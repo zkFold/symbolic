@@ -5,30 +5,31 @@
 
 module ZkFold.Symbolic.Data.MerkleTree where
 
-import           ZkFold.Symbolic.Data.Class
-import           GHC.Generics                     hiding (Rep)
-import           Data.Functor.Rep                 (Representable, pureRep)
-import           GHC.TypeNats
-import           Data.Type.Equality               (type (~))
-import           Prelude                          (const, ($), undefined, Traversable, Integer)
-import qualified Prelude                          as P
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           Data.Foldable                    (Foldable (..))
+import           Data.Functor.Rep                 (Representable, pureRep)
+import           Data.List.Infinite               (Infinite (..))
+import           Data.Type.Equality               (type (~))
+import           GHC.Generics                     hiding (Rep)
+import           GHC.TypeNats
+import           Prelude                          (Integer, Traversable, const, undefined, ($))
+import qualified Prelude                          as P
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Vector          (knownNat)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool        (Bool (..))
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
+import           ZkFold.Symbolic.Data.Hash        (Hashable (hasher))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import           ZkFold.Symbolic.Data.Conditional (bool, Conditional)
-import ZkFold.Symbolic.Class
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Symbolic.Data.List (List (..), uncons, emptyList, (.:), ListItem (..))
-import ZkFold.Base.Data.Vector (knownNat)
-import ZkFold.Symbolic.Data.Maybe (Maybe, just, nothing, maybe)
-import ZkFold.Symbolic.Data.Hash (Hashable (hasher))
-import ZkFold.Symbolic.Data.Payloaded
-import Data.List.Infinite (Infinite(..))
-import ZkFold.Symbolic.MonadCircuit
+import           ZkFold.Symbolic.Data.List        (List (..), ListItem (..), emptyList, uncons, (.:))
+import           ZkFold.Symbolic.Data.Maybe       (Maybe, just, maybe, nothing)
+import           ZkFold.Symbolic.Data.Payloaded
+import           ZkFold.Symbolic.MonadCircuit
 
 data MerkleTree (d :: Natural) a = MerkleTree {
-    mHash     :: (Context a) (Layout a)
-  , mLeaves   :: List (Context a) a
+    mHash   :: (Context a) (Layout a)
+  , mLeaves :: List (Context a) a
   }
   deriving (Generic)
 
