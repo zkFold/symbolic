@@ -7,11 +7,10 @@ module ZkFold.Symbolic.Data.MerkleTree where
 
 import           Data.Foldable                    (Foldable (..))
 import           Data.Functor.Rep                 (Representable, pureRep)
-import           Data.List.Infinite               (Infinite (..))
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     hiding (Rep)
 import           GHC.TypeNats
-import           Prelude                          (Integer, Traversable, const, undefined, ($))
+import           Prelude                          (Integer, Traversable, const, ($))
 import qualified Prelude                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -22,10 +21,8 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
 import           ZkFold.Symbolic.Data.Hash        (Hashable (hasher))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import           ZkFold.Symbolic.Data.List        (List (..), ListItem (..), emptyList, uncons, (.:))
+import           ZkFold.Symbolic.Data.List        (List (..), emptyList, uncons, (.:))
 import           ZkFold.Symbolic.Data.Maybe       (Maybe, just, maybe, nothing)
-import           ZkFold.Symbolic.Data.Payloaded
-import           ZkFold.Symbolic.MonadCircuit
 
 data MerkleTree (d :: Natural) a = MerkleTree {
     mHash   :: (Context a) (Layout a)
@@ -136,7 +133,7 @@ insert ::
   ( Symbolic (Context a)
   , Representable (Layout a))
   => MerkleTree d a -> MerkleTreePath d a -> a -> MerkleTree d a
-insert (MerkleTree h ls) p x = MerkleTree (embed $ pureRep zero) ls
+insert (MerkleTree _ ls) _ _ = MerkleTree (embed $ pureRep zero) ls
 
 -- -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
 -- replace :: (x -> Bool (Context x)) ->  MerkleTree d x -> x -> MerkleTree d x
