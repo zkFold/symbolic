@@ -10,121 +10,135 @@ import           Data.Functor.Rep                 (Representable, pureRep)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     hiding (Rep)
 import           GHC.TypeNats
-import           Prelude                          (Integer, Traversable, const, ($))
+import           Prelude                          (Integer, Traversable, const, ($), return)
 import qualified Prelude                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector          (knownNat)
+import           ZkFold.Base.Data.Vector
+import qualified ZkFold.Base.Data.Vector as V
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
-import           ZkFold.Symbolic.Data.Hash        (Hashable (hasher))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import           ZkFold.Symbolic.Data.List        (List (..), emptyList, uncons, (.:))
+import           ZkFold.Symbolic.Data.List
+import qualified ZkFold.Symbolic.Data.List as L
 import           ZkFold.Symbolic.Data.Maybe       (Maybe, just, maybe, nothing)
+import ZkFold.Symbolic.MonadCircuit
+import Data.Traversable (Traversable(traverse))
+import ZkFold.Base.Control.HApplicative (hunit)
+import Data.Proxy (Proxy(Proxy))
 
-data MerkleTree (d :: Natural) a = MerkleTree {
-    mHash   :: (Context a) (Layout a)
-  , mLeaves :: List (Context a) a
+data MerkleTree (d :: Natural) h = MerkleTree {
+    mHash   :: (Context h) (Layout h)
+  , mLevels :: Vector d (List (Context h) h)
   }
   deriving (Generic)
 
-instance (SymbolicData a, KnownNat (2 ^ d)) => SymbolicData (MerkleTree d a)
-instance (SymbolicInput a, KnownNat (2 ^ d)) => SymbolicInput (MerkleTree d a)
+hashAux :: forall i m a w. MonadCircuit i a w m => i -> i -> i -> m i
+hashAux b h g = newAssigned (($ b) * ($ merkleHasher h g) + (one - ($ b)* ($ merkleHasher g h)))
+  where
+    merkleHasher :: i -> i -> i
+    merkleHasher = P.undefined
+
+instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
+instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
 
 instance
   ( Symbolic c
-  , Context a ~ c
-  , Traversable (Layout a)
-  , Representable (Layout a)
-  , Conditional (Bool c) (List c a)
-  ) => Conditional (Bool c) (MerkleTree d a)
+  , Context h ~ c
+  , Conditional (Bool c) (List c h)
+  , Traversable (Layout h)
+  , Representable (Layout h)
+  , KnownNat d
+  ) => Conditional (Bool c) (MerkleTree d h)
 
 -- | Finds an element satisfying the constraint
-find :: forall a d c.
-  ( Conditional (Bool c) a
-  , Foldable (MerkleTree d)
-  , SymbolicInput a
-  , Context a ~ c)
-  => (a -> Bool c) -> MerkleTree d a -> Maybe c a
-find p = let n = nothing @a @c in
-  foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just @c i) $ p i) (const r) r) n
+find :: forall h d c.
+  ( Conditional (Bool c) h
+  , SymbolicInput h
+  , Context h ~ c
+  , Foldable (List c))
+  => (h -> Bool c) -> MerkleTree d h -> Maybe c h
+find p MerkleTree{..} = let n = nothing @h @c in
+  foldr (\i r -> maybe @h @_ @c (bool @(Bool c) n (just @c i) $ p i) (const r) r) n $ V.last mLevels
 
-newtype MerkleTreePath (d :: Natural) b = MerkleTreePath { mPath ::  List (Context b) b}
+newtype MerkleTreePath (d :: Natural) c = MerkleTreePath { mPath :: Vector d (Bool c)}
   deriving (Generic)
 
 instance
   ( Symbolic c
-  , c ~ Context b
+  -- , c ~ Context b
   , KnownNat d
-  , Conditional (Bool c) (List c b)
-  ) => Conditional (Bool c) (MerkleTreePath d b)
+  -- , Conditional (Bool c) b
+  -- , Conditional (Bool c) (List c b)
+  ) => Conditional (Bool c) (MerkleTreePath d c)
 
 -- | Finds a path to an element satisfying the constraint
 findPath :: forall x c d.
   ( Context x ~ c
   , SymbolicOutput x
+  , Symbolic c
   , Conditional (Bool c) (List c x)
   , Conditional (Bool c) Integer
-  , KnownNat d
-  , Conditional P.Bool (List c (Bool c)))
-  => (x -> Bool (Context x)) -> MerkleTree d x -> Maybe c (MerkleTreePath d (Bool c))
-findPath p (MerkleTree _ ml) = just @c $ MerkleTreePath (bool path (emptyList @c) (ind P.== 0))
+  , KnownNat d)
+  => (x -> Bool (Context x)) -> MerkleTree d x -> Maybe c (MerkleTreePath d c)
+findPath p (MerkleTree _ mll) = just @c $ MerkleTreePath path
   where
-    (ind, _) = helper (0, ml)
+    ml = V.last mll
+    (ind', _) = helper (0, ml)
 
     helper :: (Integer, List c x) -> (Integer , List c x)
-    helper (i, leaves) = let (l, ls) = uncons @c @x leaves
+    helper (i, leaves) = let (l, ls) = L.uncons @c @x leaves
       in bool (helper (i + 1, ls)) (i, leaves) (p l)
 
     d = knownNat @d :: Integer
 
-    path :: List c (Bool c)
-    path = foldl (\nl ni -> Bool (embed (Par1 $ fromConstant ni)) .: nl) (emptyList @c)
-      $ P.map (\i -> mod (div ind (2 P.^ i)) 2) [0 .. d]
+    path :: Vector d (Bool c)
+    path = unsafeToVector $ foldl (\nl ni -> Bool (embed @c (Par1 $ fromConstant ni )) : nl) []
+      $ P.map (\i -> mod (div ind' (2 P.^ i)) 2) [1 .. d]
 
 
 -- | Returns the element corresponding to a path
 lookup :: forall x c d.
-  ( KnownNat d
-  , SymbolicOutput x
+  ( SymbolicOutput x
   , Context x ~ c
   , Conditional (Bool c) Integer
-  ) => MerkleTree d x -> MerkleTreePath d (Bool c) -> x
-lookup (MerkleTree _ ml) (MerkleTreePath p) = val ml $ ind d 0 p
+  ) => MerkleTree d x -> MerkleTreePath (d-1) c -> x
+lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
-    d = knownNat @d :: Integer
+    xP = leaf @x (V.last nodes) $ ind p
 
-    ind :: Integer -> Integer -> List c (Bool c) -> Integer
-    ind 0 i _ = i
-    ind iter i ps = let (l, ls) = uncons @c ps
-      in bool (ind (iter-1) (2*i) ls) (ind (iter-1) (2*i+1) ls) l
+    xA = restore @x @c $ const
+        ( preimage --fromCircuitF @c hunit $ const (traverse unconstrained (witnessF $ arithmetize xP Proxy) )
+        , payload xP Proxy)
 
-    val :: List c x -> Integer -> x
-    val mt i = let (l, ls) = uncons @c @x mt in
+    preimage :: c (Layout x)
+    preimage = fromCircuitVF path $ \p' -> do
+      let Par1 i = P.head p'
+      return i
+      -- fromCircuitF @c hunit $ const (traverse unconstrained (witnessF $ arithmetize xP Proxy))
+
+    path = P.map (\(Bool b) -> b) $ V.fromVector p -- pack $ V.toVector $ P.map embed (unsafeToVector p)
+
+-- lookup (MerkleTree root hashAux leaves) (MerkleTreePath v) = let x = хэш искомой вершины in
+--   fromCircuit3F v root x $ bs r h1-> do
+--     gs <- traversal . unconstrained $ хэши-соседи к листам вдоль пути
+--     r' <- foldl (\h' (g', b') -> newAssigned (hashAux b' h' g') h1 $ zip gs bs
+--     constraint (r' - r)
+--     return h1
+
+leaf :: forall x. (SymbolicOutput x) => List (Context x) x -> Integer -> x
+leaf mt i = let (l, ls) = L.uncons mt in
       case i of
         0 -> l
-        _ -> val ls (i-1)
+        _ -> leaf ls (i-1)
+
+ind :: forall d c. (Conditional (Bool c) Integer) => Vector d (Bool c) -> Integer
+ind ps = let ls = V.fromVector ps
+      in foldl (\num b -> bool (num*2 +1) (num*2) b) 0 ls
 
 
-rollTree :: forall d a c.
-  ( c ~ Context a
-  , SymbolicOutput a
-  , KnownNat d
-  , Hashable a a
-  , AdditiveSemigroup a
-  ) => MerkleTree d a -> MerkleTree (d - 1) a
-rollTree (MerkleTree h l) = MerkleTree h (solve d l)
-  where
-    d = 2 P.^ (knownNat @d :: Integer)
-
-    solve :: Integer -> List c a -> List c a
-    solve 0 _ = emptyList @c
-    solve i lst =
-      let (x1, list1) = uncons lst
-          (x2, olist) = uncons list1
-      in hasher (x1 + x2) .: solve (i - 2) olist
 
 
 
@@ -132,30 +146,30 @@ rollTree (MerkleTree h l) = MerkleTree h (solve d l)
 insert ::
   ( Symbolic (Context a)
   , Representable (Layout a))
-  => MerkleTree d a -> MerkleTreePath d a -> a -> MerkleTree d a
+  => MerkleTree d a -> MerkleTreePath d c -> a -> MerkleTree d a
 insert (MerkleTree _ ls) _ _ = MerkleTree (embed $ pureRep zero) ls
 
 -- -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
 -- replace :: (x -> Bool (Context x)) ->  MerkleTree d x -> x -> MerkleTree d x
 
 -- | Returns the next path in a tree
-incrementPath :: forall c d.
+incrementPath :: forall c d x.
   ( KnownNat d
+  , Context x ~ c
   , Symbolic c
   , Conditional (Bool c) Integer
-  ) => MerkleTreePath d (Bool c) -> MerkleTreePath d (Bool c)
-incrementPath (MerkleTreePath p) = MerkleTreePath (path $ ind d 0 p + 1)
+  ) => MerkleTreePath d c -> MerkleTreePath d c
+incrementPath (MerkleTreePath p) = MerkleTreePath (path $ ind p + 1)
   where
     d = knownNat @d :: Integer
 
-    ind :: Integer -> Integer -> List c (Bool c) -> Integer
-    ind 0 i _ = i
-    ind iter i ps = let (l, ls) = uncons @c ps
-      in bool (ind (iter-1) (2*i) ls) (ind (iter-1) (2*i+1) ls) l
+    ind :: Vector d (Bool c) -> Integer
+    ind ps = let ls = V.fromVector ps
+      in foldl (\num b -> bool (num*2 +1) (num*2) b) 1 ls
 
-    path :: Integer -> List c (Bool c)
-    path val = foldl (\nl ni -> Bool (embed (Par1 $ fromConstant ni)) .: nl) (emptyList @c)
-      $ P.map (\i -> mod (div val (2 P.^ i)) 2) [0 .. d]
+    path :: Integer -> Vector d (Bool c)
+    path val = unsafeToVector $ foldl (\nl ni -> Bool (embed @c (Par1 $ fromConstant ni )) : nl) []
+      $ P.map (\i -> mod (div val (2 P.^ i)) 2) [1 .. d]
 
 
 -- | Returns the previous path in a tree
