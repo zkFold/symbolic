@@ -6,31 +6,31 @@
 module ZkFold.Symbolic.Data.MerkleTree where
 
 import           Data.Foldable                    (Foldable (..), foldlM)
-import Data.Functor.Rep ( pureRep, Representable )
+import           Data.Functor.Rep                 (Representable, pureRep)
+import qualified Data.List                        as LL
+import           Data.Proxy                       (Proxy (Proxy))
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     hiding (Rep, UInt)
 import           GHC.TypeNats
-import           Prelude                          (Integer, Traversable, const, ($), return, zip, (.))
+import           Prelude                          (Integer, Traversable, const, return, zip, ($), (.))
 import qualified Prelude                          as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Control.HApplicative (hpair)
+import           ZkFold.Base.Data.Package
+import qualified ZkFold.Base.Data.Vector          as V
 import           ZkFold.Base.Data.Vector
-import qualified ZkFold.Base.Data.Vector as V
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), horner, mzipWithMRep)
 import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
+import qualified ZkFold.Symbolic.Data.List        as L
 import           ZkFold.Symbolic.Data.List
-import qualified ZkFold.Symbolic.Data.List as L
 import           ZkFold.Symbolic.Data.Maybe       (Maybe, just)
-import ZkFold.Symbolic.MonadCircuit
-import Data.Proxy (Proxy(Proxy))
-import ZkFold.Base.Data.Package
-import ZkFold.Symbolic.Data.Combinators (mzipWithMRep, horner, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.UInt (strictConv, UInt)
-import ZkFold.Base.Control.HApplicative (hpair)
-import qualified Data.List as LL
+import           ZkFold.Symbolic.Data.UInt        (UInt, strictConv)
+import           ZkFold.Symbolic.MonadCircuit
 
 data MerkleTree (d :: Natural) h = MerkleTree {
     mHash   :: (Context h) (Layout h)
