@@ -5,34 +5,35 @@
 
 module ZkFold.Symbolic.Data.MerkleTree where
 
-import           Data.Foldable                    (foldlM)
-import           Data.Functor.Rep                 (Representable)
-import qualified Data.List                        as LL
-import           Data.Proxy                       (Proxy (Proxy))
-import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     hiding (Rep, UInt, from)
+import           Data.Foldable                     (foldlM)
+import           Data.Functor.Rep                  (Representable)
+import qualified Data.List                         as LL
+import           Data.Proxy                        (Proxy (Proxy))
+import           Data.Type.Equality                (type (~))
+import           GHC.Generics                      hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                          (Integer, Traversable, const, return, zip, ($), (.))
-import qualified Prelude                          as P
+import           Prelude                           (Integer, Traversable, const, return, zip, ($), (.))
+import qualified Prelude                           as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative (hpair)
+import           ZkFold.Base.Control.HApplicative  (hpair)
 import           ZkFold.Base.Data.Package
-import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          hiding ((.:))
+import qualified ZkFold.Base.Data.Vector           as V
+import           ZkFold.Base.Data.Vector           hiding ((.:))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
+import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), horner, mzipWithMRep, NumberOfRegisters, Iso (from), expansion)
-import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import qualified ZkFold.Symbolic.Data.List        as L
+import           ZkFold.Symbolic.Data.Combinators  (Iso (from), NumberOfRegisters, RegisterSize (Auto), expansion,
+                                                    horner, mzipWithMRep)
+import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement, fromFieldElement))
+import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
+import qualified ZkFold.Symbolic.Data.List         as L
 import           ZkFold.Symbolic.Data.List
-import           ZkFold.Symbolic.Data.Maybe       (just, nothing, fromMaybe)
-import qualified ZkFold.Symbolic.Data.Maybe       as M
-import           ZkFold.Symbolic.Data.UInt        (UInt, strictConv)
+import qualified ZkFold.Symbolic.Data.Maybe        as M
+import           ZkFold.Symbolic.Data.Maybe        (fromMaybe, just, nothing)
+import           ZkFold.Symbolic.Data.UInt         (UInt, strictConv)
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Data.FieldElement (FieldElement(FieldElement, fromFieldElement))
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
