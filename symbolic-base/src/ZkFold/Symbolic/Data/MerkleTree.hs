@@ -110,15 +110,17 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
     xP = leaf @c @x @d (V.last nodes) $ ind path
 
-    inits = V.unsafeToVector @(d-1) $ LL.unfoldr (\v -> if LL.null v then P.Nothing else P.Just (ind @_ @c (V.unsafeToVector v), LL.init v)) (V.fromVector path)
+    inits = V.unsafeToVector @(d-2) $
+              LL.unfoldr (\v -> let initV = LL.init v
+                                 in if LL.null initV then P.Nothing else P.Just (ind @_ @c (V.unsafeToVector initV), initV)) $ V.fromVector path
 
     cinds :: Vector (d-1) (c Par1)
     cinds = unpacked $ fromCircuit2F (pack path) (pack inits) $ \ps' is' -> do
       let ps = P.fmap unPar1 (unComp1 ps')
-          is = V.unsafeToVector $ fromConstant @(BaseField c) zero : (P.init . V.fromVector $ P.fmap unPar1 (unComp1 is'))
+          is = V.unsafeToVector @(d-1) (fromConstant @(BaseField c) zero : (V.fromVector . P.fmap unPar1 $ unComp1 is'))
       mzipWithMRep (\wp wi -> newAssigned (one - ($ wp) + ($ wi)*(one + one))) ps is
 
-    inds = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
+    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
 
     xA = restore @x @c $ const (preimage , payload xP Proxy)
 
@@ -126,7 +128,7 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
     rootAndH1 = hpair root (arithmetize xP Proxy)
 
     preimage :: c (Layout x)
-    preimage = fromCircuit3F (pack inds) (pack path) rootAndH1 $ \ g p' r' -> do
+    preimage = fromCircuit3F (pack pairs) (pack path) rootAndH1 $ \ g p' r' -> do
       let gs = V.fromVector $ unComp1 g
           bs = V.fromVector $ unComp1 p'
           (r :*: h1) = r'
@@ -159,23 +161,24 @@ insertLeaf :: forall x c d.
   , SymbolicFold c
   , KnownRegisters c d Auto
   ) => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
-insertLeaf (MerkleTree root nodes) (MerkleTreePath p) xI = MerkleTree root (V.unsafeToVector z3)
+insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preimage) (V.unsafeToVector z3)
   where
-    inits = V.unsafeToVector @(d-1) $ LL.unfoldr (\v -> if LL.null v then P.Nothing else P.Just (ind @_ @c (V.unsafeToVector v), LL.init v)) (V.fromVector path)
+    inits = V.unsafeToVector @(d-2) $
+              LL.unfoldr (\v -> let initV = LL.init v
+                                 in if LL.null initV then P.Nothing else P.Just (ind @_ @c (V.unsafeToVector initV), initV)) $ V.fromVector path
 
     cinds :: Vector (d-1) (c Par1)
     cinds = unpacked $ fromCircuit2F (pack path) (pack inits) $ \ps' is' -> do
       let ps = P.fmap unPar1 (unComp1 ps')
-          is = V.unsafeToVector $ fromConstant @(BaseField c) zero : (P.init . V.fromVector $ P.fmap unPar1 (unComp1 is'))
+          is = V.unsafeToVector @(d-1) (fromConstant @(BaseField c) zero : (V.fromVector . P.fmap unPar1 $ unComp1 is'))
       mzipWithMRep (\wp wi -> newAssigned (one - ($ wp) + ($ wi)*(one + one))) ps is
 
-    inds = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
+    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
 
     preimage :: Vector (d - 1) (c (Layout x))
-    preimage = unpack $ fromCircuit3F (pack inds) (pack path) (arithmetize xI Proxy) $ \ g p' h' -> do
+    preimage = unpack $ fromCircuit3F (pack pairs) (pack path) (arithmetize xI Proxy) $ \ g p' h1 -> do
       let gs = V.fromVector $ unComp1 g
           bs = V.fromVector $ unComp1 p'
-          h1 = h'
       hd <- helper h1 (zip gs bs)
       return $ Comp1 $ V.unsafeToVector @(d-1) hd
 
@@ -191,8 +194,8 @@ insertLeaf (MerkleTree root nodes) (MerkleTreePath p) xI = MerkleTree root (V.un
 
     z3 = P.zipWith3 (\l mtp xi -> L.insert l mtp (restore @_ @c $ const (xi, pureRep zero)))
           (V.fromVector nodes)
-          (P.map (strictConv @_ @(UInt d Auto c)) $ V.fromVector inits)
-          (V.fromVector preimage)
+          (P.map (strictConv @_ @(UInt d Auto c)) ([embed $ Par1 zero] P.++ V.fromVector inits P.++ [ind path]))
+          (V.fromVector preimage P.<> [arithmetize xI Proxy])
 
 -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
 replace :: forall x c d n.
@@ -205,7 +208,6 @@ replace :: forall x c d n.
   , SymbolicFold c, KnownRegisters c d Auto
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
 replace p t = insertLeaf t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
-
 
 -- | Returns the next path in a tree
 incrementPath :: forall c d.
