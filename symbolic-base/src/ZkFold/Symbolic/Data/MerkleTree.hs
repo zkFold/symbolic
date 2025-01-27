@@ -23,8 +23,8 @@ import           ZkFold.Base.Data.Vector           hiding ((.:))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators  (Iso (from), NumberOfRegisters, RegisterSize (Auto), expansion,
-                                                    horner, mzipWithMRep, KnownRegisters)
+import           ZkFold.Symbolic.Data.Combinators  (Iso (from), KnownRegisters, NumberOfRegisters, RegisterSize (Auto),
+                                                    expansion, horner, mzipWithMRep)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
@@ -32,10 +32,10 @@ import qualified ZkFold.Symbolic.Data.List         as L
 import           ZkFold.Symbolic.Data.List
 import qualified ZkFold.Symbolic.Data.Maybe        as M
 import           ZkFold.Symbolic.Data.Maybe        (fromMaybe, just, nothing)
+import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Data.UInt         (UInt (..), strictConv)
+import           ZkFold.Symbolic.Fold              (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Symbolic.Fold (SymbolicFold)
-import ZkFold.Symbolic.Data.Morph
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
