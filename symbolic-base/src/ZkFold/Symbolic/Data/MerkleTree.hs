@@ -6,13 +6,13 @@
 module ZkFold.Symbolic.Data.MerkleTree where
 
 import           Data.Foldable                     (foldlM)
-import           Data.Functor.Rep                  (Representable)
+import           Data.Functor.Rep                  (Representable, pureRep)
 import qualified Data.List                         as LL
 import           Data.Proxy                        (Proxy (Proxy))
 import           Data.Type.Equality                (type (~))
 import           GHC.Generics                      hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                           (Integer, Traversable, const, return, zip, ($), (.))
+import           Prelude                           (Traversable, const, return, zip, ($), (.))
 import qualified Prelude                           as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators  (Iso (from), NumberOfRegisters, RegisterSize (Auto), expansion,
-                                                    horner, mzipWithMRep)
+                                                    horner, mzipWithMRep, KnownRegisters)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
@@ -32,8 +32,10 @@ import qualified ZkFold.Symbolic.Data.List         as L
 import           ZkFold.Symbolic.Data.List
 import qualified ZkFold.Symbolic.Data.Maybe        as M
 import           ZkFold.Symbolic.Data.Maybe        (fromMaybe, just, nothing)
-import           ZkFold.Symbolic.Data.UInt         (UInt, strictConv)
+import           ZkFold.Symbolic.Data.UInt         (UInt (..), strictConv)
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Fold (SymbolicFold)
+import ZkFold.Symbolic.Data.Morph
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
@@ -54,21 +56,13 @@ hashAux (Par1 b) h g = do
 instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
 
-instance
-  ( Symbolic c
-  , Context h ~ c
-  , Conditional (Bool c) (List c h)
-  , Traversable (Layout h)
-  , Representable (Layout h)
-  , KnownNat d
-  ) => Conditional (Bool c) (MerkleTree d h)
-
 -- | Finds an element satisfying the constraint
 find :: forall h d c.
   ( Conditional (Bool c) h
   , SymbolicInput h
   , Context h ~ c
-  ) => (h -> Bool c) -> MerkleTree d h -> M.Maybe c h
+  , SymbolicFold c
+  ) => MorphFrom c h (Bool c) -> MerkleTree d h -> M.Maybe c h
 find p MerkleTree{..} =
   let leaves = V.last mLevels
       arr = L.filter p leaves
@@ -88,18 +82,12 @@ findPath :: forall x c d n.
   , KnownNat (d-1)
   , KnownNat (NumberOfRegisters (BaseField c) n Auto)
   , NumberOfBits (BaseField c) ~ n
-  ) => (x -> Bool c) -> MerkleTree d x -> M.Maybe c (MerkleTreePath d c)
-findPath p mt@(MerkleTree _ nodes) = bool (nothing @_ @c) (just path) (p $ lookup @x @c mt path)
+  , SymbolicFold c, KnownRegisters c d Auto
+  ) => MorphFrom c x (Bool c) -> MerkleTree d x -> M.Maybe c (MerkleTreePath d c)
+findPath p mt@(MerkleTree _ nodes) =  bool (nothing @_ @c) (just path) (p @ lookup @x @c mt path :: Bool c)
   where
-    d = knownNat @d :: Integer
-    pd = 2 P.^ (d-1) :: Integer
     leaves = V.last nodes
-    idsL :: List c (UInt n Auto c) = LL.foldr ((.:) . fromConstant) L.emptyList [0..pd]
-    fe = fromFieldElement . from . L.head $ L.filter (p . (leaves L.!!)) idsL
-
-    path :: MerkleTreePath d c = MerkleTreePath . P.fmap Bool . unpack $ fromCircuitF fe $ \(Par1 e) -> do
-      ee <- expansion (P.fromIntegral d) e
-      return $ Comp1 (V.unsafeToVector @(d-1) $ P.map Par1 ee)
+    path = MerkleTreePath . indToPath @c . fromFieldElement . from $ findIndex p leaves
 
 indToPath :: forall c d.
   ( Symbolic c
@@ -116,6 +104,7 @@ lookup :: forall x c d.
   , Context x ~ c
   , KnownNat (d - 1)
   , KnownNat d
+  , SymbolicFold c, KnownRegisters c d Auto
   ) => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
@@ -149,7 +138,9 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
     path = P.fmap (\(Bool b) -> b) p
 
 
-leaf :: forall c x d. (SymbolicOutput x, Context x ~ c, KnownNat d) => List c x -> c Par1 -> x
+leaf :: forall c x d.
+  (SymbolicOutput x, SymbolicFold c, KnownRegisters c d Auto, Context x ~ c, KnownNat d
+  ) => List c x -> c Par1 -> x
 leaf l i = let num = strictConv @_ @(UInt d Auto c) i in l L.!! num
 
 
@@ -160,10 +151,48 @@ ind vb = fromCircuitF (pack vb) $ \vb' -> do
   return $ fromConstant b1n
 
 -- | Inserts an element at a specified position in a tree
-insert :: forall x c d.
-  () => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
-insert (MerkleTree _ _) (MerkleTreePath _) _ = P.undefined
+insertLeaf :: forall x c d.
+  ( SymbolicOutput x
+  , Context x ~ c
+  , KnownNat (d - 1)
+  , KnownNat d
+  , SymbolicFold c
+  , KnownRegisters c d Auto
+  ) => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
+insertLeaf (MerkleTree root nodes) (MerkleTreePath p) xI = MerkleTree root (V.unsafeToVector z3)
+  where
+    inits = V.unsafeToVector @(d-1) $ LL.unfoldr (\v -> if LL.null v then P.Nothing else P.Just (ind @_ @c (V.unsafeToVector v), LL.init v)) (V.fromVector path)
 
+    cinds :: Vector (d-1) (c Par1)
+    cinds = unpacked $ fromCircuit2F (pack path) (pack inits) $ \ps' is' -> do
+      let ps = P.fmap unPar1 (unComp1 ps')
+          is = V.unsafeToVector $ fromConstant @(BaseField c) zero : (P.init . V.fromVector $ P.fmap unPar1 (unComp1 is'))
+      mzipWithMRep (\wp wi -> newAssigned (one - ($ wp) + ($ wi)*(one + one))) ps is
+
+    inds = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
+
+    preimage :: Vector (d - 1) (c (Layout x))
+    preimage = unpack $ fromCircuit3F (pack inds) (pack path) (arithmetize xI Proxy) $ \ g p' h' -> do
+      let gs = V.fromVector $ unComp1 g
+          bs = V.fromVector $ unComp1 p'
+          h1 = h'
+      hd <- helper h1 (zip gs bs)
+      return $ Comp1 $ V.unsafeToVector @(d-1) hd
+
+    helper :: forall i m a w f. (MonadCircuit i a w m, Representable f, Traversable f) => f i -> [(f i, Par1 i)] -> m [f i]
+    helper _ [] = return []
+    helper h (pi:ps) = do
+      let (g, b) = pi
+      hN <- hashAux b h g
+      (hN :) P.<$> helper hN ps
+
+    path :: Vector (d - 1) (c Par1)
+    path = P.fmap (\(Bool b) -> b) p
+
+    z3 = P.zipWith3 (\l mtp xi -> L.insert l mtp (restore @_ @c $ const (xi, pureRep zero)))
+          (V.fromVector nodes)
+          (P.map (strictConv @_ @(UInt d Auto c)) $ V.fromVector inits)
+          (V.fromVector preimage)
 
 -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
 replace :: forall x c d n.
@@ -173,8 +202,9 @@ replace :: forall x c d n.
   , KnownNat (d-1)
   , KnownNat (NumberOfRegisters (BaseField c) n Auto)
   , NumberOfBits (BaseField c) ~ n
-  ) => (x -> Bool (Context x)) -> MerkleTree d x -> x -> MerkleTree d x
-replace p t = insert t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
+  , SymbolicFold c, KnownRegisters c d Auto
+  ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
+replace p t = insertLeaf t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
 
 
 -- | Returns the next path in a tree
