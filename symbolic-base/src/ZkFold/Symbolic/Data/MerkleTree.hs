@@ -2,7 +2,6 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-
 module ZkFold.Symbolic.Data.MerkleTree where
 
 import           Data.Foldable                     (foldlM)
@@ -36,6 +35,8 @@ import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Data.UInt         (UInt (..), strictConv)
 import           ZkFold.Symbolic.Fold              (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Algorithms.Hash.MiMC
+import ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
@@ -44,14 +45,19 @@ data MerkleTree (d :: Natural) h = MerkleTree {
   }
   deriving (Generic)
 
-hashAux :: forall i m a w f. (MonadCircuit i a w m, Representable f, Traversable f) => Par1 i -> f i -> f i -> m (f i)
+hashAux :: forall i m a w f.
+  ( MonadCircuit i a w m
+  , Representable f
+  , Traversable f
+  , Arithmetic a
+  ) => Par1 i -> f i -> f i -> m (f i)
 hashAux (Par1 b) h g = do
   v1 <- merkleHasher h g
   v2 <- merkleHasher g h
   mzipWithMRep (\wx wy -> newAssigned ((one - ($ b)) * ($ wx) + ($ b) * ($ wy))) v1 v2
   where
     merkleHasher :: f i -> f i -> m (f i)
-    merkleHasher = P.undefined
+    merkleHasher = mzipWithMRep (\a c -> newAssigned (\x -> mimcHashN @a mimcConstants zero [x a, x c]))
 
 instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
@@ -104,7 +110,8 @@ lookup :: forall x c d.
   , Context x ~ c
   , KnownNat (d - 1)
   , KnownNat d
-  , SymbolicFold c, KnownRegisters c d Auto
+  , SymbolicFold c
+  , KnownRegisters c d Auto
   ) => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
@@ -182,7 +189,7 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
       hd <- helper h1 (zip gs bs)
       return $ Comp1 $ V.unsafeToVector @(d-1) hd
 
-    helper :: forall i m a w f. (MonadCircuit i a w m, Representable f, Traversable f) => f i -> [(f i, Par1 i)] -> m [f i]
+    helper :: forall i m a w f. (MonadCircuit i a w m, Representable f, Traversable f, Arithmetic a) => f i -> [(f i, Par1 i)] -> m [f i]
     helper _ [] = return []
     helper h (pi:ps) = do
       let (g, b) = pi
