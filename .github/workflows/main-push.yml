@@ -37,7 +37,7 @@ jobs:
       shell: bash
       run: |
         cabal update
-        cabal build all -f Pedantic
+        cabal build all -f Pedantic --allow-newer
 
     - name: Upload package
       env:
