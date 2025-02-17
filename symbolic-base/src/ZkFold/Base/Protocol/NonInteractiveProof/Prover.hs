@@ -10,7 +10,6 @@ import           Data.Aeson.Types
 import           Data.ByteString                          (ByteString)
 import qualified Data.ByteString.Base64                   as B64
 import qualified Data.ByteString.Char8                    as BS
--- import           Data.Swagger
 import qualified Data.Text                                as T
 import           GHC.Generics                             (Generic)
 import           Optics                                   ((&))

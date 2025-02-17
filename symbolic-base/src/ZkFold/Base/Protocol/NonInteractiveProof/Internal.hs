@@ -1,29 +1,23 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE Unsafe #-}
+{-# LANGUAGE Unsafe              #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
 #if defined(javascript_HOST_ARCH)
 
-import qualified Data.ByteString.Char8                      as C
-import           Data.String                                (IsString(fromString))
-import           GHC.JS.Prim
-import           System.IO.Unsafe                           (unsafePerformIO)
-
-#else
-
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
-
-#endif
-
 import           Data.ByteString                            (ByteString)
+import qualified Data.ByteString.Char8                      as C
 import           Data.Maybe                                 (fromJust)
+import           Data.String                                (IsString (fromString))
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
+import           GHC.JS.Prim
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
+import           System.IO.Unsafe                           (unsafePerformIO)
 
 import           ZkFold.Base.Algebra.Basic.Class            (Field, MultiplicativeSemigroup ((*)), Scale (..), sum)
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))

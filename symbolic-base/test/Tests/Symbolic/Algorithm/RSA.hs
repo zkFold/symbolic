@@ -9,7 +9,6 @@ import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
-import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
@@ -32,8 +31,8 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA' :: forall keyLength . RSA keyLength 256 I => Spec
-specRSA' = do
+specRSA' :: forall keyLength g . (CryptoRandomGen g, RSA keyLength 256 I) => g -> Spec
+specRSA' gen = do
     describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
         it "signs and verifies correctly" $ withMaxSuccess 10 $ do
             x <- toss $ (2 :: Natural) ^ (32 :: Natural)
