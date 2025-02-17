@@ -5,6 +5,7 @@ module Tests.Symbolic.Algorithm.JWT (specJWT) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import           Crypto.Random                               (newGenIO, SystemRandom)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
@@ -52,5 +53,5 @@ specJWT = do
             let secret     = signPayload skey payload
                 (check, _) = verifySignature cert secret
 
-            pure $ evalBool check === one
+                pure $ evalBool check === one
 
