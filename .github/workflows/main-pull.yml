@@ -32,7 +32,7 @@ jobs:
 
     - name: Configure Cabal
       run: |
-        cabal update
+        cabal update --allow-newer
         cabal configure --enable-tests --enable-benchmarks --enable-documentation
 
     - name: Generate cache key
@@ -52,7 +52,7 @@ jobs:
 
     - name: Install stylish-haskell
       run: |
-        cabal install stylish-haskell
+        cabal install stylish-haskell --allow-newer
 
     - name: Lint Haskell
       run: |
@@ -86,10 +86,10 @@ jobs:
         cabal build all -f Pedantic --allow-newer
 
     - name: Test
-      run: cabal test all --test-option="--skip=SLOW"
+      run: cabal test all --test-option="--skip=SLOW" --allow-newer
 
     - name: Compiler benchmark
-      run: cabal bench compiler-golden-stats
+      run: cabal bench compiler-golden-stats --allow-newer
 
     # - name: Check cabal file
     #   run: cabal check

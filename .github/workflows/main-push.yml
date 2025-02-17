@@ -36,7 +36,7 @@ jobs:
     - name: Build package
       shell: bash
       run: |
-        cabal update
+        cabal update --allow-newer
         cabal build all -f Pedantic --allow-newer
 
     - name: Upload package
