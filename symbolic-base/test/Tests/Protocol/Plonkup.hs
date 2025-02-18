@@ -18,7 +18,7 @@ import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (U1 (..))
 import           GHC.IsList                                          (IsList (fromList))
 import           Test.Hspec
-import           Test.QuickCheck                                     hiding (witness)
+import           Test.QuickCheck
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)

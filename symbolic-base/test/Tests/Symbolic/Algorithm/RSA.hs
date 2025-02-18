@@ -5,6 +5,7 @@ module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import           System.Random                               (RandomGen)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)

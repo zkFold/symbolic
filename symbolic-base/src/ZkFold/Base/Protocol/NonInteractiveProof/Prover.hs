@@ -32,9 +32,6 @@ instance FromJSON ProofBytes where
             Left err -> fail err
             Right bs -> return $ ProofBytes bs
 
--- instance ToSchema ProofBytes where
---   declareNamedSchema _ = pure $ NamedSchema (Just "Proof bytes") byteSchema
-
 data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
     deriving (Show, Eq, Generic, NFData)
 
@@ -61,9 +58,6 @@ instance FromJSON ProveAPIResult where
         "Witness error" -> return ProveAPIErrorWitness
         _ -> fail "Unknown error message"
       _ -> fail "Unknown status"
-
--- instance ToSchema ProveAPIResult where
---   declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 proveAPI
     :: forall a core

@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         cabal: [3.14.1.1]
-        ghc: [9.12.1]
+        ghc: [9.6.6, 9.12.1]
 
     runs-on: ${{ matrix.os }}
 
@@ -32,13 +32,13 @@ jobs:
 
     - name: Configure Cabal
       run: |
-        cabal update --allow-newer
+        cabal update
         cabal configure --enable-tests --enable-benchmarks --enable-documentation
 
     - name: Generate cache key
       # Creates plan.json file
       run: |
-        cabal build all --dry-run --allow-newer
+        cabal build all --dry-run
 
     - name: Restore cached dependencies
       uses: actions/cache/restore@v4
@@ -52,7 +52,7 @@ jobs:
 
     - name: Install stylish-haskell
       run: |
-        cabal install stylish-haskell --allow-newer
+        cabal install stylish-haskell --allow-older --with-compiler ghc-9.6.6
 
     - name: Lint Haskell
       run: |
@@ -70,7 +70,7 @@ jobs:
       # If we had an exact cache hit, the dependencies will be up to date.
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        cabal build all --only-dependencies --allow-newer
+        cabal build all --only-dependencies
 
     # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
     - name: Save cached dependencies
@@ -83,13 +83,13 @@ jobs:
 
     - name: Build
       run: |
-        cabal build all -f Pedantic --allow-newer
+        cabal build all -f Pedantic
 
     - name: Test
-      run: cabal test all --test-option="--skip=SLOW" --allow-newer
+      run: cabal test all --test-option="--skip=SLOW"
 
     - name: Compiler benchmark
-      run: cabal bench compiler-golden-stats --allow-newer
+      run: cabal bench compiler-golden-stats
 
     # - name: Check cabal file
     #   run: cabal check

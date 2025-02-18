@@ -36,8 +36,8 @@ jobs:
     - name: Build package
       shell: bash
       run: |
-        cabal update --allow-newer
-        cabal build all -f Pedantic --allow-newer
+        cabal update
+        cabal build all -f Pedantic
 
     - name: Upload package
       env:

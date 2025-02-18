@@ -9,7 +9,6 @@ import           Data.Constraint                                   (Dict, withDi
 import           Data.Constraint.Nat                               (minusNat, modBound, modNat, plusMonotone2, plusNat,
                                                                     timesNat, zeroLe)
 import           Data.Constraint.Unsafe                            (unsafeAxiom)
-import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V

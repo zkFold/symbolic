@@ -1,3 +1,7 @@
+allow-newer: 
+    base                ,
+    template-haskell    , 
+    deepseq
 
 packages:
     symbolic-base

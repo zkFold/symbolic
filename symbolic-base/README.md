@@ -4,16 +4,16 @@ This package contains the Symbolic framework base library. It includes the Symbo
 # Tests
 To run the tests, execute
 ```bash
-cabal test --allow-newer
+cabal test
 ```
 
 To disable slow test groups, execute
 ```bash
-cabal test --allow-newer --test-option="--skip=SLOW"
+cabal test --test-option="--skip=SLOW"
 ```
 
 # Compile in JS
 
 ```bash
-cabal build --allow-newer --with-hsc2hs=javascript-unknown-ghcjs-hsc2hs --with-ghc=javascript-unknown-ghcjs-ghc --with-ghc-pkg=javascript-unknown-ghcjs-ghc-pkg
+cabal build symbolic-base --with-hsc2hs=javascript-unknown-ghcjs-hsc2hs --with-ghc=javascript-unknown-ghcjs-ghc --with-ghc-pkg=javascript-unknown-ghcjs-ghc-pkg
 ```

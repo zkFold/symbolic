@@ -1,6 +1,6 @@
 module Main where
 
-import           Crypto.Random                      (CryptoRandomGen, SystemRandom, newGenIO)
+import           System.Random                      (RandomGen, initStdGen)
 import           Prelude                            hiding (Bool, Fractional (..), Num (..), drop, length, replicate,
                                                      take, (==))
 import           Test.Hspec                         (Spec, hspec)
@@ -28,7 +28,7 @@ import           Tests.Symbolic.Data.Hash           (specHash)
 import           Tests.Symbolic.Data.List           (specList)
 import           Tests.Symbolic.Data.UInt           (specUInt)
 
-spec :: CryptoRandomGen g => g -> Spec
+spec :: RandomGen g => g -> Spec
 spec gen = do
     -- Base.Algebra
     specField
@@ -68,4 +68,4 @@ spec gen = do
     specSHA2
 
 main :: IO ()
-main = hspec =<< (spec <$> newGenIO @SystemRandom)
+main = hspec . spec =<< initStdGen
