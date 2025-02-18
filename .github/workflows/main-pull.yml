@@ -26,17 +26,9 @@ jobs:
       uses: haskell-actions/setup@v2.6.2
       id: setup
       with:
-        ghc-version: ${{ matrix.ghc }}
+        ghc-version: [9.12.1, 9.6.6]
         cabal-version: ${{ matrix.cabal }}
         cabal-update: true
-
-    - name: Set up GHC 9.6.6
-      uses: haskell-actions/setup@v2.6.2
-      id: setup
-      with:
-        ghc-version: 9.6.6
-        cabal-version: ${{ matrix.cabal }}
-        cabal-update: false
 
     - name: Configure Cabal
       run: |
