@@ -57,37 +57,39 @@ instance
   ) => SymbolicInput (PrivateKey keyLen ctx) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
+type PubExponentSize = 18
+
 data PublicKey keyLen ctx
     = PublicKey
-        { pubE :: UInt 32 'Auto ctx
+        { pubE :: UInt PubExponentSize 'Auto ctx
         , pubN :: UInt keyLen 'Auto ctx
         }
 
 deriving instance Generic (PublicKey keyLen context)
 deriving instance
     ( NFData (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , NFData (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    , NFData (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
     ) =>  NFData  (PublicKey keyLen context)
 deriving instance
     ( P.Eq (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , P.Eq (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    , P.Eq (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
     ) =>  P.Eq    (PublicKey keyLen context)
 deriving instance
     ( P.Show (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) 32 'Auto)))
+    , P.Show (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
     , P.Show (BaseField context)
     ) =>  P.Show  (PublicKey keyLen context)
 
 deriving instance
     ( Symbolic ctx
-    , KnownRegisters ctx 32 'Auto
+    , KnownRegisters ctx PubExponentSize 'Auto
     , KnownRegisters ctx keyLen 'Auto
     ) => SymbolicData (PublicKey keyLen ctx)
 
 instance
   ( Symbolic ctx
   , KnownNat keyLen
-  , KnownRegisters ctx 32 'Auto
+  , KnownRegisters ctx PubExponentSize 'Auto
   , KnownRegisters ctx keyLen 'Auto
   ) => SymbolicInput (PublicKey keyLen ctx) where
     isValid PublicKey{..} = isValid pubE && isValid pubN
