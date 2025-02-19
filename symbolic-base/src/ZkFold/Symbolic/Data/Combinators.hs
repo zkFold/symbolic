@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Data.Combinators where
 import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
 import           Data.Foldable                    (foldlM)
-import           Data.Functor.Rep                 (Representable, fmapRep, liftR3, mzipRep, mzipWithRep)
+import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
 import           Data.List                        (find, splitAt)
 import           Data.List.Split                  (chunksOf)
@@ -36,15 +36,6 @@ mzipWithMRep ::
   (a -> b -> m c) -> f a -> f b -> m (f c)
 mzipWithMRep f x y = sequenceA (mzipWithRep f x y)
 
-liftMR3 ::
-  (Representable f, Traversable f, Applicative m) =>
-  (a -> b -> c -> m d) -> f a -> f b -> f c -> m (f d)
-liftMR3 f x y z = sequenceA (liftR3 f x y z)
-
-fmapMRep ::
-  (Representable f, Traversable f, Applicative m) =>
-  (a -> m b) -> f a -> m (f b)
-fmapMRep f x = sequenceA (fmapRep f x)
 --------------------------------------------------------------------------------------------------
 
 -- | A class for isomorphic types.
