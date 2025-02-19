@@ -4,10 +4,10 @@
 module ZkFold.Symbolic.Algorithms.Hash.MiMC where
 
 import           Data.Foldable                                  (toList)
-import           Data.Functor.Rep                               (pureRep, liftR3, fmapRep)
+import           Data.Functor.Rep                               (fmapRep, liftR3, pureRep)
 import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
 import           Data.Proxy                                     (Proxy (..))
-import           GHC.Generics                                   ((:*:) (..), Par1 (..))
+import           GHC.Generics                                   (Par1 (..), (:*:) (..))
 import           Numeric.Natural                                (Natural)
 import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
                                                                  (^), (||))
@@ -21,8 +21,8 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                   (MonadCircuit (newAssigned))
-import ZkFold.Symbolic.Interpreter
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5
