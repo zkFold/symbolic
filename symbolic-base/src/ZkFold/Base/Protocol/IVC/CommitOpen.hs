@@ -5,53 +5,54 @@ module ZkFold.Base.Protocol.IVC.CommitOpen where
 import           Data.Zip                              (zipWith)
 import           Prelude                               hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..))
+import           ZkFold.Base.Algebra.Basic.Class       (AdditiveGroup (..), Scale, FromConstant)
 import           ZkFold.Base.Algebra.Basic.Number      (Natural, type (-))
 import           ZkFold.Base.Data.Vector               (Vector)
 import           ZkFold.Base.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
-import           ZkFold.Base.Protocol.IVC.Predicate    (PredicateFunctionAssumptions)
 import           ZkFold.Base.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import           ZkFold.Symbolic.MonadCircuit          (ResidueField)
+import           ZkFold.Symbolic.Class                 (Symbolic (..))
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElementW    (FieldElementW)
 
 data CommitOpen k a i p c = CommitOpen
     {
-        input :: forall f . PredicateFunctionAssumptions a f
-            => i f
-            -> p f
-            -> i f
+        input :: forall ctx . (Symbolic ctx, BaseField ctx ~ a)
+            => i (FieldElementW ctx)
+            -> p (FieldElementW ctx)
+            -> i (FieldElementW ctx)
 
-      , prover :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
-            => i f
-            -> p f
-            -> f
+      , prover :: forall ctx . (Symbolic ctx, BaseField ctx ~ a, FromConstant a (FieldElementW ctx), Scale a (FieldElementW ctx), HomomorphicCommit [FieldElementW ctx] (c (FieldElementW ctx)))
+            => i (FieldElementW ctx)
+            -> p (FieldElementW ctx)
+            -> FieldElementW ctx
             -> Natural
-            -> ([f], c f)
+            -> ([FieldElementW ctx], c (FieldElementW ctx))
 
-      , verifier :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
-            => i f
-            -> Vector k ([f], c f)
-            -> Vector (k-1) f
-            -> ([f], Vector k (c f))
+      , verifier :: forall ctx . (Symbolic ctx, BaseField ctx ~ a, HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx)))
+            => i (FieldElement ctx)
+            -> Vector k ([FieldElement ctx], c (FieldElement ctx))
+            -> Vector (k-1) (FieldElement ctx)
+            -> ([FieldElement ctx], Vector k (c (FieldElement ctx)))
     }
 
 commitOpen :: forall k a i p c . SpecialSoundProtocol k a i p -> CommitOpen k a i p c
 commitOpen SpecialSoundProtocol {..} =
     let
-        prover' :: forall f . (PredicateFunctionAssumptions a f, ResidueField f, HomomorphicCommit [f] (c f))
-            => i f
-            -> p f
-            -> f
+        prover' ::  forall ctx . (Symbolic ctx, BaseField ctx ~ a, FromConstant a (FieldElementW ctx), Scale a (FieldElementW ctx), HomomorphicCommit [FieldElementW ctx] (c (FieldElementW ctx)))
+            => i (FieldElementW ctx)
+            -> p (FieldElementW ctx)
+            -> FieldElementW ctx
             -> Natural
-            -> ([f], c f)
+            -> ([FieldElementW ctx], c (FieldElementW ctx))
         prover' pi0 w r i =
             let m = prover pi0 w r i
             in (m, hcommit m)
 
-        verifier' :: forall f . (PredicateFunctionAssumptions a f, HomomorphicCommit [f] (c f))
-            => i f
-            -> Vector k ([f], c f)
-            -> Vector (k-1) f
-            -> ([f], Vector k (c f))
+        verifier' :: forall ctx . (Symbolic ctx, BaseField ctx ~ a, HomomorphicCommit [FieldElement ctx] (c (FieldElement ctx)))
+            => i (FieldElement ctx)
+            -> Vector k ([FieldElement ctx], c (FieldElement ctx))
+            -> Vector (k-1) (FieldElement ctx)
+            -> ([FieldElement ctx], Vector k (c (FieldElement ctx)))
         verifier' pi pms rs =
             let ms = fmap fst pms
                 cs = fmap snd pms

@@ -17,7 +17,7 @@ import           Data.Zip                                   (Semialign (..), Zip
 import           GHC.Generics                               (Generic, Generic1, Par1)
 import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (FiniteField, FromConstant (..), Scale, zero, (*), (+), (-))
+import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), zero, (*), (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
 import           ZkFold.Base.Data.ByteString                (Binary, Binary1)
 import           ZkFold.Base.Data.Orphans                   ()
@@ -78,7 +78,7 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 --------------------------------------------------------------------------------
 
-type RecursiveFunctionAssumptions algo a d k i p c f =
+type RecursiveFunctionAssumptions algo a d k i p c ctx =
     ( HashAlgorithm algo
     , Arithmetic a
     , Binary a
@@ -90,17 +90,16 @@ type RecursiveFunctionAssumptions algo a d k i p c f =
     , LayoutFunctor p
     , LayoutFunctor c
     , c ~ Par1
-    , FiniteField f
-    , FromConstant a f
-    , Scale a f
+    , Symbolic ctx
+    , BaseField ctx ~ a
     )
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo a d k i p c f . RecursiveFunctionAssumptions algo a d k i p c f
+recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
     => PredicateFunction a i p
-    -> RecursiveI i f
-    -> RecursiveP d k i p c f
-    -> RecursiveI i f
+    -> RecursiveI i (FieldElement ctx)
+    -> RecursiveP d k i p c (FieldElement ctx)
+    -> RecursiveI i (FieldElement ctx)
 recursiveFunction func z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
@@ -109,13 +108,13 @@ recursiveFunction func z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
         accScheme :: AccumulatorScheme d k a (RecursiveI i) c
         accScheme = accumulatorScheme @algo pRec
 
-        x' :: i f
+        x' :: i (FieldElement ctx)
         x' = func x u
 
-        accX' :: AccumulatorInstance k (RecursiveI i) c f
+        accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
         accX' = verifier accScheme z piX accX pf
 
-        h :: f
+        h :: FieldElement ctx
         h = oracle @algo accX'
     in
         mzipWithRep (\v1 v2 -> v1 + (v2-v1)*flag) (RecursiveI x zero) (RecursiveI x' h)

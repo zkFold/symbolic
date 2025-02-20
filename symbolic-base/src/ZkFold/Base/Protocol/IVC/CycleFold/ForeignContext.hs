@@ -9,7 +9,7 @@ import           Data.Foldable                              (Foldable)
 import           Data.Function                              (const)
 import           Data.Proxy                                 (Proxy (..))
 import           GHC.Generics                               (Generic)
-import           Prelude                                    (return, type (~), ($))
+import           Prelude                                    (return, type (~), ($), fmap)
 import qualified Prelude                                    as Haskell
 import           Test.QuickCheck                            (Arbitrary (..))
 
@@ -18,11 +18,12 @@ import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+),
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta    as Pasta
 import           ZkFold.Base.Data.ByteString                (Binary)
+import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.Oracle
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate)
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), predicate, PredicateFunction)
 import           ZkFold.Base.Protocol.IVC.SpecialSound      (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Data.Bool
@@ -31,6 +32,7 @@ import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA                   (KnownFFA)
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Pasta                 (PallasPoint)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
@@ -146,9 +148,17 @@ opPredicate :: forall a.
     , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     )
     => Predicate a (PredicateLayout a) (PredicatePayload a)
-opPredicate = predicate \(i :: c (PredicateLayout a)) p -> arithmetize (opCircuit
-  (restore0 $ const i :: NativeOperation (PrimaryGroup c))
-  (restore0 $ const p)) Proxy
+opPredicate =
+    let
+        circuit :: PredicateFunction a (PredicateLayout a) (PredicatePayload a)
+        circuit (x :: (PredicateLayout a) (FieldElement c)) u =
+            let
+                x' = restore0 $ const $ packed $ fmap fromFieldElement x :: NativeOperation (PrimaryGroup c)
+                u' = restore0 $ const $ packed $ fmap fromFieldElement u
+            in
+                fmap FieldElement $ unpacked $ arithmetize (opCircuit x' u') Proxy
+    in
+        predicate circuit
 
 opProtocol :: forall algo d k a.
     ( HashAlgorithm algo
