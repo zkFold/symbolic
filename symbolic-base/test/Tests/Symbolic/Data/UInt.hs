@@ -144,6 +144,17 @@ specUInt' = do
                 refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR) .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
 
+        it "performs productMod correctly" $ do
+            a <- toss  (2 ^ ((n `div` 2) -! 2))
+            b <- toss  (2 ^ ((n `div` 2) -! 2))
+            d <- toss1 (2 ^ ((n `div` 2) -! 2))
+            let (acQ, acR) = (productMod (fromConstant a :: UInt n rs (AC (Zp p))) (fromConstant b) (fromConstant d))
+                (zpQ, zpR) = (productMod (fromConstant a :: UInt n rs (Interpreter (Zp p))) (fromConstant b) (fromConstant d))
+                (trueQ, trueR) = (a * b) `divMod` d
+                refQ = execZpUint (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
+                refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
+            return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR) .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
+
         when (n <= 128) $ it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
             y <- toss m

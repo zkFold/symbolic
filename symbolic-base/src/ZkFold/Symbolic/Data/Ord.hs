@@ -30,12 +30,16 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- TODO (Issue #23): add `compare`
 class Ord b a where
+    infix 4 <=
     (<=) :: a -> a -> b
 
+    infix 4 <
     (<) :: a -> a -> b
 
+    infix 4 >=
     (>=) :: a -> a -> b
 
+    infix 4 >
     (>) :: a -> a -> b
 
     max :: a -> a -> a
