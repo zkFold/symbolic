@@ -106,6 +106,7 @@ library
       Examples.UInt
       Examples.Ed25519
       Examples.Commitment
+      Examples.ZkLogin
     build-depends:
       adjunctions,
       base,
