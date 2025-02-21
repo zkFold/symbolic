@@ -19,7 +19,6 @@ import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
-import           Examples.ZkLogin                            (exampleZkLoginNoSig)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -58,7 +57,6 @@ exampleOutput = ExampleOutput @p @i @o . const . compile
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Eq", exampleOutput exampleEq)
-  , ("ZkloginNoSig", exampleOutput $ exampleZkLoginNoSig)
   , ("Conditional", exampleOutput exampleConditional)
   , ("Constant.5", exampleOutput exampleConst5)
   , ("Eq.Constant.5", exampleOutput exampleEq5)
@@ -92,6 +90,7 @@ examples =
   , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
   , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
+  -- , ("ZkloginNoSig", exampleOutput $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
   -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
