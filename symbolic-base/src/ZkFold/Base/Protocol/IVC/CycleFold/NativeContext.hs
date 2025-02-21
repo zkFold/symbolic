@@ -32,8 +32,9 @@ import ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve(..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.Data.Class (SymbolicData(..))
 import Data.Function (flip)
+import ZkFold.Symbolic.Data.Pasta (PallasPoint, VestaPoint)
 
-type ForeignGroup c = Ed25519_Point c
+type ForeignGroup c = PallasPoint c
 -- ^ The same point as 'PrimaryGroup', but viewed from native context:
 -- base field is FFA(q), scalar field is FE(=Zp)
 type ForeignField c = BaseFieldOf (ForeignGroup c)
@@ -45,7 +46,7 @@ type ForeignOperationInput c = NativeOperationInput (ForeignGroup c)
 type ForeignOperation c = NativeOperation (ForeignGroup c)
 type ForeignPayload c = NativePayload (ForeignGroup c)
 
-type SecGroup c = Ed25519_Point c
+type SecGroup c = VestaPoint c
 -- ^ The secondary group, but viewed from a foreign context:
 -- base field is FFA(p), scalar field is FE(=Zq)
 type SecGroupLayout a = Layout (SecGroup (Interpreter a))
