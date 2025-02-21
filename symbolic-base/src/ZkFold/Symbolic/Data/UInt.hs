@@ -20,11 +20,13 @@ module ZkFold.Symbolic.Data.UInt (
     expMod,
     eea,
     natural,
-    register
+    register,
+    productMod,
 ) where
 
 import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
+import           Control.Monad                     (zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
@@ -52,7 +54,8 @@ import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (length, replicate, replicateA)
+import           ZkFold.Prelude                    (length, replicate, replicateA, take)
+import           ZkFold.Symbolic.Algorithms.FFT    (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -150,8 +153,54 @@ bitsPow
 bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
-        sq = (n * n) `mod` m
-        newRes = force $ ifThenElse (isSet bits (b -! 1)) ((res * n) `mod` m) res
+        sq = Haskell.snd $ productMod n n m
+        newRes = force $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
+
+
+-- | Calculate @a * b `divMod` m@ using less constraints than would've been required by these operations used consequently
+--
+productMod
+    :: forall c n r
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat n
+    => KnownRegisters c n r
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => UInt n r c
+    -> UInt n r c
+    -> UInt n r c
+    -> (UInt n r c, UInt n r c)
+productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
+    case (value @n) of
+      0 -> (zero, zero)
+      _ -> (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
+      where
+        source = symbolic3F aRegs bRegs mRegs
+          (\ar br mr ->
+            let r = registerSize @(BaseField c) @n @r
+                a' = vectorToNatural ar r
+                b' = vectorToNatural br r
+                m' = vectorToNatural mr r
+            in naturalToVector @c @n @r ((a' * b') `div` m')
+                :*: naturalToVector @c @n @r ((a' * b') `mod` m'))
+          \ar br mr -> (liftA2 (:*:) `on` traverse unconstrained)
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
+
+        -- | Unconstrained @div@ part.
+        dv = hmap fstP source
+
+        -- | Unconstrained @mod@ part.
+        md = hmap sndP source
+
+        Bool eq = (UInt aRegs :: UInt n r c) `unsafeMulNoPad` UInt bRegs == UInt dv `unsafeMulNoPad` UInt mRegs + UInt md
+
+        Bool lt = (UInt md :: UInt n r c) < UInt mRegs
+
+        circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+          constraint (($ e) - one)
+          constraint (($ l) - one)
+          return dm
 
 
 cast :: forall a n r . (Arithmetic a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
@@ -204,6 +253,7 @@ eea a b = eea' 1 a b one zero zero one
                 quotient = oldR `div` r
 
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
+
 
 --------------------------------------------------------------------------------
 
@@ -484,47 +534,85 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => MultiplicativeSemigroup (UInt n rs c) where
-    UInt x * UInt y = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @rs $ vectorToNatural u (registerSize @(BaseField c) @n @rs) * vectorToNatural v (registerSize @(BaseField c) @n @rs))
-        (\xv yv -> do
-            case V.fromVector $ Z.zip xv yv of
-              []              -> return $ V.unsafeToVector []
-              [(i, j)]        -> V.unsafeToVector <$> solve1 i j
-              ((i, j) : rest) -> let (z, w) = Haskell.last rest
-                                     (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                  in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
-        )
+instance
+    ( Symbolic c
+    , KnownNat n
+    , KnownRegisterSize rs
+    ) => MultiplicativeSemigroup (UInt n rs c) where
+    UInt x * UInt y = UInt $
+        case (value @n) of
+          0 -> x
+          _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+                   withSecondNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                       trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
         where
-            solve1 :: forall i w m. MonadCircuit i (BaseField c) w m => i -> i -> m [i]
-            solve1 i j = do
-                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs)
-                return [z]
+            xPadded, yPadded :: c (Vector (SecondNextPow2 (NumberOfRegisters (BaseField c) n rs)))
+            xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padSecondNextPow2
+            yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padSecondNextPow2
 
-            solveN :: forall i w m. MonadCircuit i (BaseField c) w m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
-            solveN (i, j) (is, js) (i', j') = do
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
-                    r  = numberOfRegisters @(BaseField c) @n @rs
-                -- single addend for lower register
-                q <- newAssigned (\v -> v i * v j)
-                -- multiple addends for middle registers
-                qs <- for [1 .. r -! 2] $ \k ->
-                    for [0 .. k] $ \l ->
-                        newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
-                -- lower register
-                (p, c) <- splitExpansion (registerSize @(BaseField c) @n @rs) (registerSize @(BaseField c) @n @rs) q
-                -- middle registers
-                (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
-                    s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
-                    splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
-                -- high register
-                p'0 <- foldrM (\k l -> do
-                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
-                    newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
-                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow p'0
-                return (p : ps <> [p'])
+-- | Multiply two UInts assuming neither of them holds a value of more than @n / 2@ bits.
+-- Requires less constraints than regular multiplication but its behaviour is undefined if the assumption does not hold.
+-- Intended for internal usage
+--
+unsafeMulNoPad
+    :: forall n c rs
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => UInt n rs c -> UInt n rs c -> UInt n rs c
+unsafeMulNoPad (UInt x) (UInt y) = UInt $
+    case (value @n) of
+      0 -> x
+      _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+               withNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                   trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
+    where
+        xPadded, yPadded :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n rs)))
+        xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padNextPow2
+        yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padNextPow2
+
+
+trimRegisters
+    :: forall c n rs k
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => c (Vector (2^k)) -> c (Vector (NumberOfRegisters (BaseField c) n rs))
+trimRegisters c = fromCircuitF c $ \regs -> do
+    let rs   = take (numberOfRegisters @(BaseField c) @n @rs) $ V.fromVector regs
+        lows = Haskell.init rs
+        hi   = Haskell.last rs
+    z <- newAssigned (const zero)
+    (newLows, carry) <- foldlM step ([], z) lows
+
+    let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
+    s <- newAssigned (\p -> p carry + p hi)
+    (newHi, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow s
+
+    pure $ V.unsafeToVector $ Haskell.reverse (newHi : newLows)
+
+    where
+        step :: forall i w m. MonadCircuit i (BaseField c) w m => ([i], i) -> i -> m ([i], i)
+        step (acc, cr) r = do
+            s <- newAssigned (\p -> p cr + p r)
+            (l, h) <- splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
+            pure (l : acc, h)
+
+mulFFT
+    :: forall c k
+    .  Symbolic c
+    => KnownNat k
+    => c (Vector (2^k)) -> c (Vector (2^k)) -> c (Vector (2^k))
+mulFFT x y = c
+    where
+        xHat, yHat :: c (Vector (2^k))
+        xHat = fft x
+        yHat = fft y
+
+        c :: c (Vector (2^k))
+        c = ifft $ fromCircuit2F xHat yHat $ \u v ->
+                V.unsafeToVector <$> zipWithM (\i j -> newAssigned $ \p -> p i * p j) (V.fromVector u) (V.fromVector v)
+
 
 instance
     ( Symbolic c

@@ -16,6 +16,7 @@ import           GHC.Generics     (Par1, U1, (:*:), (:.:))
 
 instance NFData1 U1
 instance NFData1 Par1
+instance NFData a => NFData (Par1 a)
 instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
 instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
 

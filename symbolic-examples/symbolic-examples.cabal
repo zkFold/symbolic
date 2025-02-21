@@ -98,6 +98,7 @@ library
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
+      Examples.JWT
       Examples.LEQ
       Examples.MiMCHash
       Examples.ReverseList
@@ -105,6 +106,7 @@ library
       Examples.UInt
       Examples.Ed25519
       Examples.Commitment
+      Examples.ZkLogin
     build-depends:
       adjunctions,
       base,
