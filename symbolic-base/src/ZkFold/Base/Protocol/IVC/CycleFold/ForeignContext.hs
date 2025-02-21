@@ -145,6 +145,7 @@ type PredicatePayload a = Layout (NativePayload (PrimaryGroup (Interpreter a)))
 opPredicate :: forall a.
     ( Arithmetic a
     , Binary a
+    , KnownFFA Pasta.FpModulus (Fixed 1) (Interpreter a)
     , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     )
     => Predicate a (PredicateLayout a) (PredicatePayload a)
@@ -166,6 +167,7 @@ opProtocol :: forall algo d k a.
     , k ~ 1
     , Arithmetic a
     , Binary a
+    , KnownFFA Pasta.FpModulus (Fixed 1) (Interpreter a)
     , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     )
     => FiatShamir k a (PredicateLayout a) (PredicatePayload a) (PredicateLayout a)
@@ -177,6 +179,7 @@ opAccumulatorScheme :: forall algo d k a f.
     , KnownNat (d + 1)
     , Arithmetic a
     , Binary a
+    , KnownFFA Pasta.FpModulus (Fixed 1) (Interpreter a)
     , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
     , Foldable f
     )

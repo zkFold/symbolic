@@ -18,11 +18,10 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
-import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 
-type PallasPoint ctx = Base.Pasta_Point (FieldElement ctx)
+type PallasPoint ctx = Base.Pasta_Point (FFA Base.FpModulus (Fixed 1) ctx)
 
-instance (Symbolic ctx, KnownFFA Base.FqModulus (Fixed 1) ctx) => CyclicGroup (PallasPoint ctx) where
+instance (Symbolic ctx, KnownFFA Base.FpModulus (Fixed 1) ctx, KnownFFA Base.FqModulus (Fixed 1) ctx) => CyclicGroup (PallasPoint ctx) where
   type ScalarFieldOf (PallasPoint ctx) = FFA Base.FqModulus (Fixed 1) ctx
   pointGen = pointXY
     (fromConstant (0x40000000000000000000000000000000224698fc094cf91b992d30ed00000000 :: Natural))
@@ -32,6 +31,7 @@ instance
   ( Symbolic ctx
   , a ~ BaseField ctx
   , bits ~ NumberOfBits a
+  , KnownFFA Base.FpModulus (Fixed 1) ctx
   , KnownFFA Base.FqModulus (Fixed 1) ctx
   ) => Scale (FFA Base.FqModulus (Fixed 1) ctx) (PallasPoint ctx) where
 
