@@ -2,6 +2,7 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     ( PublicInput
     , zkLogin
     , zkLoginNoSig
+    , zkLoginMock
     ) where
 
 import           Prelude                              (($))
@@ -49,3 +50,15 @@ zkLoginNoSig clientSecret@ClientSecret{..} amount recipient _ pi = piValid
         tokenHash = sha2Var @"SHA256" $ secretBits clientSecret
         truePi = sha2Var @"SHA256" $ plEmail csPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
         piValid = truePi == pi
+
+zkLoginMock
+    :: forall ctx
+    .  RSA 2048 10328 ctx
+    => SecretBits ctx
+    => ClientSecret ctx
+    -> ByteString 64 ctx
+    -> ByteString 256 ctx
+    -> Certificate ctx
+    -> PublicInput ctx
+    -> Bool ctx
+zkLoginMock _ _ _ _ _ = true
