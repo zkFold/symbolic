@@ -22,6 +22,7 @@ module ZkFold.Symbolic.Data.UInt (
     natural,
     register,
     productMod,
+    blueprintGE,
 ) where
 
 import           Control.Applicative               (Applicative (..))
