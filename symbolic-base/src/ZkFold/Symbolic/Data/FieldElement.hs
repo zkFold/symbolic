@@ -45,7 +45,7 @@ deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (FieldElement c)
 
-deriving newtype instance Symbolic c => Ord (Bool c) (FieldElement c)
+deriving newtype instance Symbolic c => Ord (FieldElement c)
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant
