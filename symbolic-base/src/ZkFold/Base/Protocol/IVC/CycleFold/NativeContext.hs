@@ -25,14 +25,18 @@ import           ZkFold.Base.Protocol.IVC.NARK                     (NARKInstance
                                                                     narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle
 import           ZkFold.Symbolic.Class                             (Arithmetic, Symbolic (..), embedW)
-import           ZkFold.Symbolic.Data.Bool                         (Bool)
+import           ZkFold.Symbolic.Data.Bool                         (Bool, false, BoolType (..))
 import           ZkFold.Symbolic.Data.FieldElement                 (FieldElement (..))
-import ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point)
 import ZkFold.Base.Algebra.EllipticCurve.Class (EllipticCurve(..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.Data.Class (SymbolicData(..))
 import Data.Function (flip)
 import ZkFold.Symbolic.Data.Pasta (PallasPoint, VestaPoint)
+import Data.Proxy (Proxy(..))
+import ZkFold.Symbolic.Data.FFA (KnownFFA)
+import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (..))
+import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta as Pasta
+import ZkFold.Symbolic.Data.FieldElementW (FieldElementW, unconstrainFieldElement)
 
 type ForeignGroup c = PallasPoint c
 -- ^ The same point as 'PrimaryGroup', but viewed from native context:
@@ -82,6 +86,9 @@ fopCircuit :: forall algo d k a' ctx .
     , Symbolic ctx
     , FromConstant a' (ForeignField ctx)
     , Scale a' (ForeignField ctx)
+    , BaseField ctx ~ a'
+    , KnownFFA Pasta.FpModulus (Fixed 1) ctx
+    , KnownFFA Pasta.FqModulus (Fixed 1) ctx
     )
     => ForeignPoint algo d k a' ctx
     -> ForeignOperationInput ctx
@@ -90,19 +97,21 @@ fopCircuit ForeignPoint {..} op =
     let
         -- witness computation
 
-        g :: Layout (PrimaryGroup (Interpreter a')) a'
-        g = _ -- toWitness $ opRes fpValue
+        g :: ForeignGroup ctx
+        g = opRes fpValue
 
-        input0 :: PredicateLayout a' a'
-        input0 = NativeOperation zero zero zero zero zero
+        input0 :: PredicateLayout a' (FieldElementW ctx)
+        input0 = fmap (unconstrainFieldElement . FieldElement) $ unpacked $ flip arithmetize Proxy $
+            NativeOperation zero zero zero (zero :: ForeignGroup ctx) false
 
-        payload :: PredicatePayload a' a'
-        payload = flip arithmetize Proxy $ case op of
-            Addition h       -> NativePayload zero _ {- g -} h    zero
-            Multiplication s -> NativePayload s    _ {- g -} zero one
+        payload :: PredicatePayload a' (FieldElementW ctx)
+        payload = fmap (unconstrainFieldElement . FieldElement) $ unpacked $ flip arithmetize Proxy $ case op of
+            Addition h       -> NativePayload zero g h    false
+            Multiplication s -> NativePayload s    g zero true
 
-        narkIP :: NARKInstanceProof k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
-        narkIP@(NARKInstanceProof input (NARKProof piX _)) = _ -- narkInstanceProof (opProtocol @algo @d @_ @a') input0 payload
+        -- This one should be in the foreign context!
+        narkIP :: NARKInstanceProof k (PredicateLayout a') (SecGroupLayout a') (FieldElementW ctx)
+        narkIP@(NARKInstanceProof input (NARKProof piX _)) = narkInstanceProof (opProtocol @algo @d @_ @a') input0 payload
 
         accX :: AccumulatorInstance k (PredicateLayout a') (SecGroupLayout a') (ForeignField ctx)
         accX = _ -- toWitness fpAccumulatorInstance
