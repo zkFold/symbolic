@@ -13,7 +13,6 @@ import           Control.DeepSeq                  (NFData)
 import           Data.Foldable                    (fold, toList)
 import           Data.Function                    (on)
 import           Data.List                        (concatMap, reverse, zipWith)
-import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (traverse)
 import           GHC.Generics
 import           Prelude                          (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
@@ -155,7 +154,7 @@ bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 getBitsBE :: forall c f . (Symbolic c, LayoutFunctor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = symbolicF (arithmetize x Proxy)
+getBitsBE x = symbolicF x
     (concatMap (reverse . padBits n . map fromConstant . binaryExpansion . toConstant))
     (fmap (concatMap reverse) . traverse (expansion n) . toList)
   where n = numberOfBits @(BaseField c)
