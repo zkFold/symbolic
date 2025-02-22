@@ -13,6 +13,8 @@ module ZkFold.Symbolic.Data.ByteString
     , ShiftBits (..)
     , Resize (..)
     , reverseEndianness
+    , set
+    , unset
     , isSet
     , isUnset
     , toWords
@@ -21,24 +23,27 @@ module ZkFold.Symbolic.Data.ByteString
     , append
     , emptyByteString
     , toBsBits
+    , orRight
     ) where
 
 import           Control.DeepSeq                   (NFData)
-import           Control.Monad                     (replicateM)
+import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                         as B
 import qualified Data.ByteString                   as Bytes
+import           Data.Constraint.Nat               (Max)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
 import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
+import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
-                                                    ($), (.), (<$>), (<), (<>), (==), (>=))
+                                                    ($), (.), (<$>), (<), (<>), (==), (>), (>=))
 import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
@@ -49,7 +54,7 @@ import           ZkFold.Base.Data.Package          (packWith, unpackWith)
 import           ZkFold.Base.Data.Utils            (zipWithM)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (replicateA, (!!))
+import           ZkFold.Prelude                    (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
@@ -77,20 +82,27 @@ deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (Byte
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat m
     ) => IsString (ByteString n c) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat m
     ) => FromConstant Bytes.ByteString (ByteString n c) where
     fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
-        . Haskell.toInteger <$> (V.unsafeToVector @m $ Bytes.unpack bytes)
+        . Haskell.toInteger <$> (V.unsafeToVector @m paddedBytes)
+
+        where
+            desiredLen = value @m
+            actualLen = Haskell.fromIntegral $ Bytes.length bytes
+            paddedBytes = replicate (desiredLen -! actualLen) 0 <> Bytes.unpack bytes
+
 
 emptyByteString :: FromConstant Natural (ByteString 0 c) => ByteString 0 c
 emptyByteString = fromConstant @Natural 0
-
 
 -- | A class for data types that support bit shift and bit cyclic shift (rotation) operations.
 --
@@ -131,9 +143,9 @@ instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
         where base = 2
 
 
-    -- | Pack a ByteString using one field element per bit.
-    -- @fromConstant@ discards bits after @n@.
-    -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
+-- | Pack a ByteString using one field element per bit.
+-- @fromConstant@ discards bits after @n@.
+-- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
 instance (Symbolic c, KnownNat n) => FromConstant Natural (ByteString n c) where
     fromConstant n = ByteString . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
 
@@ -199,6 +211,19 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                         xj = x j
                      in xi + xj - (xi * xj + xi * xj)
 
+orRight
+    :: forall m n c
+    .  Symbolic c
+    => ByteString m c
+    -> ByteString n c
+    -> ByteString (Max m n) c
+orRight l r = bitwiseOperation l r cons
+        where
+            cons i j x =
+                        let xi = x i
+                            xj = x j
+                        in xi + xj - xi * xj
+
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
 -- 2. @wordSize@ is not zero;
@@ -243,7 +268,8 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
           (\v ->  V.shift v s (fromConstant (0 :: Integer)))
           (\bitsV -> do
               let bits = V.fromVector bitsV
-              zeros <- replicateM (Haskell.fromIntegral $ Haskell.abs s) $ newAssigned (Haskell.const zero)
+              z <- newAssigned (Haskell.const zero)
+              let zeros = Haskell.replicate (Haskell.fromIntegral $ Haskell.abs s) z
 
               let newBits = case s < 0 of
                           Haskell.True  -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
@@ -259,19 +285,18 @@ instance
   , KnownNat k
   , KnownNat n
   ) => Resize (ByteString k c) (ByteString n c) where
-    resize (ByteString oldBits) = ByteString $ symbolicF oldBits
-        (\v ->  V.unsafeToVector $ zeroA <> takeMin (V.fromVector v))
-        (\bitsV -> do
-            let bits = V.fromVector bitsV
-            zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-            return $ V.unsafeToVector $ zeros <> takeMin bits
-        )
+    resize (ByteString oldBits)
+      | diff > 0 = ByteString $ symbolicF oldBits
+          (\v -> V.unsafeToVector $ zeroA <> V.fromVector v)
+          (\bitsV -> do
+              let bits = V.fromVector bitsV
+              zeros <- replicateM diff $ newAssigned (Haskell.const zero)
+              return $ V.unsafeToVector $ zeros <> bits
+          )
+      | otherwise = ByteString $ hmap (V.unsafeToVector . Haskell.drop (Haskell.abs diff) . V.fromVector) oldBits
         where
             diff :: Haskell.Int
             diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
-
-            takeMin :: [a] -> [a]
-            takeMin = Haskell.take (Haskell.min (Haskell.fromIntegral $ getNatural @n) (Haskell.fromIntegral $ getNatural @k))
 
             zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
@@ -287,6 +312,12 @@ instance
         case us of
             []       -> Par1 <$> newAssigned (const one)
             (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+
+set :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
+set (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
+
+unset :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
+unset (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
@@ -318,21 +349,26 @@ toBase _ 0    = Nothing
 toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 
 
+
 -- | A generic bitwise operation on two ByteStrings.
+-- If one of the strings is longer, the operation is applied to the least significant bits. The remaining bits are not affected, i.e.
+-- 101 || 01001 == 01101
 -- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 --
 bitwiseOperation
-    :: forall c n
+    :: forall m n c
     .  Symbolic c
-    => ByteString n c
+    => ByteString m c
     -> ByteString n c
     -> (forall i. i -> i -> ClosedPoly i (BaseField c))
-    -> ByteString n c
+    -> ByteString (Max m n) c
 bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
     ByteString $ fromCircuit2F bits1 bits2 $ \lv rv -> do
-        let varsLeft = lv
-            varsRight = rv
-        zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
+        let aligned = V.alignRight lv rv
+        forM aligned $ \case
+            These i j -> newAssigned $ cons i j
+            This i -> pure i
+            That j -> pure j
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion

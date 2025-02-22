@@ -21,14 +21,18 @@ module ZkFold.Symbolic.Data.UInt (
     eea,
     natural,
     register,
+    productMod,
+    blueprintGE,
     addInteger,
     subtractInteger
 ) where
 
 import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
+import           Control.Monad                     (foldM, zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
+import qualified Data.Bool                         as Haskell
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
@@ -54,7 +58,8 @@ import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (length, replicate, replicateA)
+import           ZkFold.Prelude                    (length, replicate, replicateA, take)
+import           ZkFold.Symbolic.Algorithms.FFT    (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -67,7 +72,7 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
-                                                    newAssigned)
+                                                    newAssigned, newRanged)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -152,8 +157,54 @@ bitsPow
 bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
-        sq = (n * n) `mod` m
-        newRes = force $ ifThenElse (isSet bits (b -! 1)) ((res * n) `mod` m) res
+        sq = Haskell.snd $ productMod n n m
+        newRes = force $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
+
+
+-- | Calculate @a * b `divMod` m@ using less constraints than would've been required by these operations used consequently
+--
+productMod
+    :: forall c n r
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat n
+    => KnownRegisters c n r
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => UInt n r c
+    -> UInt n r c
+    -> UInt n r c
+    -> (UInt n r c, UInt n r c)
+productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
+    case (value @n) of
+      0 -> (zero, zero)
+      _ -> (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
+      where
+        source = symbolic3F aRegs bRegs mRegs
+          (\ar br mr ->
+            let r = registerSize @(BaseField c) @n @r
+                a' = vectorToNatural ar r
+                b' = vectorToNatural br r
+                m' = vectorToNatural mr r
+            in naturalToVector @c @n @r ((a' * b') `div` m')
+                :*: naturalToVector @c @n @r ((a' * b') `mod` m'))
+          \ar br mr -> (liftA2 (:*:) `on` traverse unconstrained)
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
+
+        -- | Unconstrained @div@ part.
+        dv = hmap fstP source
+
+        -- | Unconstrained @mod@ part.
+        md = hmap sndP source
+
+        Bool eqCase = (UInt aRegs :: UInt n r c) `unsafeMulNoPad` UInt bRegs == UInt dv `unsafeMulNoPad` UInt mRegs + UInt md
+
+        Bool ltCase = (UInt md :: UInt n r c) < UInt mRegs
+
+        circuit = fromCircuit3F eqCase ltCase (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+          constraint (($ e) - one)
+          constraint (($ l) - one)
+          return dm
 
 
 cast :: forall a n r . (Arithmetic a, KnownNat n, KnownRegisterSize r) => Natural -> ([Natural], Natural, [Natural])
@@ -206,6 +257,7 @@ eea a b = eea' 1 a b one zero zero one
                 quotient = oldR `div` r
 
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
+
 
 --------------------------------------------------------------------------------
 
@@ -350,14 +402,14 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
         -- | divMod first constraint: @numerator = denominator * div + mod@.
         -- This should always be true.
-        Bool eq = den * UInt dv + UInt md == num
+        Bool eqCase = den * UInt dv + UInt md == num
 
         -- | divMod second constraint: @0 <= mod < denominator@.
         -- This should always be true.
-        Bool lt = UInt md < den
+        Bool ltCase = UInt md < den
 
         -- | Computes properly constrained registers of @div@ and @mod@.
-        circuit = fromCircuit3F eq lt (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+        circuit = fromCircuit3F eqCase ltCase (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
           constraint (($ e) - one)
           constraint (($ l) - one)
           return dm
@@ -383,7 +435,14 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
          , KnownNat (Ceil regSize OrdWord)
-         ) => Ord (Bool c) (UInt n r c) where
+         ) => Ord (UInt n r c) where
+
+    type OrderingOf (UInt n r c) = Ordering c
+
+    ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+
+    compare x y = bool (bool lt eq (x == y)) gt (x > y)
+
     x <= y = y >= x
 
     x <  y = y > x
@@ -486,47 +545,85 @@ instance
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize rs) => MultiplicativeSemigroup (UInt n rs c) where
-    UInt x * UInt y = UInt $ symbolic2F x y
-        (\u v -> naturalToVector @c @n @rs $ vectorToNatural u (registerSize @(BaseField c) @n @rs) * vectorToNatural v (registerSize @(BaseField c) @n @rs))
-        (\xv yv -> do
-            case V.fromVector $ Z.zip xv yv of
-              []              -> return $ V.unsafeToVector []
-              [(i, j)]        -> V.unsafeToVector <$> solve1 i j
-              ((i, j) : rest) -> let (z, w) = Haskell.last rest
-                                     (ris, rjs) = Haskell.unzip $ Haskell.init rest
-                                  in V.unsafeToVector <$> solveN (i, j) (ris, rjs) (z, w)
-        )
+instance
+    ( Symbolic c
+    , KnownNat n
+    , KnownRegisterSize rs
+    ) => MultiplicativeSemigroup (UInt n rs c) where
+    UInt x * UInt y = UInt $
+        case (value @n) of
+          0 -> x
+          _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+                   withSecondNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                       trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
         where
-            solve1 :: forall i w m. MonadCircuit i (BaseField c) w m => i -> i -> m [i]
-            solve1 i j = do
-                (z, _) <- newAssigned (\v -> v i * v j) >>= splitExpansion (highRegisterSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs)
-                return [z]
+            xPadded, yPadded :: c (Vector (SecondNextPow2 (NumberOfRegisters (BaseField c) n rs)))
+            xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padSecondNextPow2
+            yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padSecondNextPow2
 
-            solveN :: forall i w m. MonadCircuit i (BaseField c) w m => (i, i) -> ([i], [i]) -> (i, i) -> m [i]
-            solveN (i, j) (is, js) (i', j') = do
-                let cs = fromList $ zip [0..] (i : is ++ [i'])
-                    ds = fromList $ zip [0..] (j : js ++ [j'])
-                    r  = numberOfRegisters @(BaseField c) @n @rs
-                -- single addend for lower register
-                q <- newAssigned (\v -> v i * v j)
-                -- multiple addends for middle registers
-                qs <- for [1 .. r -! 2] $ \k ->
-                    for [0 .. k] $ \l ->
-                        newAssigned (\v -> v (cs ! l) * v (ds ! (k -! l)))
-                -- lower register
-                (p, c) <- splitExpansion (registerSize @(BaseField c) @n @rs) (registerSize @(BaseField c) @n @rs) q
-                -- middle registers
-                (ps, c') <- flip runStateT c $ for qs $ StateT . \rs c' -> do
-                    s <- foldrM (\k l -> newAssigned (\v -> v k + v l)) c' rs
-                    splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
-                -- high register
-                p'0 <- foldrM (\k l -> do
-                    k' <- newAssigned (\v -> v (cs ! k) * v (ds ! (r -! (k + 1))))
-                    newAssigned (\v -> v k' + v l)) c' [0 .. r -! 1]
-                let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
-                (p', _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow p'0
-                return (p : ps <> [p'])
+-- | Multiply two UInts assuming neither of them holds a value of more than @n / 2@ bits.
+-- Requires less constraints than regular multiplication but its behaviour is undefined if the assumption does not hold.
+-- Intended for internal usage
+--
+unsafeMulNoPad
+    :: forall n c rs
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => UInt n rs c -> UInt n rs c -> UInt n rs c
+unsafeMulNoPad (UInt x) (UInt y) = UInt $
+    case (value @n) of
+      0 -> x
+      _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+               withNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                   trimRegisters @c @n @rs $ mulFFT @c xPadded yPadded
+    where
+        xPadded, yPadded :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n rs)))
+        xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padNextPow2
+        yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padNextPow2
+
+
+trimRegisters
+    :: forall c n rs k
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => c (Vector (2^k)) -> c (Vector (NumberOfRegisters (BaseField c) n rs))
+trimRegisters c = fromCircuitF c $ \regs -> do
+    let rs   = take (numberOfRegisters @(BaseField c) @n @rs) $ V.fromVector regs
+        lows = Haskell.init rs
+        hi   = Haskell.last rs
+    z <- newAssigned (const zero)
+    (newLows, carry) <- foldlM step ([], z) lows
+
+    let highOverflow = registerSize @(BaseField c) @n @rs + maxOverflow @(BaseField c) @n @rs -! highRegisterSize @(BaseField c) @n @rs
+    s <- newAssigned (\p -> p carry + p hi)
+    (newHi, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @rs) highOverflow s
+
+    pure $ V.unsafeToVector $ Haskell.reverse (newHi : newLows)
+
+    where
+        step :: forall i w m. MonadCircuit i (BaseField c) w m => ([i], i) -> i -> m ([i], i)
+        step (acc, cr) r = do
+            s <- newAssigned (\p -> p cr + p r)
+            (l, h) <- splitExpansion (registerSize @(BaseField c) @n @rs) (maxOverflow @(BaseField c) @n @rs) s
+            pure (l : acc, h)
+
+mulFFT
+    :: forall c k
+    .  Symbolic c
+    => KnownNat k
+    => c (Vector (2^k)) -> c (Vector (2^k)) -> c (Vector (2^k))
+mulFFT x y = c
+    where
+        xHat, yHat :: c (Vector (2^k))
+        xHat = fft x
+        yHat = fft y
+
+        c :: c (Vector (2^k))
+        c = ifft $ fromCircuit2F xHat yHat $ \u v ->
+                V.unsafeToVector <$> zipWithM (\i j -> newAssigned $ \p -> p i * p j) (V.fromVector u) (V.fromVector v)
+
 
 instance
     ( Symbolic c
@@ -709,6 +806,83 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) 
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
     toJSON = toJSON . toConstant
+
+
+-- Old Ord circuits for compatibility --
+
+bitwiseGE :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
+-- ^ Given two lists of bits of equal length, compares them lexicographically.
+bitwiseGE xs ys = Bool $
+  symbolic2F xs ys
+    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.>= toList vs))
+    $ \is js -> Par1 <$> blueprintGE @r is js
+
+blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
+blueprintGE xs ys = do
+  (_, hasNegOne) <- circuitDelta @r xs ys
+  newAssigned $ \p -> one - p hasNegOne
+
+bitwiseGT :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
+-- ^ Given two lists of bits of equal length, compares them lexicographically.
+bitwiseGT xs ys = Bool $
+  symbolic2F xs ys
+    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.> toList vs))
+    $ \is js -> do
+      (hasOne, hasNegOne) <- circuitDelta @r is js
+      Par1 <$> newAssigned (\p -> p hasOne * (one - p hasNegOne))
+
+-- | Compare two sets of r-bit words lexicographically
+--
+circuitDelta :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
+circuitDelta l r = do
+    z1 <- newAssigned (Haskell.const zero)
+    z2 <- newAssigned (Haskell.const zero)
+    foldM update (z1, z2) $ Z.zip l r
+        where
+            bound = scale ((2 ^ value @r) -! 1) one
+
+            -- | If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i.
+            -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
+            --
+            --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
+            -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
+            update :: (i, i) -> (i, i) -> m (i, i)
+            update (z1, z2) (x, y) = do
+                -- @f1@ is one if and only if @x > y@ and zero otherwise.
+                -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
+                -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
+                -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
+                -- This is exactly the opposite of what @f1@ should be.
+                f1 <- newRanged one $
+                    let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
+                     in one - q // q
+
+                -- f2 is one if and only if y > x and zero otherwise
+                f2 <- newRanged one $
+                    let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
+                     in one - q // q
+
+                dxy <- newAssigned (\p -> p x - p y)
+
+                d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
+                d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
+                rangeConstraint d1  bound
+                rangeConstraint d1' bound
+
+                d2  <- newAssigned (\p -> p f2 * (negate one - p dxy))
+                d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
+                rangeConstraint d2  bound
+                rangeConstraint d2' bound
+
+                bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
+
+                f1z <- newAssigned $ \p -> p bothZero * p f1
+                f2z <- newAssigned $ \p -> p bothZero * p f2
+
+                z1' <- newAssigned $ \p -> p z1 + p f1z
+                z2' <- newAssigned $ \p -> p z2 + p f2z
+
+                Haskell.return (z1', z2')
 
 
 addInteger :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => UInt n r c -> UInt n r c -> UInt n r c

@@ -8,6 +8,9 @@ module ZkFold.Symbolic.Data.Combinators where
 
 import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.Foldable                    (foldlM)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
@@ -21,6 +24,7 @@ import           Data.Type.Bool                   (If)
 import           Data.Type.Ord
 import           GHC.Base                         (const, return)
 import           GHC.List                         (reverse)
+import           GHC.TypeLits                     (Symbol, UnconsSymbol)
 import           GHC.TypeNats
 import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
 import qualified Prelude                          as Haskell
@@ -28,6 +32,9 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
+import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Prelude                   (take)
 import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -110,9 +117,10 @@ type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) ::
 type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
-  NumberOfRegisters _ 0    _          = 0
-  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+  NumberOfRegisters _ 0    _            = 0
+  NumberOfRegisters a bits (Fixed bits) = 1
+  NumberOfRegisters a bits (Fixed rs)   = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegisters a bits Auto         = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
                                                                           -- which requires more than 50 registers.
 
@@ -184,6 +192,74 @@ highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
 --
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
+
+-- | Convert a type-level string into a term.
+-- Useful for ByteStrings and VarByteStrings as it will calculate their length automatically
+--
+class IsTypeString (s :: Symbol) a where
+    fromType :: a
+
+type family Length (s :: Symbol) :: Natural where
+    Length s = Length' (UnconsSymbol s)
+
+type family FromMaybe (a :: k) (mb :: Haskell.Maybe k) :: k where
+    FromMaybe def Haskell.Nothing = def
+    FromMaybe def (Haskell.Just a) = a
+
+type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
+    Length' 'Haskell.Nothing = 0
+    Length' ('Haskell.Just '(c, rest)) = 1 + Length' (UnconsSymbol rest)
+
+
+---------------------------------------------------------------
+-- | Types and helper axioms for padding vectors
+---------------------------------------------------------------
+
+type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
+
+nextPow2 :: Natural -> Natural
+nextPow2 n = 2 ^ nextNBits n
+
+nextNBits :: Natural -> Natural
+nextNBits n = ilog2 (2 * n -! 1)
+
+withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
+withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
+
+withNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1)) => r) -> r
+withNextNBits = withDict (withNextNBits' @n)
+
+type SecondNextPow2 n = 2 ^ (Log2 (2 * n - 1) + 1)
+
+secondNextPow2 :: Natural -> Natural
+secondNextPow2 n = 2 ^ secondNextNBits n
+
+secondNextNBits :: Natural -> Natural
+secondNextNBits n = ilog2 (2 * n -! 1) + 1
+
+withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
+withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
+
+withSecondNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
+withSecondNextNBits = withDict (withSecondNextNBits' @n)
+
+withNumberOfRegisters' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (NumberOfRegisters a n r)
+withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
+
+withNumberOfRegisters :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (NumberOfRegisters a n r)) => k) -> k
+withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
+
+padNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)
+padNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (nextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
+
+padSecondNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (SecondNextPow2 n) i)
+padSecondNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (secondNextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
 
 ---------------------------------------------------------------
 
@@ -263,3 +339,8 @@ runInvert is = do
 
 isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is
+
+ilog2 :: Natural -> Natural
+ilog2 1 = 0
+ilog2 n = 1 + ilog2 (n `div` 2)
+
