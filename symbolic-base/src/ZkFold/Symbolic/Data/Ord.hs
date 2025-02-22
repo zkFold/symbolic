@@ -60,6 +60,10 @@ class
   compare x y = gcompare (from x) (from y)
 
   (<), (<=), (>), (>=) :: a -> a -> BooleanOf a
+  infix 4 <
+  infix 4 <=
+  infix 4 >
+  infix 4 >=
   default (<)
     :: (Ord (BooleanOf a), OrderingOf (BooleanOf a) ~ OrderingOf a)
     => a -> a -> BooleanOf a

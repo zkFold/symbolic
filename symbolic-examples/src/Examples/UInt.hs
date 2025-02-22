@@ -2,24 +2,39 @@
 
 module Examples.UInt (
     exampleUIntMul,
+    exampleUIntProductMod,
     exampleUIntDivMod,
+    exampleUIntExpMod,
     exampleUIntStrictAdd,
     exampleUIntStrictMul,
-    exampleUIntResize
+    exampleUIntResize,
   ) where
 
+import           Control.DeepSeq                  (NFData)
 import           Data.Type.Equality               (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (*))
+import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
-import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, NumberOfRegisters, resize)
-import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt)
+import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
+                                                   NumberOfRegisters, resize)
+import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt, expMod, productMod)
+
 
 exampleUIntMul ::
   (KnownNat n, KnownRegisterSize r, Symbolic c) =>
   UInt n r c -> UInt n r c -> UInt n r c
 exampleUIntMul = (*)
+
+exampleUIntProductMod
+    :: KnownNat n
+    => KnownRegisterSize r
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => Symbolic c
+    => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
+exampleUIntProductMod = productMod
 
 exampleUIntDivMod ::
   (KnownNat n, KnownRegisterSize r, Symbolic c,
@@ -27,6 +42,23 @@ exampleUIntDivMod ::
    KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)) =>
   UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod
+
+exampleUIntExpMod
+  :: forall n p m r c
+  .  Symbolic c
+  => KnownRegisterSize r
+  => KnownNat p
+  => KnownNat n
+  => KnownNat m
+  => KnownNat (2 * m)
+  => KnownRegisters c (2 * m) r
+  => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
+  => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
+  => UInt n r c
+  -> UInt p r c
+  -> UInt m r c
+  -> UInt m r c
+exampleUIntExpMod = expMod @c @n @p @m @r
 
 exampleUIntStrictAdd ::
   (KnownNat n, KnownRegisterSize r, Symbolic c) =>

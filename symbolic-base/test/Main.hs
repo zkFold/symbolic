@@ -16,6 +16,7 @@ import           Tests.Protocol.IVC                 (specIVC)
 import           Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Protocol.Plonkup             (specPlonkup)
 import           Tests.Symbolic.Algorithm.Blake2b   (specBlake2b)
+import           Tests.Symbolic.Algorithm.JWT       (specJWT)
 import           Tests.Symbolic.Algorithm.RSA       (specRSA)
 import           Tests.Symbolic.Algorithm.SHA2      (specSHA2, specSHA2Natural)
 import           Tests.Symbolic.ArithmeticCircuit   (specArithmeticCircuit)
@@ -53,12 +54,14 @@ main = hspec $ do
     -- Symbolic types and operations
     specHash
     specList
+
     specUInt
     specFFA
     specByteString
 
     -- Symbolic cryptography
     specBlake2b
+    specJWT
     specRSA
     specSHA2Natural
     specSHA2

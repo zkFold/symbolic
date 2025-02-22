@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               zkfold-uplc
+name:               symbolic-uplc
 version:            0.1.0.0
 synopsis:           zkFold's UPLC converter from Plutus Core to arithmetic circuits
 -- description:
@@ -50,7 +50,7 @@ library
       text
     hs-source-dirs:     src
 
-test-suite zkfold-uplc-test
+test-suite symbolic-uplc-test
     import:             options
     type:               exitcode-stdio-1.0
     main-is:            Test.hs
@@ -60,5 +60,5 @@ test-suite zkfold-uplc-test
       hspec        ,
       symbolic-base,
       QuickCheck   ,
-      zkfold-uplc
+      symbolic-uplc
     hs-source-dirs:     test

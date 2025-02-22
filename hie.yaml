@@ -27,11 +27,11 @@ cradle:
     - path: "symbolic-examples/bench/BenchCompiler.hs"
       component: "symbolic-examples:bench:bench-compiler"
 
-    - path: "zkfold-ledger/src"
-      component: "lib:zkfold-ledger"
+    - path: "symbolic-ledger/src"
+      component: "lib:symbolic-ledger"
 
-    - path: "zkfold-uplc/src"
-      component: "lib:zkfold-uplc"
+    - path: "symbolic-uplc/src"
+      component: "lib:symbolic-uplc"
 
-    - path: "zkfold-uplc/test"
-      component: "zkfold-uplc:test:zkfold-uplc-test"
+    - path: "symbolic-uplc/test"
+      component: "symbolic-uplc:test:symbolic-uplc-test"
