@@ -28,7 +28,7 @@ import           Prelude                          (error, fromIntegral)
 
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+))
 import           ZkFold.Prelude                   ((!!))
-import           ZkFold.Symbolic.Class            (Symbolic)
+import           ZkFold.Symbolic.Class            (Symbolic, BaseField)
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
@@ -37,6 +37,12 @@ import qualified ZkFold.Symbolic.UPLC.Data        as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
+import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.UInt ( UInt, addInteger, subtractInteger )
+import ZkFold.Symbolic.Data.ByteString (ByteString)
+import GHC.TypeLits (withKnownNat)
+import           Data.Constraint.Unsafe
+
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -204,8 +210,8 @@ applyMono b (FLam f) (v:args) = do
 -- This part is meant to be changed when completing the Converter implementation.
 
 -- Uncomment these lines as more types are available in Converter:
--- instance Sym c => IsData BTInteger ??? c where asPair _ = Nothing
--- instance Sym c => IsData BTByteString ??? c where asPair _ = Nothing
+instance (Sym c, KnownRegisters c 64 Auto) => IsData BTInteger (UInt 64 Auto c) c where asPair _ = Nothing
+instance Sym c => IsData BTByteString (ByteString 64 c) c where asPair _ = Nothing
 -- instance Sym c => IsData BTString ??? c where asPair _ = Nothing
 instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
 instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
@@ -319,11 +325,24 @@ instance
 --
 -- Note that you can use 'FromConstant' instances defined above
 -- to get rid of the 'FSat'/'FLam' boilerplate.
-evalMono :: Sym c => BuiltinMonoFunction s t -> Fun s t c
+evalMono :: forall c s t.
+  ( Sym c
+  ) => BuiltinMonoFunction s t -> Fun s t c
+evalMono (BMFInteger AddInteger)      = addIntegerFun @c
+evalMono (BMFInteger SubtractInteger) = subtractIntegerFun @c
 evalMono (BMFInteger _)    = error "FIXME: UPLC Integer support"
+
 evalMono (BMFByteString _) = error "FIXME: UPLC ByteString support"
 evalMono (BMFString _)     = error "FIXME: UPLC String support"
 evalMono (BMFAlgorithm _)  = error "FIXME: UPLC Algorithms support"
 evalMono (BMFData _)       = error "FIXME: UPLC Data support"
 evalMono (BMFCurve _)      = error "FIXME: UPLC Curve support"
 evalMono (BMFBitwise _)    = error "FIXME: UPLC ByteString support"
+
+addIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
+addIntegerFun = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $
+                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ addInteger v w) :: (Fun '[] BTInteger c)))
+
+subtractIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
+subtractIntegerFun = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $
+                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ subtractInteger v w) :: (Fun '[] BTInteger c)))

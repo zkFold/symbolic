@@ -20,7 +20,9 @@ module ZkFold.Symbolic.Data.UInt (
     expMod,
     eea,
     natural,
-    register
+    register,
+    addInteger,
+    subtractInteger
 ) where
 
 import           Control.Applicative               (Applicative (..))
@@ -707,3 +709,14 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) 
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
     toJSON = toJSON . toConstant
+
+
+addInteger :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => UInt n r c -> UInt n r c -> UInt n r c
+addInteger u1 u2 = u1 - h + u2
+    where
+        h = fromConstant (2 ^ (getNatural @n -! 1) :: Natural)
+
+subtractInteger :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => UInt n r c -> UInt n r c -> UInt n r c
+subtractInteger u1 u2 = u1 + h - u2
+    where
+        h = fromConstant (2 ^ (getNatural @n -! 1) :: Natural)
