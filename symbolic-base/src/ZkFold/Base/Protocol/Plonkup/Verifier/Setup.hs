@@ -1,8 +1,12 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Setup where
 
+
+import           Control.DeepSeq                                   (NFData)
+import           GHC.Generics                                      (Generic)
 import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                     (^))
 
@@ -22,6 +26,9 @@ data PlonkupVerifierSetup p i n l g1 g2 = PlonkupVerifierSetup
     , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1)
     , commitments :: PlonkupCircuitCommitments g1
     }
+    deriving Generic
+
+deriving instance (NFData g1, NFData g2, NFData (ScalarFieldOf g1)) => NFData (PlonkupVerifierSetup p i n l g1 g2)
 
 instance
         ( CyclicGroup g1

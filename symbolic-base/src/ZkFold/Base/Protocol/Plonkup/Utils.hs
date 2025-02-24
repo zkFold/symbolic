@@ -6,7 +6,10 @@ module ZkFold.Base.Protocol.Plonkup.Utils where
 
 import           Data.Bifunctor                          (first)
 import           Data.Bool                               (bool)
+import           Data.Constraint                         (withDict)
+import           Data.Constraint.Nat                     (plusNat)
 import           Data.Map                                (fromList, insertWith, toList)
+import qualified Data.Set                                as S
 import           Prelude                                 hiding (Num (..), drop, length, replicate, sum, take, (!!),
                                                           (/), (^))
 import           System.Random                           (RandomGen, mkStdGen, uniformR)
@@ -14,26 +17,33 @@ import           System.Random                           (RandomGen, mkStdGen, u
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import           ZkFold.Base.Data.Vector                 (Vector, unsafeToVector)
+import           ZkFold.Base.Data.Vector                 (Vector, unfold)
 import           ZkFold.Prelude                          (log2ceiling, replicate)
 import           ZkFold.Symbolic.Class                   (Arithmetic)
 
-getParams :: forall a . (Eq a, FiniteField a) => Natural -> (a, a, a)
+getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
     where
         omega = case rootOfUnity @a (log2ceiling n) of
                   Just o -> o
                   _      -> error "impossible"
+
         hGroup = map (omega^) [0 .. n-!1]
-        hGroup' k = map (k*) hGroup
+        hGroupS = S.fromList hGroup
+        hGroup' k = S.fromList $ map (k*) hGroup
 
         findK' :: RandomGen g => g -> (a, a, a)
         findK' g =
             let (k1, g') = first fromConstant $ uniformR (1, order @a -! 1) g
                 (k2, g'') = first fromConstant $ uniformR (1, order @a -! 1) g'
+                hGroupK1 = hGroup' k1
+                hGroupK2 = hGroup' k2
             in bool (findK' g'') (omega, k1, k2) $
-                all (`notElem` hGroup) (hGroup' k1)
-                && all (`notElem` hGroup' k1) (hGroup' k2)
+                   S.disjoint hGroupS hGroupK1
+                && S.disjoint hGroupK1 hGroupK2
+
+withnp5 :: forall n {r}. KnownNat n => (KnownNat (n + 5) => r) -> r
+withnp5 = withDict (plusNat @n @5)
 
 getSecrectParams :: forall n g1 g2 .
     ( KnownNat n
@@ -43,7 +53,7 @@ getSecrectParams :: forall n g1 g2 .
     , Scale (ScalarFieldOf g1) g2
     ) => ScalarFieldOf g1 -> (Vector (n + 5) g1, g2)
 getSecrectParams x =
-    let xs = unsafeToVector $ fmap (x^) [0 .. (value @n + 5)]
+    let xs = withnp5 @n $ unfold (\b -> (b, x * b)) one
         gs = fmap (`scale` pointGen) xs
         h1 = x `scale` pointGen
     in (gs, h1)

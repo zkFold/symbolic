@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Prover.Setup where
 
+import           Control.DeepSeq                                 (NFData)
 import qualified Data.Vector                                     as V
+import           GHC.Generics                                    (Generic)
 import           Prelude                                         hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                   (^))
 
@@ -23,6 +26,9 @@ data PlonkupProverSetup p i n l g1 g2 = PlonkupProverSetup
     , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1)
     , polynomials :: PlonkupCircuitPolynomials n g1
     }
+    deriving Generic
+
+deriving instance (NFData g1, NFData (ScalarFieldOf g1)) => NFData (PlonkupProverSetup p i n l g1 g2)
 
 instance
         ( CyclicGroup g1

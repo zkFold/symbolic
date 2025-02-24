@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials where
 
+import           Control.DeepSeq                         (NFData)
+import           GHC.Generics                            (Generic)
 import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
@@ -19,6 +22,10 @@ data PlonkupCircuitPolynomials n g = PlonkupCircuitPolynomials {
         s3X :: PlonkupPolyExtended n g,
         tX  :: PlonkupPolyExtended n g
     }
+    deriving Generic
+
+deriving instance NFData (ScalarFieldOf g) => NFData (PlonkupCircuitPolynomials n g)
+
 instance Show (ScalarFieldOf g) => Show (PlonkupCircuitPolynomials n g) where
     show PlonkupCircuitPolynomials {..} =
         "Circuit Polynomials: "
