@@ -11,10 +11,12 @@ module ZkFold.Base.Algebra.Basic.Permutations (
     fromCycles
 ) where
 
+import           Control.DeepSeq                  (NFData)
 import           Data.Functor.Rep                 (Representable (index))
 import           Data.Map                         (Map, elems, empty, singleton, union)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
+import           GHC.Generics                     (Generic)
 import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
@@ -39,7 +41,7 @@ mkIndexPartition vs =
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFData)
 
 instance KnownNat n => Arbitrary (Permutation n) where
     arbitrary =

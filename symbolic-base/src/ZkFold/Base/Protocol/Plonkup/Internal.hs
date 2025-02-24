@@ -1,12 +1,15 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Internal where
 
+import           Control.DeepSeq                                     (NFData, NFData1)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
+import           GHC.Generics                                        (Generic)
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -33,6 +36,9 @@ data Plonkup p i (n :: Natural) l g1 g2 transcript = Plonkup {
         h1    :: g2,
         gs'   :: Vector (n + 5) g1
     }
+    deriving Generic
+
+deriving instance (NFData g1, NFData g2, NFData (ScalarFieldOf g1), NFData1 l, NFData (Rep i)) => NFData (Plonkup p i n l g1 g2 transcript)
 
 type PlonkupPermutationSize n = 3 * n
 

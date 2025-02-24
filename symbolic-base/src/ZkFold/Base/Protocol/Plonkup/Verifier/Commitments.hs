@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments where
 
-import           Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Control.DeepSeq (NFData)
+import           GHC.Generics    (Generic)
+import           Prelude         hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupCircuitCommitments g = PlonkupCircuitCommitments {
         cmQl :: g,
@@ -17,6 +20,10 @@ data PlonkupCircuitCommitments g = PlonkupCircuitCommitments {
         cmS3 :: g,
         cmT1 :: g
     }
+    deriving Generic
+
+deriving instance NFData g => NFData (PlonkupCircuitCommitments g)
+
 instance (Show g) => Show (PlonkupCircuitCommitments g) where
     show PlonkupCircuitCommitments {..} =
         "Plonkup Circuit Commitments: "

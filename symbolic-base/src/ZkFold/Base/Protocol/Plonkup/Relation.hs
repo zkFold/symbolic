@@ -1,9 +1,11 @@
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Relation where
 
+import           Control.DeepSeq                                     (NFData)
 import           Data.Binary                                         (Binary)
 import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
@@ -14,6 +16,7 @@ import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust, mapMaybe)
 import qualified Data.Set                                            as S
+import           GHC.Generics                                        (Generic)
 import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
@@ -47,6 +50,9 @@ data PlonkupRelation p i n l a = PlonkupRelation
     , witness  :: p a -> i a -> (PolyVec a n, PolyVec a n, PolyVec a n)
     , pubInput :: p a -> i a -> l a
     }
+    deriving Generic
+
+deriving instance (NFData a) => NFData (PlonkupRelation p i n l a)
 
 instance Show a => Show (PlonkupRelation p i n l a) where
     show PlonkupRelation {..} =
