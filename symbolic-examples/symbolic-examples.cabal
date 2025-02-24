@@ -92,6 +92,7 @@ library
     other-modules:
       Examples.BatchTransfer
       Examples.Blake2b
+      Examples.BLS12_381
       Examples.ByteString
       Examples.Conditional
       Examples.Constant

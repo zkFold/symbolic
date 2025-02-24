@@ -187,6 +187,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
+      ZkFold.Symbolic.Data.BLS12_381
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
