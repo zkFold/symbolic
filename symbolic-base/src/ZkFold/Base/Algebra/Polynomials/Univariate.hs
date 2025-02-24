@@ -94,12 +94,16 @@ instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant
 
 instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
-    P l + P r = removeZeros $ P $ V.zipWith (+) lPadded rPadded
+    P l + P r = removeZeros $ P $
+        case (V.length l P.- V.length r) of
+          0 -> V.zipWith (+) l r
+          _ -> V.zipWith (+) l r V.++ rest
       where
-        len = max (V.length l) (V.length r)
+        len = min (V.length l) (V.length r)
 
-        lPadded = l V.++ V.replicate (len P.- V.length l) zero
-        rPadded = r V.++ V.replicate (len P.- V.length r) zero
+        rest
+          | V.length l < V.length r = V.unsafeDrop len r
+          | otherwise = V.unsafeDrop len l
 
 instance {-# OVERLAPPING #-} (Field c, Eq c) => Scale (Poly c) (Poly c)
 
