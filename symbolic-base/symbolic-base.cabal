@@ -181,6 +181,7 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization

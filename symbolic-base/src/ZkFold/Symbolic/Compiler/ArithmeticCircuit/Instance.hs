@@ -25,6 +25,7 @@ import           ZkFold.Base.Data.Vector                             (Vector, un
 import           ZkFold.Prelude                                      (genSubset, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.Data.FieldElement                   (FieldElement (..))
 import           ZkFold.Symbolic.MonadCircuit
@@ -107,16 +108,16 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
 -- TODO: make it more readable
 instance (Show a, Show (o (Var a i)), Show (Var a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a p i o) where
     show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
-                          ++ "\n, acRange = " ++ show (acRange r)
+                          ++ "\n, acRange = " ++ show (acLookup r)
                           ++ "\n, acOutput = " ++ show (acOutput r)
                           ++ " }"
 
 -- TODO: add witness generation info to the JSON object
-instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i)) => ToJSON (ArithmeticCircuit a p i o) where
+instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i), ToJSON (LookupType a), ToJSONKey (LookupType a)) => ToJSON (ArithmeticCircuit a p i o) where
     toJSON r = object
         [
             "system" .= acSystem r,
-            "range"  .= acRange r,
+            "lookup" .= acLookup r,
             "output" .= acOutput r
         ]
 
@@ -125,8 +126,9 @@ instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"
-            acRange    <- v .: "range"
+            acLookup   <- v .: "lookup"
             acOutput   <- v .: "output"
-            let acWitness = empty
-                acFold    = empty
+            let acWitness        = empty
+                acFold           = empty
+                acLookupFunction = empty
             pure ArithmeticCircuit{..}
