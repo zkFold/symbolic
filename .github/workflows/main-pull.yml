@@ -154,4 +154,4 @@ jobs:
              -H "Content-Type: application/x-tar" \
              -H 'Content-Encoding: gzip' \
              --data-binary "dist-newstyle/symbolic-base-0.1.0.0-docs.tar.gz" \
-             https://hackage.haskell.org/package/symbolic-base-0.1.0.0/candidate
+             https://hackage.haskell.org/package/symbolic-base-0.1.0.0/docs
