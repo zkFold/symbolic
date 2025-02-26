@@ -3,7 +3,7 @@
 
 module Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256) where
 
-import           ZkFold.Base.Algebra.Basic.Number        (KnownNat, type (*))
+import           ZkFold.Base.Algebra.Basic.Number        (KnownNat, (type (*)))
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_224, blake2b_256)
 import           ZkFold.Symbolic.Class                   (Symbolic)
 import           ZkFold.Symbolic.Data.ByteString         (ByteString)

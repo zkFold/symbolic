@@ -1,8 +1,8 @@
 module Main where
 
-import           System.Random                      (RandomGen, initStdGen)
 import           Prelude                            hiding (Bool, Fractional (..), Num (..), drop, length, replicate,
                                                      take, (==))
+import           System.Random                      (RandomGen, initStdGen)
 import           Test.Hspec                         (Spec, hspec)
 import           Tests.Algebra.EllipticCurve        (specEllipticCurve)
 import           Tests.Algebra.Field                (specField)
@@ -63,7 +63,7 @@ spec gen = do
     -- Symbolic cryptography
     specBlake2b
     specJWT
-    specRSA
+    specRSA gen
     specSHA2Natural
     specSHA2
 
