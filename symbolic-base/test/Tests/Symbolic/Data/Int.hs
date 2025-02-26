@@ -27,13 +27,13 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize,
                                                               NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 import ZkFold.Symbolic.Data.Int
-import ZkFold.Symbolic.Data.UInt (UInt(..), OrdWord)
+import ZkFold.Symbolic.Data.UInt (UInt(..))
 
 toss :: Natural -> Gen Integer
 toss (P.fromIntegral -> x) = chooseInteger (-x, x)
@@ -92,7 +92,6 @@ specInt'
     => KnownRegisterSize rs
     => r ~ NumberOfRegisters (Zp p) (n+1) rs
     => KnownNat r
-    => KnownNat (Ceil (GetRegisterSize (Zp p) (n+1) rs) OrdWord)
     => Spec
 specInt' = do
     let n = value @n

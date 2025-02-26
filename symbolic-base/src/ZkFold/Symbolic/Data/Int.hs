@@ -8,14 +8,13 @@ module ZkFold.Symbolic.Data.Int where
 import           Control.DeepSeq
 import qualified Data.Bool                         as Haskell
 import           Data.Kind                         (Type)
-import           GHC.Generics                      (Generic, Par1 (..))
-import           Prelude                           (Integer, return, type (~), ($), (.))
+import           GHC.Generics                      (Generic)
+import           Prelude                           (Integer, type (~), ($), (.))
 import qualified Prelude                           as Haskell hiding ((-))
 import           Test.QuickCheck                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class   hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -52,35 +51,37 @@ instance MultiplicativeMonoid (Int n r c) => Exponent (Int n r c) Natural where
 
 ------------------------------------------------------------------------------
 
-instance (Symbolic (Interpreter a), KnownNat n, KnownRegisterSize r
+instance
+    ( Symbolic (Interpreter a), KnownNat n, KnownRegisterSize r
     , KnownNat (n + 1)
-    , regSize ~ GetRegisterSize a (n+1) r
-    , KnownNat (Ceil regSize OrdWord)
-    , KnownNat (NumberOfRegisters a (n + 1) r)) => ToConstant (Int n r (Interpreter a)) where
+    ) => ToConstant (Int n r (Interpreter a)) where
     type Const (Int n r (Interpreter a)) = Integer
-    toConstant i@(Int u) = withDict (plusNat @n @1) $
-        Haskell.bool (Haskell.toInteger $ toConstant u) (negate . Haskell.toInteger . toConstant $ negate u) (isNegative i Haskell.== true)
+    toConstant i@(Int u) =
+        withDict (plusNat @n @1) $
+            withGetRegisterSize @(n+1) @r @a $
+                Haskell.bool (Haskell.toInteger $ toConstant u) (negate . Haskell.toInteger . toConstant $ negate u) (isNegative i Haskell.== true)
 
-isNegative :: forall n r c regSize.
-    (Symbolic c, KnownNat n, KnownRegisterSize r
-    , KnownNat (NumberOfRegisters (BaseField c) (n + 1) r), KnownNat (n + 1)
-    , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-    , KnownNat (Ceil regSize OrdWord)) => Int n r c -> Bool c
-isNegative (Int u) = u >= fromConstant ((2 :: Natural) ^ (value @n))
-
-isNotNegative :: forall n r c regSize.
+isNegative :: forall n r c.
     ( Symbolic c, KnownNat n, KnownRegisterSize r
-    , KnownNat (NumberOfRegisters (BaseField c) (n + 1) r), KnownNat (n + 1)
-    , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-    , KnownNat (Ceil regSize OrdWord)) => Int n r c -> Bool c
+    ) => Int n r c -> Bool c
+isNegative (Int u) =
+    withDict (plusNat @n @1) $
+        withNumberOfRegisters @(n+1) @r @(BaseField c) $
+            withGetRegisterSize @(n+1) @r @(BaseField c) $
+                withCeilRegSize @(GetRegisterSize (BaseField c) (n+1) r) @OrdWord $
+                    u >= fromConstant ((2 :: Natural) ^ (value @n))
+
+isNotNegative :: forall n r c.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    ) => Int n r c -> Bool c
 isNotNegative i = not (isNegative i)
 
-abs :: forall c n r regSize.
-    (Symbolic c, KnownNat n, KnownRegisterSize r
-    , KnownNat (NumberOfRegisters (BaseField c) (n + 1) r), KnownNat (n + 1)
-    , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-    , KnownNat (Ceil regSize OrdWord))  => Int n r c -> Int n r c
-abs i = bool i (negate i) (isNegative i)
+abs :: forall c n r.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    )  => Int n r c -> Int n r c
+abs i = withDict (plusNat @n @1) $
+            withNumberOfRegisters @(n+1) @r @(BaseField c) $
+                bool i (negate i) (isNegative i)
 
 instance (Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r) => Scale Natural (Int n r c)
 instance (Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r) => Scale Integer (Int n r c)
@@ -101,30 +102,26 @@ instance (Symbolic c, KnownNat n, k ~ n+1, KnownNat k, KnownRegisterSize r) => I
     from = Int
 
 -- -- --------------------------------------------------------------------------------
---   AddInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
 instance (Symbolic c, KnownNat (n+1), KnownRegisterSize r) => AdditiveSemigroup (Int n r c) where
     Int u1 + Int u2 = Int (u1+u2)
 
---   SubtractInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
 instance (Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r) => AdditiveGroup (Int n r c) where
-    Int u1 - Int u2 = withDict (plusNat @n @1) $ Int (u1-u2)
-    negate (Int u) = withDict (plusNat @n @1) $ Int (negate u)
+    Int u1 - Int u2 = Int (u1-u2)
+    negate (Int u) = Int (negate u)
 
---   MultiplyInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
 instance (Symbolic c, KnownNat (n+1), KnownRegisterSize r) => MultiplicativeSemigroup (Int n r c) where
     Int x * Int y = Int $ x * y
 
---   DivideInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
---   ModInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
 instance ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
          , KnownRegisters c (n+1) r
-         , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-         , KnownNat (Ceil regSize OrdWord)
          ) => SemiEuclidean (Int n r c) where
   divMod i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
     where
         (Int u1, Int u2) = (abs i1, abs i2)
-        (d, m) = divMod u1 u2
+        (d, m) = withGetRegisterSize @(n+1) @r @(BaseField c) $
+                    withCeilRegSize @(GetRegisterSize (BaseField c) (n+1) r) @OrdWord $
+                        divMod u1 u2
+
 
         ite_tf = ifThenElse (isNegative i1 && not (isNegative i2)) dm_mp ite_pm
         ite_pm = ifThenElse (not (isNegative i1) && isNegative i2) dm_pm dm_pp
@@ -135,30 +132,29 @@ instance ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
         dm_pp = (Int d, Int m)
 
 
-div :: (Symbolic c, KnownNat (n + 1), KnownNat n, KnownRegisterSize r,
- KnownRegisters c (n + 1) r,
- regSize ~ GetRegisterSize (BaseField c) (n + 1) r,
- KnownNat (Ceil regSize OrdWord)) => Int n r c -> Int n r c -> Int n r c
-div i1 i2 = Haskell.fst $ divMod i1 i2
+div :: forall n r c.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n + 1) r
+    ) => Int n r c -> Int n r c -> Int n r c
+div i1 i2 = withDict (plusNat @n @1) $ Haskell.fst $ divMod i1 i2
 
-mod :: (Symbolic c, KnownNat (n + 1), KnownNat n, KnownRegisterSize r,
- KnownRegisters c (n + 1) r,
- regSize ~ GetRegisterSize (BaseField c) (n + 1) r,
- KnownNat (Ceil regSize OrdWord)) => Int n r c -> Int n r c -> Int n r c
-mod i1 i2 = Haskell.snd $ divMod i1 i2
+mod :: forall n r c.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n + 1) r
+    ) => Int n r c -> Int n r c -> Int n r c
+mod i1 i2 = withDict (plusNat @n @1) $ Haskell.snd $ divMod i1 i2
 
 
---   QuotientInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
---   RemainderInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTInteger
-quotRem :: ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
-         , KnownRegisters c (n+1) r
-         , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-         , KnownNat (Ceil regSize OrdWord)
-         ) => Int n r c -> Int n r c -> (Int n r c, Int n r c)
+quotRem :: forall n r c.
+    ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n+1) r
+    ) => Int n r c -> Int n r c -> (Int n r c, Int n r c)
 quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
     where
         (Int u1, Int u2) = (abs i1, abs i2)
-        (d, m) = divMod u1 u2
+        (d, m) = withGetRegisterSize @(n+1) @r @(BaseField c) $
+                    withCeilRegSize @(GetRegisterSize (BaseField c) (n+1) r) @OrdWord $
+                        divMod u1 u2
 
         ite_tf = ifThenElse (isNegative i1 && isNotNegative i2) dm_mp ite_pm
         ite_pm = ifThenElse (isNotNegative i1 && isNegative i2) dm_pm dm_pp
@@ -168,14 +164,23 @@ quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
         dm_pm = (negate (Int d), Int m)
         dm_pp = (Int d, Int m)
 
---   EqualsInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTBool
---   LessThanInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTBool
---   LessThanEqualsInteger :: BuiltinIntegerFunction '[BTInteger, BTInteger] BTBool
-instance ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
-         , KnownRegisters c (n+1) r
-         , regSize ~ GetRegisterSize (BaseField c) (n+1) r
-         , KnownNat (Ceil regSize OrdWord)
-         ) => Ord (Int n r c) where
+qout :: forall n r c.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n + 1) r
+    ) => Int n r c -> Int n r c -> Int n r c
+qout i1 i2 = withDict (plusNat @n @1) $ Haskell.fst $ quotRem i1 i2
+
+rem :: forall n r c.
+    ( Symbolic c, KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n + 1) r
+    ) => Int n r c -> Int n r c -> Int n r c
+rem i1 i2 = withDict (plusNat @n @1) $ Haskell.snd $ quotRem i1 i2
+
+
+instance
+    ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
+    , KnownRegisters c (n+1) r
+    ) => Ord (Int n r c) where
 
     type OrderingOf (Int n r c) = Ordering c
 
@@ -189,18 +194,21 @@ instance ( Symbolic c, KnownNat (n+1), KnownNat n, KnownRegisterSize r
 
     i1@(Int u1) >= i2@(Int u2) = pm || (ub && (pp || nn))
         where
-            ub = u1 >= u2
+            ub = withGetRegisterSize @(n+1) @r @(BaseField c) $
+                    withCeilRegSize @(GetRegisterSize (BaseField c) (n+1) r) @OrdWord $
+                        u1 >= u2
             nn = isNegative i1 && isNegative i2
             pp = isNotNegative i1 && isNotNegative i2
             pm = isNotNegative i1 && isNegative i2
 
     i1@(Int u1) > i2@(Int u2) = pm || (ub && (pp || nn))
         where
-            ub = u1 > u2
+            ub = withGetRegisterSize @(n+1) @r @(BaseField c) $
+                    withCeilRegSize @(GetRegisterSize (BaseField c) (n+1) r) @OrdWord $
+                        u1 > u2
             nn = isNegative i1 && isNegative i2
             pp = isNotNegative i1 && isNotNegative i2
             pm = isNotNegative i1 && isNegative i2
-
 
 
     max x y = bool @(Bool c) x y $ x < y
