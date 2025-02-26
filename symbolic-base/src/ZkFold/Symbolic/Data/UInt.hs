@@ -22,9 +22,7 @@ module ZkFold.Symbolic.Data.UInt (
     natural,
     register,
     productMod,
-    blueprintGE,
-    addInteger,
-    subtractInteger
+    blueprintGE
 ) where
 
 import           Control.Applicative               (Applicative (..))
@@ -535,8 +533,11 @@ instance
                 ns
                     | numberOfRegisters @(BaseField c) @n @r Haskell.== 1 = [y' + 1]
                     | otherwise = (y : ys) <> [y']
-            (zs, _) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN ns xs)
-            return $ V.unsafeToVector zs
+                head_ns = Haskell.last ns
+                head_xs = Haskell.last xs
+            (zs, p) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN (Haskell.init ns) (Haskell.init xs))
+            (zp_head, _) <- negateNH head_ns head_xs p
+            return $ V.unsafeToVector (zs <> [zp_head])
         )
         where
             negateN :: MonadCircuit i (BaseField c) w m => Natural -> i -> i -> m (i, i)
@@ -544,6 +545,10 @@ instance
                 r <- newAssigned (\v -> fromConstant n - v i + v b)
                 splitExpansion (registerSize @(BaseField c) @n @r) 1 r
 
+            negateNH :: MonadCircuit i (BaseField c) w m => Natural -> i -> i -> m (i, i)
+            negateNH n i b = do
+                r <- newAssigned (\v -> fromConstant n - v i + v b)
+                splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 r
 
 instance
     ( Symbolic c
@@ -883,14 +888,3 @@ circuitDelta l r = do
                 z2' <- newAssigned $ \p -> p z2 + p f2z
 
                 Haskell.return (z1', z2')
-
-
-addInteger :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => UInt n r c -> UInt n r c -> UInt n r c
-addInteger u1 u2 = u1 - h + u2
-    where
-        h = fromConstant (2 ^ (getNatural @n -! 1) :: Natural)
-
-subtractInteger :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => UInt n r c -> UInt n r c -> UInt n r c
-subtractInteger u1 u2 = u1 + h - u2
-    where
-        h = fromConstant (2 ^ (getNatural @n -! 1) :: Natural)

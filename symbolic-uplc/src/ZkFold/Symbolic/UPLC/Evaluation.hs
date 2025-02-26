@@ -26,7 +26,7 @@ import           Data.Traversable                 (Traversable, traverse)
 import           Data.Typeable                    (Typeable, cast)
 import           Prelude                          (error, fromIntegral)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+))
+import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+), (-), (*))
 import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Class            (Symbolic, BaseField)
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
@@ -38,11 +38,10 @@ import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.UInt ( UInt, addInteger, subtractInteger )
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import Data.Constraint.Unsafe (unsafeSNat)
 import GHC.TypeLits (withKnownNat)
-import           Data.Constraint.Unsafe
-
+import ZkFold.Symbolic.Data.Int
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -210,7 +209,7 @@ applyMono b (FLam f) (v:args) = do
 -- This part is meant to be changed when completing the Converter implementation.
 
 -- Uncomment these lines as more types are available in Converter:
-instance (Sym c, KnownRegisters c 64 Auto) => IsData BTInteger (UInt 64 Auto c) c where asPair _ = Nothing
+instance (Sym c, KnownRegisters c 64 Auto) => IsData BTInteger (Int 63 Auto c) c where asPair _ = Nothing
 instance Sym c => IsData BTByteString (ByteString 64 c) c where asPair _ = Nothing
 -- instance Sym c => IsData BTString ??? c where asPair _ = Nothing
 instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
@@ -283,9 +282,9 @@ data SymValue t c = forall v. IsData t v c => SymValue v
 
 -- | Given a UPLC constant, evaluate it as a corresponding Symbolic value.
 -- Types would not let you go (terribly) wrong!
-evalConstant :: Sym c => Constant t -> SymValue t c
+evalConstant :: forall c t. Sym c => Constant t -> SymValue t c
 evalConstant (CBool b)       = SymValue (if b then true else false)
-evalConstant (CInteger _)    = error "FIXME: UPLC Integer support"
+evalConstant (CInteger i)    = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $ SymValue (fromConstant i)
 evalConstant (CByteString _) = error "FIXME: UPLC ByteString support"
 evalConstant (CString _)     = error "FIXME: UPLC String support"
 evalConstant (CUnit ())      = SymValue Proxy
@@ -330,6 +329,7 @@ evalMono :: forall c s t.
   ) => BuiltinMonoFunction s t -> Fun s t c
 evalMono (BMFInteger AddInteger)      = addIntegerFun @c
 evalMono (BMFInteger SubtractInteger) = subtractIntegerFun @c
+evalMono (BMFInteger MultiplyInteger) = multiplyIntegerFun @c
 evalMono (BMFInteger _)    = error "FIXME: UPLC Integer support"
 
 evalMono (BMFByteString _) = error "FIXME: UPLC ByteString support"
@@ -339,10 +339,16 @@ evalMono (BMFData _)       = error "FIXME: UPLC Data support"
 evalMono (BMFCurve _)      = error "FIXME: UPLC Curve support"
 evalMono (BMFBitwise _)    = error "FIXME: UPLC ByteString support"
 
+--------------------------------------------------------------------------------
+
 addIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
 addIntegerFun = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $
-                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ addInteger v w) :: (Fun '[] BTInteger c)))
+                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v + w) :: (Fun '[] BTInteger c)))
 
 subtractIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
 subtractIntegerFun = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $
-                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ subtractInteger v w) :: (Fun '[] BTInteger c)))
+                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v - w) :: (Fun '[] BTInteger c)))
+
+multiplyIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
+multiplyIntegerFun = withKnownNat @(NumberOfRegisters (BaseField c) 64 Auto) (unsafeSNat $ numberOfRegisters @(BaseField c) @64 @Auto) $
+                  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v * w) :: (Fun '[] BTInteger c)))
