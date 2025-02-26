@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 import           Control.DeepSeq                             (NFData, NFData1)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
-import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
@@ -45,7 +44,6 @@ exampleOutput ::
   , Layout f ~ o
   , SymbolicInput (Support f)
   , Context (Support f) ~ c
-  , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
   , Payload (Support f) ~ p
   , Representable i
