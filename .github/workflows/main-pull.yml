@@ -119,3 +119,19 @@ jobs:
         commit_user_name: GitHub Action
         commit_user_email: action@github.com
         branch: ${{ github.head_ref }}
+
+    - name: Upload package
+      env:
+        HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      shell: bash
+      run: |
+        cabal sdist symbolic-base
+        cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
+
+        cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
+        curl -X PUT \
+             --user "VladimirSinyakov:$HACKAGE_PASSWORD" \
+             -H "Content-Type: application/x-tar" \
+             -H 'Content-Encoding: gzip' \
+             --data-binary "dist-newstyle/symbolic-base-0.1.0.0-docs.tar.gz" \
+             https://hackage.haskell.org/package/symbolic-base-0.1.0.0/candidate
