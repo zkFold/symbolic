@@ -53,4 +53,3 @@ specJWT = do
                 (check, _) = verifySignature cert secret
 
             pure $ evalBool check === one
-

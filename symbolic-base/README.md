@@ -11,3 +11,9 @@ To disable slow test groups, execute
 ```bash
 cabal test --test-option="--skip=SLOW"
 ```
+
+# Compile in JS
+
+```bash
+cabal build symbolic-base --with-hsc2hs=javascript-unknown-ghcjs-hsc2hs --with-ghc=javascript-unknown-ghcjs-ghc --with-ghc-pkg=javascript-unknown-ghcjs-ghc-pkg
+```

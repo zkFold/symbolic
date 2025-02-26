@@ -11,8 +11,8 @@ import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
+import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
