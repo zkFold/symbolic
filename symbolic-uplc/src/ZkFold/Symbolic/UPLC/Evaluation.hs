@@ -24,7 +24,7 @@ import           Data.Ord                         ((<))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable, traverse)
 import           Data.Typeable                    (Typeable, cast)
-import           Prelude                          (error, fromIntegral)
+import           Prelude                          (error, fromIntegral, type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+))
 import           ZkFold.Prelude                   ((!!))
