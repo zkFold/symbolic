@@ -109,6 +109,8 @@ registerSize = case regSize @r of
 
 type Ceil a b = Div (a + b - 1) b
 
+type HasRegisterSize a bits r = KnownNat (GetRegisterSize a bits r)
+
 type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
     GetRegisterSize _ 0    _          = 0
     GetRegisterSize a bits (Fixed rs) = rs

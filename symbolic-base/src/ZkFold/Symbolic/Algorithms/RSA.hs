@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
-                                                       NumberOfRegisters, RegisterSize (..), Resize (..))
+                                                       NumberOfRegisters, RegisterSize (..), Resize (..), HasRegisterSize)
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
@@ -109,6 +109,7 @@ type RSA keyLen msgLen ctx =
 sign
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
+    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => ByteString msgLen ctx
     -> PrivateKey keyLen ctx
     -> Signature keyLen ctx
@@ -123,6 +124,7 @@ sign msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
 verify
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
+    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => ByteString msgLen ctx
     -> Signature keyLen ctx
     -> PublicKey keyLen ctx
@@ -141,6 +143,7 @@ verify msg sig PublicKey{..} = target == input
 signVar
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
+    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => VarByteString msgLen ctx
     -> PrivateKey keyLen ctx
     -> Signature keyLen ctx
@@ -155,6 +158,7 @@ signVar msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
 verifyVar
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
+    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => VarByteString msgLen ctx
     -> Signature keyLen ctx
     -> PublicKey keyLen ctx

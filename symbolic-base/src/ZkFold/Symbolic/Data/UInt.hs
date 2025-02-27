@@ -39,7 +39,7 @@ import           Data.Map                          (fromList, (!))
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
 import qualified Data.Zip                          as Z
-import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..))
+import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..), (:.:) (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Prelude                           (Integer, const, error, flip, otherwise, return, type (~), ($), (++),
                                                     (.), (<>), (>>=))
@@ -117,6 +117,7 @@ expMod
     => KnownRegisters c (2 * m) r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
+    => HasRegisterSize (BaseField c) (2*m) r
     => UInt n r c
     -> UInt p r c
     -> UInt m r c
@@ -144,6 +145,7 @@ bitsPow
     => KnownRegisters c n r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
+    => HasRegisterSize (BaseField c) n r
     => Natural
     -> ByteString p c
     -> UInt n r c
@@ -165,6 +167,7 @@ productMod
     => KnownRegisterSize r
     => KnownNat n
     => KnownRegisters c n r
+    => HasRegisterSize (BaseField c) n r
     => UInt n r c
     -> UInt n r c
     -> UInt n r c
@@ -372,6 +375,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
          , KnownNat (Ceil regSize OrdWord)
+         , HasRegisterSize (BaseField c) n r
          ) => SemiEuclidean (UInt n r c) where
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
@@ -409,6 +413,18 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
           constraint (($ l) - one)
           return dm
 
+asWordsReg
+    :: forall regSize ctx k
+    .  Symbolic ctx
+    => KnownNat regSize
+    => ctx (Vector k)                           -- @k@ registers of size up to @regSize@
+    -> ctx (Vector k :.: Vector regSize) -- @k * wordsPerReg@ registers of size @wordSize@
+asWordsReg v = fromCircuitF v $ \regs -> do
+    words <- for regs $ \reg -> do
+      bits <- expansionW @regSize (value @regSize) reg
+      return (V.reverse (V.unsafeToVector bits))
+    return (Comp1 words)
+
 asWords
     :: forall wordSize regSize ctx k
     .  Symbolic ctx
@@ -426,13 +442,18 @@ asWords v = fromCircuitF v $ \regs -> do
 -- | Word size in bits used in comparisons. Subject to change
 type OrdWord = 16
 
-instance (Symbolic c, KnownRegisters c n r) => Ord (UInt n r c) where
+instance
+  ( Symbolic c
+  , KnownRegisters c n r
+  , HasRegisterSize (BaseField c) n r
+  , regSize ~ GetRegisterSize (BaseField c) n r
+  ) => Ord (UInt n r c) where
 
     type OrderingOf (UInt n r c) = Ordering c
 
     ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
 
-    compare (UInt x) (UInt y) = bitwiseCompare x y
+    compare (UInt x) (UInt y) = (bitwiseCompare `on` (asWordsReg @regSize)) x y
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc

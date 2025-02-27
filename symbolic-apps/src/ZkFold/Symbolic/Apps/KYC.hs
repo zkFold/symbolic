@@ -12,11 +12,11 @@ import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (fromConstant))
 import           ZkFold.Base.Algebra.Basic.Field  (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector          (Vector, head, tail, toVector)
-import           ZkFold.Symbolic.Class            (Symbolic)
+import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)
 import           ZkFold.Symbolic.Data.Combinators (Iso (..), KnownRegisterSize, KnownRegisters,
-                                                   RegisterSize (..))
+                                                   RegisterSize (..), HasRegisterSize)
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)), elem)
 import           ZkFold.Symbolic.Data.Ord         (Ord ((>=)))
 import           ZkFold.Symbolic.Data.UInt        (UInt)
@@ -64,6 +64,7 @@ kycExample :: forall n r rsc context . (
   , Eq (KYCHash context)
   , KnownRegisterSize r
   , KnownRegisters context 64 r
+  , HasRegisterSize (BaseField context) 64 r
   ) => KYCData n context -> KYCHash context -> Bool context
 kycExample kycData hash =
   let
