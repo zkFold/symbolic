@@ -7,11 +7,13 @@ module ZkFold.Symbolic.Data.Ord
   , Ordering
   , Ord (..)
   , GOrd (..)
+  , bitwiseCompare
   ) where
 
 import           Control.DeepSeq                  (NFData)
-import           Data.Foldable                    (fold, toList)
+import           Data.Foldable                    (Foldable, fold, toList)
 import           Data.Function                    (on)
+import           Data.Functor.Rep                 (Representable, mzipWithRep)
 import           Data.List                        (concatMap, reverse, zipWith)
 import           Data.Traversable                 (traverse)
 import           GHC.Generics
@@ -150,10 +152,16 @@ instance Symbolic c => IsOrdering (Ordering c) where
 instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
   type OrderingOf (c f) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare = bitwiseCompare `on` getBitsBE
+  compare = bitwiseCompareList `on` getBitsBE
 
-bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
-bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
+bitwiseCompareList :: forall c . Symbolic c => c [] -> c [] -> Ordering c
+bitwiseCompareList x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
+
+bitwiseCompare
+  :: forall c f. (Symbolic c, Representable f, Foldable f)
+  => c f -> c f -> Ordering c
+bitwiseCompare x y =
+  fold ((mzipWithRep (compare `on` Bool) `on` unpacked) x y)
 
 getBitsBE :: forall c f . (Symbolic c, LayoutFunctor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to

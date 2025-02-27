@@ -22,15 +22,13 @@ module ZkFold.Symbolic.Data.UInt (
     natural,
     register,
     productMod,
-    blueprintGE,
 ) where
 
 import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
-import           Control.Monad                     (foldM, zipWithM)
+import           Control.Monad                     (zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import qualified Data.Bool                         as Haskell
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
@@ -70,7 +68,7 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
-                                                    newAssigned, newRanged)
+                                                    newAssigned)
 
 
 -- TODO (Issue #18): hide this constructor
@@ -167,7 +165,6 @@ productMod
     => KnownRegisterSize r
     => KnownNat n
     => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => UInt n r c
     -> UInt n r c
     -> UInt n r c
@@ -429,35 +426,13 @@ asWords v = fromCircuitF v $ \regs -> do
 -- | Word size in bits used in comparisons. Subject to change
 type OrdWord = 16
 
-instance ( Symbolic c, KnownNat n, KnownRegisterSize r
-         , KnownRegisters c n r
-         , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
-         ) => Ord (UInt n r c) where
+instance (Symbolic c, KnownRegisters c n r) => Ord (UInt n r c) where
 
     type OrderingOf (UInt n r c) = Ordering c
 
     ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
 
-    compare x y = bool (bool lt eq (x == y)) gt (x > y)
-
-    x <= y = y >= x
-
-    x <  y = y > x
-
-    (UInt u1) >= (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
-         in bitwiseGE @OrdWord w1 w2
-
-    (UInt u1) > (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
-         in bitwiseGT @OrdWord w1 w2
-
-    max x y = bool @(Bool c) x y $ x < y
-
-    min x y = bool @(Bool c) x y $ x > y
+    compare (UInt x) (UInt y) = bitwiseCompare x y
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
@@ -804,80 +779,3 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) 
 
 instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
     toJSON = toJSON . toConstant
-
-
--- Old Ord circuits for compatibility --
-
-bitwiseGE :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGE xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.>= toList vs))
-    $ \is js -> Par1 <$> blueprintGE @r is js
-
-blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
-blueprintGE xs ys = do
-  (_, hasNegOne) <- circuitDelta @r xs ys
-  newAssigned $ \p -> one - p hasNegOne
-
-bitwiseGT :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGT xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.> toList vs))
-    $ \is js -> do
-      (hasOne, hasNegOne) <- circuitDelta @r is js
-      Par1 <$> newAssigned (\p -> p hasOne * (one - p hasNegOne))
-
--- | Compare two sets of r-bit words lexicographically
---
-circuitDelta :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
-circuitDelta l r = do
-    z1 <- newAssigned (Haskell.const zero)
-    z2 <- newAssigned (Haskell.const zero)
-    foldM update (z1, z2) $ Z.zip l r
-        where
-            bound = scale ((2 ^ value @r) -! 1) one
-
-            -- | If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i.
-            -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
-            --
-            --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
-            -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
-            update :: (i, i) -> (i, i) -> m (i, i)
-            update (z1, z2) (x, y) = do
-                -- @f1@ is one if and only if @x > y@ and zero otherwise.
-                -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
-                -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
-                -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
-                -- This is exactly the opposite of what @f1@ should be.
-                f1 <- newRanged one $
-                    let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
-                     in one - q // q
-
-                -- f2 is one if and only if y > x and zero otherwise
-                f2 <- newRanged one $
-                    let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
-                     in one - q // q
-
-                dxy <- newAssigned (\p -> p x - p y)
-
-                d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
-                d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
-                rangeConstraint d1  bound
-                rangeConstraint d1' bound
-
-                d2  <- newAssigned (\p -> p f2 * (negate one - p dxy))
-                d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
-                rangeConstraint d2  bound
-                rangeConstraint d2' bound
-
-                bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
-
-                f1z <- newAssigned $ \p -> p bothZero * p f1
-                f2z <- newAssigned $ \p -> p bothZero * p f2
-
-                z1' <- newAssigned $ \p -> p z1 + p f1z
-                z2' <- newAssigned $ \p -> p z2 + p f2z
-
-                Haskell.return (z1', z2')

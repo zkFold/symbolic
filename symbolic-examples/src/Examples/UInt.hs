@@ -30,7 +30,6 @@ exampleUIntMul = (*)
 exampleUIntProductMod
     :: KnownNat n
     => KnownRegisterSize r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => KnownNat (NumberOfRegisters (BaseField c) n r)
     => Symbolic c
     => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)

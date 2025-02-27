@@ -20,6 +20,7 @@ module ZkFold.Symbolic.Data.JWT
     ) where
 
 import           Control.DeepSeq                    (NFData, force)
+import           Control.Monad                      (foldM)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
@@ -29,6 +30,7 @@ import           Data.Constraint.Unsafe             (unsafeAxiom, unsafeSNat)
 import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
+import qualified Data.Zip                           as Z
 import           Generic.Random                     (genericArbitrary, uniform)
 import           GHC.Generics                       (Generic, Par1 (..))
 import           GHC.TypeLits                       (withKnownNat)
@@ -53,7 +55,7 @@ import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
 import           ZkFold.Symbolic.Data.UInt
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned, (@+))
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit
 
 
 class IsSymbolicJSON a where
@@ -477,6 +479,64 @@ word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
 
         V.unsafeToVector . P.reverse <$> expansion 8 s4
 
+-- | helper for word6ToAscii
+blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, P.Foldable f, KnownNat r) => f i -> f i -> m i
+blueprintGE xs ys = do
+  (_, hasNegOne) <- circuitDelta @r xs ys
+  newAssigned $ \p -> one - p hasNegOne
+
+-- | Compare two sets of r-bit words lexicographically
+--
+circuitDelta :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, P.Foldable f, KnownNat r) => f i -> f i -> m (i, i)
+circuitDelta l r = do
+    z1 <- newAssigned (P.const zero)
+    z2 <- newAssigned (P.const zero)
+    foldM update (z1, z2) $ Z.zip l r
+        where
+            bound = scale ((2 ^ value @r) -! 1) one
+
+            -- | If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i.
+            -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
+            --
+            --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
+            -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
+            update :: (i, i) -> (i, i) -> m (i, i)
+            update (z1, z2) (x, y) = do
+                -- @f1@ is one if and only if @x > y@ and zero otherwise.
+                -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
+                -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
+                -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
+                -- This is exactly the opposite of what @f1@ should be.
+                f1 <- newRanged one $
+                    let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
+                     in one - q // q
+
+                -- f2 is one if and only if y > x and zero otherwise
+                f2 <- newRanged one $
+                    let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
+                     in one - q // q
+
+                dxy <- newAssigned (\p -> p x - p y)
+
+                d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
+                d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
+                rangeConstraint d1  bound
+                rangeConstraint d1' bound
+
+                d2  <- newAssigned (\p -> p f2 * (negate one - p dxy))
+                d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
+                rangeConstraint d2  bound
+                rangeConstraint d2' bound
+
+                bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
+
+                f1z <- newAssigned $ \p -> p bothZero * p f1
+                f2z <- newAssigned $ \p -> p bothZero * p f2
+
+                z1' <- newAssigned $ \p -> p z1 + p f1z
+                z2' <- newAssigned $ \p -> p z2 + p f2z
+
+                P.return (z1', z2')
 
 toAsciiBits
     :: forall a ctx
