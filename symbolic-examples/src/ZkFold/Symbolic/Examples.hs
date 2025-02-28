@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 import           Control.DeepSeq                             (NFData, NFData1)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
-import           Data.Proxy                                  (Proxy)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
@@ -45,7 +44,6 @@ exampleOutput ::
   , Layout f ~ o
   , SymbolicInput (Support f)
   , Context (Support f) ~ c
-  , Support (Support f) ~ Proxy c
   , Layout (Support f) ~ i
   , Payload (Support f) ~ p
   , Representable i
@@ -56,20 +54,20 @@ exampleOutput = ExampleOutput @p @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
 examples =
-  [ ("Eq", exampleOutput exampleEq)
-  , ("Conditional", exampleOutput exampleConditional)
-  , ("Constant.5", exampleOutput exampleConst5)
+  [ ("Constant.5", exampleOutput exampleConst5)
   , ("Eq.Constant.5", exampleOutput exampleEq5)
+  , ("Eq", exampleOutput exampleEq)
+  , ("Conditional", exampleOutput exampleConditional)
+  , ("LEQ", exampleOutput exampleLEQ)
   , ("ByteString.And.32", exampleOutput $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput $ exampleByteStringOr @64)
-  , ("LEQ", exampleOutput exampleLEQ)
   , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringResize @1 @512)
-  , ("UInt.Extend.1.512", exampleOutput $ exampleUIntResize @1 @512 @Auto)
   , ("ByteString.Truncate.512.1", exampleOutput $ exampleByteStringResize @512 @1)
-  , ("UInt.Truncate.512.1", exampleOutput $ exampleUIntResize @512 @1 @Auto)
   , ("ByteString.Truncate.74.54", exampleOutput $ exampleByteStringResize @74 @54)
-  , ("UInt.Truncate.74.54", exampleOutput $ exampleUIntResize @74 @54 @Auto)
   , ("ByteString.Add.512", exampleOutput $ exampleByteStringAdd @512)
+  , ("UInt.Extend.1.512", exampleOutput $ exampleUIntResize @1 @512 @Auto)
+  , ("UInt.Truncate.512.1", exampleOutput $ exampleUIntResize @512 @1 @Auto)
+  , ("UInt.Truncate.74.54", exampleOutput $ exampleUIntResize @74 @54 @Auto)
   , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
   , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
   , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)
@@ -86,13 +84,14 @@ examples =
   , ("FFA.Inv.097", exampleOutput exampleFFAinv097)
   , ("Blake2b_224", exampleOutput $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput $ exampleBlake2b_256 @64)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
-  , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
-  , ("MiMCHash", exampleOutput exampleMiMC)
   , ("SHA256.32", exampleOutput $ exampleSHA @32)
+  , ("MiMCHash", exampleOutput exampleMiMC)
+  -- , ("BLS12_381.Scale", exampleOutput exampleBLS12_381Scale)
+  -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
+  , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
+  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
   -- , ("ZkloginNoSig", exampleOutput $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
-  -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
   -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
   -- , ("PedersonCommitment", exampleOutput exampleCommitment)
   -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)

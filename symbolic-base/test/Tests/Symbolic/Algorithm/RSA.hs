@@ -9,7 +9,7 @@ import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
 import qualified Prelude                                     as P
-import           System.Random                               (mkStdGen)
+import           System.Random                               (RandomGen)
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
@@ -32,14 +32,12 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA' :: forall keyLength . RSA keyLength 256 I => Spec
-specRSA' = do
+specRSA' :: forall keyLength g . (RandomGen g, RSA keyLength 256 I) => g -> Spec
+specRSA' gen = do
     describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
         it "signs and verifies correctly" $ withMaxSuccess 10 $ do
-            x <- toss $ (2 :: Natural) ^ (32 :: Natural)
             msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
-            let gen = mkStdGen (P.fromIntegral x)
-                (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @keyLength)
+            let (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @keyLength)
                 prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 msg = fromConstant msgBits
@@ -54,7 +52,7 @@ specRSA' = do
 
             pure $ evalBool check === one .&. evalBool checkV === one
 
-specRSA :: Spec
-specRSA = do
-    specRSA' @512
-    specRSA' @2048
+specRSA :: RandomGen g => g -> Spec
+specRSA gen = do
+    specRSA' @512   gen
+    specRSA' @2048  gen

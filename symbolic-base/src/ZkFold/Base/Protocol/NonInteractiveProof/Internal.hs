@@ -1,9 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE Unsafe              #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
+#if defined(javascript_HOST_ARCH)
+import qualified Data.ByteString.Char8                      as C
+import           Data.String                                (IsString(fromString))
+import           GHC.JS.Prim
+import           System.IO.Unsafe                           (unsafePerformIO)
+#else
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
+#endif
+
 import           Data.ByteString                            (ByteString)
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
@@ -28,8 +38,24 @@ transcript ts a = ts <> toTranscript a
 class Monoid ts => FromTranscript ts a where
     fromTranscript :: ts -> a
 
+#if defined(javascript_HOST_ARCH)
+
+foreign import javascript unsafe "blake2b"
+    blake2b :: JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal
+
+instance Binary a => FromTranscript ByteString a where
+    fromTranscript = fromJust . fromByteString . (hsBlake2b 28 mempty)
+        where
+            hsBlake2b :: Int -> ByteString -> ByteString -> ByteString
+            hsBlake2b a b c =
+                fromString $ fromJSString (unsafePerformIO $ blake2b (toJSString $ C.unpack c) (toJSString $ C.unpack b) (toJSInt a) jsNull jsNull)
+
+#else
+
 instance Binary a => FromTranscript ByteString a where
     fromTranscript = fromJust . fromByteString . hash 28 mempty
+
+#endif
 
 challenge :: forall ts a . FromTranscript ts a => ts -> a
 challenge = fromTranscript

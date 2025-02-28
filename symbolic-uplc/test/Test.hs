@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeOperators    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
-
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Eq                                     (Eq)
@@ -12,6 +11,7 @@ import           Data.Function                               (const, ($))
 import           Data.Functor                                (Functor, (<$>))
 import           Data.Functor.Rep                            (Rep, Representable)
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
+import           Prelude                                     (type (~))
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
 import           Test.Hspec.QuickCheck                       (prop)

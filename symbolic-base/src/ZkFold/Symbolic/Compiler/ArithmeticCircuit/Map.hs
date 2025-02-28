@@ -42,7 +42,8 @@ mapVarArithmeticCircuit ac =
         -- | TODO: compress fold ids, too
         witF (WFoldVar i v) = WFoldVar i v
      in ArithmeticCircuit
-          { acRange   = Set.map varF <$> acRange ac
+          { acLookup   = Set.map (map varF) <$> acLookup ac
+          , acLookupFunction = acLookupFunction ac
           , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
           , acWitness = (fmap witF <$> acWitness ac) `Map.compose` backward
           , acFold = bimap oVarF (fmap witF) <$> acFold ac
