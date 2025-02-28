@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
@@ -26,7 +27,7 @@ import           Data.Traversable                 (Traversable, traverse)
 import           Data.Typeable                    (Typeable, cast)
 import           Prelude                          (error, fromIntegral)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+), (-), (*))
+import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+), (-), (*), AdditiveMonoid (zero), MultiplicativeMonoid (..), NumberOfBits)
 import           ZkFold.Prelude                   ((!!))
 import           ZkFold.Symbolic.Class            (Symbolic, BaseField)
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
@@ -38,10 +39,16 @@ import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Int
 import qualified ZkFold.Symbolic.Data.Ord         as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq          as Symbolic
+import           ZkFold.Symbolic.Data.VarByteString
+import ZkFold.Symbolic.Data.ByteString (dropN, ByteString, truncate)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
+import Data.Constraint
+import Data.Constraint.Unsafe (unsafeAxiom)
+import ZkFold.Base.Algebra.Basic.Number (value, Natural)
+import ZkFold.Symbolic.Data.UInt (UInt, OrdWord)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
@@ -155,7 +162,7 @@ beta e env t args = impl (e : map shiftT env) t (map shiftA args)
     shiftA (ACase ts)     = ACase (map (`shift` 0) ts)
     shiftA (AThunk thunk) = AThunk (shiftT thunk)
     shiftT (Left term)   = Left (shift term 0)
-    shiftT (Right value) = Right value
+    shiftT (Right val)   = Right val
     shift (TVariable i) b        = TVariable (i + if i < b then 0 else 1)
     shift (TConstant c) _        = TConstant c
     shift (TBuiltin f) _         = TBuiltin f
@@ -210,8 +217,12 @@ applyMono b (FLam f) (v:args) = do
 -- This part is meant to be changed when completing the Converter implementation.
 
 -- Uncomment these lines as more types are available in Converter:
-instance (Sym c, KnownRegisters c 65 Auto) => IsData BTInteger (Int 64 Auto c) c where asPair _ = Nothing
-instance Sym c => IsData BTByteString (ByteString 64 c) c where asPair _ = Nothing
+type IntLength = 64
+type IntLength' = 65
+instance (Sym c, KnownRegisters c IntLength' Auto) => IsData BTInteger (Int IntLength Auto c) c where asPair _ = Nothing
+
+type BSLength = 4000
+instance Sym c => IsData BTByteString (VarByteString BSLength c) c where asPair _ = Nothing
 -- instance Sym c => IsData BTString ??? c where asPair _ = Nothing
 instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
 instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
@@ -285,7 +296,7 @@ data SymValue t c = forall v. IsData t v c => SymValue v
 -- Types would not let you go (terribly) wrong!
 evalConstant :: forall c t. Sym c => Constant t -> SymValue t c
 evalConstant (CBool b)       = SymValue (if b then true else false)
-evalConstant (CInteger i)    = withNumberOfRegisters @65 @Auto @(BaseField c) $ SymValue (fromConstant i)
+evalConstant (CInteger i)    = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ SymValue (fromConstant i)
 evalConstant (CByteString b) = SymValue (fromConstant b)
 evalConstant (CString _)     = error "FIXME: UPLC String support"
 evalConstant (CUnit ())      = SymValue Proxy
@@ -328,30 +339,33 @@ instance
 evalMono :: forall c s t.
   ( Sym c
   ) => BuiltinMonoFunction s t -> Fun s t c
-evalMono (BMFInteger AddInteger)      = addIntegerFun @c
-evalMono (BMFInteger SubtractInteger) = subtractIntegerFun @c
-evalMono (BMFInteger MultiplyInteger) = multiplyIntegerFun @c
-evalMono (BMFInteger DivideInteger)   = divideIntegerFun @c
-evalMono (BMFInteger ModInteger)      = modIntegerFun @c
-evalMono (BMFInteger QuotientInteger) = quotientIntegerFun @c
-evalMono (BMFInteger RemainderInteger) = remainderIntegerFun @c
-evalMono (BMFInteger EqualsInteger)   = equalsIntegerFun @c
-evalMono (BMFInteger LessThanInteger) = lessThanIntegerFun @c
+evalMono (BMFInteger AddInteger)            = addIntegerFun @c
+evalMono (BMFInteger SubtractInteger)       = subtractIntegerFun @c
+evalMono (BMFInteger MultiplyInteger)       = multiplyIntegerFun @c
+evalMono (BMFInteger DivideInteger)         = divideIntegerFun @c
+evalMono (BMFInteger ModInteger)            = modIntegerFun @c
+evalMono (BMFInteger QuotientInteger)       = quotientIntegerFun @c
+evalMono (BMFInteger RemainderInteger)      = remainderIntegerFun @c
+evalMono (BMFInteger EqualsInteger)         = equalsIntegerFun @c
+evalMono (BMFInteger LessThanInteger)       = lessThanIntegerFun @c
 evalMono (BMFInteger LessThanEqualsInteger) = lessThanEqualsIntegerFun @c
-evalMono (BMFInteger _)    = error "FIXME: UPLC Integer support"
+evalMono (BMFInteger _)                     = error "FIXME: UPLC Integer support"
 
 
 
--- evalMono (BMFByteString AppendByteString) = appendByteStringFun
--- evalMono (BMFByteString ConsByteString) =
--- evalMono (BMFByteString SliceByteString) =
--- evalMono (BMFByteString LengthOfByteString) =
--- evalMono (BMFByteString IndexByteString) =
--- evalMono (BMFByteString EqualsByteString) =
--- evalMono (BMFByteString LessThanByteString) =
--- evalMono (BMFByteString LessThanEqualsByteString) =
-evalMono (BMFByteString _)    = error "FIXME: UPLC Integer support"
+evalMono (BMFByteString AppendByteString)         = appendByteStringFun @c
+evalMono (BMFByteString ConsByteString)           = consByteStringFun @c
+evalMono (BMFByteString SliceByteString)          = sliceByteStringFun @c
+evalMono (BMFByteString LengthOfByteString)       = lengthOfByteStringFun @c
+evalMono (BMFByteString IndexByteString)          = indexByteStringFun @c
+evalMono (BMFByteString EqualsByteString)         = equalsByteStringFun @c
+evalMono (BMFByteString LessThanByteString)       = lessThanByteStringFun @c
+evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun @c
 
+-- evalMono (BMFString AppendString) =
+-- evalMono (BMFString EqualsString) =
+-- evalMono (BMFString EncodeUtf8)   =
+-- evalMono (BMFString DecodeUtf8)   =
 
 evalMono (BMFString _)     = error "FIXME: UPLC String support"
 evalMono (BMFAlgorithm _)  = error "FIXME: UPLC Algorithms support"
@@ -360,56 +374,99 @@ evalMono (BMFCurve _)      = error "FIXME: UPLC Curve support"
 evalMono (BMFBitwise _)    = error "FIXME: UPLC ByteString support"
 
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 addIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-addIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+addIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v + w) :: (Fun '[] BTInteger c)))
 
 subtractIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-subtractIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+subtractIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v - w) :: (Fun '[] BTInteger c)))
 
 multiplyIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-multiplyIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+multiplyIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v * w) :: (Fun '[] BTInteger c)))
 
 divideIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-divideIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+divideIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v `div` w) :: (Fun '[] BTInteger c)))
 
 modIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-modIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+modIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v `mod` w) :: (Fun '[] BTInteger c)))
 
 
 quotientIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-quotientIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+quotientIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v `qout` w) :: (Fun '[] BTInteger c)))
 
 remainderIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTInteger c
-remainderIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+remainderIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v `rem` w) :: (Fun '[] BTInteger c)))
 
 equalsIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTBool c
-equalsIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+equalsIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v Symbolic.== w) :: (Fun '[] BTBool c)))
 
 lessThanIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTBool c
-lessThanIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+lessThanIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v Symbolic.< w) :: (Fun '[] BTBool c)))
 
 lessThanEqualsIntegerFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger] BTBool c
-lessThanEqualsIntegerFun = withNumberOfRegisters @65 @Auto @(BaseField c) $
+lessThanEqualsIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
                   FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ v Symbolic.<= w) :: (Fun '[] BTBool c)))
 
+--------------------------------------------------------------------------------
 
--- appendByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTByteString] BTByteString c
--- appendByteStringFun
+appendByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTByteString] BTByteString c
+appendByteStringFun = FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength (append v w)) :: (Fun '[] BTByteString c)))
 
--- consByteStringFun ::
--- sliceByteStringFun ::
--- lengthOfByteStringFun ::
--- indexByteStringFun ::
--- equalsByteStringFun ::
--- lessThanByteStringFun ::
--- lessThanEqualsByteStringFun ::
+consByteStringFun :: forall c .(Sym c) => Fun [BTInteger, BTByteString] BTByteString c
+consByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
+  FLam (\v ->
+    FLam (\w -> let bu :: ByteString 8 c = dropN @8 @IntLength' (from $ uint v)
+                 in fromConstant (Symbolic.just @c $ dropZeros @BSLength (append w $ fromByteString bu) ) :: (Fun '[] BTByteString c)))
+
+
+sliceByteStringFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger, BTByteString] BTByteString c
+sliceByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength' @c $
+  FLam (\(Int f :: Int IntLength Auto c)->
+    FLam (\(Int t :: Int IntLength Auto c) ->
+      FLam (\(VarByteString l b) -> let (fr, to) = (Symbolic.max (from f) zero, Symbolic.max (from f + from t-one) (l - one))
+                                        fe8 = fromConstant (8::Natural) :: FieldElement c
+                                        newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - to*fe8)
+                                     in fromConstant $ Symbolic.just @c (VarByteString to newB) :: (Fun '[] BTByteString c))))
+
+isoFieldElemUInt :: forall n c. (Symbolic c) => Dict (NumberOfBits (BaseField c) ~ n)
+isoFieldElemUInt = unsafeAxiom
+
+withIsoFieldElemUInt :: forall n c {r}. (Symbolic c) => (NumberOfBits (BaseField c) ~ n => r) -> r
+withIsoFieldElemUInt =  withDict $ isoFieldElemUInt @n @c
+
+lengthOfByteStringFun :: forall c. (Sym c) => Fun '[BTByteString] BTInteger c
+lengthOfByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength' @c $
+  FLam (\(VarByteString l _) -> fromConstant (Symbolic.just @c $ div (from (from l :: UInt IntLength' Auto c)) (fromConstant (8 :: Natural))) :: (Fun '[] BTInteger c))
+
+indexByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTInteger] BTInteger c
+indexByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength' @c $
+  withGetRegisterSize @IntLength' @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) IntLength' Auto) @OrdWord $
+    FLam (\(VarByteString l b) ->
+      FLam (\i@(Int t) -> let fr = bool (error "index is not in interval") (from t :: FieldElement c) (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
+                              fe8 = fromConstant (8::Natural) :: FieldElement c
+                              newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - fe8)
+                          in fromConstant (Symbolic.just @c (Int . from $ truncate @_ @IntLength' newB) ) :: (Fun '[] BTInteger c)))
+
+
+equalsByteStringFun :: forall c. (Sym c) => Fun '[BTByteString, BTByteString] BTBool c
+equalsByteStringFun =  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w) :: (Fun '[] BTBool c)))
+
+lessThanByteStringFun :: forall c. (Sym c) => Fun '[BTByteString, BTByteString] BTBool c
+lessThanByteStringFun =  withNumberOfRegisters @BSLength @Auto @(BaseField c) $
+  withGetRegisterSize @BSLength @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) BSLength Auto) @OrdWord $
+    FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.< from (bsBuffer w)) :: (Fun '[] BTBool c)))
+
+lessThanEqualsByteStringFun :: forall c. (Sym c) => Fun '[BTByteString, BTByteString] BTBool c
+lessThanEqualsByteStringFun =  withNumberOfRegisters @BSLength @Auto @(BaseField c) $
+  withGetRegisterSize @BSLength @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) BSLength Auto) @OrdWord $
+    FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w)) :: (Fun '[] BTBool c)))

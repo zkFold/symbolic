@@ -15,6 +15,7 @@ module ZkFold.Symbolic.Data.VarByteString
     , shiftL
     , shiftR
     , wipeUnassigned
+    , dropZeros
     ) where
 
 import           Control.DeepSeq                   (NFData)
@@ -44,7 +45,7 @@ import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, 
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), isSet, orRight)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), isSet, orRight, dropN, truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
@@ -53,6 +54,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, newAssigned)
+import ZkFold.Symbolic.Data.Ord ((<))
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -361,3 +363,9 @@ shiftWordsR (Words regs) p2
             s <- newAssigned $ \p ->  p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
             pure (s : acc, l)
 
+dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
+dropZeros VarByteString{..} = bool bsNLessLen bsNMoreLen (bsLength < feN)
+    where
+        feN = fromConstant (value @n)
+        bsNMoreLen = VarByteString bsLength (dropN bsBuffer)
+        bsNLessLen = VarByteString feN (truncate bsBuffer)

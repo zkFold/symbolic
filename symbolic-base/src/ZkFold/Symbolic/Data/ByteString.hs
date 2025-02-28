@@ -20,6 +20,7 @@ module ZkFold.Symbolic.Data.ByteString
     , toWords
     , concat
     , truncate
+    , dropN
     , append
     , emptyByteString
     , toBsBits
@@ -31,7 +32,7 @@ import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                         as B
 import qualified Data.ByteString                   as Bytes
-import           Data.Constraint.Nat               (Max)
+import           Data.Constraint.Nat               (Max, plusMinusInverse3)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
@@ -65,11 +66,14 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
-
+import qualified Data.Vector as Vec
+import Data.Constraint (withDict)
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
+    deriving (Generic)
+newtype BString (context :: (Type -> Type) -> Type) = BString (context Vec.Vector)
     deriving (Generic)
 
 deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
@@ -247,6 +251,12 @@ truncate :: forall m n c. (
   ) => ByteString m c -> ByteString n c
 truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
+dropN :: forall n m c.
+    ( Symbolic c
+    , KnownNat (m-n)
+    , n <= m
+    ) => ByteString m c -> ByteString n c
+dropN (ByteString bits) = withDict (plusMinusInverse3 @n @m) $ ByteString $ hmap (V.drop @(m-n)) bits
 
 append
     :: forall m n c
@@ -394,3 +404,4 @@ hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteStri
 hexToByteString str = case readHex str of
     [(n, "")] -> Just (fromConstant @Natural n)
     _         -> Nothing
+
