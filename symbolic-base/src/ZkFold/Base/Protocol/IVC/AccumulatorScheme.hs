@@ -25,6 +25,7 @@ import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, oracle)
 import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate, PredicateFunctionAssumptions)
+import           ZkFold.Prelude                             (length)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k a i c = AccumulatorScheme
@@ -32,6 +33,11 @@ data AccumulatorScheme d k a i c = AccumulatorScheme
     prover   :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
             => Accumulator k i c f                          -- accumulator
             -> NARKInstanceProof k i c f                    -- instance-proof pair (pi, π)
+            -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
+
+  , prover'  :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+            => Accumulator k i c f                          -- accumulator 1
+            -> Accumulator k i c f                          -- accumulator 2
             -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
   , verifier :: forall f .
@@ -42,6 +48,17 @@ data AccumulatorScheme d k a i c = AccumulatorScheme
             => i f                                          -- Public input
             -> Vector k (c f)                               -- NARK proof π.x
             -> AccumulatorInstance k i c f                  -- accumulator instance acc.x
+            -> Vector (d-1) (c f)                           -- accumulation proof E_j
+            -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
+
+  --
+  , verifier' :: forall f .
+            ( Field f
+            , AdditiveMonoid (c f)
+            , Scale f (c f)
+            )
+            => AccumulatorInstance k i c f                  -- accumulator instance acc1.x
+            -> AccumulatorInstance k i c f                  -- accumulator instance acc2.x
             -> Vector (d-1) (c f)                           -- accumulation proof E_j
             -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
 
@@ -140,6 +157,49 @@ accumulatorScheme phi =
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
 
+      prover' :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+        => Accumulator k i c f
+        -> Accumulator k i c f
+        -> (Accumulator k i c f, Vector (d-1) (c f))
+      prover' acc1 acc2 =
+        let
+            polyMu :: PU.PolyVec f (d+1)
+            polyMu = PU.polyVecLinear (acc2^.x^.mu) (acc1^.x^.mu)
+
+            polyPi :: i (PU.PolyVec f (d+1))
+            polyPi = mzipWithRep PU.polyVecLinear (fmap (* (acc2^.x^.mu)) (acc2^.x^.pi)) (acc1^.x^.pi)
+
+            polyW :: Vector k [PU.PolyVec f (d+1)]
+            polyW = zipWith (zipWith PU.polyVecLinear) (fmap (fmap (* (acc2^.x^.mu))) (acc2^.w)) (acc1^.w)
+
+            polyR :: Vector (k-1) (PU.PolyVec f (d+1))
+            polyR = zipWith PU.polyVecLinear (fmap (* (acc2^.x^.mu)) (acc2^.x^.r)) (acc1^.x^.r)
+
+            e_uni :: [Vector (d+1) f]
+            e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
+
+            e_all :: Vector (d+1) [f]
+            e_all = tabulate (\i -> fmap (`index` i) e_uni)
+
+            e_j :: Vector (d-1) [f]
+            e_j = withDict (plusMinusInverse1 @1 @d) $ tail $ init e_all
+
+            pf :: Vector (d-1) (c f)
+            pf = hcommit <$> e_j
+
+            alpha :: f
+            alpha = oracle @algo (acc1^.x, acc2^.x, pf)
+
+            mu'   = alpha * (acc2^.x^.mu) + acc1^.x^.mu
+            pi''  = mzipWithRep (+) (fmap (* alpha) (acc2^.x^.pi)) (acc1^.x^.pi)
+            ri''  = scale alpha (acc2^.x^.r)  + acc1^.x^.r
+            ci''  = scale alpha (acc2^.x^.c) + acc1^.x^.c
+            m_i'' = zipWith (+) (scale alpha (acc2^.w)) (acc1^.w)
+
+            eCapital' = acc1^.x^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf) + scale ((acc2^.x^.mu * alpha)^(length pf + 1)) (acc2^.x^.e)
+        in
+            (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
+
       verifier :: forall f .
         ( Field f
         , Scale f (c f)
@@ -171,6 +231,29 @@ accumulatorScheme phi =
 
             -- Fig 4, step 5
             e' = acc^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf)
+        in
+            AccumulatorInstance { _pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu' }
+      
+      verifier' :: forall f .
+            ( Field f
+            , AdditiveMonoid (c f)
+            , Scale f (c f)
+            )
+            => AccumulatorInstance k i c f
+            -> AccumulatorInstance k i c f
+            -> Vector (d-1) (c f)
+            -> AccumulatorInstance k i c f
+      verifier' acc1 acc2 pf =
+        let
+            alpha :: f
+            alpha = oracle @algo (acc1, acc2, pf)
+
+            mu'  = alpha * (acc2^.mu) + acc1^.mu
+            pi'' = mzipWithRep (+) (fmap (* alpha) (acc2^.pi)) (acc1^.pi)
+            ri'' = zipWith (+) (scale alpha (acc2^.r)) (acc1^.r)
+            ci'' = zipWith (+) (scale alpha (acc2^.c)) (acc1^.c)
+
+            e' = acc1^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf) + scale ((acc2^.mu * alpha)^(length pf + 1)) (acc2^.e)
         in
             AccumulatorInstance { _pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu' }
 
@@ -208,4 +291,4 @@ accumulatorScheme phi =
             eDiff
 
   in
-      AccumulatorScheme prover verifier decider decider'
+      AccumulatorScheme prover prover' verifier verifier' decider decider'
