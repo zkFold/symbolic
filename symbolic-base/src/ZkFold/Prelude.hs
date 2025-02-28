@@ -78,5 +78,6 @@ assert statement obj x = if statement then x else error $ show obj
 chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
 
-genSubset :: Natural -> [a] -> Gen [a]
-genSubset l as = take l <$> shuffle as
+-- | Choose a list of length `l` from a list allowing repetitions.
+chooseFromList :: Natural -> [a] -> Gen [a]
+chooseFromList l as = take l <$> shuffle (concatMap (replicate l) as)
