@@ -45,7 +45,7 @@ import           Control.Monad.State                                          (S
 import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
 import           Data.ByteString                                              (ByteString)
-import           Data.Foldable                                                (fold, toList)
+import           Data.Foldable                                                (fold, foldl', toList)
 import           Data.Functor.Rep
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I

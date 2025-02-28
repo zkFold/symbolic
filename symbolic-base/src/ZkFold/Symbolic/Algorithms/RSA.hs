@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
+import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, HasRegisterSize, Iso (..), KnownRegisters,
                                                        NumberOfRegisters, RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
@@ -104,6 +104,7 @@ type RSA keyLen msgLen ctx =
    , NFData (ctx (Vector keyLen))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
+   , HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
    )
 
 sign
