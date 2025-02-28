@@ -25,6 +25,7 @@ import           Tests.Symbolic.Compiler            (specCompiler)
 import           Tests.Symbolic.Data.ByteString     (specByteString)
 import           Tests.Symbolic.Data.FFA            (specFFA)
 import           Tests.Symbolic.Data.Hash           (specHash)
+import           Tests.Symbolic.Data.Int            (specInt)
 import           Tests.Symbolic.Data.List           (specList)
 import           Tests.Symbolic.Data.UInt           (specUInt)
 

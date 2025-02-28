@@ -44,11 +44,11 @@ import qualified ZkFold.Symbolic.Data.Ord         as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq          as Symbolic
 import           ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Data.ByteString (dropN, ByteString, truncate)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import Data.Constraint
 import Data.Constraint.Unsafe (unsafeAxiom)
 import ZkFold.Base.Algebra.Basic.Number (value, Natural)
 import ZkFold.Symbolic.Data.UInt (UInt, OrdWord)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
