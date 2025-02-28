@@ -104,12 +104,12 @@ type RSA keyLen msgLen ctx =
    , NFData (ctx (Vector keyLen))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
+   , HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
    )
 
 sign
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
-    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => ByteString msgLen ctx
     -> PrivateKey keyLen ctx
     -> Signature keyLen ctx
@@ -124,7 +124,6 @@ sign msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
 verify
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
-    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => ByteString msgLen ctx
     -> Signature keyLen ctx
     -> PublicKey keyLen ctx
@@ -143,7 +142,6 @@ verify msg sig PublicKey{..} = target == input
 signVar
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
-    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => VarByteString msgLen ctx
     -> PrivateKey keyLen ctx
     -> Signature keyLen ctx
@@ -158,7 +156,6 @@ signVar msg PrivateKey{..} = force $ from $ expMod msgI prvD prvN
 verifyVar
     :: forall keyLen msgLen ctx
     .  RSA keyLen msgLen ctx
-    => HasRegisterSize (BaseField ctx) (2 * keyLen) Auto
     => VarByteString msgLen ctx
     -> Signature keyLen ctx
     -> PublicKey keyLen ctx

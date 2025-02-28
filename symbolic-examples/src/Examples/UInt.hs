@@ -18,7 +18,7 @@ import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (*))
 import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
-                                                   NumberOfRegisters, resize)
+                                                   NumberOfRegisters, resize, HasRegisterSize)
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt, expMod, productMod)
 
 
@@ -31,6 +31,7 @@ exampleUIntProductMod
     :: KnownNat n
     => KnownRegisterSize r
     => KnownNat (NumberOfRegisters (BaseField c) n r)
+    => HasRegisterSize (BaseField c) n r
     => Symbolic c
     => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntProductMod = productMod
@@ -38,7 +39,8 @@ exampleUIntProductMod = productMod
 exampleUIntDivMod ::
   (KnownNat n, KnownRegisterSize r, Symbolic c,
    NumberOfRegisters (BaseField c) n r ~ k, KnownNat k,
-   KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)) =>
+   KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord),
+   HasRegisterSize (BaseField c) n r) =>
   UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod
 
@@ -53,6 +55,7 @@ exampleUIntExpMod
   => KnownRegisters c (2 * m) r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
   => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
+  => HasRegisterSize (BaseField c) (2*m) r
   => UInt n r c
   -> UInt p r c
   -> UInt m r c
