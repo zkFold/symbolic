@@ -223,7 +223,9 @@ instance (Sym c, KnownRegisters c IntLength' Auto) => IsData BTInteger (Int IntL
 
 type BSLength = 4000
 instance Sym c => IsData BTByteString (VarByteString BSLength c) c where asPair _ = Nothing
--- instance Sym c => IsData BTString ??? c where asPair _ = Nothing
+
+type StrLength = 40000
+instance Sym c => IsData BTString (VarByteString StrLength c) c where asPair _ = Nothing
 instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
 instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
 instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
@@ -362,12 +364,11 @@ evalMono (BMFByteString EqualsByteString)         = equalsByteStringFun @c
 evalMono (BMFByteString LessThanByteString)       = lessThanByteStringFun @c
 evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun @c
 
--- evalMono (BMFString AppendString) =
--- evalMono (BMFString EqualsString) =
--- evalMono (BMFString EncodeUtf8)   =
--- evalMono (BMFString DecodeUtf8)   =
+evalMono (BMFString AppendString) = appendStringFun
+evalMono (BMFString EqualsString) = equalsStringFun
+evalMono (BMFString EncodeUtf8)   = encodeUtf8Fun
+evalMono (BMFString DecodeUtf8)   = decodeUtf8Fun
 
-evalMono (BMFString _)     = error "FIXME: UPLC String support"
 evalMono (BMFAlgorithm _)  = error "FIXME: UPLC Algorithms support"
 evalMono (BMFData _)       = error "FIXME: UPLC Data support"
 evalMono (BMFCurve _)      = error "FIXME: UPLC Curve support"
@@ -420,7 +421,8 @@ lessThanEqualsIntegerFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c
 --------------------------------------------------------------------------------
 
 appendByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTByteString] BTByteString c
-appendByteStringFun = FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength (append v w)) :: (Fun '[] BTByteString c)))
+appendByteStringFun = FLam (\v ->
+                        FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength (append v w)) :: (Fun '[] BTByteString c)))
 
 consByteStringFun :: forall c .(Sym c) => Fun [BTInteger, BTByteString] BTByteString c
 consByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $
@@ -446,13 +448,14 @@ withIsoFieldElemUInt =  withDict $ isoFieldElemUInt @n @c
 
 lengthOfByteStringFun :: forall c. (Sym c) => Fun '[BTByteString] BTInteger c
 lengthOfByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength' @c $
-  FLam (\(VarByteString l _) -> fromConstant (Symbolic.just @c $ div (from (from l :: UInt IntLength' Auto c)) (fromConstant (8 :: Natural))) :: (Fun '[] BTInteger c))
+  FLam (\(VarByteString l _) ->
+    fromConstant (Symbolic.just @c $ div (from (from l :: UInt IntLength' Auto c)) (fromConstant (8 :: Natural))) :: (Fun '[] BTInteger c))
 
 indexByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTInteger] BTInteger c
 indexByteStringFun = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength' @c $
   withGetRegisterSize @IntLength' @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) IntLength' Auto) @OrdWord $
     FLam (\(VarByteString l b) ->
-      FLam (\i@(Int t) -> let fr = bool (error "index is not in interval") (from t :: FieldElement c) (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
+      FLam (\i@(Int t) -> let fr = bool (error "index is not in interval") (from t) (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
                               fe8 = fromConstant (8::Natural) :: FieldElement c
                               newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - fe8)
                           in fromConstant (Symbolic.just @c (Int . from $ truncate @_ @IntLength' newB) ) :: (Fun '[] BTInteger c)))
@@ -470,3 +473,18 @@ lessThanEqualsByteStringFun :: forall c. (Sym c) => Fun '[BTByteString, BTByteSt
 lessThanEqualsByteStringFun =  withNumberOfRegisters @BSLength @Auto @(BaseField c) $
   withGetRegisterSize @BSLength @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) BSLength Auto) @OrdWord $
     FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w)) :: (Fun '[] BTBool c)))
+
+--------------------------------------------------------------------------------
+
+appendStringFun :: forall c .(Sym c) => Fun [BTString, BTString] BTString c
+appendStringFun = FLam (\v ->
+                        FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @StrLength (append v w)) :: (Fun '[] BTString c)))
+
+equalsStringFun :: forall c. (Sym c) => Fun '[BTString, BTString] BTBool c
+equalsStringFun =  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w) :: (Fun '[] BTBool c)))
+
+encodeUtf8Fun :: forall c. (Sym c) => Fun '[BTString] BTByteString c
+encodeUtf8Fun =  FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength w) :: (Fun '[] BTByteString c))
+
+decodeUtf8Fun :: forall c. (Sym c) => Fun '[BTByteString] BTString c
+decodeUtf8Fun =  FLam (\(VarByteString l b) -> fromConstant (Symbolic.just @c $ VarByteString l (resize b)) :: (Fun '[] BTString c))
