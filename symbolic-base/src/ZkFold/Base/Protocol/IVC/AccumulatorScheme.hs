@@ -51,7 +51,6 @@ data AccumulatorScheme d k a i c = AccumulatorScheme
             -> Vector (d-1) (c f)                           -- accumulation proof E_j
             -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
 
-  --
   , verifier' :: forall f .
             ( Field f
             , AdditiveMonoid (c f)
