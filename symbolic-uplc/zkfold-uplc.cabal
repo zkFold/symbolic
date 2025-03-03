@@ -47,7 +47,8 @@ library
       base         ,
       bytestring   ,
       symbolic-base,
-      text
+      text         ,
+      constraints
     hs-source-dirs:     src
 
 test-suite symbolic-uplc-test
