@@ -3,7 +3,7 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     ( PublicInput
-    , ZkLoginInput
+    , ZkLoginInput (..)
     , zkLogin
     , zkLoginNoSig
     , zkLoginMock
