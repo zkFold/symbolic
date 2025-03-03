@@ -32,6 +32,7 @@ import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                         as B
 import qualified Data.ByteString                   as Bytes
+import           Data.Constraint                   (withDict)
 import           Data.Constraint.Nat               (Max, plusMinusInverse3)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
@@ -40,6 +41,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
+import qualified Data.Vector                       as Vec
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
@@ -66,8 +68,6 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
-import qualified Data.Vector as Vec
-import Data.Constraint (withDict)
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --

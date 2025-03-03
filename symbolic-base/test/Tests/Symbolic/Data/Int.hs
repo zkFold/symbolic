@@ -13,10 +13,11 @@ import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
-import           Prelude                                     (show, type (~), Integer)
+import           Prelude                                     (Integer, show, type (~))
 import qualified Prelude                                     as P
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, Property, (.&.), (===), chooseInteger, elements, (.||.))
+import           Test.QuickCheck                             (Gen, Property, chooseInteger, elements, (.&.), (.||.),
+                                                              (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 
 import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
@@ -27,13 +28,13 @@ import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, NumberOfRegisters,
+                                                              RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Int
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import ZkFold.Symbolic.Data.Int
-import ZkFold.Symbolic.Data.UInt (UInt(..))
 
 toss :: Natural -> Gen Integer
 toss (P.fromIntegral -> x) = chooseInteger (-x, x)

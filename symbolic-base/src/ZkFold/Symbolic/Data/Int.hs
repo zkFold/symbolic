@@ -1,32 +1,32 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 
 module ZkFold.Symbolic.Data.Int where
 
 import           Control.DeepSeq
-import qualified Data.Bool                         as Haskell
-import           Data.Kind                         (Type)
-import           GHC.Generics                      (Generic)
-import           Prelude                           (Integer, type (~), ($), (.))
-import qualified Prelude                           as Haskell hiding ((-))
-import           Test.QuickCheck                   (Arbitrary (..))
+import qualified Data.Bool                        as Haskell
+import           Data.Constraint                  (withDict)
+import           Data.Constraint.Nat
+import           Data.Kind                        (Type)
+import           GHC.Generics                     (Generic)
+import           Prelude                          (Integer, type (~), ($), (.))
+import qualified Prelude                          as Haskell hiding ((-))
+import           Test.QuickCheck                  (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class   hiding (Euclidean (..))
+import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector           (Vector (..))
+import           ZkFold.Base.Data.Vector          (Vector (..))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import Data.Constraint.Nat
-import Data.Constraint (withDict)
-import ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt (n+1) r c}

@@ -12,6 +12,7 @@
 {-# LANGUAGE UndecidableInstances   #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
+
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
 import           Control.Monad                    (return)
@@ -25,7 +26,7 @@ import           Data.Ord                         ((<))
 import           Data.Proxy                       (Proxy (..))
 import           Data.Traversable                 (Traversable, traverse)
 import           Data.Typeable                    (Typeable, cast)
-import           Prelude                          (error, fromIntegral, type (~))
+import           Prelude                          (error, fromIntegral, type (~), foldr, head)
 
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+), (-), (*), AdditiveMonoid (zero), MultiplicativeMonoid (..), NumberOfBits)
 import           ZkFold.Prelude                   ((!!))
@@ -40,6 +41,8 @@ import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Int
+
+import qualified ZkFold.Symbolic.Data.List as L
 import qualified ZkFold.Symbolic.Data.Ord         as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq          as Symbolic
 import           ZkFold.Symbolic.Data.VarByteString
@@ -49,6 +52,7 @@ import Data.Constraint.Unsafe (unsafeAxiom)
 import ZkFold.Base.Algebra.Basic.Number (value, Natural)
 import ZkFold.Symbolic.Data.UInt (UInt, OrdWord)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Class (SymbolicOutput)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
@@ -60,7 +64,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
-    ( Typeable v, SymbolicData v
+    ( Typeable v, SymbolicData v, SymbolicOutput v
     , Context v ~ c, Support v ~ Proxy c
     -- TODO: Remove after Conditional becomes part of SymbolicData
     , Conditional (Bool c) v
@@ -230,7 +234,7 @@ instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
 instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
 instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
 -- Uncomment this line as List becomes available in Converter:
--- instance (Sym c, IsData t v c) => IsData (BTList t) ??? c where asPair _ = Nothing
+instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where asPair _ = Nothing
 instance
   (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
@@ -272,6 +276,7 @@ applyPoly ctx SndPair [arg] = do
   MaybeValue p <- evalArg ctx arg []
   (_, ExValue v) <- asPair (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p v)
+applyPoly _ (BPFList ChooseList) _ = error "FIXME: UPLC List support"
 applyPoly _ (BPFList _) _ = error "FIXME: UPLC List support"
 applyPoly _ ChooseData _ = error "FIXME: UPLC Data support"
 applyPoly _ _ _ = Nothing
@@ -303,7 +308,7 @@ evalConstant (CByteString b) = SymValue (fromConstant b)
 evalConstant (CString _)     = error "FIXME: UPLC String support"
 evalConstant (CUnit ())      = SymValue Proxy
 evalConstant (CData _)       = error "FIXME: UPLC Data support"
-evalConstant (CList _)       = error "FIXME: UPLC List support"
+evalConstant (CList lst)     = SymValue $ makeList ([evalConstant $ head lst])
 evalConstant (CPair p q)     = pair (evalConstant p) (evalConstant q)
 evalConstant (CG1 _)         = error "FIXME: UPLC BLS support"
 evalConstant (CG2 _)         = error "FIXME: UPLC BLS support"
@@ -311,6 +316,13 @@ evalConstant (CG2 _)         = error "FIXME: UPLC BLS support"
 -- | Useful helper function.
 pair :: Sym c => SymValue t c -> SymValue u c -> SymValue (BTPair t u) c
 pair (SymValue p) (SymValue q) = SymValue (p, q)
+
+makeList :: forall c t v. (Sym c, IsData t v c) => [SymValue t c] -> L.List c v
+makeList ((SymValue x):xs) = L.emptyList @c -- x L..: (makeList xs)
+makeList _ = error "FIXME: UPLC BLS support"
+
+-- concList :: forall c t v. (Sym c, IsData t v c) => SymValue t c -> L.List c v -> L.List c v
+-- concList (SymValue v) l = v L..: l
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c
@@ -352,8 +364,6 @@ evalMono (BMFInteger EqualsInteger)         = equalsIntegerFun @c
 evalMono (BMFInteger LessThanInteger)       = lessThanIntegerFun @c
 evalMono (BMFInteger LessThanEqualsInteger) = lessThanEqualsIntegerFun @c
 evalMono (BMFInteger _)                     = error "FIXME: UPLC Integer support"
-
-
 
 evalMono (BMFByteString AppendByteString)         = appendByteStringFun @c
 evalMono (BMFByteString ConsByteString)           = consByteStringFun @c
@@ -481,10 +491,12 @@ appendStringFun = FLam (\v ->
                         FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @StrLength (append v w)) :: (Fun '[] BTString c)))
 
 equalsStringFun :: forall c. (Sym c) => Fun '[BTString, BTString] BTBool c
-equalsStringFun =  FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w) :: (Fun '[] BTBool c)))
+equalsStringFun = FLam (\v -> FLam (\w -> fromConstant (Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w) :: (Fun '[] BTBool c)))
 
 encodeUtf8Fun :: forall c. (Sym c) => Fun '[BTString] BTByteString c
-encodeUtf8Fun =  FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength w) :: (Fun '[] BTByteString c))
+encodeUtf8Fun = FLam (\w -> fromConstant (Symbolic.just @c $ dropZeros @BSLength w) :: (Fun '[] BTByteString c))
 
 decodeUtf8Fun :: forall c. (Sym c) => Fun '[BTByteString] BTString c
-decodeUtf8Fun =  FLam (\(VarByteString l b) -> fromConstant (Symbolic.just @c $ VarByteString l (resize b)) :: (Fun '[] BTString c))
+decodeUtf8Fun = FLam (\(VarByteString l b) -> fromConstant (Symbolic.just @c $ VarByteString l (resize b)) :: (Fun '[] BTString c))
+
+--------------------------------------------------------------------------------
