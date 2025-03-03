@@ -65,8 +65,8 @@ data ZkLoginInput ctx =
         { zkSecret      :: ClientSecret ctx
         , zkAmount      :: ByteString 64 ctx
         , zkRecipient   :: ByteString 256 ctx
-        , zkCertificate :: Certificate ctx
-        , zkPI          :: PublicInput ctx
+--        , zkCertificate :: Certificate ctx
+--        , zkPI          :: PublicInput ctx
         }
         deriving Generic
 
@@ -75,6 +75,7 @@ deriving instance
     , KnownRegisters ctx PubExponentSize 'Auto
     , KnownRegisters ctx 2048 'Auto
     ) => SymbolicData (ZkLoginInput ctx)
+
 instance
     ( Symbolic ctx
     , KnownRegisters ctx PubExponentSize 'Auto
