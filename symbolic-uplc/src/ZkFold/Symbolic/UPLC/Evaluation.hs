@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE FlexibleContexts       #-}
@@ -10,45 +11,45 @@
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
-import           Control.Monad                    (return)
-import           Data.Either                      (Either (..))
-import           Data.Function                    (($), (.))
-import           Data.Functor                     ((<$>))
-import           Data.Functor.Rep                 (Representable)
-import           Data.List                        (map, null, (++))
-import           Data.Maybe                       (Maybe (..))
-import           Data.Ord                         ((<))
-import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (Traversable, traverse)
-import           Data.Typeable                    (Typeable, cast)
-import           Prelude                          (error, fromIntegral, type (~))
+import           Control.Monad                      (return)
+import           Data.Constraint
+import           Data.Constraint.Unsafe             (unsafeAxiom)
+import           Data.Either                        (Either (..))
+import           Data.Function                      (($), (.))
+import           Data.Functor                       ((<$>))
+import           Data.Functor.Rep                   (Representable)
+import           Data.List                          (map, null, (++))
+import           Data.Maybe                         (Maybe (..))
+import           Data.Ord                           ((<))
+import           Data.Proxy                         (Proxy (..))
+import           Data.Traversable                   (Traversable, traverse)
+import           Data.Typeable                      (Typeable, cast)
+import           Prelude                            (error, fromIntegral, type (~))
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), (+), (-), (*), AdditiveMonoid (zero), MultiplicativeMonoid (..), NumberOfBits)
-import           ZkFold.Prelude                   ((!!))
-import           ZkFold.Symbolic.Class            (Symbolic, BaseField)
-import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional (Conditional, bool)
-import qualified ZkFold.Symbolic.Data.Maybe       as Symbolic
-import qualified ZkFold.Symbolic.UPLC.Data        as Symbolic
+import           ZkFold.Base.Algebra.Basic.Class    (AdditiveMonoid (zero), FromConstant (..),
+                                                     MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
+import           ZkFold.Base.Algebra.Basic.Number   (Natural, value)
+import           ZkFold.Prelude                     ((!!))
+import           ZkFold.Symbolic.Class              (BaseField, Symbolic)
+import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
+import           ZkFold.Symbolic.Data.Class         (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Combinators
+import           ZkFold.Symbolic.Data.Conditional   (Conditional, bool)
+import qualified ZkFold.Symbolic.Data.Eq            as Symbolic
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Int
+import qualified ZkFold.Symbolic.Data.Maybe         as Symbolic
+import qualified ZkFold.Symbolic.Data.Ord           as Symbolic
+import           ZkFold.Symbolic.Data.UInt          (OrdWord, UInt)
+import           ZkFold.Symbolic.Data.VarByteString
+import qualified ZkFold.Symbolic.UPLC.Data          as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
-import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Int
-import qualified ZkFold.Symbolic.Data.Ord         as Symbolic
-import qualified ZkFold.Symbolic.Data.Eq          as Symbolic
-import           ZkFold.Symbolic.Data.VarByteString
-import ZkFold.Symbolic.Data.ByteString (dropN, ByteString, truncate)
-import Data.Constraint
-import Data.Constraint.Unsafe (unsafeAxiom)
-import ZkFold.Base.Algebra.Basic.Number (value, Natural)
-import ZkFold.Symbolic.Data.UInt (UInt, OrdWord)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
@@ -161,8 +162,8 @@ beta e env t args = impl (e : map shiftT env) t (map shiftA args)
   where
     shiftA (ACase ts)     = ACase (map (`shift` 0) ts)
     shiftA (AThunk thunk) = AThunk (shiftT thunk)
-    shiftT (Left term)   = Left (shift term 0)
-    shiftT (Right val)   = Right val
+    shiftT (Left term) = Left (shift term 0)
+    shiftT (Right val) = Right val
     shift (TVariable i) b        = TVariable (i + if i < b then 0 else 1)
     shift (TConstant c) _        = TConstant c
     shift (TBuiltin f) _         = TBuiltin f
@@ -339,17 +340,17 @@ instance
 evalMono :: forall c s t.
   ( Sym c
   ) => BuiltinMonoFunction s t -> Fun s t c
-evalMono (BMFInteger AddInteger)            = addIntegerFun @c
-evalMono (BMFInteger SubtractInteger)       = subtractIntegerFun @c
-evalMono (BMFInteger MultiplyInteger)       = multiplyIntegerFun @c
-evalMono (BMFInteger DivideInteger)         = divideIntegerFun @c
-evalMono (BMFInteger ModInteger)            = modIntegerFun @c
-evalMono (BMFInteger QuotientInteger)       = quotientIntegerFun @c
-evalMono (BMFInteger RemainderInteger)      = remainderIntegerFun @c
-evalMono (BMFInteger EqualsInteger)         = equalsIntegerFun @c
-evalMono (BMFInteger LessThanInteger)       = lessThanIntegerFun @c
-evalMono (BMFInteger LessThanEqualsInteger) = lessThanEqualsIntegerFun @c
-evalMono (BMFInteger _)                     = error "FIXME: UPLC Integer support"
+evalMono (BMFInteger AddInteger)                  = addIntegerFun @c
+evalMono (BMFInteger SubtractInteger)             = subtractIntegerFun @c
+evalMono (BMFInteger MultiplyInteger)             = multiplyIntegerFun @c
+evalMono (BMFInteger DivideInteger)               = divideIntegerFun @c
+evalMono (BMFInteger ModInteger)                  = modIntegerFun @c
+evalMono (BMFInteger QuotientInteger)             = quotientIntegerFun @c
+evalMono (BMFInteger RemainderInteger)            = remainderIntegerFun @c
+evalMono (BMFInteger EqualsInteger)               = equalsIntegerFun @c
+evalMono (BMFInteger LessThanInteger)             = lessThanIntegerFun @c
+evalMono (BMFInteger LessThanEqualsInteger)       = lessThanEqualsIntegerFun @c
+evalMono (BMFInteger _)                           = error "FIXME: UPLC Integer support"
 
 
 
@@ -367,11 +368,11 @@ evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun 
 -- evalMono (BMFString EncodeUtf8)   =
 -- evalMono (BMFString DecodeUtf8)   =
 
-evalMono (BMFString _)     = error "FIXME: UPLC String support"
-evalMono (BMFAlgorithm _)  = error "FIXME: UPLC Algorithms support"
-evalMono (BMFData _)       = error "FIXME: UPLC Data support"
-evalMono (BMFCurve _)      = error "FIXME: UPLC Curve support"
-evalMono (BMFBitwise _)    = error "FIXME: UPLC ByteString support"
+evalMono (BMFString _)                            = error "FIXME: UPLC String support"
+evalMono (BMFAlgorithm _)                         = error "FIXME: UPLC Algorithms support"
+evalMono (BMFData _)                              = error "FIXME: UPLC Data support"
+evalMono (BMFCurve _)                             = error "FIXME: UPLC Curve support"
+evalMono (BMFBitwise _)                           = error "FIXME: UPLC ByteString support"
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

@@ -45,16 +45,16 @@ import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, 
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), isSet, orRight, dropN, truncate)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
+import           ZkFold.Symbolic.Data.Ord          ((<))
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, newAssigned)
-import ZkFold.Symbolic.Data.Ord ((<))
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
