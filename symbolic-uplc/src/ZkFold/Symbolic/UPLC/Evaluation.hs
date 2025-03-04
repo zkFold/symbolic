@@ -22,13 +22,14 @@ import           Data.Either                        (Either (..))
 import           Data.Function                      (($), (.))
 import           Data.Functor                       ((<$>))
 import           Data.Functor.Rep                   (Representable)
-import           Data.List                          (map, null, (++))
-import           Data.Maybe                         (Maybe (..))
+import           Data.List                          (map, null, (++), unsnoc)
+import           Data.Maybe                         (Maybe (..), fromJust)
 import           Data.Ord                           ((<))
+import           Data.Text                          (unpack)
 import           Data.Proxy                         (Proxy (..))
 import           Data.Traversable                   (Traversable, traverse)
 import           Data.Typeable                      (Typeable, cast)
-import           Prelude                            (error, foldr, fromIntegral, head, type (~))
+import           Prelude                            (error, fromIntegral, type (~), foldr)
 
 import           ZkFold.Base.Algebra.Basic.Class    (AdditiveMonoid (zero), FromConstant (..),
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
@@ -38,7 +39,6 @@ import           ZkFold.Symbolic.Class              (BaseField, Symbolic)
 import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
 import           ZkFold.Symbolic.Data.Class         (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional   (Conditional, bool)
 import qualified ZkFold.Symbolic.Data.Eq            as Symbolic
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
@@ -52,6 +52,8 @@ import qualified ZkFold.Symbolic.UPLC.Data          as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
+import           ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Fold (SymbolicFold)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
@@ -63,7 +65,8 @@ import           ZkFold.UPLC.Term
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
-    ( Typeable v, SymbolicData v, SymbolicOutput v
+    ( Typeable v, SymbolicData v
+    , SymbolicOutput v, SymbolicFold c
     , Context v ~ c, Support v ~ Proxy c
     -- TODO: Remove after Conditional becomes part of SymbolicData
     , Conditional (Bool c) v
@@ -72,13 +75,16 @@ class
     , Representable (Payload v)
     ) => IsData (t :: BuiltinType) v c | t c -> v, v -> t, v -> c where
   asPair :: v -> Maybe (ExValue c, ExValue c)
+  asList :: v -> Maybe (ExList c)
+
+data ExList c = forall t v. IsData t v c => ExList (L.List c v)
 
 -- | Existential wrapper around 'IsData' Symbolic types.
 data ExValue c = forall t v. IsData t v c => ExValue v
 
 -- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
 -- it is also 'Typeable'.
-type Sym c = (Symbolic c, Typeable c)
+type Sym c = (Symbolic c, Typeable c, SymbolicFold c)
 
 -- | According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf),
 -- evaluation of a UPLC term is a partial function.
@@ -222,21 +228,38 @@ applyMono b (FLam f) (v:args) = do
 -- Uncomment these lines as more types are available in Converter:
 type IntLength = 64
 type IntLength' = 65
-instance (Sym c, KnownRegisters c IntLength' Auto) => IsData BTInteger (Int IntLength Auto c) c where asPair _ = Nothing
+instance (Sym c, KnownRegisters c IntLength' Auto) => IsData BTInteger (Int IntLength Auto c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
 
 type BSLength = 4000
-instance Sym c => IsData BTByteString (VarByteString BSLength c) c where asPair _ = Nothing
+instance Sym c => IsData BTByteString (VarByteString BSLength c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
 
 type StrLength = 40000
-instance Sym c => IsData BTString (VarByteString StrLength c) c where asPair _ = Nothing
-instance Sym c => IsData BTBool (Bool c) c where asPair _ = Nothing
-instance Sym c => IsData BTUnit (Proxy c) c where asPair _ = Nothing
-instance Sym c => IsData BTData (Symbolic.Data c) c where asPair _ = Nothing
--- Uncomment this line as List becomes available in Converter:
-instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where asPair _ = Nothing
+instance Sym c => IsData BTString (VarByteString StrLength c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+instance Sym c => IsData BTBool (Bool c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+instance Sym c => IsData BTUnit (Proxy c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+instance Sym c => IsData BTData (Symbolic.Data c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
+  asPair _ = Nothing
+  asList l = Just (ExList l)
+
 instance
   (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
+  asList _ = Nothing
+
 -- Uncomment these lines as more types are available in Converter:
 -- instance Sym c => IsData BTBLSG1 ??? c where asPair _ = Nothing
 -- instance Sym c => IsData BTBLSG2 ??? c where asPair _ = Nothing
@@ -275,7 +298,28 @@ applyPoly ctx SndPair [arg] = do
   MaybeValue p <- evalArg ctx arg []
   (_, ExValue v) <- asPair (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p v)
-applyPoly _ (BPFList ChooseList) _ = error "FIXME: UPLC List support"
+applyPoly ctx (BPFList ChooseList) (ct:tt:et:args) = let
+    b0 = applyPoly ctx (BPFList NullList) [ct]
+    bt =   evalArg ctx (AThunk . Right $ b0) []
+  in applyPoly ctx IfThenElse ((AThunk . Right $ bt):tt:et:args)
+applyPoly ctx (BPFList MkCons) (x0:xs0:_) = do
+  MaybeValue x <- evalArg ctx x0 []
+  let l = Symbolic.fromJust x
+  MaybeValue xs <- evalArg ctx xs0 []
+  let ls = Symbolic.fromJust xs
+  return $ MaybeValue (Symbolic.just $ l L..: (fromJust $ cast ls))
+applyPoly ctx (BPFList HeadList) (xs0:_) = do
+  MaybeValue p <- evalArg ctx xs0 []
+  ExList v <- asList (Symbolic.fromJust p)
+  return $ MaybeValue (symMaybe p (L.head v))
+applyPoly ctx (BPFList TailList) (xs0:_) = do
+  MaybeValue p <- evalArg ctx xs0 []
+  ExList v <- asList (Symbolic.fromJust p)
+  return $ MaybeValue (symMaybe p (L.tail v))
+applyPoly ctx (BPFList NullList) (xs0:_) = do
+  MaybeValue p <- evalArg ctx xs0 []
+  ExList v <- asList (Symbolic.fromJust p)
+  return $ MaybeValue (symMaybe p (L.null v))
 applyPoly _ (BPFList _) _ = error "FIXME: UPLC List support"
 applyPoly _ ChooseData _ = error "FIXME: UPLC Data support"
 applyPoly _ _ _ = Nothing
@@ -300,14 +344,16 @@ data SymValue t c = forall v. IsData t v c => SymValue v
 
 -- | Given a UPLC constant, evaluate it as a corresponding Symbolic value.
 -- Types would not let you go (terribly) wrong!
-evalConstant :: forall c t. Sym c => Constant t -> SymValue t c
+evalConstant :: forall c t. (Sym c) => Constant t -> SymValue t c
 evalConstant (CBool b)       = SymValue (if b then true else false)
 evalConstant (CInteger i)    = withNumberOfRegisters @IntLength' @Auto @(BaseField c) $ SymValue (fromConstant i)
 evalConstant (CByteString b) = SymValue (fromConstant b)
-evalConstant (CString _)     = error "FIXME: UPLC String support"
+evalConstant (CString s)     = SymValue (fromString $ unpack s)
 evalConstant (CUnit ())      = SymValue Proxy
 evalConstant (CData _)       = error "FIXME: UPLC Data support"
-evalConstant (CList lst)     = SymValue $ makeList ([evalConstant $ head lst])
+evalConstant (CList [])      = error "FIXME: UPLC Data support"
+evalConstant (CList lst)     = let (xs, x) = fromJust (unsnoc lst)
+                                in foldr (\l r -> concatList l r) (makeSingleton (evalConstant x)) (map evalConstant xs)
 evalConstant (CPair p q)     = pair (evalConstant p) (evalConstant q)
 evalConstant (CG1 _)         = error "FIXME: UPLC BLS support"
 evalConstant (CG2 _)         = error "FIXME: UPLC BLS support"
@@ -316,12 +362,11 @@ evalConstant (CG2 _)         = error "FIXME: UPLC BLS support"
 pair :: Sym c => SymValue t c -> SymValue u c -> SymValue (BTPair t u) c
 pair (SymValue p) (SymValue q) = SymValue (p, q)
 
-makeList :: forall c t v. (Sym c, IsData t v c) => [SymValue t c] -> L.List c v
-makeList ((SymValue x):xs) = L.emptyList @c -- x L..: (makeList xs)
-makeList _                 = error "FIXME: UPLC BLS support"
+makeSingleton :: (Sym c) => SymValue u c -> SymValue (BTList u) c
+makeSingleton (SymValue xs) = SymValue $ L.singleton xs
 
--- concList :: forall c t v. (Sym c, IsData t v c) => SymValue t c -> L.List c v -> L.List c v
--- concList (SymValue v) l = v L..: l
+concatList :: (Sym c) => SymValue u c -> SymValue (BTList u) c -> SymValue (BTList u) c
+concatList (SymValue x) (SymValue xs) = SymValue (x L..: (fromJust $ cast xs))
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c

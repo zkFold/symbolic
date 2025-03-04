@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Data.VarByteString
     , shiftR
     , wipeUnassigned
     , dropZeros
+    , fromString
     ) where
 
 import           Control.DeepSeq                   (NFData)
