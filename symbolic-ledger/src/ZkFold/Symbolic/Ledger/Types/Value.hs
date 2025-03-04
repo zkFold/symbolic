@@ -2,7 +2,8 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (*), (+), (==), (&&))
+import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
+                                                        (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
@@ -10,7 +11,7 @@ import           ZkFold.Symbolic.Data.Bool             (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq               (Eq ((==), BooleanOf), SymbolicEq)
+import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
