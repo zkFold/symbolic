@@ -22,14 +22,14 @@ import           Data.Either                        (Either (..))
 import           Data.Function                      (($), (.))
 import           Data.Functor                       ((<$>))
 import           Data.Functor.Rep                   (Representable)
-import           Data.List                          (map, null, (++), unsnoc)
+import           Data.List                          (map, null, unsnoc, (++))
 import           Data.Maybe                         (Maybe (..), fromJust)
 import           Data.Ord                           ((<))
-import           Data.Text                          (unpack)
 import           Data.Proxy                         (Proxy (..))
+import           Data.Text                          (unpack)
 import           Data.Traversable                   (Traversable, traverse)
 import           Data.Typeable                      (Typeable, cast)
-import           Prelude                            (error, fromIntegral, type (~), foldr)
+import           Prelude                            (error, foldr, fromIntegral, type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class    (AdditiveMonoid (zero), FromConstant (..),
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
@@ -39,6 +39,7 @@ import           ZkFold.Symbolic.Class              (BaseField, Symbolic)
 import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
 import           ZkFold.Symbolic.Data.Class         (SymbolicData (..), SymbolicOutput)
+import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional   (Conditional, bool)
 import qualified ZkFold.Symbolic.Data.Eq            as Symbolic
 import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
@@ -48,12 +49,11 @@ import qualified ZkFold.Symbolic.Data.Maybe         as Symbolic
 import qualified ZkFold.Symbolic.Data.Ord           as Symbolic
 import           ZkFold.Symbolic.Data.UInt          (OrdWord, UInt)
 import           ZkFold.Symbolic.Data.VarByteString
+import           ZkFold.Symbolic.Fold               (SymbolicFold)
 import qualified ZkFold.Symbolic.UPLC.Data          as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
-import           ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Fold (SymbolicFold)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
