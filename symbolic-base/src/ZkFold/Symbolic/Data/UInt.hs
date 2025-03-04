@@ -36,8 +36,9 @@ import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
-import           Data.List                         (unfoldr, zip)
+import           Data.List                         (unfoldr, zip, unsnoc)
 import           Data.Map                          (fromList, (!))
+import           Data.Maybe                        (isJust, fromJust)
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
 import qualified Data.Zip                          as Z
@@ -524,20 +525,24 @@ instance
     negate :: UInt n r c -> UInt n r c
     negate (UInt x) = UInt $ symbolicF x
         (\v -> naturalToVector @c @n @r $ (2 ^ value @n) -! vectorToNatural v (registerSize @(BaseField c) @n @r))
-        (\xv -> do
-            j <- newAssigned (Haskell.const zero)
-            let xs = V.fromVector xv
-                y = 2 ^ registerSize @(BaseField c) @n @r
-                ys = replicate (numberOfRegisters @(BaseField c) @n @r -! 2) (2 ^ registerSize @(BaseField c) @n @r -! 1)
-                y' = 2 ^ highRegisterSize @(BaseField c) @n @r -! 1
-                ns
-                    | numberOfRegisters @(BaseField c) @n @r Haskell.== 1 = [y' + 1]
-                    | otherwise = (y : ys) <> [y']
-                head_ns = Haskell.last ns
-                head_xs = Haskell.last xs
-            (zs, p) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN (Haskell.init ns) (Haskell.init xs))
-            (zp_head, _) <- negateNH head_ns head_xs p
-            return $ V.unsafeToVector (zs <> [zp_head])
+        (\xv -> if (Haskell.length (V.fromVector xv) Haskell.== 0)
+            then
+                return $ xv
+            else
+                do
+                j <- newAssigned (Haskell.const zero)
+                let xs = V.fromVector xv
+                    y = 2 ^ registerSize @(BaseField c) @n @r
+                    ys = replicate (numberOfRegisters @(BaseField c) @n @r -! 2) (2 ^ registerSize @(BaseField c) @n @r -! 1)
+                    y' = 2 ^ highRegisterSize @(BaseField c) @n @r -! 1
+                    ns
+                        | numberOfRegisters @(BaseField c) @n @r Haskell.== 1 = [y' + 1]
+                        | otherwise = (y : ys) <> [y']
+                    (init_ns, last_ns) = fromJust $ unsnoc ns
+                    (init_xs, last_xs) = fromJust $ unsnoc xs
+                (zs, p) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN (init_ns) (init_xs))
+                (zp_head, _) <- negateNH last_ns last_xs p
+                return $ V.unsafeToVector (zs <> [zp_head])
         )
         where
             negateN :: MonadCircuit i (BaseField c) w m => Natural -> i -> i -> m (i, i)
