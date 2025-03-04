@@ -38,7 +38,7 @@ import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
 import           Data.List                         (unfoldr, zip, unsnoc)
 import           Data.Map                          (fromList, (!))
-import           Data.Maybe                        (isJust, fromJust)
+import           Data.Maybe                        (fromJust)
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
 import qualified Data.Zip                          as Z
