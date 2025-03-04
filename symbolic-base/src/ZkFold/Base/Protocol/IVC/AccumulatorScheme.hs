@@ -24,18 +24,23 @@ import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (transcript)
 import           ZkFold.Base.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Base.Protocol.IVC.Oracle            (HashAlgorithm, oracle)
-import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate, PredicateFunctionAssumptions)
+import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate)
 import           ZkFold.Prelude                             (length)
+import ZkFold.Symbolic.MonadCircuit (ResidueField)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k a i c = AccumulatorScheme
   {
-    prover   :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+    prover  :: forall f
+            .  (ResidueField f, Algebra a f, Scale f (c f))
+            => (HomomorphicCommit [f] (c f))
             => Accumulator k i c f                          -- accumulator
             -> NARKInstanceProof k i c f                    -- instance-proof pair (pi, π)
             -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
-  , prover'  :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+  , prover' :: forall f
+            .  (ResidueField f, Algebra a f, Scale f (c f))
+            => (HomomorphicCommit [f] (c f))
             => Accumulator k i c f                          -- accumulator 1
             -> Accumulator k i c f                          -- accumulator 2
             -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
@@ -92,7 +97,9 @@ accumulatorScheme :: forall algo d k a i p c .
     -> AccumulatorScheme d k a i c
 accumulatorScheme phi =
   let
-      prover :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+      prover :: forall f
+        .  (ResidueField f, Algebra a f, Scale f (c f))
+        => (HomomorphicCommit [f] (c f))
         => Accumulator k i c f
         -> NARKInstanceProof k i c f
         -> (Accumulator k i c f, Vector (d-1) (c f))
@@ -156,7 +163,9 @@ accumulatorScheme phi =
         in
             (Accumulator (AccumulatorInstance pi'' ci'' ri'' eCapital' mu') m_i'', pf)
 
-      prover' :: forall f . (PredicateFunctionAssumptions a f, Scale f (c f), HomomorphicCommit [f] (c f))
+      prover' :: forall f
+        .  (ResidueField f, Algebra a f, Scale f (c f))
+        => (HomomorphicCommit [f] (c f))
         => Accumulator k i c f
         -> Accumulator k i c f
         -> (Accumulator k i c f, Vector (d-1) (c f))

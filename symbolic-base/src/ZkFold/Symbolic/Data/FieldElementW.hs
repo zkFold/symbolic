@@ -4,6 +4,7 @@
 
 module ZkFold.Symbolic.Data.FieldElementW where
 
+import           Control.DeepSeq                             (NFData)
 import           Data.Function                               (const, ($), (.))
 import           Data.Functor                                ((<$>))
 import           Data.Proxy                                  (Proxy (..))
@@ -37,6 +38,8 @@ unconstrainFieldElement = FieldElementW . unPar1 . witnessF . fromFieldElement
 
 deriving newtype instance P.Show (WitnessField c) => P.Show (FieldElementW c)
 deriving newtype instance P.Eq (WitnessField c) => P.Eq (FieldElementW c)
+deriving newtype instance Symbolic c => NFData (FieldElementW c)
+
 instance FromConstant Natural (WitnessField c) => Arbitrary (FieldElementW c) where
   arbitrary = FieldElementW . fromConstant . toConstant <$> arbitrary @(Zp BLS12_381_Scalar)
 

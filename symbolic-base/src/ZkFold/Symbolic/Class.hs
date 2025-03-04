@@ -46,7 +46,8 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
 class ( HApplicative c, Package c, Arithmetic (BaseField c)
-      , ResidueField (WitnessField c)) => Symbolic c where
+      , ResidueField (WitnessField c), NFData (WitnessField c)
+      ) => Symbolic c where
     -- | Base algebraic field over which computations are performed.
     type BaseField c :: Type
     -- | Type of witnesses usable inside circuit construction

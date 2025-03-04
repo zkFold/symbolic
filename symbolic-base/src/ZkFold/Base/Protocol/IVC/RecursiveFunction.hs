@@ -11,17 +11,21 @@ module ZkFold.Base.Protocol.IVC.RecursiveFunction where
 
 import           Control.DeepSeq                            (NFData, NFData1)
 import           Data.Distributive                          (Distributive (..))
-import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep, mzipWithRep)
+import           Data.Function                              ((.))
+import           Data.Functor                               ((<$>))
+import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
 import           Data.These                                 (These (..))
 import           Data.Zip                                   (Semialign (..), Zip (..))
-import           GHC.Generics                               (Generic, Generic1, Par1)
+import           GHC.Generics                               (Generic, Generic1, Par1 (..), type (:.:) (..))
 import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($))
 
-import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), zero, (*), (+), (-))
+import           ZkFold.Base.Algebra.Basic.Class            (FromConstant (..), zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
+import           ZkFold.Base.Control.HApplicative           (HApplicative (..))
 import           ZkFold.Base.Data.ByteString                (Binary, Binary1)
+import           ZkFold.Base.Data.HFunctor                  (hmap)
 import           ZkFold.Base.Data.Orphans                   ()
-import           ZkFold.Base.Data.Package                   (packed, unpacked)
+import           ZkFold.Base.Data.Package                   (Package (..), packed, unpacked)
 import           ZkFold.Base.Data.Vector                    (Vector)
 import           ZkFold.Base.Protocol.IVC.Accumulator       hiding (pi, x)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
@@ -30,12 +34,15 @@ import           ZkFold.Base.Protocol.IVC.Predicate         (Predicate (..), Pre
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional           (Conditional (..))
+import           ZkFold.Symbolic.Data.Conditional           (Conditional (..), ifThenElse)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
 
 -- | Public input to the recursive function
-data RecursiveI i f = RecursiveI (i f) f
+data RecursiveI i f = RecursiveI
+    { recursiveIInput :: i f
+    , recursiveIHash  :: f
+    }
     deriving (Generic, Generic1, Show, Binary, NFData, NFData1, Functor, Foldable, Traversable)
 
 instance Semialign i => Semialign (RecursiveI i) where
@@ -65,8 +72,14 @@ instance (Symbolic ctx, LayoutFunctor i) => Conditional (Bool ctx) (RecursiveI i
         in fmap FieldElement $ unpacked $ bool x' y' b
 
 -- | Payload to the recursive function
-data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
-    deriving (Generic, Generic1, NFData1, Functor, Foldable, Traversable)
+data RecursiveP d k i p c f = RecursiveP
+  { recursivePPayload     :: p f
+  , recursivePCommitments :: Vector k (c f)
+  , recursivePAccInstance :: AccumulatorInstance k (RecursiveI i) c f
+  , recursivePFlag        :: f
+  , recursivePAccProof    :: Vector (d-1) (c f)
+  }
+  deriving (Generic, Generic1, NFData1, Functor, Foldable, Traversable)
 
 instance (KnownNat (d - 1), KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
 
@@ -97,10 +110,10 @@ type RecursiveFunctionAssumptions algo a d k i p c ctx =
 -- | Transform a step function into a recursive function
 recursiveFunction :: forall algo a d k i p c ctx . RecursiveFunctionAssumptions algo a d k i p c ctx
     => PredicateFunction a i p
-    -> RecursiveI i (FieldElement ctx)
-    -> RecursiveP d k i p c (FieldElement ctx)
-    -> RecursiveI i (FieldElement ctx)
-recursiveFunction func z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
+    -> ctx (RecursiveI i)
+    -> ctx (RecursiveP d k i p c)
+    -> ctx (RecursiveI i)
+recursiveFunction func z p =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = predicate (recursiveFunction @algo @a func)
@@ -108,13 +121,33 @@ recursiveFunction func z@(RecursiveI x _) (RecursiveP u piX accX flag pf) =
         accScheme :: AccumulatorScheme d k a (RecursiveI i) c
         accScheme = accumulatorScheme @algo pRec
 
-        x' :: i (FieldElement ctx)
-        x' = func x u
+        x, x' :: ctx i
+        x  = hmap recursiveIInput z
+        x' = func x (hmap recursivePPayload p)
+
+        piX :: Vector k (c (FieldElement ctx))
+        piX = unComp1 $ FieldElement
+          <$> unpackWith (Comp1 . fmap Par1 . recursivePCommitments) p
+
+        accX :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
+        accX = FieldElement <$> unpackWith (fmap Par1 . recursivePAccInstance) p
+
+        pf :: Vector (d-1) (c (FieldElement ctx))
+        pf = unComp1 $ FieldElement
+          <$> unpackWith (Comp1 . fmap Par1 . recursivePAccProof) p
 
         accX' :: AccumulatorInstance k (RecursiveI i) c (FieldElement ctx)
-        accX' = verifier accScheme z piX accX pf
+        accX' = verifier accScheme
+          (FieldElement <$> unpacked z) piX accX pf
 
-        h :: FieldElement ctx
-        h = oracle @algo accX'
-    in
-        mzipWithRep (\v1 v2 -> v1 + (v2-v1)*flag) (RecursiveI x zero) (RecursiveI x' h)
+        h, zr :: ctx Par1
+        FieldElement h = oracle @algo accX'
+        FieldElement zr = zero
+
+        newI, oldI :: ctx (RecursiveI i)
+        newI = hliftA2 (\inp (Par1 hsh) -> RecursiveI inp hsh) x' h
+        oldI = hliftA2 (\old (Par1 zro) -> RecursiveI old zro) x zr
+
+        flag :: Bool ctx
+        flag = Bool $ hmap (Par1 . recursivePFlag) p
+    in ifThenElse flag newI oldI

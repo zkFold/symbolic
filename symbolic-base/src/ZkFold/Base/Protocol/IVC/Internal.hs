@@ -34,6 +34,7 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool, BoolType (..)
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.FieldElementW         (FieldElementW (..), constrainFieldElement)
+import ZkFold.Symbolic.Interpreter (Atop(..))
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -59,10 +60,7 @@ makeLenses ''IVCResult
 
 ivc :: forall algo a d k i p c ctx n .
     ( RecursiveFunctionAssumptions algo a d k i p c ctx
-    , FromConstant a (FieldElementW ctx)
-    , Scale a (FieldElementW ctx)
-    , KnownNat n
-    )
+    , Algebra a (FieldElementW ctx), KnownNat n)
     => PredicateFunction a i p
     -> i (FieldElementW ctx)
     -> Vector n (p (FieldElementW ctx))
@@ -92,7 +90,7 @@ ivc f x0 ps =
                 payload = RecursiveP witness (res^.proof^.proofX) (res^.acc^.x) one pf
 
                 z' :: RecursiveI i (FieldElementW ctx)
-                z' = input protocol (res^.z) payload
+                z' = runAtop @a (input protocol (Atop $ res^.z) (Atop payload))
 
                 (messages, commits) = unzip $ prover protocol (res^.z) payload
 

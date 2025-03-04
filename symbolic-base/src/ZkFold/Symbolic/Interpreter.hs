@@ -3,14 +3,14 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
+module ZkFold.Symbolic.Interpreter (Interpreter (..), Atop (..)) where
 
 import           Control.Applicative              (Applicative)
 import           Control.DeepSeq                  (NFData)
 import           Control.Monad                    (Monad, return)
 import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.Eq                          (Eq)
-import           Data.Function                    (id, ($), (.))
+import           Data.Function                    (($), (.), id)
 import           Data.Functor                     (Functor, (<$>))
 import           Data.Functor.Identity            (Identity (..))
 import           Data.List                        (foldl')
@@ -47,7 +47,7 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   type BaseField (Interpreter a) = a
   type WitnessField (Interpreter a) = a
   witnessF (Interpreter x) = x
-  fromCircuitF (Interpreter x) c = Interpreter $ runWitnesses @a (c x)
+  fromCircuitF (Interpreter x) c = Interpreter $ runWitnesses @a @a (c x)
   sanityF (Interpreter x) f _ = Interpreter (f x)
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
@@ -55,15 +55,31 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
     foldl' ((. Interpreter) . uncurry fun) (seed, pload)
       $ take (toConstant cnt) $ toList stream
 
+-- | TODO: Integrate with Interpreter
+newtype Atop a b f = Atop { runAtop :: f b }
+  deriving (HFunctor, HApplicative) via (Interpreter b)
+
+instance Package (Atop a b) where
+  unpackWith f (Atop x) = Atop <$> f x
+  packWith f g = Atop $ f (runAtop <$> g)
+
+instance (Arithmetic a, Algebra a b, ResidueField b, NFData b) =>
+    Symbolic (Atop a b) where
+  type BaseField (Atop a b) = a
+  type WitnessField (Atop a b) = b
+  fromCircuitF (Atop f) c = Atop $ runWitnesses @a @b (c f)
+  witnessF (Atop f) = f
+
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.
-newtype Witnesses a x = Witnesses { runWitnesses :: x }
+newtype Witnesses a b x = Witnesses { runWitnesses :: x }
   deriving (Functor, Applicative, Monad) via Identity
 
-instance Arithmetic a => Witness a a where
+instance ResidueField a => Witness a a where
   at = id
 
-instance Arithmetic a => MonadCircuit a a a (Witnesses a) where
+instance (Arithmetic a, Algebra a b, ResidueField b) =>
+    MonadCircuit b a b (Witnesses a b) where
   unconstrained = return
   constraint _ = return ()
   rangeConstraint _ _ = return ()
