@@ -9,7 +9,7 @@ import           Data.Foldable                              (Foldable)
 import           Data.Function                              (const)
 import           Data.Proxy                                 (Proxy (..))
 import           GHC.Generics                               (Generic)
-import           Prelude                                    (return, type (~), ($), fmap)
+import           Prelude                                    (return, type (~), ($))
 import qualified Prelude                                    as Haskell
 import           Test.QuickCheck                            (Arbitrary (..))
 
@@ -18,7 +18,6 @@ import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+),
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta    as Pasta
 import           ZkFold.Base.Data.ByteString                (Binary)
-import           ZkFold.Base.Data.Package                   (packed, unpacked)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import           ZkFold.Base.Protocol.IVC.CommitOpen        (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir        (FiatShamir, fiatShamir)
@@ -32,7 +31,6 @@ import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA                   (KnownFFA)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Data.Pasta                 (PallasPoint)
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
@@ -152,16 +150,15 @@ opPredicate :: forall a.
 opPredicate =
     let
         circuit :: PredicateFunction a (PredicateLayout a) (PredicatePayload a)
-        circuit (x :: (PredicateLayout a) (FieldElement c)) u =
+        circuit (x :: c (PredicateLayout a)) u =
             let
-                x' = restore0 $ const $ packed $ fmap fromFieldElement x :: NativeOperation (PrimaryGroup c)
-                u' = restore0 $ const $ packed $ fmap fromFieldElement u
-            in
-                fmap FieldElement $ unpacked $ arithmetize (opCircuit x' u') Proxy
+                x' = restore0 $ const x :: NativeOperation (PrimaryGroup c)
+                u' = restore0 $ const u
+            in arithmetize (opCircuit x' u') Proxy
     in
         predicate circuit
 
-opProtocol :: forall algo d k a.
+opProtocol :: forall algo d k a f.
     ( HashAlgorithm algo
     , KnownNat (d + 1)
     , k ~ 1
@@ -169,8 +166,9 @@ opProtocol :: forall algo d k a.
     , Binary a
     , KnownFFA Pasta.FpModulus (Fixed 1) (Interpreter a)
     , KnownFFA Pasta.FqModulus (Fixed 1) (Interpreter a)
+    , Foldable f
     )
-    => FiatShamir k a (PredicateLayout a) (PredicatePayload a) (PredicateLayout a)
+    => FiatShamir k a (PredicateLayout a) (PredicatePayload a) f
 opProtocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d $ opPredicate
 
 opAccumulatorScheme :: forall algo d k a f.
