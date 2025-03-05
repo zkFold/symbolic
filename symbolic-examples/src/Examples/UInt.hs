@@ -79,6 +79,6 @@ exampleUIntResize ::
 exampleUIntResize = resize
 
 exampleUIntLeq ::
-  (KnownNat n, KnownRegisterSize r, Symbolic c) =>
+  (KnownNat n, KnownRegisterSize r, Symbolic c, KnownNat (NumberOfRegisters (BaseField c) n r)) =>
   UInt n r c -> UInt n r c -> Bool c
 exampleUIntLeq = (<=)
