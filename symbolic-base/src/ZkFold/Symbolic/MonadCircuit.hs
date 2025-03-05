@@ -93,6 +93,8 @@ class ( Monad m, FromConstant a var
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
 
+  -- lookupConstraint
+
   -- | Adds new lookup function to the system.
   -- For example, @'registerFunction' f @ stores the function @f@.
   registerFunction :: (Representable f, Binary (Rep f), Foldable g)
