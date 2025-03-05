@@ -1,4 +1,5 @@
 UInt.Truncate.74.54
-Number of constraints: 76
+Number of polynomial constraints: 76
 Number of variables: 150
-Number of range lookups: 76
+Number of lookup constraints: 76
+Number of lookup tables: 3

@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -128,7 +127,7 @@ tokenBits
     => TokenHeader ctx
     -> p
     -> VarByteString (864 + 8 + BitCount p) ctx
-tokenBits h p =  force $
+tokenBits h p = force $
        toBits h
     @+ (fromType @".")
     @+ toBits p

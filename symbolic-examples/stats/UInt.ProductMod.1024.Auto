@@ -1,4 +1,5 @@
 UInt.ProductMod.1024.Auto
-Number of constraints: 4494
+Number of polynomial constraints: 4494
 Number of variables: 7851
-Number of range lookups: 3702
+Number of lookup constraints: 3702
+Number of lookup tables: 6

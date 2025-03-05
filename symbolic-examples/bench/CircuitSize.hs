@@ -19,12 +19,14 @@ import           ZkFold.Symbolic.Examples                   (ExampleOutput (..))
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
   String.fromString name
-  <> "\nNumber of constraints: "
+  <> "\nNumber of polynomial constraints: "
   <> String.fromString (show $ Circuit.acSizeN circuit)
   <> "\nNumber of variables: "
   <> String.fromString (show $ Circuit.acSizeM circuit)
-  <> "\nNumber of range lookups: "
-  <> String.fromString (show $ Circuit.acSizeR circuit)
+  <> "\nNumber of lookup constraints: "
+  <> String.fromString (show $ Circuit.acSizeL circuit)
+  <> "\nNumber of lookup tables: "
+  <> String.fromString (show $ Circuit.acSizeT circuit)
 
 main :: IO ()
 main = Tasty.defaultMain $ Tasty.testGroup "Compiler golden tests" [

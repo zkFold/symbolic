@@ -120,7 +120,8 @@ instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
 data LookupFunction a =
-  forall f g. LookupFunction (forall x. (ResidueField x, Representable f, Traversable g) => f x -> g x)
+  forall f g. (Representable f, Traversable g) =>
+  LookupFunction (forall x. ResidueField x => f x -> g x)
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -131,9 +132,9 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
         acSystem         :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
         acLookupFunction :: Map ByteString (LookupFunction a),
-        -- ^ The system of lookup functions
+        -- ^ The set of lookup functions
         acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
-        -- ^ The range constraints [0, a] for the selected variables
+        -- ^ The lookup constraints for the selected variables
         acWitness        :: Map ByteString (CircuitWitness a i),
         -- ^ The witness generation functions
         acFold           :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a i)),
@@ -312,29 +313,24 @@ instance
                     else error "The constraint is non-zero"
         Nothing -> zoom #acSystem . modify $ M.insert (witToVar (p at)) (p evalConstVar)
 
-    rangeConstraint (LinVar k x b) upperBound = do
-      v <- preparedVar
-      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [v])
+    lookupConstraint vars lt = do
+      vs <- traverse prepare (toList vars)
+      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton vs))
+      return ()
       where
-        preparedVar = if k == one && b == zero || k == negate one && b == upperBound
-          then return x
-          else do
-            let
-              wf = at $ LinVar k x b
-              v = witToVar @a wf
-            -- TODO: forbid reassignment of variables
-            zoom #acWitness $ modify (M.insert v wf)
-            return (NewVar (EqVar v))
-
-    rangeConstraint (ConstVar c) upperBound =
-      if c <= upperBound
-        then return ()
-        else error "The constant does not belong to the interval"
+        prepare (LinVar k x b) | k == one && b == zero = return x
+        prepare src = do
+          let w = at src
+              b = witToVar @a w
+              v = NewVar (EqVar b)
+          zoom #acWitness $ modify (M.insert b w)
+          constraint (($ LinVar one v zero) - ($ src))
+          return v
 
     registerFunction f = do
-      let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
-      zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
-      return $ FunctionId b
+      let functionId = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
+      zoom #acLookupFunction $ modify (M.insert functionId $ LookupFunction f)
+      return $ FunctionId functionId
 
 -- | Generates new variable index given a witness for it.
 --

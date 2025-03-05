@@ -1,4 +1,5 @@
 UInt.StrictMul.512.Auto
-Number of constraints: 1206
+Number of polynomial constraints: 1206
 Number of variables: 2312
-Number of range lookups: 1132
+Number of lookup constraints: 1132
+Number of lookup tables: 3
