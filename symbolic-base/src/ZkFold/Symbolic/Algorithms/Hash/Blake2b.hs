@@ -7,8 +7,8 @@ module ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_224, blake2b_256, blake2
 
 import           Data.Bool                                         (bool)
 import           Data.Constraint                                   (Dict, withDict)
-import           Data.Constraint.Nat                               (minusNat, modBound, modNat, plusMonotone2, plusNat,
-                                                                    timesNat, zeroLe)
+import           Data.Constraint.Nat                               (divNat, minusNat, modBound, modNat, plusMonotone2,
+                                                                    plusNat, timesNat, zeroLe)
 import           Data.Constraint.Unsafe                            (unsafeAxiom)
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
@@ -312,6 +312,7 @@ blake2b :: forall keyLen inputLen outputLen c n.
 blake2b key input =
     let input' = withConstraints @inputLen $
                     withDict (nLeInput @n @inputLen) $
+                    withDict (divNat @n @64) $
                     from <$> (toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip rotateBitsL (value @(ExtensionBits inputLen)) $

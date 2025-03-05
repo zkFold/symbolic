@@ -5,6 +5,7 @@
 module Tests.Symbolic.Compiler.Optimization (specOptimization) where
 
 import           Data.Binary                                (Binary)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics                               (Par1 (..), U1 (..), type (:*:))
 import           Prelude                                    (Show, return, ($))
 import           Test.Hspec
@@ -18,7 +19,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
 import           ZkFold.Symbolic.MonadCircuit
 
-testFunc :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
+testFunc ::
+  (Arithmetic a, Binary a, Typeable a) => ArithmeticCircuit a Par1 Par1
 testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
     i1 <- newRanged (fromConstant (1 :: Natural)) (at i0)
     i2 <- newAssigned (($ i1) + one)
@@ -29,14 +31,15 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
     return (Par1 i5)
 
 testBool ::
-  forall a . (Arithmetic a, Binary a) =>
+  forall a . (Arithmetic a, Binary a, Typeable a) =>
   ArithmeticCircuit a ((U1 :*: U1) :*: Par1 :*: U1) Par1
 testBool = compile @a identBool
     where
         identBool :: Bool c -> Bool c
         identBool x = x
 
-testConst :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
+testConst ::
+  (Arithmetic a, Binary a, Typeable a) => ArithmeticCircuit a Par1 Par1
 testConst = fromCircuitF idCircuit $ \(Par1 i0) -> do
     i1 <- newAssigned (($ i0) + one)
     i2 <- newAssigned (($ i1) + one)
@@ -45,13 +48,15 @@ testConst = fromCircuitF idCircuit $ \(Par1 i0) -> do
     constraint (($ i4) - fromConstant (5 :: Natural))
     return (Par1 i0)
 
-testLinVar :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
+testLinVar ::
+  (Arithmetic a, Binary a, Typeable a) => ArithmeticCircuit a Par1 Par1
 testLinVar = fromCircuitF idCircuit $ \(Par1 i0) -> do
     i1 <- newAssigned (($ i0) + one)
     i2 <- newAssigned (($ i1) * ($ i0))
     return (Par1 i2)
 
-specOptimization :: forall a . (Arithmetic a, Binary a, Show a) => Spec
+specOptimization ::
+  forall a . (Arithmetic a, Binary a, Show a, Typeable a) => Spec
 specOptimization =
     describe "Compiler optimization specification" $ do
         let ac = optimize @a testFunc

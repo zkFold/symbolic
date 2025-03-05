@@ -6,6 +6,7 @@ module Tests.Symbolic.Data.List (specList) where
 import           Data.Binary                                 (Binary)
 import qualified Data.Eq                                     as Haskell
 import           Data.Function                               (($))
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1 (..), U1 (..), type (:*:) (..))
 import           Test.Hspec                                  (Spec, describe)
 import           Test.Hspec.QuickCheck                       (prop)
@@ -39,7 +40,8 @@ foldrTest x y = lSize r == lSize l
 headFun :: Symbolic c => List c (FieldElement c) -> FieldElement c
 headFun = head
 
-specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specList' ::
+  forall a. (Arbitrary a, Arithmetic a, Binary a, Show a, Typeable a) => Spec
 specList' = describe "List spec" $ do
   let _headChecks = -- compile-time test
                     acOutput (compile @a headFun)

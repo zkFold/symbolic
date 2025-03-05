@@ -26,6 +26,7 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
+import Data.Typeable (Typeable)
 
 {-
     ZkFold Symbolic compiler module dependency order:
@@ -71,7 +72,7 @@ compileWith ::
   ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a i
   , Representable i
   , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a j
-  , Binary a, Binary (Rep i), Binary (Rep j)
+  , Binary a, Typeable a, Binary (Rep i), Binary (Rep j)
   , Ord (Rep i), Ord (Rep j)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
@@ -88,7 +89,7 @@ compileWith outputTransform inputTransform =
 -- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
-  , c ~ ArithmeticCircuit a (Payload s :*: Layout s), Binary a)
+  , c ~ ArithmeticCircuit a (Payload s :*: Layout s), Binary a, Typeable a)
   => f -> y
 compile = compileInternal id (naturalCircuit sndP) (inputPayload fstP)
 
@@ -96,7 +97,7 @@ compile = compileInternal id (naturalCircuit sndP) (inputPayload fstP)
 compileIO ::
   forall a c p f s l .
   ( c ~ ArithmeticCircuit a (p :*: l)
-  , FromJSON a, ToJSON a, ToJSONKey a, Binary a
+  , FromJSON a, ToJSON a, ToJSONKey a, Binary a, Typeable a
   , ToJSON (Layout f (Var a (p :*: l)))
   , FromJSON (Rep l), FromJSON (Rep p)
   , ToJSON (Rep l), ToJSON (Rep p)

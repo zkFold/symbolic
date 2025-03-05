@@ -7,6 +7,7 @@ import           Data.Function                               (const, ($), (.))
 import           Data.Functor.Rep                            (Rep, Representable)
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
+import           Data.Typeable                               (Typeable)
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
@@ -42,8 +43,9 @@ type C a = ArithmeticCircuit a
 data ExampleOutput where
   ExampleOutput ::
     forall a i o.
-    (Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
-    (() -> C a i o) -> ExampleOutput
+    ( Representable i, NFData (Rep i), NFData1 o
+    , Arithmetic a, Binary a, Typeable a
+    ) => (() -> C a i o) -> ExampleOutput
 
 exampleOutput ::
   forall a i o c f.
@@ -56,6 +58,7 @@ exampleOutput ::
   , i ~ Payload (Support f) :*: Layout (Support f)
   , NFData1 o
   , Binary a
+  , Typeable a
   ) => f -> ExampleOutput
 exampleOutput = ExampleOutput @a @i @o . const . compile
 

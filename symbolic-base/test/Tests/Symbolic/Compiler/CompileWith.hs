@@ -10,6 +10,7 @@ import           Control.Monad                   (return)
 import           Data.Binary                     (Binary)
 import           Data.Function                   (($))
 import           Data.Functor                    ((<$>))
+import           Data.Typeable                   (Typeable)
 import           GHC.Generics                    (U1 (..), (:*:) (..))
 import           Test.Hspec                      (Spec, describe)
 import           Test.Hspec.QuickCheck           (prop)
@@ -30,7 +31,8 @@ instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
 instance Arbitrary (U1 a) where
   arbitrary = return U1
 
-specCompileWith :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specCompileWith ::
+  forall a. (Arbitrary a, Arithmetic a, Binary a, Show a, Typeable a) => Spec
 specCompileWith = describe "CompileWith specification" $ do
   prop "Guessing with payload is constant in input" $
     let circuit = compileWith @a guessOutput

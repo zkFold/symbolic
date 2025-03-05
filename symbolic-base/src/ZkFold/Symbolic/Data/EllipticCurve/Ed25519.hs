@@ -1,12 +1,10 @@
-{-# LANGUAGE RebindableSyntax     #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 
-import           Prelude                                   (fromInteger, ($))
+import           Prelude                                   (($))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -16,7 +14,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed2551
 import           ZkFold.Symbolic.Class                     (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators          (RegisterSize (Auto), from)
+import           ZkFold.Symbolic.Data.Combinators          (RegisterSize (Auto), Iso (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 

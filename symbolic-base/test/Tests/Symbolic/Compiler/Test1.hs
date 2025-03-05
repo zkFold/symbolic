@@ -20,6 +20,7 @@ import           ZkFold.Symbolic.Data.Conditional  ((?))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Interpreter       (Interpreter)
+import Data.Typeable (Typeable)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall c . Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
@@ -37,7 +38,8 @@ testResult ::
 testResult r x y = fromConstant (unPar1 $ eval r ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
-specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
+specArithmetization1 ::
+  forall a . (Arithmetic a, Arbitrary a, Binary a, Show a, Typeable a) => Spec
 specArithmetization1 = do
     describe "Arithmetization test 1" $ do
         it "should pass" $ do

@@ -6,6 +6,7 @@ module Tests.Symbolic.Data.MerkleTree
   ) where
 
 import           Data.Binary                                 (Binary)
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
 import           Prelude                                     (return, ($), (.))
 import qualified Prelude                                     as Haskell
@@ -101,10 +102,10 @@ tossPow m = chooseNatural (0, (2 :: Natural) ^ m -! 1)
 --   a <- replicateM (fromIntegral $ value @n) (tossPow m)
   -- return $ V.unsafeToVector a
 
-specMerkleTree' :: forall a d.
-  ( PrimeField a
+specMerkleTree' ::
+  forall a d.
+  ( Arbitrary a, Arithmetic a, Binary a, Haskell.Show a, Typeable a
   , KnownNat d
-  , Arbitrary a, Arithmetic a, Binary a, Haskell.Show a
   ) => Spec
 specMerkleTree' = do
     describe "MerkleTree specification" $ do

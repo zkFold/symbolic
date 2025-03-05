@@ -85,13 +85,14 @@ toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
-        rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
+        rs :: [Natural] = concat . mapMaybe (fmap (toList . S.map (toConstant . snd)) . asRange) . M.keys $ acLookup ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
+        rangeLookups = M.mapMaybeWithKey (\k a' -> a' <$ asRange k) (acLookup ac)
+        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems rangeLookups
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + length (tabulate @l id) + length xLookup

@@ -21,7 +21,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- information about the system
         acSizeN,
         acSizeM,
-        acSizeR,
+        acSizeL,
+        acSizeLF,
         acSystem,
         acValue,
         acPrint,
@@ -41,13 +42,14 @@ import           Control.DeepSeq                                         (NFData
 import           Control.Monad                                           (foldM)
 import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
-import           Data.Bool                                               (bool)
+import           Data.Either                                             (partitionEithers)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
                                                                           take)
 import qualified Data.Map.Monoidal                                       as M
 import qualified Data.Set                                                as S
+import           Data.Typeable                                           (Typeable)
 import           Data.Void                                               (absurd)
 import           GHC.Generics                                            (U1 (..), (:*:))
 import           Numeric.Natural                                         (Natural)
@@ -105,14 +107,19 @@ desugarRange i (a, b)
 
 -- | Desugars range constraints into polynomial constraints
 desugarRanges ::
-  (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
+  (Arithmetic a, Binary a, Typeable a) =>
+  (Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
-          [(head $ map toVar v, k) | (k', s) <- M.toList rm, v <- S.toList s, k <- S.toList k']
-      rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
-      (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acLookup c)
-  in r' { acLookup = tm, acOutput = acOutput c }
+  let (rm, tm) = partitionEithers
+                    [ maybe (Right (k, v)) (Left . (, v)) (asRange k)
+                    | (k, v) <- M.assocs (acLookup c)
+                    ]
+      r' = flip execState c {acOutput = U1} $ traverse (uncurry desugarRange)
+              [ (toVar v, k)
+              | (k', s) <- rm, [v] <- S.toList s, k <- S.toList k'
+              ]
+  in r' { acLookup = M.fromList tm, acOutput = acOutput c }
 
 -- | Payload of an input to arithmetic circuit.
 -- To be used as an argument to 'compileWith'.
@@ -121,7 +128,7 @@ inputPayload ::
 inputPayload f = f $ tabulate (pure . InVar)
 
 guessOutput ::
-  (Arithmetic a, Binary a, Binary (Rep i), Binary (Rep o)) =>
+  (Arithmetic a, Binary a, Typeable a, Binary (Rep i), Binary (Rep o)) =>
   (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
   (Representable i, Representable o, Foldable o) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a (i :*: o) U1
@@ -139,9 +146,13 @@ acSizeN = length . acSystem
 acSizeM :: ArithmeticCircuit a i o -> Natural
 acSizeM = length . acWitness
 
--- | Calculates the number of range lookups in the system.
-acSizeR :: ArithmeticCircuit a i o -> Natural
-acSizeR = sum . map length . M.elems . acLookup
+-- | Calculates the number of all lookups in the system.
+acSizeL :: ArithmeticCircuit a i o -> Natural
+acSizeL = sum . map length . M.elems . acLookup
+
+-- | Calculates the number of all lookups in the system.
+acSizeLF :: ArithmeticCircuit a i o -> Natural
+acSizeLF = length . elems . acLookupFunction
 
 acValue ::
   (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 o -> o a

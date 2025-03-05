@@ -53,12 +53,13 @@ optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
                                                             let polyId = witToVar @a @i (pure inVar - fromConstant v)]
 
     optRanges :: Map (SysVar i) a -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i]) -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i])
-    optRanges m = MM.mapMaybeWithKey (\k' v -> bool Nothing (maybeSet v $ fromRange k') (isRange k'))
+    optRanges m = MM.mapMaybeWithKey (\k' v -> asRange k' >>= maybeSet v)
       where
         maybeSet :: S.Set [SysVar i] -> S.Set (a, a) -> Maybe (S.Set [SysVar i])
         maybeSet v k = bool (error "range constraint less then value")
-                            (let t = S.difference v (S.map (: []) (keysSet m))
-                              in if null t then Nothing else Just t) (all (inInterval k) $ restrictKeys (mapKeys (: []) m :: Map [SysVar i] a) v)
+                            (let t = S.difference v (S.map (:[]) (keysSet m))
+                              in if null t then Nothing else Just t)
+                            (all (inInterval k) $ restrictKeys (mapKeys (:[]) m) v)
 
     inInterval :: S.Set (a, a) -> a -> Bool
     inInterval si v = and $ S.map (\(l', r') -> ((v >= l') && (v <= r')) :: Bool) si

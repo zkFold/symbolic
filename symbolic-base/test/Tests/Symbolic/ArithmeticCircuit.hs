@@ -9,6 +9,7 @@ import           Data.Binary                                 (Binary)
 import           Data.Bool                                   (bool)
 import           Data.Functor                                ((<$>))
 import           Data.Functor.Rep                            (Representable (..))
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1, U1 (..))
 import           Prelude                                     (Foldable, Ord, Show, String, id, return, ($))
 import qualified Prelude                                     as Haskell
@@ -29,17 +30,17 @@ import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                    ((<=))
 
 correctHom0 ::
-  forall a. (Arithmetic a, Binary a, Show a) =>
+  forall a. (Arithmetic a, Binary a, Show a, Typeable a) =>
   (forall b . Field b => b) -> Property
 correctHom0 f = let r = fromFieldElement f in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === f @a
 
 correctHom1 ::
-  (Arithmetic a, Binary a, Show a) =>
+  (Arithmetic a, Binary a, Show a, Typeable a) =>
   (forall b . Field b => b -> b) -> a -> Property
 correctHom1 f x = let r = fromFieldElement $ f (fromConstant x) in checkClosedCircuit r .&&. exec1 r === f x
 
 correctHom2 ::
-  (Arithmetic a, Binary a, Show a) =>
+  (Arithmetic a, Binary a, Show a, Typeable a) =>
   (forall b . Field b => b -> b -> b) -> a -> a -> Property
 correctHom2 f x y = let r = fromFieldElement $ f (fromConstant x) (fromConstant y)
                     in checkClosedCircuit r .&&. exec1 r === f x y
@@ -55,7 +56,7 @@ propCircuitInvariance ac wi = eval ac wi === eval (mapVarArithmeticCircuit ac) w
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
 
-specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
+specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Binary a, Show a, Typeable a) => Spec
 specArithmeticCircuit' = do
     describe "ArithmeticCircuit specification" $ do
         it "embeds constants" $ correctHom1 @a id
