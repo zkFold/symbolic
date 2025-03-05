@@ -21,6 +21,8 @@ import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
                                                    NumberOfRegisters, resize)
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt, expMod, productMod)
+import           ZkFold.Symbolic.Data.Bool         (Bool)
+import           ZkFold.Symbolic.Data.Ord          ((<=))
 
 
 exampleUIntMul ::
