@@ -41,7 +41,6 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import qualified Data.Vector                       as Vec
 import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
@@ -68,12 +67,11 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
+
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
-    deriving (Generic)
-newtype BString (context :: (Type -> Type) -> Type) = BString (context Vec.Vector)
     deriving (Generic)
 
 deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
@@ -404,4 +402,3 @@ hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteStri
 hexToByteString str = case readHex str of
     [(n, "")] -> Just (fromConstant @Natural n)
     _         -> Nothing
-
