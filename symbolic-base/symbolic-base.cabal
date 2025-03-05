@@ -339,7 +339,6 @@ test-suite symbolic-base-test
       blake2                                     ,
       constraints                                ,
       containers                                 ,
-      containers                                 ,
       random                                     ,
       directory                        <= 1.3.8.4,
       filepath                         <= 1.5.2.0,
