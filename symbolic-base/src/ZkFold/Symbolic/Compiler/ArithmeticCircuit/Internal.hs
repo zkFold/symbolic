@@ -58,6 +58,7 @@ import           Data.Semialign                                               (u
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
 import           Data.Traversable                                             (for)
+import           Data.Typeable
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
 import           Prelude                                                      hiding (Num (..), drop, length, product,
@@ -132,8 +133,8 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
         -- ^ The system of polynomial constraints
         acLookupFunction :: Map ByteString (LookupFunction a),
         -- ^ The system of lookup functions
-        acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
-        -- ^ The range constraints [0, a] for the selected variables
+        acLookup         :: MonoidalMap (LookupType a) (S.Set [Var a i]),
+        -- ^ The lookup constraints for the selected variables
         acWitness        :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
         acFold           :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
@@ -344,6 +345,11 @@ instance
         then return ()
         else error "The constant does not belong to the interval"
 
+    -- lookupConstraint :: (Foldable f, Typeable f, Functor f) => f var -> LookupTable a f -> m ()
+    lookupConstraint vars lt = do
+      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton $ toList vars))
+      return ()
+
     registerFunction f = do
       let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
       zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
@@ -486,7 +492,7 @@ apply xs ac = ac
     witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
-    filterSet :: Ord (Rep j) => S.Set [SysVar (i :*: j)] ->  S.Set (Maybe [SysVar j])
+    filterSet :: Ord (Rep j) => S.Set [Var a (i :*: j)] ->  S.Set (Maybe [SysVar j])
     filterSet = S.map (Just . mapMaybe (\case
                     NewVar v        -> Just (NewVar v)
                     InVar (Right v) -> Just (InVar v)
