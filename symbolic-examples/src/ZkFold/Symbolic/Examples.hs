@@ -76,6 +76,8 @@ examples =
   , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
   , ("UInt.ExpMod.32.16.64.Auto", exampleOutput $ exampleUIntExpMod @32 @16 @64 @Auto)
   , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput $ exampleUIntExpMod @256 @64 @1024 @Auto)
+  , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
+  , ("UInt.LEQ.256.Auto", exampleOutput $ exampleUIntLeq @256 @Auto)
   , ("FFA.Add.337", exampleOutput exampleFFAadd337)
   , ("FFA.Add.097", exampleOutput exampleFFAadd097)
   , ("FFA.Mul.337", exampleOutput exampleFFAmul337)

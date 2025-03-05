@@ -8,6 +8,7 @@ module Examples.UInt (
     exampleUIntStrictAdd,
     exampleUIntStrictMul,
     exampleUIntResize,
+    exampleUIntLeq,
   ) where
 
 import           Control.DeepSeq                  (NFData)
@@ -74,3 +75,8 @@ exampleUIntResize ::
   (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c) =>
   UInt n r c -> UInt k r c
 exampleUIntResize = resize
+
+exampleUIntLeq ::
+  (KnownNat n, KnownRegisterSize r, Symbolic c) =>
+  UInt n r c -> UInt n r c -> Bool c
+exampleUIntLeq = (<)
