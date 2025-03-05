@@ -81,4 +81,4 @@ exampleUIntResize = resize
 exampleUIntLeq ::
   (KnownNat n, KnownRegisterSize r, Symbolic c) =>
   UInt n r c -> UInt n r c -> Bool c
-exampleUIntLeq = (<)
+exampleUIntLeq = (<=)
