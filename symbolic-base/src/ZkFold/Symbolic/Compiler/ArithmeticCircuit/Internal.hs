@@ -58,7 +58,6 @@ import           Data.Semialign                                               (u
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
 import           Data.Traversable                                             (for)
-import           Data.Typeable
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
 import           Prelude                                                      hiding (Num (..), drop, length, product,
@@ -231,12 +230,12 @@ indexG witGen inputs = \case
 -------------------------------- "HProfunctor" ---------------------------------
 
 hlmap ::
-  (Representable i, Representable j, Ord (Rep j), Functor o) =>
+  (Representable i, Representable j, Ord (Rep j), Ord a, Functor o) =>
   (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
 hlmap f (ArithmeticCircuit s lf l w d o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
   , acLookupFunction = lf
-  , acLookup = S.map (map $ imapSysVar f) <$> l
+  , acLookup = S.map (map $ imapVar f) <$> l
   , acWitness = fmap (imapWitVar f) <$> w
   , acFold = bimap (imapVar f) (imapWitVar f <$>) <$> d
   , acOutput = imapVar f <$> o
@@ -328,7 +327,7 @@ instance
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [v])
+      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [toVar v])
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
@@ -355,17 +354,17 @@ instance
       zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
       return $ FunctionId b
 
-andLookup :: (Arithmetic a) => LookupTable a (Par1 :*: Par1)
-andLookup = p
-  where
-    p = Product b b
-    b = Ranges $ S.singleton (zero, one)
+-- andLookup :: (Arithmetic a) => LookupTable a (Par1 :*: Par1)
+-- andLookup = p
+--   where
+--     p = Product b b
+--     b = Ranges $ S.singleton (zero, one)
 
-    andOp :: (Par1 :*: Par1) a -> Par1 a
-    andOp ((Par1 b1) :*: (Par1 b2)) = Par1 b1
+--     andOp :: (Par1 :*: Par1) a -> Par1 a
+--     andOp ((Par1 b1) :*: (Par1 b2)) = Par1 b1
 
-    fId :: LookupFunction a
-    fId = LookupFunction andOp
+--     fId :: LookupFunction a
+--     fId = LookupFunction andOp
 
 -- | Generates new variable index given a witness for it.
 --
@@ -467,8 +466,7 @@ exec ac = eval ac U1 U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
 apply ::
-  (Eq a, Field a, Ord (Rep j), Representable i, Functor o) =>
-  i a -> ArithmeticCircuit a p (i :*: j) o -> ArithmeticCircuit a p j o
+  (Field a, Ord (Rep j), Ord a, Representable i, Functor o) =>i a -> ArithmeticCircuit a p (i :*: j) o -> ArithmeticCircuit a p j o
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
   , acLookup = S.fromList . catMaybes . toList . filterSet <$> acLookup ac
@@ -492,10 +490,10 @@ apply xs ac = ac
     witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
-    filterSet :: Ord (Rep j) => S.Set [Var a (i :*: j)] ->  S.Set (Maybe [SysVar j])
+    filterSet :: (Ord (Rep j), Ord a) => S.Set [Var a (i :*: j)] ->  S.Set (Maybe [Var a j])
     filterSet = S.map (Just . mapMaybe (\case
-                    NewVar v        -> Just (NewVar v)
-                    InVar (Right v) -> Just (InVar v)
+                    LinVar k (NewVar v) b        -> Just $ LinVar k (NewVar v) b
+                    LinVar k (InVar (Right v)) b        -> Just $ LinVar k (InVar v) b
                     _               -> Nothing))
 
 -- TODO: Add proper symbolic application functions
