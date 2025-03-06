@@ -8,9 +8,9 @@ import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Eq                                     (Eq)
 import           Data.Function                               (const, ($))
-import qualified Data.Text                               as T
 import           Data.Functor                                (Functor, (<$>))
 import           Data.Functor.Rep                            (Rep, Representable)
+import qualified Data.Text                                   as T
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           Prelude                                     (type (~), (.))
 import           System.IO                                   (IO)
