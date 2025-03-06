@@ -78,7 +78,7 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (Int n r c) (UInt 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (Int n r c) where
     from = Int
 
--- -- --------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (Int n r c) where
     Int u1 + Int u2 = Int (u1+u2)
 

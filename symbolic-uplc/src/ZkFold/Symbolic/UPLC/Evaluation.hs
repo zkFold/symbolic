@@ -16,8 +16,6 @@
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
 import           Control.Monad                      (return)
-import           Data.Constraint
-import           Data.Constraint.Unsafe             (unsafeAxiom)
 import           Data.Either                        (Either (..))
 import           Data.Function                      (($), (.))
 import           Data.Functor                       ((<$>))
@@ -411,14 +409,14 @@ evalMono (BMFInteger LessThanInteger)             = lessThanIntegerFun
 evalMono (BMFInteger LessThanEqualsInteger)       = lessThanEqualsIntegerFun
 evalMono (BMFInteger _)                           = error "FIXME: UPLC Integer support"
 
-evalMono (BMFByteString AppendByteString)         = appendByteStringFun @c
-evalMono (BMFByteString ConsByteString)           = consByteStringFun @c
-evalMono (BMFByteString SliceByteString)          = sliceByteStringFun @c
-evalMono (BMFByteString LengthOfByteString)       = lengthOfByteStringFun @c
-evalMono (BMFByteString IndexByteString)          = indexByteStringFun @c
-evalMono (BMFByteString EqualsByteString)         = equalsByteStringFun @c
-evalMono (BMFByteString LessThanByteString)       = lessThanByteStringFun @c
-evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun @c
+evalMono (BMFByteString AppendByteString)         = appendByteStringFun
+evalMono (BMFByteString ConsByteString)           = consByteStringFun
+evalMono (BMFByteString SliceByteString)          = sliceByteStringFun
+evalMono (BMFByteString LengthOfByteString)       = lengthOfByteStringFun
+evalMono (BMFByteString IndexByteString)          = indexByteStringFun
+evalMono (BMFByteString EqualsByteString)         = equalsByteStringFun
+evalMono (BMFByteString LessThanByteString)       = lessThanByteStringFun
+evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun
 
 evalMono (BMFString AppendString)                 = appendStringFun
 evalMono (BMFString EqualsString)                 = equalsStringFun
@@ -486,24 +484,28 @@ consByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $
 
 
 sliceByteStringFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger, BTByteString] BTByteString c
-sliceByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
+sliceByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $
   fromConstant (\(Int f :: Int IntLength Auto c) (Int t :: Int IntLength Auto c) (VarByteString l b)
-                    -> let (fr, to) = (Symbolic.max (from f) zero, Symbolic.max (from f + from t-one) (l - one))
+                    -> let f' = from (resize f :: UInt (NumberOfBits (BaseField c)) Auto c)
+                           t' = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
+                           (fr, to) = (Symbolic.max f' zero, Symbolic.min (f' + t' - one) (l - one))
                            fe8 = fromConstant (8::Natural) :: FieldElement c
                            newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - to*fe8)
                         in fromConstant $ Symbolic.just @c (VarByteString to newB) :: (Fun '[] BTByteString c))
 
 lengthOfByteStringFun :: forall c. (Sym c) => Fun '[BTByteString] BTInteger c
-lengthOfByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
-  fromConstant (\(VarByteString l _) -> Symbolic.just @c $ div (from (from l :: UInt IntLength Auto c)) (fromConstant (8 :: Natural)))
+lengthOfByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $
+  fromConstant (\(VarByteString l _)
+    -> let l' = resize (from l :: UInt (NumberOfBits (BaseField c)) Auto c)
+        in Symbolic.just @c $ div (Int l') (fromConstant (8 :: Natural)))
 
 indexByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTInteger] BTInteger c
-indexByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
+indexByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $
   withGetRegisterSize @IntLength @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) IntLength Auto) @OrdWord $
     fromConstant (\(VarByteString l b) i@(Int t) ->
       let
           indexIn = (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
-          fr = from t
+          fr = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
           fe8 = fromConstant (8::Natural) :: FieldElement c
           newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - fe8)
        in bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn)
