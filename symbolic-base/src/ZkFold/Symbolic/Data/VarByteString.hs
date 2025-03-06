@@ -49,7 +49,7 @@ import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
-import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
+import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
@@ -365,7 +365,7 @@ shiftWordsR (Words regs) p2
             pure (s : acc, l)
 
 dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
-dropZeros VarByteString{..} = bool bsNLessLen bsNMoreLen (bsLength < feN)
+dropZeros VarByteString{..} = ifThenElse (bsLength < feN) bsNMoreLen bsNLessLen
     where
         feN = fromConstant (value @n)
         bsNMoreLen = VarByteString bsLength (dropN bsBuffer)

@@ -58,10 +58,10 @@ evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
 execAcInt ::
   forall a n r . (Arithmetic a, Binary a) =>
-  Int n r (AC a) -> Vector (NumberOfRegisters a (n+1) r) a
+  Int n r (AC a) -> Vector (NumberOfRegisters a n r) a
 execAcInt (Int (UInt v)) = exec v
 
-execZpInt :: forall a n r . Int n r (Interpreter a) -> Vector (NumberOfRegisters a (n+1) r) a
+execZpInt :: forall a n r . Int n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
 execZpInt (Int (UInt (Interpreter v))) = v
 
 type BinaryOp a = a -> a -> a
@@ -89,14 +89,13 @@ specInt'
     :: forall p n r rs
     .  PrimeField (Zp p)
     => KnownNat n
-    => KnownNat (n+1)
     => KnownRegisterSize rs
-    => r ~ NumberOfRegisters (Zp p) (n+1) rs
+    => r ~ NumberOfRegisters (Zp p) n rs
     => KnownNat r
     => Spec
 specInt' = do
     let n = value @n
-        m = 2 ^ (11 :: Natural)
+        m = 2 ^ (n -! 1)
     describe ("Int" ++ show n ++ " specification") $ do
         it "Zp embeds Integer" $ do
             x <- toss m
@@ -113,7 +112,9 @@ specInt' = do
             return $ (t === 0) .||. (t === 1)
         it "Abs correct" $ do
             x <- tossp m
-            return $ toConstant (abs (fromConstant (-x) :: Int n rs (Interpreter (Zp p)))) === x
+            return $ toConstant (abs (fromConstant (-x) :: Int n rs (Interpreter (Zp p)))) === x .&.
+                    toConstant (abs (fromConstant x :: Int n rs (Interpreter (Zp p)))) === x .&.
+                    toConstant (abs (zero :: Int n rs (Interpreter (Zp p)))) === 0
         it "AC embeds Integer" $ do
             x <- toss m
             return $ execAcInt @(Zp p) @n @rs (fromConstant x) === execZpInt @_ @n @rs (fromConstant x)
@@ -127,7 +128,7 @@ specInt' = do
         it "iso uint correctly" $ do
             x <- toss m
             let ix = fromConstant x :: Int n rs (AC (Zp p))
-                ux = fromConstant x :: UInt (n+1) rs (AC (Zp p))
+                ux = fromConstant x :: UInt n rs (AC (Zp p))
             return $ execAcInt (from ux :: Int n rs (AC (Zp p))) === execAcInt @_ @n @rs ix
 
         when (m > 0) $ it "performs divMod correctly" $ do
@@ -140,7 +141,7 @@ specInt' = do
                 refR = execZpInt (fromConstant trueR ::Int n rs (Interpreter (Zp p)))
             return $ (execAcInt acQ, execAcInt acR) === (execZpInt zpQ, execZpInt zpR) .&. (refQ, refR) === (execZpInt zpQ, execZpInt zpR)
 
-        when (m > 0) $ it "performs quotReq correctly" $ do
+        when (m > 0) $ it "performs quotRem correctly" $ do
             num <- toss m
             d <- toss1 m
             let (acQ, acR) = (fromConstant num :: Int n rs (AC (Zp p))) `quotRem` fromConstant d
