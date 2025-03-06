@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
@@ -8,7 +9,7 @@ import           Data.Binary                                       (Binary)
 import           Data.Function                                     ((.))
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Kind                                         (Type)
-import           Prelude                                           (Foldable, Integer, Functor)
+import           Prelude                                           (Foldable, Integer, Functor, Traversable)
 import           Data.Typeable
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -94,7 +95,7 @@ class ( Monad m, FromConstant a var
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
 
-  lookupConstraint :: (Foldable f, Typeable f, Functor f) => f var -> LookupTable a f -> m ()
+  lookupConstraint :: (Traversable f, Typeable f, Functor f) => f w -> LookupTable a f -> m ()
 
   -- | Adds new lookup function to the system.
   -- For example, @'registerFunction' f @ stores the function @f@.
@@ -140,3 +141,4 @@ newConstrained poly witness = do
   v <- unconstrained witness
   constraint (`poly` v)
   return v
+

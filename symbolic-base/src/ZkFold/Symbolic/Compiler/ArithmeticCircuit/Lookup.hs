@@ -17,6 +17,7 @@ import           Data.Typeable
 import           GHC.Base
 import           GHC.Generics     (Generic, Par1, (:*:))
 import           Prelude          (Show)
+import ZkFold.Base.Algebra.Basic.Class ()
 
 
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }

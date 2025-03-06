@@ -346,25 +346,14 @@ instance
 
     -- lookupConstraint :: (Foldable f, Typeable f, Functor f) => f var -> LookupTable a f -> m ()
     lookupConstraint vars lt = do
-      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton $ toList vars))
+      v <- sequenceA $ fmap unconstrained vars
+      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton $ toList v))
       return ()
 
     registerFunction f = do
       let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
       zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
       return $ FunctionId b
-
--- andLookup :: (Arithmetic a) => LookupTable a (Par1 :*: Par1)
--- andLookup = p
---   where
---     p = Product b b
---     b = Ranges $ S.singleton (zero, one)
-
---     andOp :: (Par1 :*: Par1) a -> Par1 a
---     andOp ((Par1 b1) :*: (Par1 b2)) = Par1 b1
-
---     fId :: LookupFunction a
---     fId = LookupFunction andOp
 
 -- | Generates new variable index given a witness for it.
 --

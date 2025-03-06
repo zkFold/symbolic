@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
@@ -16,7 +17,7 @@ import           Data.Eq                         (Eq (..))
 import           Data.Foldable                   (Foldable (..))
 import           Data.Function                   (($), (.))
 import           Data.Functor                    (Functor, fmap, (<$>))
-import           GHC.Generics                    (Generic, Par1 (..))
+import           GHC.Generics                    (Generic, Par1 (..), (:*:) (..))
 import qualified Prelude                         as Haskell
 import           Text.Show                       (Show)
 
@@ -24,7 +25,13 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit    (newAssigned, MonadCircuit (..), ResidueField, at)
+import Prelude (return, Traversable)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import qualified Data.Set as S
+import Data.Binary (Binary)
+import Data.Typeable (Typeable)
+import Data.Functor.Rep (Representable, Rep)
 
 class BoolType b where
     true  :: b
@@ -67,7 +74,7 @@ instance Symbolic c => SymbolicData (Bool c)
 instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
 
-instance Symbolic c => BoolType (Bool c) where
+instance (Symbolic c) => BoolType (Bool c) where
     true = Bool $ embed (Par1 one)
 
     false = Bool $ embed (Par1 zero)
@@ -76,7 +83,12 @@ instance Symbolic c => BoolType (Bool c) where
       \(Par1 v) -> Par1 <$> newAssigned (one - ($ v))
 
     Bool b1 && Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))
+      \p1 p2 -> do
+        ans <- newBinLookup bool2Lookup (fmap at $ p1 :*: p2) andOp
+        a <- unconstrained ans
+        return $ Par1 a
+        where
+            andOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 * v2)
 
     Bool b1 || Bool b2 = Bool $ fromCircuit2F b1 b2 $
       \(Par1 v1) (Par1 v2) -> Par1 <$>
@@ -103,3 +115,19 @@ all1 f = foldr1 (&&) . fmap f
 
 any :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 any f = foldr ((||) . f) false
+
+boolLookup :: Arithmetic a => LookupTable a Par1
+boolLookup = Ranges $ S.singleton (zero, one)
+
+bool2Lookup :: Arithmetic a => LookupTable a (Par1 :*: Par1)
+bool2Lookup = Product boolLookup boolLookup
+
+newBinLookup ::
+  ( Traversable f, Typeable f, Representable f
+  , MonadCircuit var a w m, Binary (Rep f))
+   => LookupTable a f -> f w -> (forall x. ResidueField x=> f x -> Par1 x) -> m ( w)
+newBinLookup dom vars f = do
+    let v3 = unPar1 $ f vars
+    fId <- registerFunction f
+    lookupConstraint ((vars) :*: (Par1 v3)) (Plot fId dom)
+    return $ v3
