@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Data.Bool (
     BoolType(..),
@@ -12,26 +12,26 @@ module ZkFold.Symbolic.Data.Bool (
     or
 ) where
 
-import           Control.DeepSeq                 (NFData)
-import           Data.Eq                         (Eq (..))
-import           Data.Foldable                   (Foldable (..))
-import           Data.Function                   (($), (.))
-import           Data.Functor                    (Functor, fmap, (<$>))
-import           GHC.Generics                    (Generic, Par1 (..), (:*:) (..))
-import qualified Prelude                         as Haskell
-import           Text.Show                       (Show)
+import           Control.DeepSeq                                   (NFData)
+import           Data.Binary                                       (Binary)
+import           Data.Eq                                           (Eq (..))
+import           Data.Foldable                                     (Foldable (..))
+import           Data.Function                                     (($), (.))
+import           Data.Functor                                      (Functor, fmap, (<$>))
+import           Data.Functor.Rep                                  (Rep, Representable)
+import qualified Data.Set                                          as S
+import           Data.Typeable                                     (Typeable)
+import           GHC.Generics                                      (Generic, Par1 (..), (:*:) (..))
+import           Prelude                                           (Traversable)
+import qualified Prelude                                           as Haskell
+import           Text.Show                                         (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Class      (SymbolicData)
-import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit    (newAssigned, MonadCircuit (..), ResidueField, at)
-import Prelude (Traversable)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import qualified Data.Set as S
-import Data.Binary (Binary)
-import Data.Typeable (Typeable)
-import Data.Functor.Rep (Representable, Rep)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import           ZkFold.Symbolic.Data.Class                        (SymbolicData)
+import           ZkFold.Symbolic.Interpreter                       (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit                      (MonadCircuit (..), ResidueField, at, newAssigned)
 
 class BoolType b where
     true  :: b

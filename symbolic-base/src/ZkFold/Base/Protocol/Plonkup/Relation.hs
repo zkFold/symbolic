@@ -32,7 +32,7 @@ import           ZkFold.Prelude                                      (length, re
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar, fromVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (fromVar, toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation p i n l a = PlonkupRelation

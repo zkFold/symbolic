@@ -10,14 +10,15 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
 
 import           Control.DeepSeq
 import           Data.Aeson.Types
-import           Data.ByteString  (ByteString)
+import           Data.ByteString                 (ByteString)
 import           Data.Set
-import qualified Data.Text        as T
+import qualified Data.Text                       as T
 import           Data.Typeable
 import           GHC.Base
-import           GHC.Generics     (Generic, Par1, (:*:))
-import           Prelude          (Show)
-import ZkFold.Base.Algebra.Basic.Class ()
+import           GHC.Generics                    (Generic, Par1, (:*:))
+import           Prelude                         (Show)
+
+import           ZkFold.Base.Algebra.Basic.Class ()
 
 
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }

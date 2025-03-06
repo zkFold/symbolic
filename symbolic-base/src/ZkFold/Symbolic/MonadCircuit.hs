@@ -1,6 +1,6 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
@@ -9,8 +9,8 @@ import           Data.Binary                                       (Binary)
 import           Data.Function                                     ((.))
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Kind                                         (Type)
-import           Prelude                                           (Foldable, Integer, Functor, Traversable)
 import           Data.Typeable
+import           Prelude                                           (Foldable, Functor, Integer, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                   (Zp)

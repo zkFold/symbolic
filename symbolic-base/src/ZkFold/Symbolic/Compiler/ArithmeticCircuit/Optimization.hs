@@ -22,8 +22,8 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (toVar)
 
 --------------------------------- High-level functions --------------------------------
 
