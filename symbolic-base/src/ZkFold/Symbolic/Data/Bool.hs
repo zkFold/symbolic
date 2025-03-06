@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit    (newAssigned, MonadCircuit (..), ResidueField, at)
-import Prelude (return, Traversable)
+import Prelude (Traversable)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import qualified Data.Set as S
 import Data.Binary (Binary)
@@ -83,20 +83,19 @@ instance (Symbolic c) => BoolType (Bool c) where
       \(Par1 v) -> Par1 <$> newAssigned (one - ($ v))
 
     Bool b1 && Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \p1 p2 -> do
-        ans <- newBinLookup bool2Lookup (fmap at $ p1 :*: p2) andOp
-        a <- unconstrained ans
-        return $ Par1 a
+      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) andOp
         where
             andOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 * v2)
 
     Bool b1 || Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \(Par1 v1) (Par1 v2) -> Par1 <$>
-          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - x1 * x2)
+      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) orOp
+        where
+            orOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 + v2 - v1 * v2)
 
     Bool b1 `xor` Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \(Par1 v1) (Par1 v2) -> Par1 <$>
-          newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
+      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) xorOp
+        where
+            xorOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 + v2 - (one + one) * v1 * v2)
 
 fromBool :: Bool (Interpreter a) -> a
 fromBool (Bool (Interpreter (Par1 b))) = b
@@ -125,9 +124,9 @@ bool2Lookup = Product boolLookup boolLookup
 newBinLookup ::
   ( Traversable f, Typeable f, Representable f
   , MonadCircuit var a w m, Binary (Rep f))
-   => LookupTable a f -> f w -> (forall x. ResidueField x=> f x -> Par1 x) -> m ( w)
+   => LookupTable a f -> f w -> (forall x. ResidueField x=> f x -> Par1 x) -> m (Par1 var)
 newBinLookup dom vars f = do
     let v3 = unPar1 $ f vars
     fId <- registerFunction f
     lookupConstraint ((vars) :*: (Par1 v3)) (Plot fId dom)
-    return $ v3
+    Par1 <$> unconstrained v3
