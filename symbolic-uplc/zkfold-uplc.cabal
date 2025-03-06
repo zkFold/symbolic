@@ -60,6 +60,7 @@ test-suite symbolic-uplc-test
       base         ,
       hspec        ,
       symbolic-base,
+      text,
       QuickCheck   ,
       symbolic-uplc
     hs-source-dirs:     test

@@ -35,7 +35,7 @@ import           ZkFold.Base.Algebra.Basic.Class    (AdditiveMonoid (zero), From
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number   (Natural, value)
 import           ZkFold.Prelude                     ((!!))
-import           ZkFold.Symbolic.Class              (BaseField, Symbolic)
+import           ZkFold.Symbolic.Class              (BaseField)
 import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
 import           ZkFold.Symbolic.Data.Class         (SymbolicData (..), SymbolicOutput)
@@ -77,7 +77,7 @@ class
   asPair :: v -> Maybe (ExValue c, ExValue c)
   asList :: v -> Maybe (ExList c)
 
--- | Existential wrapper around 'IsData' Symbolic types.
+-- | Existential wrapper around list of 'IsData' Symbolic types.
 data ExList c = forall t v. IsData t v c => ExList (L.List c v)
 
 -- | Existential wrapper around 'IsData' Symbolic types.
@@ -308,13 +308,14 @@ applyPoly ctx (BPFList MkCons) [x0,xs0] = do
   let l = Symbolic.fromJust x
   MaybeValue xs <- evalArg ctx xs0 []
   let ls = Symbolic.fromJust xs
-  return $ MaybeValue (symMaybe2 x xs $ l L..: (fromJust $ cast ls))
-applyPoly ctx (BPFList HeadList) (xs0:args) = do
-  MaybeValue p <- evalArg ctx xs0 args
+  ls' <- cast ls
+  return $ MaybeValue (symMaybe2 x xs $ l L..: ls')
+applyPoly ctx (BPFList HeadList) [xs0] = do
+  MaybeValue p <- evalArg ctx xs0 []
   ExList v <- asList (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p (L.head v))
-applyPoly ctx (BPFList TailList) (xs0:args) = do
-  MaybeValue p <- evalArg ctx xs0 args
+applyPoly ctx (BPFList TailList) [xs0] = do
+  MaybeValue p <- evalArg ctx xs0 []
   ExList v <- asList (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p (L.tail v))
 applyPoly ctx (BPFList NullList) [xs0] = do
@@ -485,31 +486,27 @@ consByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $
 
 
 sliceByteStringFun :: forall c .(Sym c) => Fun [BTInteger, BTInteger, BTByteString] BTByteString c
-sliceByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength @c $
+sliceByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
   fromConstant (\(Int f :: Int IntLength Auto c) (Int t :: Int IntLength Auto c) (VarByteString l b)
                     -> let (fr, to) = (Symbolic.max (from f) zero, Symbolic.max (from f + from t-one) (l - one))
                            fe8 = fromConstant (8::Natural) :: FieldElement c
                            newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - to*fe8)
                         in fromConstant $ Symbolic.just @c (VarByteString to newB) :: (Fun '[] BTByteString c))
 
-isoFieldElemUInt :: forall n c. (Symbolic c) => Dict (NumberOfBits (BaseField c) ~ n)
-isoFieldElemUInt = unsafeAxiom
-
-withIsoFieldElemUInt :: forall n c {r}. (Symbolic c) => (NumberOfBits (BaseField c) ~ n => r) -> r
-withIsoFieldElemUInt =  withDict $ isoFieldElemUInt @n @c
-
 lengthOfByteStringFun :: forall c. (Sym c) => Fun '[BTByteString] BTInteger c
-lengthOfByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength @c $
+lengthOfByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
   fromConstant (\(VarByteString l _) -> Symbolic.just @c $ div (from (from l :: UInt IntLength Auto c)) (fromConstant (8 :: Natural)))
 
 indexByteStringFun :: forall c .(Sym c) => Fun [BTByteString, BTInteger] BTInteger c
-indexByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withIsoFieldElemUInt @IntLength @c $
+indexByteStringFun = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ withDict (unsafeAxiom :: Dict (NumberOfBits (BaseField c) ~ IntLength)) $
   withGetRegisterSize @IntLength @Auto @(BaseField c) $ withCeilRegSize @(GetRegisterSize (BaseField c) IntLength Auto) @OrdWord $
     fromConstant (\(VarByteString l b) i@(Int t) ->
-      let fr = bool (error "index is not in interval") (from t) (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
+      let
+          indexIn = (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
+          fr = from t
           fe8 = fromConstant (8::Natural) :: FieldElement c
           newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr*fe8)) (fromConstant (value @BSLength) - fe8)
-       in Symbolic.just @c (Int . from $ truncate @_ @IntLength newB))
+       in bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn)
 
 equalsByteStringFun :: forall c. (Sym c) => Fun '[BTByteString, BTByteString] BTBool c
 equalsByteStringFun =  fromConstant (\v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w)

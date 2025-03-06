@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 
 module ZkFold.Symbolic.Data.Int where
@@ -37,12 +38,8 @@ deriving instance (Haskell.Show (BaseField c), Haskell.Show (c (Vector (NumberOf
 deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c) where
-    fromConstant c = Int $ fromConstant c
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (Int n r c) where
-    fromConstant c = Int $ fromConstant c
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (Int n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Exponent (Int n r c) Natural where
     (^) = natPow
@@ -68,17 +65,12 @@ isNotNegative i = not (isNegative i)
 abs :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Int n r c
 abs i = withNumberOfRegisters @n @r @(BaseField c) $ bool i (negate i) (isNegative i)
 
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (Int n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (Int n r c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (Int n r c)
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Natural (Int n r c)
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (Int n r c)
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (Int n r c) where
-    one = fromConstant (1 :: Natural)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (Int n r c) where
-    zero = fromConstant (0:: Natural)
-
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Semiring (Int n r c)
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (Int n r c) where
-    arbitrary = Int Haskell.<$> arbitrary
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (Int n r c) (UInt n r c) where
     from (Int u) = u

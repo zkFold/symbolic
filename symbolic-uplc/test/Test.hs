@@ -8,10 +8,11 @@ import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Eq                                     (Eq)
 import           Data.Function                               (const, ($))
+import qualified Data.Text                               as T
 import           Data.Functor                                (Functor, (<$>))
 import           Data.Functor.Rep                            (Rep, Representable)
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
-import           Prelude                                     (type (~))
+import           Prelude                                     (type (~), (.))
 import           System.IO                                   (IO)
 import           Test.Hspec                                  (describe, hspec)
 import           Test.Hspec.QuickCheck                       (prop)
@@ -57,6 +58,11 @@ tFalse = TConstant (CBool false)
 tTrue = TConstant (CBool true)
 tUnit = TConstant (CUnit ())
 
+tString1, tString2, tString12 :: Term
+tString1 = TConstant (CString . T.pack $ "1")
+tString2 = TConstant (CString . T.pack $ "2")
+tString12 = TConstant (CString . T.pack $ "12")
+
 infixl 1 $$
 ($$) :: Term -> Term -> Term
 ($$) = TApp
@@ -84,3 +90,21 @@ main = hspec $ describe "UPLC tests" $ do
   prop "if as an argument is ok" $ areSame contractV3
     (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
     (const true)
+  prop "strings are equal" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString1 $$ tString1))
+    (const true)
+  prop "strings are not equal" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString1 $$ tString2))
+    (const false)
+  prop "append string is correct" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString12
+                                                                                              $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString1 $$ tString2)))
+    (const true)
+  prop "append string is correct-2" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString12
+                                                                                              $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)))
+    (const false)
