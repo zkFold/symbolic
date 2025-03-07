@@ -83,17 +83,17 @@ instance (Symbolic c) => BoolType (Bool c) where
       \(Par1 v) -> Par1 <$> newAssigned (one - ($ v))
 
     Bool b1 && Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) andOp
+      \p1 p2 -> newBinLookup bool2Lookup (p1 :*: p2) andOp
         where
             andOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 * v2)
 
     Bool b1 || Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) orOp
+      \p1 p2 -> newBinLookup bool2Lookup (p1 :*: p2) orOp
         where
             orOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 + v2 - v1 * v2)
 
     Bool b1 `xor` Bool b2 = Bool $ fromCircuit2F b1 b2 $
-      \p1 p2 -> newBinLookup bool2Lookup (fmap at $ p1 :*: p2) xorOp
+      \p1 p2 -> newBinLookup bool2Lookup (p1 :*: p2) xorOp
         where
             xorOp ((Par1 v1) :*: (Par1 v2)) = Par1 (v1 + v2 - (one + one) * v1 * v2)
 
@@ -121,14 +121,14 @@ boolLookup = Ranges $ S.singleton (zero, one)
 bool2Lookup :: Arithmetic a => LookupTable a (Par1 :*: Par1)
 bool2Lookup = Product boolLookup boolLookup
 
-newBinLookup ::
+newBinLookup :: forall f var a w m.
   ( Traversable f, Typeable f, Representable f
   , MonadCircuit var a w m, Binary (Rep f))
-   => LookupTable a f -> f w -> (forall x. ResidueField x => f x -> Par1 x) -> m (Par1 var)
+   => LookupTable a f -> f var -> (forall x. ResidueField x => f x -> Par1 x) -> m (Par1 var)
 newBinLookup dom vars f = do
-    let (Par1 v3w) = f vars
+    let vs = fmap (at @var @w )vars
+        (Par1 v3w) = f vs
     v3 <- unconstrained v3w
     fId <- registerFunction f
-    vs <- Haskell.sequenceA $ fmap unconstrained vars
-    lookupConstraint (vs :*: (Par1 v3)) (Plot fId dom)
+    lookupConstraint (vars :*: (Par1 v3)) (Plot fId dom)
     return $ Par1 v3
