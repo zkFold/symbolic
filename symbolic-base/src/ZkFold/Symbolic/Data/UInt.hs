@@ -441,12 +441,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     compare = bitwiseCompare `on` uintBits
 
 uintBits
-    :: forall n r c. Symbolic c
+    :: (KnownNat n, KnownRegisterSize r, Symbolic c)
     => UInt n r c
-    -> c []
+    -> c (Vector n)
 uintBits uint =
     let ByteString bits = from uint
-    in V.fromVector bits
+    in bits
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
