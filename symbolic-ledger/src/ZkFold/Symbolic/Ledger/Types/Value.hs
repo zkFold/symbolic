@@ -70,7 +70,7 @@ addValue val@Value {..} (UnsafeMultiAssetValue valList) =
   let (valHead@(valHeadCurrencySymbol, valHeadTokenList), valTail) = uncons valList
       valHeadTokenListAdded = addTokenAmount valHeadTokenList
       UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
-      multiVal = 
+      multiVal =
         ifThenElse (mintingPolicy == valHeadCurrencySymbol)
           (UnsafeMultiAssetValue ((valHeadCurrencySymbol, valHeadTokenListAdded) .: valTail))
           (UnsafeMultiAssetValue (valHead .: valTailAdded))
