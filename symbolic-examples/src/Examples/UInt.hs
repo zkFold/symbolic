@@ -8,6 +8,7 @@ module Examples.UInt (
     exampleUIntStrictAdd,
     exampleUIntStrictMul,
     exampleUIntResize,
+    exampleUIntLeq,
   ) where
 
 import           Control.DeepSeq                  (NFData)
@@ -20,6 +21,8 @@ import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
                                                    NumberOfRegisters, resize)
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt, expMod, productMod)
+import           ZkFold.Symbolic.Data.Bool         (Bool)
+import           ZkFold.Symbolic.Data.Ord          ((<=))
 
 
 exampleUIntMul ::
@@ -74,3 +77,11 @@ exampleUIntResize ::
   (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c) =>
   UInt n r c -> UInt k r c
 exampleUIntResize = resize
+
+exampleUIntLeq ::
+  ( KnownNat n, KnownRegisterSize r, Symbolic c
+  , KnownRegisters c n r
+  , regSize ~ GetRegisterSize (BaseField c) n r
+  , KnownNat (Ceil regSize OrdWord)
+  ) => UInt n r c -> UInt n r c -> Bool c
+exampleUIntLeq = (<=)
