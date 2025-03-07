@@ -15,6 +15,8 @@ module ZkFold.Symbolic.Data.VarByteString
     , shiftL
     , shiftR
     , wipeUnassigned
+    , dropZeros
+    , fromString
     ) where
 
 import           Control.DeepSeq                   (NFData)
@@ -44,13 +46,14 @@ import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, 
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), isSet, orRight)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
-import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool)
+import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
+import           ZkFold.Symbolic.Data.Ord          ((<))
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, newAssigned)
 
@@ -361,3 +364,9 @@ shiftWordsR (Words regs) p2
             s <- newAssigned $ \p ->  p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
             pure (s : acc, l)
 
+dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
+dropZeros VarByteString{..} = ifThenElse (bsLength < feN) bsNMoreLen bsNLessLen
+    where
+        feN = fromConstant (value @n)
+        bsNMoreLen = VarByteString bsLength (dropN bsBuffer)
+        bsNLessLen = VarByteString feN (truncate bsBuffer)
