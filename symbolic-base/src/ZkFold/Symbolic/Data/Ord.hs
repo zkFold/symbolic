@@ -13,6 +13,7 @@ module ZkFold.Symbolic.Data.Ord
 import           Control.DeepSeq                  (NFData)
 import           Data.Foldable                    (fold, toList)
 import           Data.Function                    (on)
+import           Data.Functor.Rep                 (Representable, mzipWithRep)
 import           Data.List                        (concatMap, reverse, zipWith)
 import           Data.Traversable                 (traverse)
 import           GHC.Generics
