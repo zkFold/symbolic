@@ -2,11 +2,12 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import Data.Data (Proxy)
+import           Data.Data                             (Proxy)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
                                                         (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Control.HApplicative      (HApplicative)
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
@@ -16,7 +17,6 @@ import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), Sy
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
-import ZkFold.Base.Control.HApplicative (HApplicative)
 
 -- | Input to the minting contract. Usually a token name.
 data Token context
