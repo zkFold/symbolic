@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Ord
   , Ordering
   , Ord (..)
   , GOrd (..)
+  , bitwiseCompare
   ) where
 
 import           Control.DeepSeq                  (NFData)
