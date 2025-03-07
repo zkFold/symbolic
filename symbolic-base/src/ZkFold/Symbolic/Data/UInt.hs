@@ -441,13 +441,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     compare = bitwiseCompare `on` uintBits
 
 uintBits
-    :: forall n r c. (Symbolic c, KnownRegisterSize r)
+    :: forall n r c. Symbolic c
     => UInt n r c
     -> c []
-uintBits (UInt v) = fromCircuitF v $ \regs -> do
-    let rsize = case regSize @r of {Auto -> 16; Fixed r -> r}
-    words <- Haskell.mapM (expansion rsize) regs
-    Haskell.pure $ Haskell.reverse . Haskell.concat . V.fromVector $ words
+uintBits uint =
+    let ByteString bits = from uint
+    in V.fromVector bits
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
