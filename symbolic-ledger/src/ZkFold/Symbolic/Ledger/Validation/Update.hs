@@ -9,10 +9,12 @@ import           Prelude                                       hiding (Bool, Eq 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
+import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Eq                       (Eq (..), SymbolicEq)
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
+import ZkFold.Symbolic.Data.UInt (UInt)
 
 data UpdateWitness context = UpdateWitness
   { updateWitnessOnlineTxs :: List context (AddressIndex context, Transaction context, TransactionWitness context, Bool context)
@@ -76,6 +78,7 @@ updateIsValid ::
   => Conditional (Bool context) (MultiAssetValue context)
   => BooleanOf (Token context) ~ Bool context
   => Eq (Token context)
+  => TupleSymbolicData context Token (UInt 64 Auto)
   => Hash context
   -> Update context
   -> UpdateWitness context
