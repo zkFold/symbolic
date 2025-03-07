@@ -5,6 +5,7 @@ module Tests.Symbolic.Algorithm.JWT (specJWT) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import           Crypto.Random                               (newGenIO)
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
@@ -38,9 +39,10 @@ specJWT = do
         it "signs and verifies correctly" $ withMaxSuccess 10 $ do
             x <- toss $ (2 :: Natural) ^ (32 :: Natural)
             kidBits <- toss $ (2 :: Natural) ^ (320 :: Natural)
+            gen <- newGenIO @SystemRandom
 
-            let gen = mkStdGen (P.fromIntegral x)
-                (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen 2048
+            let (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen 2048
+                R.PublicKey{public_n = private_n} = private_pub
                 prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 kid = fromNatural 320 kidBits :: VarByteString 320 I

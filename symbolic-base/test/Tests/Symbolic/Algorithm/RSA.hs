@@ -5,6 +5,7 @@ module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                            (generateKeyPair)
 import qualified Codec.Crypto.RSA                            as R
+import qualified Codec.Crypto.RSA.Pure                       as R
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1 (..))
 import           Prelude                                     (pure)
@@ -32,12 +33,13 @@ toss x = chooseNatural (0, x -! 1)
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v
 
-specRSA' :: forall keyLength g . (RandomGen g, RSA keyLength 256 I) => g -> Spec
+specRSA' :: (RSA keyLength 256 I) => SystemRandom -> Spec
 specRSA' gen = do
     describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
         it "signs and verifies correctly" $ withMaxSuccess 10 $ do
             msgBits <- toss $ (2 :: Natural) ^ (256 :: Natural)
             let (R.PublicKey{..}, R.PrivateKey{..}, _) = generateKeyPair gen (P.fromIntegral $ value @keyLength)
+                R.PublicKey{public_n = private_n} = private_pub
                 prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
                 pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
                 msg = fromConstant msgBits
