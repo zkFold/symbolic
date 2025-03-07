@@ -12,7 +12,7 @@ import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool, ifThenElse)
+import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
@@ -67,27 +67,26 @@ addValue ::
   -> MultiAssetValue context
   -> MultiAssetValue context
 addValue val@Value {..} (UnsafeMultiAssetValue valList) =
-  let tokenAmount = (tokenInstance, tokenQuantity)
-      oneVal = UnsafeMultiAssetValue (singleton (mintingPolicy, singleton tokenAmount))
-      (valHead@(valHeadCurrencySymbol, valHeadTokenList), valTail) = uncons valList
+  let (valHead@(valHeadCurrencySymbol, valHeadTokenList), valTail) = uncons valList
       valHeadTokenListAdded = addTokenAmount valHeadTokenList
       UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
-      multiVal = ifThenElse @(Bool context)
-        (mintingPolicy == valHeadCurrencySymbol)
-        (UnsafeMultiAssetValue ((valHeadCurrencySymbol, valHeadTokenListAdded) .: valTail))
-        (UnsafeMultiAssetValue (valHead .: valTailAdded))
-  in bool multiVal oneVal (null valList)
+      multiVal = 
+        ifThenElse (mintingPolicy == valHeadCurrencySymbol)
+          (UnsafeMultiAssetValue ((valHeadCurrencySymbol, valHeadTokenListAdded) .: valTail))
+          (UnsafeMultiAssetValue (valHead .: valTailAdded))
+  in ifThenElse (null valList)
+       (UnsafeMultiAssetValue (singleton (mintingPolicy, singleton (tokenInstance, tokenQuantity))))
+       multiVal
   where
     addTokenAmount tokenAmountList =
       let (tokenHead@(tokenHeadToken, tokenHeadAmount), tokenTail) = uncons tokenAmountList
-          tokenAmountAdded = ifThenElse @(Bool context)
-            (tokenHeadToken == tokenInstance)
-            ((tokenHeadToken, tokenHeadAmount + tokenQuantity) .: tokenTail)
-            (tokenHead .: addTokenAmount tokenTail)
-      in ifThenElse @(Bool context)
-        (null tokenAmountList)
-        (singleton (tokenInstance, tokenQuantity))
-        tokenAmountAdded
+          tokenAmountAdded =
+            ifThenElse (tokenHeadToken == tokenInstance)
+              ((tokenHeadToken, tokenHeadAmount + tokenQuantity) .: tokenTail)
+              (tokenHead .: addTokenAmount tokenTail)
+      in ifThenElse (null tokenAmountList)
+           (singleton (tokenInstance, tokenQuantity))
+           tokenAmountAdded
 
 -- Safe constructor for a multi-asset value
 multiValueAsset ::
