@@ -22,7 +22,7 @@ import           Data.Functor.Rep                                  (Rep, Represe
 import qualified Data.Set                                          as S
 import           Data.Typeable                                     (Typeable)
 import           GHC.Generics                                      (Generic, Par1 (..), (:*:) (..))
-import           Prelude                                           (Traversable)
+import           Prelude                                           (Traversable, return)
 import qualified Prelude                                           as Haskell
 import           Text.Show                                         (Show)
 
@@ -124,9 +124,11 @@ bool2Lookup = Product boolLookup boolLookup
 newBinLookup ::
   ( Traversable f, Typeable f, Representable f
   , MonadCircuit var a w m, Binary (Rep f))
-   => LookupTable a f -> f w -> (forall x. ResidueField x=> f x -> Par1 x) -> m (Par1 var)
+   => LookupTable a f -> f w -> (forall x. ResidueField x => f x -> Par1 x) -> m (Par1 var)
 newBinLookup dom vars f = do
-    let v3 = unPar1 $ f vars
+    let (Par1 v3w) = f vars
+    v3 <- unconstrained v3w
     fId <- registerFunction f
-    lookupConstraint ((vars) :*: (Par1 v3)) (Plot fId dom)
-    Par1 <$> unconstrained v3
+    vs <- Haskell.sequenceA $ fmap unconstrained vars
+    lookupConstraint (vs :*: (Par1 v3)) (Plot fId dom)
+    return $ Par1 v3

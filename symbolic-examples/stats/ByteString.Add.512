@@ -1,4 +1,5 @@
 ByteString.Add.512
 Number of constraints: 5634
 Number of variables: 6146
-Number of range lookups: 522
+Number of all lookups: 522
+Number of all lookup functions: 1

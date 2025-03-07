@@ -21,7 +21,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- information about the system
         acSizeN,
         acSizeM,
-        acSizeR,
+        acSizeL,
+        acSizeLF,
         acSystem,
         acValue,
         acPrint,
@@ -142,9 +143,13 @@ acSizeN = length . acSystem
 acSizeM :: ArithmeticCircuit a p i o -> Natural
 acSizeM = length . acWitness
 
--- | Calculates the number of range lookups in the system.
-acSizeR :: ArithmeticCircuit a p i o -> Natural
-acSizeR = sum . map length . M.elems . acLookup
+-- | Calculates the number of all lookups in the system.
+acSizeL :: ArithmeticCircuit a p i o -> Natural
+acSizeL = sum . map length . M.elems . acLookup
+
+-- | Calculates the number of all lookups in the system.
+acSizeLF :: ArithmeticCircuit a p i o -> Natural
+acSizeLF = length . elems . acLookupFunction
 
 acValue ::
   (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a

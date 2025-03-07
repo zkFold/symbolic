@@ -56,8 +56,8 @@ toVar :: Semiring a => SysVar i -> Var a i
 toVar x = LinVar one x zero
 
 fromVar :: Arithmetic a => Var a i -> SysVar i
-fromVar (LinVar k x b) = bool (error "there are no SysVar inside Var") x (k == one && b == zero)
-fromVar _              = error "there are no SysVar inside Var"
+fromVar (LinVar k x b) = bool (error "this LinVar now equal x") x (k == one && b == zero)
+fromVar _              = error "can't select SysVar"
 
 imapVar ::
   (Representable i, Representable j) =>

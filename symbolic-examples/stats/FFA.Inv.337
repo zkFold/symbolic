@@ -1,4 +1,5 @@
 FFA.Inv.337
 Number of constraints: 3902
 Number of variables: 5896
-Number of range lookups: 2328
+Number of all lookups: 2328
+Number of all lookup functions: 1

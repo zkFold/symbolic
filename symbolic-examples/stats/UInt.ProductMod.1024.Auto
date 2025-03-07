@@ -1,4 +1,5 @@
 UInt.ProductMod.1024.Auto
 Number of constraints: 4484
 Number of variables: 7851
-Number of range lookups: 3702
+Number of all lookups: 3702
+Number of all lookup functions: 1

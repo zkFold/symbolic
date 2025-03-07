@@ -24,7 +24,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 -- This module contains functions for mapping variables in arithmetic circuits.
 
 mapVarArithmeticCircuit ::
-  (Field a, Functor o, Ord (Rep i), Ord a, Representable i, Foldable i) =>
+  (Field a, Ord a, Functor o, Ord (Rep i), Representable i, Foldable i) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 mapVarArithmeticCircuit ac =
     let vars = [v | NewVar (EqVar v) <- getAllVars ac]
