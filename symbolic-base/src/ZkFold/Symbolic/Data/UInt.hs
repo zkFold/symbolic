@@ -30,7 +30,6 @@ import           Control.DeepSeq
 import           Control.Monad                     (foldM, zipWithM)
 import           Control.Monad.State               (StateT (..))
 import           Data.Aeson                        hiding (Bool)
-import qualified Data.Bool                         as Haskell
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
@@ -440,25 +439,15 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
     ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
 
-    compare x y = bool (bool lt eq (x == y)) gt (x > y)
+    compare = bitwiseCompareRep `on` uintBits
 
-    x <= y = y >= x
-
-    x <  y = y > x
-
-    (UInt u1) >= (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
-         in bitwiseGE @OrdWord w1 w2
-
-    (UInt u1) > (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
-         in bitwiseGT @OrdWord w1 w2
-
-    max x y = bool @(Bool c) x y $ x < y
-
-    min x y = bool @(Bool c) x y $ x > y
+uintBits
+    :: (KnownNat n, KnownRegisterSize r, Symbolic c)
+    => UInt n r c
+    -> c (Vector n)
+uintBits uint =
+    let ByteString bits = from uint
+    in bits
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
@@ -820,26 +809,10 @@ instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJ
 
 -- Old Ord circuits for compatibility --
 
-bitwiseGE :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGE xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.>= toList vs))
-    $ \is js -> Par1 <$> blueprintGE @r is js
-
 blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
 blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta @r xs ys
   newAssigned $ \p -> one - p hasNegOne
-
-bitwiseGT :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGT xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.> toList vs))
-    $ \is js -> do
-      (hasOne, hasNegOne) <- circuitDelta @r is js
-      Par1 <$> newAssigned (\p -> p hasOne * (one - p hasNegOne))
 
 -- | Compare two sets of r-bit words lexicographically
 --
