@@ -20,6 +20,7 @@ module ZkFold.Symbolic.Data.ByteString
     , toWords
     , concat
     , truncate
+    , dropN
     , append
     , emptyByteString
     , toBsBits
@@ -31,7 +32,8 @@ import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.Bits                         as B
 import qualified Data.ByteString                   as Bytes
-import           Data.Constraint.Nat               (Max)
+import           Data.Constraint                   (withDict)
+import           Data.Constraint.Nat               (Max, plusMinusInverse3)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
@@ -247,6 +249,12 @@ truncate :: forall m n c. (
   ) => ByteString m c -> ByteString n c
 truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
+dropN :: forall n m c.
+    ( Symbolic c
+    , KnownNat (m-n)
+    , n <= m
+    ) => ByteString m c -> ByteString n c
+dropN (ByteString bits) = withDict (plusMinusInverse3 @n @m) $ ByteString $ hmap (V.drop @(m-n)) bits
 
 append
     :: forall m n c
