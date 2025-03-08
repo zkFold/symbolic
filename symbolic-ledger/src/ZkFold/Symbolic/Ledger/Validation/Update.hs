@@ -76,6 +76,9 @@ updateIsValid ::
   => Conditional (Bool context) (MultiAssetValue context)
   => BooleanOf (Token context) ~ Bool context
   => Eq (Token context)
+  => SymbolicData ((Token context, Amount context))
+  => Context ((Token context, Amount context)) ~ context
+  => Support (Token context) ~ Proxy context
   => Hash context
   -> Update context
   -> UpdateWitness context
@@ -87,5 +90,5 @@ updateIsValid uId u w =
       spentValues = txoValue . txiOutput <$> concat (txInputs <$> txs)
       prodValues = txoValue <$> concat (txOutputs <$> txs)
   in newUpdate uId w == u
-  && multiValueAsset (spentValues ++ mintValues) == multiValueAsset prodValues
+  && multiAssetValue (spentValues ++ mintValues) == multiAssetValue prodValues
   -- ^ TODO: make sure equality of multi-asset values is "invariant under asset reordering"
