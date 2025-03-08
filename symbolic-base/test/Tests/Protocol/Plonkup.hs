@@ -11,7 +11,6 @@ import           Data.ByteString                                     (ByteString
 import           Data.Eq                                             (Eq (..))
 import           Data.Foldable                                       (Foldable, toList)
 import           Data.Function                                       (($))
-import           Data.Functor.Classes                                (Show1 (..))
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Int                                            (Int)
 import           Data.List                                           (head, sort)
@@ -20,7 +19,6 @@ import           GHC.Generics                                        (U1 (..))
 import           GHC.IsList                                          (IsList (fromList))
 import           Test.Hspec
 import           Test.QuickCheck
-import           Text.Show                                           (showsPrec)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
@@ -174,8 +172,6 @@ instance Arbitrary (U1 a) where
   arbitrary = return U1
 instance Arbitrary1 U1 where
   liftArbitrary _ = return U1
-instance Show1 U1 where
-  liftShowsPrec _ _ = showsPrec
 
 specPlonkup :: Spec
 specPlonkup = do

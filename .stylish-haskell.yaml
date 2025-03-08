@@ -470,8 +470,8 @@ newline: native
 # needs to be aware of these, so it can parse the file correctly.
 #
 # No language extensions are enabled by default.
-# language_extensions:
-  # - TemplateHaskell
+language_extensions:
+  - TemplateHaskell
   # - QuasiQuotes
 
 # Attempt to find the cabal file in ancestors of the current directory, and

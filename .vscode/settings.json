@@ -2,8 +2,8 @@
     "haskell.manageHLS": "GHCup",
     "haskell.toolchain": {
       "hls": "2.9.0.1",
-      "cabal": "3.10.3.0",
-      "ghc": "9.6.6",
+      "cabal": "3.14.1.1",
+      "ghc": "9.12.1",
       "stack": null
     }, 
     "haskell.formattingProvider": "stylish-haskell"

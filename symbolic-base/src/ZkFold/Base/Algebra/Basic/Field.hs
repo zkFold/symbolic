@@ -29,7 +29,7 @@ import qualified Prelude                                    as Haskell
 import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            hiding (scale)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class            hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.ByteString

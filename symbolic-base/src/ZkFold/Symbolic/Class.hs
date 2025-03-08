@@ -13,6 +13,7 @@ import           Data.Ord                         (Ord)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     (type (:.:) (unComp1))
 import           Numeric.Natural                  (Natural)
+import           Prelude                          (Integer)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative (HApplicative (hpair, hunit))
@@ -22,7 +23,9 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
-type Arithmetic a = (ResidueField Natural a, Eq a, Ord a, NFData a)
+type Arithmetic a = ( ResidueField a, IntegralOf a ~ Integer
+                    , ToConstant a, Const a ~ Natural
+                    , Eq a, Ord a, NFData a)
 
 -- | A type of mappings between functors inside a circuit.
 -- @fs@ are input functors, @g@ is an output functor, @c@ is context.
@@ -43,8 +46,7 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
 class ( HApplicative c, Package c, Arithmetic (BaseField c)
-      , ResidueField (Const (WitnessField c)) (WitnessField c)
-      ) => Symbolic c where
+      , ResidueField (WitnessField c)) => Symbolic c where
     -- | Base algebraic field over which computations are performed.
     type BaseField c :: Type
     -- | Type of witnesses usable inside circuit construction

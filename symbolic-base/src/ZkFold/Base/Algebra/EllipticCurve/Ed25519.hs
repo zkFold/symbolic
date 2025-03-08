@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Algebra.EllipticCurve.Ed25519
@@ -46,4 +46,4 @@ instance CyclicGroup Ed25519_Point where
     (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
 instance Scale Fl Ed25519_Point where
-  scale n x = scale (toConstant n) x
+  scale n = scale (toConstant n)

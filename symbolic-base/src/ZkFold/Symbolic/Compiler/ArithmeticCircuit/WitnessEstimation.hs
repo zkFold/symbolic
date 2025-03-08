@@ -14,7 +14,9 @@ import           Prelude                                        (Eq, Maybe (..),
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString                    ()
+import           ZkFold.Symbolic.Class                          (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))
 
 
 
@@ -92,13 +94,11 @@ instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
   finv (ConstUVar c) = ConstUVar $ finv c
   finv _             = More
 
-instance ToConstant a => ToConstant (UVar a i) where
-  type Const (UVar a i) = Maybe (Const a)
-  toConstant (ConstUVar c) = Just $ toConstant c
-  toConstant _             = Nothing
-
 instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
 
-instance FromConstant Natural a => FromConstant (Maybe Natural) (UVar a i) where
-    fromConstant (Just c) = ConstUVar $ fromConstant c
-    fromConstant Nothing  = More
+instance (Arithmetic a, Eq (Rep i)) => ResidueField (UVar a i) where
+  type IntegralOf (UVar a i) = Maybe Integer
+  fromIntegral (Just x) = ConstUVar (fromConstant x)
+  fromIntegral Nothing  = More
+  toIntegral (ConstUVar c) = Just (toIntegral c)
+  toIntegral _             = Nothing

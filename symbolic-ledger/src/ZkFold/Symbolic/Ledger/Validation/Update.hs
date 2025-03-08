@@ -74,6 +74,8 @@ updateIsValid ::
   => Context (MultiAssetValue context) ~ context
   => SymbolicEq (MultiAssetValue context)
   => Conditional (Bool context) (MultiAssetValue context)
+  => BooleanOf (Token context) ~ Bool context
+  => Eq (Token context)
   => Hash context
   -> Update context
   -> UpdateWitness context

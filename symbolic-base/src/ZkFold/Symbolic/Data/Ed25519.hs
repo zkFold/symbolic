@@ -16,13 +16,14 @@ import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed2551
 import           ZkFold.Symbolic.Class                     (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators          (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 import           ZkFold.Symbolic.Data.FieldElement
 
-type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base ctx)
+type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 
-instance Symbolic ctx => CyclicGroup (Ed25519_Point ctx) where
+instance (Symbolic ctx, KnownFFA Ed25519_Base 'Auto ctx) => CyclicGroup (Ed25519_Point ctx) where
   type ScalarFieldOf (Ed25519_Point ctx) = FieldElement ctx
   pointGen = pointXY
     (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
@@ -32,6 +33,7 @@ instance
   ( Symbolic ctx
   , a ~ BaseField ctx
   , bits ~ NumberOfBits a
+  , KnownFFA Ed25519_Base 'Auto ctx
   ) => Scale (FieldElement ctx) (Ed25519_Point ctx) where
 
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)

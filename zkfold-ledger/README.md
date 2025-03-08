@@ -1,2 +1,0 @@
-# zkFold Ledger
-This package contains the zkFold Symbolic framework base library. It includes the zkFold Symbolic compiler and a number of zero knowledge proof protocols. The compiler translates code written using the zkFold Symbolic framework into arithmetic circuits. The zero knowledge proof protocols are used to verify statements about the circuits.

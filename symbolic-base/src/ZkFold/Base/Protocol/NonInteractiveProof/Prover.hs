@@ -10,7 +10,6 @@ import           Data.Aeson.Types
 import           Data.ByteString                          (ByteString)
 import qualified Data.ByteString.Base64                   as B64
 import qualified Data.ByteString.Char8                    as BS
-import           Data.Swagger
 import qualified Data.Text                                as T
 import           GHC.Generics                             (Generic)
 import           Optics                                   ((&))
@@ -32,9 +31,6 @@ instance FromJSON ProofBytes where
         case B64.decode . BS.pack . T.unpack $ t of
             Left err -> fail err
             Right bs -> return $ ProofBytes bs
-
-instance ToSchema ProofBytes where
-  declareNamedSchema _ = pure $ NamedSchema (Just "Proof bytes") byteSchema
 
 data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
     deriving (Show, Eq, Generic, NFData)
@@ -62,9 +58,6 @@ instance FromJSON ProveAPIResult where
         "Witness error" -> return ProveAPIErrorWitness
         _ -> fail "Unknown error message"
       _ -> fail "Unknown status"
-
-instance ToSchema ProveAPIResult where
-  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 proveAPI
     :: forall a core

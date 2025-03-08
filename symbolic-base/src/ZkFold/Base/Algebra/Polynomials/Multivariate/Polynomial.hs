@@ -7,7 +7,7 @@ import           Control.DeepSeq                                       (NFData)
 import           Data.Aeson                                            (FromJSON, ToJSON)
 import           Data.Bifunctor                                        (Bifunctor (..))
 import           Data.Functor                                          ((<&>))
-import           Data.List                                             (foldl', intercalate)
+import           Data.List                                             (intercalate)
 import           Data.Map.Strict                                       (Map, empty, keysSet)
 import qualified Data.Map.Strict                                       as M
 import           Data.Set                                              (Set)

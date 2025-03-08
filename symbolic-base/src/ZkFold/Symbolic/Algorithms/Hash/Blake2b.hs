@@ -9,7 +9,6 @@ import           Data.Constraint                                   (Dict, withDi
 import           Data.Constraint.Nat                               (minusNat, modBound, modNat, plusMonotone2, plusNat,
                                                                     timesNat, zeroLe)
 import           Data.Constraint.Unsafe                            (unsafeAxiom)
-import           Data.List                                         (foldl')
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V
@@ -28,8 +27,8 @@ import           ZkFold.Prelude                                    (length, repl
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b.Constants (blake2b_iv, sigma)
 import           ZkFold.Symbolic.Class                             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                         (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), Resize (..), ShiftBits (..),
-                                                                    concat, reverseEndianness, toWords)
+import           ZkFold.Symbolic.Data.ByteString                   (ByteString (..), ShiftBits (..), concat,
+                                                                    reverseEndianness, toWords, truncate)
 import           ZkFold.Symbolic.Data.Combinators                  (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt                         (UInt (..))
 
@@ -255,10 +254,10 @@ blake2b' d =
             else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
         bs = reverseEndianness @64 $ concat @8 @64 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
-    in with8n @nn' (resize bs)
+    in withDict (timesNLe512 @nn') $ with8n @nn' (truncate bs)
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
-type ExtendedInputByteString inputLen c = ByteString (8 * inputLen + ExtensionBits inputLen) c
+type ExtendedInputByteString inputLen = 8 * inputLen + ExtensionBits inputLen
 
 withExtensionBits :: forall n {r}. KnownNat n => (KnownNat (ExtensionBits n) => r) -> r
 withExtensionBits = withDict (modBound @n @128) $
@@ -279,6 +278,9 @@ with8nLessExt = withExtendedInputByteString @n $
 with8n  :: forall n {r}. KnownNat n => (KnownNat (8 * n) => r) -> r
 with8n = withDict (timesNat @8 @n)
 
+timesNLe512 :: forall n . Dict (8 * n <= 512)
+timesNLe512 = unsafeAxiom
+
 blake2bDivConstraint :: forall n. Dict (Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n)
 blake2bDivConstraint = unsafeAxiom
 
@@ -293,6 +295,9 @@ withConstraints :: forall n {r}. KnownNat n => (
     , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n) => r) -> r
 withConstraints = with8nLessExt @n $ withExtendedInputByteString @n $ withExtensionBits @n $ with8n @n $ withBlake2bDivConstraint @n
 
+nLeInput :: forall n i . Dict (n <= 8 * i)
+nLeInput = unsafeAxiom
+
 blake2b :: forall keyLen inputLen outputLen c n.
     ( Symbolic c
     , KnownNat keyLen
@@ -302,10 +307,11 @@ blake2b :: forall keyLen inputLen outputLen c n.
     ) => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
 blake2b key input =
     let input' = withConstraints @inputLen $
+                    withDict (nLeInput @n @inputLen) $
                     from <$> (toWords @(Div n 64) @64 $
                     reverseEndianness @64 $
                     flip rotateBitsL (value @(ExtensionBits inputLen)) $
-                    resize @_ @(ExtendedInputByteString inputLen c) input ) :: Vec.Vector (Div n 64) (UInt 64 Auto c)
+                    truncate @_ @(ExtendedInputByteString inputLen) input ) :: Vec.Vector (Div n 64) (UInt 64 Auto c)
 
         key'    = fromConstant @_ key :: UInt 64 Auto c
         input'' = if value @keyLen > 0

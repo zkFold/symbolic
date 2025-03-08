@@ -6,7 +6,6 @@
 module Tests.Protocol.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                             (ByteString)
-import           Data.Functor.Classes                        (Show1 (..))
 import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
 import           GHC.Generics                                (U1 (..))
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
@@ -38,8 +37,6 @@ specNonInteractiveProof' = do
 
 instance Arbitrary (U1 a) where
   arbitrary = return U1
-instance Show1 U1 where
-  liftShowsPrec _ _ = showsPrec
 instance Arbitrary1 U1 where
   liftArbitrary _ = return U1
 

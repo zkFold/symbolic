@@ -55,7 +55,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @MiMCHash . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir @(MiMCHash F) . commitOpen . specialSoundProtocol @D
 
 initAccumulator :: PHI -> Accumulator K I C F
 initAccumulator = emptyAccumulator @D
@@ -87,7 +87,7 @@ testPublicInput phi =
     in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
-testAccumulatorScheme = accumulatorScheme @MiMCHash
+testAccumulatorScheme = accumulatorScheme @(MiMCHash F)
 
 testAccumulator :: PHI -> Accumulator K I C F
 testAccumulator phi =

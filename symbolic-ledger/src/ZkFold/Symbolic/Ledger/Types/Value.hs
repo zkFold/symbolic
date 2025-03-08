@@ -2,15 +2,16 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value where
 
-import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (*), (+), (==))
+import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
+                                                        (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
-import           ZkFold.Symbolic.Data.Bool             (Bool)
+import           ZkFold.Symbolic.Data.Bool             (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq               (Eq ((==)), SymbolicEq)
+import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
@@ -45,6 +46,8 @@ emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 -- Add a single value to a multi-asset value
 addValue ::
      forall context. Conditional (Bool context) (MultiAssetValue context)
+  => BooleanOf (Token context) ~ Bool context
+  => Eq (Token context)
   => Symbolic context
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
@@ -59,9 +62,9 @@ addValue val (UnsafeMultiAssetValue valList) =
       valHeadAdded = valHead {tokenQuantity = tokenQuantity valHead + tokenQuantity val}
       UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
       multiVal = bool @(Bool context)
-        (UnsafeMultiAssetValue (valHeadAdded .: valTail))
         (UnsafeMultiAssetValue (valHead .: valTailAdded))
-        (mintingPolicy val == mintingPolicy valHead)
+        (UnsafeMultiAssetValue (valHeadAdded .: valTail))
+        (mintingPolicy val == mintingPolicy valHead && tokenInstance val == tokenInstance valHead)
   in bool multiVal oneVal (null valList)
 
 -- Safe constructor for a multi-asset value
@@ -70,9 +73,15 @@ multiValueAsset ::
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
   => Conditional (Bool context) (MultiAssetValue context)
+  => BooleanOf (Token context) ~ Bool context
+  => Eq (Token context)
   => SymbolicEq (CurrencySymbol context)
   => Context (CurrencySymbol context) ~ context
   => Foldable (List context)
   => List context (Value context)
   -> MultiAssetValue context
 multiValueAsset = foldr addValue emptyMultiAssetValue
+
+-- | Unsafe constructor for a multi-asset value. Mainly to be used for testing.
+unsafeMultiAssetValue :: List context (Value context) -> MultiAssetValue context
+unsafeMultiAssetValue = UnsafeMultiAssetValue

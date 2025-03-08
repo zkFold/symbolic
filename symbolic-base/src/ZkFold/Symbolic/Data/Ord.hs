@@ -1,158 +1,204 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DerivingVia          #-}
-{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.Ord (Ord (..), blueprintGE, bitwiseGE, bitwiseGT, getBitsBE) where
+module ZkFold.Symbolic.Data.Ord
+  ( IsOrdering (..)
+  , Ordering
+  , Ord (..)
+  , GOrd (..)
+  ) where
 
-import           Control.Monad                    (foldM)
-import qualified Data.Bool                        as Haskell
-import           Data.Data                        (Proxy (..))
-import           Data.Foldable                    (Foldable, concatMap, toList)
-import           Data.Function                    ((.))
-import           Data.Functor                     (fmap, (<$>))
-import           Data.List                        (map, reverse)
-import           Data.Traversable                 (Traversable (traverse))
-import qualified Data.Zip                         as Z
-import           GHC.Generics                     (Par1 (..))
-import           Prelude                          (type (~), ($))
-import qualified Prelude                          as Haskell
+import           Control.DeepSeq                  (NFData)
+import           Data.Foldable                    (fold, toList)
+import           Data.Function                    (on)
+import           Data.List                        (concatMap, reverse, zipWith)
+import           Data.Traversable                 (traverse)
+import           GHC.Generics
+import           Prelude                          (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
+import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField), symbolic2F, symbolicF)
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
+import           ZkFold.Base.Data.Package
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)
-import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.MonadCircuit
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
--- TODO (Issue #23): add `compare`
-class Ord b a where
-    (<=) :: a -> a -> b
+class Monoid ordering => IsOrdering ordering where
+  lt, eq, gt :: ordering
 
-    (<) :: a -> a -> b
+instance IsOrdering Prelude.Ordering where
+  lt = Prelude.LT
+  eq = Prelude.EQ
+  gt = Prelude.GT
 
-    (>=) :: a -> a -> b
+class
+  ( Eq a
+  , IsOrdering (OrderingOf a)
+  ) => Ord a where
 
-    (>) :: a -> a -> b
+  type OrderingOf a
+  type OrderingOf a = GOrderingOf (Rep a)
 
-    max :: a -> a -> a
-    -- max x y = bool @b y x $ x <= y
+  ordering :: a -> a -> a -> OrderingOf a -> a
+  default ordering
+    :: (Generic a, GOrd (Rep a), OrderingOf a ~ GOrderingOf (Rep a))
+    => a -> a -> a -> OrderingOf a -> a
+  ordering ltCase eqCase gtCase o =
+    to (gordering (from ltCase) (from eqCase) (from gtCase) o)
 
-    min :: a -> a -> a
-    -- min x y = bool @b y x $ x >= y
+  compare :: a -> a -> OrderingOf a
+  default compare
+    :: (Generic a, GOrd (Rep a), OrderingOf a ~ GOrderingOf (Rep a))
+    => a -> a -> OrderingOf a
+  compare x y = gcompare (from x) (from y)
 
-instance Haskell.Ord a => Ord Haskell.Bool a where
-    (<=) = (Haskell.<=)
+  (<), (<=), (>), (>=) :: a -> a -> BooleanOf a
+  infix 4 <
+  infix 4 <=
+  infix 4 >
+  infix 4 >=
+  default (<)
+    :: (Ord (BooleanOf a), OrderingOf (BooleanOf a) ~ OrderingOf a)
+    => a -> a -> BooleanOf a
+  x < y = ordering true false false (compare x y)
+  default (<=)
+    :: (Ord (BooleanOf a), OrderingOf (BooleanOf a) ~ OrderingOf a)
+    => a -> a -> BooleanOf a
+  x <= y = ordering true true false (compare x y)
+  default (>)
+    :: (Ord (BooleanOf a), OrderingOf (BooleanOf a) ~ OrderingOf a)
+    => a -> a -> BooleanOf a
+  x > y = ordering false false true (compare x y)
+  default (>=)
+    :: (Ord (BooleanOf a), OrderingOf (BooleanOf a) ~ OrderingOf a)
+    => a -> a -> BooleanOf a
+  x >= y = ordering false true true (compare x y)
+  max, min :: a -> a -> a
+  max x y = ordering y x x (compare x y)
+  min x y = ordering x x y (compare x y)
 
-    (<) = (Haskell.<)
+instance Ord Natural where
+  type OrderingOf Natural = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance Ord Prelude.Bool where
+  type OrderingOf Prelude.Bool = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance Ord Prelude.String where
+  type OrderingOf Prelude.String = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
+instance KnownNat n => Ord (Zp n) where
+  type OrderingOf (Zp n) = Prelude.Ordering
+  ordering x y z = \case
+    Prelude.LT -> x; Prelude.EQ -> y; Prelude.GT -> z
+  compare = Prelude.compare
+  (>) = (Prelude.>)
+  (>=) = (Prelude.>=)
+  (<) = (Prelude.<)
+  (<=) = (Prelude.<=)
+  min = Prelude.min
+  max = Prelude.max
 
-    (>=) = (Haskell.>=)
+newtype Ordering c = Ordering (c Par1)
+  deriving (Generic)
+deriving instance NFData (c Par1) => NFData (Ordering c)
+deriving instance Show (c Par1) => Show (Ordering c)
+deriving newtype instance Symbolic c => Conditional (Bool c) (Ordering c)
+deriving newtype instance Symbolic c => Eq (Ordering c)
+instance Symbolic c => SymbolicData (Ordering c)
+instance Symbolic c => Semigroup (Ordering c) where
+  Ordering o1 <> Ordering o2 = Ordering $ fromCircuit2F o1 o2 $
+    \(Par1 v1) (Par1 v2) -> Par1 <$>
+      newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 * x1 * (x1 - x2) + x2)
+instance Symbolic c => Monoid (Ordering c) where
+  mempty = eq
+instance Symbolic c => IsOrdering (Ordering c) where
+  lt = Ordering $ embed (Par1 (negate one))
+  eq = Ordering $ embed (Par1 zero)
+  gt = Ordering $ embed (Par1 one)
 
-    (>) = (Haskell.>)
+instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
+  type OrderingOf (c f) = Ordering c
+  ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+  compare = bitwiseCompare `on` getBitsBE
 
-    max = Haskell.max
+bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
+bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
-    min = Haskell.min
-
--- | Every @SymbolicData@ type can be compared lexicographically.
-instance (Symbolic c, LayoutFunctor f) => Ord (Bool c) (c f) where
-
-    x <= y = y >= x
-
-    x <  y = y > x
-
-    x >= y = bitwiseGE @1 (getBitsBE x) (getBitsBE y)
-
-    x > y = bitwiseGT @1 (getBitsBE x) (getBitsBE y)
-
-    max x y = bool @(Bool c) x y $ x < y
-
-    min x y = bool @(Bool c) x y $ x > y
-
-getBitsBE ::
-  forall c x .
-  (SymbolicOutput x, Context x ~ c) =>
-  x -> c []
+getBitsBE :: forall c f . (Symbolic c, LayoutFunctor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
-getBitsBE x = symbolicF (arithmetize x Proxy)
+getBitsBE x = symbolicF x
     (concatMap (reverse . padBits n . map fromConstant . binaryExpansion . toConstant))
     (fmap (concatMap reverse) . traverse (expansion n) . toList)
   where n = numberOfBits @(BaseField c)
 
-bitwiseGE :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGE xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.>= toList vs))
-    $ \is js -> Par1 <$> blueprintGE @r is js
+instance Symbolic c => Ord (Bool c) where
+  type OrderingOf (Bool c) = Ordering c
+  ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
+  compare (Bool b1) (Bool b2) = Ordering $ fromCircuit2F b1 b2 $
+    \(Par1 v1) (Par1 v2) -> fmap Par1 $
+      newAssigned $ \x -> let x1 = x v1; x2 = x v2 in x1 - x2
 
-blueprintGE :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
-blueprintGE xs ys = do
-  (_, hasNegOne) <- circuitDelta @r xs ys
-  newAssigned $ \p -> one - p hasNegOne
+deriving newtype instance Symbolic c => Ord (Ordering c)
 
-bitwiseGT :: forall r c f . (Symbolic c, Z.Zip f, Foldable f, KnownNat r) => c f -> c f -> Bool c
--- ^ Given two lists of bits of equal length, compares them lexicographically.
-bitwiseGT xs ys = Bool $
-  symbolic2F xs ys
-    (\us vs -> Par1 $ Haskell.bool zero one (toList us Haskell.> toList vs))
-    $ \is js -> do
-      (hasOne, hasNegOne) <- circuitDelta @r is js
-      Par1 <$> newAssigned (\p -> p hasOne * (one - p hasNegOne))
+class
+  ( GEq u
+  , IsOrdering (GOrderingOf u)
+  ) => GOrd u where
+  type GOrderingOf u
+  gordering :: u x -> u x -> u x -> GOrderingOf u -> u x
+  gcompare :: u x -> u x -> GOrderingOf u
 
--- | Compare two sets of r-bit words lexicographically
---
-circuitDelta :: forall r i a w m f . (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
-circuitDelta l r = do
-    z1 <- newAssigned (Haskell.const zero)
-    z2 <- newAssigned (Haskell.const zero)
-    foldM update (z1, z2) $ Z.zip l r
-        where
-            bound = scale ((2 ^ value @r) -! 1) one
+instance
+  ( GOrd u
+  , GOrd v
+  , GBooleanOf u ~ GBooleanOf v
+  , GOrderingOf u ~ GOrderingOf v
+  ) => GOrd (u :*: v) where
+  type GOrderingOf (u :*: v) = GOrderingOf u
+  gordering (lt0 :*: lt1) (eq0 :*: eq1) (gt0 :*: gt1) o =
+    gordering lt0 eq0 gt0 o :*: gordering lt1 eq1 gt1 o
+  gcompare (x0 :*: x1) (y0 :*: y1) = gcompare x0 y0 <> gcompare x1 y1
 
-            -- | If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i.
-            -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
-            --
-            --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
-            -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
-            update :: (i, i) -> (i, i) -> m (i, i)
-            update (z1, z2) (x, y) = do
-                -- @f1@ is one if and only if @x > y@ and zero otherwise.
-                -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
-                -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
-                -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
-                -- This is exactly the opposite of what @f1@ should be.
-                f1 <- newRanged one $
-                    let q = fromConstant (toConstant (at y + one @w) `div` toConstant (at x + one @w))
-                     in one - q // q
+instance GOrd v => GOrd (M1 i c v) where
+  type GOrderingOf (M1 i c v) = GOrderingOf v
+  gordering (M1 ltCase) (M1 eqCase) (M1 gtCase) o =
+    M1 (gordering ltCase eqCase gtCase o)
+  gcompare (M1 x) (M1 y) = gcompare x y
 
-                -- f2 is one if and only if y > x and zero otherwise
-                f2 <- newRanged one $
-                    let q = fromConstant (toConstant (at x + one @w) `div` toConstant (at y + one @w))
-                     in one - q // q
-
-                dxy <- newAssigned (\p -> p x - p y)
-
-                d1  <- newAssigned (\p -> p f1 * p dxy - p f1)
-                d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
-                rangeConstraint d1  bound
-                rangeConstraint d1' bound
-
-                d2  <- newAssigned (\p -> p f2 * (negate one - p dxy))
-                d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
-                rangeConstraint d2  bound
-                rangeConstraint d2' bound
-
-                bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
-
-                f1z <- newAssigned $ \p -> p bothZero * p f1
-                f2z <- newAssigned $ \p -> p bothZero * p f2
-
-                z1' <- newAssigned $ \p -> p z1 + p f1z
-                z2' <- newAssigned $ \p -> p z2 + p f2z
-
-                Haskell.return (z1', z2')
+instance Ord x => GOrd (Rec0 x) where
+  type GOrderingOf (Rec0 x) = OrderingOf x
+  gordering (K1 ltCase) (K1 eqCase) (K1 gtCase) o =
+    K1 (ordering ltCase eqCase gtCase o)
+  gcompare (K1 x) (K1 y) = compare x y

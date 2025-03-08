@@ -7,7 +7,7 @@ import           GHC.Base                                (($))
 import           GHC.TypeLits                            (KnownNat, Log2)
 import qualified GHC.TypeNats
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Number        (value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class                   as S

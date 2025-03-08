@@ -6,13 +6,21 @@
 
 module ZkFold.Base.Algebra.Basic.Class where
 
-import           Data.Bool                        (bool)
-import           Data.Foldable                    (foldl')
+import           Control.Applicative              (Applicative (..))
+import           Data.Bool                        (Bool (..), bool, otherwise, (&&))
+import           Data.Eq                          (Eq (..))
+import           Data.Foldable                    (Foldable (foldl, foldl', foldl1, foldr))
+import           Data.Function                    (const, id, ($), (.))
+import           Data.Functor                     (Functor (..))
 import           Data.Functor.Constant            (Constant (..))
 import           Data.Kind                        (Type)
+import           Data.List                        (iterate, map, repeat, zipWith, (++))
+import           Data.Maybe                       (Maybe (..))
+import           Data.Ord                         (Ord (..), Ordering (..))
+import           Data.Ratio                       (Rational)
+import           Data.Type.Equality               (type (~))
 import           GHC.Natural                      (naturalFromInteger)
-import           Prelude                          hiding (Num (..), div, divMod, length, mod, negate, product,
-                                                   replicate, sum, (/), (^))
+import           Prelude                          (Integer)
 import qualified Prelude                          as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
@@ -149,7 +157,7 @@ natPow a n = product $ zipWith f (binaryExpansion n) (iterate (\x -> x * x) a)
   where
     f 0 _ = one
     f 1 x = x
-    f _ _ = error "^: This should never happen."
+    f _ _ = Haskell.error "^: This should never happen."
 
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
@@ -219,7 +227,7 @@ natScale n a = sum $ zipWith f (binaryExpansion n) (iterate (\x -> x + x) a)
   where
     f 0 _ = zero
     f 1 x = x
-    f _ _ = error "scale: This should never happen."
+    f _ _ = Haskell.error "scale: This should never happen."
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl (+) zero
@@ -292,6 +300,28 @@ class Semiring a => SemiEuclidean a where
 [Right distributivity] @(a - b) * c == a * c - b * c@
 -}
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
+
+-- | A 'Euclidean' ring is a 'Ring' which is a 'SemiEuclidean' domain and,
+-- in addition, admits a notion of /greatest common divisor/ @gcd x y@
+-- together with Bezout coefficients @bezoutL x y@
+-- (and, correspondingly, @bezoutR x y@) such that:
+-- @
+-- bezoutL x y * x + bezoutR x y * y = gcd x y
+-- @
+class (Ring a, SemiEuclidean a) => Euclidean a where
+  {-# MINIMAL eea | (gcd, bezoutL, bezoutR) #-}
+
+  eea :: a -> a -> (a, a, a)
+  eea x y = (gcd x y, bezoutL x y, bezoutR x y)
+
+  gcd :: a -> a -> a
+  gcd x y = let (g, _, _) = eea x y in g
+
+  bezoutL :: a -> a -> a
+  bezoutL x y = let (_, s, _) = eea x y in s
+
+  bezoutR :: a -> a -> a
+  bezoutR x y = let (_, _, t) = eea x y in t
 
 {- | Type of modules/algebras over the base type of constants @b@. As all the
 required laws are implied by the constraints, this is simply an alias rather
@@ -435,7 +465,7 @@ castBits []     = []
 castBits (x:xs)
     | x == zero = zero : castBits xs
     | x == one  = one  : castBits xs
-    | otherwise = error "castBits: impossible bit value"
+    | otherwise = Haskell.error "castBits: impossible bit value"
 
 --------------------------------------------------------------------------------
 
@@ -517,6 +547,13 @@ instance SemiEuclidean Integer where
 
 instance Ring Integer
 
+instance Euclidean Integer where
+  eea x 0 = (x, 1, 0)
+  eea x y = go (x, y) (1, 0)
+    where go (g, 0) (b, _) = (g, b, (g - x * b) `div` y)
+          go (q, r) (s, t) = let (d, m) = divMod q r in
+            go (r, m) (t, s - d * t)
+
 --------------------------------------------------------------------------------
 
 -- TODO: Roll out our own Ratio type
@@ -595,12 +632,12 @@ instance AdditiveGroup Bool where
     negate = id
 
 instance FromConstant Natural Bool where
-    fromConstant = odd
+    fromConstant = Haskell.odd
 
 instance Semiring Bool
 
 instance FromConstant Integer Bool where
-    fromConstant = odd
+    fromConstant = Haskell.odd
 
 instance Ring Bool
 
@@ -611,7 +648,7 @@ instance BinaryExpansion Bool where
 
     fromBinary []  = False
     fromBinary [x] = x
-    fromBinary _   = error "fromBits: This should never happen."
+    fromBinary _   = Haskell.error "fromBits: This should never happen."
 
 instance MultiplicativeMonoid a => Exponent a Bool where
     _ ^ False = one
@@ -809,6 +846,10 @@ instance FromConstant a (Maybe a) where
 instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
     fromConstant = fmap fromConstant
 
-instance SemiEuclidean Natural => SemiEuclidean (Maybe Natural) where
+instance SemiEuclidean a => SemiEuclidean (Maybe a) where
     divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
     divMod _ _               = (Nothing, Nothing)
+
+instance Euclidean a => Euclidean (Maybe a) where
+    eea (Just x) (Just y) = let (g, s, t) = eea x y in (Just g, Just s, Just t)
+    eea _        _        = (Nothing, Nothing, Nothing)

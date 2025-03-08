@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Data.Conditional (Conditional)
 import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
@@ -44,10 +45,14 @@ deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (FieldElement c)
 
-deriving newtype instance Symbolic c => Ord (Bool c) (FieldElement c)
+deriving newtype instance Symbolic c => Ord (FieldElement c)
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant
+
+instance ToConstant (FieldElement (Interpreter a)) where
+  type Const (FieldElement (Interpreter a)) = a
+  toConstant (FieldElement (Interpreter (Par1 x))) = x
 
 instance Symbolic c => Exponent (FieldElement c) Natural where
   (^) = natPow

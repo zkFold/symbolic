@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -59,8 +58,8 @@ type Fq12 = Ext2 Fq6 IP3
 
 ------------------------------------- BLS12-381-G1 --------------------------------------
 
-instance WeierstrassCurve "BLS12-381-G1" Fq where
-  weierstrassB = 4
+instance Field field => WeierstrassCurve "BLS12-381-G1" field where
+  weierstrassB = fromConstant (4 :: Natural)
 
 type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 

@@ -12,7 +12,7 @@ import           Data.Foldable                                       (toList)
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
-import           Data.Maybe                                          (fromJust)
+import           Data.Maybe                                          (fromJust, mapMaybe)
 import qualified Data.Set                                            as S
 import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
@@ -31,6 +31,7 @@ import           ZkFold.Base.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Prelude                                      (length, replicate)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
@@ -82,13 +83,13 @@ toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
-        rs = map toConstant $ M.keys $ acRange ac
+        rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
         -- TODO: We are expecting at most one range.
         t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup = concatMap S.toList $ M.elems (acRange ac)
+        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + length (tabulate @l id) + length xLookup

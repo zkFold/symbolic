@@ -21,6 +21,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (
 import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), evalPolynomial, var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
 
 --------------------------------- High-level functions --------------------------------
@@ -33,9 +34,10 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 optimize :: forall a p i o.
   (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i), Binary a, Binary (Rep p)) =>
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
-optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
+optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
     acSystem = addInVarConstraints newS,
-    acRange = optRanges vs r,
+    acLookupFunction = lf,
+    acLookup = optRanges vs r,
     acWitness = (>>= optWitVar vs) <$>
       M.filterWithKey (\k _ -> notMember (NewVar (EqVar k)) vs) w,
     acFold = optimizeFold . bimap varF (>>= optWitVar vs) <$> f,
@@ -52,9 +54,16 @@ optimize (ArithmeticCircuit s r w f o) = ArithmeticCircuit {
                                                             let poly = var inVar - fromConstant v,
                                                             let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
-    optRanges :: Map (SysVar i) a -> MM.MonoidalMap a (S.Set (SysVar i)) -> MM.MonoidalMap a (S.Set (SysVar i))
-    optRanges m = MM.mapMaybeWithKey (\k v -> bool (error "range constraint less then value")
-      (let t = S.difference v $ keysSet m in if null t then Nothing else Just t) (all (<= k) $ restrictKeys m v))
+    optRanges :: Map (SysVar i) a -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i]) -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i])
+    optRanges m = MM.mapMaybeWithKey (\k' v -> bool Nothing (maybeSet v $ fromRange k') (isRange k'))
+      where
+        maybeSet :: S.Set [SysVar i] -> S.Set (a, a) -> Maybe (S.Set [SysVar i])
+        maybeSet v k = bool (error "range constraint less then value")
+                            (let t = S.difference v (S.map (: []) (keysSet m))
+                              in if null t then Nothing else Just t) (all (inInterval k) $ restrictKeys (mapKeys (: []) m :: Map [SysVar i] a) v)
+
+    inInterval :: S.Set (a, a) -> a -> Bool
+    inInterval si v = and $ S.map (\(l', r') -> ((v >= l') && (v <= r')) :: Bool) si
 
     optWitVar :: Map (SysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
     optWitVar m = \case

@@ -8,6 +8,9 @@ module ZkFold.Symbolic.Data.Combinators where
 
 import           Control.Applicative              (Applicative)
 import           Control.Monad                    (mapM)
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.Foldable                    (foldlM)
 import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
 import           Data.Kind                        (Type)
@@ -21,6 +24,7 @@ import           Data.Type.Bool                   (If)
 import           Data.Type.Ord
 import           GHC.Base                         (const, return)
 import           GHC.List                         (reverse)
+import           GHC.TypeLits                     (Symbol, UnconsSymbol)
 import           GHC.TypeNats
 import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
 import qualified Prelude                          as Haskell
@@ -28,6 +32,9 @@ import           Type.Errors
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (value)
+import qualified ZkFold.Base.Data.Vector          as V
+import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Prelude                   (take)
 import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -78,7 +85,7 @@ fromBits hiBits loBits bits = do
     highNew <- horner . Haskell.reverse $  bitsHighNew
     pure $ highNew : lowsNew
 
-data RegisterSize = Auto | Fixed Natural deriving (Haskell.Eq)
+data RegisterSize = Auto | Fixed Natural deriving (Haskell.Eq, Haskell.Show)
 
 class KnownRegisterSize (r :: RegisterSize) where
   regSize :: RegisterSize
@@ -103,14 +110,17 @@ registerSize = case regSize @r of
 type Ceil a b = Div (a + b - 1) b
 
 type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
+    GetRegisterSize _ 0    _          = 0
     GetRegisterSize a bits (Fixed rs) = rs
     GetRegisterSize a bits Auto       = Ceil bits (NumberOfRegisters a bits Auto)
 
 type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
 type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize ) :: Natural where
-  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters a bits Auto       = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+  NumberOfRegisters _ 0    _            = 0
+  NumberOfRegisters a bits (Fixed bits) = 1
+  NumberOfRegisters a bits (Fixed rs)   = If (Mod bits rs >? 0 ) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegisters a bits Auto         = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
                                                                           -- But it is weird anyway if someone is trying to store a value
                                                                           -- which requires more than 50 registers.
 
@@ -142,10 +152,11 @@ type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
 numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
 numberOfRegisters =  case regSize @r of
     Auto -> fromMaybe (error "too many bits, field is not big enough")
-        $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [1 .. maxRegisterCount]
+        $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [0 .. maxRegisterCount]
         where
             maxRegisterCount = 2 ^ bitLimit
             bitLimit = Haskell.floor $ log2 (order @a)
+            maxRegisterSize 0 = 0
             maxRegisterSize regCount =
                 let maxAdded = Haskell.ceiling $ log2 regCount
                 in Haskell.floor $ (bitLimit -! maxAdded) % 2
@@ -182,6 +193,87 @@ highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
 
+-- | Convert a type-level string into a term.
+-- Useful for ByteStrings and VarByteStrings as it will calculate their length automatically
+--
+class IsTypeString (s :: Symbol) a where
+    fromType :: a
+
+type family Length (s :: Symbol) :: Natural where
+    Length s = Length' (UnconsSymbol s)
+
+type family FromMaybe (a :: k) (mb :: Haskell.Maybe k) :: k where
+    FromMaybe def Haskell.Nothing = def
+    FromMaybe def (Haskell.Just a) = a
+
+type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
+    Length' 'Haskell.Nothing = 0
+    Length' ('Haskell.Just '(c, rest)) = 1 + Length' (UnconsSymbol rest)
+
+
+---------------------------------------------------------------
+-- | Types and helper axioms for padding vectors
+---------------------------------------------------------------
+
+type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
+
+nextPow2 :: Natural -> Natural
+nextPow2 n = 2 ^ nextNBits n
+
+nextNBits :: Natural -> Natural
+nextNBits n = ilog2 (2 * n -! 1)
+
+withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
+withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
+
+withNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1)) => r) -> r
+withNextNBits = withDict (withNextNBits' @n)
+
+type SecondNextPow2 n = 2 ^ (Log2 (2 * n - 1) + 1)
+
+secondNextPow2 :: Natural -> Natural
+secondNextPow2 n = 2 ^ secondNextNBits n
+
+secondNextNBits :: Natural -> Natural
+secondNextNBits n = ilog2 (2 * n -! 1) + 1
+
+withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
+withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
+
+withSecondNextNBits :: forall n {r}. (KnownNat n) => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
+withSecondNextNBits = withDict (withSecondNextNBits' @n)
+
+withNumberOfRegisters' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (NumberOfRegisters a n r)
+withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
+
+withNumberOfRegisters :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (NumberOfRegisters a n r)) => k) -> k
+withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
+
+withCeilRegSize' :: forall rs ow. (KnownNat rs, KnownNat ow) :- KnownNat (Ceil rs ow)
+withCeilRegSize' = Sub $ withKnownNat @(Ceil rs ow) (unsafeSNat (Haskell.div (value @rs + value @ow -! 1) (value @ow))) Dict
+
+withCeilRegSize :: forall rs ow {k}. (KnownNat rs, KnownNat ow) => ((KnownNat (Ceil rs ow)) => k) -> k
+withCeilRegSize = withDict (withCeilRegSize' @rs @ow)
+
+withGetRegisterSize' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize a n r)
+withGetRegisterSize' = Sub $ withKnownNat @(GetRegisterSize a n r) (unsafeSNat (registerSize @a @n @r)) Dict
+
+withGetRegisterSize :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (GetRegisterSize a n r)) => k) -> k
+withGetRegisterSize = withDict (withGetRegisterSize' @n @r @a)
+
+
+padNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)
+padNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (nextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
+
+padSecondNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (SecondNextPow2 n) i)
+padSecondNextPow2 v = do
+    z <- newAssigned (const zero)
+    let padded = take (secondNextPow2 $ value @n) $ V.fromVector v <> Haskell.repeat z
+    pure $ V.unsafeToVector padded
+
 ---------------------------------------------------------------
 
 expansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
@@ -209,12 +301,12 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
         wordSize :: Natural
         wordSize = 2 ^ value @r
 
-        repr :: ResidueField n x => Natural -> x -> x
+        repr :: ResidueField x => Natural -> x -> x
         repr j =
-              fromConstant
+              fromIntegral
               . (`mod` fromConstant wordSize)
               . (`div` fromConstant (wordSize ^ j))
-              . toConstant
+              . toIntegral
 
 hornerW :: forall r i a w m . (KnownNat r, MonadCircuit i a w m) => [i] -> m i
 -- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
@@ -241,16 +333,16 @@ splitExpansion n1 n2 k = do
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
-        lower :: ResidueField n a => a -> a
+        lower :: ResidueField a => a -> a
         lower =
-            fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toConstant
+            fromIntegral . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
 
-        upper :: ResidueField n a => a -> a
+        upper :: ResidueField a => a -> a
         upper =
-            fromConstant
+            fromIntegral
             . (`mod` fromConstant @Natural (2 ^ n2))
             . (`div` fromConstant @Natural (2 ^ n1))
-            . toConstant
+            . toIntegral
 
 runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
@@ -260,3 +352,8 @@ runInvert is = do
 
 isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is
+
+ilog2 :: Natural -> Natural
+ilog2 1 = 0
+ilog2 n = 1 + ilog2 (n `div` 2)
+

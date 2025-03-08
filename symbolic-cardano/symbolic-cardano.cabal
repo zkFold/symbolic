@@ -2,7 +2,7 @@ cabal-version:      3.0
 
 name:               symbolic-cardano
 version:            0.1.0.0
-tested-with:        GHC == 9.6.6
+tested-with:        GHC == 9.12.1
 synopsis:           ZkFold Symbolic library for integration with Cardano
 homepage:           https://zkfold.io/
 category:           Blockchain, Cryptography, DSL, Math, Symbolic Computation

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -14,9 +15,13 @@ import           Data.Functor.Rep (Representable (..), WrappedRep (..))
 import           Data.Ord         (Ord)
 import           GHC.Generics     (Par1, U1, (:*:), (:.:))
 
+instance NFData (U1 a)
 instance NFData1 U1
 instance NFData1 Par1
+instance NFData a => NFData (Par1 a)
+instance (NFData1 f, NFData1 g, NFData a, NFData (f a), NFData (g a)) => NFData ((:*:) f g a)
 instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
+instance (NFData1 f, NFData1 g, NFData a, NFData (f a), NFData (f (g a))) => NFData ((:.:) f g a)
 instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
 
 deriving newtype instance Binary (Rep f) => Binary (WrappedRep f)

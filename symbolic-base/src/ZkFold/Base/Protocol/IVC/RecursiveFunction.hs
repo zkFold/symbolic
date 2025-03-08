@@ -64,7 +64,7 @@ instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => Sy
 
 -- | Payload to the recursive function
 data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
-    deriving (Generic, Generic1, NFData1, Functor, Foldable, Traversable)
+    deriving (Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
 
 instance (KnownNat (d - 1), KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
 

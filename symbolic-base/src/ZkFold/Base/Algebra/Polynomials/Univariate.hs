@@ -57,7 +57,7 @@ import           Prelude                          hiding (Num (..), drop, length
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (replicate, zipWithDefault)

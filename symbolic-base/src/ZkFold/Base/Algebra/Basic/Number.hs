@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE MagicHash            #-}
+{-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
