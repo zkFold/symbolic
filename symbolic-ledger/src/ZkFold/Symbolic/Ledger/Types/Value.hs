@@ -1,13 +1,25 @@
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Ledger.Types.Value where
+module ZkFold.Symbolic.Ledger.Types.Value (
+  Token,
+  MintingContract,
+  CurrencySymbol,
+  Amount,
+  Value (..),
+  MultiAssetValue,
+  multiAssetValueToList,
+  unsafeMultiAssetValueFromList,
+  emptyMultiAssetValue,
+  addValue,
+  multiAssetValue, 
+) where
 
 import           Data.Data                             (Proxy)
+import Data.Coerce (coerce)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
                                                         (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative      (HApplicative)
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
@@ -28,31 +40,40 @@ type MintingContract tx w context = Contract tx (Token context) w context
 -- | A currency symbol is a hash of the minting contract that mints the tokens.
 type CurrencySymbol context = ContractId context
 
+-- | Amount of tokens.
+type Amount context = UInt 64 Auto context
+
 -- | A value represents the amount of tokens that is contained in a transaction output.
 -- The `ContractId` corresponds to the contract that minted the tokens with the `Token` containing the input data.
--- The `UInt64` contains the amount of tokens.
+-- The `Amount` contains the amount of tokens.
 data Value context = Value
   { mintingPolicy :: CurrencySymbol context
   , tokenInstance :: Token context
-  , tokenQuantity :: UInt 64 Auto context
+  , tokenQuantity :: Amount context
   }
 
 -- | Denotes multiple values.
-newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (CurrencySymbol context, List context (Token context, UInt 64 Auto context)))
+newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (CurrencySymbol context, List context (Token context, Amount context)))
 
--- | Constraint for a tuple to represent a symbolic data.
-type TupleSymbolicData c x y = (SymbolicData (x c), SymbolicData (y c), HApplicative (Context (x c)), Context (x c) ~ Context (y c), Support (x c) ~ Support (y c))
+-- | Convert a multi-asset value to a list.
+multiAssetValueToList :: MultiAssetValue context -> List context (CurrencySymbol context, List context (Token context, Amount context))
+multiAssetValueToList = coerce
+
+-- | Unsafe constructor for a multi-asset value. Mainly to be used for testing.
+unsafeMultiAssetValueFromList :: List context (CurrencySymbol context, List context (Token context, UInt 64 Auto context)) -> MultiAssetValue context
+unsafeMultiAssetValueFromList = UnsafeMultiAssetValue
 
 -- | Construct an empty multi-asset value.
 emptyMultiAssetValue ::
        SymbolicData (CurrencySymbol context)
     => Context (CurrencySymbol context) ~ context
     => Support (CurrencySymbol context) ~ Proxy context
-    => TupleSymbolicData context Token (UInt 64 Auto)
+    => SymbolicData ((Token context, Amount context))
+    => Context ((Token context, Amount context)) ~ context
     => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
--- Add a single value to a multi-asset value
+-- | Add a single value to a multi-asset value.
 addValue ::
      forall context. Conditional (Bool context) (MultiAssetValue context)
   => BooleanOf (Token context) ~ Bool context
@@ -62,7 +83,9 @@ addValue ::
   => Context (Value context) ~ context
   => SymbolicEq (CurrencySymbol context)
   => Context (CurrencySymbol context) ~ context
-  => TupleSymbolicData context Token (UInt 64 Auto)
+  => SymbolicData ((Token context, Amount context))
+  => Context ((Token context, Amount context)) ~ context
+  => Support (Token context) ~ Proxy context
   => Value context
   -> MultiAssetValue context
   -> MultiAssetValue context
@@ -88,8 +111,8 @@ addValue val@Value {..} (UnsafeMultiAssetValue valList) =
            (singleton (tokenInstance, tokenQuantity))
            tokenAmountAdded
 
--- Safe constructor for a multi-asset value
-multiValueAsset ::
+-- | Safe constructor for a multi-asset value.
+multiAssetValue ::
      Symbolic context
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
@@ -99,11 +122,10 @@ multiValueAsset ::
   => SymbolicEq (CurrencySymbol context)
   => Context (CurrencySymbol context) ~ context
   => Foldable (List context)
-  => TupleSymbolicData context Token (UInt 64 Auto)
+  => SymbolicData ((Token context, Amount context))
+  => Context ((Token context, Amount context)) ~ context
+  => Support (Token context) ~ Proxy context
   => List context (Value context)
   -> MultiAssetValue context
-multiValueAsset = foldr addValue emptyMultiAssetValue
+multiAssetValue = foldr addValue emptyMultiAssetValue
 
--- | Unsafe constructor for a multi-asset value. Mainly to be used for testing.
-unsafeMultiAssetValue :: List context (CurrencySymbol context, List context (Token context, UInt 64 Auto context)) -> MultiAssetValue context
-unsafeMultiAssetValue = UnsafeMultiAssetValue
