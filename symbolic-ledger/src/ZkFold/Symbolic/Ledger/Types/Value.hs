@@ -11,11 +11,11 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   unsafeMultiAssetValueFromList,
   emptyMultiAssetValue,
   addValue,
-  multiAssetValue, 
+  multiAssetValue,
 ) where
 
+import           Data.Coerce                           (coerce)
 import           Data.Data                             (Proxy)
-import Data.Coerce (coerce)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
                                                         (==))
 
