@@ -1,8 +1,9 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE OverloadedLists      #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE OverloadedLists       #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Base.Protocol.KZG where
 
@@ -23,32 +24,33 @@ import           ZkFold.Base.Data.ByteString                (Binary)
 import           ZkFold.Base.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol
-newtype KZG g1 g2 (d :: Natural) = KZG (ScalarFieldOf g1)
-instance Show (ScalarFieldOf g1) => Show (KZG g1 g2 d) where
+newtype KZG g1 g2 (d :: Natural) pv = KZG (ScalarFieldOf g1)
+instance Show (ScalarFieldOf g1) => Show (KZG g1 g2 d pv) where
     show (KZG x) = "KZG " <> show x
-instance Eq (ScalarFieldOf g1) => Eq (KZG g1 g2 d) where
+instance Eq (ScalarFieldOf g1) => Eq (KZG g1 g2 d pv) where
     KZG x == KZG y = x == y
-instance Arbitrary (ScalarFieldOf g1) => Arbitrary (KZG g1 g2 d) where
+instance (Arbitrary (ScalarFieldOf g1), UnivariateFieldPolyVec pv (ScalarFieldOf g1) d) => Arbitrary (KZG g1 g2 d pv) where
     arbitrary = KZG <$> arbitrary
 
-newtype WitnessKZG g1 g2 d = WitnessKZG
-  { runWitness :: Map (ScalarFieldOf g1) (V.Vector (PolyVec (ScalarFieldOf g1) d)) }
-instance (Show (ScalarFieldOf g1)) => Show (WitnessKZG g1 g2 d) where
+newtype WitnessKZG g1 g2 d pv = WitnessKZG
+  { runWitness :: Map (ScalarFieldOf g1) (V.Vector (pv (ScalarFieldOf g1) d)) }
+instance (Show (ScalarFieldOf g1), Show (pv (ScalarFieldOf g1) d)) => Show (WitnessKZG g1 g2 d pv) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
 instance
   ( KnownNat d
   , Arbitrary (ScalarFieldOf g1)
+  , Arbitrary (pv (ScalarFieldOf g1) d)
   , Ord (ScalarFieldOf g1)
   , Ring (ScalarFieldOf g1)
-  ) => Arbitrary (WitnessKZG g1 g2 d) where
+  ) => Arbitrary (WitnessKZG g1 g2 d pv) where
     arbitrary = do
         n <- chooseInt (1, 3)
         m <- chooseInt (1, 5)
         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
-instance forall f g1 g2 gt d kzg core.
-    ( KZG g1 g2 d ~ kzg
+instance forall f g1 g2 gt d kzg core pv .
+    ( KZG g1 g2 d pv ~ kzg
     , KnownNat d
     , Ord f
     , Binary f
@@ -58,14 +60,15 @@ instance forall f g1 g2 gt d kzg core.
     , Binary g1
     , Pairing g1 g2 gt
     , Eq gt
-    , CoreFunction g1 core
-    ) => NonInteractiveProof (KZG g1 g2 d) core where
-    type Transcript (KZG g1 g2 d)  = ByteString
-    type SetupProve (KZG g1 g2 d)  = V.Vector g1
-    type SetupVerify (KZG g1 g2 d) = (V.Vector g1, g2, g2)
-    type Witness (KZG g1 g2 d)     = WitnessKZG g1 g2 d
-    type Input (KZG g1 g2 d)       = Map (ScalarFieldOf g1) (V.Vector g1, V.Vector (ScalarFieldOf g1))
-    type Proof (KZG g1 g2 d)       = Map (ScalarFieldOf g1) g1
+    , CoreFunction g1 core pv d
+    , UnivariateFieldPolyVec pv f d
+    ) => NonInteractiveProof (KZG g1 g2 d pv) core where
+    type Transcript (KZG g1 g2 d pv)  = ByteString
+    type SetupProve (KZG g1 g2 d pv)  = V.Vector g1
+    type SetupVerify (KZG g1 g2 d pv) = (V.Vector g1, g2, g2)
+    type Witness (KZG g1 g2 d pv)     = WitnessKZG g1 g2 d pv
+    type Input (KZG g1 g2 d pv)       = Map (ScalarFieldOf g1) (V.Vector g1, V.Vector (ScalarFieldOf g1))
+    type Proof (KZG g1 g2 d pv)       = Map (ScalarFieldOf g1) g1
 
     setupProve :: kzg -> SetupProve kzg
     setupProve (KZG x) =
@@ -87,11 +90,11 @@ instance forall f g1 g2 gt d kzg core.
     prove gs (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
-                     -> (f, V.Vector (PolyVec f d))
+                     -> (f, V.Vector (pv f d))
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts0, (iMap, pMap)) (z, fs) = (ts3, (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    com = msm @g1 @core
+                    com = msm @g1 @core @pv @d
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
@@ -126,14 +129,14 @@ instance forall f g1 g2 gt d kzg core.
 
                     gamma = V.fromList gamma'
 
-                    com = msm @g1 @core
+                    com = msm @g1 @core @pv @d
 
                     v0' = r `scale` sum (V.zipWith scale gamma cms)
-                        - r `scale` (gs `com` toPolyVec @f @d [sum $ V.zipWith (*) gamma fzs])
+                        - r `scale` (gs `com` toPolyVec @pv @f @d [sum $ V.zipWith (*) gamma fzs])
                         + (r * z) `scale` w
                     v1' = r `scale` w
 
 ------------------------------------ Helper functions ------------------------------------
 
-provePolyVecEval :: forall size f . (KnownNat size, FiniteField f, Eq f) => PolyVec f size -> f -> PolyVec f size
-provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]
+provePolyVecEval :: forall pv size f . (FiniteField f, UnivariateFieldPolyVec pv f size) => pv f size -> f -> pv f size
+provePolyVecEval f z = (f - toPolyVec @pv [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec @pv [negate z, one]
