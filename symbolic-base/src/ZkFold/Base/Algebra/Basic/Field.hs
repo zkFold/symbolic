@@ -199,8 +199,8 @@ instance (MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
 
 ----------------------------- Field Extensions --------------------------------
 
-class IrreduciblePoly f (e :: Symbol) | e -> f where
-    irreduciblePoly :: Poly f
+class (UnivariateFieldPolynomial poly f) => IrreduciblePoly poly f (e :: Symbol) | e -> f, e -> poly where
+    irreduciblePoly :: poly f
 
 data Ext2 f (e :: Symbol) = Ext2 f f
     deriving (Eq, Show, Generic)
@@ -226,23 +226,23 @@ instance Field f => AdditiveGroup (Ext2 f e) where
     negate (Ext2 a b) = Ext2 (negate a) (negate b)
     Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
 
-instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => Scale (Ext2 f e) (Ext2 f e)
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext2 f e) (Ext2 f e)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext2 f e) where
-    Ext2 a b * Ext2 c d = fromConstant (toPoly [a, b] * toPoly [c, d])
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext2 f e) where
+    Ext2 a b * Ext2 c d = fromConstant @(poly f) (toPoly @poly [a, b] * toPoly @poly [c, d])
 
 instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
     (^) = natPow
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext2 f e) where
     one = Ext2 one zero
 
 instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
     (^) = intPowF
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
     finv (Ext2 a b) =
-        let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @f @e)
+        let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @poly @f @e)
         in case fromPoly $ scaleP (one // lt g) 0 s of
             []  -> Ext2 zero zero
             [x] -> Ext2 x zero
@@ -253,21 +253,21 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext2 f e) where
 instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
     fromConstant e = Ext2 (fromConstant e) zero
 
-instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => FromConstant (Poly f) (Ext2 f e) where
-    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @f @e) of
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant (poly f) (Ext2 f e) where
+    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @poly @f @e) of
       []  -> zero
       [x] -> fromConstant x
       v   -> Ext2 (v V.! 0) (v V.! 1)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext2 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Semiring (Ext2 f e)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext2 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Ring (Ext2 f e)
 
 instance Binary f => Binary (Ext2 f e) where
     put (Ext2 a b) = put a <> put b
     get = Ext2 <$> get <*> get
 
-instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
@@ -294,23 +294,23 @@ instance Field f => AdditiveGroup (Ext3 f e) where
     negate (Ext3 a b c) = Ext3 (negate a) (negate b) (negate c)
     Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
 
-instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => Scale (Ext3 f e) (Ext3 f e)
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext3 f e) (Ext3 f e)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeSemigroup (Ext3 f e) where
-    Ext3 a b c * Ext3 d e f = fromConstant (toPoly [a, b, c] * toPoly [d, e, f])
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext3 f e) where
+    Ext3 a b c * Ext3 d e f = fromConstant @(poly f) (toPoly [a, b, c] * toPoly [d, e, f])
 
 instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
     (^) = natPow
 
-instance (Field f, Eq f, IrreduciblePoly f e) => MultiplicativeMonoid (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext3 f e) where
     one = Ext3 one zero zero
 
 instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
     (^) = intPowF
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
     finv (Ext3 a b c) =
-        let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @f @e)
+        let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @poly @f @e)
         in case fromPoly $ scaleP (one // lt g) 0 s of
             []     -> Ext3 zero zero zero
             [x]    -> Ext3 x zero zero
@@ -322,20 +322,20 @@ instance (Field f, Eq f, IrreduciblePoly f e) => Field (Ext3 f e) where
 instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
     fromConstant e = Ext3 (fromConstant e) zero zero
 
-instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly f e) => FromConstant (Poly f) (Ext3 f e) where
-    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @f @e) of
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant (poly f) (Ext3 f e) where
+    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @poly @f @e) of
       []     -> zero
       [x]    -> fromConstant x
       [x, y] -> Ext3 x y zero
       v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Semiring (Ext3 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Semiring (Ext3 f e)
 
-instance (Field f, Eq f, IrreduciblePoly f e) => Ring (Ext3 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Ring (Ext3 f e)
 
 instance Binary f => Binary (Ext3 f e) where
     put (Ext3 a b c) = put a <> put b <> put c
     get = Ext3 <$> get <*> get <*> get
 
-instance (Field f, Eq f, IrreduciblePoly f e, Arbitrary f) => Arbitrary (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ext3 f e) where
     arbitrary = Ext3 <$> arbitrary <*> arbitrary <*> arbitrary

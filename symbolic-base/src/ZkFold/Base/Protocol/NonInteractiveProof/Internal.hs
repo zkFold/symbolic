@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE Unsafe              #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
@@ -21,9 +22,9 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Field, MultiplicativeSemigroup ((*)), Scale (..), sum)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), sum)
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, PolyVec, fromPolyVec)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..))
 import           ZkFold.Base.Data.ByteString
 
 class Monoid ts => ToTranscript ts a where
@@ -90,13 +91,17 @@ class NonInteractiveProof a core where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
-class (CyclicGroup g) => CoreFunction g core where
-    msm :: (f ~ ScalarFieldOf g) => V.Vector g -> PolyVec f size -> g
-
-    polyMul :: (f ~ ScalarFieldOf g, Field f, Eq f) => Poly f -> Poly f -> Poly f
+class (CyclicGroup g) => CoreFunction g core pv size where
+    msm :: 
+        ( f ~ ScalarFieldOf g
+        ) => V.Vector g -> pv f size -> g
 
 data HaskellCore
 
-instance (CyclicGroup g, f ~ ScalarFieldOf g) => CoreFunction g HaskellCore where
-    msm gs f = sum $ V.zipWith scale (fromPolyVec f) gs
-    polyMul = (*)
+instance 
+    ( CyclicGroup g
+    , f ~ ScalarFieldOf g
+    , UnivariateRingPolyVec pv f size
+    ) => CoreFunction g HaskellCore pv size where
+
+    msm gs f = sum $ V.zipWith scale (fromPolyVec @pv @f f) gs

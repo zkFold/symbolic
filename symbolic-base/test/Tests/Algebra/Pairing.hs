@@ -16,8 +16,8 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
-                                                              vec2poly)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, PolyVec, deg, evalPolyVec, polyVecDiv, scalePV,
+                                                              toPolyVec, vec2poly)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (CoreFunction (..), HaskellCore, msm)
 
 propVerificationKZG
@@ -28,10 +28,10 @@ propVerificationKZG
     => f ~ ScalarFieldOf g2
     => Field f
     => Eq f
-    => CoreFunction g1 core
+    => CoreFunction g1 core PolyVec 32
     => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
-    let n  = deg $ vec2poly p
+    let n  = deg @Poly $ vec2poly p
 
         -- G1
         gs = V.fromList $ map ((`scale` pointGen) . (x^)) [0 .. n]
@@ -41,7 +41,7 @@ propVerificationKZG x p z =
         h0 = pointGen :: g2
         h1 = x `scale` h0
 
-        com = msm @g1 @core
+        com = msm @g1 @core @PolyVec
         -- Proving a polynomial evaluation
         pz = p `evalPolyVec` z
         h  = (p - scalePV pz one) `polyVecDiv` toPolyVec [negate z, one]
