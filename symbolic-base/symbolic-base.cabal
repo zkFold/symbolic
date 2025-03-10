@@ -204,6 +204,10 @@ library
       ZkFold.Symbolic.Data.Input
       ZkFold.Symbolic.Data.Int
       ZkFold.Symbolic.Data.JWT
+      ZkFold.Symbolic.Data.JWT.Google
+      ZkFold.Symbolic.Data.JWT.RS256
+      ZkFold.Symbolic.Data.JWT.Twitch
+      ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
