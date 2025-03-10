@@ -48,7 +48,7 @@ decode encoded primeElement r n = bool decoded encoded' isCorrect
         es1 = V.indexed . V.fromList $ one : P.take (n P.- 1) (iterate (* invPE) invPE)
         iroots = mapMaybe (\(i,x) -> bool Nothing (Just (i , x)) (evalPoly lx x == zero)) es1
 
-        omega = toPoly $ take r $ fromPoly (lx * syndromes)
+        omega = toPoly @Poly $ take r $ fromPoly (lx * syndromes)
         lx'= diff lx
 
         err = V.foldl (+) zero $ map (\(i,x) ->
@@ -93,5 +93,5 @@ scalarN q l lv rv = bool (sum $ V.zipWith (*) lPadded rPadded) zero (min l (leng
         rPadded = V.reverse $ V.take q rv
 
 
-diff :: ( Field c, Eq c) =>Poly c -> Poly c
+diff :: (Field c, Eq c) => Poly c -> Poly c
 diff p = let cs = fromPoly p in toPoly $ V.tail $ V.imap (\i c -> scale (fromIntegral i :: Integer) c) cs
