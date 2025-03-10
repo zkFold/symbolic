@@ -40,7 +40,7 @@ import           Data.Map                          (fromList, (!))
 import           Data.Maybe                        (fromJust)
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
-import qualified Data.Vector                       as V (init, last)
+import qualified Data.Vector                       as Vec (init, last, toList)
 import qualified Data.Zip                          as Z
 import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..))
 import           GHC.Natural                       (naturalFromInteger)
@@ -446,8 +446,8 @@ uintBits
     -> c []
 uintBits (UInt v) = fromCircuitF v $ \regs -> do
     let regsV = V.toV regs
-        regsInit = V.init regV
-        regsLast = V.last regV
+        regsInit = Vec.init regV
+        regsLast = Vec.toList (Vec.last regV)
         rSizeInit = registerSize @(BaseField c) @n @r
         rSizeLast = highRegisterSize @(BaseField c) @n @r
     wordsInit <- Haskell.mapM (expansion rSizeInit) regsInit
