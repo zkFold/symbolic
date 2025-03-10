@@ -22,7 +22,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (genSubset, length)
+import           ZkFold.Prelude                                      (chooseFromList, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
@@ -64,7 +64,7 @@ instance
   ) => Arbitrary (ArithmeticCircuit a p i (Vector l)) where
     arbitrary = do
         ac <- arbitrary @(ArithmeticCircuit a p i Par1)
-        o  <- unsafeToVector <$> genSubset (value @l) (getAllVars ac)
+        o  <- unsafeToVector <$> chooseFromList (value @l) (getAllVars ac)
         return ac {acOutput = toVar <$> o}
 
 arbitrary' ::

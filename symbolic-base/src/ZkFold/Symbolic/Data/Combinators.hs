@@ -249,6 +249,19 @@ withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSN
 withNumberOfRegisters :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (NumberOfRegisters a n r)) => k) -> k
 withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
 
+withCeilRegSize' :: forall rs ow. (KnownNat rs, KnownNat ow) :- KnownNat (Ceil rs ow)
+withCeilRegSize' = Sub $ withKnownNat @(Ceil rs ow) (unsafeSNat (Haskell.div (value @rs + value @ow -! 1) (value @ow))) Dict
+
+withCeilRegSize :: forall rs ow {k}. (KnownNat rs, KnownNat ow) => ((KnownNat (Ceil rs ow)) => k) -> k
+withCeilRegSize = withDict (withCeilRegSize' @rs @ow)
+
+withGetRegisterSize' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize a n r)
+withGetRegisterSize' = Sub $ withKnownNat @(GetRegisterSize a n r) (unsafeSNat (registerSize @a @n @r)) Dict
+
+withGetRegisterSize :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => ((KnownNat (GetRegisterSize a n r)) => k) -> k
+withGetRegisterSize = withDict (withGetRegisterSize' @n @r @a)
+
+
 padNextPow2 :: forall i a w m n . (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)
 padNextPow2 v = do
     z <- newAssigned (const zero)
