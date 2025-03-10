@@ -118,7 +118,6 @@ expMod
     => KnownNat m
     => KnownNat (2 * m)
     => KnownRegisters c (2 * m) r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
     => UInt n r c
     -> UInt p r c
@@ -145,7 +144,6 @@ bitsPow
     => KnownNat n
     => KnownNat p
     => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
     => Natural
     -> ByteString p c
@@ -168,7 +166,6 @@ productMod
     => KnownRegisterSize r
     => KnownNat n
     => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
     => UInt n r c
     -> UInt n r c
     -> UInt n r c
@@ -375,7 +372,6 @@ register c i =
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
          ) => SemiEuclidean (UInt n r c) where
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
