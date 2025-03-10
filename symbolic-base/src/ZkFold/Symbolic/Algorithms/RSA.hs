@@ -25,11 +25,11 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
+import           ZkFold.Symbolic.Data.Combinators     (GetRegisterSize, Iso (..), KnownRegisters,
                                                        NumberOfRegisters, RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
-import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
+import           ZkFold.Symbolic.Data.UInt            (UInt, expMod)
 import           ZkFold.Symbolic.Data.VarByteString   (VarByteString)
 
 type Signature keyLen ctx = ByteString keyLen ctx
@@ -100,7 +100,7 @@ type RSA keyLen msgLen ctx =
    , KnownNat (2 * keyLen)
    , KnownRegisters ctx keyLen 'Auto
    , KnownRegisters ctx (2 * keyLen) 'Auto
-   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
+   , KnownNat (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto)
    , NFData (ctx (Vector keyLen))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
