@@ -40,6 +40,7 @@ import           Data.Map                          (fromList, (!))
 import           Data.Maybe                        (fromJust)
 import           Data.Traversable                  (for, traverse)
 import           Data.Tuple                        (swap)
+import qualified Data.Vector                       as V (init, last)
 import qualified Data.Zip                          as Z
 import           GHC.Generics                      (Generic, Par1 (..), (:*:) (..))
 import           GHC.Natural                       (naturalFromInteger)
@@ -431,8 +432,6 @@ type OrdWord = 16
 
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
-         , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
          ) => Ord (UInt n r c) where
 
     type OrderingOf (UInt n r c) = Ordering c
@@ -442,12 +441,18 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     compare = bitwiseCompareRep `on` uintBits
 
 uintBits
-    :: (KnownNat n, KnownRegisterSize r, Symbolic c)
+    :: forall n r c. (KnownNat n, KnownRegisterSize r, Symbolic c)
     => UInt n r c
-    -> c (Vector n)
-uintBits uint =
-    let ByteString bits = from uint
-    in bits
+    -> c []
+uintBits (UInt v) = fromCircuitF v $ \regs -> do
+    let regsV = V.toV regs
+        regsInit = V.init regV
+        regsLast = V.last regV
+        rSizeInit = registerSize @(BaseField c) @n @r
+        rSizeLast = highRegisterSize @(BaseField c) @n @r
+    wordsInit <- Haskell.mapM (expansion rSizeInit) regsInit
+    wordsLast <- expansion rSizeLast regsLast
+    Haskell.pure $ wordsLast <> Haskell.reverse (Haskell.concat wordsInit)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
