@@ -441,15 +441,17 @@ uintBits
     => UInt n r c
     -> c []
 uintBits (UInt v) = fromCircuitF v $ \regs -> do
-    let regsV = V.toV regs
-        regsInit = Vec.toList (Vec.init regsV)
-        regsLast = Vec.last regsV
-        rSizeInit = registerSize @(BaseField c) @n @r
-        rSizeLast = highRegisterSize @(BaseField c) @n @r
-    wordsInit <- Haskell.mapM (expansion rSizeInit) regsInit
-    wordsLast <- expansion rSizeLast regsLast
-    Haskell.pure $ Haskell.reverse wordsLast
-      <> Haskell.reverse (Haskell.concat wordsInit)
+    let n = value @n
+    if n == 0 then Haskell.pure [] else do
+      let regsV = V.toV regs
+          regsInit = Vec.toList (Vec.init regsV)
+          regsLast = Vec.last regsV
+          rSizeInit = registerSize @(BaseField c) @n @r
+          rSizeLast = highRegisterSize @(BaseField c) @n @r
+      wordsInit <- Haskell.mapM (expansion rSizeInit) regsInit
+      wordsLast <- expansion rSizeLast regsLast
+      Haskell.pure $ Haskell.reverse wordsLast
+        <> Haskell.reverse (Haskell.concat wordsInit)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UInt n r c) where
     UInt xc + UInt yc
