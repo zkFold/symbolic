@@ -446,8 +446,8 @@ uintBits
     -> c []
 uintBits (UInt v) = fromCircuitF v $ \regs -> do
     let regsV = V.toV regs
-        regsInit = Vec.toList (Vec.init regV)
-        regsLast = Vec.last regV
+        regsInit = Vec.toList (Vec.init regsV)
+        regsLast = Vec.last regsV
         rSizeInit = registerSize @(BaseField c) @n @r
         rSizeLast = highRegisterSize @(BaseField c) @n @r
     wordsInit <- Haskell.mapM (expansion rSizeInit) regsInit
