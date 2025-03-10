@@ -118,7 +118,7 @@ expMod
     => KnownNat m
     => KnownNat (2 * m)
     => KnownRegisters c (2 * m) r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
+    => KnownNat (GetRegisterSize (BaseField c) (2 * m) r)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
     => UInt n r c
     -> UInt p r c
@@ -145,7 +145,7 @@ bitsPow
     => KnownNat n
     => KnownNat p
     => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => KnownNat (GetRegisterSize (BaseField c) n r)
     => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
     => Natural
     -> ByteString p c
@@ -168,7 +168,7 @@ productMod
     => KnownRegisterSize r
     => KnownNat n
     => KnownRegisters c n r
-    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => KnownNat (GetRegisterSize (BaseField c) n r)
     => UInt n r c
     -> UInt n r c
     -> UInt n r c
@@ -375,7 +375,7 @@ register c i =
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
+         , KnownNat regSize
          ) => SemiEuclidean (UInt n r c) where
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
@@ -414,18 +414,17 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
           return dm
 
 asWords
-    :: forall wordSize regSize ctx k
+    :: forall regSize ctx k
     .  Symbolic ctx
-    => KnownNat (Ceil regSize wordSize)
-    => KnownNat wordSize
-    => ctx (Vector k)                           -- @k@ registers of size up to @regSize@
-    -> ctx (Vector (k * Ceil regSize wordSize)) -- @k * wordsPerReg@ registers of size @wordSize@
+    => KnownNat regSize
+    => ctx (Vector k) -- @k@ registers of size @regSize@
+    -> ctx (Vector (k * regSize)) -- @k * regSize@ registers of size @wordSize@
 asWords v = fromCircuitF v $ \regs -> do
-    words <- Haskell.mapM (expansionW @wordSize wordsPerReg) regs
+    words <- Haskell.mapM (expansionW @regSize wordsPerReg) regs
     Haskell.pure $ V.reverse . V.unsafeToVector . Haskell.concat . V.fromVector $ words
   where
       wordsPerReg :: Natural
-      wordsPerReg = value @(Ceil regSize wordSize)
+      wordsPerReg = value @regSize
 
 -- | Word size in bits used in comparisons. Subject to change
 type OrdWord = 16
@@ -433,7 +432,7 @@ type OrdWord = 16
 instance ( Symbolic c, KnownNat n, KnownRegisterSize r
          , KnownRegisters c n r
          , regSize ~ GetRegisterSize (BaseField c) n r
-         , KnownNat (Ceil regSize OrdWord)
+         , KnownNat regSize
          ) => Ord (UInt n r c) where
 
     type OrderingOf (UInt n r c) = Ordering c
@@ -447,13 +446,13 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     x <  y = y > x
 
     (UInt u1) >= (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
+        let w1 = asWords @regSize u1
+            w2 = asWords @regSize u2
          in bitwiseGE @OrdWord w1 w2
 
     (UInt u1) > (UInt u2) =
-        let w1 = asWords @OrdWord @regSize u1
-            w2 = asWords @OrdWord @regSize u2
+        let w1 = asWords @regSize u1
+            w2 = asWords @regSize u2
          in bitwiseGT @OrdWord w1 w2
 
     max x y = bool @(Bool c) x y $ x < y
