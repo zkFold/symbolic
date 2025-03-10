@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Ord
   , Ordering
   , Ord (..)
   , GOrd (..)
+  , bitwiseCompareList
   , bitwiseCompareRep
   ) where
 
@@ -152,10 +153,10 @@ instance Symbolic c => IsOrdering (Ordering c) where
 instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
   type OrderingOf (c f) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare = bitwiseCompare `on` getBitsBE
+  compare = bitwiseCompareList `on` getBitsBE
 
-bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
-bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
+bitwiseCompareList :: forall c . Symbolic c => c [] -> c [] -> Ordering c
+bitwiseCompareList x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
 bitwiseCompareRep
   :: forall c v. (Symbolic c, Representable v, Prelude.Foldable v)

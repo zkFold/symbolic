@@ -438,7 +438,7 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
 
     ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
 
-    compare = bitwiseCompareRep `on` uintBits
+    compare = bitwiseCompareList `on` uintBits
 
 uintBits
     :: forall n r c. (KnownNat n, KnownRegisterSize r, Symbolic c)
