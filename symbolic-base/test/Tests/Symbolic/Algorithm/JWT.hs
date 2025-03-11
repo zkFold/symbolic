@@ -11,7 +11,7 @@ import           Prelude                                     (pure)
 import qualified Prelude                                     as P
 import           System.Random                               (mkStdGen)
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, arbitrary, withMaxSuccess, (===))
+import           Test.QuickCheck                             (Gen, arbitrary, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -23,6 +23,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.JWT
 import           ZkFold.Symbolic.Data.JWT.Google
 import           ZkFold.Symbolic.Data.JWT.RS256
+import           ZkFold.Symbolic.Data.JWT.Twitch
 import           ZkFold.Symbolic.Data.VarByteString          (VarByteString, fromNatural)
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
@@ -49,9 +50,13 @@ specJWT = do
                 skey = SigningKey kid prvkey
                 cert = Certificate kid pubkey
 
-            (payload :: GooglePayload I) <- arbitrary
+            (payloadG :: GooglePayload I) <- arbitrary
+            (payloadT :: TwitchPayload I) <- arbitrary
 
-            let (header, sig) = signPayload @"RS256" payload skey
-                (check, _)    = verifyJWT @"RS256" header payload sig cert
+            let (headerG, sigG) = signPayload @"RS256" payloadG skey
+                (checkG, _)    = verifyJWT @"RS256" headerG payloadG sigG cert
 
-            pure $ evalBool check === one
+            let (headerT, sigT) = signPayload @"RS256" payloadT skey
+                (checkT, _)    = verifyJWT @"RS256" headerT payloadT sigT cert
+
+            pure $ evalBool checkG === one .&. evalBool checkT === one
