@@ -1,20 +1,21 @@
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeOperators #-}
 
 
 module ZkFold.Symbolic.Data.Lookup where
 
 
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import GHC.Generics (Par1 (Par1), (:*:) ((:*:)))
-import Data.Functor.Rep
-import Data.Typeable (Typeable)
-import Data.Traversable (Traversable)
-import ZkFold.Symbolic.MonadCircuit
-import ZkFold.Base.Data.ByteString (Binary)
-import ZkFold.Base.Algebra.Basic.Class
-import Prelude (fmap, return, ($))
-import qualified Data.Set as S
+import           Data.Functor.Rep
+import qualified Data.Set                                          as S
+import           Data.Traversable                                  (Traversable)
+import           Data.Typeable                                     (Typeable)
+import           GHC.Generics                                      (Par1 (Par1), (:*:) ((:*:)))
+import           Prelude                                           (fmap, return, ($))
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.ByteString                       (Binary)
+import           ZkFold.Symbolic.Class                             (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import           ZkFold.Symbolic.MonadCircuit
 
 
 binLookup :: Arithmetic a => LookupTable a Par1

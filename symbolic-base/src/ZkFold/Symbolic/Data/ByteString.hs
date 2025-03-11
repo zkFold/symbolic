@@ -65,9 +65,9 @@ import           ZkFold.Symbolic.Data.Conditional  (Conditional)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (newAssigned, MonadCircuit (..), ResidueField)
-import ZkFold.Symbolic.Data.Lookup
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
