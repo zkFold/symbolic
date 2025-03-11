@@ -6,18 +6,16 @@
 
 module ZkFold.Symbolic.Data.MerkleTree where
 
-import           Data.Foldable                                  (foldlM)
-import           Data.Functor.Rep                               (Representable, pureRep)
+import           Data.Functor.Rep                               (pureRep)
 import qualified Data.List                                      as LL
 import           Data.Proxy                                     (Proxy (Proxy))
 import           Data.Type.Equality                             (type (~))
 import           GHC.Generics                                   hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                                        (Traversable, const, return, zip, ($), (.))
+import           Prelude                                        (const, return, zip, ($), (.))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative               (hpair)
 import           ZkFold.Base.Data.Package
 import qualified ZkFold.Base.Data.Vector                        as V
 import           ZkFold.Base.Data.Vector                        hiding ((.:))
@@ -52,25 +50,34 @@ data MerkleTree (d :: Natural) h = MerkleTree {
 
 -- | Сreates a layer above the current one in the merkle tree
 layerFolding :: forall c x.
-  (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+  ( SymbolicOutput x, Context x ~ c, SymbolicFold c
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x)))
   => List c x -> List c x
 layerFolding xs = res
   where
     (_, res) = foldl (Morph \((arr, l ), a :: Switch s x) ->
         ifThenElse (isNothing arr :: Bool s) (just a, l) (nothing, newVer (fromJust arr) a .: l) ) (nothing :: Maybe c x, emptyList :: List c x) xs
 
-    newVer :: forall s. (Symbolic s) => Switch s x -> Switch s x -> Switch s x
-    newVer l' r' = Switch newLayout (sPayload l')
-      where
-        newLayout :: s (Layout x)
-        newLayout = fromCircuit3F z (sLayout l') (sLayout r') hashAux
+    newVer ::
+      forall s y.
+      ( Symbolic s, SymbolicData y, Ring (s (Layout y))
+      , FromConstant (BaseField s) (s (Layout y)))
+      =>
+      Switch s y -> Switch s y -> Switch s y
+    newVer l' r' = Switch (hashAux z (sLayout l') (sLayout r')) (sPayload l')
 
+    -- newLayout :: forall s y.
+    --   ( Symbolic s, SymbolicData y, Ring (s (Layout y))
+    --   , FromConstant (BaseField s) (s (Layout y))) => s (Layout y) -> s (Layout y) -> s (Layout y)
+    -- newLayout = hashAux @s @y z
+      where
         Bool z = true :: Bool s
 
 instance forall c x d n.
   ( Context x ~ c, Symbolic c
   , KnownNat d, 2 ^ d ~ n
   , SymbolicOutput x, SymbolicFold c
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => Iso (Vector n x) (MerkleTree d x) where
   from v = MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) ls
     where
@@ -82,6 +89,7 @@ instance forall c x d n.
   ( Context x ~ c, Symbolic c
   , KnownNat d, 2 ^ d ~ n
   , SymbolicOutput x, SymbolicFold c
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => Iso (MerkleTree d x) (Vector n x)  where
   from (MerkleTree _ l) = V.unsafeToVector $ helper @c (V.last l) (2 ^ getNatural @d)
     where
@@ -90,19 +98,17 @@ instance forall c x d n.
         0 -> []
         _ -> let (n, ns) = L.uncons ls in n : helper @s ns (k-!1)
 
-hashAux :: forall i m a w f.
-  ( MonadCircuit i a w m
-  , Representable f
-  , Traversable f
-  , Arithmetic a
-  ) => Par1 i -> f i -> f i -> m (f i)
-hashAux (Par1 b) h g = do
-  v1 <- merkleHasher h g
-  v2 <- merkleHasher g h
-  mzipWithMRep (\wx wy -> newAssigned ((one - ($ b)) * ($ wx) + ($ b) * ($ wy))) v1 v2
+hashAux :: forall c x.
+  (Symbolic c, SymbolicData x, Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x)))
+  => c Par1 -> c (Layout x) -> c (Layout x) -> c (Layout x)
+hashAux b' h g = do
+  let v1 = merkleHasher [h, g]
+      v2 = merkleHasher [g, h]
+  fromCircuit3F b' v1 v2 $ \ (Par1 b) x y ->
+    mzipWithMRep (\wx wy -> newAssigned ((one - ($ b)) * ($ wx) + ($ b) * ($ wy))) x y
   where
-    merkleHasher :: f i -> f i -> m (f i)
-    merkleHasher = mzipWithMRep (\a c -> newAssigned (\x -> mimcHashN @a mimcConstants zero [x a, x c]))
+    merkleHasher :: [c (Layout x)] -> c (Layout x)
+    merkleHasher = mimcHashN mimcConstants (zero :: BaseField c)
 
 instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
@@ -134,6 +140,7 @@ findPath :: forall x c d n.
   , KnownNat (NumberOfRegisters (BaseField c) n Auto)
   , NumberOfBits (BaseField c) ~ n
   , SymbolicFold c, KnownRegisters c d Auto
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> Maybe c (MerkleTreePath d c)
 findPath p mt@(MerkleTree _ nodes) = bool (nothing @_ @c) (just path) (p @ lookup @x @c mt path :: Bool c)
   where
@@ -156,6 +163,7 @@ lookup :: forall x c d.
   , KnownNat d
   , SymbolicFold c
   , KnownRegisters c d Auto
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
@@ -178,17 +186,14 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
 
     xA = restore @x @c $ const (preimage , payload xP Proxy)
 
-    rootAndH1 :: Context x (Layout x :*: Layout x)
-    rootAndH1 = hpair root (arithmetize xP Proxy)
-
     preimage :: c (Layout x)
-    preimage = fromCircuit3F (pack pairs) (pack path) rootAndH1 $ \ g p' r' -> do
-      let gs = V.fromVector $ unComp1 g
-          bs = V.fromVector $ unComp1 p'
-          (r :*: h1) = r'
-      hd :: Layout x i <- foldlM (\h' (g', b') -> hashAux b' h' g') h1 $ zip gs bs
-      _ <- mzipWithMRep (\wx wy -> constraint (($ wx) - ($ wy))) hd r
-      return h1
+    preimage =
+      let gs = V.fromVector pairs
+          bs = V.fromVector path
+          hd = P.foldl (\h' (g', b') -> hashAux @c @x b' h' g') (arithmetize xP Proxy) $ zip gs bs
+       in fromCircuit2F hd root $ \a b -> do
+        _ <- mzipWithMRep (\wx wy -> constraint (($ wx) - ($ wy))) a b
+        return a
 
     path :: Vector (d - 1) (c Par1)
     path = P.fmap (\(Bool b) -> b) p
@@ -214,6 +219,7 @@ insertLeaf :: forall x c d.
   , KnownNat d
   , SymbolicFold c
   , KnownRegisters c d Auto
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
 insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preimage) (V.unsafeToVector z3)
   where
@@ -233,18 +239,17 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
     pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
 
     preimage :: Vector (d - 1) (c (Layout x))
-    preimage = unpack $ fromCircuit3F (pack pairs) (pack path) (arithmetize xI Proxy) $ \ g p' h1 -> do
-      let gs = V.fromVector $ unComp1 g
-          bs = V.fromVector $ unComp1 p'
-      hd <- helper h1 (zip gs bs)
-      return $ Comp1 $ V.unsafeToVector @(d-1) hd
+    preimage =
+      let gs = V.fromVector pairs
+          bs = V.fromVector path
+       in  V.unsafeToVector @(d-1) $ helper (arithmetize xI Proxy) (zip gs bs)
 
-    helper :: forall i m a w f. (MonadCircuit i a w m, Representable f, Traversable f, Arithmetic a) => f i -> [(f i, Par1 i)] -> m [f i]
-    helper _ [] = return []
-    helper h (pi:ps) = do
+    helper :: c (Layout x) -> [(c (Layout x), c Par1)] -> [c (Layout x)]
+    helper _ [] =  []
+    helper h (pi:ps) =
       let (g, b) = pi
-      hN <- hashAux b h g
-      (hN :) P.<$> helper hN ps
+          hN = hashAux @c @x b h g
+      in hN : (helper hN ps)
 
     path :: Vector (d - 1) (c Par1)
     path = P.fmap (\(Bool b) -> b) p
@@ -263,6 +268,7 @@ replace :: forall x c d n.
   , KnownNat (NumberOfRegisters (BaseField c) n Auto)
   , NumberOfBits (BaseField c) ~ n
   , SymbolicFold c, KnownRegisters c d Auto
+  , Ring (c (Layout x)), FromConstant (BaseField c) (c (Layout x))
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
 replace p t = insertLeaf t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
 
