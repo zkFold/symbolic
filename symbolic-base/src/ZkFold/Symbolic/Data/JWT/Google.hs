@@ -1,45 +1,34 @@
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.JWT.Google (GooglePayload (..)) where
 
-import           Control.DeepSeq                    (NFData, force)
+import           Control.DeepSeq                    (NFData)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
-import           Data.Constraint                    (Dict (..), withDict, (:-) (..))
-import           Data.Constraint.Nat                (Max, divNat, minusNat, plusNat, timesNat)
-import           Data.Constraint.Unsafe             (unsafeAxiom, unsafeSNat)
 import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
 import           Generic.Random                     (genericArbitrary, uniform)
 import           GHC.Generics                       (Generic, Par1 (..))
-import           GHC.TypeLits                       (withKnownNat)
-import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
+import           Prelude                            (fmap, type (~), ($), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (hmap)
 import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            ((!!))
 import qualified ZkFold.Symbolic.Algorithms.RSA     as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
 import           ZkFold.Symbolic.Data.JWT
 import           ZkFold.Symbolic.Data.JWT.RS256
-import           ZkFold.Symbolic.Data.UInt
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned, (@+))
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL
@@ -130,39 +119,22 @@ instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (Go
         `VB.append` (fromType @",\"exp\":")   @+ plExp
         `VB.append` (fromType @"}")
 
-type SecretBits ctx =
-    ( NFData (ctx (V.Vector 8))
-    , NFData (ctx (V.Vector 648))
-    , NFData (ctx (V.Vector 864))
-    , NFData (ctx (V.Vector 9456))
-    , NFData (ctx (V.Vector 10328))
-    , NFData (ctx Par1)
-    )
-
-instance (Symbolic ctx) => IsBits (GooglePayload ctx) where
-    type BitCount (GooglePayload ctx) = 9654
+instance
+  ( Symbolic ctx
+  , NFData (ctx (V.Vector 8))
+  , NFData (ctx (V.Vector 9456))
+  ) => IsBits (GooglePayload ctx) where
+    type BitCount (GooglePayload ctx) = 9456
     toBits = toAsciiBits
 
-instance (Symbolic ctx, SecretBits ctx, RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (GooglePayload ctx) where
-    signPayload payload SigningKey{..} = signature
+instance (Symbolic ctx, TokenBits (GooglePayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (GooglePayload ctx) where
+    signPayload jPayload SigningKey{..} = (jHeader, signature)
         where
-            header = TokenHeader "RS256" prvKid "JWT"
-            signature = RSA.signVar (secretBits' header payload) prvKey
+            jHeader = TokenHeader "RS256" prvKid "JWT"
 
-    verifyJWT header payload signature vkey@Certificate{..} = (tokenVerified, secretHash)
+            signature = RSA.signVar (tokenBits jHeader jPayload) prvKey
+
+    verifyJWT jHeader jPayload signature Certificate{..} = (tokenVerified, secretHash)
         where
-            (sigVerified, secretHash) = RSA.verifyVar (secretBits' header payload) signature vkey
-            tokenVerified = pubKid == hdKid header && sigVerified
-
-secretBits'
-    :: forall ctx
-    .  Symbolic ctx
-    => SecretBits ctx
-    => TokenHeader ctx
-    -> GooglePayload ctx
-    -> VarByteString 10328 ctx
-secretBits' h p =  force $
-       toAsciiBits h
-    @+ (fromType @".")
-    @+ toAsciiBits p
-
+            (sigVerified, secretHash) = RSA.verifyVar (tokenBits jHeader jPayload) signature pubKey
+            tokenVerified = pubKid == hdKid jHeader && sigVerified

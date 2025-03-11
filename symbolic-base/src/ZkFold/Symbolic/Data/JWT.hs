@@ -8,76 +8,70 @@ module ZkFold.Symbolic.Data.JWT
     ( IsSymbolicJSON (..)
     , IsBits (..)
     , IsTokenPayload (..)
+    , TokenBits
     , TokenHeader (..)
     , SigningAlgorithm (..)
     , toAsciiBits
+    , tokenBits
     ) where
 
 import           Control.DeepSeq                    (NFData, force)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
-import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
-import           Data.Constraint                    (Dict (..), withDict, (:-) (..))
-import           Data.Constraint.Nat                (Max, divNat, minusNat, plusNat, timesNat)
-import           Data.Constraint.Unsafe             (unsafeAxiom, unsafeSNat)
+import           Data.Constraint                    (withDict)
 import           Data.Kind                          (Type)
-import           Data.Maybe                         (fromMaybe)
-import           Data.Scientific                    (toBoundedInteger)
-import qualified Data.Text                          as T
-import           Generic.Random                     (genericArbitrary, uniform)
 import           GHC.Generics                       (Generic, Par1 (..))
-import           GHC.TypeLits                       (Symbol, withKnownNat)
-import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
+import           GHC.TypeLits                       (Symbol)
+import           Prelude                            (type (~), ($), (.))
 import qualified Prelude                            as P
-import           Test.QuickCheck                    (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (hmap)
 import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            ((!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement
+import           ZkFold.Symbolic.Data.Combinators   hiding (toBits)
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
 import           ZkFold.Symbolic.Data.JWT.Utils
-import           ZkFold.Symbolic.Data.UInt
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned, (@+))
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 
-
+-- | Types than can be represented as a Symbolic JSON string
+--
 class IsSymbolicJSON a where
     type MaxLength a :: Natural
 
     toJsonBits :: a -> VarByteString (MaxLength a) (Context a)
 
+-- | Types than can be serialised
+--
 class IsBits a where
     type BitCount a :: Natural
 
     toBits :: a -> VarByteString (BitCount a) (Context a)
 
-class SigningAlgorithm (alg :: Symbol) (ctx :: (Type -> Type) -> Type) where
-    type SKey alg ctx :: Type
-    type VKey alg ctx :: Type
-    type Signature alg ctx :: Type
+-- | Signing algorithm for JWT (such as RS256)
+--
+class SigningAlgorithm (alg :: Symbol) where
+    type SKey alg (ctx :: (Type -> Type) -> Type) :: Type
+    type VKey alg (ctx :: (Type -> Type) -> Type) :: Type
+    type Signature alg (ctx :: (Type -> Type) -> Type) :: Type
+    type Hash alg (ctx :: (Type -> Type) -> Type) :: Type
 
+-- | Types that can act as JWT Payload
+--
 class IsTokenPayload (alg :: Symbol) a where
     signPayload
         :: a
         -> SKey alg (Context a)
-        -> Signature alg (Context a)
+        -> (TokenHeader (Context a), Signature alg (Context a))
 
     verifyJWT
         :: TokenHeader (Context a)
         -> a
         -> Signature alg (Context a)
         -> VKey alg (Context a)
-        -> Bool (Context a)
+        -> (Bool (Context a), Hash alg (Context a))
 
 -- | Json Web Token header with information about encryption algorithm and signature
 --
@@ -150,3 +144,28 @@ toAsciiBits
     => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
+
+type TokenBits a =
+    ( NFData ((Context a) (V.Vector 8))
+    , NFData ((Context a) (V.Vector 648))
+    , NFData ((Context a) (V.Vector 864))
+    , NFData ((Context a) (V.Vector (BitCount a)))
+    , NFData ((Context a) (V.Vector (872 + BitCount a)))
+    , NFData ((Context a) Par1)
+    , IsBits a
+    , KnownNat (872 + BitCount a)
+    )
+
+tokenBits
+    :: forall p ctx
+    .  Symbolic ctx
+    => Context p ~ ctx
+    => TokenBits p
+    => TokenHeader ctx
+    -> p
+    -> VarByteString (864 + 8 + BitCount p) ctx
+tokenBits h p =  force $
+       toBits h
+    @+ (fromType @".")
+    @+ toBits p
+

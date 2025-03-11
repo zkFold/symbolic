@@ -7,39 +7,32 @@
 module ZkFold.Symbolic.Data.JWT.Utils where
 
 import           Control.DeepSeq                    (NFData, force)
-import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
-import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
+import qualified Data.ByteString                    as BS
 import           Data.Constraint                    (Dict (..), withDict, (:-) (..))
 import           Data.Constraint.Nat                (Max, divNat, minusNat, plusNat, timesNat)
 import           Data.Constraint.Unsafe             (unsafeAxiom, unsafeSNat)
 import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
-import           Generic.Random                     (genericArbitrary, uniform)
-import           GHC.Generics                       (Generic, Par1 (..))
+import           Data.Text.Encoding                 (decodeUtf8)
+import           GHC.Generics                       (Par1 (..))
 import           GHC.TypeLits                       (withKnownNat)
 import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
 import qualified Prelude                            as P
-import           Test.QuickCheck                    (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor          (hmap)
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            ((!!))
-import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
-import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
 import           ZkFold.Symbolic.Data.UInt
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned, (@+))
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned)
 import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 
 -- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
@@ -239,3 +232,14 @@ word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
         s4 <- newAssigned $ \p -> p asciius   + p s3
 
         V.unsafeToVector . P.reverse <$> expansion 8 s4
+
+-- We store everything as ByteStrings for simplicity.
+-- We need to convert ints and bools to strings to avoid conversion errors
+--
+stringify :: JSON.Value -> JSON.Value
+stringify (JSON.Number s) =
+    JSON.String (T.pack . P.show . fromMaybe (P.error "instance FromJSON JWT :: Invalid integer") . toBoundedInteger @P.Int $ s)
+stringify (JSON.Bool b)   = JSON.String (T.pack $ P.show b)
+stringify (JSON.Object o) = JSON.Object $ fmap stringify o
+stringify a@(JSON.Array _) = JSON.String $ decodeUtf8 . BS.toStrict . JSON.encode $ a
+stringify rest            = rest
