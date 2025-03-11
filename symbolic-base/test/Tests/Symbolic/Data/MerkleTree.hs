@@ -1,24 +1,24 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE BlockArguments #-}
 
 
 module Tests.Symbolic.Data.MerkleTree () where
 
 
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Fold
--- import qualified ZkFold.Symbolic.Data.Maybe as M
-import ZkFold.Symbolic.Data.Class
+import           Data.Type.Equality               (type (~))
+import           GHC.Generics                     (Par1 (Par1))
 import           GHC.TypeNats
-import ZkFold.Symbolic.Data.MerkleTree
-import ZkFold.Base.Data.Vector ( Vector, (!!), Vector(..) )
-import           Data.Type.Equality                      (type (~))
-import GHC.Generics (Par1 (Par1))
-import ZkFold.Symbolic.Data.Combinators ( Iso(..), KnownRegisters, RegisterSize(..) )
-import Test.QuickCheck (Property, (===))
-import ZkFold.Base.Algebra.Basic.Class (FromConstant(..))
-import Prelude ((.), ($), Show, Eq)
+import           Prelude                          (Eq, Show, ($), (.))
+import           Test.QuickCheck                  (Property, (===))
+
+import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..))
+import           ZkFold.Base.Data.Vector          (Vector (..), (!!))
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Combinators (Iso (..), KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.MerkleTree
+import           ZkFold.Symbolic.Fold
 -- import ZkFold.Symbolic.Data.Bool (Bool)
 -- import ZkFold.Symbolic.Data.Morph
 -- import ZkFold.Symbolic.Data.Conditional (Conditional)
