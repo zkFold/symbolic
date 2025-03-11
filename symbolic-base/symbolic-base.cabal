@@ -205,6 +205,7 @@ library
       ZkFold.Symbolic.Data.Int
       ZkFold.Symbolic.Data.JWT
       ZkFold.Symbolic.Data.List
+      ZkFold.Symbolic.Data.Lookup
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
