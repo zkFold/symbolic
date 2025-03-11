@@ -43,7 +43,7 @@ zkLoginNoSig
     => TokenBits (GooglePayload ctx)
     => TokenHeader ctx
     -> GooglePayload ctx
-    -> Certificate ctx
+    -> Signature "RS256" ctx
     -> ByteString 64 ctx
     -> ByteString 256 ctx
     -> Certificate ctx
