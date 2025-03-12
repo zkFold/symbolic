@@ -4,7 +4,7 @@
 
 module ZkFold.Symbolic.Data.Ord
   ( IsOrdering (..)
-  , Ordering
+  , Ordering (..)
   , Ord (..)
   , GOrd (..)
   ) where
