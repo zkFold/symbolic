@@ -12,11 +12,11 @@ import qualified Prelude                                     as P
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_Scalar, Secp256k1_PointOf)
+import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_PointOf, Secp256k1_Scalar)
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (from, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto), from)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 
@@ -52,7 +52,7 @@ instance
       (P.iterate (\e -> e + e) x)
         where
             nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc 
+            nativeBits = ByteString $ binaryExpansion nativeSc
 
             uintBits :: ByteString uintBits ctx
             uintBits = from uintSc
