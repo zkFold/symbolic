@@ -6,8 +6,8 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.Secp256k1 (Secp256k1_Point) where
 
-import           Prelude                                   (fromInteger, type (~), ($))
-import qualified Prelude                                   as P
+import           Prelude                                     (fromInteger, type (~), ($))
+import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
