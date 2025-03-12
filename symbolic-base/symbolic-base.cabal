@@ -197,6 +197,7 @@ library
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.Ed25519
+      ZkFold.Symbolic.Data.EllipticCurve.Secp256k1
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
