@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 
 module Tests.Symbolic.Data.MerkleTree
@@ -10,6 +10,7 @@ module Tests.Symbolic.Data.MerkleTree
   ) where
 
 
+import           Data.Semialign                   (Zip)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     (Par1 (Par1))
 import           GHC.TypeNats
@@ -23,7 +24,6 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (Iso (..), KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.MerkleTree
 import           ZkFold.Symbolic.Fold
-import Data.Semialign (Zip)
 
 -- import ZkFold.Symbolic.Data.Bool (Bool)
 -- import ZkFold.Symbolic.Data.Morph
