@@ -448,12 +448,12 @@ instance ( Symbolic c, KnownNat n, KnownRegisterSize r
     (UInt u1) >= (UInt u2) =
         let w1 = asWords @regSize u1
             w2 = asWords @regSize u2
-         in bitwiseGE @OrdWord w1 w2
+         in bitwiseGE @regSize w1 w2
 
     (UInt u1) > (UInt u2) =
         let w1 = asWords @regSize u1
             w2 = asWords @regSize u2
-         in bitwiseGT @OrdWord w1 w2
+         in bitwiseGT @regSize w1 w2
 
     max x y = bool @(Bool c) x y $ x < y
 
