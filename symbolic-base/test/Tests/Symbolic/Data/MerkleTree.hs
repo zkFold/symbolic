@@ -1,9 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
 
 
-module Tests.Symbolic.Data.MerkleTree () where
+module Tests.Symbolic.Data.MerkleTree
+  ( testId
+  , testLookup
+  ) where
 
 
 import           Data.Type.Equality               (type (~))
@@ -19,6 +23,8 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (Iso (..), KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.MerkleTree
 import           ZkFold.Symbolic.Fold
+import Data.Semialign (Zip)
+
 -- import ZkFold.Symbolic.Data.Bool (Bool)
 -- import ZkFold.Symbolic.Data.Morph
 -- import ZkFold.Symbolic.Data.Conditional (Conditional)
@@ -33,6 +39,7 @@ testId :: forall x c d n.
   , Context x ~ c
   , KnownNat d
   , SymbolicFold c
+  , Zip (Layout x)
   , n ~ 2 ^ d
   , Show x, Eq x
   ) => Vector n x -> Property
@@ -45,6 +52,7 @@ testLookup :: forall x c d n.
   , KnownNat d
   , SymbolicFold c
   , KnownRegisters c d 'Auto
+  , Zip (Layout x)
   , n ~ 2 ^ d
   , Show x, Eq x
   ) => Vector n x -> Natural -> Property
