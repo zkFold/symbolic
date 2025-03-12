@@ -367,6 +367,7 @@ padTo6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => UInt (BufLen n) ('Fixed (BufLen n)) ctx
     -> FieldElement ctx
 padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
@@ -398,6 +399,7 @@ padBytestring6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => VarByteString n ctx -> VarByteString (Next6 n) ctx
 padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
@@ -413,6 +415,7 @@ base64ToAscii
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => Mod n 6 ~ 0
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII n)))
@@ -483,6 +486,8 @@ toAsciiBits
     .  IsSymbolicJSON a
     => Context a ~ ctx
     => KnownNat (MaxLength a)
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen (MaxLength a)) ('Fixed (BufLen (MaxLength a))))
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen (Next6 (MaxLength a))) ('Fixed (BufLen (Next6 (MaxLength a)))))
     => Symbolic ctx
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
