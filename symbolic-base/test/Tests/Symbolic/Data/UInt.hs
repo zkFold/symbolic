@@ -32,7 +32,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
+import           ZkFold.Symbolic.Data.Combinators            (GetRegisterSize, Iso (..), KnownRegisterSize,
                                                               NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
@@ -101,8 +101,8 @@ specUInt'
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
     => KnownNat r
     => KnownNat r2n
-    => KnownNat (Ceil (GetRegisterSize (Zp p) n rs) OrdWord)
-    => KnownNat (Ceil (GetRegisterSize (Zp p) (2 * n) rs) OrdWord)
+    => KnownNat (GetRegisterSize (Zp p) n rs)
+    => KnownNat (GetRegisterSize (Zp p) (2 * n) rs)
     => Spec
 specUInt' = do
     let n = value @n
