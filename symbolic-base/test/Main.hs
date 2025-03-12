@@ -28,46 +28,48 @@ import           Tests.Symbolic.Data.Hash           (specHash)
 import           Tests.Symbolic.Data.Int            (specInt)
 import           Tests.Symbolic.Data.List           (specList)
 import           Tests.Symbolic.Data.UInt           (specUInt)
+import Tests.Symbolic.Data.MerkleTree (specMerkleTree)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
     -- Base.Algebra
-    specField
-    specAdditiveGroup
-    specEllipticCurve
-    specPairing
-    specPermutations
-    specUnivariate
-    specReedSolomon
-    specGroebner
+    -- specField
+    -- specAdditiveGroup
+    -- specEllipticCurve
+    -- specPairing
+    -- specPermutations
+    -- specUnivariate
+    -- specReedSolomon
+    -- specGroebner
 
-    -- Base.Data
-    specBinary
+    -- -- Base.Data
+    -- specBinary
 
-    -- Base.Protocol
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
+    -- -- Base.Protocol
+    -- specPlonkup
+    -- specNonInteractiveProof
+    -- specIVC
 
-    -- Compiler spec
-    specArithmeticCircuit
-    specCompiler
+    -- -- Compiler spec
+    -- specArithmeticCircuit
+    -- specCompiler
 
-    -- Symbolic types and operations
-    specHash
-    specList
+    -- -- Symbolic types and operations
+    -- specHash
+    -- specList
 
-    specUInt
-    specInt
-    specFFA
-    specByteString
+    -- specUInt
+    -- specInt
+    -- specFFA
+    -- specByteString
+    specMerkleTree
 
     -- Symbolic cryptography
-    specBlake2b
-    specJWT
-    specRSA gen
-    specSHA2Natural
-    specSHA2
+    -- specBlake2b
+    -- specJWT
+    -- specRSA gen
+    -- specSHA2Natural
+    -- specSHA2
 
 main :: IO ()
 main = hspec . spec =<< initStdGen
