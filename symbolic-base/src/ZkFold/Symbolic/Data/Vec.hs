@@ -1,29 +1,30 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 
 module ZkFold.Symbolic.Data.Vec where
 
 
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input
-import GHC.Generics (Generic)
-import Control.DeepSeq (NFData)
-import qualified Prelude                           as Haskell
-import ZkFold.Symbolic.Data.Eq (Eq)
-import ZkFold.Symbolic.Data.Conditional (Conditional)
-import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Base.Algebra.Basic.Class
-import GHC.Num (Natural)
-import Prelude ((.), ($), Integer)
-import Data.Functor.Rep
-import ZkFold.Base.Data.Utils (zipWithM)
-import ZkFold.Symbolic.MonadCircuit
-import Data.Semialign (Zip)
-import Data.Traversable (Traversable (..))
-import           Data.Type.Equality                      (type (~))
+import           Control.DeepSeq                  (NFData)
+import           Data.Functor.Rep
+import           Data.Semialign                   (Zip)
+import           Data.Traversable                 (Traversable (..))
+import           Data.Type.Equality               (type (~))
+import           GHC.Generics                     (Generic)
+import           GHC.Num                          (Natural)
+import           Prelude                          (Integer, ($), (.))
+import qualified Prelude                          as Haskell
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Utils           (zipWithM)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool        (Bool)
+import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
+import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Input
+import           ZkFold.Symbolic.MonadCircuit
 
 
 newtype Vec f c = Vec { runVec :: c f }
