@@ -4,7 +4,7 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.Ed25519 (Ed25519_Point) where
+module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 
 import           Prelude                                   (fromInteger, type (~), ($))
 import qualified Prelude                                   as P
