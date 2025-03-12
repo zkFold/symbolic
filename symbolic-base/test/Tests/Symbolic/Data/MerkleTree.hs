@@ -9,37 +9,35 @@ module Tests.Symbolic.Data.MerkleTree
   ) where
 
 
-import           Data.Semialign                   (Zip)
-import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     (Par1 (Par1), U1 (..))
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat, Natural, type (-), type (<=), type (^))
-import           Prelude                          (($), (.), fmap, (^), return, Int, fromIntegral)
-import qualified Prelude                          as Haskell
-import           Test.QuickCheck                  (Property, (===), Arbitrary, Gen, (.&.))
+import           Control.Monad                               (replicateM)
+import           Data.Binary                                 (Binary)
+import           Data.Semialign                              (Zip)
+import           Data.Type.Equality                          (type (~))
+import           GHC.Generics                                (Par1 (Par1), U1 (..))
+import           Prelude                                     (Int, fmap, fromIntegral, return, ($), (.), (^))
+import qualified Prelude                                     as Haskell
+import           Test.Hspec                                  (Spec, describe)
+import           Test.QuickCheck                             (Arbitrary, Gen, Property, (.&.), (===))
+import           Tests.Symbolic.ArithmeticCircuit            (it)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), one, (-!))
-import           ZkFold.Base.Data.Vector          (Vector (..), (!!))
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), PrimeField, one, (-!))
+import           ZkFold.Base.Algebra.Basic.Field             (Zp)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (-), type (<=), type (^), value)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import qualified ZkFold.Base.Data.Vector                     as V
+import           ZkFold.Base.Data.Vector                     (Vector (..), (!!))
+import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (ArithmeticCircuit, exec1)
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), NumberOfRegisters, KnownRegisterSize)
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, NumberOfRegisters,
+                                                              RegisterSize (..))
+import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.MerkleTree
+import           ZkFold.Symbolic.Data.UInt                   (UInt)
 import           ZkFold.Symbolic.Fold
-import ZkFold.Base.Algebra.Basic.Field (Zp)
-import ZkFold.Symbolic.Interpreter (Interpreter(..))
-import Test.Hspec (Spec, describe)
-import Tests.Symbolic.ArithmeticCircuit (it)
-import ZkFold.Symbolic.Data.UInt (UInt)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Base.Algebra.Basic.Number (value)
-import ZkFold.Prelude (chooseNatural)
-import Data.Binary (Binary)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec1)
-import ZkFold.Symbolic.Data.Eq
-import ZkFold.Base.Algebra.Basic.Class (PrimeField)
-import Control.Monad (replicateM)
-import qualified ZkFold.Base.Data.Vector as V
+import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
 
 
 type AC a = ArithmeticCircuit a U1 U1

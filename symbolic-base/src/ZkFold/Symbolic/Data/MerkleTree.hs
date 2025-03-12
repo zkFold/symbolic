@@ -28,9 +28,9 @@ import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), true)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters,
-                                                                 RegisterSize (Auto), expansion, getNatural, horner,
-                                                                 mzipWithMRep, withNumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters, RegisterSize (Auto),
+                                                                 expansion, getNatural, horner, mzipWithMRep,
+                                                                 withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input                     (SymbolicInput)
