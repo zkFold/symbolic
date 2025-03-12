@@ -211,7 +211,6 @@ library
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
-      ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
