@@ -56,7 +56,7 @@ instance
       (Prelude.iterate (\e -> e + e) x)
         where
             nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc 
+            nativeBits = ByteString $ binaryExpansion nativeSc
 
             uintBits :: ByteString uintBits ctx
             uintBits = from uintSc
@@ -94,7 +94,7 @@ instance
       (Prelude.iterate (\e -> e + e) x)
         where
             nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc 
+            nativeBits = ByteString $ binaryExpansion nativeSc
 
             uintBits :: ByteString uintBits ctx
             uintBits = from uintSc
