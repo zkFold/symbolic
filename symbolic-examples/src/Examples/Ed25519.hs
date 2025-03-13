@@ -4,7 +4,7 @@ module Examples.Ed25519 (
     exampleEd25519Scale
   ) where
 
-import           Prelude                                   (type (~))
+import           Prelude                                    (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
