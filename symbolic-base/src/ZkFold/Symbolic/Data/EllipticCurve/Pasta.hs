@@ -6,7 +6,7 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point, Vesta_Point) where
 
-import           Prelude                                     (fromInteger, type (~), ($))
+import           Prelude                                 (fromInteger, type (~), ($))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
