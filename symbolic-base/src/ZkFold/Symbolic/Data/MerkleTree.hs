@@ -15,10 +15,11 @@ import           Data.Type.Equality                             (type (~))
 import           Data.Vector                                    (iterateN)
 import           GHC.Generics                                   hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                                        (const, return, zip, ($), (.), pure)
+import           Prelude                                        (const, pure, return, zip, ($), (.))
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number               (value)
 import           ZkFold.Base.Data.Package
 import qualified ZkFold.Base.Data.Vector                        as V
 import           ZkFold.Base.Data.Vector                        hiding ((.:))
@@ -28,8 +29,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters, RegisterSize (Auto),
-                                                                 expansion, horner, mzipWithMRep,
-                                                                 withNumberOfRegisters)
+                                                                 expansion, horner, mzipWithMRep, withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input                     (SymbolicInput)
@@ -42,7 +42,6 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt (..), stri
 import           ZkFold.Symbolic.Data.Vec
 import           ZkFold.Symbolic.Fold                           (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Base.Algebra.Basic.Number (value)
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
