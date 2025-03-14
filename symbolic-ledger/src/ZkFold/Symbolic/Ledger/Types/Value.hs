@@ -37,10 +37,10 @@ import           ZkFold.Symbolic.Data.Morph            (MorphTo (..))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Fold                  (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
--- TODO: Make it a field element.
 -- | Input to the minting contract. Usually a token name.
-newtype Token context = Token (ByteString 256 context)
+newtype Token context = Token (FieldElement context)
 
 deriving newtype instance (Symbolic context) => SymbolicData (Token context)
 deriving newtype instance (Symbolic context) => Conditional (Bool context) (Token context)
