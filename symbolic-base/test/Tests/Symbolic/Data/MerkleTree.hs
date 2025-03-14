@@ -9,132 +9,155 @@ module Tests.Symbolic.Data.MerkleTree
   ) where
 
 
-import           Control.Monad                               (replicateM)
 import           Data.Binary                                 (Binary)
-import           Data.Semialign                              (Zip)
-import           Data.Type.Equality                          (type (~))
-import           GHC.Generics                                (Par1 (Par1), U1 (..))
-import           Prelude                                     (Int, fmap, fromIntegral, return, ($), (.), (^))
+import           GHC.Generics                                (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
+import           Prelude                                     (fmap, return, ($), (.), (<$>))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Arbitrary, Gen, Property, (.&.), (===))
-import           Tests.Symbolic.ArithmeticCircuit            (it)
+import           Test.QuickCheck                             (Arbitrary, Gen)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), PrimeField, one, (-!))
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (-), type (<=), type (^), value)
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector (..), (!!))
+import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (ArithmeticCircuit, exec1)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (ArithmeticCircuit, eval1)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), KnownRegisterSize, NumberOfRegisters,
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), NumberOfRegisters,
                                                               RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.MerkleTree
-import           ZkFold.Symbolic.Data.UInt                   (UInt)
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
+import Test.Hspec.QuickCheck (prop)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fromFieldElement)
+import ZkFold.Symbolic.Compiler (compile)
+import ZkFold.Symbolic.Data.List (emptyList, lSize)
+import qualified ZkFold.Symbolic.Data.List as L
+import ZkFold.Symbolic.Data.Morph (MorphTo(..), MorphFrom)
+import ZkFold.Symbolic.Data.Maybe (nothing, fromJust)
 
 
 type AC a = ArithmeticCircuit a U1 U1
 type I a = Interpreter a
 
-evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
-evalBool (Bool ac) = exec1 ac
+-- evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
+-- evalBool (Bool ac) = exec1 ac
 
 evalBoolVec :: forall a . Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
 
-testId :: forall c x d n.
-  ( SymbolicOutput x
-  , Context x ~ c
-  , SymbolicFold c
-  , KnownNat d
-  , Zip (Layout x)
-  , n ~ 2 ^ (d-1),1 <= d
-  , KnownNat n, Eq x, BooleanOf x ~ Bool c
-  ) => Vector n x -> Bool c
-testId v = v == (from (from v :: MerkleTree d x) :: Vector n x)
-
-
-testLookup :: forall x c d n.
-  ( SymbolicOutput x
-  , Context x ~ c
-  , SymbolicFold c
-  , KnownNat d
-  , 1 <= d
-  , Zip (Layout x)
-  , n ~ 2 ^ (d-1)
-  , Eq x, BooleanOf x ~ Bool c
-  ) => Vector n x -> Natural -> Bool c
-testLookup v n = (v !! n) == lookup (from v :: MerkleTree d x) (MerkleTreePath . fmap Bool . indToPath @c @d . embed . Par1 $ fromConstant n)
-
-tossPow :: Natural -> Gen Natural
-tossPow m = chooseNatural (0, (2 :: Natural) ^ m -! 1)
-
-genVec :: forall n. KnownNat n => Natural -> Gen (Vector n Natural)
-genVec m = do
-  a <- replicateM (fromIntegral $ value @n) (tossPow m)
-  return $ V.unsafeToVector a
-
-specMerkleTree' :: forall n m p rs d rm.
-  ( PrimeField (Zp p)
-  , KnownNat n, 2 ^ (d-1) ~ n, KnownNat d, 1 <= d
-  , KnownNat m
-  , KnownRegisterSize rs
-  , rm ~ NumberOfRegisters (Zp p) m rs
-  , KnownNat rm
-  ) => Spec
-specMerkleTree' = do
-    describe ("MerkleTree specification") $ do
-      it "testId" $ do
-        v <- genVec @n (value @m)
-        let vI = fmap fromConstant v :: Vector n (UInt m rs (I (Zp p)))
-            vA = fmap fromConstant v :: Vector n (UInt m rs (AC (Zp p)))
-            bI = evalBoolVec $ testId vI
-            bA = evalBool @(Zp p) $ testId vA
-            trueEq = one
-        return $ bI === bA .&. bI === (one :: Zp p) .&. bA === (one :: Zp p) .&. bI === trueEq
-      -- it "testPath" $ do
-      --   k <- tossPow (d-1)
-      --   return $ testPath @x @c @d @n k
-      -- it "testLookup" $ \(v :: Vector n x) -> testLookup v 1
-
-specMerkleTree :: Spec
-specMerkleTree = do
-    specMerkleTree' @8 @32 @(BLS12_381_Scalar) @Auto @4
-
-
-
---------------------------------------------------------------------------------
-
--- testPath :: forall x c d n.
+-- testId :: forall c x d n.
 --   ( SymbolicOutput x
 --   , Context x ~ c
 --   , SymbolicFold c
 --   , KnownNat d
---   , Zip (Layout x)
---   , n ~ 2 ^ (d-1),1 <= d, KnownNat n
---   , Show x, Eq x
---   ) => Natural -> Property
--- testPath n = (fromConstant n :: UInt n Auto c) === ( strictConv $ ind $ indToPath @c @d . embed . Par1 $ fromConstant n)
+--   , n ~ 2 ^ (d-1),1 <= d
+--   , Eq x, BooleanOf x ~ Bool c
+--   , KnownNat n
+  -- ) => Vector n x -> Bool c
+-- testId v = v == (from (from v :: MerkleTree d x) :: Vector n x)
+
+
+testIso2 :: forall c. (SymbolicFold c) => FieldElement c -> FieldElement c -> Bool c
+testIso2 x y = let v = V.unsafeToVector [x,y]
+   in v == (from (from v :: MerkleTree 2 (FieldElement c)) :: Vector 2 (FieldElement c))
+
+testIso3 :: forall c. (SymbolicFold c) => FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c -> Bool c
+testIso3 x y z w = let v = V.unsafeToVector [x,y,z,w]
+   in v == (from (from v :: MerkleTree 3 (FieldElement c)) :: Vector 4 (FieldElement c))
+
+testPath :: forall d c. (Symbolic c, KnownNat d) => FieldElement c -> Bool c
+testPath fe@(FieldElement e) = fe == (FieldElement . ind $ indToPath @c @d e)
+
+testLayerFolding :: forall c. (SymbolicFold c) => FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c -> Bool c
+testLayerFolding x y z w =
+  let l = x L..: y L..: z L..: w L..: emptyList
+      m = L.foldr (Morph \(a :: FieldElement s, b :: L.List s (FieldElement s)) -> a L..: b)
+            (emptyList :: L.List c (FieldElement c)) l
+   in (fromConstant (4 :: Natural)) == (FieldElement $ lSize l)
+      &&
+      (fromConstant (4 :: Natural)) == (FieldElement $ lSize m)
+
+testLookup :: forall c.
+  ( SymbolicFold c
+  , KnownNat (NumberOfRegisters (BaseField c) (NumberOfBits (BaseField c) ) 'Auto)
+  ) => FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c -> Bool c
+testLookup fe x y z w =
+  let v = V.unsafeToVector [x,y,z,w]
+      l = x L..: y L..: z L..: w L..: emptyList
+      mt = from v :: MerkleTree 3 (FieldElement c)
+      n = from fe
+      mp = MerkleTreePath $ fmap Bool $ indToPath @c (fromFieldElement fe) :: MerkleTreePath 3 c
+   in (l L.!! n) == lookup mt mp
+
+
+testFind :: forall c. (SymbolicFold c) => BaseField c -> BaseField c -> FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c -> Bool c
+testFind aw out x y z w =
+  let v = V.unsafeToVector [x,y,z,w]
+      mt = from v :: MerkleTree 3 (FieldElement c)
+
+      p ::  BaseField c -> MorphFrom c (FieldElement c) (Bool c)
+      p t = Morph \(a :: FieldElement s) -> fromConstant t == a
+
+      fw = find (p aw) mt
+      fOut = find (p out) mt
+   in (fOut == nothing) && (fromConstant aw == fromJust fw)
 
 
 
--- testFind :: forall c x d n.
---   ( SymbolicInput x
---   , Context x ~ c, KnownNat d
---   , SymbolicFold c
---   , n ~ 2 ^ d
---   , Eq x, Conditional (Bool c) x, Eq (c Par1), Show (M.Maybe c x)
---   ) => (x -> Bool c) -> Vector n x -> Property
--- testFind pred v = M.find pred (toV v) === find (Morph pred :: MorphFrom c x (Bool c)) (from v :: MerkleTree d x)
+tossPow :: Natural -> Gen Natural
+tossPow m = chooseNatural (0, (2 :: Natural) ^ m -! 1)
+
+-- genVec :: forall n. KnownNat n => Natural -> Gen (Vector n Natural)
+-- genVec m = do
+--   a <- replicateM (fromIntegral $ value @n) (tossPow m)
+  -- return $ V.unsafeToVector a
+
+specMerkleTree' :: forall a d.
+  ( PrimeField a
+  , KnownNat d
+  , Arbitrary a, Arithmetic a, Binary a, Haskell.Show a
+  , KnownNat (NumberOfRegisters (BaseField (AC a)) (NumberOfBits (BaseField (AC a)) ) 'Auto)
+  ) => Spec
+specMerkleTree' = do
+    describe ("MerkleTree specification") $ do
+      let d = value @d
+      prop "testId2" $ \x y ->
+        let ac = eval1 (compile @a testIso2) (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1)
+            i  = evalBoolVec $ testIso2 (fromConstant x) (fromConstant y)
+         in ac Haskell.== i && (i Haskell.== one)
+      prop "testId3" $ \x y z w ->
+        let ac = eval1 (compile @a testIso3) (U1 :*: U1 :*: U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
+            i  = evalBoolVec $ testIso3 (fromConstant x) (fromConstant y) (fromConstant z) (fromConstant w)
+         in ac Haskell.== i && (i Haskell.== one)
+      prop "testPath" $ do
+        r <- tossPow (value @d)
+        let ac = eval1 (compile @a (testPath @d)) (U1 :*: U1) (Par1 (fromConstant r) :*: U1)
+            i  = evalBoolVec $ testPath @d (fromConstant r)
+        return $ ac Haskell.== i && (i Haskell.== one)
+      prop "testLayerFolding" $ \x y z w ->
+        let ac = eval1 (compile @a testLayerFolding) (U1 :*: U1 :*: U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
+            i  = evalBoolVec $ testLayerFolding (fromConstant x) (fromConstant y) (fromConstant z) (fromConstant w)
+         in ac Haskell.== i && (i Haskell.== one)
+      prop "testLookup" $ \x y z w -> do
+        r <- tossPow d
+        let ac = eval1 (compile @a testLookup) (U1 :*: U1 :*: U1 :*: U1 :*: U1 :*: U1) (Par1 (fromConstant r) :*: Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
+            i  = evalBoolVec $ testLookup (fromConstant d) (fromConstant x) (fromConstant y) (fromConstant z) (fromConstant w)
+        return $ ac Haskell.== i && (i Haskell.== one)
+      prop "testFind" $ \x y z -> do
+        w   <- fromConstant <$> tossPow d :: Gen a
+        out <- fromConstant <$> tossPow d :: Gen a
+        let ac = eval1 (compile @a (testFind w out)) (U1 :*: U1 :*: U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
+            (xf, yf, zf, wf, outf) = (fromConstant x ::  FieldElement (I a), fromConstant y, fromConstant z, fromConstant w, fromConstant out)
+            i  = evalBoolVec $ (testFind w out) xf yf zf wf
+            c  = evalBoolVec $ (outf /= xf) && (outf /= yf) && (outf /= zf) && (outf /= wf)
+        return $ xor (ac Haskell.== i) (i Haskell.== one) `xor` (c Haskell.== one)
 
 
--- Add tests to verify (among other things) the circuit efficiency of those operations and their compositions.
--- For example, a composition of findPath and lookup should only do d hashes in-circuit (instead of naive 2*d)
--- since we verify the same path from the leaf to the root.
+specMerkleTree :: Spec
+specMerkleTree = do
+    specMerkleTree' @(Zp BLS12_381_Scalar) @4

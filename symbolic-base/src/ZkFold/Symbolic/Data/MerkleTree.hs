@@ -11,12 +11,11 @@ import           Data.Constraint.Nat                            (minusNat, plusM
 import           Data.Functor.Rep                               (pureRep)
 import qualified Data.List                                      as LL
 import           Data.Proxy                                     (Proxy (Proxy))
-import           Data.Semialign                                 (Zip)
 import           Data.Type.Equality                             (type (~))
 import           Data.Vector                                    (iterateN)
 import           GHC.Generics                                   hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                                        (const, return, zip, ($), (.))
+import           Prelude                                        (const, return, zip, ($), (.), pure)
 import qualified Prelude                                        as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -26,10 +25,10 @@ import           ZkFold.Base.Data.Vector                        hiding ((.:))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool                      (Bool (..), true)
+import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters, RegisterSize (Auto),
-                                                                 expansion, getNatural, horner, mzipWithMRep,
+                                                                 expansion, horner, mzipWithMRep,
                                                                  withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (FieldElement, fromFieldElement))
@@ -43,6 +42,7 @@ import           ZkFold.Symbolic.Data.UInt                      (UInt (..), stri
 import           ZkFold.Symbolic.Data.Vec
 import           ZkFold.Symbolic.Fold                           (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Base.Algebra.Basic.Number (value)
 
 
 data MerkleTree (d :: Natural) h = MerkleTree {
@@ -53,42 +53,69 @@ data MerkleTree (d :: Natural) h = MerkleTree {
 
 -- | Сreates a layer above the current one in the merkle tree
 layerFolding :: forall c x.
-  (SymbolicOutput x, Context x ~ c, SymbolicFold c, Zip  (Layout x))
-  => List c x -> List c x
+  ( SymbolicOutput x
+  , Context x ~ c
+  , SymbolicFold c
+  ) => List c x -> List c x
 layerFolding xs = res
   where
-    (_, res) = foldl (Morph \((arr, l ), a :: Switch s x) ->
-        ifThenElse (isNothing arr :: Bool s) (just a, l) (nothing, newVer (fromJust arr) a .: l)) (nothing :: Maybe c x, emptyList :: List c x) xs
+    (_, res) = foldr (Morph \(a :: Switch s x, (arr, l )) ->
+      ifThenElse (isNothing arr :: Bool s) (just a, l) (nothing, (newVer (fromJust arr) a) .: l))
+        (nothing :: Maybe c x, emptyList :: List c x) xs
 
-    newVer ::
-      forall s y. ( Symbolic s, SymbolicData y, Zip (Layout y))
-      => Switch s y -> Switch s y -> Switch s y
-    newVer l' r' = Switch (newLayout @s @y (sLayout l') (sLayout r')) (sPayload l')
+    -- (_, res) = foldr (Morph \(a :: Switch s x, (b :: Maybe s (Switch s x), l )) ->
+    --     (ifThenElse (isNothing b :: Bool s) (just a) nothing,
+    --      ifThenElse (isNothing b :: Bool s) l ((fromJust b) .: l)))
+    --                  (nothing :: Maybe c x, emptyList :: List c x) xs
 
-    newLayout :: forall s y.
-      ( Symbolic s, SymbolicData y, Zip (Layout y))
-      => s (Layout y) -> s (Layout y) -> s (Layout y)
-    newLayout = hashAux @s @y z
-      where
-        Bool z = true :: Bool s
+newVer ::
+  forall s y. (Symbolic s, SymbolicData y)
+  => Switch s y -> Switch s y -> Switch s y
+newVer l' r' = Switch (hashAux @s @y z (sLayout l') (sLayout r')) (sPayload l')
+  where
+    Bool z = false :: Bool s
+
+
+zeroMerkleTree :: forall d x c.
+  ( SymbolicFold c
+  , SymbolicOutput x
+  , Context x ~ c
+  , KnownNat d
+  , 1 <= d
+  , KnownNat (2 ^ (d-1))
+  , AdditiveMonoid x
+  ) => MerkleTree d x
+zeroMerkleTree = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) (hl V..: ls)
+    where
+      (h, checkL) = L.uncons hl
+      (hl :: List c x, ls :: Vector (d-1) (List c x)) =
+        V.uncons @d @(List c x). V.reverse . Vector $ iterateN (P.fromIntegral $ value @d) layerFolding vs
+      vs :: List c x = P.foldr (L..:) emptyList $ fromVector (pure zero :: Vector (2 ^ (d-1)) x)
 
 instance forall c x d n.
-  ( SymbolicFold c, SymbolicOutput x,
-    Context x ~ c, Zip (Layout x), KnownNat d, 2 ^ (d-1) ~ n, 1 <= d
+  ( SymbolicFold c
+  , SymbolicOutput x
+  , Context x ~ c
+  , KnownNat d
+  , 2 ^ (d-1) ~ n
+  , 1 <= d
   ) => Iso (Vector n x) (MerkleTree d x) where
   from v = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) (hl V..: ls)
     where
       (h, checkL) = L.uncons hl
       (hl :: List c x, ls :: Vector (d-1) (List c x)) =
-        withDict (plusMinusInverse3 @1 @d) $
-        V.uncons @d @(List c x). V.reverse . Vector $ iterateN (P.fromIntegral $ getNatural @d) layerFolding vs
-      vs :: List c x = P.foldr (L..:) emptyList $ fromVector v
+        V.uncons @d @(List c x). V.reverse . Vector $ iterateN (P.fromIntegral $ value @d -! 1) layerFolding vs
+      vs :: List c x = P.foldr (L..:) emptyList $ fromVector @n v
 
 instance forall c x d n.
-  ( SymbolicFold c, SymbolicOutput x,
-    Context x ~ c, Zip (Layout x), KnownNat d, 2 ^ (d-1) ~ n, 1 <= d
+  ( SymbolicFold c
+  , SymbolicOutput x
+  , Context x ~ c
+  , KnownNat d
+  , 2 ^ (d-1) ~ n
+  , 1 <= d
   ) => Iso (MerkleTree d x) (Vector n x)  where
-  from (MerkleTree _ l) = V.unsafeToVector $ helper @c (V.last l) (2 ^ (getNatural @d -! 1))
+  from (MerkleTree _ l) = V.unsafeToVector @n $ helper @c (V.last l) (2 ^ (value @d -! 1))
     where
       helper :: forall s y. (SymbolicOutput y, Symbolic s, Context y ~ s) => List s y -> Natural -> [y]
       helper ls k = case k of
@@ -96,7 +123,8 @@ instance forall c x d n.
         _ -> let (n, ns) = L.uncons ls in n : helper @s ns (k-!1)
 
 hashAux :: forall c x.
-  (Symbolic c, SymbolicData x, Zip (Layout x))
+  ( Symbolic c
+  , SymbolicData x)
   => c Par1 -> c (Layout x) -> c (Layout x) -> c (Layout x)
 hashAux b' h g = do
   let (Vec v1) = merkleHasher [Vec h, Vec g]
@@ -112,8 +140,10 @@ instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
 
 -- | Finds an element satisfying the constraint
 find :: forall c h d.
-  ( Conditional (Bool c) h, SymbolicInput h
-  , Context h ~ c, SymbolicFold c
+  ( Conditional (Bool c) h
+  , SymbolicInput h
+  , Context h ~ c
+  , SymbolicFold c
   ) => MorphFrom c h (Bool c) -> MerkleTree d h -> Maybe c h
 find p MerkleTree{..} =
   let leaves = V.last mLevels
@@ -134,7 +164,6 @@ findPath :: forall x c d n.
   , KnownNat d
   , 1 <= d
   , NumberOfBits (BaseField c) ~ n
-  , Zip (Layout x)
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> Maybe c (MerkleTreePath d c)
 findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @_ @c) (just path) (p @ lookup @x @c mt path :: Bool c)
   where
@@ -154,7 +183,6 @@ lookup :: forall x c d.
   , SymbolicFold c
   , KnownNat d
   , 1 <= d
-  , Zip (Layout x)
   ) => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
@@ -214,7 +242,6 @@ insertLeaf :: forall x c d.
   , KnownNat d
   , 1 <= d
   , KnownRegisters c d Auto
-  , Zip (Layout x)
   ) => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
 insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preimage) (V.unsafeToVector z3)
   where
@@ -263,7 +290,6 @@ replace :: forall x c d n.
   , 1 <= d
   , KnownRegisters c d Auto
   , NumberOfBits (BaseField c) ~ n
-  , Zip (Layout x)
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
 replace p t = withNumberOfRegisters @n @Auto @(BaseField c) $ withDict (minusNat @d @1) $
   insertLeaf t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
