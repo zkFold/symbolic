@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   Token,
@@ -17,8 +17,8 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 
 import           Data.Coerce                           (coerce)
 import           Data.Data                             (Proxy)
-import           Prelude                               hiding ((||), Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
-                                                        (==))
+import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
+                                                        (==), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
@@ -26,14 +26,14 @@ import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
-import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
+import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
 import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
+import           ZkFold.Symbolic.Data.Morph            (MorphFrom, MorphTo (..), (@))
+import           ZkFold.Symbolic.Data.Switch           (Switch (..))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
+import           ZkFold.Symbolic.Fold                  (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
-import ZkFold.Symbolic.Data.Switch (Switch (..))
-import           ZkFold.Symbolic.Data.Morph        (MorphFrom, MorphTo (..), (@))
-import ZkFold.Symbolic.Fold (SymbolicFold)
 
 -- | Input to the minting contract. Usually a token name.
 data Token context
@@ -78,79 +78,85 @@ emptyMultiAssetValue ::
     => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
--- FIXME: delete me
-y ::
+-- | Add a given token with it's amount to a list. If the token already exists, the amount is added to the existing amount.
+--
+-- We assume that all the tokens in the list are unique.
+addTokenAmount ::
      forall context.
-     SymbolicOutput (Token context)
-  => Eq (Token context)
-  => Context (Token context) ~ context
+     SymbolicOutput ((Token context, Amount context))
+  => Context ((Token context, Amount context)) ~ context
   => SymbolicFold context
-  => List context (Token context)
-y = addToken (Morph \(a :: (Token s), b) -> a == b) undefined emptyList
-
-
--- FIXME: delete me.
-addToken ::
-     forall context.
-     SymbolicOutput (Token context)
-  => Context (Token context) ~ context
-  => SymbolicFold context
-  => MorphFrom context (Token context, Token context) (Bool context)
-  -> Token context
-  -> List context (Token context) -> List context (Token context)
-addToken eq givenToken ls =
-  let (exists, _, r) =
-        Symbolic.List.foldr (Morph \(y :: Switch s (Token context), (found :: Bool s, givenToken' :: Switch s (Token context), ys)) ->
-          let isSame = eq @ (y, givenToken') in
-          (found || isSame, givenToken', y .: ys)
-              )
-              (false :: Bool context, givenToken, emptyList)
-              ls
-  in r
+  => SymbolicOutput (Amount context)
+  => SymbolicOutput (Token context)
+  => Token context
+  -> Amount context
+  -> List context (Token context, Amount context) -> List context (Token context, Amount context)
+addTokenAmount givenToken givenAmount ls =
+  let (tokenExisted, _, _, r) =
+        Symbolic.List.foldr (
+          Morph
+            \((yt :: Switch s (Token context), ya :: Switch s (Amount context)),
+              (found :: Bool s, givenToken' :: Switch s (Token context), givenAmount' :: Switch s (Amount context), ys)) ->
+                let isSame :: Bool s = undefined  -- givenToken' == yt
+                in (
+                    found || isSame,
+                    givenToken',
+                    givenAmount',
+                    ifThenElse isSame
+                      undefined  -- ((yt, ya + givenAmount) .: ys)
+                      ((yt, ya) .: ys)
+                  )
+        )
+          (false :: Bool context, givenToken, givenAmount, emptyList)
+          ls
+  in ifThenElse tokenExisted
+       r
+       ((givenToken, givenAmount) .: ls)
 
 -- | Add a single value to a multi-asset value.
 addValue ::
      forall context. Conditional (Bool context) (MultiAssetValue context)
   => BooleanOf (Token context) ~ Bool context
   => Eq (Token context)
-  => Symbolic context
   => SymbolicOutput (Value context)
   => Context (Value context) ~ context
   => SymbolicEq (CurrencySymbol context)
   => Context (CurrencySymbol context) ~ context
+  => SymbolicFold context
+  => SymbolicOutput (Token context)
+  => SymbolicOutput (Amount context)
   => SymbolicData ((Token context, Amount context))
   => Context ((Token context, Amount context)) ~ context
   => Support (Token context) ~ Proxy context
   => Value context
   -> MultiAssetValue context
   -> MultiAssetValue context
-addValue val@Value {..} (UnsafeMultiAssetValue valList) =
-  let (valHead@(valHeadCurrencySymbol, valHeadTokenList), valTail) = uncons valList
-      valHeadTokenListAdded = addTokenAmount valHeadTokenList
-      UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
-  in ifThenElse (null valList)
-       (UnsafeMultiAssetValue (singleton (mintingPolicy, singleton (tokenInstance, tokenQuantity))))
-       (
-        ifThenElse (mintingPolicy == valHeadCurrencySymbol)
-          (UnsafeMultiAssetValue ((valHeadCurrencySymbol, valHeadTokenListAdded) .: valTail))
-          (UnsafeMultiAssetValue (valHead .: valTailAdded))
-
-       )
-  where
-    addTokenAmount tokenAmountList =
-      let (tokenHead@(tokenHeadToken, tokenHeadAmount), tokenTail) = uncons tokenAmountList
-          tokenAmountAdded =
-            ifThenElse (tokenHeadToken == tokenInstance)
-              ((tokenHeadToken, tokenHeadAmount + tokenQuantity) .: tokenTail)
-              (tokenHead .: addTokenAmount tokenTail)
-      in ifThenElse (null tokenAmountList)
-           (singleton (tokenInstance, tokenQuantity))
-           tokenAmountAdded
+addValue Value {..} (UnsafeMultiAssetValue valList) =
+  let (policyExisted, _, _, _, r) =
+        Symbolic.List.foldr (Morph \((yp :: Switch s (CurrencySymbol context), yas :: List s ((Switch s (Token context), Switch s (Amount context)))), (found :: Bool s, mintingPolicy' :: Switch s (CurrencySymbol context), tokenInstance' :: Switch s (Token context), tokenQuantity' :: Switch s (Amount context), ys)) ->
+          let isSame :: Bool s = undefined  -- mintingPolicy' == yp
+              tokenAmountAdded = undefined -- addTokenAmount tokenInstance' tokenQuantity' yas
+          in (
+               found || isSame,
+               mintingPolicy',
+               tokenInstance',
+               tokenQuantity',
+               ifThenElse isSame
+                 ((yp, tokenAmountAdded) .: ys)
+                 ((yp, yas) .: ys))
+          )
+              (false :: Bool context, mintingPolicy, tokenInstance, tokenQuantity, emptyList)
+              valList
+  in ifThenElse policyExisted
+       (UnsafeMultiAssetValue r)
+       (UnsafeMultiAssetValue $ (mintingPolicy, singleton (tokenInstance, tokenQuantity)) .: valList)
 
 -- | Safe constructor for a multi-asset value.
 multiAssetValue ::
-     Symbolic context
-  => SymbolicOutput (Value context)
+     SymbolicOutput (Value context)
+  => SymbolicFold context
+  => SymbolicOutput (Token context)
+  => SymbolicOutput (Amount context)
   => Context (Value context) ~ context
   => Conditional (Bool context) (MultiAssetValue context)
   => BooleanOf (Token context) ~ Bool context
