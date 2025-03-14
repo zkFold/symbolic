@@ -8,8 +8,9 @@ import           Prelude                                       hiding (Bool, Eq 
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq                       (Eq (..), SymbolicEq)
+import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Conditional              (bool)
+import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
@@ -71,14 +72,7 @@ updateIsValid ::
   => SymbolicOutput (ContractData context)
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
-  => Context (MultiAssetValue context) ~ context
-  => SymbolicEq (MultiAssetValue context)
-  => Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
-  => SymbolicData ((Token context, Amount context))
-  => Context ((Token context, Amount context)) ~ context
-  => Support (Token context) ~ Proxy context
+  => KnownRegisters context 64 Auto
   => Hash context
   -> Update context
   -> UpdateWitness context

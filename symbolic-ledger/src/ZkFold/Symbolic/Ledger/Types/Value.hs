@@ -19,25 +19,23 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 ) where
 
 import           Data.Coerce                           (coerce)
-import           Data.Data                             (Proxy)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
                                                         (==), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString       (ByteString)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
+import           ZkFold.Symbolic.Data.Eq               (Eq ((==)))
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
 import           ZkFold.Symbolic.Data.List             (List, emptyList, singleton, (.:))
 import           ZkFold.Symbolic.Data.Morph            (MorphTo (..))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Fold                  (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 -- | Input to the minting contract. Usually a token name.
 newtype Token context = Token (FieldElement context)
@@ -51,7 +49,7 @@ deriving newtype instance (Symbolic context) => Eq (Token context)
 type MintingContract tx w context = Contract tx (Token context) w context
 
 -- | A currency symbol is a hash of the minting contract that mints the tokens.
-type CurrencySymbol context = Token context -- ContractId context
+type CurrencySymbol context = ContractId context
 
 -- | Amount of tokens.
 type Amount context = UInt 64 Auto context
@@ -68,6 +66,10 @@ data Value context = Value
 -- | Denotes multiple values.
 newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (CurrencySymbol context, List context (Token context, Amount context)))
 
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (MultiAssetValue context)
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => Conditional (Bool context) (MultiAssetValue context)
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => Eq (MultiAssetValue context)
+
 -- | Convert a multi-asset value to a list.
 multiAssetValueToList :: MultiAssetValue context -> List context (CurrencySymbol context, List context (Token context, Amount context))
 multiAssetValueToList = coerce
@@ -78,10 +80,8 @@ unsafeMultiAssetValueFromList = UnsafeMultiAssetValue
 
 -- | Construct an empty multi-asset value.
 emptyMultiAssetValue ::
-       SymbolicData (CurrencySymbol context)
-    => Context (CurrencySymbol context) ~ context
-    => Support (CurrencySymbol context) ~ Proxy context
-    => SymbolicData ((Token context, Amount context))
+       KnownRegisters context 64 Auto
+    => Symbolic context
     => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
@@ -119,19 +119,8 @@ addTokenAmount givenToken givenAmount ls =
 
 -- | Add a single value to a multi-asset value.
 addValue ::
-     forall context. Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
-  => SymbolicOutput (Value context)
-  => Context (Value context) ~ context
-  => SymbolicEq (CurrencySymbol context)
-  => Context (CurrencySymbol context) ~ context
-  => SymbolicFold context
-  => SymbolicOutput (Token context)
-  => SymbolicOutput (Amount context)
-  => SymbolicData ((Token context, Amount context))
-  => Context ((Token context, Amount context)) ~ context
-  => Support (Token context) ~ Proxy context
+     forall context.
+     SymbolicFold context
   => KnownRegisters context 64 Auto
   => Value context
   -> MultiAssetValue context
@@ -158,21 +147,9 @@ addValue Value {..} (UnsafeMultiAssetValue valList) =
 
 -- | Safe constructor for a multi-asset value.
 multiAssetValue ::
-     SymbolicOutput (Value context)
-  => SymbolicFold context
-  => SymbolicOutput (Token context)
-  => SymbolicOutput (Amount context)
-  => Context (Value context) ~ context
-  => Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
-  => SymbolicEq (CurrencySymbol context)
-  => Context (CurrencySymbol context) ~ context
+     SymbolicFold context
   => Foldable (List context)
-  => SymbolicData ((Token context, Amount context))
   => KnownRegisters context 64 Auto
-  => Context ((Token context, Amount context)) ~ context
-  => Support (Token context) ~ Proxy context
   => List context (Value context)
   -> MultiAssetValue context
 multiAssetValue = foldr addValue emptyMultiAssetValue

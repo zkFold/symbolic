@@ -60,7 +60,6 @@ emptyUpdate ::
   => SymbolicOutput (ContractData context)
   => SymbolicData (Input context)
   => SymbolicOutput (Output context)
-  => Context (Hash context) ~ context
   => Context (AddressIndex context) ~ context
   => Context (ContractData context) ~ context
   => Context (Input context) ~ context
