@@ -14,6 +14,7 @@ import           GHC.Generics                                (Par1 (Par1), U1 (.
 import           Prelude                                     (fmap, return, ($), (.), (<$>))
 import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe)
+import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck                             (Arbitrary, Gen)
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -24,21 +25,19 @@ import qualified ZkFold.Base.Data.Vector                     as V
 import           ZkFold.Base.Data.Vector                     (Vector (..))
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler                    (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (ArithmeticCircuit, eval1)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), NumberOfRegisters,
-                                                              RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Iso (..), NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement), fromFieldElement)
+import qualified ZkFold.Symbolic.Data.List                   as L
+import           ZkFold.Symbolic.Data.List                   (emptyList, lSize)
+import           ZkFold.Symbolic.Data.Maybe                  (fromJust, nothing)
 import           ZkFold.Symbolic.Data.MerkleTree
+import           ZkFold.Symbolic.Data.Morph                  (MorphFrom, MorphTo (..))
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
-import Test.Hspec.QuickCheck (prop)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fromFieldElement)
-import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Data.List (emptyList, lSize)
-import qualified ZkFold.Symbolic.Data.List as L
-import ZkFold.Symbolic.Data.Morph (MorphTo(..), MorphFrom)
-import ZkFold.Symbolic.Data.Maybe (nothing, fromJust)
 
 
 type AC a = ArithmeticCircuit a U1 U1
