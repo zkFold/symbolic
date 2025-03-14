@@ -1,5 +1,8 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   Token,
@@ -23,27 +26,32 @@ import           Prelude                               hiding (Bool, Eq, all, le
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString       (ByteString)
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
 import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
-import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
-import           ZkFold.Symbolic.Data.Morph            (MorphFrom, MorphTo (..), (@))
-import           ZkFold.Symbolic.Data.Switch           (Switch (..))
+import           ZkFold.Symbolic.Data.List             (List, emptyList, singleton, (.:))
+import           ZkFold.Symbolic.Data.Morph            (MorphTo (..))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
 import           ZkFold.Symbolic.Fold                  (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
+-- TODO: Make it a field element.
 -- | Input to the minting contract. Usually a token name.
-data Token context
+newtype Token context = Token (ByteString 256 context)
+
+deriving newtype instance (Symbolic context) => SymbolicData (Token context)
+deriving newtype instance (Symbolic context) => Conditional (Bool context) (Token context)
+deriving newtype instance (Symbolic context) => Eq (Token context)
 
 -- | A minting contract is a contract that guards the minting and burning of tokens.
 -- In order to mint or burn tokens, the transaction must satisfy the minting contract.
 type MintingContract tx w context = Contract tx (Token context) w context
 
 -- | A currency symbol is a hash of the minting contract that mints the tokens.
-type CurrencySymbol context = ContractId context
+type CurrencySymbol context = Token context -- ContractId context
 
 -- | Amount of tokens.
 type Amount context = UInt 64 Auto context
@@ -74,7 +82,6 @@ emptyMultiAssetValue ::
     => Context (CurrencySymbol context) ~ context
     => Support (CurrencySymbol context) ~ Proxy context
     => SymbolicData ((Token context, Amount context))
-    => Context ((Token context, Amount context)) ~ context
     => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
@@ -83,11 +90,8 @@ emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 -- We assume that all the tokens in the list are unique.
 addTokenAmount ::
      forall context.
-     SymbolicOutput ((Token context, Amount context))
-  => Context ((Token context, Amount context)) ~ context
-  => SymbolicFold context
-  => SymbolicOutput (Amount context)
-  => SymbolicOutput (Token context)
+     SymbolicFold context
+  => KnownRegisters context 64 Auto
   => Token context
   -> Amount context
   -> List context (Token context, Amount context) -> List context (Token context, Amount context)
@@ -95,15 +99,15 @@ addTokenAmount givenToken givenAmount ls =
   let (tokenExisted, _, _, r) =
         Symbolic.List.foldr (
           Morph
-            \((yt :: Switch s (Token context), ya :: Switch s (Amount context)),
-              (found :: Bool s, givenToken' :: Switch s (Token context), givenAmount' :: Switch s (Amount context), ys)) ->
-                let isSame :: Bool s = undefined  -- givenToken' == yt
+            \((yt :: Token s, ya :: Amount s),
+              (found :: Bool s, givenToken' :: Token s, givenAmount' :: Amount s, ys)) ->
+                let isSame :: Bool s = givenToken' == yt
                 in (
                     found || isSame,
                     givenToken',
                     givenAmount',
                     ifThenElse isSame
-                      undefined  -- ((yt, ya + givenAmount) .: ys)
+                      ((yt, ya + givenAmount') .: ys)
                       ((yt, ya) .: ys)
                   )
         )
@@ -128,14 +132,15 @@ addValue ::
   => SymbolicData ((Token context, Amount context))
   => Context ((Token context, Amount context)) ~ context
   => Support (Token context) ~ Proxy context
+  => KnownRegisters context 64 Auto
   => Value context
   -> MultiAssetValue context
   -> MultiAssetValue context
 addValue Value {..} (UnsafeMultiAssetValue valList) =
   let (policyExisted, _, _, _, r) =
-        Symbolic.List.foldr (Morph \((yp :: Switch s (CurrencySymbol context), yas :: List s ((Switch s (Token context), Switch s (Amount context)))), (found :: Bool s, mintingPolicy' :: Switch s (CurrencySymbol context), tokenInstance' :: Switch s (Token context), tokenQuantity' :: Switch s (Amount context), ys)) ->
+        Symbolic.List.foldr (Morph \((yp :: CurrencySymbol s, yas :: List s ((Token s, Amount s))), (found :: Bool s, mintingPolicy' :: CurrencySymbol s, tokenInstance' :: (Token s), tokenQuantity' :: (Amount s), ys)) ->
           let isSame :: Bool s = undefined  -- mintingPolicy' == yp
-              tokenAmountAdded = undefined -- addTokenAmount tokenInstance' tokenQuantity' yas
+              tokenAmountAdded = addTokenAmount tokenInstance' tokenQuantity' yas
           in (
                found || isSame,
                mintingPolicy',
@@ -165,6 +170,7 @@ multiAssetValue ::
   => Context (CurrencySymbol context) ~ context
   => Foldable (List context)
   => SymbolicData ((Token context, Amount context))
+  => KnownRegisters context 64 Auto
   => Context ((Token context, Amount context)) ~ context
   => Support (Token context) ~ Proxy context
   => List context (Value context)
