@@ -127,8 +127,8 @@ addValue ::
   -> MultiAssetValue context
 addValue Value {..} (UnsafeMultiAssetValue valList) =
   let (policyExisted, _, _, _, r) =
-        Symbolic.List.foldr (Morph \((yp :: CurrencySymbol s, yas :: List s ((Token s, Amount s))), (found :: Bool s, mintingPolicy' :: CurrencySymbol s, tokenInstance' :: (Token s), tokenQuantity' :: (Amount s), ys)) ->
-          let isSame :: Bool s = undefined  -- mintingPolicy' == yp
+        Symbolic.List.foldr (Morph \((yp :: CurrencySymbol s, yas :: List s ((Token s, Amount s))), (found :: Bool s, mintingPolicy' :: CurrencySymbol s, tokenInstance' :: Token s, tokenQuantity' :: Amount s, ys)) ->
+          let isSame :: Bool s = mintingPolicy' == yp
               tokenAmountAdded = addTokenAmount tokenInstance' tokenQuantity' yas
           in (
                found || isSame,
