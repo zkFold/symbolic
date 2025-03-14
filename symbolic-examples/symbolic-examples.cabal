@@ -115,7 +115,6 @@ library
       deepseq,
       symbolic-base,
       symbolic-cardano,
-      semialign
     hs-source-dirs: src
 
 benchmark bench-compilation-evaluation
