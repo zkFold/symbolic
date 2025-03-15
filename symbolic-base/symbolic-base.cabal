@@ -209,6 +209,7 @@ library
       ZkFold.Symbolic.Data.JWT.Twitch
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
+      ZkFold.Symbolic.Data.Lookup
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord

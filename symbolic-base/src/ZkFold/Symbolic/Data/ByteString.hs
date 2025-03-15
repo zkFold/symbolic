@@ -41,7 +41,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..), type (:*:) ((:*:)))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
@@ -65,8 +65,9 @@ import           ZkFold.Symbolic.Data.Conditional  (Conditional)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -182,19 +183,9 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 
     not (ByteString bits) = ByteString $ fromCircuitF bits $ mapM (\i -> newAssigned (\p -> one - p i))
 
-    l || r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi + xj - xi * xj
+    l || r = bitwiseOperation l r orOp
 
-    l && r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi * xj
+    l && r = bitwiseOperation l r andOp
 
     xor (ByteString l) (ByteString r) =
         ByteString $ symbolic2F l r
@@ -219,12 +210,7 @@ orRight
     => ByteString m c
     -> ByteString n c
     -> ByteString (Max m n) c
-orRight l r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi + xj - xi * xj
+orRight l r = bitwiseOperation l r orOp
 
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
@@ -368,15 +354,16 @@ bitwiseOperation
     .  Symbolic c
     => ByteString m c
     -> ByteString n c
-    -> (forall i. i -> i -> ClosedPoly i (BaseField c))
+    -> (forall {x}. ResidueField x => (:*:) Par1 Par1 x -> Par1 x)
     -> ByteString (Max m n) c
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
+bitwiseOperation (ByteString bits1) (ByteString bits2) op =
     ByteString $ fromCircuit2F bits1 bits2 $ \lv rv -> do
         let aligned = V.alignRight lv rv
-        forM aligned $ \case
-            These i j -> newAssigned $ cons i j
+        nv <- forM aligned $ \case
+            These i j -> unPar1 <$> newBinLookup bin2Lookup ((Par1 i) :*: (Par1 j)) op
             This i -> pure i
             That j -> pure j
+        return nv
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion
