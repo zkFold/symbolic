@@ -106,7 +106,7 @@ instance Symbolic ctx => Arbitrary (TwitchPayload ctx) where
 instance Symbolic ctx => FromJSON (TwitchPayload ctx) where
     parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
 
-instance (Symbolic ctx, Context (TwitchPayload ctx) ~ ctx) => IsSymbolicJSON (TwitchPayload ctx) where
+instance (Symbolic ctx) => IsSymbolicJSON (TwitchPayload ctx) where
     type MaxLength (TwitchPayload ctx) = 6792
     toJsonBits TwitchPayload{..} =
                     (fromType @"{\"channel_id\":\"")   @+ twChannelId
