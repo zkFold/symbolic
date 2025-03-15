@@ -14,6 +14,7 @@ import           Test.QuickCheck                             (Arbitrary (..), Ar
                                                               withMaxSuccess)
 
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec)
 import           ZkFold.Base.Data.Vector                     (Vector)
 import           ZkFold.Base.Protocol.KZG                    (KZG)
 import           ZkFold.Base.Protocol.NonInteractiveProof    (HaskellCore, NonInteractiveProof (..))
@@ -42,6 +43,6 @@ instance Arbitrary1 U1 where
 
 specNonInteractiveProof :: Spec
 specNonInteractiveProof = do
-    specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32) @HaskellCore
-    specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString) @HaskellCore
-    specNonInteractiveProof' @(Plonkup U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString) @HaskellCore
+    specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32 PolyVec) @HaskellCore
+    specNonInteractiveProof' @(Plonk U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore
+    specNonInteractiveProof' @(Plonkup U1 (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore
