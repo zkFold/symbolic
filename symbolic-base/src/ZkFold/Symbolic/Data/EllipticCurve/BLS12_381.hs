@@ -6,7 +6,7 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point) where
 
-import           Prelude                                     (fromInteger, type (~), ($))
+import           Prelude                                     (fromInteger, ($))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -16,7 +16,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Symbolic.Class                       (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto), from)
+import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 
@@ -24,10 +24,6 @@ type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_B
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize BLS12_381_Scalar (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
   ) => CyclicGroup (BLS12_381_G1_Point ctx) where
@@ -38,24 +34,17 @@ instance
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize BLS12_381_Scalar (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
   ) => Scale (FFA BLS12_381_Scalar 'Auto ctx) (BLS12_381_G1_Point ctx) where
 
-    scale (FFA nativeSc uintSc) x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet (nativeBits `append` uintBits) b))
+    scale ffa x = sum $ Prelude.zipWith
+      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
       (Prelude.iterate (\e -> e + e) x)
         where
-            nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc
+          bits :: ByteString (FFAMaxBits BLS12_381_Scalar ctx) ctx
+          bits = from (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
 
-            uintBits :: ByteString uintBits ctx
-            uintBits = from uintSc
-
-            upper :: Natural
-            upper = value @(nativeBits + uintBits) -! 1
+          upper :: Natural
+          upper = value @(FFAMaxBits BLS12_381_Scalar ctx) -! 1

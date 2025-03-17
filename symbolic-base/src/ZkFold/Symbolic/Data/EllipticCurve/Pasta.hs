@@ -6,7 +6,7 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point, Vesta_Point) where
 
-import           Prelude                                 (fromInteger, type (~), ($))
+import           Prelude                                 (fromInteger, ($))
 import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -28,10 +28,6 @@ type Vesta_Point ctx =
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize FqModulus (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
   ) => CyclicGroup (Pallas_Point ctx) where
@@ -42,36 +38,25 @@ instance
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize FqModulus (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
   ) => Scale (FFA FqModulus 'Auto ctx) (Pallas_Point ctx) where
 
-    scale (FFA nativeSc uintSc) x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet (nativeBits `append` uintBits) b))
+    scale ffa x = sum $ Prelude.zipWith
+      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
       (Prelude.iterate (\e -> e + e) x)
         where
-            nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc
+          bits :: ByteString (FFAMaxBits FqModulus ctx) ctx
+          bits = from (toUInt @(FFAMaxBits FqModulus ctx) ffa)
 
-            uintBits :: ByteString uintBits ctx
-            uintBits = from uintSc
-
-            upper :: Natural
-            upper = value @(nativeBits + uintBits) -! 1
+          upper :: Natural
+          upper = value @(FFAMaxBits FqModulus ctx) -! 1
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize FpModulus (Order a)
-  , KnownNat (nativeBits + uintBits)
-  , KnownFFA FqModulus 'Auto ctx
   , KnownFFA FpModulus 'Auto ctx
+  , KnownFFA FqModulus 'Auto ctx
   ) => CyclicGroup (Vesta_Point ctx) where
   type ScalarFieldOf (Vesta_Point ctx) = FFA FpModulus 'Auto ctx
   pointGen = pointXY
@@ -80,24 +65,17 @@ instance
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize FpModulus (Order a)
-  , KnownNat (nativeBits + uintBits)
-  , KnownFFA FqModulus 'Auto ctx
   , KnownFFA FpModulus 'Auto ctx
+  , KnownFFA FqModulus 'Auto ctx
   ) => Scale (FFA FpModulus 'Auto ctx) (Vesta_Point ctx) where
 
-    scale (FFA nativeSc uintSc) x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet (nativeBits `append` uintBits) b))
+    scale ffa x = sum $ Prelude.zipWith
+      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
       (Prelude.iterate (\e -> e + e) x)
         where
-            nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc
+          bits :: ByteString (FFAMaxBits FpModulus ctx) ctx
+          bits = from (toUInt @(FFAMaxBits FpModulus ctx) ffa)
 
-            uintBits :: ByteString uintBits ctx
-            uintBits = from uintSc
-
-            upper :: Natural
-            upper = value @(nativeBits + uintBits) -! 1
+          upper :: Natural
+          upper = value @(FFAMaxBits FpModulus ctx) -! 1

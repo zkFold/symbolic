@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAUIntSize) where
+module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAMaxBits, toUInt) where
 
 import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (Monad (..))

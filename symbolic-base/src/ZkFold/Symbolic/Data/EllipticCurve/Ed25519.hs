@@ -6,8 +6,8 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 
-import           Prelude                                   (fromInteger, type (~), ($))
-import qualified Prelude                                   as P
+import           Prelude                                   (fromInteger, ($))
+import qualified Prelude
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -24,10 +24,6 @@ type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize Ed25519_Scalar (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
   ) => CyclicGroup (Ed25519_Point ctx) where
@@ -38,24 +34,17 @@ instance
 
 instance
   ( Symbolic ctx
-  , a ~ BaseField ctx
-  , nativeBits ~ NumberOfBits a
-  , uintBits ~ FFAUIntSize Ed25519_Scalar (Order a)
-  , KnownNat (nativeBits + uintBits)
   , KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
   ) => Scale (FFA Ed25519_Scalar 'Auto ctx) (Ed25519_Point ctx) where
 
-    scale (FFA nativeSc uintSc) x = sum $ P.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet (nativeBits `append` uintBits) b))
+    scale ffa x = sum $ Prelude.zipWith
+      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
-      (P.iterate (\e -> e + e) x)
+      (Prelude.iterate (\e -> e + e) x)
         where
-            nativeBits :: ByteString nativeBits ctx
-            nativeBits = ByteString $ binaryExpansion nativeSc
+          bits :: ByteString (FFAMaxBits Ed25519_Scalar ctx) ctx
+          bits = from (toUInt @(FFAMaxBits Ed25519_Scalar ctx) ffa)
 
-            uintBits :: ByteString uintBits ctx
-            uintBits = from uintSc
-
-            upper :: Natural
-            upper = value @(nativeBits + uintBits) -! 1
+          upper :: Natural
+          upper = value @(FFAMaxBits Ed25519_Scalar ctx) -! 1
