@@ -4,10 +4,7 @@ module Examples.Ed25519 (
     exampleEd25519Scale
   ) where
 
-import           Prelude                                    (type (~))
-
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519  (Ed25519_Base, Ed25519_Scalar)
 import           ZkFold.Symbolic.Class
@@ -17,10 +14,6 @@ import           ZkFold.Symbolic.Data.FFA
 
 exampleEd25519Scale
     :: ( Symbolic ctx
-       , a ~ BaseField ctx
-       , nativeBits ~ NumberOfBits a
-       , uintBits ~ FFAUIntSize Ed25519_Scalar (Order a)
-       , KnownNat (nativeBits + uintBits)
        , KnownFFA Ed25519_Base 'Auto ctx
        , KnownFFA Ed25519_Scalar 'Auto ctx
        )
