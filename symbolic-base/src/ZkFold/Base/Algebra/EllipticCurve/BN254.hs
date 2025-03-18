@@ -48,8 +48,8 @@ instance Prime BN254_Base
 type Fr = Zp BN254_Scalar
 type Fp = Zp BN254_Base
 
-instance IrreduciblePoly Poly Fp "BN254-IP1" where
-  irreduciblePoly = toPoly @Poly [1, 0, 1]
+instance IrreduciblePoly (Poly Fp) Fp "BN254-IP1" where
+  irreduciblePoly = toPoly @Fp @(Poly Fp) [1, 0, 1]
 
 type Fp2 = Ext2 Fp "BN254-IP1"
 
@@ -57,13 +57,13 @@ type Fp2 = Ext2 Fp "BN254-IP1"
 xi :: Fp2
 xi = Ext2 9 1
 
-instance IrreduciblePoly Poly Fp2 "BN254-IP2" where
-  irreduciblePoly = toPoly @Poly [negate xi, zero, zero, one]
+instance IrreduciblePoly (Poly Fp2) Fp2 "BN254-IP2" where
+  irreduciblePoly = toPoly @Fp2 @(Poly Fp2) [negate xi, zero, zero, one]
 
 type Fp6 = Ext3 Fp2 "BN254-IP2"
 
-instance IrreduciblePoly Poly Fp6 "BN254-IP3" where
-  irreduciblePoly = toPoly @Poly [Ext3 zero (negate one) zero, zero, one]
+instance IrreduciblePoly (Poly Fp6) Fp6 "BN254-IP3" where
+  irreduciblePoly = toPoly @Fp6 @(Poly Fp6) [Ext3 zero (negate one) zero, zero, one]
 
 type Fp12 = Ext2 Fp6 "BN254-IP3"
 

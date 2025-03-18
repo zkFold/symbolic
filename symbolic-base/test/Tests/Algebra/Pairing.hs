@@ -31,7 +31,7 @@ propVerificationKZG
     => CoreFunction g1 core PolyVec 32
     => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
-    let n  = deg @Poly $ vec2poly p
+    let n  = deg @f @(Poly f) $ vec2poly p
 
         -- G1
         gs = V.fromList $ map ((`scale` pointGen) . (x^)) [0 .. n]

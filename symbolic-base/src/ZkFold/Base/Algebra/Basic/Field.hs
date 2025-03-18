@@ -199,8 +199,8 @@ instance (MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
 
 ----------------------------- Field Extensions --------------------------------
 
-class (UnivariateFieldPolynomial poly f) => IrreduciblePoly poly f (e :: Symbol) | e -> f, e -> poly where
-    irreduciblePoly :: poly f
+class (UnivariateFieldPolynomial f poly) => IrreduciblePoly poly f (e :: Symbol) | e -> f, e -> poly where
+    irreduciblePoly :: poly
 
 data Ext2 f (e :: Symbol) = Ext2 f f
     deriving (Eq, Show, Generic)
@@ -229,7 +229,7 @@ instance Field f => AdditiveGroup (Ext2 f e) where
 instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext2 f e) (Ext2 f e)
 
 instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext2 f e) where
-    Ext2 a b * Ext2 c d = fromConstant @(poly f) (toPoly @poly [a, b] * toPoly @poly [c, d])
+    Ext2 a b * Ext2 c d = fromConstant @poly (toPoly @f @poly [a, b] * toPoly @f @poly [c, d])
 
 instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
     (^) = natPow
@@ -250,13 +250,16 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
 
     rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
 
-instance (FromConstant f f', Field f') => FromConstant f (Ext2 f' e) where
-    fromConstant e = Ext2 (fromConstant e) zero
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant Natural (Ext2 f e) where
+    fromConstant = flip scale one
 
-instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant (poly f) (Ext2 f e) where
-    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @poly @f @e) of
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant Integer (Ext2 f e) where
+    fromConstant = flip scale one
+
+instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext2 f e) where
+    fromConstant p = case fromPoly . snd $ qr (fromConstant p) (irreduciblePoly @poly @f @e) of
       []  -> zero
-      [x] -> fromConstant x
+      [x] -> Ext2 x zero
       v   -> Ext2 (v V.! 0) (v V.! 1)
 
 instance (Field f, Eq f, IrreduciblePoly poly f e) => Semiring (Ext2 f e)
@@ -297,7 +300,7 @@ instance Field f => AdditiveGroup (Ext3 f e) where
 instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext3 f e) (Ext3 f e)
 
 instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext3 f e) where
-    Ext3 a b c * Ext3 d e f = fromConstant @(poly f) (toPoly [a, b, c] * toPoly [d, e, f])
+    Ext3 a b c * Ext3 d e f = fromConstant @poly (toPoly [a, b, c] * toPoly [d, e, f])
 
 instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
     (^) = natPow
@@ -319,13 +322,16 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
 
     rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
 
-instance (FromConstant f f', Field f') => FromConstant f (Ext3 f' ip) where
-    fromConstant e = Ext3 (fromConstant e) zero zero
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant Natural (Ext3 f e) where
+    fromConstant = flip scale one
 
-instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant (poly f) (Ext3 f e) where
-    fromConstant p = case fromPoly . snd $ qr p (irreduciblePoly @poly @f @e) of
+instance {-# OVERLAPPING #-} (Field f, IrreduciblePoly poly f e) => FromConstant Integer (Ext3 f e) where
+    fromConstant = flip scale one
+
+instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext3 f e) where
+    fromConstant p = case fromPoly . snd $ qr (fromConstant p) (irreduciblePoly @poly @f @e) of
       []     -> zero
-      [x]    -> fromConstant x
+      [x]    -> Ext3 x zero zero
       [x, y] -> Ext3 x y zero
       v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 

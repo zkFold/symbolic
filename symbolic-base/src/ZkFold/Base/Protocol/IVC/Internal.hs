@@ -15,8 +15,8 @@ import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, Par1, U1, (:*:))
-import           Prelude                                    (Eq, Show, const, ($))
+import           GHC.Generics                               (Generic, U1, (:*:))
+import           Prelude                                    (Show, const, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
@@ -86,7 +86,6 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
     , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
-    , Eq (ArithmeticCircuit a (RecursiveI i :*: RecursiveP d 1 i p c) U1 Par1)
     )
 
 -- | Create the first IVC result

@@ -1,8 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes          #-}
 {-# LANGUAGE DeriveAnyClass               #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
+{-# LANGUAGE QuantifiedConstraints        #-}
 {-# LANGUAGE TypeApplications             #-}
+{-# LANGUAGE TypeOperators                #-}
 {-# LANGUAGE UndecidableInstances         #-}
+
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -46,42 +49,42 @@ infixl 6 .+, +.
 
 class
     ( Ring c
-    , AdditiveGroup (poly c)
-    ) => UnivariateRingPolynomial poly c where
+    , AdditiveGroup poly
+    ) => UnivariateRingPolynomial c poly | poly -> c where
 
-    constant :: c -> poly c
+    constant :: c -> poly
 
-    fromPoly :: poly c -> V.Vector c
+    fromPoly :: poly -> V.Vector c
 
-    lt :: poly c -> c
+    lt :: poly -> c
 
     -- | Degree of zero polynomial is `-1`
-    deg :: poly c -> Integer
+    deg :: poly -> Integer
 
-    toPoly :: V.Vector c -> poly c
+    toPoly :: V.Vector c -> poly
 
-    monomial :: Natural -> c -> poly c
+    monomial :: Natural -> c -> poly
 
-    evalPoly :: poly c -> c -> c
+    evalPoly :: poly -> c -> c
 
-    scaleP :: c -> Natural -> poly c -> poly c
+    scaleP :: c -> Natural -> poly -> poly
 
 class
     ( Field c
     , Eq c
-    , MultiplicativeMonoid (poly c)
-    , UnivariateRingPolynomial poly c
-    ) => UnivariateFieldPolynomial poly c where
+    , MultiplicativeMonoid poly
+    , UnivariateRingPolynomial c poly
+    ) => UnivariateFieldPolynomial c poly | poly -> c where
 
-    qr :: poly c -> poly c -> (poly c, poly c)
+    qr :: poly -> poly -> (poly, poly)
 
     -- | Extended Euclidean algorithm.
-    eea :: poly c -> poly c -> (poly c, poly c)
+    eea :: poly -> poly -> (poly, poly)
 
 instance
     ( Ring c
     , Eq c
-    ) => UnivariateRingPolynomial Poly c where
+    ) => UnivariateRingPolynomial c (Poly c) where
 
     constant = P . V.singleton
 
@@ -102,7 +105,7 @@ instance
 instance
     ( Field c
     , Eq c
-    ) => UnivariateFieldPolynomial Poly c where
+    ) => UnivariateFieldPolynomial c (Poly c) where
 
     qr a b = go a b zero
         where
@@ -303,9 +306,9 @@ class
 
     fromPolyVec :: pv c size -> V.Vector c
 
-    poly2vec :: forall poly . (UnivariateRingPolynomial poly c) => poly c -> pv c size
+    poly2vec :: forall poly . (UnivariateRingPolynomial c poly) => poly -> pv c size
 
-    vec2poly :: forall poly . (UnivariateRingPolynomial poly c) => pv c size -> poly c
+    vec2poly :: forall poly . (UnivariateRingPolynomial c poly) => pv c size -> poly
 
     -- -- p(x) = a0
     polyVecConstant :: c -> pv c size
@@ -419,7 +422,7 @@ instance
             zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
         in PV zs
 
-    polyVecDiv l r = poly2vec $ fst $ qr @Poly (vec2poly l) (vec2poly r)
+    polyVecDiv l r = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
 instance
     ( UnivariateRingPolyVec pv c size

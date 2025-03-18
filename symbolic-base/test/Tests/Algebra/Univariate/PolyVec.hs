@@ -45,8 +45,8 @@ propPolyVecDivision
     (Field c, KnownNat s, Eq c) =>
     PolyVec c s -> PolyVec c s -> Bool
 propPolyVecDivision p q =
-    let d1 = deg @Poly $ vec2poly p
-        d2 = deg @Poly $ vec2poly q
+    let d1 = deg @c @(Poly c) $ vec2poly p
+        d2 = deg @c @(Poly c) $ vec2poly q
     in (p * q) `polyVecDiv` q == p || (d1 + d2 > fromIntegral (value @s) - 1)
 
 -- TODO: Don't use a hardcoded root of unity

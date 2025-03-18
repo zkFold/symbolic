@@ -49,7 +49,7 @@ instance Scale (Zp PlutoEris_p) Eris_Point where
 
 -- The definition of Triton has not been finalized and is subject to change
 
-instance IrreduciblePoly Poly (Zp PlutoEris_p) "i*sqrt5" where
+instance IrreduciblePoly (Poly (Zp PlutoEris_p)) (Zp PlutoEris_p) "i*sqrt5" where
   irreduciblePoly = toPoly [5, 0, 1]
 
 instance WeierstrassCurve "Triton" (Ext2 (Zp PlutoEris_p) "i*sqrt5") where
