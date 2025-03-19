@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments      #-}
 
 module Tests.Symbolic.Data.List (specList) where
 
@@ -20,9 +20,9 @@ import           ZkFold.Symbolic.Compiler                    (acOutput, compile,
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Eq                     ((==))
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
-import           ZkFold.Symbolic.Data.List                   (List, emptyList, head, tail, (.:), foldr, lSize)
-import ZkFold.Symbolic.Data.Morph
-import ZkFold.Symbolic.Fold (SymbolicFold)
+import           ZkFold.Symbolic.Data.List                   (List, emptyList, foldr, head, lSize, tail, (.:))
+import           ZkFold.Symbolic.Data.Morph
+import           ZkFold.Symbolic.Fold                        (SymbolicFold)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x
