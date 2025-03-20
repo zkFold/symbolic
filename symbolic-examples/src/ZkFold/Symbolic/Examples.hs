@@ -8,11 +8,9 @@ import           Data.Functor.Rep                            (Rep, Representable
 import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
--- import           Examples.BLS12_381                          (exampleBLS12_381Scale)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
--- import           Examples.Ed25519                            (exampleEd25519Scale)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
@@ -23,7 +21,6 @@ import           Examples.UInt
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
--- import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   (Ed25519_Scalar)
 import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
