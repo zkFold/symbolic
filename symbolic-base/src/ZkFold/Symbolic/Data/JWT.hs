@@ -139,6 +139,8 @@ toAsciiBits
     .  IsSymbolicJSON a
     => Context a ~ ctx
     => KnownNat (MaxLength a)
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen (MaxLength a)) ('Fixed (BufLen (MaxLength a))))
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen (Next6 (MaxLength a))) ('Fixed (BufLen (Next6 (MaxLength a)))))
     => Symbolic ctx
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
@@ -168,4 +170,3 @@ tokenBits h p =  force $
        toBits h
     @+ (fromType @".")
     @+ toBits p
-

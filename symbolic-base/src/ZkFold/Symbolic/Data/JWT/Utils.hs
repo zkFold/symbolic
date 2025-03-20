@@ -123,6 +123,7 @@ padTo6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => UInt (BufLen n) ('Fixed (BufLen n)) ctx
     -> FieldElement ctx
 padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
@@ -154,6 +155,7 @@ padBytestring6
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => VarByteString n ctx -> VarByteString (Next6 n) ctx
 padBytestring6 VarByteString{..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
     where
@@ -172,6 +174,7 @@ base64ToAscii
     => Mod n 6 ~ 0
     => NFData (ctx (V.Vector 8))
     => NFData (ctx (V.Vector (ASCII n)))
+    => KnownNat (GetRegisterSize (BaseField ctx) (BufLen n) ('Fixed (BufLen n)))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
     where
