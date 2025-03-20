@@ -9,10 +9,10 @@ import           Data.String                                 (String)
 import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
 import           Examples.BLS12_381                          (exampleBLS12_381Scale)
-import           Examples.Ed25519                            (exampleEd25519Scale)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
+import           Examples.Ed25519                            (exampleEd25519Scale)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
