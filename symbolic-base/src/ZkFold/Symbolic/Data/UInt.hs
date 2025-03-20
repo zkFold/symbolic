@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoDeriveAnyClass     #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -36,7 +37,10 @@ import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
-import           Data.List                         (unfoldr, unsnoc, zip)
+import           Data.List                         (unfoldr, zip)
+#if __GLASGOW_HASKELL__ >= 910
+import           Data.List                         (unsnoc)
+#endif
 import           Data.Map                          (fromList, (!))
 import           Data.Maybe                        (fromJust)
 import           Data.Traversable                  (for, traverse)
@@ -893,3 +897,10 @@ circuitDelta l r = do
                 z2' <- newAssigned $ \p -> p z2 + p f2z
 
                 Haskell.return (z1', z2')
+
+#if __GLASGOW_HASKELL__ < 910
+unsnoc :: [a] -> Haskell.Maybe ([a], a)
+unsnoc [] = Haskell.Nothing
+unsnoc l =  Haskell.Just (Haskell.init l, Haskell.last l)
+#endif
+

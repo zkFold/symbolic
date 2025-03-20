@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
@@ -12,6 +13,9 @@ import           Data.Constraint.Unsafe                            (unsafeAxiom)
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))
 import qualified Data.Vector                                       as V
+#if __GLASGOW_HASKELL__ < 912
+import           Data.List                                         (foldl')
+#endif
 import           GHC.IsList                                        (IsList (..))
 import qualified GHC.Num                                           as GHC
 import           Prelude                                           hiding (Num (..), concat, divMod, length, mod,
@@ -109,16 +113,16 @@ rotr64 (x, y) = (x `shiftUIntR` y) `xorUInt` (x `shiftUIntL` (64 -! y))
 -- | Little-endian byte access.
 b2b_g :: forall c . Symbolic c =>
     V.Vector (UInt 64 Auto c) -> (Int, Int, Int, Int, UInt 64 Auto c, UInt 64 Auto c) -> V.Vector (UInt 64 Auto c)
-b2b_g v (a, b, c, d, x, y) =
-    let va1 = (v ! a) + (v ! b) + x                 -- v[a] = v[a] + v[b] + x;         \
-        vd1 = rotr64 ((v ! d) `xorUInt` va1, r1)    -- v[d] = ROTR64(v[d] ^ v[a], 32); \
-        vc1 = (v ! c) + vd1                         -- v[c] = v[c] + v[d];             \
-        vb1 = rotr64 ((v ! b) `xorUInt` vc1, r2)    -- v[b] = ROTR64(v[b] ^ v[c], 24); \
-        va2 = va1 + vb1 + y                         -- v[a] = v[a] + v[b] + y;         \
-        vd2 = rotr64 (vd1 `xorUInt` va2, r3)        -- v[d] = ROTR64(v[d] ^ v[a], 16); \
-        vc2 = vc1 + vd2                             -- v[c] = v[c] + v[d];             \
+b2b_g v (a, b, c, d, x, y) = v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
+    where
+        va1 = (v ! a) + (v ! b) + x                 -- v[a] = v[a] + v[b] + x;         
+        vd1 = rotr64 ((v ! d) `xorUInt` va1, r1)    -- v[d] = ROTR64(v[d] ^ v[a], 32); 
+        vc1 = (v ! c) + vd1                         -- v[c] = v[c] + v[d];             
+        vb1 = rotr64 ((v ! b) `xorUInt` vc1, r2)    -- v[b] = ROTR64(v[b] ^ v[c], 24); 
+        va2 = va1 + vb1 + y                         -- v[a] = v[a] + v[b] + y;         
+        vd2 = rotr64 (vd1 `xorUInt` va2, r3)        -- v[d] = ROTR64(v[d] ^ v[a], 16); 
+        vc2 = vc1 + vd2                             -- v[c] = v[c] + v[d];             
         vb2 = rotr64 (vb1 `xorUInt` vc2, r4)        -- v[b] = ROTR64(v[b] ^ v[c], 63);
-    in v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
 
 {-
 3.2.  Compression Function F
