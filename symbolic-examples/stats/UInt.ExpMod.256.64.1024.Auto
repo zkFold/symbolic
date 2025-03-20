@@ -1,4 +1,4 @@
 UInt.ExpMod.256.64.1024.Auto
-Number of constraints: 133113
-Number of variables: 149421
-Number of range lookups: 29645
+Number of constraints: 293560
+Number of variables: 355627
+Number of range lookups: 136332
