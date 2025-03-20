@@ -4,10 +4,7 @@ module ZkFold.Prelude where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
-import           Data.List            (genericIndex)
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List            (foldl')
-#endif
+import           Data.List            (foldl', genericIndex)
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)

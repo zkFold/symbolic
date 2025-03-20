@@ -48,11 +48,9 @@ import           Data.Binary                                                  (B
 import           Data.ByteString                                              (ByteString)
 import           Data.Foldable                                                (fold, toList)
 import           Data.Functor.Rep
+import           Data.List                                                    (foldl')
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                                    (foldl')
-#endif
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)

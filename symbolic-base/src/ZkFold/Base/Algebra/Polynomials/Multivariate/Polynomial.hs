@@ -8,10 +8,7 @@ import           Control.DeepSeq                                       (NFData)
 import           Data.Aeson                                            (FromJSON, ToJSON)
 import           Data.Bifunctor                                        (Bifunctor (..))
 import           Data.Functor                                          ((<&>))
-import           Data.List                                             (intercalate)
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                             (foldl')
-#endif
+import           Data.List                                             (foldl', intercalate)
 import           Data.Map.Strict                                       (Map, empty, keysSet)
 import qualified Data.Map.Strict                                       as M
 import           Data.Set                                              (Set)
