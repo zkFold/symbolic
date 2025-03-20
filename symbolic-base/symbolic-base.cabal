@@ -189,14 +189,18 @@ library
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
-      ZkFold.Symbolic.Data.BLS12_381
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.DiscreteField
-      ZkFold.Symbolic.Data.Ed25519
+      ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
+      ZkFold.Symbolic.Data.EllipticCurve.BN254
+      ZkFold.Symbolic.Data.EllipticCurve.Ed25519
+      ZkFold.Symbolic.Data.EllipticCurve.Pasta
+      ZkFold.Symbolic.Data.EllipticCurve.PlutoEris
+      ZkFold.Symbolic.Data.EllipticCurve.Secp256k1
       ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
@@ -213,7 +217,6 @@ library
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
-      ZkFold.Symbolic.Data.Secp256k1
       ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
