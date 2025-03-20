@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingVia           #-}
 {-# LANGUAGE NoStarIsType          #-}
@@ -49,6 +50,9 @@ import           Data.Foldable                                                (f
 import           Data.Functor.Rep
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I
+#if __GLASGOW_HASKELL__ < 912
+import           Data.List                                                    (foldl')
+#endif
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
