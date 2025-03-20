@@ -420,11 +420,8 @@ asWords
     => ctx (Vector k) -- @k@ registers of size @regSize@
     -> ctx (Vector (k * regSize)) -- @k * regSize@ registers of size @wordSize@
 asWords v = fromCircuitF v $ \regs -> do
-    words <- Haskell.mapM (expansionW @regSize wordsPerReg) regs
+    words <- Haskell.mapM (expansionW @regSize 1) regs
     Haskell.pure $ V.reverse . V.unsafeToVector . Haskell.concat . V.fromVector $ words
-  where
-      wordsPerReg :: Natural
-      wordsPerReg = value @regSize
 
 -- | Word size in bits used in comparisons. Subject to change
 type OrdWord = 16
