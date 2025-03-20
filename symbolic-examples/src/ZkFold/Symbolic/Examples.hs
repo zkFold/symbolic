@@ -25,6 +25,7 @@ import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   (Ed25519_Scalar)
 import           ZkFold.Base.Data.ByteString                 (Binary)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
@@ -37,7 +38,7 @@ type C a = ArithmeticCircuit a
 data ExampleOutput where
   ExampleOutput ::
     forall a p i o.
-    (Representable p, Representable i, NFData (Rep i), NFData1 o) =>
+    (Representable p, Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
     (() -> C a p i o) -> ExampleOutput
 
 exampleOutput ::
