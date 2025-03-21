@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingVia           #-}
 {-# LANGUAGE NoStarIsType          #-}
@@ -47,6 +48,7 @@ import           Data.Binary                                                  (B
 import           Data.ByteString                                              (ByteString)
 import           Data.Foldable                                                (fold, toList)
 import           Data.Functor.Rep
+import           Data.List                                                    (foldl')
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I
 import           Data.Map.Monoidal                                            (MonoidalMap)

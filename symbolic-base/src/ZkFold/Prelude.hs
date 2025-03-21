@@ -1,8 +1,10 @@
+{-# LANGUAGE CPP #-}
+
 module ZkFold.Prelude where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
-import           Data.List            (genericIndex)
+import           Data.List            (foldl', genericIndex)
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
