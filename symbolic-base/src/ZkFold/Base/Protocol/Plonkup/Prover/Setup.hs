@@ -16,9 +16,9 @@ data PlonkupProverSetup p i n l g1 g2 pv = PlonkupProverSetup
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
     , gs          :: V.Vector g1
-    , sigma1s     :: pv (ScalarFieldOf g1) n
-    , sigma2s     :: pv (ScalarFieldOf g1) n
-    , sigma3s     :: pv (ScalarFieldOf g1) n
+    , sigma1s     :: pv n
+    , sigma2s     :: pv n
+    , sigma3s     :: pv n
     , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
     , polynomials :: PlonkupCircuitPolynomials n g1 pv
     }
@@ -28,8 +28,8 @@ instance
         , Show g1
         , Show g2
         , Show (ScalarFieldOf g1)
-        , Show (pv (ScalarFieldOf g1) n)
-        , Show (pv (ScalarFieldOf g1) (PlonkupPolyExtendedLength n))
+        , Show (pv n)
+        , Show (pv (PlonkupPolyExtendedLength n))
         , Show (PlonkupRelation p i n l (ScalarFieldOf g1) pv)
         ) => Show (PlonkupProverSetup p i n l g1 g2 pv) where
     show PlonkupProverSetup {..} =

@@ -14,7 +14,6 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     , removeZeros
     , PolyVec
     , rewrapPolyVec
-    , castPolyVec
     , mulVector
     , mulDft
     , mulKaratsuba
@@ -56,18 +55,29 @@ class
 
     fromPoly :: poly -> V.Vector c
 
+    toPoly :: V.Vector c -> poly
+
+    -- | Leading coefficient
     lt :: poly -> c
 
     -- | Degree of zero polynomial is `-1`
     deg :: poly -> Integer
 
-    toPoly :: V.Vector c -> poly
+    -- | Return `c * x ^ n`
+    monomial
+        :: Natural -- ^ n
+        -> c -- ^ c
+        -> poly
 
-    monomial :: Natural -> c -> poly
-
+    -- | Evaluate polynomial
     evalPoly :: poly -> c -> c
 
-    scaleP :: c -> Natural -> poly -> poly
+    -- | Return `c * p * (x ^ n)`
+    scaleP
+        :: c -- ^ c
+        -> Natural -- ^ n
+        -> poly -- ^ p
+        -> poly
 
 class
     ( Field c
@@ -298,105 +308,86 @@ newtype PolyVec c (size :: Natural) = PV (V.Vector c)
 
 class
     ( Ring c
-    , KnownNat size
-    , AdditiveGroup (pv c size)
-    ) => UnivariateRingPolyVec pv c size where
+    , C pv ~ c
+    , forall size . (KnownNat size) => AdditiveGroup (pv size)
+    ) => UnivariateRingPolyVec c pv | pv -> c where
 
-    toPolyVec :: V.Vector c -> pv c size
+    type C pv
 
-    fromPolyVec :: pv c size -> V.Vector c
+-- -- | Multiply the corresponding coefficients of two polynomials.
+    (.*.) :: forall size . (KnownNat size) => pv size -> pv size -> pv size
 
-    poly2vec :: forall poly . (UnivariateRingPolynomial c poly) => poly -> pv c size
+-- -- | Multiply every coefficient of the polynomial by a constant.
+    (.*) :: forall size . (KnownNat size) => pv size -> c -> pv size
 
-    vec2poly :: forall poly . (UnivariateRingPolynomial c poly) => pv c size -> poly
+-- -- | Multiply every coefficient of the polynomial by a constant.
+    (*.) :: forall size . (KnownNat size) => c -> pv size -> pv size
+
+-- -- | Add a constant to every coefficient of the polynomial.
+    (.+) :: forall size . (KnownNat size) => pv size -> c -> pv size
+
+-- -- | Add a constant to every coefficient of the polynomial.
+    (+.) :: forall size . (KnownNat size) => c -> pv size -> pv size
+
+    toPolyVec :: forall size . (KnownNat size) => V.Vector c -> pv size
+
+    fromPolyVec :: forall size . (KnownNat size) => pv size -> V.Vector c
+
+    poly2vec :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => poly -> pv size
+
+    vec2poly :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => pv size -> poly
 
     -- -- p(x) = a0
-    polyVecConstant :: c -> pv c size
+    polyVecConstant :: forall size . (KnownNat size) => c -> pv size
 
     -- p(x) = a1 * x + a0
-    polyVecLinear :: c -> c -> pv c size
+    polyVecLinear
+        :: forall size . (KnownNat size)
+        => c -- ^ a1
+        -> c -- ^ a0
+        -> pv size
 
     -- p(x) = a2 * x^2 + a1 * x + a0
-    polyVecQuadratic :: c -> c -> c -> pv c size
+    polyVecQuadratic
+        :: forall size . (KnownNat size)
+        => c -- ^ a2
+        -> c -- ^ a1
+        -> c -- ^ a0
+        -> pv size
 
-    scalePV :: c -> pv c size -> pv c size
-
-    evalPolyVec :: pv c size -> c -> c
+    evalPolyVec :: forall size . (KnownNat size) => pv size -> c -> c
 
 class
     ( Field c
-    , Ring (pv c size)
-    , UnivariateRingPolyVec pv c size
-    ) => UnivariateFieldPolyVec pv c size where
--- -- | Multiply the corresponding coefficients of two polynomials.
-    (.*.) :: pv c size -> pv c size -> pv c size
+    , forall size . (KnownNat size) => Ring (pv size)
+    , UnivariateRingPolyVec c pv
+    ) => UnivariateFieldPolyVec c pv | pv -> c where
 
 -- -- | Divide the corresponding coefficients of two polynomials.
-    (./.) :: pv c size -> pv c size -> pv c size
-
--- -- | Multiply every coefficient of the polynomial by a constant.
-    (.*) :: pv c size -> c -> pv c size
-
--- -- | Multiply every coefficient of the polynomial by a constant.
-    (*.) :: c -> pv c size -> pv c size
-
--- -- | Add a constant to every coefficient of the polynomial.
-    (.+) :: pv c size -> c -> pv c size
-
--- -- | Add a constant to every coefficient of the polynomial.
-    (+.) :: c -> pv c size -> pv c size
+    (./.) :: forall size . (KnownNat size) => pv size -> pv size -> pv size
 
 -- -- p(x) = x^n - 1
-    polyVecZero :: Natural -> pv c size
+    polyVecZero :: forall size . (KnownNat size) => Natural -> pv size
 
 -- -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
-    polyVecLagrange :: Natural -> Natural -> c -> pv c size
+    polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> pv size
 
 -- -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
-    polyVecInLagrangeBasis :: forall n . (KnownNat n) => c -> pv c n -> pv c size
+    polyVecInLagrangeBasis :: forall n size . (KnownNat size, KnownNat n) => c -> pv n -> pv size
 
-    polyVecGrandProduct :: pv c size -> pv c size -> pv c size -> c -> c -> pv c size
+    polyVecGrandProduct :: forall size . (KnownNat size) => pv size -> pv size -> pv size -> c -> c -> pv size
 
-    polyVecDiv :: pv c size -> pv c size -> pv c size
+    polyVecDiv :: forall size . (KnownNat size) => pv size -> pv size -> pv size
+
+    castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => pv size -> pv size'
 
 instance
     ( Ring c
-    , KnownNat size
-    ) => UnivariateRingPolyVec PolyVec c size where
+    ) => UnivariateRingPolyVec c (PolyVec c) where
 
-    toPolyVec = PV . V.take (fromIntegral (value @size)) . addZeros @c @size
+    type C (PolyVec c) = c
 
-    fromPolyVec (PV cs) = cs
-
-    poly2vec = toPolyVec . fromPoly
-
-    vec2poly = toPoly . fromPolyVec
-
-    polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
-
-    polyVecLinear a1 a0 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
-
-    polyVecQuadratic a2 a1 a0  = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
-
-    scalePV c (PV as) = PV $ fmap (*c) as
-
-    evalPolyVec (PV cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Natural))
-
-castPolyVec :: forall c size size' . (Ring c, KnownNat size, KnownNat size', Eq c) => PolyVec c size -> PolyVec c size'
-castPolyVec (PV cs)
-    | value @size <= value @size'                             = toPolyVec cs
-    | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
-    | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
-
-instance
-    ( Field c
-    , Eq c
-    , UnivariateRingPolyVec PolyVec c size
-    ) => UnivariateFieldPolyVec PolyVec c size where
-
-    l .*. r = toPolyVec $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
-
-    l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+    l .*. r = toPolyVec @_ @(PolyVec c) $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
 
     (PV cs) .* a = PV $ fmap (* a) cs
 
@@ -406,28 +397,73 @@ instance
 
     a +. (PV cs) = PV $ fmap (+ a) cs
 
-    polyVecZero n = poly2vec @PolyVec @c @size $ scaleP one n (one @(Poly c)) - one @(Poly c)
+    toPolyVec :: forall size . (KnownNat size) => V.Vector c -> PolyVec c size
+    toPolyVec = PV . V.take (fromIntegral (value @size)) . addZeros @c @size
 
-    polyVecLagrange n i omega = scalePV (omega^i // fromConstant n) $ (polyVecZero @PolyVec @c @size n - one) `polyVecDiv'` polyVecLinear @PolyVec @c @size one (negate $ omega^i)
-        where polyVecDiv' = polyVecDiv @PolyVec @c @size
+    fromPolyVec :: forall size . PolyVec c size -> V.Vector c
+    fromPolyVec (PV cs) = cs
 
-    polyVecInLagrangeBasis :: forall n . (KnownNat n) => c -> PolyVec c n -> PolyVec c size
+    poly2vec :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => poly -> PolyVec c size
+    poly2vec = toPolyVec . fromPoly
+
+    vec2poly :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => PolyVec c size -> poly
+    vec2poly = toPoly . fromPolyVec
+
+    -- -- p(x) = a0
+    polyVecConstant :: forall size . (KnownNat size) => c -> PolyVec c size
+    polyVecConstant a0 = PV $ V.singleton a0 V.++ V.replicate (fromIntegral $ value @size -! 1) zero
+
+    -- p(x) = a1 * x + a0
+    polyVecLinear :: forall size . (KnownNat size) => c -> c -> PolyVec c size
+    polyVecLinear a1 a0 = PV $ V.fromList [a0, a1] V.++ V.replicate (fromIntegral $ value @size -! 2) zero
+
+    -- p(x) = a2 * x^2 + a1 * x + a0
+    polyVecQuadratic :: forall size . (KnownNat size) => c -> c -> c -> PolyVec c size
+    polyVecQuadratic a2 a1 a0  = PV $ V.fromList [a0, a1, a2] V.++ V.replicate (fromIntegral $ value @size -! 3) zero
+
+    evalPolyVec :: forall size . PolyVec c size -> c -> c
+    evalPolyVec (PV cs) x = sum $ V.zipWith (*) cs $ fmap (x^) (V.generate (V.length cs) (fromIntegral @_ @Natural))
+
+instance
+    ( Field c
+    , Eq c
+    , UnivariateRingPolyVec c (PolyVec c)
+    ) => UnivariateFieldPolyVec c (PolyVec c) where
+
+    l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+
+    polyVecZero :: forall size . (KnownNat size) => Natural -> PolyVec c size
+    polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
+
+    polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> PolyVec c size
+    polyVecLagrange n i omega = (*.) (omega^i // fromConstant n) $ (polyVecZero n - one) `polyVecDiv` polyVecLinear one (negate $ omega^i)
+
+    polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
     polyVecInLagrangeBasis omega (PV cs) =
-        let ls = fmap (\i -> polyVecLagrange @PolyVec @c @size (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
-        in sum $ V.zipWith scalePV cs ls
+        let ls = fmap (\i -> polyVecLagrange (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
+        in sum $ V.zipWith (*.) cs ls
 
+    polyVecGrandProduct :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
     polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
         let ps = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) bs))
             qs = fmap (+ gamma) (V.zipWith (+) as (fmap (* beta) sigmas))
             zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
         in PV zs
 
+    polyVecDiv :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
     polyVecDiv l r = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
+    castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
+    castPolyVec (PV cs)
+        | value @size <= value @size'                             = toPolyVec cs
+        | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
+        | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
+
 instance
-    ( UnivariateRingPolyVec pv c size
-    ) => IsList (pv c size) where
-    type Item (pv c size) = c
+    ( UnivariateRingPolyVec c pv
+    , KnownNat size
+    ) => IsList (pv size) where
+    type Item (pv size) = C pv
     fromList = toPolyVec . V.fromList
     toList = V.toList . fromPolyVec
 
@@ -466,7 +502,7 @@ instance (Field c, KnownNat size) => Semiring (PolyVec c size)
 instance (Field c, KnownNat size) => Ring (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
-    arbitrary = toPolyVec <$> V.replicateM (fromIntegral $ value @size) arbitrary
+    arbitrary = toPolyVec @_ @(PolyVec c) <$> V.replicateM (fromIntegral $ value @size) (arbitrary @c)
 
 -------------------------------- Helper functions --------------------------------
 

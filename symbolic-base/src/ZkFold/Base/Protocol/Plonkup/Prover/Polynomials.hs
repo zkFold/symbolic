@@ -21,7 +21,7 @@ data PlonkupCircuitPolynomials n g pv = PlonkupCircuitPolynomials {
     }
 instance
     ( Show (ScalarFieldOf g)
-    , Show (pv (ScalarFieldOf g) (PlonkupPolyExtendedLength n))
+    , Show (pv (PlonkupPolyExtendedLength n))
     ) => Show (PlonkupCircuitPolynomials n g pv) where
     show PlonkupCircuitPolynomials {..} =
         "Circuit Polynomials: "

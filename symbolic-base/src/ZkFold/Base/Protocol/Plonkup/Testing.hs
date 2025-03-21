@@ -40,10 +40,10 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , delta         :: ScalarFieldOf g1
     , epsilon       :: ScalarFieldOf g1
     , xi            :: ScalarFieldOf g1
-    , omegas        :: pv (ScalarFieldOf g1) n
+    , omegas        :: pv n
     , omegas'       :: PlonkupPolyExtended n g1 pv
-    , grandProduct1 :: pv (ScalarFieldOf g1) n
-    , w1            :: pv (ScalarFieldOf g1) n
-    , w2            :: pv (ScalarFieldOf g1) n
-    , w3            :: pv (ScalarFieldOf g1) n
+    , grandProduct1 :: pv n
+    , w1            :: pv n
+    , w2            :: pv n
+    , w3            :: pv n
     }

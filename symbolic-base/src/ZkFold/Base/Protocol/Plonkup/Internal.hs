@@ -41,7 +41,7 @@ type PlonkupPolyExtendedLength n = 4 * n + 6
 with4n6 :: forall n {r}. KnownNat n => (KnownNat (4 * n + 6) => r) -> r
 with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
-type PlonkupPolyExtended n g pv = pv (ScalarFieldOf g) (PlonkupPolyExtendedLength n)
+type PlonkupPolyExtended n g pv = pv (PlonkupPolyExtendedLength n)
 
 instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 l, Ord (Rep i), Show g1, Show g2) => Show (Plonkup p i n l g1 g2 t pv) where
     show Plonkup {..} =

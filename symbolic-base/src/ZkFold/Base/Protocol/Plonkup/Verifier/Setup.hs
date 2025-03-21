@@ -14,9 +14,9 @@ data PlonkupVerifierSetup p i n l g1 g2 pv = PlonkupVerifierSetup
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
     , h1          :: g2
-    , sigma1s     :: pv (ScalarFieldOf g1) n
-    , sigma2s     :: pv (ScalarFieldOf g1) n
-    , sigma3s     :: pv (ScalarFieldOf g1) n
+    , sigma1s     :: pv n
+    , sigma2s     :: pv n
+    , sigma3s     :: pv n
     , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
     , commitments :: PlonkupCircuitCommitments g1
     }
@@ -26,7 +26,7 @@ instance
         , Show g1
         , Show g2
         , Show (ScalarFieldOf g1)
-        , Show (pv (ScalarFieldOf g1) n)
+        , Show (pv n)
         , Show (PlonkupRelation p i n l (ScalarFieldOf g1) pv)
         ) => Show (PlonkupVerifierSetup p i n l g1 g2 pv) where
     show PlonkupVerifierSetup {..} =

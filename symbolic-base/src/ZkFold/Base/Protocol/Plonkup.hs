@@ -9,11 +9,13 @@ module ZkFold.Base.Protocol.Plonkup (
 
 import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Rep, Representable)
+import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class             (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate
@@ -29,7 +31,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall p i n l g1 g2 gt ts core pv .
+instance forall p i n l g1 g2 gt ts pv .
         ( KnownNat n
         , Representable p
         , Representable i
@@ -45,10 +47,10 @@ instance forall p i n l g1 g2 gt ts core pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , CoreFunction g1 core pv (PlonkupPolyExtendedLength n)
-        , UnivariateFieldPolyVec pv (ScalarFieldOf g2) n
-        , UnivariateFieldPolyVec pv (ScalarFieldOf g2) (PlonkupPolyExtendedLength n)
-        ) => NonInteractiveProof (Plonkup p i n l g1 g2 ts pv) core where
+        , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , KnownNat (PlonkupPolyExtendedLength n)
+        , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+        ) => NonInteractiveProof (Plonkup p i n l g1 g2 ts pv) where
     type Transcript (Plonkup p i n l g1 g2 ts pv)  = ts
     type SetupProve (Plonkup p i n l g1 g2 ts pv)  = PlonkupProverSetup p i n l g1 g2 pv
     type SetupVerify (Plonkup p i n l g1 g2 ts pv) = PlonkupVerifierSetup p i n l g1 g2 pv
@@ -58,17 +60,17 @@ instance forall p i n l g1 g2 gt ts core pv .
 
     setupProve :: Plonkup p i n l g1 g2 ts pv -> SetupProve (Plonkup p i n l g1 g2 ts pv)
     setupProve plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts @core plonk
+        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts plonk
         in PlonkupProverSetup {..}
 
     setupVerify :: Plonkup p i n l g1 g2 ts pv -> SetupVerify (Plonkup p i n l g1 g2 ts pv)
     setupVerify plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts @core plonk
+        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts plonk
         in PlonkupVerifierSetup {..}
 
     prove :: SetupProve (Plonkup p i n l g1 g2 ts pv) -> Witness (Plonkup p i n l g1 g2 ts pv) -> (Input (Plonkup p i n l g1 g2 ts pv), Proof (Plonkup p i n l g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @p @i @n @l @g1 @g2 @ts @core @pv setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @p @i @n @l @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
     verify :: SetupVerify (Plonkup p i n l g1 g2 ts pv) -> Input (Plonkup p i n l g1 g2 ts pv) -> Proof (Plonkup p i n l g1 g2 ts pv) -> Bool

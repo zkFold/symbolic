@@ -9,12 +9,14 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
 import           Data.Kind                                           (Type)
+import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
 import           Test.QuickCheck                                     (Arbitrary (..))
 
+import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate          hiding (qr)
@@ -65,8 +67,8 @@ instance ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
         => Arbitrary (Plonk p i n l g1 g2 t pv) where
     arbitrary = fromPlonkup <$> arbitrary
 
-instance forall p i n l g1 g2 gt (ts :: Type) core pv .
-        ( NonInteractiveProof (Plonkup p i n l g1 g2 ts pv) core
+instance forall p i n l g1 g2 gt (ts :: Type) pv .
+        ( NonInteractiveProof (Plonkup p i n l g1 g2 ts pv)
         , SetupProve (Plonkup p i n l g1 g2 ts pv) ~ PlonkupProverSetup p i n l g1 g2 pv
         , SetupVerify (Plonkup p i n l g1 g2 ts pv) ~ PlonkupVerifierSetup p i n l g1 g2 pv
         , Witness (Plonkup p i n l g1 g2 ts pv) ~ (PlonkupWitnessInput p i g1, PlonkupProverSecret g1)
@@ -81,10 +83,11 @@ instance forall p i n l g1 g2 gt (ts :: Type) core pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , CoreFunction g1 core pv (PlonkupPolyExtendedLength n)
-        , UnivariateFieldPolyVec pv (ScalarFieldOf g1) n
-        , UnivariateFieldPolyVec pv (ScalarFieldOf g1) (PlonkupPolyExtendedLength n)
-        ) => NonInteractiveProof (Plonk p i n l g1 g2 ts pv) core where
+        , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , KnownNat n
+        , KnownNat (PlonkupPolyExtendedLength n)
+        , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+        ) => NonInteractiveProof (Plonk p i n l g1 g2 ts pv) where
     type Transcript (Plonk p i n l g1 g2 ts pv)  = ts
     type SetupProve (Plonk p i n l g1 g2 ts pv)  = PlonkupProverSetup p i n l g1 g2 pv
     type SetupVerify (Plonk p i n l g1 g2 ts pv) = PlonkupVerifierSetup p i n l g1 g2 pv
@@ -93,14 +96,14 @@ instance forall p i n l g1 g2 gt (ts :: Type) core pv .
     type Proof (Plonk p i n l g1 g2 ts pv)       = PlonkupProof g1
 
     setupProve :: Plonk p i n l g1 g2 ts pv -> SetupProve (Plonk p i n l g1 g2 ts pv)
-    setupProve = setupProve @(Plonkup p i n l g1 g2 ts pv) @core . toPlonkup
+    setupProve = setupProve @(Plonkup p i n l g1 g2 ts pv) . toPlonkup
 
     setupVerify :: Plonk p i n l g1 g2 ts pv -> SetupVerify (Plonk p i n l g1 g2 ts pv)
-    setupVerify = setupVerify @(Plonkup p i n l g1 g2 ts pv) @core . toPlonkup
+    setupVerify = setupVerify @(Plonkup p i n l g1 g2 ts pv) . toPlonkup
 
     prove :: SetupProve (Plonk p i n l g1 g2 ts pv) -> Witness (Plonk p i n l g1 g2 ts pv) -> (Input (Plonk p i n l g1 g2 ts pv), Proof (Plonk p i n l g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = plonkProve @p @i @n @l @g1 @g2 @ts @core @pv setup witness
+        let (input, proof, _) = plonkProve @p @i @n @l @g1 @g2 @ts @pv setup witness
         in (input, proof)
 
     verify :: SetupVerify (Plonk p i n l g1 g2 ts pv) -> Input (Plonk p i n l g1 g2 ts pv) -> Proof (Plonk p i n l g1 g2 ts pv) -> Bool

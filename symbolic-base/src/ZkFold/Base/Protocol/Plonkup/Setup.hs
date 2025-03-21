@@ -13,13 +13,12 @@ import           Prelude                                           hiding (Num (
                                                                     (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                  (value)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, value)
 import           ZkFold.Base.Algebra.Basic.Permutations            (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class           (CyclicGroup (..), Pairing)
 import           ZkFold.Base.Algebra.Polynomials.Univariate        (UnivariateFieldPolyVec (..), polyVecInLagrangeBasis,
                                                                     toPolyVec)
 import           ZkFold.Base.Data.Vector                           (Vector (..))
-import           ZkFold.Base.Protocol.NonInteractiveProof.Internal (CoreFunction (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal             (Plonkup (..), PlonkupPermutationSize,
                                                                     PlonkupPolyExtendedLength, with4n6)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
@@ -34,9 +33,9 @@ data PlonkupSetup p i n l g1 g2 pv = PlonkupSetup
     , gs          :: V.Vector g1
     , h0          :: g2
     , h1          :: g2
-    , sigma1s     :: pv (ScalarFieldOf g1) n
-    , sigma2s     :: pv (ScalarFieldOf g1) n
-    , sigma3s     :: pv (ScalarFieldOf g1) n
+    , sigma1s     :: pv n
+    , sigma2s     :: pv n
+    , sigma3s     :: pv n
     , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
     , polynomials :: PlonkupCircuitPolynomials n g1 pv
     , commitments :: PlonkupCircuitCommitments g1
@@ -46,9 +45,9 @@ instance
         ( Show g1
         , Show g2
         , Show (ScalarFieldOf g1)
-        , Show (pv (ScalarFieldOf g1) n)
+        , Show (pv n)
+        , Show (pv (PlonkupPolyExtendedLength n))
         , Show (PlonkupRelation p i n l (ScalarFieldOf g1) pv)
-        , Show (pv (ScalarFieldOf g1) (PlonkupPolyExtendedLength n))
         ) => Show (PlonkupSetup p i n l g1 g2 pv) where
     show PlonkupSetup {..} =
         "Setup: "
@@ -65,7 +64,7 @@ instance
         ++ show polynomials ++ " "
         ++ show commitments
 
-plonkupSetup :: forall i p n l g1 g2 gt ts core pv .
+plonkupSetup :: forall i p n l g1 g2 gt ts pv .
     ( Representable p
     , Representable i
     , Representable l
@@ -74,9 +73,10 @@ plonkupSetup :: forall i p n l g1 g2 gt ts core pv .
     , Arithmetic (ScalarFieldOf g1)
     , Binary (ScalarFieldOf g2)
     , Pairing g1 g2 gt
-    , UnivariateFieldPolyVec pv (ScalarFieldOf g2) n
-    , UnivariateFieldPolyVec pv (ScalarFieldOf g2) (PlonkupPolyExtendedLength n)
-    , CoreFunction g1 core pv (PlonkupPolyExtendedLength n)
+    , KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+    , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => Plonkup p i n l g1 g2 ts pv -> PlonkupSetup p i n l g1 g2 pv
 plonkupSetup Plonkup {..} =
     let gs = toV gs'
@@ -94,19 +94,19 @@ plonkupSetup Plonkup {..} =
         sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        qmX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qM)
-        qlX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qL)
-        qrX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qR)
-        qoX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qO)
-        qcX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qC)
-        qkX = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega qK)
-        s1X = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega sigma1s)
-        s2X = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega sigma2s)
-        s3X = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega sigma3s)
-        tX  = with4n6 @n (polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) omega t)
+        qmX = with4n6 @n (polyVecInLagrangeBasis omega qM)
+        qlX = with4n6 @n (polyVecInLagrangeBasis omega qL)
+        qrX = with4n6 @n (polyVecInLagrangeBasis omega qR)
+        qoX = with4n6 @n (polyVecInLagrangeBasis omega qO)
+        qcX = with4n6 @n (polyVecInLagrangeBasis omega qC)
+        qkX = with4n6 @n (polyVecInLagrangeBasis omega qK)
+        s1X = with4n6 @n (polyVecInLagrangeBasis omega sigma1s)
+        s2X = with4n6 @n (polyVecInLagrangeBasis omega sigma2s)
+        s3X = with4n6 @n (polyVecInLagrangeBasis omega sigma3s)
+        tX  = with4n6 @n (polyVecInLagrangeBasis omega t)
         polynomials = PlonkupCircuitPolynomials {..}
 
-        com = msm @g1 @core @pv
+        com = msm
         cmQl = gs `com` qlX
         cmQr = gs `com` qrX
         cmQo = gs `com` qoX

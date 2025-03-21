@@ -11,7 +11,7 @@ import           Prelude                                           hiding (Num (
                                                                     (/), (^))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                  (Natural, value)
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, Natural, value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.Polynomials.Univariate        hiding (qr)
 import           ZkFold.Base.Protocol.NonInteractiveProof          hiding (verify)
@@ -30,8 +30,9 @@ plonkVerify :: forall p i n l g1 g2 gt ts pv .
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)
     , FromTranscript ts (ScalarFieldOf g1)
-    , UnivariateFieldPolyVec pv (ScalarFieldOf g2) n
-    , UnivariateFieldPolyVec pv (ScalarFieldOf g2) (PlonkupPolyExtendedLength n)
+    , KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
     ) => PlonkupVerifierSetup p i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
@@ -95,13 +96,13 @@ plonkVerify
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = with4n6 @n $ polyVecZero @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) (value @n) `evalPolyVec` xi :: ScalarFieldOf g1
+        zhX_xi = with4n6 @n $ polyVecZero @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) `evalPolyVec` xi :: ScalarFieldOf g1
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = with4n6 @n $ polyVecLagrange @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = with4n6 @n $ polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @pv @(ScalarFieldOf g1) @(PlonkupPolyExtendedLength n) @n omega
+        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) @n omega
             (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
             `evalPolyVec` xi
 

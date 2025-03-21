@@ -28,7 +28,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Class             (CyclicGrou
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
 import           ZkFold.Base.Algebra.Polynomials.Univariate
 import           ZkFold.Base.Data.Vector                             (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof            (HaskellCore, setupProve)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (setupProve)
 import           ZkFold.Base.Protocol.Plonkup                        hiding (omega)
 import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
 import           ZkFold.Base.Protocol.Plonkup.Prover                 (plonkupProve)
@@ -59,7 +59,7 @@ propPlonkConstraintConversion p =
 
 propPlonkupRelationHolds ::
   forall p i n l a . (Foldable l, KnownNat n, Arithmetic a) =>
-  PlonkupRelation p i n l a PolyVec -> p a -> i a -> Bool
+  PlonkupRelation p i n l a (PolyVec a) -> p a -> i a -> Bool
 propPlonkupRelationHolds PlonkupRelation {..} p w =
     let (w1, w2, w3) = witness p w
         pub          = negate $ toPolyVec $ fromList $ toList $ pubInput p w
@@ -70,40 +70,40 @@ propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkPolyEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
         p = with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propPlonkGrandProductIsCorrect :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductIsCorrect plonk witness secret =
-    let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @_ plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
     in head (toList $ fromPolyVec grandProduct1) == one
 
 propPlonkGrandProductEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
 
-        gammaX = scalePV gamma $ with4n6 @n $ one
+        gammaX = polyVecConstant one
         p =  with4n6 @n $ (aX + polyVecLinear beta gamma)
             * (bX + polyVecLinear (beta * k1) gamma)
             * (cX + polyVecLinear (beta * k2) gamma)
@@ -116,55 +116,55 @@ propPlonkGrandProductEquality plonk witness secret pow =
 
 propLookupPolyEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupPolyEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
 
         p = with4n6 @n $ qkX * (aX - fX)
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLookupGrandProductIsCorrect :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductIsCorrect plonk witness secret =
-    let setup = setupProve @_ @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @_ plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
     in z2X `evalPolyVec` omega == one
 
 propLookupGrandProductEquality :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
 
-        deltaX   = scalePV delta $ with4n6 @n $ one
-        epsilonX = scalePV epsilon $ with4n6 @n $ one
+        deltaX   = polyVecConstant one
+        epsilonX = polyVecConstant one
         p = with4n6 @n $ z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas'))
                 - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas'))
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLinearizationPolyEvaluation :: forall p i n l
     . (Representable p, KnownNat n, Representable i, Representable l, Foldable l, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n))
-    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec
+    => Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
     -> PlonkupWitnessInput p i BLS12_381_G1_Point
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLinearizationPolyEvaluation plonk witness secret =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString PolyVec) @HaskellCore plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @HaskellCore @PolyVec setup (witness, secret)
+    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
         evalPolyVec' = evalPolyVec
     in rX `evalPolyVec'` xi == zero
 

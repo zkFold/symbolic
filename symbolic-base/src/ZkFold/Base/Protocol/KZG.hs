@@ -29,17 +29,20 @@ instance Show (ScalarFieldOf g1) => Show (KZG g1 g2 d pv) where
     show (KZG x) = "KZG " <> show x
 instance Eq (ScalarFieldOf g1) => Eq (KZG g1 g2 d pv) where
     KZG x == KZG y = x == y
-instance (Arbitrary (ScalarFieldOf g1), UnivariateFieldPolyVec pv (ScalarFieldOf g1) d) => Arbitrary (KZG g1 g2 d pv) where
+instance
+    ( Arbitrary (ScalarFieldOf g1)
+    , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    ) => Arbitrary (KZG g1 g2 d pv) where
     arbitrary = KZG <$> arbitrary
 
 newtype WitnessKZG g1 g2 d pv = WitnessKZG
-  { runWitness :: Map (ScalarFieldOf g1) (V.Vector (pv (ScalarFieldOf g1) d)) }
-instance (Show (ScalarFieldOf g1), Show (pv (ScalarFieldOf g1) d)) => Show (WitnessKZG g1 g2 d pv) where
+  { runWitness :: Map (ScalarFieldOf g1) (V.Vector (pv d)) }
+instance (Show (ScalarFieldOf g1), Show (pv d)) => Show (WitnessKZG g1 g2 d pv) where
     show (WitnessKZG w) = "WitnessKZG " <> show w
 instance
   ( KnownNat d
   , Arbitrary (ScalarFieldOf g1)
-  , Arbitrary (pv (ScalarFieldOf g1) d)
+  , Arbitrary (pv d)
   , Ord (ScalarFieldOf g1)
   , Ring (ScalarFieldOf g1)
   ) => Arbitrary (WitnessKZG g1 g2 d pv) where
@@ -49,7 +52,7 @@ instance
         WitnessKZG . fromList <$> replicateM n ((,) <$> arbitrary <*> (V.fromList <$> replicateM m arbitrary))
 
 -- TODO (Issue #18): check list lengths
-instance forall f g1 g2 gt d kzg core pv .
+instance forall f g1 g2 gt d kzg pv .
     ( KZG g1 g2 d pv ~ kzg
     , KnownNat d
     , Ord f
@@ -60,9 +63,9 @@ instance forall f g1 g2 gt d kzg core pv .
     , Binary g1
     , Pairing g1 g2 gt
     , Eq gt
-    , CoreFunction g1 core pv d
-    , UnivariateFieldPolyVec pv f d
-    ) => NonInteractiveProof (KZG g1 g2 d pv) core where
+    , MultiScale (V.Vector g1) (pv d) g1
+    , UnivariateFieldPolyVec f pv
+    ) => NonInteractiveProof (KZG g1 g2 d pv) where
     type Transcript (KZG g1 g2 d pv)  = ByteString
     type SetupProve (KZG g1 g2 d pv)  = V.Vector g1
     type SetupVerify (KZG g1 g2 d pv) = (V.Vector g1, g2, g2)
@@ -90,19 +93,19 @@ instance forall f g1 g2 gt d kzg core pv .
     prove gs (WitnessKZG w) = snd $ foldl proveOne (empty, (mempty, mempty)) (toList w)
         where
             proveOne :: (Transcript kzg, (Input kzg, Proof kzg))
-                     -> (f, V.Vector (pv f d))
+                     -> (f, V.Vector (pv d))
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts0, (iMap, pMap)) (z, fs) = (ts3, (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    com = msm @g1 @core @pv @d
+                    com = msm
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
                     ts1 = ts0 `transcript` z `transcript` fzs `transcript` cms
-                    (gamma, ts2) = challenges ts1 (fromIntegral $ V.length cms)
+                    (gamma, ts2) = challenges @ByteString @f ts1 (fromIntegral $ V.length cms)
                     ts3 = ts2 `transcript` (0 :: Word8)
 
-                    h            = sum $ V.zipWith scalePV (V.fromList gamma) $ fmap (`provePolyVecEval` z) fs
+                    h = sum $ V.zipWith (*.) (V.fromList gamma) $ fmap (`provePolyVecEval` z) fs
 
     verify :: SetupVerify kzg -> Input kzg -> Proof kzg -> Bool
     verify (gs, h0, h1) input proof =
@@ -129,14 +132,14 @@ instance forall f g1 g2 gt d kzg core pv .
 
                     gamma = V.fromList gamma'
 
-                    com = msm @g1 @core @pv @d
+                    com = msm
 
                     v0' = r `scale` sum (V.zipWith scale gamma cms)
-                        - r `scale` (gs `com` toPolyVec @pv @f @d [sum $ V.zipWith (*) gamma fzs])
+                        - r `scale` (gs `com` toPolyVec @_ @pv @d [sum $ V.zipWith (*) gamma fzs])
                         + (r * z) `scale` w
                     v1' = r `scale` w
 
 ------------------------------------ Helper functions ------------------------------------
 
-provePolyVecEval :: forall pv size f . (FiniteField f, UnivariateFieldPolyVec pv f size) => pv f size -> f -> pv f size
-provePolyVecEval f z = (f - toPolyVec @pv [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec @pv [negate z, one]
+provePolyVecEval :: forall pv size f . (KnownNat size, FiniteField f, UnivariateFieldPolyVec f pv) => pv size -> f -> pv size
+provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]

@@ -28,16 +28,16 @@ propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>
     [c] -> Bool
 propToPolyVec cs =
-    let p = toPolyVec @PolyVec @c @s $ V.fromList cs
+    let p = toPolyVec @_ @(PolyVec c) @s $ V.fromList cs
     in length (fromPolyVec p) == value @s
 
 propCastPolyVec :: forall c s s' .
-    (Ring c, KnownNat s, KnownNat s', Eq c) =>
+    (Field c, KnownNat s, KnownNat s', Eq c) =>
     [c] -> Bool
 propCastPolyVec cs =
     let n = min (value @s) (value @s')
         cs' = V.fromList $ bool cs (take n cs) (length cs > n)
-        p' = castPolyVec @c @s @s' (toPolyVec @PolyVec @c @s cs')
+        p' = castPolyVec @_ @(PolyVec c) @s @s' (toPolyVec cs')
     in length (fromPolyVec p') == value @s'
 
 propPolyVecDivision
@@ -57,7 +57,7 @@ propPolyVecZero
     Natural -> Bool
 propPolyVecZero i =
     let Just omega = rootOfUnity 5 :: Maybe c
-        p = polyVecZero @PolyVec @c @d (value @s)
+        p = polyVecZero @_ @(PolyVec c) @d (value @s)
         x = omega^abs i
     in p `evalPolyVec` x == zero
 
@@ -69,7 +69,7 @@ propPolyVecLagrange
     Natural -> Bool
 propPolyVecLagrange i =
     let Just omega = rootOfUnity 5 :: Maybe c
-        p = polyVecLagrange @PolyVec @c @d (value @s) i omega
+        p = polyVecLagrange @_ @(PolyVec c) @d (value @s) i omega
     in p `evalPolyVec` (omega^i) == one &&
         all ((== zero) . (p `evalPolyVec`) . (omega^)) ([1 .. value @s] \\ [i])
 

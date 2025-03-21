@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE Unsafe              #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
@@ -22,10 +23,11 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), sum)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), MultiScale(..), sum)
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..))
+import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..), PolyVec)
 import           ZkFold.Base.Data.ByteString
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat)
 
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
@@ -70,7 +72,7 @@ challenges ts0 n = go ts0 n []
             ts' = ts `transcript` (0 :: Word8)
         in go ts' (k - 1) (c : acc)
 
-class NonInteractiveProof a core where
+class NonInteractiveProof a where
     type Transcript a
 
     type SetupProve a
@@ -91,17 +93,11 @@ class NonInteractiveProof a core where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
-class (CyclicGroup g) => CoreFunction g core pv size where
-    msm :: 
-        ( f ~ ScalarFieldOf g
-        ) => V.Vector g -> pv f size -> g
 
-data HaskellCore
-
-instance 
+instance
     ( CyclicGroup g
+    , KnownNat size
     , f ~ ScalarFieldOf g
-    , UnivariateRingPolyVec pv f size
-    ) => CoreFunction g HaskellCore pv size where
-
-    msm gs f = sum $ V.zipWith scale (fromPolyVec @pv @f f) gs
+    , UnivariateRingPolyVec f (PolyVec f)
+    ) => MultiScale (V.Vector g) (PolyVec f size) g where
+    msm gs f = sum $ V.zipWith scale (fromPolyVec f) gs

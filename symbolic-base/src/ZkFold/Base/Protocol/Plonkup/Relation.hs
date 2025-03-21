@@ -37,19 +37,19 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation p i n l a pv = PlonkupRelation
-    { qM       :: pv a n
-    , qL       :: pv a n
-    , qR       :: pv a n
-    , qO       :: pv a n
-    , qC       :: pv a n
-    , qK       :: pv a n
-    , t        :: pv a n
+    { qM       :: pv n
+    , qL       :: pv n
+    , qR       :: pv n
+    , qO       :: pv n
+    , qC       :: pv n
+    , qK       :: pv n
+    , t        :: pv n
     , sigma    :: Permutation (3 * n)
-    , witness  :: p a -> i a -> (pv a n, pv a n, pv a n)
+    , witness  :: p a -> i a -> (pv n, pv n, pv n)
     , pubInput :: p a -> i a -> l a
     }
 
-instance (Show a, Show (pv a n)) => Show (PlonkupRelation p i n l a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation p i n l a pv) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -63,7 +63,7 @@ instance (Show a, Show (pv a n)) => Show (PlonkupRelation p i n l a pv) where
 
 instance
         ( KnownNat n
-        , UnivariateRingPolyVec pv a n
+        , UnivariateRingPolyVec a pv
         , KnownNat (PlonkupPermutationSize n)
         , Representable p
         , Representable i
@@ -78,7 +78,7 @@ instance
 
 toPlonkupRelation ::
   forall i p n l a pv .
-  ( Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec pv a n
+  ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
   , Representable p, Representable i, Representable l, Foldable l
   ) => ArithmeticCircuit a p i l -> Maybe (PlonkupRelation p i n l a pv)
 toPlonkupRelation ac =
@@ -102,12 +102,12 @@ toPlonkupRelation ac =
             , replicate (value @n -! n') ConsExtra
             ]
 
-        qM = toPolyVec @pv @a @n $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
-        qL = toPolyVec @pv @a @n $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
-        qR = toPolyVec @pv @a @n $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
-        qO = toPolyVec @pv @a @n $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
-        qC = toPolyVec @pv @a @n $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
-        qK = toPolyVec @pv @a @n $ fromList $ map isLookupConstraint plonkupSystem
+        qM = toPolyVec $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
+        qL = toPolyVec $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
+        qR = toPolyVec $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
+        qO = toPolyVec $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
+        qC = toPolyVec $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
+        qK = toPolyVec $ fromList $ map isLookupConstraint plonkupSystem
 
         a  = map getA plonkupSystem
         b  = map getB plonkupSystem
