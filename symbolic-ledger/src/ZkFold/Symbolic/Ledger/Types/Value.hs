@@ -1,23 +1,48 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
-module ZkFold.Symbolic.Ledger.Types.Value where
+module ZkFold.Symbolic.Ledger.Types.Value (
+  Token,
+  MintingContract,
+  CurrencySymbol,
+  Amount,
+  Value (..),
+  MultiAssetValue,
+  multiAssetValueToList,
+  unsafeMultiAssetValueFromList,
+  emptyMultiAssetValue,
+  addValue,
+  multiAssetValue,
+) where
 
+import           Data.Coerce                           (coerce)
 import           Prelude                               hiding (Bool, Eq, all, length, null, splitAt, (&&), (*), (+),
-                                                        (==))
+                                                        (==), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                 (Symbolic)
-import           ZkFold.Symbolic.Data.Bool             (Bool, (&&))
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Combinators      (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional      (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq               (Eq (BooleanOf, (==)), SymbolicEq)
-import           ZkFold.Symbolic.Data.List             (List, emptyList, null, singleton, uncons, (.:))
+import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
+import           ZkFold.Symbolic.Data.Eq               (Eq ((==)))
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
+import           ZkFold.Symbolic.Data.List             (List, emptyList, singleton, (.:))
+import           ZkFold.Symbolic.Data.Morph            (MorphTo (..))
 import           ZkFold.Symbolic.Data.UInt             (UInt)
+import           ZkFold.Symbolic.Fold                  (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
 
 -- | Input to the minting contract. Usually a token name.
-data Token context
+newtype Token context = Token (FieldElement context)
+
+deriving newtype instance (Symbolic context) => SymbolicData (Token context)
+deriving newtype instance (Symbolic context) => Conditional (Bool context) (Token context)
+deriving newtype instance (Symbolic context) => Eq (Token context)
 
 -- | A minting contract is a contract that guards the minting and burning of tokens.
 -- In order to mint or burn tokens, the transaction must satisfy the minting contract.
@@ -26,62 +51,106 @@ type MintingContract tx w context = Contract tx (Token context) w context
 -- | A currency symbol is a hash of the minting contract that mints the tokens.
 type CurrencySymbol context = ContractId context
 
+-- | Amount of tokens.
+type Amount context = UInt 64 Auto context
+
 -- | A value represents the amount of tokens that is contained in a transaction output.
 -- The `ContractId` corresponds to the contract that minted the tokens with the `Token` containing the input data.
--- The `UInt64` contains the amount of tokens.
+-- The `Amount` contains the amount of tokens.
 data Value context = Value
   { mintingPolicy :: CurrencySymbol context
   , tokenInstance :: Token context
-  , tokenQuantity :: UInt 64 Auto context
+  , tokenQuantity :: Amount context
   }
 
-newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (Value context))
+-- | Denotes multiple values.
+newtype MultiAssetValue context = UnsafeMultiAssetValue (List context (CurrencySymbol context, List context (Token context, Amount context)))
 
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (MultiAssetValue context)
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => Conditional (Bool context) (MultiAssetValue context)
+deriving newtype instance (KnownRegisters context 64 Auto, Symbolic context) => Eq (MultiAssetValue context)
+
+-- | Convert a multi-asset value to a list.
+multiAssetValueToList :: MultiAssetValue context -> List context (CurrencySymbol context, List context (Token context, Amount context))
+multiAssetValueToList = coerce
+
+-- | Unsafe constructor for a multi-asset value. Mainly to be used for testing.
+unsafeMultiAssetValueFromList :: List context (CurrencySymbol context, List context (Token context, UInt 64 Auto context)) -> MultiAssetValue context
+unsafeMultiAssetValueFromList = UnsafeMultiAssetValue
+
+-- | Construct an empty multi-asset value.
 emptyMultiAssetValue ::
-     SymbolicData (Value context)
-  => Context (Value context) ~ context
-  => MultiAssetValue context
+       KnownRegisters context 64 Auto
+    => Symbolic context
+    => MultiAssetValue context
 emptyMultiAssetValue = UnsafeMultiAssetValue emptyList
 
--- Add a single value to a multi-asset value
+-- | Add a given token with it's amount to a list. If the token already exists, the amount is added to the existing amount.
+--
+-- We assume that all the tokens in the list are unique.
+addTokenAmount ::
+     forall context.
+     SymbolicFold context
+  => KnownRegisters context 64 Auto
+  => Token context
+  -> Amount context
+  -> List context (Token context, Amount context) -> List context (Token context, Amount context)
+addTokenAmount givenToken givenAmount ls =
+  let (tokenExisted, _, _, r) =
+        Symbolic.List.foldr (
+          Morph
+            \((yt :: Token s, ya :: Amount s),
+              (found :: Bool s, givenToken' :: Token s, givenAmount' :: Amount s, ys)) ->
+                let isSame :: Bool s = givenToken' == yt
+                in (
+                    found || isSame,
+                    givenToken',
+                    givenAmount',
+                    ifThenElse isSame
+                      ((yt, ya + givenAmount') .: ys)
+                      ((yt, ya) .: ys)
+                  )
+        )
+          (false :: Bool context, givenToken, givenAmount, emptyList)
+          ls
+  in ifThenElse tokenExisted
+       r
+       ((givenToken, givenAmount) .: ls)
+
+-- | Add a single value to a multi-asset value.
 addValue ::
-     forall context. Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
-  => Symbolic context
-  => SymbolicOutput (Value context)
-  => Context (Value context) ~ context
-  => SymbolicEq (CurrencySymbol context)
-  => Context (CurrencySymbol context) ~ context
+     forall context.
+     SymbolicFold context
+  => KnownRegisters context 64 Auto
   => Value context
   -> MultiAssetValue context
   -> MultiAssetValue context
-addValue val (UnsafeMultiAssetValue valList) =
-  let oneVal = UnsafeMultiAssetValue (singleton val)
-      (valHead, valTail) = uncons valList
-      valHeadAdded = valHead {tokenQuantity = tokenQuantity valHead + tokenQuantity val}
-      UnsafeMultiAssetValue valTailAdded = addValue val (UnsafeMultiAssetValue valTail)
-      multiVal = bool @(Bool context)
-        (UnsafeMultiAssetValue (valHead .: valTailAdded))
-        (UnsafeMultiAssetValue (valHeadAdded .: valTail))
-        (mintingPolicy val == mintingPolicy valHead && tokenInstance val == tokenInstance valHead)
-  in bool multiVal oneVal (null valList)
+addValue Value {..} (UnsafeMultiAssetValue valList) =
+  let (policyExisted, _, _, _, r) =
+        Symbolic.List.foldr (Morph \((yp :: CurrencySymbol s, yas :: List s ((Token s, Amount s))), (found :: Bool s, mintingPolicy' :: CurrencySymbol s, tokenInstance' :: Token s, tokenQuantity' :: Amount s, ys)) ->
+          let isSame :: Bool s = mintingPolicy' == yp
+              tokenAmountAdded = addTokenAmount tokenInstance' tokenQuantity' yas
+          in (
+               found || isSame,
+               mintingPolicy',
+               tokenInstance',
+               tokenQuantity',
+               ifThenElse isSame
+                 ((yp, tokenAmountAdded) .: ys)
+                 ((yp, yas) .: ys))
+          )
+              (false :: Bool context, mintingPolicy, tokenInstance, tokenQuantity, emptyList)
+              valList
+  in ifThenElse policyExisted
+       (UnsafeMultiAssetValue r)
+       (UnsafeMultiAssetValue $ (mintingPolicy, singleton (tokenInstance, tokenQuantity)) .: valList)
 
--- Safe constructor for a multi-asset value
-multiValueAsset ::
-     Symbolic context
-  => SymbolicOutput (Value context)
-  => Context (Value context) ~ context
-  => Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
-  => SymbolicEq (CurrencySymbol context)
-  => Context (CurrencySymbol context) ~ context
+-- | Safe constructor for a multi-asset value.
+multiAssetValue ::
+     SymbolicFold context
   => Foldable (List context)
+  => KnownRegisters context 64 Auto
   => List context (Value context)
   -> MultiAssetValue context
-multiValueAsset = foldr addValue emptyMultiAssetValue
+multiAssetValue = foldr addValue emptyMultiAssetValue
 
--- | Unsafe constructor for a multi-asset value. Mainly to be used for testing.
-unsafeMultiAssetValue :: List context (Value context) -> MultiAssetValue context
-unsafeMultiAssetValue = UnsafeMultiAssetValue
