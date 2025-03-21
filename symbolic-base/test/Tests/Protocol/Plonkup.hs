@@ -76,8 +76,8 @@ propPlonkPolyEquality :: forall p i n l
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkPolyEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
         p = with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
@@ -88,7 +88,7 @@ propPlonkGrandProductIsCorrect :: forall p i n l
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductIsCorrect plonk witness secret =
-    let setup = setupProve @_ plonk
+    let setup = setupProve plonk
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
     in head (toList $ fromPolyVec grandProduct1) == one
 
@@ -100,10 +100,10 @@ propPlonkGrandProductEquality :: forall p i n l
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propPlonkGrandProductEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
 
-        gammaX = polyVecConstant one
+        gammaX = polyVecConstant gamma
         p =  with4n6 @n $ (aX + polyVecLinear beta gamma)
             * (bX + polyVecLinear (beta * k1) gamma)
             * (cX + polyVecLinear (beta * k2) gamma)
@@ -122,8 +122,8 @@ propLookupPolyEquality :: forall p i n l
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupPolyEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
 
         p = with4n6 @n $ qkX * (aX - fX)
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
@@ -135,8 +135,8 @@ propLookupGrandProductIsCorrect :: forall p i n l
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductIsCorrect plonk witness secret =
-    let setup = setupProve @_ plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
     in z2X `evalPolyVec` omega == one
 
 propLookupGrandProductEquality :: forall p i n l
@@ -147,11 +147,11 @@ propLookupGrandProductEquality :: forall p i n l
     -> ScalarFieldOf BLS12_381_G1_Point
     -> Bool
 propLookupGrandProductEquality plonk witness secret pow =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
 
-        deltaX   = polyVecConstant one
-        epsilonX = polyVecConstant one
+        deltaX   = polyVecConstant delta
+        epsilonX = polyVecConstant epsilon
         p = with4n6 @n $ z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas'))
                 - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas'))
     in p `evalPolyVec` (omega ^ fromZp pow) == zero
@@ -163,10 +163,9 @@ propLinearizationPolyEvaluation :: forall p i n l
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> Bool
 propLinearizationPolyEvaluation plonk witness secret =
-    let setup = setupProve @(Plonkup p i n l BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))) plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) setup (witness, secret)
-        evalPolyVec' = evalPolyVec
-    in rX `evalPolyVec'` xi == zero
+    let setup = setupProve plonk
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
+    in rX `evalPolyVec` xi == zero
 
 instance Arbitrary (U1 a) where
   arbitrary = return U1

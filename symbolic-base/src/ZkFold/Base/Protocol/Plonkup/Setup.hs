@@ -116,7 +116,7 @@ plonkupSetup Plonkup {..} =
         cmS1 = gs `com` s1X
         cmS2 = gs `com` s2X
         cmS3 = gs `com` s3X
-        cmT1  = gs `com` tX
+        cmT1 = gs `com` tX
         commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}

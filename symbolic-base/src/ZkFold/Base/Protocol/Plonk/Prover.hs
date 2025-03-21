@@ -152,7 +152,7 @@ plonkProve PlonkupProverSetup {..}
         -- alpha4 = alpha3 * alpha
         -- alpha5 = alpha4 * alpha
 
-        gammaX   = polyVecConstant one
+        gammaX   = polyVecConstant gamma
         -- deltaX   = scalePV delta one
         -- epsilonX = scalePV epsilon one
         qX = with4n6 @n $ (

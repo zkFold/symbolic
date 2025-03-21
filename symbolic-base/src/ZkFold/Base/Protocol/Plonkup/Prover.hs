@@ -156,9 +156,9 @@ plonkupProve PlonkupProverSetup {..}
         alpha4 = alpha3 * alpha
         alpha5 = alpha4 * alpha
 
-        gammaX   = polyVecConstant @_ @pv gamma
-        deltaX   = polyVecConstant @_ @pv delta
-        epsilonX = polyVecConstant @_ @pv epsilon
+        gammaX   = polyVecConstant gamma
+        deltaX   = polyVecConstant delta
+        epsilonX = polyVecConstant epsilon
         qX = (
                 (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
               + (aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha
@@ -197,7 +197,7 @@ plonkupProve PlonkupProverSetup {..}
         z2_xi'  = z2X `evalPolyVec` (xi * omega)
         h1_xi'  = h1X `evalPolyVec` (xi * omega)
         h2_xi   = h2X `evalPolyVec` xi
-        lag1_xi = polyVecLagrange @_ @pv @n (value @n) 1 omega `evalPolyVec` xi
+        lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
         l1_xi   = one // (scale n one * (xi - omega))
 
         -- Round 6
