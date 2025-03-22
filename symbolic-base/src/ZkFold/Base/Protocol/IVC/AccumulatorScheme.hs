@@ -82,11 +82,11 @@ accumulatorScheme phi =
 
             -- X * pi + pi' as a list of univariate polynomials
             polyPi :: i (PU.PolyVec f (d+1))
-            polyPi = zipWith (PU.polyVecLinear @f) pubi (acc^.x^.pi)
+            polyPi = zipWith PU.polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
             polyW :: Vector k [PU.PolyVec f (d+1)]
-            polyW = zipWith (zipWith (PU.polyVecLinear @f)) pi_w (acc^.w)
+            polyW = zipWith (zipWith PU.polyVecLinear) pi_w (acc^.w)
 
             -- X * ri + ri'
             polyR :: Vector (k-1) (PU.PolyVec f (d+1))

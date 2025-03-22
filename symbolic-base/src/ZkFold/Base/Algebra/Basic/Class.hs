@@ -93,6 +93,9 @@ class Scale b a where
     default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
     scale = (*) . fromConstant
 
+class MultiScale p s g where
+    msm :: p -> s -> g
+
 instance MultiplicativeSemigroup a => Scale a a
 
 -- | A class of types with a binary associative operation with a multiplicative

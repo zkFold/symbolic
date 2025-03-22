@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier.Setup where
@@ -7,19 +6,18 @@ import           Prelude                                           hiding (Num (
                                                                     (^))
 
 import           ZkFold.Base.Algebra.EllipticCurve.Class           (CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate        hiding (qr)
 import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
-data PlonkupVerifierSetup p i n l g1 g2 = PlonkupVerifierSetup
+data PlonkupVerifierSetup p i n l g1 g2 pv = PlonkupVerifierSetup
     { omega       :: ScalarFieldOf g1
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
     , h1          :: g2
-    , sigma1s     :: PolyVec (ScalarFieldOf g1) n
-    , sigma2s     :: PolyVec (ScalarFieldOf g1) n
-    , sigma3s     :: PolyVec (ScalarFieldOf g1) n
-    , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1)
+    , sigma1s     :: pv n
+    , sigma2s     :: pv n
+    , sigma3s     :: pv n
+    , relation    :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
     , commitments :: PlonkupCircuitCommitments g1
     }
 
@@ -28,8 +26,9 @@ instance
         , Show g1
         , Show g2
         , Show (ScalarFieldOf g1)
-        , Show (PlonkupRelation p i n l (ScalarFieldOf g1))
-        ) => Show (PlonkupVerifierSetup p i n l g1 g2) where
+        , Show (pv n)
+        , Show (PlonkupRelation p i n l (ScalarFieldOf g1) pv)
+        ) => Show (PlonkupVerifierSetup p i n l g1 g2 pv) where
     show PlonkupVerifierSetup {..} =
         "Verifier setup: "
         ++ show omega ++ " "
