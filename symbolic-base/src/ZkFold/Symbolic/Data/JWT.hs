@@ -29,7 +29,7 @@ import           ZkFold.Base.Algebra.Basic.Number
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords, RegSize)
+import           ZkFold.Symbolic.Data.ByteString    (RegSize)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators   hiding (toBits)
 import           ZkFold.Symbolic.Data.Input         (SymbolicInput)
@@ -127,9 +127,9 @@ instance
 
 instance
  ( Symbolic ctx
- , NFData (ctx (V.Vector 8))
- , NFData (ctx (V.Vector 648))
- , NFData (ctx (V.Vector 864))
+ , NFData (ctx (V.Vector 2))
+ , NFData (ctx (V.Vector 162))
+ , NFData (ctx (V.Vector 216))
  , NFData (ctx Par1)
  ) => IsBits (TokenHeader ctx) where
     type BitCount (TokenHeader ctx) = 864
@@ -140,20 +140,26 @@ toAsciiBits
     .  IsSymbolicJSON a
     => Context a ~ ctx
     => KnownNat (MaxLength a)
+    => KnownNat (Div (Div (MaxLength a + 5) 6 * 6) 6)
     => Symbolic ctx
     => NFData (ctx (V.Vector 2))
-    => NFData (ctx (V.Vector (NumberOfRegisters (BaseField ctx) (ASCII (Next6 (MaxLength a))) (Fixed RegSize))))
+    => NFData (ctx (V.Vector (NumberOfRegisters (BaseField ctx)(Div (Div (MaxLength a + 5) 6 * 6) 6 * 8) (Fixed RegSize))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
 type TokenBits a =
-    ( NFData ((Context a) (V.Vector 8))
+    ( NFData ((Context a) (V.Vector 2))
+    , NFData ((Context a) (V.Vector 8))
+    , NFData ((Context a) (V.Vector 162))
+    , NFData ((Context a) (V.Vector 216))
     , NFData ((Context a) (V.Vector 648))
     , NFData ((Context a) (V.Vector 864))
     , NFData ((Context a) (V.Vector (BitCount a)))
     , NFData ((Context a) (V.Vector (872 + BitCount a)))
+    , NFData ((Context a) (V.Vector (NumberOfRegisters (BaseField (Context a)) (872 + BitCount a) (Fixed RegSize))))
     , NFData ((Context a) Par1)
     , IsBits a
+    , KnownNat (BitCount a)
     , KnownNat (872 + BitCount a)
     )
 
@@ -165,7 +171,7 @@ tokenBits
     => TokenHeader ctx
     -> p
     -> VarByteString (864 + 8 + BitCount p) ctx
-tokenBits h p =  force $
+tokenBits h p = force $
        toBits h
     @+ (fromType @".")
     @+ toBits p

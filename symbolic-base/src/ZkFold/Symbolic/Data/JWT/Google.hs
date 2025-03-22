@@ -67,19 +67,20 @@ data GooglePayload ctx
     deriving Generic
 
 deriving instance
-    ( P.Eq (ctx (V.Vector 40))
-    , P.Eq (ctx (V.Vector 80))
+    ( P.Eq (ctx (V.Vector 10))
+    , P.Eq (ctx (V.Vector 20))
+    , P.Eq (ctx (V.Vector 64))
+    , P.Eq (ctx (V.Vector 128))
     , P.Eq (ctx (V.Vector 256))
-    , P.Eq (ctx (V.Vector 512))
-    , P.Eq (ctx (V.Vector 1024))
     , P.Eq (ctx Par1)
     ) => P.Eq (GooglePayload ctx)
 deriving instance
-    ( P.Show (ctx (V.Vector 40))
-    , P.Show (ctx (V.Vector 80))
+    ( P.Show (ctx (V.Vector 10))
+    , P.Show (ctx (V.Vector 20))
+    , P.Show (ctx (V.Vector 64))
+    , P.Show (ctx (V.Vector 128))
     , P.Show (ctx (V.Vector 256))
     , P.Show (ctx (V.Vector 512))
-    , P.Show (ctx (V.Vector 1024))
     , P.Show (ctx Par1)
     ) => P.Show (GooglePayload ctx)
 deriving instance Symbolic ctx => SymbolicData (GooglePayload ctx)
@@ -121,8 +122,8 @@ instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (Go
 
 instance
   ( Symbolic ctx
-  , NFData (ctx (V.Vector 8))
-  , NFData (ctx (V.Vector 9456))
+  , NFData (ctx (V.Vector 2))
+  , NFData (ctx (V.Vector 2364))
   ) => IsBits (GooglePayload ctx) where
     type BitCount (GooglePayload ctx) = 9456
     toBits = toAsciiBits

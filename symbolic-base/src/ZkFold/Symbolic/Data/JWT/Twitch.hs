@@ -59,11 +59,11 @@ data PubSubPerms ctx =
     deriving Generic
 
 deriving instance
-    ( P.Eq (ctx (V.Vector 2048))
+    ( P.Eq (ctx (V.Vector 512))
     , P.Eq (ctx Par1)
     ) => P.Eq (PubSubPerms ctx)
 deriving instance
-    ( P.Show (ctx (V.Vector 2048))
+    ( P.Show (ctx (V.Vector 512))
     , P.Show (ctx Par1)
     ) => P.Show (PubSubPerms ctx)
 deriving instance Symbolic ctx => SymbolicData (PubSubPerms ctx)
@@ -82,18 +82,21 @@ instance Symbolic ctx => FromJSON (PubSubPerms ctx) where
     parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
 
 deriving instance
-    ( P.Eq (ctx (V.Vector 40))
-    , P.Eq (ctx (V.Vector 80))
-    , P.Eq (ctx (V.Vector 88))
+    ( P.Eq (ctx (V.Vector 10))
+    , P.Eq (ctx (V.Vector 20))
+    , P.Eq (ctx (V.Vector 22))
+    , P.Eq (ctx (V.Vector 64))
+    , P.Eq (ctx (V.Vector 128))
+    , P.Eq (ctx (V.Vector 256))
     , P.Eq (ctx (V.Vector 512))
-    , P.Eq (ctx (V.Vector 2048))
     , P.Eq (ctx Par1)
     ) => P.Eq (TwitchPayload ctx)
 
 deriving instance
-    ( P.Show (ctx (V.Vector 40))
-    , P.Show (ctx (V.Vector 80))
-    , P.Show (ctx (V.Vector 88))
+    ( P.Show (ctx (V.Vector 10))
+    , P.Show (ctx (V.Vector 20))
+    , P.Show (ctx (V.Vector 22))
+    , P.Show (ctx (V.Vector 128))
     , P.Show (ctx (V.Vector 512))
     , P.Show (ctx (V.Vector 2048))
     , P.Show (ctx Par1)
@@ -120,8 +123,8 @@ instance (Symbolic ctx) => IsSymbolicJSON (TwitchPayload ctx) where
 
 instance
   ( Symbolic ctx
-  , NFData (ctx (V.Vector 8))
-  , NFData (ctx (V.Vector 9056))
+  , NFData (ctx (V.Vector 2))
+  , NFData (ctx (V.Vector 2264))
   ) => IsBits (TwitchPayload ctx) where
     type BitCount (TwitchPayload ctx) = 9056
     toBits = toAsciiBits
