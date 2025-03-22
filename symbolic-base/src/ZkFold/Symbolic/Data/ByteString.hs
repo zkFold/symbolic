@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Data.ByteString
     ( ByteString(..)
     , ShiftBits (..)
     , Resize (..)
+    , Iso (..)
     , reverseEndianness
     , set
     , unset
@@ -25,15 +26,18 @@ module ZkFold.Symbolic.Data.ByteString
     , emptyByteString
     , toBsBits
     , orRight
+    , bitsToRegs
+    , regsToBits
+    , RegSize
     ) where
 
 import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
-import qualified Data.Bits                         as B
 import qualified Data.ByteString                   as Bytes
-import           Data.Constraint                   (withDict)
-import           Data.Constraint.Nat               (Max, plusMinusInverse3)
+import           Data.Constraint                   (Dict, withDict)
+import           Data.Constraint.Nat               (Max, maxNat, minusNat, plusMinusInverse3, plusNat, timesNat)
+import           Data.Constraint.Unsafe            (unsafeAxiom)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
@@ -41,7 +45,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..), type (:*:) ((:*:)))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
@@ -53,7 +57,6 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Package          (packWith, unpackWith)
-import           ZkFold.Base.Data.Utils            (zipWithM)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
 import           ZkFold.Prelude                    (replicate, replicateA, (!!))
@@ -65,35 +68,39 @@ import           ZkFold.Symbolic.Data.Conditional  (Conditional)
 import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
+
+type RegSize = 4
+
+newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector (NumberOfRegisters (BaseField context) n (Fixed RegSize))))
     deriving (Generic)
 
-deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
-deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
-deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
-deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
-deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
-deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)
+deriving stock instance Haskell.Show (c (Vector (NumberOfRegisters (BaseField c) n (Fixed RegSize)))) => Haskell.Show (ByteString n c)
+deriving stock instance Haskell.Eq (c (Vector (NumberOfRegisters (BaseField c) n (Fixed RegSize)))) => Haskell.Eq (ByteString n c)
+deriving anyclass instance NFData (c (Vector (NumberOfRegisters (BaseField c) n (Fixed RegSize)))) => NFData (ByteString n c)
+deriving newtype instance (KnownNat (NumberOfRegisters (BaseField c) n (Fixed RegSize)), Symbolic c) => SymbolicData (ByteString n c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n (Fixed RegSize))) => Eq (ByteString n c)
+deriving newtype instance (Symbolic c, KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n (Fixed RegSize))) => Conditional (Bool c) (ByteString n c)
 
 instance
     ( Symbolic c
     , m * 8 ~ n
     , KnownNat m
     ) => IsString (ByteString n c) where
-    fromString = fromConstant . fromString @Bytes.ByteString
+    fromString = withDict (timesNat @m @8) $ fromConstant . fromString @Bytes.ByteString
 
 instance
     ( Symbolic c
     , m * 8 ~ n
     , KnownNat m
     ) => FromConstant Bytes.ByteString (ByteString n c) where
-    fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
+    fromConstant bytes = withDict (timesNat @m @8) $ concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
         . Haskell.toInteger <$> (V.unsafeToVector @m paddedBytes)
 
@@ -142,7 +149,7 @@ class ShiftBits a where
 instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
     type Const (ByteString n (Interpreter a)) = Natural
     toConstant (ByteString (Interpreter bits)) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
-        where base = 2
+        where base = 2 ^ value @RegSize
 
 
 -- | Pack a ByteString using one field element per bit.
@@ -155,8 +162,10 @@ instance (Symbolic c, KnownNat n) => FromConstant Integer (ByteString n c) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
-    arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
-        where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
+    arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA nr (toss (value @RegSize :: Natural))
+        where
+            toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
+            nr = numberOfRegisters @(BaseField c) @n @(Fixed RegSize)
 
 reverseEndianness' :: forall wordSize k m x {n}.
     ( KnownNat wordSize
@@ -171,10 +180,11 @@ reverseEndianness' v =
 reverseEndianness :: forall wordSize k c m {n}.
     ( Symbolic c
     , KnownNat wordSize
+    , KnownNat n
     , n ~ k * wordSize
     , m * 8 ~ wordSize
     ) => ByteString n c -> ByteString n c
-reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
+reverseEndianness (ByteString v) = ByteString . bitsToRegs @n . hmap (reverseEndianness' @wordSize @k) $ regsToBits v
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
@@ -182,49 +192,46 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 
     not (ByteString bits) = ByteString $ fromCircuitF bits $ mapM (\i -> newAssigned (\p -> one - p i))
 
-    l || r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi + xj - xi * xj
+    l || r = bitwiseOperation l r orOp
 
-    l && r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi * xj
+    l && r = bitwiseOperation l r andOp
 
-    xor (ByteString l) (ByteString r) =
-        ByteString $ symbolic2F l r
-            (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n))
-            (\lv rv -> do
-                let varsLeft = lv
-                    varsRight = rv
-                zipWithM  (\i j -> newAssigned $ cons i j) varsLeft varsRight
-            )
-            where
-                vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
-                vecToNat = Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
+    xor l r = bitwiseOperation l r xorOp
 
-                cons i j x =
-                    let xi = x i
-                        xj = x j
-                     in xi + xj - (xi * xj + xi * xj)
+-- expand :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> [i] -> m [i]
+-- expand loBits hiBits is = do
+--     let lows = Haskell.tail is
+--         high = Haskell.head is
+--     bitsLow  <- Haskell.reverse <$> mapM (expansion loBits) lows
+--     bitsHigh <- Haskell.reverse <$> expansion hiBits high
+--     lowsNew <- mapM (horner . Haskell.reverse) bitsLow
+--     highNew <- horner . Haskell.reverse $  bitsHigh
+--     pure $ highNew : lowsNew
+
+-- xorAnd :: forall n c. (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
+-- xorAnd (ByteString l) (ByteString r) = ByteString $ fromCircuit2F l r $ \lv rv -> do
+--     let lregs = V.fromVector lv
+--         rregs = V.fromVector rv
+--         hrs = highRegisterSize @(BaseField c) @n @(Fixed RegSize)
+--         rs = registerSize @(BaseField c) @n @(Fixed RegSize)
+--     le <- expand hrs rs lregs
+--     re <- expand hrs rs rregs
+--     return lv
+
+
+-- f(b0 + 2*b1 + ... + 2^15*b15) = b0 + 4*b1 + ... + 4^15*b15
+-- After doing so, note that
+
+-- f(x) + f(y) = f(x xor y) + 2 * f(x and y)
 
 orRight
     :: forall m n c
     .  Symbolic c
+    => (KnownNat m, KnownNat n)
     => ByteString m c
     -> ByteString n c
     -> ByteString (Max m n) c
-orRight l r = bitwiseOperation l r cons
-        where
-            cons i j x =
-                        let xi = x i
-                            xj = x j
-                        in xi + xj - xi * xj
+orRight l r = withDict (maxNat @m @n) $ resize $ bitwiseOperation @m @n l r orOp
 
 -- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
 -- 1. @wordSize@ is not greater than @n@;
@@ -233,11 +240,11 @@ orRight l r = bitwiseOperation l r cons
 -- 4. @wordSize@ divides @n@.
 --
 
-toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
-toWords (ByteString bits) = ByteString <$> unpackWith (V.chunks @m @wordSize) bits
+toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize, KnownNat m) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+toWords (ByteString bits) = withDict (timesNat @m @wordSize) $ (ByteString . bitsToRegs <$>) <$> unpackWith (V.chunks @m @wordSize) $ regsToBits bits
 
-concat :: forall k m c. (Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
-concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
+concat :: forall k m c. (Symbolic c, KnownNat m, KnownNat k) => Vector k (ByteString m c) -> ByteString (k * m) c
+concat bs =  withDict (timesNat @k @m) $ ByteString $ bitsToRegs @(k*m) $ packWith V.concat ((\(ByteString bits) -> regsToBits @m bits) <$> bs)
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
@@ -245,16 +252,19 @@ concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
 truncate :: forall m n c. (
     Symbolic c
   , KnownNat n
+  , KnownNat m
   , n <= m
   ) => ByteString m c -> ByteString n c
-truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
+truncate (ByteString bits) = ByteString . bitsToRegs @n $ hmap (V.take @n) (regsToBits @m bits)
 
 dropN :: forall n m c.
     ( Symbolic c
-    , KnownNat (m-n)
+    , KnownNat m
+    , KnownNat n
     , n <= m
     ) => ByteString m c -> ByteString n c
-dropN (ByteString bits) = withDict (plusMinusInverse3 @n @m) $ ByteString $ hmap (V.drop @(m-n)) bits
+dropN (ByteString bits) = withDict (minusNat @m @n) $ withDict (plusMinusInverse3 @n @m) $
+    ByteString . bitsToRegs @n $ hmap (V.drop @(m-n)) (regsToBits @m bits)
 
 append
     :: forall m n c
@@ -264,15 +274,15 @@ append
     => ByteString m c
     -> ByteString n c
     -> ByteString (m + n) c
-append (ByteString bits1) (ByteString bits2) =
-    ByteString $ fromCircuit2F bits1 bits2 $ \v1 v2 -> pure $ v1 `V.append` v2
+append (ByteString bits1) (ByteString bits2) = withDict (plusNat @m @n) $
+    ByteString .  bitsToRegs @(m+n) $ fromCircuit2F (regsToBits bits1) (regsToBits @n bits2) $ \v1 v2 -> pure $ v1 `V.append` v2
 
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
     shiftBits bs@(ByteString oldBits) s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ symbolicF oldBits
+      | otherwise = ByteString . bitsToRegs $ symbolicF (regsToBits @n oldBits)
           (\v ->  V.shift v s (fromConstant (0 :: Integer)))
           (\bitsV -> do
               let bits = V.fromVector bitsV
@@ -286,7 +296,7 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
               pure $ V.unsafeToVector newBits
           )
 
-    rotateBits (ByteString bits) s = ByteString $ hmap (`V.rotate` s) bits
+    rotateBits (ByteString bits) s = ByteString . bitsToRegs $ hmap (`V.rotate` s) (regsToBits @n bits)
 
 instance
   ( Symbolic c
@@ -311,21 +321,23 @@ instance
 instance
   ( Symbolic c
   , KnownNat n
+  , KnownNat (NumberOfRegisters (BaseField c) n (Fixed RegSize))
   ) => SymbolicInput (ByteString n c) where
-
-    isValid (ByteString bits) = Bool $ fromCircuitF bits $ \v -> do
-        let vs = V.fromVector v
-        ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
-        us <-for ys $ \i -> isZero $ Par1 i
-        case us of
-            []       -> Par1 <$> newAssigned (const one)
-            (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
+    isValid (ByteString bits) = Bool $ fromCircuitF (regsToBits @n bits) $ \v -> do
+            let vs = V.fromVector v
+            ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
+            us <-for ys $ \i -> isZero $ Par1 i
+            case us of
+                []       -> Par1 <$> newAssigned (const one)
+                (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
 
 set :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
-set (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
+set (ByteString bits) ix =  withNumberOfRegisters @n @(Fixed RegSize) @(BaseField c) $
+    ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
 
 unset :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
-unset (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
+unset (ByteString bits) ix = withNumberOfRegisters @n @(Fixed RegSize) @(BaseField c) $
+    ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
 isSet (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
@@ -344,7 +356,7 @@ isUnset (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
 toBsBits :: Natural -> Natural -> [Natural]
 toBsBits num n = reverse bits
     where
-        base = 2
+        base = 2 ^ value @RegSize
 
         availableBits = unfoldr (toBase base) (num `Haskell.mod` (2 Haskell.^ n)) <> Haskell.repeat 0
 
@@ -368,21 +380,27 @@ bitwiseOperation
     .  Symbolic c
     => ByteString m c
     -> ByteString n c
-    -> (forall i. i -> i -> ClosedPoly i (BaseField c))
+    -> (forall {x}. ResidueField x => (:*:) Par1 Par1 x -> Par1 x)
     -> ByteString (Max m n) c
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
+bitwiseOperation (ByteString bits1) (ByteString bits2) op = withDict (maxNumberOfRegisters @m @n @c) $
     ByteString $ fromCircuit2F bits1 bits2 $ \lv rv -> do
-        let aligned = V.alignRight lv rv
-        forM aligned $ \case
-            These i j -> newAssigned $ cons i j
-            This i -> pure i
-            That j -> pure j
+            let aligned = V.alignRight lv rv
+            nv <- forM aligned $ \case
+                These i j -> unPar1 <$> newBinLookup (powBin2Lookup $ value @RegSize) ((Par1 i) :*: (Par1 j)) op
+                This i -> pure i
+                That j -> pure j
+            return nv
+
+maxNumberOfRegisters :: forall m n c .
+    Dict (Max (NumberOfRegisters (BaseField c) m (Fixed RegSize)) (NumberOfRegisters (BaseField c) n (Fixed RegSize))
+            ~ (NumberOfRegisters (BaseField c) (Max m n) (Fixed RegSize)))
+maxNumberOfRegisters = unsafeAxiom
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
-  from = ByteString . binaryExpansion
+  from = ByteString . bitsToRegs @n @c. binaryExpansion
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
-  from (ByteString a) = fromBinary a
+  from (ByteString a) = fromBinary $ regsToBits a
 
 instance (Symbolic c, KnownNat n)
     => FromJSON (ByteString n c) where
@@ -402,3 +420,17 @@ hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteStri
 hexToByteString str = case readHex str of
     [(n, "")] -> Just (fromConstant @Natural n)
     _         -> Nothing
+
+regsToBits :: forall n c.(Symbolic c, KnownNat n) => c (Vector (NumberOfRegisters (BaseField c) n ('Fixed RegSize))) -> c (Vector n)
+regsToBits v = fromCircuitF v $ \u1 -> do
+            let regs = V.fromVector u1
+                hrs = highRegisterSize @(BaseField c) @n @(Fixed RegSize)
+                rs = registerSize @(BaseField c) @n @(Fixed RegSize)
+            V.unsafeToVector <$> toBits (Haskell.reverse regs) hrs rs
+
+bitsToRegs :: forall n c. (Symbolic c, KnownNat n) => c (Vector n) -> c (Vector (NumberOfRegisters (BaseField c) n ('Fixed RegSize)))
+bitsToRegs u = fromCircuitF u (\ui -> do
+            let bsBits = V.fromVector ui
+                hrs = highRegisterSize @(BaseField c) @n @(Fixed RegSize)
+                rs = registerSize @(BaseField c) @n @(Fixed RegSize)
+            V.unsafeToVector . Haskell.reverse <$> fromBits hrs rs bsBits)

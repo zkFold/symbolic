@@ -1,6 +1,7 @@
+{-# LANGUAGE TypeOperators #-}
 module ZkFold.Symbolic.Cardano.Contracts.SponsoredTx (sponsoredTx) where
 
-import           Prelude                              (($))
+import           Prelude                              (($), (.))
 import qualified Prelude                              as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -9,7 +10,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString      (ByteString (..))
+import           ZkFold.Symbolic.Data.ByteString      (ByteString (..), bitsToRegs)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Maybe
@@ -35,7 +36,8 @@ sponsoredTx tx1 tx2 = noExchange && consumesLiability && consumesOutput
         noExchange = P.snd lLiability /= zero && P.snd lBabel == zero -- There is a liability but no reward. Another party is expected to cover it
 
         tx1Hash :: ByteString 256 context
-        tx1Hash = resize $ ByteString $ binaryExpansion $ hash @context tx1
+        tx1Hash = resize @(ByteString (Log2 (Order (BaseField context) - 1) + 1) context) @(ByteString 256 context) $
+                ByteString $ bitsToRegs . binaryExpansion  $ hash @context tx1
 
         consumesLiability :: Bool context
         consumesLiability = isJust $ find (\Input{..} -> outputRefId txiOutputRef == tx1Hash && outputRefIndex txiOutputRef == zero) $ txInputs tx2

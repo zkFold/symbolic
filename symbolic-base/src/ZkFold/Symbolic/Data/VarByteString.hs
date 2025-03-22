@@ -46,7 +46,8 @@ import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, 
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), RegSize, dropN, isSet, orRight, regsToBits,
+                                                    truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool, ifThenElse)
@@ -69,13 +70,13 @@ data VarByteString (maxLen :: Natural) (context :: (Type -> Type) -> Type) =
         }
     deriving (Generic)
 
-deriving stock instance (Haskell.Show (ctx (Vector n)), Haskell.Show (ctx Par1)) => Haskell.Show (VarByteString n ctx)
-deriving stock instance (Haskell.Eq (ctx (Vector n)), Haskell.Eq (ctx Par1)) => Haskell.Eq (VarByteString n ctx)
-deriving anyclass instance (NFData (ctx (Vector n)), NFData (ctx Par1)) => NFData (VarByteString n ctx)
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ctx)
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
-deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
-deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
+deriving stock instance (Haskell.Show (ctx (Vector (NumberOfRegisters (BaseField ctx) n (Fixed RegSize)))), Haskell.Show (ctx Par1)) => Haskell.Show (VarByteString n ctx)
+deriving stock instance (Haskell.Eq (ctx (Vector (NumberOfRegisters (BaseField ctx) n (Fixed RegSize)))), Haskell.Eq (ctx Par1)) => Haskell.Eq (VarByteString n ctx)
+deriving anyclass instance (NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) n (Fixed RegSize)))), NFData (ctx Par1)) => NFData (VarByteString n ctx)
+deriving instance (KnownNat n, Symbolic ctx, KnownNat (NumberOfRegisters (BaseField ctx) n (Fixed RegSize))) => SymbolicData (VarByteString n ctx)
+deriving instance (KnownNat n, Symbolic ctx, KnownNat (NumberOfRegisters (BaseField ctx) n (Fixed RegSize))) => SymbolicInput (VarByteString n ctx)
+deriving instance (Symbolic ctx, KnownNat n, KnownNat (NumberOfRegisters (BaseField ctx) n (Fixed RegSize))) => Eq (VarByteString n ctx)
+deriving instance (Symbolic ctx, KnownNat n, KnownNat (NumberOfRegisters (BaseField ctx) n (Fixed RegSize))) => Conditional (Bool ctx) (VarByteString n ctx)
 
 instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx) where
     arbitrary = do
@@ -83,13 +84,15 @@ instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx)
         bits  <- Haskell.fromIntegral <$> chooseInteger (0, Haskell.fromIntegral $ 2^nbits -! 1)
         pure $ fromNatural nbits bits
 
-toAsciiString :: forall n p . (KnownNat (Div n 8), (Div n 8) * 8 ~ n, KnownNat p) => VarByteString n (Interpreter (Zp p)) -> Haskell.String
+toAsciiString :: forall n p . (KnownNat (Div n 8), (Div n 8) * 8 ~ n, KnownNat n, 1 <= p-1, 1 <= p, Prime p)
+    => VarByteString n (Interpreter (Zp p)) -> Haskell.String
 toAsciiString VarByteString{..} = drop numZeros $ fromVector chars
     where
-        ByteString (Interpreter v) = bsBuffer
+        ByteString v = bsBuffer
+        Interpreter v' = withDict (minusNat @p @1) $ withDict (log2Nat @(p-1)) $ withDict (plusNat @(Log2 (p - 1)) @1) $ regsToBits v
         FieldElement (Interpreter (Par1 len)) = bsLength
         strLen = fromZp len `div` 8
-        chars = chr . Haskell.fromIntegral . fromZp . Haskell.foldl (\b a -> b + b + a) zero <$> chunks @(Div n 8) @8 v
+        chars = chr . Haskell.fromIntegral . fromZp . Haskell.foldl (\b a -> b + b + a) zero <$> chunks @(Div n 8) @8 v'
         numZeros = value @(Div n 8) -! strLen
 
 instance
@@ -144,23 +147,23 @@ append
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
-    => KnownNat (m + n)
+    => KnownNat n
     => VarByteString m ctx
     -> VarByteString n ctx
     -> VarByteString (m + n) ctx
 append (VarByteString l1 bs1) (VarByteString l2 bs2) = VarByteString (l1 + l2) $ withMax @m @n newBs
     where
         ex1 :: ByteString (m + n) ctx
-        ex1 = resize bs1
+        ex1 = withDict (plusNat @m @n) $ resize bs1
 
-        newBs = (ex1 `shiftL` l2) `orRight` bs2
+        newBs = withDict (plusNat @m @n) $ (ex1 `shiftL` l2) `orRight` bs2
 
 infixl 6 @+
 (@+)
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
-    => KnownNat (m + n)
+    => KnownNat n
     => VarByteString m ctx
     -> VarByteString n ctx
     -> VarByteString (m + n) ctx
@@ -364,7 +367,8 @@ shiftWordsR (Words regs) p2
             s <- newAssigned $ \p ->  p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
             pure (s : acc, l)
 
-dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
+dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat m
+    , KnownNat (NumberOfRegisters (BaseField c) n (Fixed RegSize))) => VarByteString m c -> VarByteString n c
 dropZeros VarByteString{..} = ifThenElse (bsLength < feN) bsNMoreLen bsNLessLen
     where
         feN = fromConstant (value @n)
