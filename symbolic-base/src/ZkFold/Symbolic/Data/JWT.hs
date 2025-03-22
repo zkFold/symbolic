@@ -44,7 +44,7 @@ import           ZkFold.Base.Data.Vector            ((!!))
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords, RegSize)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
@@ -137,21 +137,21 @@ data TokenHeader ctx
     deriving Generic
 
 deriving instance
-    ( P.Eq (ctx (V.Vector 72))
-    , P.Eq (ctx (V.Vector 320))
-    , P.Eq (ctx (V.Vector 32))
+    ( P.Eq (ctx (V.Vector 8))
+    , P.Eq (ctx (V.Vector 80))
+    , P.Eq (ctx (V.Vector 18))
     , P.Eq (ctx Par1)
     ) => P.Eq (TokenHeader ctx)
 deriving instance
-    ( P.Show (ctx (V.Vector 72))
-    , P.Show (ctx (V.Vector 320))
-    , P.Show (ctx (V.Vector 32))
+    ( P.Show (ctx (V.Vector 8))
+    , P.Show (ctx (V.Vector 80))
+    , P.Show (ctx (V.Vector 18))
     , P.Show (ctx Par1)
     ) => P.Show (TokenHeader ctx)
 deriving instance
-    ( NFData (ctx (V.Vector 72))
-    , NFData (ctx (V.Vector 320))
-    , NFData (ctx (V.Vector 32))
+    ( NFData (ctx (V.Vector 8))
+    , NFData (ctx (V.Vector 80))
+    , NFData (ctx (V.Vector 18))
     , NFData (ctx Par1)
     ) => NFData (TokenHeader ctx)
 
@@ -211,18 +211,20 @@ data TokenPayload ctx
     deriving Generic
 
 deriving instance
-    ( P.Eq (ctx (V.Vector 40))
-    , P.Eq (ctx (V.Vector 80))
+    ( P.Eq (ctx (V.Vector 10))
+    , P.Eq (ctx (V.Vector 20))
+    , P.Eq (ctx (V.Vector 64))
+    , P.Eq (ctx (V.Vector 128))
     , P.Eq (ctx (V.Vector 256))
-    , P.Eq (ctx (V.Vector 512))
     , P.Eq (ctx (V.Vector 1024))
     , P.Eq (ctx Par1)
     ) => P.Eq (TokenPayload ctx)
 deriving instance
-    ( P.Show (ctx (V.Vector 40))
-    , P.Show (ctx (V.Vector 80))
+    ( P.Show (ctx (V.Vector 10))
+    , P.Show (ctx (V.Vector 20))
+    , P.Show (ctx (V.Vector 64))
+    , P.Show (ctx (V.Vector 128))
     , P.Show (ctx (V.Vector 256))
-    , P.Show (ctx (V.Vector 512))
     , P.Show (ctx (V.Vector 1024))
     , P.Show (ctx Par1)
     ) => P.Show (TokenPayload ctx)
@@ -414,14 +416,14 @@ base64ToAscii
     .  Symbolic ctx
     => KnownNat n
     => Mod n 6 ~ 0
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector (ASCII n)))
+    => NFData (ctx (V.Vector 2))
+    => NFData (ctx (V.Vector (NumberOfRegisters (BaseField ctx) (ASCII n) (Fixed RegSize))))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
     where
-        words6 = withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
+        words6 = withDict (divNat @n @6) $ withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
         ascii  = word6ToAscii <$> words6
-        result = force $ concat ascii
+        result = withDict (divNat @n @6) $ force $ concat ascii
 
         newLen =
             knownBufLen @n $
@@ -439,7 +441,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
     -            62          45
     _            63          95
 -}
-word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 8))) => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 2))) => ByteString 6 ctx -> ByteString 8 ctx
 word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
     do
         let bitsSym = V.fromVector bits
@@ -484,17 +486,18 @@ toAsciiBits
     => Context a ~ ctx
     => KnownNat (MaxLength a)
     => Symbolic ctx
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
+    => NFData (ctx (V.Vector 2))
+    => NFData (ctx (V.Vector (NumberOfRegisters (BaseField ctx) (ASCII (Next6 (MaxLength a))) (Fixed RegSize))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
 
 type SecretBits ctx =
-    ( NFData (ctx (V.Vector 8))
-    , NFData (ctx (V.Vector 648))
-    , NFData (ctx (V.Vector 864))
-    , NFData (ctx (V.Vector 9456))
+    ( NFData (ctx (V.Vector 2))
+    , NFData (ctx (V.Vector 162))
+    , NFData (ctx (V.Vector 216))
+    , NFData (ctx (V.Vector 2364))
+    , NFData (ctx (V.Vector 2582))
     , NFData (ctx (V.Vector 10328))
     , NFData (ctx Par1)
     )

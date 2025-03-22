@@ -16,6 +16,7 @@ import           ZkFold.Base.Data.ByteString                       (Binary)
 import           ZkFold.Symbolic.Class                             (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Base.Algebra.Basic.Number (Natural)
 
 
 binLookup :: Arithmetic a => LookupTable a Par1
@@ -29,12 +30,18 @@ newBinLookup :: forall f var a w m.
   , MonadCircuit var a w m, Binary (Rep f))
    => LookupTable a f -> f var -> (forall x. ResidueField x => f x -> Par1 x) -> m (Par1 var)
 newBinLookup dom vars f = do
-    let vs = fmap (at @var @w )vars
+    let vs = fmap (at @var @w) vars
         (Par1 v3w) = f vs
     v3 <- unconstrained v3w
     fId <- registerFunction f
     lookupConstraint (vars :*: (Par1 v3)) (Plot fId dom)
     return $ Par1 v3
+
+powBinLookup :: Arithmetic a => Natural -> LookupTable a Par1
+powBinLookup n = Ranges $ S.singleton (zero, (one + one) ^ n)
+
+powBin2Lookup :: Arithmetic a => Natural -> LookupTable a (Par1 :*: Par1)
+powBin2Lookup n = Product (powBinLookup n) (powBinLookup n)
 
 
 --------------------------------------------------------------------------------

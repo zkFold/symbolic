@@ -23,7 +23,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString (..))
 import qualified ZkFold.Symbolic.Data.Eq                     as Symbolic
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
 
-blake2bNumeric :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
+blake2bNumeric :: forall c . (Symbolic c, Eq (c (Vector 128))) => Spec
 blake2bNumeric =
     let a = blake2b_512 @0 @c $ fromConstant (0 :: Natural)
         c = hash 64 BI.empty BI.empty
@@ -41,7 +41,7 @@ Appendix A.  Example of BLAKE2b Computation
                         18 D3 8A A8 DB F1 92 5A B9 23 86 ED D4 00 99 23
 -}
 
-blake2bExampleRfc :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
+blake2bExampleRfc :: forall c . (Symbolic c, Eq (c (Vector 128))) => Spec
 blake2bExampleRfc =
     let abc' = blake2b_512 @3 @c $ fromConstant $ fromString @BI.ByteString "abc"
         abc  = fromConstant @_ @(ByteString 512 _) $ hash 64 BI.empty "abc"
@@ -53,7 +53,7 @@ equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c i
 
 blake2bSymbolic :: Spec
 blake2bSymbolic =
-    let ac :: ArithmeticCircuit Fr (U1 :*: U1) (Vector 24 :*: U1) Par1
+    let ac :: ArithmeticCircuit Fr (U1 :*: U1) (Vector 6 :*: U1) Par1
         ac    = compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
         ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
         input         = runInterpreter bs

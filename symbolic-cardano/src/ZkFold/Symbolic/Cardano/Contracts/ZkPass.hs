@@ -56,6 +56,7 @@ verifyAllocatorSignature :: forall point n context curve baseField.
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
+     , NFData (context (Vector 16))
      , NFData (context (Vector 64))
      )
     => ByteString 256 context
@@ -89,6 +90,7 @@ verifyValidatorSignature :: forall point n context curve baseField.
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
+     , NFData (context (Vector 16))
      , NFData (context (Vector 64))
      )
     => ByteString 256 context
@@ -136,6 +138,7 @@ zkPassSymbolicVerifier :: forall point n context curve baseField.
      , SemiEuclidean (UInt 256 'Auto context)
      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
+     , NFData (context (Vector 16))
      , NFData (context (Vector 64))
      )
     =>ZKPassResult context

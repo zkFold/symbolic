@@ -32,7 +32,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
+import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, KnownRegisterSize,
                                                               NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord

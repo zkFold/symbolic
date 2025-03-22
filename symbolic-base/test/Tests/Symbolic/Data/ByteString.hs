@@ -8,7 +8,7 @@ import           Control.Monad                               (return)
 import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint                             (withDict)
-import           Data.Constraint.Nat                         (plusNat)
+import           Data.Constraint.Nat                         (plusNat, divNat, log2Nat, minusNat)
 import           Data.Function                               (($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
@@ -30,7 +30,7 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
 
@@ -75,15 +75,18 @@ testWords
     :: forall n wordSize p
     .  KnownNat n
     => KnownNat wordSize
+    => 1 <= wordSize
+    => 1 <= p - 1
+    => 1 <= p
     => Prime p
-    => KnownNat (Log2 (p - 1) + 1)
     => (Div n wordSize) * wordSize ~ n
     => Spec
-testWords = it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
+testWords = withDict (minusNat @p @1) $ withDict (log2Nat @(p-1)) $ withDict (plusNat @(Log2 (p - 1)) @1) $
+    it ("divides a bytestring of length " <> show (value @n) <> " into words of length " <> show (value @wordSize)) $ do
     x <- toss m
     let arithBS = fromConstant x :: ByteString n (AC (Zp p))
         zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
-    return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (AC (Zp p)))) === toWords @(Div n wordSize) @wordSize zpBS)
+    return $ withDict (divNat @n @wordSize) $ (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (AC (Zp p)))) === toWords @(Div n wordSize) @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
         m = 2 Haskell.^ n -! 1
@@ -134,6 +137,9 @@ specByteString'
     :: forall p n
     .  PrimeField (Zp p)
     => KnownNat n
+    => 1 <= n
+    => 1 <= p
+    => 1 <= p - 1
     => (Div n n) * n ~ n
     => (Div n 4) * 4 ~ n
     => (Div n 2) * 2 ~ n

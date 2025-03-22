@@ -23,7 +23,7 @@ import           ZkFold.Base.Data.Vector              (Vector)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2, sha2Var)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
-import           ZkFold.Symbolic.Data.ByteString      (ByteString)
+import           ZkFold.Symbolic.Data.ByteString      (ByteString, RegSize)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
                                                        NumberOfRegisters, RegisterSize (..), Resize (..))
@@ -103,6 +103,7 @@ type RSA keyLen msgLen ctx =
    , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
    , NFData (ctx (Vector keyLen))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
+   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen (Fixed RegSize) )))
    , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
    )
 

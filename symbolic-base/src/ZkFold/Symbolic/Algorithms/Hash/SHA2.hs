@@ -44,9 +44,9 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
 import           ZkFold.Symbolic.Class                          (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords,
-                                                                 truncate)
+                                                                 truncate, RegSize, bitsToRegs)
 import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..), expansionW,
-                                                                 ilog2)
+                                                                 ilog2, NumberOfRegisters, withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord
@@ -62,6 +62,7 @@ import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
 class
     (Symbolic context
     , NFData (context (Vector (WordSize algorithm)))
+    , NFData (context (Vector (NumberOfRegisters (BaseField context) (WordSize algorithm) (Fixed RegSize))))
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
     , Mod (ChunkSize algorithm) (WordSize algorithm) ~ 0
@@ -96,6 +97,7 @@ class
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA256")))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA256") (Fixed RegSize))))
     ) => AlgorithmSetup "SHA256" c where
     type WordSize "SHA256" = 32
     type ChunkSize "SHA256" = 512
@@ -110,6 +112,7 @@ instance
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA224")))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA224") (Fixed RegSize))))
     ) => AlgorithmSetup "SHA224" c where
     type WordSize "SHA224" = 32
     type ChunkSize "SHA224" = 512
@@ -123,6 +126,7 @@ instance
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512")))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA512") (Fixed RegSize))))
     )  => AlgorithmSetup "SHA512" c where
     type WordSize "SHA512" = 64
     type ChunkSize "SHA512" = 1024
@@ -136,6 +140,7 @@ instance
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA384")))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA384") (Fixed RegSize))))
     ) => AlgorithmSetup "SHA384" c where
     type WordSize "SHA384" = 64
     type ChunkSize "SHA384" = 1024
@@ -149,6 +154,7 @@ instance
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512/224")))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA512/224") (Fixed RegSize))))
     ) => AlgorithmSetup "SHA512/224" c where
     type WordSize "SHA512/224" = 64
     type ChunkSize "SHA512/224" = 1024
@@ -162,6 +168,7 @@ instance
 instance
     (Symbolic c
     , NFData (c (Vector (WordSize "SHA512/256" )))
+    , NFData (c (Vector (NumberOfRegisters (BaseField c) (WordSize "SHA512/256") (Fixed RegSize))))
     ) => AlgorithmSetup "SHA512/256" c where
     type WordSize "SHA512/256" = 64
     type ChunkSize "SHA512/256" = 1024
@@ -226,7 +233,7 @@ withDivisibleDiv = withDict (divisibleDiv @a @b)
 
 -- | Constraints required for a type-safe SHA2
 --
-type SHA2 algorithm context k = (AlgorithmSetup algorithm context, KnownNat k)
+type SHA2 algorithm context k = (AlgorithmSetup algorithm context, KnownNat k, 1 <= ChunkSize algorithm, 1 <= WordSize algorithm, KnownNat (ResultSize algorithm))
 
 -- | A generalised version of SHA2. It is agnostic of the ByteString base field.
 -- Sample usage:
@@ -248,9 +255,10 @@ sha2 messageBits = sha2Blocks @algorithm @context (fromVector chunks)
                                 sha2Pad @(ChunkSize algorithm) @(2 * WordSize algorithm) messageBits
 
         chunks :: Vector d (ByteString (ChunkSize algorithm) context)
-        chunks = withModPaddedLength @k @algorithm $
-                    withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
-                        toWords @d @(ChunkSize algorithm) paddedMessage
+        chunks = withModPaddedLength @k @algorithm $ withDict (timesNat @2 @(WordSize algorithm)) $ withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $
+                    withDict (divNat @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm)) $
+                        withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
+                            toWords @d @(ChunkSize algorithm) paddedMessage
 
 sha2Var
     :: forall (algorithm :: Symbol) context k {d}
@@ -268,9 +276,10 @@ sha2Var messageBits = sha2BlocksVar @algorithm @context bsLength (fromVector chu
         VarByteString{..} = paddedMessage
 
         chunks :: Vector d (ByteString (ChunkSize algorithm) context)
-        chunks = withModPaddedLength @k @algorithm $
-                    withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
-                        toWords @d @(ChunkSize algorithm) bsBuffer
+        chunks =  withModPaddedLength @k @algorithm $ withDict (timesNat @2 @(WordSize algorithm)) $ withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $
+                    withDict (divNat @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm)) $
+                        withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
+                            toWords @d @(ChunkSize algorithm) bsBuffer
 
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
@@ -335,7 +344,9 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         diff = paddedLengthFe - bsLength
 
         lenBits :: ByteString (PaddedLength k padTo lenBits) context
-        lenBits = withPaddedLength @k @padTo @lenBits $ resize . ByteString . hmap reverse $ binaryExpansion bsLength
+        lenBits = withPaddedLength @k @padTo @lenBits $
+            resize @(ByteString (Log2 (Order (BaseField context) - 1) + 1) context) @(ByteString (PaddedLength k padTo lenBits) context) $
+                ByteString . bitsToRegs . hmap reverse $ binaryExpansion bsLength
 
         paddedL :: Natural
         paddedL = withPaddedLength @k @padTo @lenBits $ value @(PaddedLength k padTo lenBits)
@@ -370,6 +381,7 @@ type SHA2N algorithm context = AlgorithmSetup algorithm context
 sha2Natural
     :: forall (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
     .  SHA2N algorithm context
+    => 1 <= WordSize algorithm
     => Natural -> Natural -> ByteString (ResultSize algorithm) context
 sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
     where
@@ -404,6 +416,7 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
 sha2Blocks
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
+    => 1 <= WordSize algorithm
     => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
 sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize algorithm) $ unsafeToVector @8 $ V.toList hashParts
     where
@@ -422,6 +435,7 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize al
 sha2BlocksVar
     :: forall algorithm (context :: (Type -> Type) -> Type)
     .  AlgorithmSetup algorithm context
+    => 1 <= WordSize algorithm
     => FieldElement context -> [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
 sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(WordSize algorithm) $ Vector @8 hashParts
     where
@@ -438,7 +452,7 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
             :: V.Vector (ByteString (WordSize algorithm) context)
             -> (Natural, ByteString (ChunkSize algorithm) context)
             -> V.Vector (ByteString (WordSize algorithm) context)
-        varStep hn (ix, chunk) =
+        varStep hn (ix, chunk) = withNumberOfRegisters @(WordSize algorithm) @(Fixed RegSize) @(BaseField context) $
             toV $ bool @(Bool context)
                     (Vector @8 hn)
                     (Vector @8 $ processChunkPure @algorithm @context hn chunk)
@@ -447,6 +461,7 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
 processChunkPure
     :: forall algorithm context
     .  AlgorithmSetup algorithm context
+    => 1 <= WordSize algorithm
     => V.Vector (ByteString (WordSize algorithm) context)
     -> ByteString (ChunkSize algorithm) context
     -> V.Vector (ByteString (WordSize algorithm) context)
@@ -458,6 +473,7 @@ processChunkPure hn chunk = runST $ do
 processChunk
     :: forall algorithm context s
     .  AlgorithmSetup algorithm context
+    => 1 <= WordSize algorithm
     => V.MVector (VM.PrimState (ST s)) (ByteString (WordSize algorithm) context)
     -> ByteString (ChunkSize algorithm) context
     -> ST s (V.MVector (VM.PrimState (ST s)) (ByteString (WordSize algorithm) context))
@@ -465,7 +481,8 @@ processChunk hn chunk = do
     let words =
             fromVector $
                 withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $
-                    toWords @(Div (ChunkSize algorithm) (WordSize algorithm)) @(WordSize algorithm) chunk
+                    withDict (divNat @(ChunkSize algorithm) @(WordSize algorithm)) $
+                        toWords @(Div (ChunkSize algorithm) (WordSize algorithm)) @(WordSize algorithm) chunk
 
     messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
     forM_ (zip [0..] words) $ P.uncurry (VM.write messageSchedule)

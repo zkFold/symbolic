@@ -6,7 +6,7 @@
 
 module ZkFold.Symbolic.Data.Secp256k1 (Secp256k1_Point) where
 
-import           Prelude                                     (fromInteger, type (~), ($))
+import           Prelude                                     (fromInteger, type (~), ($), (.))
 import qualified Prelude                                     as P
 
 import           ZkFold.Base.Algebra.Basic.Class
@@ -39,7 +39,7 @@ instance
     scale sc x = sum $ P.zipWith (\b p -> bool @(Bool ctx) zero p (isSet bits b)) [upper, upper -! 1 .. 0] (P.iterate (\e -> e + e) x)
         where
             bits :: ByteString bits ctx
-            bits = ByteString $ binaryExpansion sc
+            bits = ByteString . bitsToRegs @bits $ binaryExpansion sc
 
             upper :: Natural
             upper = value @bits -! 1

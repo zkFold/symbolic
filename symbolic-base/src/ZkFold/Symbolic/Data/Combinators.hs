@@ -149,7 +149,7 @@ type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
     ListRange from from = '[from]
     ListRange from to = from ': ListRange (from + 1) to
 
-numberOfRegisters :: forall a n r . ( Finite a, KnownNat n, KnownRegisterSize r) => Natural
+numberOfRegisters :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural
 numberOfRegisters =  case regSize @r of
     Auto -> fromMaybe (error "too many bits, field is not big enough")
         $ find (\c -> c * maxRegisterSize c Haskell.>= getNatural @n) [0 .. maxRegisterCount]
