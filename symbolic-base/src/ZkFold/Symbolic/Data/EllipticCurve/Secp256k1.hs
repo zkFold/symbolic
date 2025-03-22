@@ -4,7 +4,7 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.Secp256k1 (Secp256k1_Point) where
+module ZkFold.Symbolic.Data.EllipticCurve.Secp256k1 (Secp256k1_Point) where
 
 import           Prelude                                     (fromInteger, type (~), ($), (.))
 import qualified Prelude                                     as P
