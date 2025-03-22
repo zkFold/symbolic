@@ -43,10 +43,10 @@ import           ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants (sha224InitialHa
                                                                  word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                          (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords,
-                                                                 truncate, RegSize, bitsToRegs)
-import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..), expansionW,
-                                                                 ilog2, NumberOfRegisters, withNumberOfRegisters)
+import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), RegSize, ShiftBits (..), bitsToRegs,
+                                                                 concat, set, toWords, truncate)
+import           ZkFold.Symbolic.Data.Combinators               (Iso (..), NumberOfRegisters, RegisterSize (..),
+                                                                 Resize (..), expansionW, ilog2, withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord

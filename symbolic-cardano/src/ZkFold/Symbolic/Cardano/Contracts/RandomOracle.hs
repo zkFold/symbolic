@@ -7,16 +7,16 @@ import           Prelude                              hiding (Bool, Eq (..), all
                                                        (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number     (Log2, type (-), type (+))
+import           ZkFold.Base.Algebra.Basic.Number     (Log2, type (+), type (-))
 import           ZkFold.Base.Data.Vector              (Vector, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class                (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString      as Symbolic
+import           ZkFold.Symbolic.Data.ByteString      (bitsToRegs)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
-import ZkFold.Symbolic.Data.ByteString (bitsToRegs)
 
 type Tokens = 2
 type TxOut context = Output Tokens () context

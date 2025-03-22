@@ -6,8 +6,8 @@ module ZkFold.Symbolic.Algorithms.Hash.Blake2b (blake2b_224, blake2b_256, blake2
 
 import           Data.Bool                                         (bool)
 import           Data.Constraint                                   (Dict, withDict)
-import           Data.Constraint.Nat                               (minusNat, modBound, modNat, plusMonotone2, plusNat,
-                                                                    timesNat, zeroLe, divNat)
+import           Data.Constraint.Nat                               (divNat, minusNat, modBound, modNat, plusMonotone2,
+                                                                    plusNat, timesNat, zeroLe)
 import           Data.Constraint.Unsafe                            (unsafeAxiom)
 import           Data.Ratio                                        ((%))
 import           Data.Vector                                       ((!), (//))

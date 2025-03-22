@@ -35,8 +35,9 @@ import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (forM, replicateM)
 import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.ByteString                   as Bytes
-import           Data.Constraint                   (withDict, Dict)
-import           Data.Constraint.Nat               (Max, plusMinusInverse3, timesNat, minusNat, plusNat, maxNat)
+import           Data.Constraint                   (Dict, withDict)
+import           Data.Constraint.Nat               (Max, maxNat, minusNat, plusMinusInverse3, plusNat, timesNat)
+import           Data.Constraint.Unsafe            (unsafeAxiom)
 import           Data.Foldable                     (foldlM)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
@@ -70,7 +71,6 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
-import Data.Constraint.Unsafe (unsafeAxiom)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.

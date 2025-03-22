@@ -12,11 +12,11 @@ import           GHC.Generics                                      (Par1 (Par1),
 import           Prelude                                           (fmap, return, ($))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number                  (Natural)
 import           ZkFold.Base.Data.ByteString                       (Binary)
 import           ZkFold.Symbolic.Class                             (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Base.Algebra.Basic.Number (Natural)
 
 
 binLookup :: Arithmetic a => LookupTable a Par1

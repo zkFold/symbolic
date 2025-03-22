@@ -46,7 +46,8 @@ import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, 
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..))
-import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate, RegSize, regsToBits)
+import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), RegSize, dropN, isSet, orRight, regsToBits,
+                                                    truncate)
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool, ifThenElse)
