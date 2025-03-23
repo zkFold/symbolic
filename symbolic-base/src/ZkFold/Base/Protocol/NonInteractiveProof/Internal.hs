@@ -23,7 +23,7 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), MultiScale(..), sum)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), Bilinear(..), sum)
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
 import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..), PolyVec)
 import           ZkFold.Base.Data.ByteString
@@ -99,5 +99,5 @@ instance
     , KnownNat size
     , f ~ ScalarFieldOf g
     , UnivariateRingPolyVec f (PolyVec f)
-    ) => MultiScale (V.Vector g) (PolyVec f size) g where
-    msm gs f = sum $ V.zipWith scale (fromPolyVec f) gs
+    ) => Bilinear (V.Vector g) (PolyVec f size) g where
+    bilinear gs f = sum $ V.zipWith scale (fromPolyVec f) gs

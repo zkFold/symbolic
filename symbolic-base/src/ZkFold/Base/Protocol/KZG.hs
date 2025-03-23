@@ -63,7 +63,7 @@ instance forall f g1 g2 gt d kzg pv .
     , Binary g1
     , Pairing g1 g2 gt
     , Eq gt
-    , MultiScale (V.Vector g1) (pv d) g1
+    , Bilinear (V.Vector g1) (pv d) g1
     , UnivariateFieldPolyVec f pv
     ) => NonInteractiveProof (KZG g1 g2 d pv) where
     type Transcript (KZG g1 g2 d pv)  = ByteString
@@ -97,7 +97,7 @@ instance forall f g1 g2 gt d kzg pv .
                      -> (Transcript kzg, (Input kzg, Proof kzg))
             proveOne (ts0, (iMap, pMap)) (z, fs) = (ts3, (insert z (cms, fzs) iMap, insert z (gs `com` h) pMap))
                 where
-                    com = msm
+                    com = bilinear
                     cms  = fmap (com gs) fs
                     fzs  = fmap (`evalPolyVec` z) fs
 
@@ -132,7 +132,7 @@ instance forall f g1 g2 gt d kzg pv .
 
                     gamma = V.fromList gamma'
 
-                    com = msm
+                    com = bilinear
 
                     v0' = r `scale` sum (V.zipWith scale gamma cms)
                         - r `scale` (gs `com` toPolyVec @_ @pv @d [sum $ V.zipWith (*) gamma fzs])

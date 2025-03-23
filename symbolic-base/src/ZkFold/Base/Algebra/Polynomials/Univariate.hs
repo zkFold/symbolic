@@ -298,6 +298,10 @@ instance (Field c, Eq c) => Exponent (Poly c) Natural where
 instance (Field c, Eq c) => MultiplicativeMonoid (Poly c) where
     one = P $ V.singleton one
 
+instance (Field c, Eq c) => Semiring (Poly c) where
+
+instance (Field c, Eq c) => Ring (Poly c) where
+
 instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
     arbitrary = fmap toPoly $ chooseInt (0, 128) >>= \n -> V.replicateM n arbitrary
 

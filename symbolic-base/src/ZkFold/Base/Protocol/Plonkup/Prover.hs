@@ -42,7 +42,7 @@ plonkupProve :: forall p i n l g1 g2 ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => PlonkupProverSetup p i n l g1 g2 pv -> (PlonkupWitnessInput p i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)
@@ -73,7 +73,7 @@ plonkupProve PlonkupProverSetup {..}
         bX = polyVecLinear (secret 3) (secret 4) * zhX + w2X :: PlonkupPolyExtended n g1 pv
         cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n g1 pv
 
-        com = msm
+        com = bilinear
         cmA = gs `com` aX
         cmB = gs `com` bX
         cmC = gs `com` cX

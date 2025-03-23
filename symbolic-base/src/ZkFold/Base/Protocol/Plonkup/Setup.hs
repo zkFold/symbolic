@@ -76,7 +76,7 @@ plonkupSetup :: forall i p n l g1 g2 gt ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-    , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => Plonkup p i n l g1 g2 ts pv -> PlonkupSetup p i n l g1 g2 pv
 plonkupSetup Plonkup {..} =
     let gs = toV gs'
@@ -106,7 +106,7 @@ plonkupSetup Plonkup {..} =
         tX  = with4n6 @n (polyVecInLagrangeBasis omega t)
         polynomials = PlonkupCircuitPolynomials {..}
 
-        com = msm
+        com = bilinear
         cmQl = gs `com` qlX
         cmQr = gs `com` qrX
         cmQo = gs `com` qoX

@@ -40,7 +40,7 @@ propVerificationKZG x p z =
         h0 = pointGen :: g2
         h1 = x `scale` h0
 
-        com = msm
+        com = bilinear
         -- Proving a polynomial evaluation
         pz = p `evalPolyVec` z
         h  = (p - polyVecConstant pz) `polyVecDiv` toPolyVec [negate z, one]

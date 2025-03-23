@@ -83,7 +83,7 @@ instance forall p i n l g1 g2 gt (ts :: Type) pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , MultiScale (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
         , KnownNat n
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
