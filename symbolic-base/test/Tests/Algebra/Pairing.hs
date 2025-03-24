@@ -16,22 +16,21 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.BN254
 import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, deg, evalPolyVec, polyVecDiv, scalePV, toPolyVec,
-                                                              vec2poly)
-import           ZkFold.Base.Protocol.NonInteractiveProof    (CoreFunction (..), HaskellCore, msm)
+import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, PolyVec, deg, evalPolyVec, polyVecConstant,
+                                                              polyVecDiv, toPolyVec, vec2poly)
+import           ZkFold.Base.Protocol.NonInteractiveProof    ()
 
 propVerificationKZG
-    :: forall g1 g2 gt f core
+    :: forall g1 g2 gt f
     .  Pairing g1 g2 gt
     => Eq gt
     => f ~ ScalarFieldOf g1
     => f ~ ScalarFieldOf g2
     => Field f
     => Eq f
-    => CoreFunction g1 core
     => f -> PolyVec f 32 -> f -> Bool
 propVerificationKZG x p z =
-    let n  = deg $ vec2poly p
+    let n  = deg @f @(Poly f) $ vec2poly p
 
         -- G1
         gs = V.fromList $ map ((`scale` pointGen) . (x^)) [0 .. n]
@@ -41,10 +40,10 @@ propVerificationKZG x p z =
         h0 = pointGen :: g2
         h1 = x `scale` h0
 
-        com = msm @g1 @core
+        com = bilinear
         -- Proving a polynomial evaluation
         pz = p `evalPolyVec` z
-        h  = (p - scalePV pz one) `polyVecDiv` toPolyVec [negate z, one]
+        h  = (p - polyVecConstant pz) `polyVecDiv` toPolyVec [negate z, one]
         w  = gs `com` h
         v0 = gs `com` p - (pz `scale` g0) + z `scale` w
 
@@ -83,7 +82,7 @@ specPairing' = do
                         (p /= zero && q /= zero) ==> pairing @g1 @g2 p q /= one
             describe "Pairing verification" $ do
                 it "should verify KZG commitments" $ withMaxSuccess 10 $ do
-                    property $ propVerificationKZG @g1 @g2 @gt @f @HaskellCore
+                    property $ propVerificationKZG @g1 @g2 @gt @f
 
 specPairing :: Spec
 specPairing = do

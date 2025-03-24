@@ -23,19 +23,19 @@ import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 
-plonkupVerify :: forall p i n l g1 g2 gt ts .
-    ( KnownNat n
-    , KnownNat (PlonkupPolyExtendedLength n)
-    , Foldable l
+plonkupVerify :: forall p i n l g1 g2 gt ts pv .
+    ( Foldable l
     , Pairing g1 g2 gt
     , Compressible g1
-    , Eq (ScalarFieldOf g1)
     , Eq gt
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)
     , FromTranscript ts (ScalarFieldOf g1)
-    ) => PlonkupVerifierSetup p i n l g1 g2 -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
+    , KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+    ) => PlonkupVerifierSetup p i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
 plonkupVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)
@@ -98,13 +98,13 @@ plonkupVerify
         eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = polyVecZero @(ScalarFieldOf g1) @n @(PlonkupPolyExtendedLength n) `evalPolyVec` xi :: ScalarFieldOf g1
+        zhX_xi = polyVecZero @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) `evalPolyVec` xi :: ScalarFieldOf g1
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = polyVecLagrange @(ScalarFieldOf g1) @n @(PlonkupPolyExtendedLength n) 1 omega `evalPolyVec` xi
+        lagrange1_xi = polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @n @(PlonkupPolyExtendedLength n) omega
+        pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) @n omega
             (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
             `evalPolyVec` xi
 

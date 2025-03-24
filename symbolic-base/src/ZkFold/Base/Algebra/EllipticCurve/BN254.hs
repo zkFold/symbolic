@@ -1,6 +1,6 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE OverloadedLists      #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -30,7 +30,7 @@ import           ZkFold.Base.Algebra.Basic.Field            (Ext2 (..), Ext3 (..
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Algebra.EllipticCurve.Pairing
-import           ZkFold.Base.Algebra.Polynomials.Univariate (toPoly)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, toPoly)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 
@@ -48,24 +48,24 @@ instance Prime BN254_Base
 type Fr = Zp BN254_Scalar
 type Fp = Zp BN254_Base
 
-instance IrreduciblePoly Fp "IP1" where
-  irreduciblePoly = toPoly [1, 0, 1]
+instance IrreduciblePoly (Poly Fp) Fp "BN254-IP1" where
+  irreduciblePoly = toPoly @Fp @(Poly Fp) [1, 0, 1]
 
-type Fp2 = Ext2 Fp "IP1"
+type Fp2 = Ext2 Fp "BN254-IP1"
 
 -- cubic nonresidue in @Fp2@.
 xi :: Fp2
 xi = Ext2 9 1
 
-instance IrreduciblePoly Fp2 "IP2" where
-  irreduciblePoly = toPoly [negate xi, zero, zero, one]
+instance IrreduciblePoly (Poly Fp2) Fp2 "BN254-IP2" where
+  irreduciblePoly = toPoly @Fp2 @(Poly Fp2) [negate xi, zero, zero, one]
 
-type Fp6 = Ext3 Fp2 "IP2"
+type Fp6 = Ext3 Fp2 "BN254-IP2"
 
-instance IrreduciblePoly Fp6 "IP3" where
-  irreduciblePoly = toPoly [Ext3 zero (negate one) zero, zero, one]
+instance IrreduciblePoly (Poly Fp6) Fp6 "BN254-IP3" where
+  irreduciblePoly = toPoly @Fp6 @(Poly Fp6) [Ext3 zero (negate one) zero, zero, one]
 
-type Fp12 = Ext2 Fp6 "IP3"
+type Fp12 = Ext2 Fp6 "BN254-IP3"
 
 ------------------------------- bn254 G1 ---------------------------------------
 
