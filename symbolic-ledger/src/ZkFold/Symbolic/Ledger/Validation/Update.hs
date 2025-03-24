@@ -8,8 +8,9 @@ import           Prelude                                       hiding (Bool, Eq 
 
 import           ZkFold.Symbolic.Data.Bool                     (Bool, (&&))
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional              (Conditional, bool)
-import           ZkFold.Symbolic.Data.Eq                       (Eq (..), SymbolicEq)
+import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Conditional              (bool)
+import           ZkFold.Symbolic.Data.Eq                       (Eq (..))
 import           ZkFold.Symbolic.Data.List                     (List, concat, singleton, (++))
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, transactionIsValid)
@@ -71,11 +72,7 @@ updateIsValid ::
   => SymbolicOutput (ContractData context)
   => Context (ContractData context) ~ context
   => Context (Value context) ~ context
-  => Context (MultiAssetValue context) ~ context
-  => SymbolicEq (MultiAssetValue context)
-  => Conditional (Bool context) (MultiAssetValue context)
-  => BooleanOf (Token context) ~ Bool context
-  => Eq (Token context)
+  => KnownRegisters context 64 Auto
   => Hash context
   -> Update context
   -> UpdateWitness context
@@ -87,5 +84,5 @@ updateIsValid uId u w =
       spentValues = txoValue . txiOutput <$> concat (txInputs <$> txs)
       prodValues = txoValue <$> concat (txOutputs <$> txs)
   in newUpdate uId w == u
-  && multiValueAsset (spentValues ++ mintValues) == multiValueAsset prodValues
+  && multiAssetValue (spentValues ++ mintValues) == multiAssetValue prodValues
   -- ^ TODO: make sure equality of multi-asset values is "invariant under asset reordering"
