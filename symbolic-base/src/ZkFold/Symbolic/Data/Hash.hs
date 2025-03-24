@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Hash where
 
@@ -14,7 +15,8 @@ import           ZkFold.Base.Control.HApplicative (hunit)
 import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Eq          (SymbolicEq, (==))
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
+import           ZkFold.Symbolic.Data.Eq          (Eq (..), SymbolicEq, (==))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
 import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
@@ -38,6 +40,8 @@ data Hash h a = Hash
 
 instance (SymbolicOutput h, SymbolicOutput a) => SymbolicData (Hash h a)
 instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
+instance (c ~ (Context h), Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
+instance (c ~ (Context h), Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
 
 -- | Restorably hash the data.
 hash :: (Hashable h a, SymbolicOutput a, Context h ~ Context a) => a -> Hash h a
