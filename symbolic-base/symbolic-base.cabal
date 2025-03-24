@@ -240,7 +240,7 @@ library
         containers                            < 0.7,
         constraints                                ,
         cryptohash-sha256                    < 0.12,
-        deepseq                          <= 1.5.0.0,
+        deepseq                         ^>= 1.5.0.0,
         distributive                               ,
         generic-random                        < 1.6,
         infinite-list                              ,
