@@ -1,15 +1,14 @@
 module ZkFold.Symbolic.Ledger.Types.Address where
 
-import           Prelude                               hiding (Bool, Eq, length, splitAt, (*), (+))
+import           Prelude                                       hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Ledger.Types.Contract (Contract, ContractId)
-
--- | Input to the spending contract. Usually some sort of commitment information to be used when spending the output.
-data Datum context
-
--- | A contract that locks a transaction output.
--- In order to spend the output, the spending transaction must satisfy the contract.
-type SpendingContract tx w context = Contract tx (Datum context) w context
+import           ZkFold.Symbolic.Ledger.Types.Circuit          (Circuit)
+import           ZkFold.Symbolic.Ledger.Types.DataAvailability
+import           ZkFold.Symbolic.Ledger.Types.Hash             (Hash)
 
 -- | Address on the zkFold ledger.
-type Address context = ContractId context
+--
+-- Circuit describes the smart contract that locks funds at this address.
+--
+-- Data availability index points to a data availability source that posts data about the address's transactions. The data availability type indicates whether the address is associated with online or offline transactions.
+type Address context = Hash (Circuit context, DAIndex context, DAType context)
