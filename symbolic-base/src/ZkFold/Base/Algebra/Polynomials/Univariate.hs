@@ -449,9 +449,9 @@ instance
     
             vecLen = fromIntegral $ value @size
 
-            coefficients i 
-              | i >= n    = zero
-              | otherwise = norm * wi ^ (n -! i -! 1)
+            coefficients ix 
+              | ix >= n    = zero
+              | otherwise = norm * wi ^ (n -! ix -! 1)
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
     polyVecInLagrangeBasis omega (PV cs) =
