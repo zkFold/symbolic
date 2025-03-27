@@ -71,6 +71,7 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
+import Data.Functor.Rep (mzipRep)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -198,25 +199,32 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 
     xor l r = bitwiseOperation l r xorOp
 
--- expand :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> [i] -> m [i]
--- expand loBits hiBits is = do
---     let lows = Haskell.tail is
---         high = Haskell.head is
---     bitsLow  <- Haskell.reverse <$> mapM (expansion loBits) lows
---     bitsHigh <- Haskell.reverse <$> expansion hiBits high
---     lowsNew <- mapM (horner . Haskell.reverse) bitsLow
---     highNew <- horner . Haskell.reverse $  bitsHigh
---     pure $ highNew : lowsNew
+expand :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> [i] -> m [i]
+expand loBits hiBits is = do
+    let lows = Haskell.tail is
+        high = Haskell.head is
+    bitsLow  <- Haskell.reverse <$> mapM (expansion loBits) lows
+    bitsHigh <- Haskell.reverse <$> expansion hiBits high
+    lowsNew <- mapM (hornerW @2 . Haskell.reverse) bitsLow
+    highNew <- hornerW @2 . Haskell.reverse $ bitsHigh
+    pure $ highNew : lowsNew
 
--- xorAnd :: forall n c. (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
--- xorAnd (ByteString l) (ByteString r) = ByteString $ fromCircuit2F l r $ \lv rv -> do
---     let lregs = V.fromVector lv
---         rregs = V.fromVector rv
---         hrs = highRegisterSize @(BaseField c) @n @(Fixed RegSize)
---         rs = registerSize @(BaseField c) @n @(Fixed RegSize)
---     le <- expand hrs rs lregs
---     re <- expand hrs rs rregs
---     return lv
+xorAnd :: forall n c. (Symbolic c, KnownNat n) => ByteString n c -> ByteString n c -> ByteString n c
+xorAnd (ByteString l) (ByteString r) = ByteString $ fromCircuit2F l r $ \lv rv -> do
+    let lregs = V.fromVector lv
+        rregs = V.fromVector rv
+        hrs = highRegisterSize @(BaseField c) @n @(Fixed RegSize)
+        rs = registerSize @(BaseField c) @n @(Fixed RegSize)
+    le <- expand hrs rs lregs
+    re <- expand hrs rs rregs
+    ks <- for (mzipRep le re) $ \(i, j) -> sep (i+j)
+
+    return lv
+    where
+        sep s = do
+            ss <- bitsOf (value @RegSize) s
+
+
 
 
 -- f(b0 + 2*b1 + ... + 2^15*b15) = b0 + 4*b1 + ... + 4^15*b15
