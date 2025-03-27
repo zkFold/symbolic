@@ -7,7 +7,7 @@ import           GHC.Generics                                (U1 (..), type (:*:
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (property, withMaxSuccess)
+import           Test.QuickCheck                             (property, withMaxSuccess, (==>))
 
 import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -132,6 +132,11 @@ specAccumulatorScheme = do
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
+            it "must reject on different predicates" $ do
+                withMaxSuccess 10 $ property $ \p q -> p!=q ==> testVerifierResult (testPredicate q) != testAccumulatorInstance (testPredicate p)
+        describe "decider" $ do
+            it "must output zeros" $ do
+                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == -- vector of zeros: (Vector k (c f), c f)
 
 specIVC :: Spec
 specIVC = do
