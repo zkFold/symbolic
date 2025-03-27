@@ -1,4 +1,5 @@
 ByteString.And.32
-Number of constraints: 287
+Number of constraints: 254
 Number of variables: 286
-Number of range lookups: 0
+Number of all lookups: 0
+Number of all lookup functions: 1

@@ -23,8 +23,10 @@ metrics name circuit =
   <> String.fromString (show $ Circuit.acSizeN circuit)
   <> "\nNumber of variables: "
   <> String.fromString (show $ Circuit.acSizeM circuit)
-  <> "\nNumber of range lookups: "
-  <> String.fromString (show $ Circuit.acSizeR circuit)
+  <> "\nNumber of all lookups: "
+  <> String.fromString (show $ Circuit.acSizeL circuit)
+  <> "\nNumber of all lookup functions: "
+  <> String.fromString (show $ Circuit.acSizeLF circuit)
 
 main :: IO ()
 main = Tasty.defaultMain $ Tasty.testGroup "Compiler golden tests" [

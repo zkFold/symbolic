@@ -22,6 +22,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
 
 --------------------------------- High-level functions --------------------------------
@@ -54,13 +55,13 @@ optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
                                                             let poly = var inVar - fromConstant v,
                                                             let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
 
-    optRanges :: Map (SysVar i) a -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i]) -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i])
+    optRanges :: Map (SysVar i) a -> MM.MonoidalMap (LookupType a) (S.Set [Var a i]) -> MM.MonoidalMap (LookupType a) (S.Set [Var a i])
     optRanges m = MM.mapMaybeWithKey (\k' v -> bool Nothing (maybeSet v $ fromRange k') (isRange k'))
       where
-        maybeSet :: S.Set [SysVar i] -> S.Set (a, a) -> Maybe (S.Set [SysVar i])
+        maybeSet :: S.Set [Var a i] -> S.Set (a, a) -> Maybe (S.Set [Var a i])
         maybeSet v k = bool (error "range constraint less then value")
-                            (let t = S.difference v (S.map (: []) (keysSet m))
-                              in if null t then Nothing else Just t) (all (inInterval k) $ restrictKeys (mapKeys (: []) m :: Map [SysVar i] a) v)
+                            (let t = S.difference v (S.map ((:[]) . toVar) (keysSet m))
+                              in if null t then Nothing else Just t) (all (inInterval k) $ restrictKeys (mapKeys ((:[]) . toVar) m :: Map [Var a i] a) v)
 
     inInterval :: S.Set (a, a) -> a -> Bool
     inInterval si v = and $ S.map (\(l', r') -> ((v >= l') && (v <= r')) :: Bool) si

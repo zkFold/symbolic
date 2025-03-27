@@ -1,4 +1,5 @@
 ByteString.Or.64
-Number of constraints: 575
+Number of constraints: 510
 Number of variables: 574
-Number of range lookups: 0
+Number of all lookups: 0
+Number of all lookup functions: 2
