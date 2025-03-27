@@ -173,6 +173,7 @@ padVector v l
   | V.length v == l = v
   | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
+
 mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
 mulAdaptive l r
       | V.null l = V.empty
@@ -440,7 +441,17 @@ instance
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
 
     polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> PolyVec c size
-    polyVecLagrange n i omega = (*.) (omega^i // fromConstant n) $ (polyVecZero n - one) `polyVecDiv` polyVecLinear one (negate $ omega^i)
+    polyVecLagrange n i omega = toPolyVec (V.generate vecLen $ coefficients . fromIntegral)
+        where
+            wi = omega ^ i
+                    
+            norm = wi // fromConstant n
+    
+            vecLen = fromIntegral $ value @size
+
+            coefficients i 
+              | i >= n    = zero
+              | otherwise = norm * wi ^ (n -! i -! 1)
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
     polyVecInLagrangeBasis omega (PV cs) =
