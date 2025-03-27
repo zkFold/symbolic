@@ -21,6 +21,8 @@ import           Examples.UInt
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Data.ByteString                 (Binary)
+import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
@@ -28,18 +30,18 @@ import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
-type C = ArithmeticCircuit A
+type C a = ArithmeticCircuit a
 
 data ExampleOutput where
   ExampleOutput ::
-    forall p i o.
-    (Representable p, Representable i, NFData (Rep i), NFData1 o) =>
-    (() -> C p i o) -> ExampleOutput
+    forall a p i o.
+    (Representable p, Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
+    (() -> C a p i o) -> ExampleOutput
 
 exampleOutput ::
-  forall p i o c f.
+  forall a p i o c f.
   ( SymbolicData f
-  , c ~ C p i
+  , c ~ C a p i
   , Context f ~ c
   , Layout f ~ o
   , SymbolicInput (Support f)
@@ -49,51 +51,52 @@ exampleOutput ::
   , Representable i
   , NFData (Rep i)
   , NFData1 o
+  , Binary a
   ) => f -> ExampleOutput
-exampleOutput = ExampleOutput @p @i @o . const . compile
+exampleOutput = ExampleOutput @a @p @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
 examples =
-  [ ("Constant.5", exampleOutput exampleConst5)
-  , ("Eq.Constant.5", exampleOutput exampleEq5)
-  , ("Eq", exampleOutput exampleEq)
-  , ("Conditional", exampleOutput exampleConditional)
-  , ("LEQ", exampleOutput exampleLEQ)
-  , ("ByteString.And.32", exampleOutput $ exampleByteStringAnd @32)
-  , ("ByteString.Or.64", exampleOutput $ exampleByteStringOr @64)
-  , ("ByteString.Extend.1.512", exampleOutput $ exampleByteStringResize @1 @512)
-  , ("ByteString.Truncate.512.1", exampleOutput $ exampleByteStringResize @512 @1)
-  , ("ByteString.Truncate.74.54", exampleOutput $ exampleByteStringResize @74 @54)
-  , ("ByteString.Add.512", exampleOutput $ exampleByteStringAdd @512)
-  , ("UInt.Extend.1.512", exampleOutput $ exampleUIntResize @1 @512 @Auto)
-  , ("UInt.Truncate.512.1", exampleOutput $ exampleUIntResize @512 @1 @Auto)
-  , ("UInt.Truncate.74.54", exampleOutput $ exampleUIntResize @74 @54 @Auto)
-  , ("UInt.StrictAdd.256.Auto", exampleOutput $ exampleUIntStrictAdd @256 @Auto)
-  , ("UInt.StrictMul.512.Auto", exampleOutput $ exampleUIntStrictMul @512 @Auto)
-  , ("UInt.Mul.64.Auto", exampleOutput $ exampleUIntMul @64 @Auto)
-  , ("UInt.Mul.4096.Auto", exampleOutput $ exampleUIntMul @4096 @Auto)
-  , ("UInt.ProductMod.1024.Auto", exampleOutput $ exampleUIntProductMod @1024 @Auto)
-  , ("UInt.DivMod.32.Auto", exampleOutput $ exampleUIntDivMod @32 @Auto)
-  , ("UInt.ExpMod.32.16.64.Auto", exampleOutput $ exampleUIntExpMod @32 @16 @64 @Auto)
-  , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput $ exampleUIntExpMod @256 @64 @1024 @Auto)
-  , ("UInt.LEQ.256.Auto", exampleOutput $ exampleUIntLeq @256 @Auto)
-  , ("FFA.Add.337", exampleOutput exampleFFAadd337)
-  , ("FFA.Add.097", exampleOutput exampleFFAadd097)
-  , ("FFA.Mul.337", exampleOutput exampleFFAmul337)
-  , ("FFA.Mul.097", exampleOutput exampleFFAmul097)
-  , ("FFA.Inv.337", exampleOutput exampleFFAinv337)
-  , ("FFA.Inv.097", exampleOutput exampleFFAinv097)
-  , ("Blake2b_224", exampleOutput $ exampleBlake2b_224 @32)
-  , ("Blake2b_256", exampleOutput $ exampleBlake2b_256 @64)
-  , ("SHA256.32", exampleOutput $ exampleSHA @32)
-  , ("MiMCHash", exampleOutput exampleMiMC)
-  -- , ("BLS12_381.Scale", exampleOutput exampleBLS12_381Scale)
-  -- , ("Ed25519.Scale", exampleOutput exampleEd25519Scale)
-  , ("Fibonacci.100", exampleOutput $ exampleFibonacci 100)
-  , ("Reverse.32.3000", exampleOutput $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
-  -- , ("ZkloginNoSig", exampleOutput $ exampleZkLoginNoSig)
-  -- , ("RSA.sign.verify.256", exampleOutput exampleRSA)
-  -- , ("JWT.secretBits", exampleOutput $ exampleJWTSerialisation)
-  -- , ("PedersonCommitment", exampleOutput exampleCommitment)
-  -- , ("BatchTransfer", exampleOutput exampleBatchTransfer)
+  [ ("Constant.5", exampleOutput @A exampleConst5)
+  , ("Eq.Constant.5", exampleOutput @A exampleEq5)
+  , ("Eq", exampleOutput @A exampleEq)
+  , ("Conditional", exampleOutput @A exampleConditional)
+  , ("LEQ", exampleOutput @A exampleLEQ)
+  , ("ByteString.And.32", exampleOutput @A $ exampleByteStringAnd @32)
+  , ("ByteString.Or.64", exampleOutput @A $ exampleByteStringOr @64)
+  , ("ByteString.Extend.1.512", exampleOutput @A $ exampleByteStringResize @1 @512)
+  , ("ByteString.Truncate.512.1", exampleOutput @A $ exampleByteStringResize @512 @1)
+  , ("ByteString.Truncate.74.54", exampleOutput @A $ exampleByteStringResize @74 @54)
+  , ("ByteString.Add.512", exampleOutput @A $ exampleByteStringAdd @512)
+  , ("UInt.Extend.1.512", exampleOutput @A $ exampleUIntResize @1 @512 @Auto)
+  , ("UInt.Truncate.512.1", exampleOutput @A $ exampleUIntResize @512 @1 @Auto)
+  , ("UInt.Truncate.74.54", exampleOutput @A $ exampleUIntResize @74 @54 @Auto)
+  , ("UInt.StrictAdd.256.Auto", exampleOutput @A $ exampleUIntStrictAdd @256 @Auto)
+  , ("UInt.StrictMul.512.Auto", exampleOutput @A $ exampleUIntStrictMul @512 @Auto)
+  , ("UInt.Mul.64.Auto", exampleOutput @A $ exampleUIntMul @64 @Auto)
+  , ("UInt.Mul.4096.Auto", exampleOutput @A $ exampleUIntMul @4096 @Auto)
+  , ("UInt.LEQ.256.Auto", exampleOutput @A $ exampleUIntLeq @256 @Auto)
+  , ("UInt.ProductMod.1024.Auto", exampleOutput @A $ exampleUIntProductMod @1024 @Auto)
+  , ("UInt.DivMod.32.Auto", exampleOutput @A $ exampleUIntDivMod @32 @Auto)
+  , ("UInt.ExpMod.32.16.64.Auto", exampleOutput @A $ exampleUIntExpMod @32 @16 @64 @Auto)
+  , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput @A $ exampleUIntExpMod @256 @64 @1024 @Auto)
+  , ("FFA.Add.337", exampleOutput @A exampleFFAadd337)
+  , ("FFA.Add.097", exampleOutput @A exampleFFAadd097)
+  , ("FFA.Mul.337", exampleOutput @A exampleFFAmul337)
+  , ("FFA.Mul.097", exampleOutput @A exampleFFAmul097)
+  , ("FFA.Inv.337", exampleOutput @A exampleFFAinv337)
+  , ("FFA.Inv.097", exampleOutput @A exampleFFAinv097)
+  , ("Blake2b_224", exampleOutput @A $ exampleBlake2b_224 @32)
+  , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
+  , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
+  , ("MiMCHash", exampleOutput @A exampleMiMC)
+  -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
+  -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Scalar) exampleEd25519Scale)
+  , ("Fibonacci.100", exampleOutput @A $ exampleFibonacci 100)
+  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _ _)))
+  -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
+  -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
+  -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
+  -- , ("PedersonCommitment", exampleOutput @A exampleCommitment)
+  -- , ("BatchTransfer", exampleOutput @A exampleBatchTransfer)
   ]

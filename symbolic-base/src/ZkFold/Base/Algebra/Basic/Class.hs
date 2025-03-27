@@ -29,6 +29,18 @@ import           ZkFold.Prelude                   (length, replicate)
 infixl 7 *, /
 infixl 6 +, -, -!
 
+class Bilinear p s g | p s -> g where
+    -- | Bilinear function. Should satisfy the following:
+    --
+    -- [First argument linearity] @bilinear c (scale k a + b) == scale k (bilinear c a) + bilinear c b@
+    -- [First argument absorption] @bilinear c zero == zero@
+    --
+    -- [Second argument linearity] @bilinear (scale k c + d) a == scale k (bilinear c a) + bilinear d a@
+    -- [Second argument absorption] @bilinear zero a == zero@
+    --
+    -- The default implementation is the multiplication by a constant.
+    bilinear :: p -> s -> g
+
 {- | Every algebraic structure has a handful of "constant types" related
 with it: natural numbers, integers, field of constants etc. This typeclass
 captures this relation.

@@ -60,8 +60,8 @@ instance FromJSON ProveAPIResult where
       _ -> fail "Unknown status"
 
 proveAPI
-    :: forall a core
-    . (NonInteractiveProof a core
+    :: forall a
+    . (NonInteractiveProof a
     , Binary (SetupProve a)
     , Binary (Witness a)
     , Binary (Input a)
@@ -75,10 +75,10 @@ proveAPI bsS bsW =
     in case (mS, mW) of
         (Nothing, _)     -> ProveAPIErrorSetup
         (_, Nothing)     -> ProveAPIErrorWitness
-        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a @core s w
+        (Just s, Just w) -> ProveAPISuccess . ProofBytes $ toByteString $ prove @a s w
 
-testVector :: forall a core .
-    NonInteractiveProof a core =>
+testVector :: forall a .
+    NonInteractiveProof a =>
     Arbitrary a =>
     Arbitrary (Witness a) =>
     Binary (SetupProve a) =>
@@ -89,6 +89,6 @@ testVector n = generate . vectorOf n $ (,)
     <$> arbitrary @a
     <*> arbitrary @(Witness a)
     >>= \(a, w) -> do
-        let s = setupProve @a @core a
-        let (i, p) = prove @a @core s w
+        let s = setupProve @a a
+        let (i, p) = prove @a s w
         pure (toByteString s, toByteString i, toByteString p)

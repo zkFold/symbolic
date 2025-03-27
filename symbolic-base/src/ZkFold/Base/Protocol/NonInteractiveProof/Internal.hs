@@ -2,6 +2,8 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE Unsafe              #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
 
@@ -21,10 +23,11 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Field, MultiplicativeSemigroup ((*)), Scale (..), sum)
+import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), Bilinear(..), sum)
 import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate (Poly, PolyVec, fromPolyVec)
+import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..), PolyVec)
 import           ZkFold.Base.Data.ByteString
+import           ZkFold.Base.Algebra.Basic.Number           (KnownNat)
 
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
@@ -69,7 +72,7 @@ challenges ts0 n = go ts0 n []
             ts' = ts `transcript` (0 :: Word8)
         in go ts' (k - 1) (c : acc)
 
-class NonInteractiveProof a core where
+class NonInteractiveProof a where
     type Transcript a
 
     type SetupProve a
@@ -90,13 +93,11 @@ class NonInteractiveProof a core where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
-class (CyclicGroup g) => CoreFunction g core where
-    msm :: (f ~ ScalarFieldOf g) => V.Vector g -> PolyVec f size -> g
 
-    polyMul :: (f ~ ScalarFieldOf g, Field f, Eq f) => Poly f -> Poly f -> Poly f
-
-data HaskellCore
-
-instance (CyclicGroup g, f ~ ScalarFieldOf g) => CoreFunction g HaskellCore where
-    msm gs f = sum $ V.zipWith scale (fromPolyVec f) gs
-    polyMul = (*)
+instance
+    ( CyclicGroup g
+    , KnownNat size
+    , f ~ ScalarFieldOf g
+    , UnivariateRingPolyVec f (PolyVec f)
+    ) => Bilinear (V.Vector g) (PolyVec f size) g where
+    bilinear gs f = sum $ V.zipWith scale (fromPolyVec f) gs

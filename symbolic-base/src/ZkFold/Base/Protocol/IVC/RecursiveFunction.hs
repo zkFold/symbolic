@@ -109,7 +109,7 @@ recursiveFunction func =
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = predicate func'
 
-        funcRecursive :: forall ctx f . RecursiveFunctionAssumptions algo d a i c f ctx
+        funcRecursive :: forall ctx f . (RecursiveFunctionAssumptions algo d a i c f ctx)
             => RecursiveI i f
             -> RecursiveP d k i p c f
             -> RecursiveI i f
