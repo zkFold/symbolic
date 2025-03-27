@@ -39,6 +39,7 @@ import           Data.Constraint                   (Dict, withDict)
 import           Data.Constraint.Nat               (Max, maxNat, minusNat, plusMinusInverse3, plusNat, timesNat)
 import           Data.Constraint.Unsafe            (unsafeAxiom)
 import           Data.Foldable                     (foldlM)
+import           Data.Functor.Rep                  (mzipRep)
 import           Data.Kind                         (Type)
 import           Data.List                         (reverse, unfoldr)
 import           Data.Maybe                        (Maybe (..))
@@ -71,7 +72,6 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Lookup
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField, newAssigned)
-import Data.Functor.Rep (mzipRep)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
