@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Algorithms.RSA
     , RSA
     , PublicKey (..)
     , PrivateKey (..)
+    , PubExponentSize
     , Signature
     ) where
 
