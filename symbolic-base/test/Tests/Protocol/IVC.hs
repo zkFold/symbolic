@@ -97,7 +97,7 @@ testAccumulator phi =
 testProverMismsatch :: PHI -> PHI -> PHI -> Accumulator K I C F   -- prover output
 testProverMismsatch phi1 phi2 phi3 =
     let s = testAccumulatorScheme phi1
-    in prover s (initAccumulator phi2) $ testInstanceProofPair phi3    
+    in prover s (initAccumulator phi2) $ testInstanceProofPair phi3
 
 testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
 testAccumulatorInstance phi =
@@ -164,12 +164,12 @@ specAccumulatorScheme = do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
             it "must reject on different predicates" $ do
                 withMaxSuccess 10 $ property $ \p q -> p!=q ==> testVerifierResult (testPredicate q) != testAccumulatorInstance (testPredicate p)
-            it "must reject on different predicates" $ do 
+            it "must reject on different predicates" $ do
                 withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate p) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate q) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate r)
         describe "decider" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == zeroVector (C F) C F
-            it "must reject on different predicates" $ do 
+            it "must reject on different predicates" $ do
                 withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ decider testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != zeroVector (C F) C F
 
 specIVC :: Spec
