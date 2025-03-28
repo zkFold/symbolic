@@ -13,6 +13,7 @@ import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, 
 import           ZkFold.Symbolic.Data.Conditional              (Conditional)
 import           ZkFold.Symbolic.Data.Eq                       (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address          (Address)
+import           ZkFold.Symbolic.Ledger.Types.Hash             (HashSimple)
 import           ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex, TransactionId)
 import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAssetQuantity)
 
@@ -20,7 +21,7 @@ import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAs
 data TransactionEnvelope context = TransactionEnvelope
     { txeAddress       :: Address context
     -- ^ Address that initiated the transaction. Inputs in the transaction that are locked by this address are considered to be spent whereas rest are considered as reference inputs.
-    , txeTransactionId :: TransactionId context
+    , txeTransactionId :: HashSimple context
     -- ^ 'TransactionId'.
     }
     deriving stock Generic
