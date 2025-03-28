@@ -1,7 +1,5 @@
 {-# LANGUAGE BlockArguments        #-}
-{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
@@ -30,19 +28,19 @@ import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators     (KnownRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional     (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq              (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement    (FieldElement)
 import           ZkFold.Symbolic.Data.Int             (Int)
 import qualified ZkFold.Symbolic.Data.List            as Symbolic.List
 import           ZkFold.Symbolic.Data.List            (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Morph           (MorphTo (..))
 import           ZkFold.Symbolic.Fold                 (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Address (Address)
+import           ZkFold.Symbolic.Ledger.Types.Datum   (Datum)
 
 -- | Asset policy is the address of the initial UTxO that contains the asset.
 type AssetPolicy context = Address context
 
 -- | Name of the asset. It's the datum of the initial UTxO that contains the asset.
-type AssetName context = FieldElement context
+type AssetName context = Datum context
 
 -- | Quantity of an asset.
 type AssetQuantity context = Int 128 Auto context

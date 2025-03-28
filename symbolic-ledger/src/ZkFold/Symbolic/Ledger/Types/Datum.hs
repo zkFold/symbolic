@@ -6,5 +6,5 @@ import           Prelude                           hiding (Bool, Eq, Ord, length
 
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
--- | An output is tagged with a datum.
+-- | Datum that is attached to a transaction output.
 type Datum context = FieldElement context

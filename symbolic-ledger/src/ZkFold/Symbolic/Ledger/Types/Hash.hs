@@ -1,5 +1,3 @@
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Ledger.Types.Hash (
   Hash,

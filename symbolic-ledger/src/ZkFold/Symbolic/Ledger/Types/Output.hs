@@ -1,4 +1,3 @@
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Ledger.Types.Output where
 
@@ -17,11 +16,11 @@ import           ZkFold.Symbolic.Ledger.Types.Value   (AssetValue, KnownRegister
 -- | Transaction output.
 data Output context = Output
         { txoAddress :: Address context
-        -- ^ 'Address' at which the value is locked
+        -- ^ 'Address' at which the value is locked.
         , txoValue   :: AssetValue context
-        -- ^ 'AssetValue' locked by the output
+        -- ^ 'AssetValue' locked by the output.
         , txoDatum   :: Datum context
-        -- ^ 'Datum' associated with the output
+        -- ^ 'Datum' associated with the output.
         }
   deriving stock Generic
 

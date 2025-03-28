@@ -1,4 +1,6 @@
-module ZkFold.Symbolic.Ledger.Types.Address where
+module ZkFold.Symbolic.Ledger.Types.Address (
+  Address,
+) where
 
 import           Prelude                                       hiding (Bool, Eq, length, splitAt, (*), (+))
 
