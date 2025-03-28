@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Data.Conditional              (Conditional)
 import           ZkFold.Symbolic.Data.Eq                       (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address          (Address)
 import           ZkFold.Symbolic.Ledger.Types.Hash             (HashSimple)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex, TransactionId)
+import           ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
 import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAssetQuantity)
 
 -- | Envelope of a transaction.

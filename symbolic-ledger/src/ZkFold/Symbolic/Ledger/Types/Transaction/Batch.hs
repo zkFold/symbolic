@@ -14,14 +14,10 @@ import           ZkFold.Symbolic.Data.Conditional                   (Conditional
 import           ZkFold.Symbolic.Data.Eq                            (Eq)
 import           ZkFold.Symbolic.Data.List                          (List)
 import           ZkFold.Symbolic.Data.UTCTime                       (UTCTime)
-import           ZkFold.Symbolic.Ledger.Types.Address               (Address)
 import           ZkFold.Symbolic.Ledger.Types.DataAvailability      (DAIndex)
-import           ZkFold.Symbolic.Ledger.Types.Hash                  (Hash, HashSimple)
-import           ZkFold.Symbolic.Ledger.Types.Root                  (Root)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.BatchData (TransactionBatchData)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Core      (KnownRegistersOutputIndex, TransactionId)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Envelope  (TransactionEnvelope)
-import           ZkFold.Symbolic.Ledger.Types.Value                 (AssetValues, KnownRegistersAssetQuantity)
+import           ZkFold.Symbolic.Ledger.Types.Hash                  (HashSimple)
+import           ZkFold.Symbolic.Ledger.Types.Transaction.Core      (KnownRegistersOutputIndex)
+import           ZkFold.Symbolic.Ledger.Types.Value                 (KnownRegistersAssetQuantity)
 
 -- TODO: Use POSIXTime instead of UTCTime?
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
