@@ -102,8 +102,8 @@ plonkVerify
         lagrange1_xi = with4n6 @n $ polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) @n omega
-            (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
+        pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @_ @(PlonkupPolyExtendedLength n) omega
+            (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
