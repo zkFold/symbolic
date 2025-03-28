@@ -441,9 +441,7 @@ instance
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
 
     polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> PolyVec c size
---    polyVecLagrange n i omega = toPolyVec (V.unfoldrExactN vecLen coefficients (norm * wi^(n -! 1), n))
---    polyVecLagrange n i omega = toPolyVec (V.generate vecLen $ coefficients . fromIntegral) 
-    polyVecLagrange n i omega = (*.) (omega^i // fromConstant n) $ (polyVecZero n - one) `polyVecDiv` polyVecLinear one (negate $ omega^i) 
+    polyVecLagrange n i omega = toPolyVec (V.unfoldrExactN vecLen coefficients (norm * wi^(n -! 1), n))
         where
             wi = omega ^ i
 
@@ -453,12 +451,8 @@ instance
     
             vecLen = fromIntegral $ value @size
 
-            coefficients ix
-              | ix >= (n -! 1)    = zero
-              | otherwise = norm * wi ^ (n -! ix -! 1)
-
---            coefficients (_, 0)  = (zero, (zero, 0))
---            coefficients (w, ix) = (w, (w * wInv, ix -! 1))
+            coefficients (_, 0)  = (zero, (zero, 0))
+            coefficients (w, ix) = (w, (w * wInv, ix -! 1))
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
     polyVecInLagrangeBasis omega (PV cs) =
