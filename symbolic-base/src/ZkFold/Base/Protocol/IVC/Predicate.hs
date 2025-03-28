@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Data.Class            (LayoutFunctor)
 import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
 
-type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p) i U1
+type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p :*: i) U1
 
 data Predicate a i p = Predicate
     { predicateEval    :: i a -> p a -> i a
@@ -45,6 +45,6 @@ predicate func =
 
         predicateCircuit :: PredicateCircuit a i p
         predicateCircuit =
-            hlmap (U1 :*:) $
-            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
+            hlmap (\(i :*: p :*: j) -> (i :*: p) :*: j) $
+            compileWith @a guessOutput (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

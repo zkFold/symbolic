@@ -29,7 +29,7 @@ import           ZkFold.Base.Protocol.Plonkup.Testing            (PlonkupProverT
 import           ZkFold.Base.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 
-plonkProve :: forall p i n l g1 g2 ts pv .
+plonkProve :: forall i n l g1 g2 ts pv .
     ( Foldable l
     , Ord (ScalarFieldOf g1)
     , Compressible g1
@@ -41,9 +41,9 @@ plonkProve :: forall p i n l g1 g2 ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    ) => PlonkupProverSetup p i n l g1 g2 pv -> (PlonkupWitnessInput p i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
+    ) => PlonkupProverSetup i n l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkProve PlonkupProverSetup {..}
-        (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)
+        (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
 
@@ -53,8 +53,8 @@ plonkProve PlonkupProverSetup {..}
         n = value @n
         zhX = with4n6 @n $ polyVecZero (value @n)
 
-        (w1, w2, w3) = witness relation wExtra wInput
-        wPub = pubInput relation wExtra wInput
+        (w1, w2, w3) = witness relation wInput
+        wPub = pubInput relation wInput
 
         w1X = with4n6 @n $ polyVecInLagrangeBasis omega w1 :: PlonkupPolyExtended n g1 pv
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv

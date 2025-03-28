@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Base.Protocol.Plonk.Verifier
     ( plonkVerify
@@ -21,8 +20,9 @@ import           ZkFold.Base.Protocol.Plonkup.Proof
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 
-plonkVerify :: forall p i n l g1 g2 gt ts pv .
-    ( Foldable l
+plonkVerify :: forall i n l g1 g2 gt ts pv .
+    ( KnownNat n
+    , Foldable l
     , Pairing g1 g2 gt
     , Compressible g1
     , Eq gt
@@ -30,10 +30,9 @@ plonkVerify :: forall p i n l g1 g2 gt ts pv .
     , ToTranscript ts (ScalarFieldOf g1)
     , ToTranscript ts (Compressed g1)
     , FromTranscript ts (ScalarFieldOf g1)
-    , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-    ) => PlonkupVerifierSetup p i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
+    ) => PlonkupVerifierSetup i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)

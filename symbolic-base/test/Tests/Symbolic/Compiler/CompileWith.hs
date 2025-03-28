@@ -34,4 +34,4 @@ specCompileWith :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Sp
 specCompileWith = describe "CompileWith specification" $ do
   prop "Guessing with payload is constant in input" $ isConstantInput $
     compileWith @a guessOutput
-      (\(p :*: q) U1 -> (U1 :*: U1 :*: U1, p :*: q :*: U1)) testFunction
+      (\(p :*: q) -> (U1 :*: U1 :*: U1, p :*: q :*: U1)) testFunction

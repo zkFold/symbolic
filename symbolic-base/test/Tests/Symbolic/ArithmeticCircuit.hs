@@ -48,10 +48,9 @@ instance Arbitrary (U1 a) where
   arbitrary = return U1
 
 propCircuitInvariance ::
-  ( Arithmetic a, Binary a, Show a, Ord (Rep i)
-  , Representable p, Representable i, Foldable i) =>
-  ArithmeticCircuit a p i Par1 -> p a -> i a -> Property
-propCircuitInvariance ac pl wi = eval ac pl wi === eval (mapVarArithmeticCircuit ac) pl wi
+  (Arithmetic a, Binary a, Show a, Ord (Rep i), Representable i, Foldable i) =>
+  ArithmeticCircuit a i Par1 -> i a -> Property
+propCircuitInvariance ac wi = eval ac wi === eval (mapVarArithmeticCircuit ac) wi
 
 it :: Testable prop => String -> prop -> Spec
 it desc prop = Test.Hspec.it desc (property prop)
@@ -74,20 +73,20 @@ specArithmeticCircuit' = do
         --   let Bool (r :: ArithmeticCircuit a U1 Par1) = isZero (zero :: FieldElement (ArithmeticCircuit a U1))
         --    in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
-          let rs = binaryExpansion (fromConstant x :: FieldElement (ArithmeticCircuit a U1 U1))
+          let rs = binaryExpansion (fromConstant x :: FieldElement (ArithmeticCircuit a U1))
               as = padBits (numberOfBits @a) $ fromConstant <$> binaryExpansion (toConstant x)
            in checkClosedCircuit rs .&&. V.fromVector (exec rs) === as
         it "internalizes equality" $ \(x :: a) (y :: a) ->
-          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1 U1)) == fromConstant y
+          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) == fromConstant y
            in checkClosedCircuit @a r .&&. exec1 r === bool zero one (x Haskell.== y)
         it "internal equality is reflexive" $ \(x :: a) ->
-          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1 U1)) == fromConstant x
+          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) == fromConstant x
            in checkClosedCircuit @a r .&&. exec1 r === one
         it "<=s correctly" $ withMaxSuccess 10 $ \(x :: a) (y :: a) ->
-          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1 U1)) <= fromConstant y
+          let Bool r = (fromConstant x :: FieldElement (ArithmeticCircuit a U1)) <= fromConstant y
            in checkClosedCircuit @a r .&&. exec1 r === bool zero one (x Haskell.<= y)
         describe "Variable mapping" $ do
-            it "does not change the circuit" $ propCircuitInvariance @a @(Vector 2) @U1
+            it "does not change the circuit" $ propCircuitInvariance @a @(Vector 2)
 
 specArithmeticCircuit :: Spec
 specArithmeticCircuit = do

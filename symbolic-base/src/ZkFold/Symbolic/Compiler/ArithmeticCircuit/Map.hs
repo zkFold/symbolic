@@ -1,6 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map (
         mapVarArithmeticCircuit,
     ) where
@@ -25,7 +22,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 mapVarArithmeticCircuit ::
   (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) =>
-  ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
+  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 mapVarArithmeticCircuit ac =
     let vars = [v | NewVar (EqVar v) <- getAllVars ac]
         asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]
@@ -34,18 +31,17 @@ mapVarArithmeticCircuit ac =
         varF (InVar v)                     = InVar v
         varF (NewVar (EqVar v))            = NewVar (EqVar (forward ! v))
         -- | TODO: compress fold ids, too
-        varF (NewVar (FoldVar fldId fldV)) = NewVar (FoldVar fldId fldV)
+        varF (NewVar (FoldLVar fldId fldV)) = NewVar (FoldLVar fldId fldV)
+        varF (NewVar (FoldPVar fldId fldV)) = NewVar (FoldPVar fldId fldV)
         oVarF (LinVar k v b) = LinVar k (varF v) b
         oVarF (ConstVar c)   = ConstVar c
-        witF (WSysVar v)    = WSysVar (varF v)
-        witF (WExVar v)     = WExVar v
-        -- | TODO: compress fold ids, too
-        witF (WFoldVar i v) = WFoldVar i v
      in ArithmeticCircuit
           { acLookup   = Set.map (map varF) <$> acLookup ac
           , acLookupFunction = acLookupFunction ac
-          , acSystem  = fromList $ zip asc $ evalPolynomial evalMonomial (var . varF) <$> elems (acSystem ac)
-          , acWitness = (fmap witF <$> acWitness ac) `Map.compose` backward
-          , acFold = bimap oVarF (fmap witF) <$> acFold ac
+          , acSystem  =
+              fromList $ zip asc $ evalPolynomial evalMonomial (var . varF)
+              <$> elems (acSystem ac)
+          , acWitness = (fmap varF <$> acWitness ac) `Map.compose` backward
+          , acFold = bimap oVarF (fmap varF) <$> acFold ac
           , acOutput  = oVarF <$> acOutput ac
           }

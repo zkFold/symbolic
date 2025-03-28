@@ -4,12 +4,12 @@
 {-# LANGUAGE TypeOperators    #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
+
 import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Eq                                     (Eq)
 import           Data.Function                               (const, ($))
 import           Data.Functor                                (Functor, (<$>))
-import           Data.Functor.Rep                            (Rep, Representable)
 import qualified Data.Text                                   as T
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           Prelude                                     (type (~), (.))
@@ -21,7 +21,6 @@ import           Text.Show                                   (Show)
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
-import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (eval)
 import           ZkFold.Symbolic.Data.Bool                   (false, true)
@@ -33,16 +32,15 @@ import           ZkFold.UPLC.Term
 
 areSame ::
   ( SymbolicData f, Context f ~ c, Support f ~ s, Layout f ~ l
-  , c ~ ArithmeticCircuit a p i, Arbitrary (i a), Show (i a)
-  , Representable p, Binary (Rep p), Arbitrary (p a), Show (p a)
-  , SymbolicInput s, Context s ~ c, Layout s ~ i, Payload s ~ p
+  , c ~ ArithmeticCircuit a i, Arbitrary (i a), Show (i a)
+  , SymbolicInput s, Context s ~ c, i ~ Payload s :*: Layout s
   , Functor l, Eq (l a), Show (l a)
   , a ~ Zp BLS12_381_Base) =>
   (Term -> f) -> Term -> f -> Property
 areSame v t f =
   let acT = compile (v t)
       acF = compile f
-   in property $ \p i -> eval acT p i === eval acF p i
+   in property $ \i -> eval acT i === eval acF i
 
 instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
   arbitrary = (:*:) <$> arbitrary <*> arbitrary

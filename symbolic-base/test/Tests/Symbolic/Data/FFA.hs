@@ -60,7 +60,7 @@ specFFA' = do
 execAcFFA ::
   forall p q r.
   (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) =>
-  FFA q r (ArithmeticCircuit (Zp p) U1 U1) -> Zp q
+  FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
 execAcFFA (FFA (FieldElement nv) (UInt uv)) =
   execZpFFA $ FFA (FieldElement $ Interpreter $ exec nv)
                   (UInt @_ @r $ Interpreter $ exec uv)
@@ -76,5 +76,5 @@ type Predicate a = a -> a -> Property
 isHom ::
   (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) =>
   Binary (FFA q r (Interpreter (Zp p))) ->
-  Binary (FFA q r (ArithmeticCircuit (Zp p) U1 U1)) -> Predicate (Zp q)
+  Binary (FFA q r (ArithmeticCircuit (Zp p) U1)) -> Predicate (Zp q)
 isHom f g x y = execAcFFA (fromConstant x `g` fromConstant y) === execZpFFA (fromConstant x `f` fromConstant y)

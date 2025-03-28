@@ -26,7 +26,7 @@ tautology x y = (x /= y) || (x == y)
 testTautology :: forall a . (Arithmetic a, Binary a) => a -> a -> Haskell.Bool
 testTautology x y =
     let Bool ac = compile @a tautology
-        b       = unPar1 (eval ac (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1))
+        b       = unPar1 (eval ac ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1))
     in b Haskell.== one
 
 specArithmetization2 :: Spec

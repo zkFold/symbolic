@@ -60,7 +60,9 @@ specialSoundProtocol :: forall d a i p .
     ) => Predicate a i p -> SpecialSoundProtocol 1 i p [a] [a] a
 specialSoundProtocol phi@Predicate {..} =
   let
-      prover pi0 w _ _ = elems $ witnessGenerator predicateCircuit (pi0 :*: w) (predicateEval pi0 w)
+      prover pi0 w _ _ =
+        let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
+         in elems $ witnessGenerator predicateCircuit circuitInput
       verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
   in
       SpecialSoundProtocol predicateEval prover verifier

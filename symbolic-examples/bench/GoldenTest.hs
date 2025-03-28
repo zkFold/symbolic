@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Examples                   as Examples
 import           ZkFold.Symbolic.Examples                   (ExampleOutput (..))
 
-metrics :: String -> ArithmeticCircuit a p i o -> ByteString
+metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
   String.fromString name
   <> "\nNumber of constraints: "
