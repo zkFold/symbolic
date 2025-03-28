@@ -89,30 +89,60 @@ testPublicInput phi =
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
 testAccumulatorScheme = accumulatorScheme @(MiMCHash F)
 
-testAccumulator :: PHI -> Accumulator K I C F
+testAccumulator :: PHI -> Accumulator K I C F   -- accumulator in prover output
 testAccumulator phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
+
+testProverMismsatch :: PHI -> PHI -> PHI -> Accumulator K I C F   -- prover output
+testProverMismsatch phi1 phi2 phi3 =
+    let s = testAccumulatorScheme phi1
+    in prover s (initAccumulator phi2) $ testInstanceProofPair phi3    
 
 testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
 testAccumulatorInstance phi =
     let Accumulator ai _ = testAccumulator phi
     in ai
 
-testAccumulationProof :: PHI -> Vector (D - 1) (C F)
+testAccumulationProof :: PHI -> Vector (D - 1) (C F)    -- accumulation proof in prover output
 testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
-
--- testDeciderResult :: PHI -> (Vector K (C F), C F)
--- testDeciderResult phi =
---     let s = testAccumulatorScheme phi
---     in decider s $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
     let s = testAccumulatorScheme phi
     in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
+
+testDeciderResult :: PHI -> (Vector K (C F), C F)
+testDeciderResult phi = decider (testAccumulator phi)
+    --let s = testAccumulatorScheme phi
+    --in decider (testAccumulator phi)
+
+{-- Tentative code: I would like to itereate the prover to accumulate at each step a new proof associated with a new predicate and then output the vector of accumulator-proof pairs. Then we can call the verifier to check each iteration step and call teh decider on the last accumulator to check the final result.
+
+iterateProver :: [PHI] -> [(Accumulator K I C F, Vector (D - 1) (C F))]
+iterateProver phis =
+    let s = testAccumulatorScheme (head phis)  -- Use the scheme from the first PHI
+        initialAcc = initAccumulator (head phis)  -- Initialize with the first PHI
+        iterateStep (acc, results) phi =
+            let (newAcc, proofVec) = prover s acc (testInstanceProofPair phi)  -- Prover step
+            in (newAcc, results ++ [(newAcc, proofVec)])  -- Append the new accumulator and proof
+    in snd $ foldl iterateStep (initialAcc, []) phis
+
+iterateProverVerifier :: [PHI] -> (Accumulator K I C F, [Vector (D - 1) (C F)])
+iterateProverVerifier phis =
+    let s = testAccumulatorScheme (head phis)  -- Use the scheme from the first PHI
+        initialAcc = initAccumulator (head phis)  -- Initialize with the first PHI
+        iterateStep (acc, allProofs) phi =
+            let proof = testInstanceProofPair phi
+                (newAcc, proofVec) = prover s acc proof  -- Prover step
+                verifierAcc = verifier s (testPublicInput phi) (testNarkProof phi) (AccumulatorInstance newAcc) proofVec
+            in if verifierAcc == AccumulatorInstance newAcc
+               then (newAcc, allProofs ++ [proofVec])  -- Append the proofVec to the list of proofs
+               else error "Verification failed: Prover and Verifier accumulators do not match"
+    in foldl iterateStep (initialAcc, []) phis
+--}
 
 specAlgebraicMap :: Spec
 specAlgebraicMap = do
@@ -123,20 +153,24 @@ specAlgebraicMap = do
                     \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
                         == replicate (acSizeN $ testPredicateCircuit p) zero
 
+zeroVector :: (Num (c f), KnownNat k) => (Vector k (c f), c f)
+zeroVector = (replicate zero, zero)
+
 specAccumulatorScheme :: Spec
 specAccumulatorScheme = do
     describe "Accumulator scheme specification" $ do
-        -- describe "decider" $ do
-        --     it  "must output zeros" $ do
-        --         withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
                 withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
             it "must reject on different predicates" $ do
                 withMaxSuccess 10 $ property $ \p q -> p!=q ==> testVerifierResult (testPredicate q) != testAccumulatorInstance (testPredicate p)
+            it "must reject on different predicates" $ do 
+                withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate p) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate q) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate r)
         describe "decider" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == -- vector of zeros: (Vector k (c f), c f)
+                withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == zeroVector (C F) C F
+            it "must reject on different predicates" $ do 
+                withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ decider testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != zeroVector (C F) C F
 
 specIVC :: Spec
 specIVC = do
