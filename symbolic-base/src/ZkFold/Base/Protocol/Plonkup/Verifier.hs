@@ -104,7 +104,7 @@ plonkupVerify
         lagrange1_xi = polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) @n omega
+        pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @n @(PlonkupPolyExtendedLength n) omega
             (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub)
             `evalPolyVec` xi
 
