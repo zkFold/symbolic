@@ -48,6 +48,7 @@ common options
       DeriveFoldable,
       DeriveFunctor,
       DeriveGeneric,
+      DerivingStrategies,
       DeriveTraversable,
       ExistentialQuantification,
       FlexibleContexts,
@@ -75,6 +76,7 @@ common options
       TupleSections,
       TypeApplications,
       TypeFamilies,
+      TypeOperators,
       ViewPatterns
 
 common options-exe
@@ -89,19 +91,18 @@ library
     exposed-modules:
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
-      ZkFold.Symbolic.Ledger.Types.Contract
+      ZkFold.Symbolic.Ledger.Types.Circuit
+      ZkFold.Symbolic.Ledger.Types.DataAvailability
+      ZkFold.Symbolic.Ledger.Types.Datum
       ZkFold.Symbolic.Ledger.Types.Hash
-      ZkFold.Symbolic.Ledger.Types.Input
       ZkFold.Symbolic.Ledger.Types.Output
-      ZkFold.Symbolic.Ledger.Types.OutputRef
+      ZkFold.Symbolic.Ledger.Types.Root
       ZkFold.Symbolic.Ledger.Types.Transaction
-      ZkFold.Symbolic.Ledger.Types.Update
+      ZkFold.Symbolic.Ledger.Types.Transaction.Batch
+      ZkFold.Symbolic.Ledger.Types.Transaction.BatchData
+      ZkFold.Symbolic.Ledger.Types.Transaction.Core
+      ZkFold.Symbolic.Ledger.Types.Transaction.Envelope
       ZkFold.Symbolic.Ledger.Types.Value
-      ZkFold.Symbolic.Ledger.Validation.Contract
-      ZkFold.Symbolic.Ledger.Validation.Common
-      ZkFold.Symbolic.Ledger.Validation.Input
-      ZkFold.Symbolic.Ledger.Validation.Transaction
-      ZkFold.Symbolic.Ledger.Validation.Update
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                          <= 4.5,
