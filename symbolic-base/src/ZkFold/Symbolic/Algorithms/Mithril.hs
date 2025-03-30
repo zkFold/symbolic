@@ -1,0 +1,51 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE RebindableSyntax    #-}
+{-# LANGUAGE TypeOperators       #-}
+
+module ZkFold.Symbolic.Algorithms.Mithril where
+  
+import           Data.Foldable                           (foldl')
+import           Data.Type.Equality
+import           GHC.TypeLits                            (KnownNat)
+
+import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
+import           ZkFold.Base.Algebra.EllipticCurve.Class
+import           ZkFold.Base.Data.Vector                 (Vector)
+import qualified ZkFold.Symbolic.Class                   as S
+import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA  (ecdsaVerify)
+import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (Auto), GetRegisterSize)
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
+import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
+
+type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
+
+mithril
+  :: forall m n point curve p q baseField scalarField ctx .
+     ( S.Symbolic ctx
+     , baseField ~ FFA q 'Auto ctx
+     , scalarField ~ FFA p 'Auto ctx
+     , point ~ Weierstrass curve (Point baseField)
+     , ScalarFieldOf point ~ scalarField
+     , CyclicGroup point
+     , KnownFFA q 'Auto ctx
+     , KnownFFA p 'Auto ctx
+     , KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     )
+  => StakeDistribution m point ctx
+  -> scalarField
+  -> (scalarField, scalarField)
+  -> FieldElement ctx
+mithril stakeDist messageHash (r, s) =
+    let
+    in
+        foldl' (
+          \acc (point, stake) ->
+            if (ecdsaVerify @n @point point messageHash (r, s))
+              then acc + stake
+              else acc
+          )
+          zero
+          stakeDist
