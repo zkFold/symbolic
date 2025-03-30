@@ -1,51 +1,52 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE TypeOperators       #-}
+
 module ZkFold.Symbolic.Algorithms.ECDSA.ECDSA where
 import           Data.Type.Equality
-import           GHC.Base                                (($))
-import           GHC.TypeLits                            (KnownNat, Log2)
-import qualified GHC.TypeNats
+import           GHC.TypeLits                            (KnownNat)
 
 import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.Number        (value)
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString         (ByteString)
-import           ZkFold.Symbolic.Data.Combinators        (Iso (..), NumberOfRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (Auto), GetRegisterSize)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
-import           ZkFold.Symbolic.Data.UInt               (UInt, eea)
+import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, toUInt)
+import           ZkFold.Symbolic.Data.UInt               (UInt)
 
 ecdsaVerify
-  :: forall point n c curve baseField.
-     ( S.Symbolic c
-     , KnownNat n
-     , baseField ~ UInt 256 'Auto c
-     , ScalarFieldOf point ~ FieldElement c
+  :: forall point curve p q n baseField scalarField ctx .
+     ( S.Symbolic ctx
+     , baseField ~ FFA q 'Auto ctx
+     , scalarField ~ FFA p 'Auto ctx
      , point ~ Weierstrass curve (Point baseField)
+     , ScalarFieldOf point ~ scalarField
      , CyclicGroup point
-     , SemiEuclidean (UInt 256 'Auto c)
-     , KnownNat (NumberOfRegisters (S.BaseField c) 256 'Auto)
-     , Log2 (Order (S.BaseField c) GHC.TypeNats.- 1) ~ 255
+     , KnownFFA q 'Auto ctx
+     , KnownFFA p 'Auto ctx
+     , KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
      )
   => point
-  -> ByteString 256 c
-  -> (UInt 256 'Auto c, UInt 256 'Auto c)
-  -> Bool c
-ecdsaVerify publicKey message (r, s) =
-    case c of Weierstrass (Point x _ isInf) -> if isInf then false else r == (x `mod` n)
+  -> FFA p 'Auto ctx
+  -> (scalarField, scalarField)
+  -> Bool ctx
+ecdsaVerify publicKey messageHash (r, s) =
+    case c of
+      Weierstrass (Point x _ isInf) ->
+        if isInf || r == zero || s == zero
+          then false
+          else (toUInt r :: UInt n 'Auto ctx) == toUInt x
     where
-        n = fromConstant $ value @n
-
         g = pointGen @point
 
-        (sInv, _, _) = eea s n
+        sInv = finv s
 
-        u = (from message * sInv) `mod` n
+        u1 = messageHash * sInv
 
-        v = r * sInv `mod` n
+        u2 = r * sInv
 
-        c = (from u :: FieldElement c) `scale` g + (from v :: FieldElement c) `scale` publicKey
+        c = u1 `scale` g + u2 `scale` publicKey
