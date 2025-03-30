@@ -11,6 +11,7 @@ import           Examples.Blake2b                            (exampleBlake2b_224
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
+import           Examples.ECDSA                              (exampleECDSA)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
@@ -21,6 +22,7 @@ import           Examples.UInt
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (FpModulus)
 import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
@@ -30,6 +32,7 @@ import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
+type B = Zp FpModulus
 type C a = ArithmeticCircuit a
 
 data ExampleOutput where
@@ -58,6 +61,7 @@ exampleOutput = ExampleOutput @a @p @i @o . const . compile
 examples :: [(String, ExampleOutput)]
 examples =
   [ ("Constant.5", exampleOutput @A exampleConst5)
+  , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
   , ("Eq.Constant.5", exampleOutput @A exampleEq5)
   , ("Eq", exampleOutput @A exampleEq)
   , ("Conditional", exampleOutput @A exampleConditional)

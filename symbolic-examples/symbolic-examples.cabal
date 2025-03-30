@@ -96,6 +96,7 @@ library
       Examples.ByteString
       Examples.Conditional
       Examples.Constant
+      Examples.ECDSA
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci

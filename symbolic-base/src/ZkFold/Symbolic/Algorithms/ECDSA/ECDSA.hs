@@ -17,7 +17,7 @@ import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, toUInt)
 import           ZkFold.Symbolic.Data.UInt               (UInt)
 
 ecdsaVerify
-  :: forall point curve p q n baseField scalarField ctx .
+  :: forall n point curve p q baseField scalarField ctx .
      ( S.Symbolic ctx
      , baseField ~ FFA q 'Auto ctx
      , scalarField ~ FFA p 'Auto ctx
@@ -31,7 +31,7 @@ ecdsaVerify
      , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
      )
   => point
-  -> FFA p 'Auto ctx
+  -> scalarField
   -> (scalarField, scalarField)
   -> Bool ctx
 ecdsaVerify publicKey messageHash (r, s) =
