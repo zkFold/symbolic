@@ -39,7 +39,7 @@ import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (replicate, zipWithDefault)
+import           ZkFold.Prelude                   (replicate, zipWithDefault, log2ceiling)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.
@@ -455,9 +455,17 @@ instance
             coefficients (w, ix) = (w, (w * wInv, ix -! 1))
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
-    polyVecInLagrangeBasis omega (PV cs) =
-        let ls = fmap (\i -> polyVecLagrange (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
-        in sum $ V.zipWith (*.) cs ls
+    polyVecInLagrangeBasis omega (PV cs) = PV $ addZeros @c @size $ V.reverse dft 
+        where
+            nInt :: P.Int
+            nInt = fromIntegral $ value @n
+
+            norms = V.generate (V.length cs) $ \ix -> omega ^ (fromIntegral ix) // fromConstant (value @n)
+
+            cyc = V.backpermute cs $ V.generate (V.length cs) (\ix -> pred ix `P.mod` nInt)
+            dft = genericDft (log2ceiling $ value @n) omega $ V.zipWith (*) norms cyc 
+--        let ls = fmap (\i -> polyVecLagrange (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
+--        in sum $ V.zipWith (*.) cs ls
 
     polyVecGrandProduct :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
     polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
