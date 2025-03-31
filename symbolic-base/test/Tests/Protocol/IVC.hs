@@ -25,6 +25,7 @@ import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof 
 import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
+import           ZkFold.Base.Protocol.IVC.Internal           (IVCProof (..), IVCAssumptions (..), noIVCProof, ivcSetup, ivcProve, ivcVerify)
 import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
@@ -41,6 +42,11 @@ type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
 type PARDEG = 5
 type PAR = PolyVec F PARDEG
+type IVCPROOF = IVCProof K C F
+-- type ctx0
+-- type ctx1
+-- type algo
+-- type IVCASSUMPTIONS = IVCAssumptions ???
 
 testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
     => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
@@ -119,30 +125,27 @@ testDeciderResult phi = decider (testAccumulator phi)
     --let s = testAccumulatorScheme phi
     --in decider (testAccumulator phi)
 
-{-- Tentative code: I would like to itereate the prover to accumulate at each step a new proof associated with a new predicate and then output the vector of accumulator-proof pairs. Then we can call the verifier to check each iteration step and call teh decider on the last accumulator to check the final result.
-
-iterateProver :: [PHI] -> [(Accumulator K I C F, Vector (D - 1) (C F))]
-iterateProver phis =
-    let s = testAccumulatorScheme (head phis)  -- Use the scheme from the first PHI
-        initialAcc = initAccumulator (head phis)  -- Initialize with the first PHI
-        iterateStep (acc, results) phi =
-            let (newAcc, proofVec) = prover s acc (testInstanceProofPair phi)  -- Prover step
-            in (newAcc, results ++ [(newAcc, proofVec)])  -- Append the new accumulator and proof
-    in snd $ foldl iterateStep (initialAcc, []) phis
-
-iterateProverVerifier :: [PHI] -> (Accumulator K I C F, [Vector (D - 1) (C F)])
+iterateProverVerifier :: [PHI] -> (Accumulator K I C F, Vector (D - 1) (C F))
 iterateProverVerifier phis =
-    let s = testAccumulatorScheme (head phis)  -- Use the scheme from the first PHI
-        initialAcc = initAccumulator (head phis)  -- Initialize with the first PHI
+    let initialAcc = initAccumulator (head phis)  -- Initialize with the first PHI
+        initialProof = testAccumulationProof (head phis)  -- Initialize with the first proof
         iterateStep (acc, allProofs) phi =
-            let proof = testInstanceProofPair phi
+            let s = testAccumulatorScheme (phi)  -- Use the scheme from the first PHI
+                proof = testInstanceProofPair phi
                 (newAcc, proofVec) = prover s acc proof  -- Prover step
                 verifierAcc = verifier s (testPublicInput phi) (testNarkProof phi) (AccumulatorInstance newAcc) proofVec
             in if verifierAcc == AccumulatorInstance newAcc
-               then (newAcc, allProofs ++ [proofVec])  -- Append the proofVec to the list of proofs
+               --then (newAcc, allProofs ++ [proofVec])  -- Append the proofVec to the list of proofs
+               then (newAcc, proofVec)
                else error "Verification failed: Prover and Verifier accumulators do not match"
-    in foldl iterateStep (initialAcc, []) phis
---}
+    in foldl iterateStep (initialAcc, initialProof) (tail phis) --foldl f s [x1, ..., xn] = f ( ... (f (f s x1) x2) ... ) xn
+
+testTrivialIVCProof :: K -> C -> F -> IVCPROOF
+testTrivialIVCProof k c f = noIVCProof k f c
+
+testIVCProver :: PHI -> IVCPROOF
+
+-- testIVCProver :: PHI -> Accumulator K I C F
 
 specAlgebraicMap :: Spec
 specAlgebraicMap = do
@@ -161,18 +164,30 @@ specAccumulatorScheme = do
     describe "Accumulator scheme specification" $ do
         describe "verifier" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
+                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p) -- 1 iteration of prover 1 of verifier
             it "must reject on different predicates" $ do
                 withMaxSuccess 10 $ property $ \p q -> p!=q ==> testVerifierResult (testPredicate q) != testAccumulatorInstance (testPredicate p)
-            it "must reject on different predicates" $ do 
+            it "must reject on different predicates" $ do --  
                 withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate p) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate q) && fst $ testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != testVerifierResult (testPredicate r)
         describe "decider" $ do
-            it "must output zeros" $ do
+            it "must output zeros" $ do -- test decider on 1 iteration
                 withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == zeroVector (C F) C F
             it "must reject on different predicates" $ do 
                 withMaxSuccess 10 $ property $ \p q r -> p!=q || p!=r || q!=r ==> fst $ decider testProverMismsatch (testPredicate q) (testPredicate p) (testPredicate r) != zeroVector (C F) C F
+        describe "accumulator scheme" $ do
+            it "must not reject and output zeros" $ do
+                withMaxSuccess 10 $ property $ \p -> decider $ fst $ iterateProverVerifier (p) == zeroVector (C F) C F
+            it "verifier must reject on mismatched pairs accumulator--accumulation-proof" $ do
+                withMaxSuccess 10 $ property $ \p q -> p!=q ==> verifier (testAccumulatorScheme p) (testPublicInput p) (testNarkProof p) (initAccumulatorInstance p) (testAccumulationProof q) != testAccumulatorInstance (testPredicate p) && verifier (testAccumulatorScheme p) (testPublicInput p) (testNarkProof p) (initAccumulatorInstance p) (testAccumulationProof q) != testAccumulatorInstance (testPredicate q)
+
+
+specIVCScheme :: Spec
+specIVCScheme = do
+    describe "IVC protocol specification" $ do
+        it "IVC prover is well formed and verifier accpets" $ do
+            withMaxSuccess 10 $ property $ -- complete
 
 specIVC :: Spec
 specIVC = do
-    specAlgebraicMap
+    specAlgebraicMap  
     specAccumulatorScheme
