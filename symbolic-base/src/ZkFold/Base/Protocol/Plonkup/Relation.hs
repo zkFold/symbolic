@@ -84,10 +84,10 @@ toPlonkupRelation ::
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
-        plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
+        plonkConstraints    = {-# SCC plonk_constraints #-} map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
         rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
         -- TODO: We are expecting at most one range.
-        t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        t = {-# SCC t #-} toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
@@ -102,12 +102,12 @@ toPlonkupRelation ac =
             , replicate (value @n -! n') ConsExtra
             ]
 
-        qM = toPolyVec $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
-        qL = toPolyVec $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
-        qR = toPolyVec $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
-        qO = toPolyVec $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
-        qC = toPolyVec $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
-        qK = toPolyVec $ fromList $ map isLookupConstraint plonkupSystem
+        qM = {-# SCC qm #-} toPolyVec $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
+        qL = {-# SCC ql #-} toPolyVec $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
+        qR = {-# SCC qr #-} toPolyVec $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
+        qO = {-# SCC qo #-} toPolyVec $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
+        qC = {-# SCC qc #-} toPolyVec $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
+        qK = {-# SCC qk #-} toPolyVec $ fromList $ map isLookupConstraint plonkupSystem
 
         a  = map getA plonkupSystem
         b  = map getB plonkupSystem

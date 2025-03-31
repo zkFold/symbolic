@@ -82,7 +82,7 @@ plonkupSetup Plonkup {..} =
     let gs = toV gs'
         h0 = pointGen
 
-        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
+        relation@PlonkupRelation{..} = {-# SCC relation #-} fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
 
         f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i
