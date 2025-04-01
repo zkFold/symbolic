@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
+import           Control.DeepSeq                                 (NFData, force)
 import           Data.Bool                                       (bool)
 import qualified Data.Vector                                     as V
 import           Data.Word                                       (Word8)
@@ -43,6 +44,7 @@ plonkupProve :: forall p i n l g1 g2 ts pv .
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    , NFData (pv (PlonkupPolyExtendedLength n))
     ) => PlonkupProverSetup p i n l g1 g2 pv -> (PlonkupWitnessInput p i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wExtra wInput, PlonkupProverSecret ps)
@@ -160,14 +162,14 @@ plonkupProve PlonkupProverSetup {..}
         deltaX   = polyVecConstant delta
         epsilonX = polyVecConstant epsilon
         qX = {-# SCC qx #-} (
-                (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
-              + (aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha
-              - (aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha
-              + (z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2
-              + qkX * (aX - fX) .* alpha3
-              + z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4
-              - (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4
-              + (z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5
+                force (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
+              + force ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
+              - force ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
+              + force ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
+              + force (qkX * (aX - fX) .* alpha3)
+              + force (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
+              - force ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
+              + force ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
             ) `polyVecDiv` zhX
         qlowX  = toPolyVec $ V.take (fromIntegral (n+2)) $ fromPolyVec qX
         qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
