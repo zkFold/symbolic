@@ -89,10 +89,13 @@ plonkupSetup Plonkup {..} =
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
             _ -> error "setup: invalid index"
-        s = {-# SCC s #-} f <$> fromPermutation @(PlonkupPermutationSize n) sigma
-        sigma1s = toPolyVec $ V.take (fromIntegral $ value @n) s
-        sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
-        sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
+
+        g _ = omega
+
+        s = {-# SCC s #-} g <$> fromPermutation @(PlonkupPermutationSize n) sigma
+        sigma1s = {-# SCC sigma1s #-} toPolyVec $ V.take (fromIntegral $ value @n) s
+        sigma2s = {-# SCC sigma2s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
+        sigma3s = {-# SCC sigma3s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
         qmX = (polyVecInLagrangeBasis omega qM)
         qlX = (polyVecInLagrangeBasis omega qL)
