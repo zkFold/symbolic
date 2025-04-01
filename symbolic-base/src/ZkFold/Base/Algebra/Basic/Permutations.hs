@@ -21,7 +21,7 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector (..), fromVector, toVector, unsafeToVector)
+import           ZkFold.Base.Data.Vector          (Vector (..), toVector, unsafeToVector)
 import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
@@ -52,8 +52,8 @@ instance KnownNat n => Arbitrary (Permutation n) where
         in Permutation . unsafeToVector <$>
               f [] [fromConstant x | x <- [1..value @n]]
 
-fromPermutation :: Permutation n -> [Natural]
-fromPermutation (Permutation perm) = fromVector perm
+fromPermutation :: Permutation n -> V.Vector Natural
+fromPermutation (Permutation perm) = toV perm
 
 applyPermutation :: KnownNat n => Permutation n -> Vector n a -> Vector n a
 applyPermutation (Permutation ps) as =

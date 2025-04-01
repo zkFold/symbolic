@@ -2,9 +2,9 @@
 
 module Tests.Algebra.Permutations (specPermutations) where
 
-import           Data.List                              (sort)
 import           Data.Map                               (elems)
 import qualified Data.Vector                            as V
+import qualified Data.Vector.Algorithms.Intro           as V
 import           Prelude                                hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
@@ -23,4 +23,4 @@ specPermutations = do
                 \v ->
                     let ts = mkIndexPartition @Integer $ V.fromList $ fromVector @100 v
                         p = fromPermutation @100 $ fromCycles ts
-                    in sort p == sort (V.toList $ V.concat $ elems ts)
+                    in V.modify V.sort p == V.modify V.sort (V.concat $ elems ts)
