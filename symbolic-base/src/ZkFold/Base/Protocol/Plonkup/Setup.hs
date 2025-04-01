@@ -84,7 +84,7 @@ plonkupSetup Plonkup {..} =
 
         relation@PlonkupRelation{..} = {-# SCC relation #-} fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
 
-        f i = case (i-!1) `Prelude.div` value @n of
+        f i = {-# SCC f #-} case (i-!1) `Prelude.div` value @n of
             0 -> omega^i
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
@@ -92,7 +92,7 @@ plonkupSetup Plonkup {..} =
 
         g _ = omega
 
-        s = {-# SCC s #-} g <$> fromPermutation @(PlonkupPermutationSize n) sigma
+        s = {-# SCC s #-} f <$> fromPermutation @(PlonkupPermutationSize n) sigma
         sigma1s = {-# SCC sigma1s #-} toPolyVec $ V.take (fromIntegral $ value @n) s
         sigma2s = {-# SCC sigma2s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = {-# SCC sigma3s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
