@@ -52,4 +52,5 @@ main = defaultMain
       , benchOps @128 @4096
       , benchOps @1024 @1024
       , benchOps @4096 @4096
+      , benchOps @1048576 @1048576
       ]
