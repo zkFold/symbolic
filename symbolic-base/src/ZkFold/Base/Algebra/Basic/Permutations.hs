@@ -11,10 +11,12 @@ module ZkFold.Base.Algebra.Basic.Permutations (
     fromCycles
 ) where
 
+import           Control.DeepSeq                  (NFData, force)
 import           Data.Functor.Rep                 (Representable (index))
-import           Data.Map.Strict                  (Map, elems, empty, singleton, union, insertWith)
+import           Data.Map.Strict                  (Map, elems, empty, insertWith)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
+import           GHC.Generics                     (Generic)
 import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
@@ -39,7 +41,7 @@ mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) 
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFData)
 
 instance KnownNat n => Arbitrary (Permutation n) where
     arbitrary =
@@ -64,7 +66,7 @@ applyPermutation (Permutation ps) as =
         fmap (index as . naturalToZp) ps
 
 applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
-applyCycle c (Permutation perm) = Permutation $ fmap f perm
+applyCycle c (Permutation perm) = force $ Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of
