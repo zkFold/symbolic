@@ -36,7 +36,7 @@ spec gen = do
 --    specAdditiveGroup
 --    specEllipticCurve
 --    specPairing
---    specPermutations
+    specPermutations
 --    specUnivariate
 --    specReedSolomon
     specGroebner

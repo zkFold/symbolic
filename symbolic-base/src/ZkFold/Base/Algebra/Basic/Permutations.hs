@@ -12,7 +12,7 @@ module ZkFold.Base.Algebra.Basic.Permutations (
 ) where
 
 import           Data.Functor.Rep                 (Representable (index))
-import           Data.Map                         (Map, elems, empty, singleton, union)
+import           Data.Map.Strict                  (Map, elems, empty, singleton, union, insertWith)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
 import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
@@ -32,9 +32,9 @@ type IndexSet = V.Vector Natural
 type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
-mkIndexPartition vs =
-    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
-    in V.foldl union empty $ fmap f vs
+mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) e [ix] m) empty $ V.zip vs [1 .. fromIntegral $ V.length vs]
+--    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
+--    in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
 
