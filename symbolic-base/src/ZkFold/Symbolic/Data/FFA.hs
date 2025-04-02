@@ -73,8 +73,9 @@ type KnownFFA p r c =
 
 instance (Symbolic c, KnownFFA p r c) => SymbolicData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
-  isValid ffa@(FFA _ ux) =
-    isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
+  isValid ffa@(FFA _ ux) = if value @p == value @(Order (BaseField c))
+    then true
+    else isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
 instance (NFData (FieldElement c), NFData (UIntFFA p r c)) => NFData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
