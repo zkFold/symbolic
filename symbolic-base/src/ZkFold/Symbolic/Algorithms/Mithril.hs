@@ -49,3 +49,4 @@ mithril stakeDist messageHash (r, s) =
           )
           zero
           stakeDist
+  
