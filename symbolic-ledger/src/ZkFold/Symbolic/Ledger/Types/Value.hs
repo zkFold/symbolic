@@ -18,8 +18,8 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 
 import           Data.Coerce                          (coerce)
 import           GHC.Generics                         (Generic)
-import           Prelude                              hiding (Bool, Eq, Int, all, length, null, splitAt, (&&), (*), (+),
-                                                       (==), (||))
+import           Prelude                              hiding (Bool, Eq, Int, all, foldr, length, null, splitAt, (&&),
+                                                       (*), (+), (==), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                (Symbolic)
@@ -115,9 +115,8 @@ addAssetValue givenAssetVal (UnsafeAssetValues assetValList) =
 -- | Safe constructor for 'AssetValues'.
 assetValuesFromList ::
      SymbolicFold context
-  => Foldable (List context)
   => KnownRegistersAssetQuantity context
   => List context (AssetValue context)
   -> AssetValues context
-assetValuesFromList = foldr addAssetValue emptyAssetValues
+assetValuesFromList = Symbolic.List.foldr (Morph \(x, acc) -> addAssetValue x acc) emptyAssetValues
 
