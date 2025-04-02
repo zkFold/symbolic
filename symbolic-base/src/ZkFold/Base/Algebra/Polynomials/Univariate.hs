@@ -168,7 +168,10 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    P l * P r = removeZeros $ P $ mulAdaptive l r
+    P l * P r 
+      | Just (m, cm, c0) <- isShiftedMono r = scaleP cm m (P l) + (P $ (*c0) <$> l) 
+      | Just (m, cm, c0) <- isShiftedMono l = scaleP cm m (P r) + (P $ (*c0) <$> r)
+      | otherwise = removeZeros $ P $ mulAdaptive l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -478,8 +481,8 @@ instance
     -- Then, division can be performed in O(n)
     --
     polyVecDiv :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
-    polyVecDiv l r
-      | Just (m, cm, c0) <- isShiftedMono r = divShiftedMono (l .* finv cm) m c0
+    polyVecDiv l r@(PV rcs)
+      | Just (m, cm, c0) <- isShiftedMono rcs = divShiftedMono (l .* finv cm) m c0
       | otherwise = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
     castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
@@ -491,8 +494,8 @@ instance
 -- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
 -- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
 --
-isShiftedMono :: forall c size . (KnownNat size, Field c, Eq c) => PolyVec c size -> Maybe (Natural, c, c)
-isShiftedMono (PV cs)
+isShiftedMono :: forall c . (Field c, Eq c) => V.Vector c -> Maybe (Natural, c, c)
+isShiftedMono cs
   | V.length filtered /= 2 = Nothing
   | otherwise =
       case V.toList filtered of
