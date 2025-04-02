@@ -10,7 +10,7 @@ import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (Auto), GetRegisterSize)
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, toUInt)

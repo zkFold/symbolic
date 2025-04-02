@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Algorithms.Mithril where
-  
+
 import           Data.Foldable                           (foldl')
 import           Data.Type.Equality
 import           GHC.TypeLits                            (KnownNat)
@@ -11,9 +11,9 @@ import           GHC.TypeLits                            (KnownNat)
 import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Data.Vector                 (Vector)
-import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA  (ecdsaVerify)
-import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (Auto), GetRegisterSize)
+import qualified ZkFold.Symbolic.Class                   as S
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
@@ -49,4 +49,4 @@ mithril stakeDist messageHash (r, s) =
           )
           zero
           stakeDist
-  
+
