@@ -17,6 +17,7 @@ import           Data.Zip                                   (Semialign (..), Zip
 import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
 import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($),
                                                              (.), (<$>))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class            (Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
@@ -84,6 +85,7 @@ type RecursiveFunctionAssumptions algo d a i c f ctx =
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
+    , P.Eq f
     )
 
 type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx

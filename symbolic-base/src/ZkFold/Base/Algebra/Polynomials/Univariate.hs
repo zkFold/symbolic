@@ -168,10 +168,7 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    P l * P r 
-      | Just (m, cm, c0) <- isShiftedMono r = scaleP cm m (P l) + (P $ (*c0) <$> l) 
-      | Just (m, cm, c0) <- isShiftedMono l = scaleP cm m (P r) + (P $ (*c0) <$> r)
-      | otherwise = removeZeros $ P $ mulAdaptive l r
+    P l * P r = removeZeros $ P $ mulAdaptive l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -179,16 +176,24 @@ padVector v l
   | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
 
-mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
+mulAdaptive :: forall c . (Field c, Eq c) => V.Vector c -> V.Vector c -> V.Vector c
 mulAdaptive l r
       | V.null l = V.empty
       | V.null r = V.empty
+      | Just (m, cm, c0) <- isShiftedMono r = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx l (fromIntegral m) cm c0
+      | Just (m, cm, c0) <- isShiftedMono l = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx r (fromIntegral m) cm c0
       | otherwise =
           case (maybeW2n, len <= 64) of
             (_, True)        -> mulVector l r
             (Just w2n, _)    -> mulDft (p + 1) w2n lPaddedDft rPaddedDft
             (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
         where
+            mulShiftedMonoIx :: V.Vector c -> Int -> c -> c -> Int -> c
+            mulShiftedMonoIx ref m cm c0 ix =
+                let scaled  = if ix < V.length ref then c0 * (ref V.! ix) else zero
+                    shifted = if ix >= m && ix P.- m < V.length ref then cm * (ref V.! (ix P.- m)) else zero
+                in scaled + shifted
+
             len :: Int
             len = max (V.length l) (V.length r)
 
@@ -234,7 +239,7 @@ mulDft p w2n lPadded rPadded = c
     c :: V.Vector c
     c = (* nInv) <$> genericDft p w2nInv cImage
 
-mulKaratsuba :: forall a. Field a => V.Vector a -> V.Vector a -> V.Vector a
+mulKaratsuba :: forall a. (Field a, Eq a) => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2
   | len == 1 = V.zipWith (*) v1 v2
   | otherwise = result
@@ -465,7 +470,7 @@ instance
             nInt :: P.Int
             nInt = fromIntegral $ value @n
 
-            norms = V.generate (V.length cs) $ \ix -> omega ^ (fromIntegral ix) // fromConstant (value @n)
+            norms = V.generate (V.length cs) $ \ix -> omega ^ (fromIntegral ix :: Natural) // fromConstant (value @n)
 
             cyc = V.backpermute cs $ V.generate (V.length cs) (\ix -> pred ix `P.mod` nInt)
             dft = genericDft (log2ceiling $ value @n) omega $ V.zipWith (*) norms cyc
@@ -511,7 +516,7 @@ isShiftedMono cs
 -- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
 -- The remainder is discarded.
 --
-divShiftedMono :: forall c size . (KnownNat size, Field c, Eq c) => PolyVec c size -> Natural -> c -> PolyVec c size
+divShiftedMono :: forall c size . (KnownNat size, Field c) => PolyVec c size -> Natural -> c -> PolyVec c size
 divShiftedMono (PV cs) m c0 = PV $ V.create $ do
     let intLen = fromIntegral $ value @size
         intM   = fromIntegral m
@@ -550,21 +555,21 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
+instance (Field c, Eq c, KnownNat size) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
-instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
+instance {-# OVERLAPPING #-} (Field c, Eq c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+instance (Field c, Eq c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
     (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
-instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
+instance (Field c, Eq c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
-instance (Field c, KnownNat size) => Semiring (PolyVec c size)
+instance (Field c, Eq c, KnownNat size) => Semiring (PolyVec c size)
 
-instance (Field c, KnownNat size) => Ring (PolyVec c size)
+instance (Field c, Eq c, KnownNat size) => Ring (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec @_ @(PolyVec c) <$> V.replicateM (fromIntegral $ value @size) (arbitrary @c)

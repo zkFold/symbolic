@@ -17,6 +17,7 @@ import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
 import           GHC.Generics                               (Generic, U1, (:*:))
 import           Prelude                                    (Show, const, ($))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
@@ -74,6 +75,7 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , k ~ 1
     , Zip i
     , Field f
+    , P.Eq f
     , HashAlgorithm algo f
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
