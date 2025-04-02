@@ -28,7 +28,9 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     ) where
 
 import           Control.DeepSeq                  (NFData (..))
+import           Control.Monad                    (forM_)
 import qualified Data.Vector                      as V
+import qualified Data.Vector.Mutable              as VM
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
@@ -39,7 +41,7 @@ import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (replicate, zipWithDefault, log2ceiling)
+import           ZkFold.Prelude                   (log2ceiling, replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.
@@ -446,16 +448,16 @@ instance
             wi = omega ^ i
 
             wInv = one // wi
-                    
+
             norm = wi // fromConstant n
-    
+
             vecLen = fromIntegral $ value @size
 
             coefficients (_, 0)  = (zero, (zero, 0))
             coefficients (w, ix) = (w, (w * wInv, ix -! 1))
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
-    polyVecInLagrangeBasis omega (PV cs) = PV $ addZeros @c @size $ V.reverse dft 
+    polyVecInLagrangeBasis omega (PV cs) = PV $ addZeros @c @size $ V.reverse dft
         where
             nInt :: P.Int
             nInt = fromIntegral $ value @n
@@ -463,9 +465,7 @@ instance
             norms = V.generate (V.length cs) $ \ix -> omega ^ (fromIntegral ix) // fromConstant (value @n)
 
             cyc = V.backpermute cs $ V.generate (V.length cs) (\ix -> pred ix `P.mod` nInt)
-            dft = genericDft (log2ceiling $ value @n) omega $ V.zipWith (*) norms cyc 
---        let ls = fmap (\i -> polyVecLagrange (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
---        in sum $ V.zipWith (*.) cs ls
+            dft = genericDft (log2ceiling $ value @n) omega $ V.zipWith (*) norms cyc
 
     polyVecGrandProduct :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
     polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
@@ -474,14 +474,52 @@ instance
             zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
         in PV zs
 
+    -- Special case: @r@ == ax^m + b, m > 0 (or 'shifted monomial')
+    -- Then, division can be performed in O(n)
+    --
     polyVecDiv :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
-    polyVecDiv l r = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
+    polyVecDiv l r
+      | Just (m, cm, c0) <- isShiftedMono r = divShiftedMono (l .* finv cm) m c0
+      | otherwise = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
     castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
     castPolyVec (PV cs)
         | value @size <= value @size'                             = toPolyVec cs
         | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
         | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
+
+-- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
+-- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
+--
+isShiftedMono :: forall c size . (KnownNat size, Field c, Eq c) => PolyVec c size -> Maybe (Natural, c, c)
+isShiftedMono (PV cs)
+  | V.length filtered /= 2 = Nothing
+  | otherwise =
+      case V.toList filtered of
+        [(c0, 0), (cm, m)] -> pure (m, cm, c0)
+        _                  -> Nothing
+    where
+        ixed :: V.Vector (c, Natural)
+        ixed = V.zip cs $ V.iterateN (V.length cs) succ 0
+
+        filtered :: V.Vector (c, Natural)
+        filtered = V.filter ((/= zero) . fst) ixed
+
+-- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
+-- The remainder is discarded.
+--
+divShiftedMono :: forall c size . (KnownNat size, Field c, Eq c) => PolyVec c size -> Natural -> c -> PolyVec c size
+divShiftedMono (PV cs) m c0 = PV $ V.create $ do
+    let intLen = fromIntegral $ value @size
+        intM   = fromIntegral m
+    c   <- V.thaw cs
+    res <- VM.replicate intLen zero
+    forM_ [intLen P.- 1, intLen P.- 2 .. intM] $ \ix -> do
+        ci <- VM.read c ix
+        VM.write res (ix P.- intM) ci
+        VM.modify c (\x -> x - ci * c0) (ix P.- intM)
+    pure res
+
 
 instance
     ( UnivariateRingPolyVec c pv

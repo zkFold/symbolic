@@ -119,6 +119,9 @@ specUnivariatePolyVec' = do
             describe "Polynomial division" $ do
                 it "should satisfy the definition" $ do
                     property $ \(p :: PolyVec c s) q -> q /= zero ==> propPolyVecDivision p q
+                it "should correctly divide by cm * x^m + c0" $ do
+                    property $ \(p :: PolyVec c s) (m :: Integer) (cm :: c) (c0 :: c) -> 
+                        propPolyVecDivision p (cm *. polyVecZero ((fromIntegral $ abs m) `Prelude.mod` (value @s)) + polyVecConstant c0)
             describe "polyVecZero" $ do
                 it "should satisfy the definition" $ do
                     all (propPolyVecZero @c @s @d) [0 .. value @d -! 1] `shouldBe` True
