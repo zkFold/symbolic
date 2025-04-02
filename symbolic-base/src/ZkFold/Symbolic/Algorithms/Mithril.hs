@@ -11,7 +11,7 @@ import           GHC.TypeLits                            (KnownNat)
 import           ZkFold.Base.Algebra.Basic.Class         hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.EllipticCurve.Class
 import           ZkFold.Base.Data.Vector                 (Vector)
-import qualified ZkFold.Symbolic.Class                   as S
+import           ZkFold.Symbolic.Class                   (Symbolic, BaseField)
 import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA  (ecdsaVerify)
 import           ZkFold.Symbolic.Data.Combinators        (NumberOfRegisters, RegisterSize (Auto), GetRegisterSize)
 import           ZkFold.Symbolic.Data.Conditional
@@ -22,7 +22,7 @@ type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx .
-     ( S.Symbolic ctx
+     ( Symbolic ctx
      , baseField ~ FFA q 'Auto ctx
      , scalarField ~ FFA p 'Auto ctx
      , point ~ Weierstrass curve (Point baseField)
@@ -31,8 +31,8 @@ mithril
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
      )
   => StakeDistribution m point ctx
   -> scalarField
@@ -49,4 +49,3 @@ mithril stakeDist messageHash (r, s) =
           )
           zero
           stakeDist
-  

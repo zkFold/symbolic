@@ -11,11 +11,13 @@ import           Examples.Blake2b                            (exampleBlake2b_224
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
 import           Examples.Constant                           (exampleConst5, exampleEq5)
+import           Examples.ECDSA                              (exampleECDSA)
 import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MiMCHash                           (exampleMiMC)
+import           Examples.Mithril                            (exampleMithril)
 import           Examples.Pasta                              (examplePallas_Add, examplePallas_Scale)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
@@ -90,10 +92,11 @@ examples =
   , ("FFA.Mul.Native", exampleOutput @B exampleFFAmul337)
   , ("FFA.Inv.Native", exampleOutput @B exampleFFAinv337)
   , ("Pallas.Add", exampleOutput @B examplePallas_Add)
-  -- , ("Pallas.Scale", exampleOutput @B examplePallas_Scale)
+  , ("Pallas.Scale", exampleOutput @B examplePallas_Scale)
   -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
   -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Base) exampleEd25519Scale)
-  -- , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
+  , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
+  , ("Mithril.256.2", exampleOutput @B $ exampleMithril @1 @256)
   , ("Blake2b_224", exampleOutput @A $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)

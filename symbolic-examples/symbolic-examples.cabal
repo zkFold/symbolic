@@ -103,6 +103,7 @@ library
       Examples.JWT
       Examples.LEQ
       Examples.MiMCHash
+      Examples.Mithril
       Examples.Pasta
       Examples.ReverseList
       Examples.RSA
