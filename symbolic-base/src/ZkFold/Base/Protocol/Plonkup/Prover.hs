@@ -110,10 +110,10 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmF
             `transcript` compress cmH1
             `transcript` compress cmH2
-        beta    = {-# SCC beta    #-} challenge (ts2 `transcript` (1 :: Word8))
-        gamma   = {-# SCC gamma   #-} challenge (ts2 `transcript` (2 :: Word8))
-        delta   = {-# SCC delta   #-} challenge (ts2 `transcript` (3 :: Word8))
-        epsilon = {-# SCC epsilon #-} challenge (ts2 `transcript` (4 :: Word8))
+        beta    = challenge (ts2 `transcript` (1 :: Word8))
+        gamma   = challenge (ts2 `transcript` (2 :: Word8))
+        delta   = challenge (ts2 `transcript` (3 :: Word8))
+        epsilon = challenge (ts2 `transcript` (4 :: Word8))
 
         omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
         omegas' = toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
@@ -128,7 +128,7 @@ plonkupProve PlonkupProverSetup {..}
         rotL p = toPolyVec $ V.drop 1 (fromPolyVec p) V.++ V.take 1 (fromPolyVec p)
 
         -- TODO: check operation order
-        grandProduct1 = {-# SCC grandProduct1 #-} rotR . cumprod $
+        grandProduct1 = rotR . cumprod $
                 (w1 + (beta *. omegas) .+ gamma)
             .*. (w2 + ((beta * k1) *. omegas) .+ gamma)
             .*. (w3 + ((beta * k2) *. omegas) .+ gamma)
@@ -137,7 +137,7 @@ plonkupProve PlonkupProverSetup {..}
             ./. (w3 + (beta *. sigma3s) .+ gamma)
         z1X = polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n g1 pv
 
-        grandProduct2 = {-# SCC grandProduct2 #-} rotR . cumprod $
+        grandProduct2 = rotR . cumprod $
                 (one + delta) *. (epsilon +. f_zeta)
             .*. ((epsilon * (one + delta)) +. t_zeta + delta *. rotL t_zeta)
             ./. ((epsilon * (one + delta)) +. h1 + delta *. h2)
@@ -161,7 +161,10 @@ plonkupProve PlonkupProverSetup {..}
         gammaX   = polyVecConstant gamma
         deltaX   = polyVecConstant delta
         epsilonX = polyVecConstant epsilon
-        qX = {-# SCC qx #-} (
+
+        -- TODO: even with all these @force@-s, @qX@ still generates somewhat big thunks, most of which are from @genericDft@.
+        -- If this becomes critical in the future, we'll need to add strict multiplication.
+        qX = (
                 force (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
               + force ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
               - force ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
@@ -175,9 +178,9 @@ plonkupProve PlonkupProverSetup {..}
         qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
         qhighX = toPolyVec $ V.drop (fromIntegral (2*(n+2))) $ fromPolyVec qX
 
-        cmQlow  = {-# SCC cmQlow  #-} gs `com` qlowX
-        cmQmid  = {-# SCC cmQmid  #-} gs `com` qmidX
-        cmQhigh = {-# SCC cmQhigh #-} gs `com` qhighX
+        cmQlow  = gs `com` qlowX
+        cmQmid  = gs `com` qmidX
+        cmQhigh = gs `com` qhighX
 
         -- Round 5
 
@@ -204,7 +207,7 @@ plonkupProve PlonkupProverSetup {..}
 
         -- Round 6
 
-        ts5 = {-# SCC ts5 #-} ts4
+        ts5 = ts4
             `transcript` a_xi
             `transcript` b_xi
             `transcript` c_xi
@@ -222,7 +225,7 @@ plonkupProve PlonkupProverSetup {..}
         pi_xi = piX `evalPolyVec` xi
         zhX_xi = zhX `evalPolyVec` xi
 
-        rX = {-# SCC rX #-}
+        rX =
                 qmX .* (a_xi * b_xi) + qlX .* a_xi + qrX .* b_xi + qoX .* c_xi + one .* pi_xi + qcX
               + alpha *. (((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma)) *. z1X
                         - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
@@ -237,7 +240,7 @@ plonkupProve PlonkupProverSetup {..}
 
         vn i = v ^ (i :: Natural)
 
-        proofX1 = {-# SCC proofX1 #-} (
+        proofX1 = (
                   rX
                 + (vn 1 *. (aX - (a_xi *. one)))
                 + (vn 2 *. (bX - (b_xi *. one)))
@@ -248,7 +251,7 @@ plonkupProve PlonkupProverSetup {..}
                 + (vn 7 *. (tX - (t_xi *. one)))
                 + (vn 8 *. (h2X - (h2_xi *. one)))
             ) `polyVecDiv` polyVecLinear one (negate xi)
-        proofX2 = {-# SCC proofX2 #-} (
+        proofX2 = (
                   z1X - (z1_xi' *. one)
                 + (vn 1 *. (tX - (t_xi' *. one)))
                 + (vn 2 *. (z2X - (z2_xi' *. one)))

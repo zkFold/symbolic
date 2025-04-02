@@ -8,7 +8,6 @@ import           Data.Binary                                       (Binary)
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Maybe                                        (fromJust)
 import qualified Data.Vector                                       as V
-import           GHC.IsList                                        (IsList (..))
 import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                     (^))
 
@@ -82,44 +81,42 @@ plonkupSetup Plonkup {..} =
     let gs = toV gs'
         h0 = pointGen
 
-        relation@PlonkupRelation{..} = {-# SCC relation #-} fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
+        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation p i n l (ScalarFieldOf g1) pv
 
-        f i = {-# SCC f #-} case (i-!1) `Prelude.div` value @n of
+        f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
             _ -> error "setup: invalid index"
 
-        g _ = omega
+        s = f <$> fromPermutation @(PlonkupPermutationSize n) sigma
+        sigma1s = toPolyVec $ V.take (fromIntegral $ value @n) s
+        sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
+        sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        s = {-# SCC s #-} f <$> fromPermutation @(PlonkupPermutationSize n) sigma
-        sigma1s = {-# SCC sigma1s #-} toPolyVec $ V.take (fromIntegral $ value @n) s
-        sigma2s = {-# SCC sigma2s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
-        sigma3s = {-# SCC sigma3s #-} toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
-
-        qmX = {-# SCC qmx #-} polyVecInLagrangeBasis omega qM
-        qlX = {-# SCC qlx #-} polyVecInLagrangeBasis omega qL
-        qrX = {-# SCC qrx #-} polyVecInLagrangeBasis omega qR
-        qoX = {-# SCC qox #-} polyVecInLagrangeBasis omega qO
-        qcX = {-# SCC qcx #-} polyVecInLagrangeBasis omega qC
-        qkX = {-# SCC qkx #-} polyVecInLagrangeBasis omega qK
-        s1X = {-# SCC s1x #-} polyVecInLagrangeBasis omega sigma1s
-        s2X = {-# SCC s2x #-} polyVecInLagrangeBasis omega sigma2s
-        s3X = {-# SCC s3x #-} polyVecInLagrangeBasis omega sigma3s
-        tX  = {-# SCC tx  #-} polyVecInLagrangeBasis omega t
+        qmX = polyVecInLagrangeBasis omega qM
+        qlX = polyVecInLagrangeBasis omega qL
+        qrX = polyVecInLagrangeBasis omega qR
+        qoX = polyVecInLagrangeBasis omega qO
+        qcX = polyVecInLagrangeBasis omega qC
+        qkX = polyVecInLagrangeBasis omega qK
+        s1X = polyVecInLagrangeBasis omega sigma1s
+        s2X = polyVecInLagrangeBasis omega sigma2s
+        s3X = polyVecInLagrangeBasis omega sigma3s
+        tX  = polyVecInLagrangeBasis omega t
         polynomials = PlonkupCircuitPolynomials {..}
 
         com = bilinear
-        cmQl = {-# SCC cmql #-} gs `com` qlX
-        cmQr = {-# SCC cmqr #-} gs `com` qrX
-        cmQo = {-# SCC cmqo #-} gs `com` qoX
-        cmQm = {-# SCC cmqm #-} gs `com` qmX
-        cmQc = {-# SCC cmqc #-} gs `com` qcX
-        cmQk = {-# SCC cmqk #-} gs `com` qkX
-        cmS1 = {-# SCC cms1 #-} gs `com` s1X
-        cmS2 = {-# SCC cms2 #-} gs `com` s2X
-        cmS3 = {-# SCC cms3 #-} gs `com` s3X
-        cmT1 = {-# SCC cmt1 #-} gs `com` tX
+        cmQl = gs `com` qlX
+        cmQr = gs `com` qrX
+        cmQo = gs `com` qoX
+        cmQm = gs `com` qmX
+        cmQc = gs `com` qcX
+        cmQk = gs `com` qkX
+        cmS1 = gs `com` s1X
+        cmS2 = gs `com` s2X
+        cmS3 = gs `com` s3X
+        cmT1 = gs `com` tX
         commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}

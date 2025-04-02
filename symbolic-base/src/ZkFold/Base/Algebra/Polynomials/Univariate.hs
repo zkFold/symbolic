@@ -483,7 +483,7 @@ instance
         in PV zs
 
     -- Special case: @r@ == ax^m + b, m > 0 (or 'shifted monomial')
-    -- Then, division can be performed in O(n)
+    -- Then, division can be performed in O(size)
     --
     polyVecDiv :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
     polyVecDiv l r@(PV rcs)
@@ -513,11 +513,25 @@ isShiftedMono cs
         filtered :: V.Vector (c, Natural)
         filtered = V.filter ((/= zero) . fst) ixed
 
+
 -- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
 -- The remainder is discarded.
+-- The algorithm requires (size - m) field multiplications.
+--
+-- Division is performed from higher degrees downwards.
+--
+-- i-th step of the algorithm:
+--
+--  ci * x^i =
+--  ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
+--  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
+--
+--  > set the (i-m)-th coefficient of the result to be @ci@
+--  > Subtract @ci * b@ from the (i-m)-th coefficient of the nominator
+--  > Proceed to degree @i-1@
 --
 divShiftedMono :: forall c size . (KnownNat size, Field c) => PolyVec c size -> Natural -> c -> PolyVec c size
-divShiftedMono (PV cs) m c0 = PV $ V.create $ do
+divShiftedMono (PV cs) m b = PV $ V.create $ do
     let intLen = fromIntegral $ value @size
         intM   = fromIntegral m
     c   <- V.thaw cs
@@ -525,7 +539,7 @@ divShiftedMono (PV cs) m c0 = PV $ V.create $ do
     forM_ [intLen P.- 1, intLen P.- 2 .. intM] $ \ix -> do
         ci <- VM.read c ix
         VM.write res (ix P.- intM) ci
-        VM.modify c (\x -> x - ci * c0) (ix P.- intM)
+        VM.modify c (\x -> x - ci * b) (ix P.- intM)
     pure res
 
 

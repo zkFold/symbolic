@@ -85,10 +85,10 @@ toPlonkupRelation ::
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
-        plonkConstraints    = {-# SCC plonk_constraints #-} map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
+        plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
         rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
         -- TODO: We are expecting at most one range.
-        t = {-# SCC t #-} toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
@@ -103,12 +103,12 @@ toPlonkupRelation ac =
             , replicate (value @n -! n') ConsExtra
             ]
 
-        qM = {-# SCC qm #-} toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
-        qL = {-# SCC ql #-} toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
-        qR = {-# SCC qr #-} toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
-        qO = {-# SCC qo #-} toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
-        qC = {-# SCC qc #-} toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
-        qK = {-# SCC qk #-} toPolyVec $ fmap isLookupConstraint plonkupSystem
+        qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
+        qL = toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
+        qR = toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
+        qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
+        qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
+        qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
         a  = fmap getA plonkupSystem
         b  = fmap getB plonkupSystem
