@@ -527,7 +527,7 @@ isShiftedMono cs
 --  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
 --
 --  > set the (i-m)-th coefficient of the result to be @ci@
---  > Subtract @ci * b@ from the (i-m)-th coefficient of the nominator
+--  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
 --  > Proceed to degree @i-1@
 --
 divShiftedMono :: forall c size . (KnownNat size, Field c) => PolyVec c size -> Natural -> c -> PolyVec c size
