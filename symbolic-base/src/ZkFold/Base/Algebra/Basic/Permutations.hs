@@ -35,8 +35,6 @@ type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
 mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) e [ix] m) empty $ V.zip vs [1 .. fromIntegral $ V.length vs]
---    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
---    in V.foldl union empty $ fmap f vs
 
 ------------------------------------- Permutations -------------------------------------------
 
