@@ -96,7 +96,7 @@ examples =
   -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
   -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Base) exampleEd25519Scale)
   , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
-  , ("Mithril.256.2", exampleOutput @B $ exampleMithril @1 @256)
+  , ("Mithril.256.2", exampleOutput @B $ exampleMithril @256 @2)
   , ("Blake2b_224", exampleOutput @A $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)

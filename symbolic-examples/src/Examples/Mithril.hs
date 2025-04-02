@@ -14,7 +14,7 @@ import           ZkFold.Symbolic.Data.FFA                 (KnownFFA)
 import           ZkFold.Symbolic.Data.FieldElement        (FieldElement)
 
 exampleMithril
-  :: forall m n ctx .
+  :: forall n m ctx .
      ( Symbolic ctx
      , KnownFFA FpModulus 'Auto ctx
      , KnownFFA FqModulus 'Auto ctx
