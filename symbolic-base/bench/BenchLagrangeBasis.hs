@@ -35,7 +35,7 @@ benchOps = env (polynomials @n @F) $ \ ~p ->
         [ bench "polyVecInLagrangeBasis" $ nf (uncurry (polyVecInLagrangeBasis @F @(PolyVec F) @n @s)) (omega, p) ]
     where
         omega = case rootOfUnity @F (log2ceiling $ value @n) of
-                  Just w -> w
+                  Just w  -> w
                   Nothing -> error "No roots of unity"
 
 

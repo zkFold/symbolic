@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RebindableSyntax      #-}
