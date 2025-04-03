@@ -1,3 +1,4 @@
+{-# LANGUAGE ImpredicativeTypes #-}
 module ZkFold.Symbolic.Ledger.Types (
     module ZkFold.Symbolic.Ledger.Types.Address,
     module ZkFold.Symbolic.Ledger.Types.Hash,
@@ -15,6 +16,8 @@ module ZkFold.Symbolic.Ledger.Types (
 
 import           ZkFold.Symbolic.Class                         (Symbolic)
 import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.FieldElement             (FieldElement)
+import           ZkFold.Symbolic.Data.Hash                     (Hashable)
 import           ZkFold.Symbolic.Fold                          (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Address
 import           ZkFold.Symbolic.Ledger.Types.Circuit
@@ -42,4 +45,10 @@ type Signature context =
     , KnownRegisters context 11 Auto
     , Symbolic context
     , SymbolicFold context
+    -- TODO: Can we derive 'Hashable h' based on constituents (using generic)?
+    , Hashable (HashSimple context) (AssetValues context)
+    , Hashable (HashSimple context) (Transaction context)
+    , Hashable (HashSimple context) (TransactionBatch context)
+    , Hashable (HashSimple context) (Circuit context, DAIndex context, DAType context)
+    , forall s. Hashable (FieldElement s) (Circuit s, DAIndex s, DAType s)
     )

@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
 
 import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Data.Class        (SymbolicData (Context), SymbolicOutput)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData (Context))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import qualified ZkFold.Symbolic.Data.Hash         as Symbolic.Hash
 
