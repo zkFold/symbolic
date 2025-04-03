@@ -30,7 +30,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
         Symbolic.List.foldr (  -- TODO: Document why we use foldr here.
         -- TODO: Remove type annotations as much as possible.
           Morph \(tx :: Transaction s, (txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s)) ->
-            let (resInputsAccIx, resInputsAccIsConsistent, _) = 
+            let (resInputsAccIx, resInputsAccIsConsistent, _) =
                   Symbolic.List.foldl (
                     Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', ownerAddr :: Address s'), input :: Input s') ->
                       let inputAddr = txoAddress (txiOutput input)
@@ -38,7 +38,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                           newIx = ifThenElse (isNothing inputsAccIx) inputAddrIx inputsAccIx
                           newIsConsistent = ifThenElse (inputAddr == ownerAddr) (inputsAccIsConsistent && newIx == inputAddrIx) inputsAccIsConsistent
                       in (newIx, newIsConsistent, ownerAddr)
-                  ) (txAccIx, txAccIsConsistent, txOwner tx) (txInputs tx) 
+                  ) (txAccIx, txAccIsConsistent, txOwner tx) (txInputs tx)
                 in (resInputsAccIx, resInputsAccIsConsistent)
         ) (nothing :: Maybe context (DAIndex context), true :: Bool context) tbdwTransactions
   in resTxAccIsConsistent
