@@ -26,7 +26,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
   -- * Offline txs list is computed correctly.
   -- * Txs are valid.
   -- TODO: Add more.
-  let (_resTxIx :: Maybe context (DAIndex context), resTxAccIsConsistent :: Bool context) = 
+  let (_resTxAccIx :: Maybe context (DAIndex context), resTxAccIsConsistent :: Bool context) =
         Symbolic.List.foldr (  -- TODO: Document why we use foldr here.
         -- TODO: Remove type annotations as much as possible.
           Morph \(tx :: Transaction s, (txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s)) ->
