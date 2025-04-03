@@ -28,13 +28,13 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
   -- * Txs are valid.
   -- TODO: Add more.
   let (_resTxAccIx :: Maybe context (DAIndex context), resTxAccIsConsistent :: Bool context
-       , resTxAccAddresses :: List context (Address context)) =
+       , resTxAccOnlineAddresses :: List context (Address context)) =
         Symbolic.List.foldl (
         -- TODO: Remove type annotations as much as possible.
-          Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccAddresses :: List s (Address s)), tx :: Transaction s) ->
-            let (resInputsAccIx, resInputsAccIsConsistent, resInputsAccAddresses, _) =
+          Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s)), tx :: Transaction s) ->
+            let (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, _) =
                   Symbolic.List.foldl (
-                    Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', inputsAccAddresses :: List s' (Address s'), ownerAddr :: Address s'), input :: Input s') ->
+                    Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', inputsAccOnlineAddresses :: List s' (Address s'), ownerAddr :: Address s'), input :: Input s') ->
                       let inputAddr = txoAddress (txiOutput input)
                           (_inputAddrCir, inputAddrIx, inputAddrType) = preimage inputAddr
                           minputAddrIx = just inputAddrIx
@@ -43,17 +43,17 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                             ifThenElse (inputAddr == ownerAddr)
                               ( inputsAccIsConsistent && newIx == minputAddrIx
                               , ifThenElse (isOnline inputAddrType)
-                                  (inputAddr .: inputsAccAddresses)
-                                  (inputsAccAddresses)
+                                  (inputAddr .: inputsAccOnlineAddresses)
+                                  (inputsAccOnlineAddresses)
                               )
-                              (inputsAccIsConsistent, inputsAccAddresses)
+                              (inputsAccIsConsistent, inputsAccOnlineAddresses)
                       in (newIx, newIsConsistent, newAddresses, ownerAddr)
                   ) (txAccIx, txAccIsConsistent, emptyList :: List s (Address s), txOwner tx) (txInputs tx)
-                in (resInputsAccIx, resInputsAccIsConsistent, txAccAddresses ++ resInputsAccAddresses)
+                in (resInputsAccIx, resInputsAccIsConsistent, txAccOnlineAddresses ++ resInputsAccOnlineAddresses)
         ) (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context)) tbdwTransactions
   in
       resTxAccIsConsistent
-   && (tbdAddresses == removeDuplicates resTxAccAddresses)
+   && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
 
 -- TODO: Use generic 'elem' from symbolic list module.
 -- | Check if an item is present in the list.

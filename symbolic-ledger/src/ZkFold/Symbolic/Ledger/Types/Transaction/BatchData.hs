@@ -21,11 +21,11 @@ import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAs
 
 -- | Transaction batch data, given to us by a data provider source. Thus all the 'Address' entries here must have same 'DAIndex'.
 data TransactionBatchData context = TransactionBatchData
-    { tbdMerkleRoot   :: Root (Address context, List context (HashSimple context))
+    { tbdMerkleRoot          :: Root (Address context, List context (HashSimple context))
     -- ^ Merkle tree root of the addresses corresponding to online transactions (represented by their transaction hash) that are associated with a particular data availability source.
-    , tbdAddresses    :: List context (Address context)
+    , tbdOnlineAddresses     :: List context (Address context)
     -- ^ List of addresses included in the batch which correspond to online transactions and are associated with a particular data availability source.
-    , tbdTransactions :: List context ((Address context, List context (HashSimple context)))
+    , tbdOfflineTransactions :: List context ((Address context, List context (HashSimple context)))
     -- ^ All offline transactions (represented by their transaction hash) associated with a particular data availability source that are included in the batch.
     }
     deriving stock Generic
