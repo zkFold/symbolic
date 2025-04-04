@@ -28,7 +28,9 @@ module ZkFold.Base.Algebra.Polynomials.Univariate
     ) where
 
 import           Control.DeepSeq                  (NFData (..))
+import           Control.Monad                    (forM_)
 import qualified Data.Vector                      as V
+import qualified Data.Vector.Mutable              as VM
 import           GHC.Generics                     (Generic)
 import           GHC.IsList                       (IsList (..))
 import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
@@ -39,7 +41,7 @@ import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Prelude                   (replicate, zipWithDefault)
+import           ZkFold.Prelude                   (log2ceiling, replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.
@@ -173,16 +175,25 @@ padVector v l
   | V.length v == l = v
   | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
-mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
+
+mulAdaptive :: forall c . (Field c, Eq c) => V.Vector c -> V.Vector c -> V.Vector c
 mulAdaptive l r
       | V.null l = V.empty
       | V.null r = V.empty
+      | Just (m, cm, c0) <- isShiftedMono r = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx l (fromIntegral m) cm c0
+      | Just (m, cm, c0) <- isShiftedMono l = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx r (fromIntegral m) cm c0
       | otherwise =
           case (maybeW2n, len <= 64) of
             (_, True)        -> mulVector l r
             (Just w2n, _)    -> mulDft (p + 1) w2n lPaddedDft rPaddedDft
             (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
         where
+            mulShiftedMonoIx :: V.Vector c -> Int -> c -> c -> Int -> c
+            mulShiftedMonoIx ref m cm c0 ix =
+                let scaled  = if ix < V.length ref then c0 * (ref V.! ix) else zero
+                    shifted = if ix >= m && ix P.- m < V.length ref then cm * (ref V.! (ix P.- m)) else zero
+                in scaled + shifted
+
             len :: Int
             len = max (V.length l) (V.length r)
 
@@ -228,7 +239,7 @@ mulDft p w2n lPadded rPadded = c
     c :: V.Vector c
     c = (* nInv) <$> genericDft p w2nInv cImage
 
-mulKaratsuba :: forall a. Field a => V.Vector a -> V.Vector a -> V.Vector a
+mulKaratsuba :: forall a. (Field a, Eq a) => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2
   | len == 1 = V.zipWith (*) v1 v2
   | otherwise = result
@@ -440,12 +451,29 @@ instance
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
 
     polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> PolyVec c size
-    polyVecLagrange n i omega = (*.) (omega^i // fromConstant n) $ (polyVecZero n - one) `polyVecDiv` polyVecLinear one (negate $ omega^i)
+    polyVecLagrange n i omega = toPolyVec (V.unfoldrExactN vecLen coefficients (norm * wi^(n -! 1), n))
+        where
+            wi = omega ^ i
+
+            wInv = one // wi
+
+            norm = wi // fromConstant n
+
+            vecLen = fromIntegral $ value @size
+
+            coefficients (_, 0)  = (zero, (zero, 0))
+            coefficients (w, ix) = (w, (w * wInv, ix -! 1))
 
     polyVecInLagrangeBasis :: forall n size . (KnownNat n, KnownNat size) => c -> PolyVec c n -> PolyVec c size
-    polyVecInLagrangeBasis omega (PV cs) =
-        let ls = fmap (\i -> polyVecLagrange (value @n) i omega) (V.generate (V.length cs) (fromIntegral . succ))
-        in sum $ V.zipWith (*.) cs ls
+    polyVecInLagrangeBasis omega (PV cs) = PV $ addZeros @c @size $ V.reverse dft
+        where
+            nInt :: P.Int
+            nInt = fromIntegral $ value @n
+
+            norms = V.generate (V.length cs) $ \ix -> omega ^ (fromIntegral ix :: Natural) // fromConstant (value @n)
+
+            cyc = V.backpermute cs $ V.generate (V.length cs) (\ix -> pred ix `P.mod` nInt)
+            dft = genericDft (log2ceiling $ value @n) omega $ V.zipWith (*) norms cyc
 
     polyVecGrandProduct :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size -> c -> c -> PolyVec c size
     polyVecGrandProduct (PV as) (PV bs) (PV sigmas) beta gamma =
@@ -454,14 +482,66 @@ instance
             zs = fmap (product . flip V.take (V.zipWith (//) ps qs)) (V.generate (fromIntegral (value @size)) id)
         in PV zs
 
+    -- Special case: @r@ == ax^m + b, m > 0 (or 'shifted monomial')
+    -- Then, division can be performed in O(size)
+    --
     polyVecDiv :: forall size . (KnownNat size) => PolyVec c size -> PolyVec c size -> PolyVec c size
-    polyVecDiv l r = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
+    polyVecDiv l r@(PV rcs)
+      | Just (m, cm, c0) <- isShiftedMono rcs = divShiftedMono (l .* finv cm) m c0
+      | otherwise = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
     castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
     castPolyVec (PV cs)
         | value @size <= value @size'                             = toPolyVec cs
         | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
         | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
+
+-- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
+-- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
+--
+isShiftedMono :: forall c . (Field c, Eq c) => V.Vector c -> Maybe (Natural, c, c)
+isShiftedMono cs
+  | V.length filtered /= 2 = Nothing
+  | otherwise =
+      case V.toList filtered of
+        [(c0, 0), (cm, m)] -> pure (m, cm, c0)
+        _                  -> Nothing
+    where
+        ixed :: V.Vector (c, Natural)
+        ixed = V.zip cs $ V.iterateN (V.length cs) succ 0
+
+        filtered :: V.Vector (c, Natural)
+        filtered = V.filter ((/= zero) . fst) ixed
+
+
+-- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
+-- The remainder is discarded.
+-- The algorithm requires (size - m) field multiplications.
+--
+-- Division is performed from higher degrees downwards.
+--
+-- i-th step of the algorithm:
+--
+--  ci * x^i =
+--  ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
+--  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
+--
+--  > set the (i-m)-th coefficient of the result to be @ci@
+--  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
+--  > Proceed to degree @i-1@
+--
+divShiftedMono :: forall c size . (KnownNat size, Field c) => PolyVec c size -> Natural -> c -> PolyVec c size
+divShiftedMono (PV cs) m b = PV $ V.create $ do
+    let intLen = fromIntegral $ value @size
+        intM   = fromIntegral m
+    c   <- V.thaw cs
+    res <- VM.replicate intLen zero
+    forM_ [intLen P.- 1, intLen P.- 2 .. intM] $ \ix -> do
+        ci <- VM.read c ix
+        VM.write res (ix P.- intM) ci
+        VM.modify c (\x -> x - ci * b) (ix P.- intM)
+    pure res
+
 
 instance
     ( UnivariateRingPolyVec c pv
@@ -489,21 +569,21 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
+instance (Field c, Eq c, KnownNat size) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
-instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
+instance {-# OVERLAPPING #-} (Field c, Eq c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+instance (Field c, Eq c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
     (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
-instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
+instance (Field c, Eq c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
-instance (Field c, KnownNat size) => Semiring (PolyVec c size)
+instance (Field c, Eq c, KnownNat size) => Semiring (PolyVec c size)
 
-instance (Field c, KnownNat size) => Ring (PolyVec c size)
+instance (Field c, Eq c, KnownNat size) => Ring (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec @_ @(PolyVec c) <$> V.replicateM (fromIntegral $ value @size) (arbitrary @c)

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -17,6 +18,9 @@ module ZkFold.Base.Data.ByteString
   , BigEndian (..)
   ) where
 
+#if __GLASGOW_HASKELL__ < 912
+import           Data.List              (foldl')
+#endif
 import           Control.Applicative    (many)
 import qualified Data.Aeson             as Aeson
 import           Data.Binary

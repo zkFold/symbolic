@@ -5,6 +5,7 @@
 
 module Tests.Algebra.Pairing (specPairing) where
 
+import           Control.DeepSeq                             (NFData)
 import           Data.Kind                                   (Type)
 import           Data.Typeable                               (Typeable, typeOf)
 import qualified Data.Vector                                 as V
@@ -24,6 +25,7 @@ propVerificationKZG
     :: forall g1 g2 gt f
     .  Pairing g1 g2 gt
     => Eq gt
+    => NFData g1
     => f ~ ScalarFieldOf g1
     => f ~ ScalarFieldOf g2
     => Field f
@@ -57,6 +59,7 @@ specPairing'
     => Typeable gt
     => Pairing g1 g2 gt
     => Eq g1
+    => NFData g1
     => Eq g2
     => Eq gt
     => f ~ ScalarFieldOf g1

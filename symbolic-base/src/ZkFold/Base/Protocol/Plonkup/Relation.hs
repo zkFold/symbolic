@@ -15,6 +15,7 @@ import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust, mapMaybe)
 import qualified Data.Set                                            as S
+import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
@@ -96,28 +97,28 @@ toPlonkupRelation ac =
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + length (tabulate @l id) + length xLookup
 
-        plonkupSystem = concat
+        plonkupSystem = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup . LookupConstraint <$> xLookup
             , replicate (value @n -! n') ConsExtra
             ]
 
-        qM = toPolyVec $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
-        qL = toPolyVec $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
-        qR = toPolyVec $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
-        qO = toPolyVec $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
-        qC = toPolyVec $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
-        qK = toPolyVec $ fromList $ map isLookupConstraint plonkupSystem
+        qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
+        qL = toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
+        qR = toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
+        qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
+        qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
+        qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
-        a  = map getA plonkupSystem
-        b  = map getB plonkupSystem
-        c  = map getC plonkupSystem
+        a  = fmap getA plonkupSystem
+        b  = fmap getB plonkupSystem
+        c  = fmap getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
-        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c)
+        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
-        w1 e i = toPolyVec $ fromList $ fmap (indexW ac e i) a
-        w2 e i = toPolyVec $ fromList $ fmap (indexW ac e i) b
-        w3 e i = toPolyVec $ fromList $ fmap (indexW ac e i) c
+        w1 e i = toPolyVec $ fmap (indexW ac e i) a
+        w2 e i = toPolyVec $ fmap (indexW ac e i) b
+        w3 e i = toPolyVec $ fmap (indexW ac e i) c
         witness e i  = (w1 e i, w2 e i, w3 e i)
         pubInput e i = fmap (indexW ac e i) xPub
 

@@ -11,17 +11,19 @@ module ZkFold.Base.Algebra.Basic.Permutations (
     fromCycles
 ) where
 
+import           Control.DeepSeq                  (NFData, force)
 import           Data.Functor.Rep                 (Representable (index))
-import           Data.Map                         (Map, elems, empty, singleton, union)
+import           Data.Map.Strict                  (Map, elems, empty, insertWith)
 import           Data.Maybe                       (fromJust)
 import qualified Data.Vector                      as V
+import           GHC.Generics                     (Generic)
 import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector (..), fromVector, toVector, unsafeToVector)
+import           ZkFold.Base.Data.Vector          (Vector (..), toVector, unsafeToVector)
 import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
@@ -32,14 +34,12 @@ type IndexSet = V.Vector Natural
 type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
-mkIndexPartition vs =
-    let f i = singleton i $ fmap snd $ V.filter (\(v, _) -> v == i) $ V.zip vs [1 .. length vs]
-    in V.foldl union empty $ fmap f vs
+mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) e [ix] m) empty $ V.zip vs [1 .. fromIntegral $ V.length vs]
 
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFData)
 
 instance KnownNat n => Arbitrary (Permutation n) where
     arbitrary =
@@ -52,8 +52,8 @@ instance KnownNat n => Arbitrary (Permutation n) where
         in Permutation . unsafeToVector <$>
               f [] [fromConstant x | x <- [1..value @n]]
 
-fromPermutation :: Permutation n -> [Natural]
-fromPermutation (Permutation perm) = fromVector perm
+fromPermutation :: Permutation n -> V.Vector Natural
+fromPermutation (Permutation perm) = toV perm
 
 applyPermutation :: KnownNat n => Permutation n -> Vector n a -> Vector n a
 applyPermutation (Permutation ps) as =
@@ -64,7 +64,7 @@ applyPermutation (Permutation ps) as =
         fmap (index as . naturalToZp) ps
 
 applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
-applyCycle c (Permutation perm) = Permutation $ fmap f perm
+applyCycle c (Permutation perm) = force $ Permutation $ fmap f perm
     where
         f :: Natural -> Natural
         f i = case i `V.elemIndex` c of

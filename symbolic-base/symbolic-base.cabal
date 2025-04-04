@@ -36,9 +36,11 @@ common options
       -Wpartial-fields
       -Wredundant-constraints
       -Wunused-packages
-      -Wno-x-partial
       -O2
       -threaded
+    if impl(ghc >=9.8)
+      ghc-options:
+        -Wno-x-partial
     if flag(pedantic)
       ghc-options:
         -Werror
@@ -348,6 +350,7 @@ test-suite symbolic-base-test
       blake2                                     ,
       constraints                                ,
       containers                                 ,
+      deepseq                                    ,
       random                                     ,
       directory                        <= 1.3.8.4,
       filepath                         <= 1.5.2.0,
@@ -391,3 +394,17 @@ benchmark bench-in-circuit-ec
       tasty-bench,
       random,
       symbolic-base,
+
+benchmark bench-lagrange-basis
+    import:           options-exe
+    main-is:          BenchLagrangeBasis.hs
+    hs-source-dirs:   bench
+    type:             exitcode-stdio-1.0
+    ghc-options:
+      -O3
+    build-depends:
+      base,
+      deepseq,
+      symbolic-base,
+      tasty-bench,
+      QuickCheck

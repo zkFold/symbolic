@@ -57,6 +57,7 @@ accumulatorScheme :: forall algo d k a i p c f .
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)
     , Field f
+    , P.Eq f
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
     , Scale f (c f)
