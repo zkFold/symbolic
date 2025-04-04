@@ -50,12 +50,12 @@ algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
         witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
         varMap :: SysVar (i :*: p :*: i) -> f
-        varMap (InVar (Left inV))      = index pi inV
-        varMap (InVar (Right _))       =
-          P.error "constraints should not depend on payload or output"
-        varMap (NewVar (EqVar newV))   = M.findWithDefault zero newV witness
-        varMap (NewVar (FoldLVar _ _)) = P.error "unexpected FOLD constraint"
-        varMap (NewVar (FoldPVar _ _)) = P.error "unexpected FOLD constraint"
+        varMap (InVar (Left inV))        = index pi inV
+        varMap (InVar (Right (Left _)))  = P.error "constraints should not depend on payload"
+        varMap (InVar (Right (Right _))) = zero
+        varMap (NewVar (EqVar newV))     = M.findWithDefault zero newV witness
+        varMap (NewVar (FoldLVar _ _))   = P.error "unexpected FOLD constraint"
+        varMap (NewVar (FoldPVar _ _))   = P.error "unexpected FOLD constraint"
 
         f_sps :: Vector (d+1) [PM.Poly a (SysVar (i :*: p :*: i)) Natural]
         f_sps = degreeDecomposition @d $ sys

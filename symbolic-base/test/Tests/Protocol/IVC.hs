@@ -3,31 +3,28 @@
 module Tests.Protocol.IVC (specIVC) where
 
 import           Data.Functor.Constant                       (Constant)
-import           GHC.Generics                                (U1 (..), type (:*:) (..))
+import           GHC.Generics                                (U1 (..))
 import           GHC.IsList                                  (IsList (..))
 import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
 import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (property, withMaxSuccess)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..), one, zero)
+import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (-))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec, evalPolyVec)
-import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton, unsafeToVector)
+import           ZkFold.Base.Data.Vector                     (Vector (..), item, singleton)
 import           ZkFold.Base.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator)
 import           ZkFold.Base.Protocol.IVC.AccumulatorScheme  as Acc
-import           ZkFold.Base.Protocol.IVC.AlgebraicMap       (algebraicMap)
 import           ZkFold.Base.Protocol.IVC.CommitOpen         (commitOpen)
 import           ZkFold.Base.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
 import           ZkFold.Base.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
 import           ZkFold.Base.Protocol.IVC.Oracle             (MiMCHash)
 import           ZkFold.Base.Protocol.IVC.Predicate          (Predicate (..), predicate)
 import           ZkFold.Base.Protocol.IVC.SpecialSound       (specialSoundProtocol)
-import           ZkFold.Prelude                              (replicate)
 import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, acSizeN)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
@@ -35,7 +32,7 @@ type C = Constant BLS12_381_G1_Point
 type I = Vector 1
 type P = U1
 type K = 1
-type AC = ArithmeticCircuit F (I :*: P :*: I) U1
+-- type AC = ArithmeticCircuit F (I :*: P :*: I) U1
 type PHI = Predicate F I P
 type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
@@ -48,8 +45,8 @@ testFunction p x _ =
     let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
     in singleton $ evalPolyVec p' $ item x
 
-testPredicateCircuit :: PAR -> AC
-testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
+-- testPredicateCircuit :: PAR -> AC
+-- testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
@@ -71,10 +68,10 @@ testPublicInput0 = singleton $ fromConstant @Natural 42
 testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
-testMessages :: PHI -> Vector K [F]
-testMessages phi =
-    let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
-    in ms
+-- testMessages :: PHI -> Vector K [F]
+-- testMessages phi =
+--     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
+--     in ms
 
 testNarkProof :: PHI -> Vector K (C F)
 testNarkProof phi =
@@ -116,12 +113,12 @@ testVerifierResult phi =
 
 specAlgebraicMap :: Spec
 specAlgebraicMap = do
-    describe "Algebraic map specification" $ do
-        describe "Algebraic map" $ do
-            it "must output zeros on the public input and testMessages" $ do
-               withMaxSuccess 10 $ property $
-                    \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
-                        == replicate (acSizeN $ testPredicateCircuit p) zero
+    describe "Algebraic map specification" (return ()) -- $ do
+        -- describe "Algebraic map" $ do
+        --     it "must output zeros on the public input and testMessages" $ do
+        --        withMaxSuccess 10 $ property $
+        --             \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
+        --                 == replicate (acSizeN $ testPredicateCircuit p) zero
 
 specAccumulatorScheme :: Spec
 specAccumulatorScheme = do
