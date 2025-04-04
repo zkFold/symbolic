@@ -20,7 +20,7 @@ import           Data.Either                        (Either (..))
 import           Data.Function                      (($), (.))
 import           Data.Functor                       ((<$>))
 import           Data.Functor.Rep                   (Representable)
-import           Data.List                          (map, null, unsnoc, (++))
+import           Data.List                          (map, null, (++))
 import           Data.Maybe                         (Maybe (..), fromJust)
 import           Data.Ord                           ((<))
 import           Data.Proxy                         (Proxy (..))
@@ -32,7 +32,7 @@ import           Prelude                            (error, foldr, fromIntegral,
 import           ZkFold.Base.Algebra.Basic.Class    (AdditiveMonoid (zero), FromConstant (..),
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
 import           ZkFold.Base.Algebra.Basic.Number   (Natural, value)
-import           ZkFold.Prelude                     ((!!))
+import           ZkFold.Prelude                     (unsnoc, (!!))
 import           ZkFold.Symbolic.Class              (BaseField)
 import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
@@ -367,8 +367,8 @@ pair (SymValue p) (SymValue q) = SymValue (p, q)
 makeSingleton :: (Sym c) => SymValue u c -> SymValue (BTList u) c
 makeSingleton (SymValue xs) = SymValue $ L.singleton xs
 
-consList :: (Sym c) => SymValue u c -> SymValue (BTList u) c -> SymValue (BTList u) c
-consList (SymValue x) (SymValue xs) = SymValue (x L..: (fromJust $ cast xs))
+consList :: forall c u . (Sym c) => SymValue u c -> SymValue (BTList u) c -> SymValue (BTList u) c
+consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJust . cast $ x L..: (fromJust $ cast xs))
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c

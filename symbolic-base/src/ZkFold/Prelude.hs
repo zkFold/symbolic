@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-module ZkFold.Prelude where
+module ZkFold.Prelude (module ZkFold.Prelude, module Data.List) where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
