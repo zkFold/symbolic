@@ -4,15 +4,15 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData where
 
 import           Data.Function                    ((&))
-import           Prelude                          (fst, undefined, ($))
+import           Prelude                          (fst, snd, undefined, ($))
 
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
 import           ZkFold.Symbolic.Data.Eq          ((==))
-import           ZkFold.Symbolic.Data.Hash        (preimage)
+import           ZkFold.Symbolic.Data.Hash        (Hash (..), hash, preimage)
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.List        (List, emptyList, (++), (.:))
-import           ZkFold.Symbolic.Data.Maybe
+import           ZkFold.Symbolic.Data.Maybe       hiding (find)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
@@ -35,14 +35,31 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
           resTxAccIsConsistent :: Bool context
         , -- List of online addresses corresponding to inputs that are being "spent". Note that this may contain duplicates which we'll need to remove later before comparing it with the field inside batch data.
           resTxAccOnlineAddresses :: List context (Address context)
+        , -- List of offline addresses along with their list of transaction hashes.
+          resTxAccOfflineAddrsTxs :: List context (Address context, List context (HashSimple context))
         ) =
           Symbolic.List.foldl
-            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s)), tx :: Transaction s) ->
-                let (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, _) =
+            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s))), tx :: Transaction s) ->
+                let (_ownerAddrCir, _ownerAddrIx, ownerAddrType) = txOwner tx & preimage
+                    -- We assume that there is at least one input in the transaction from the address of the owner for 'newTxAccOfflineAddrsTxs' computation. Else the transaction validity check would fail.
+                    newTxAccOfflineAddrsTxs =
+                      ifThenElse
+                        (isOffline ownerAddrType)
+                        ( -- Add this tx hash to the list of tx hashes.
+                          let updOwnerAddrTxHashes =
+                                hash tx
+                                  & hHash
+                                  & (\h -> h .: find (txOwner tx) txAccOfflineAddrsTxs)
+                           in -- Update the entry of this address with given list.
+                              -- TODO: We could probably do the find and replace in single folding.
+                              updateAddrsTxsList (txOwner tx) updOwnerAddrTxHashes txAccOfflineAddrsTxs
+                        )
+                        txAccOfflineAddrsTxs
+                    (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, _) =
                       Symbolic.List.foldl
                         ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', inputsAccOnlineAddresses :: List s' (Address s'), ownerAddr :: Address s'), input :: Input s') ->
                             let inputAddr = txoAddress (txiOutput input)
-                                (_inputAddrCir, inputAddrIx, inputAddrType) = preimage inputAddr
+                                (_inputAddrCir, inputAddrIx, inputAddrType) = preimage inputAddr -- If folding operation does not require context switching, we won't require fetching this pre-image here.
                                 minputAddrIx = just inputAddrIx
                                 -- If index is not yet known, we update it with this input's index (provided this input is being "spent").
                                 newIx = ifThenElse (isNothing inputsAccIx) minputAddrIx inputsAccIx
@@ -62,13 +79,70 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                         )
                         (txAccIx, txAccIsConsistent, txAccOnlineAddresses, txOwner tx)
                         (txInputs tx)
-                 in (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses)
+                 in (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, newTxAccOfflineAddrsTxs)
             )
-            (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context))
+            (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)))
             tbdwTransactions
    in isJust resTxAccIx
         && resTxAccIsConsistent
         && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
+        && (tbdOfflineTransactions == resTxAccOfflineAddrsTxs)
+
+{- | Update the entry for the given address with given list of transaction hashes.
+
+If the address does not exist, then it is prepended to this list.
+-}
+updateAddrsTxsList ::
+  forall context.
+  Signature context =>
+  Address context ->
+  List context (HashSimple context) ->
+  List context (Address context, List context (HashSimple context)) ->
+  List context (Address context, List context (HashSimple context))
+updateAddrsTxsList addr addrTxs addrsTxs =
+  let (_, _, newAddrsTxs, addrExists) =
+        Symbolic.List.foldl
+          ( Morph \((accAddrToFind :: Address s, accAddrTxs :: List s (HashSimple s), accAddrsTxs :: List s (Address s, List s (HashSimple s)), accFound :: Bool s), ((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s)))) ->
+              let elemMatches = accAddrToFind == iterAddr
+               in ( accAddrToFind
+                  , accAddrTxs
+                  , ifThenElse
+                      elemMatches
+                      ((iterAddr, accAddrTxs) .: accAddrsTxs)
+                      ((iterAddr, iterAddrTxs) .: accAddrsTxs)
+                  , accFound || elemMatches
+                  )
+          )
+          (addr, addrTxs, emptyList :: List context (Address context, List context (HashSimple context)), false :: Bool context)
+          addrsTxs
+   in ifThenElse
+        addrExists
+        newAddrsTxs
+        ((addr, addrTxs) .: addrsTxs)
+
+{- | Find a transaction hash list corresponding to given address.
+
+If the address is not found, we return an empty list.
+-}
+find ::
+  forall context.
+  Signature context =>
+  Address context ->
+  List context (Address context, List context (HashSimple context)) ->
+  List context (HashSimple context)
+find a ls =
+  snd $
+    Symbolic.List.foldl
+      ( Morph \((accToFind :: Address s, accList :: List s (HashSimple s)), ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))) ->
+          ( accToFind
+          , ifThenElse
+              (accToFind == addr)
+              (addrTxHashes)
+              (accList)
+          )
+      )
+      (a, emptyList :: List context (HashSimple context))
+      ls
 
 -- TODO: Use generic 'elem' from symbolic list module.
 
