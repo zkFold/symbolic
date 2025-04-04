@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Base.Protocol.Plonk.Verifier
     ( plonkVerify

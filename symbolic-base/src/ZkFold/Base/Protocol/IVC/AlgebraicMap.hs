@@ -4,10 +4,12 @@
 module ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap) where
 
 import           Data.ByteString                                     (ByteString)
+import           Data.Either                                         (Either (..))
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
+import           GHC.Generics                                        ((:*:))
 import           Prelude                                             (fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
@@ -21,8 +23,6 @@ import           ZkFold.Base.Protocol.IVC.Predicate                  (Predicate 
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
-import GHC.Generics ((:*:))
-import Data.Either (Either(..))
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.

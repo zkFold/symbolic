@@ -4,20 +4,20 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var where
 
-import           Control.Applicative             (Applicative (..))
-import           Control.DeepSeq                 (NFData)
-import           Data.Aeson                      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-import           Data.Binary                     (Binary)
-import           Data.ByteString                 (ByteString)
-import           Data.Functor.Rep                (Rep, Representable, index, tabulate)
-import           GHC.Generics                    (Generic)
-import           GHC.Show                        (Show)
-import           Prelude                         (Eq, Ord)
+import           Control.Applicative                                (Applicative (..))
+import           Control.DeepSeq                                    (NFData)
+import           Data.Aeson                                         (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Data.Binary                                        (Binary)
+import           Data.ByteString                                    (ByteString)
+import           Data.Functor.Rep                                   (Rep, Representable, index, tabulate)
+import           GHC.Generics                                       (Generic)
+import           GHC.Show                                           (Show)
+import           Prelude                                            (Eq, Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString     ()
-import ZkFold.Symbolic.MonadCircuit (Witness (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
+import           ZkFold.Base.Data.ByteString                        ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
+import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 
 data NewVar
   = EqVar ByteString

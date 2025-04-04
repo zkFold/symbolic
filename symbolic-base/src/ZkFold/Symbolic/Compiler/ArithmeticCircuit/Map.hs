@@ -28,8 +28,8 @@ mapVarArithmeticCircuit ac =
         asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]
         forward = Map.fromAscList $ zip vars asc
         backward = Map.fromAscList $ zip asc vars
-        varF (InVar v)                     = InVar v
-        varF (NewVar (EqVar v))            = NewVar (EqVar (forward ! v))
+        varF (InVar v)                      = InVar v
+        varF (NewVar (EqVar v))             = NewVar (EqVar (forward ! v))
         -- | TODO: compress fold ids, too
         varF (NewVar (FoldLVar fldId fldV)) = NewVar (FoldLVar fldId fldV)
         varF (NewVar (FoldPVar fldId fldV)) = NewVar (FoldPVar fldId fldV)

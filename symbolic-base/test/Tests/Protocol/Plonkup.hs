@@ -3,39 +3,40 @@
 
 module Tests.Protocol.Plonkup (specPlonkup) where
 
-import Control.Monad (forM_, return)
-import Data.Bool (Bool)
-import Data.ByteString (ByteString)
-import Data.Eq (Eq (..))
-import Data.Foldable (Foldable, toList)
-import Data.Function (($))
-import Data.Functor.Rep (Rep, Representable)
-import Data.Int (Int)
-import Data.List (head, sort)
-import Data.Ord (Ord)
-import GHC.Generics (U1 (..))
-import GHC.IsList (IsList (fromList))
-import Test.Hspec
-import Test.QuickCheck
-import ZkFold.Base.Algebra.Basic.Class
-import ZkFold.Base.Algebra.Basic.Field (fromZp)
-import ZkFold.Base.Algebra.Basic.Number (KnownNat, Natural)
-import ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import ZkFold.Base.Algebra.Polynomials.Multivariate as PM
-import ZkFold.Base.Algebra.Polynomials.Univariate
-import ZkFold.Base.Data.Vector (Vector)
-import ZkFold.Base.Protocol.NonInteractiveProof (setupProve)
-import ZkFold.Base.Protocol.Plonkup hiding (omega)
-import ZkFold.Base.Protocol.Plonkup.PlonkConstraint
-import ZkFold.Base.Protocol.Plonkup.Prover (plonkupProve)
-import ZkFold.Base.Protocol.Plonkup.Prover.Secret
-import ZkFold.Base.Protocol.Plonkup.Relation (PlonkupRelation (..))
-import ZkFold.Base.Protocol.Plonkup.Testing
-import ZkFold.Base.Protocol.Plonkup.Utils (sortByList)
-import ZkFold.Base.Protocol.Plonkup.Witness (PlonkupWitnessInput)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           Control.Monad                                       (forM_, return)
+import           Data.Bool                                           (Bool)
+import           Data.ByteString                                     (ByteString)
+import           Data.Eq                                             (Eq (..))
+import           Data.Foldable                                       (Foldable, toList)
+import           Data.Function                                       (($))
+import           Data.Functor.Rep                                    (Rep, Representable)
+import           Data.Int                                            (Int)
+import           Data.List                                           (head, sort)
+import           Data.Ord                                            (Ord)
+import           GHC.Generics                                        (U1 (..))
+import           GHC.IsList                                          (IsList (fromList))
+import           Test.Hspec
+import           Test.QuickCheck
+
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Field                     (fromZp)
+import           ZkFold.Base.Algebra.Basic.Number                    (KnownNat, Natural)
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Base.Algebra.EllipticCurve.Class             (CyclicGroup (..))
+import           ZkFold.Base.Algebra.Polynomials.Multivariate        as PM
+import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Data.Vector                             (Vector)
+import           ZkFold.Base.Protocol.NonInteractiveProof            (setupProve)
+import           ZkFold.Base.Protocol.Plonkup                        hiding (omega)
+import           ZkFold.Base.Protocol.Plonkup.PlonkConstraint
+import           ZkFold.Base.Protocol.Plonkup.Prover                 (plonkupProve)
+import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
+import           ZkFold.Base.Protocol.Plonkup.Relation               (PlonkupRelation (..))
+import           ZkFold.Base.Protocol.Plonkup.Testing
+import           ZkFold.Base.Protocol.Plonkup.Utils                  (sortByList)
+import           ZkFold.Base.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a (Vector 1)) Natural]

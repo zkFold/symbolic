@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
@@ -18,6 +18,7 @@ import           Prelude                                    (FilePath, IO, Show 
                                                              (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Product                   (fstP, sndP)
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -25,7 +26,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import ZkFold.Base.Data.Product (sndP, fstP)
 
 {-
     ZkFold Symbolic compiler module dependency order:

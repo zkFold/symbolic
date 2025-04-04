@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Base.Protocol.Plonkup.Verifier
     ( module ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
