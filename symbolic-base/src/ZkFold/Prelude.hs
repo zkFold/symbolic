@@ -8,6 +8,9 @@ import           Data.List            (genericIndex)
 #if __GLASGOW_HASKELL__ < 912
 import           Data.List            (foldl')
 #endif
+#if __GLASGOW_HASKELL__ >= 910
+import           Data.List            (unsnoc)
+#endif
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
@@ -97,3 +100,10 @@ chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fr
 -- | Choose a list of length `l` from a list allowing repetitions.
 chooseFromList :: Natural -> [a] -> Gen [a]
 chooseFromList l as = take l <$> shuffle (concatMap (replicate l) as)
+
+#if __GLASGOW_HASKELL__ < 910
+unsnoc :: [a] -> Maybe ([a], a)
+unsnoc [] = Nothing
+unsnoc l =  Just (init l, last l)
+#endif
+
