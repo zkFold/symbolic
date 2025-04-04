@@ -28,7 +28,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
   -- \* Online addresses list is computed correctly.
   -- \* Offline txs list is computed correctly.
   -- \* Txs are valid.
-  -- TODO: Add more.
+  -- TODO: Add more?
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
         , -- Wether all relevant addresses have same data availability index.
@@ -37,24 +37,24 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
           resTxAccOnlineAddresses :: List context (Address context)
         , -- List of offline addresses along with their list of transaction hashes.
           resTxAccOfflineAddrsTxs :: List context (Address context, List context (HashSimple context))
+        , -- Tree root for online addresses with their transaction hashes.
+          resTxAccOnlineAddrsTxs :: Root (Address context, List context (HashSimple context))
         ) =
           Symbolic.List.foldl
-            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s))), tx :: Transaction s) ->
+            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
                 let (_ownerAddrCir, _ownerAddrIx, ownerAddrType) = txOwner tx & preimage
                     -- We assume that there is at least one input in the transaction from the address of the owner for 'newTxAccOfflineAddrsTxs' computation. Else the transaction validity check would fail.
-                    newTxAccOfflineAddrsTxs =
+                    txHash = hash tx & hHash
+                    (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs) =
                       ifThenElse
                         (isOffline ownerAddrType)
                         ( -- Add this tx hash to the list of tx hashes.
-                          let updOwnerAddrTxHashes =
-                                hash tx
-                                  & hHash
-                                  & (\h -> h .: find (txOwner tx) txAccOfflineAddrsTxs)
+                          let updOwnerAddrTxHashes = txHash .: find (txOwner tx) txAccOfflineAddrsTxs
                            in -- Update the entry of this address with given list.
                               -- TODO: We could probably do the find and replace in single folding.
-                              updateAddrsTxsList (txOwner tx) updOwnerAddrTxHashes txAccOfflineAddrsTxs
+                              (updateAddrsTxsList (txOwner tx) updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs)
                         )
-                        txAccOfflineAddrsTxs
+                        (txAccOfflineAddrsTxs, undefined) -- TODO: Update once Merkle tree API is available.
                     (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, _) =
                       Symbolic.List.foldl
                         ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', inputsAccOnlineAddresses :: List s' (Address s'), ownerAddr :: Address s'), input :: Input s') ->
@@ -79,14 +79,16 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                         )
                         (txAccIx, txAccIsConsistent, txAccOnlineAddresses, txOwner tx)
                         (txInputs tx)
-                 in (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, newTxAccOfflineAddrsTxs)
+                 in (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )
-            (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)))
+            (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
             tbdwTransactions
    in isJust resTxAccIx
         && resTxAccIsConsistent
+        -- TODO: Don't add input addr to online addresses but rather simply add owner address.
         && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
         && (tbdOfflineTransactions == resTxAccOfflineAddrsTxs)
+        && (tbdMerkleRoot == resTxAccOnlineAddrsTxs)
 
 {- | Update the entry for the given address with given list of transaction hashes.
 

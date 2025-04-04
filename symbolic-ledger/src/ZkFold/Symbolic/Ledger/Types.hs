@@ -43,7 +43,6 @@ type Signature context =
     ( KnownRegistersAssetQuantity context
     , KnownRegistersOutputIndex context
     , KnownRegisters context 11 Auto
-    , Symbolic context
     , SymbolicFold context
     -- TODO: Can we derive 'Hashable h' based on constituents (using generic)?
     , Hashable (HashSimple context) (AssetValues context)
