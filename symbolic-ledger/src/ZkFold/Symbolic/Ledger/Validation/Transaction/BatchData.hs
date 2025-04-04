@@ -42,50 +42,45 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
         ) =
           Symbolic.List.foldl
             ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
-                let (_ownerAddrCir, _ownerAddrIx, ownerAddrType) = txOwner tx & preimage
-                    -- We assume that there is at least one input in the transaction from the address of the owner for 'newTxAccOfflineAddrsTxs' computation. Else the transaction validity check would fail.
+                let txOwner' = txOwner tx
+                    (_ownerAddrCir, _ownerAddrIx, ownerAddrType) = txOwner' & preimage
                     txHash = hash tx & hHash
-                    (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs) =
+                    -- We assume that there is at least one input in the transaction from the address of the owner for following computation. Else the transaction validity check would fail.
+                    (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs, newTxAccOnlineAddresses) =
                       ifThenElse
                         (isOffline ownerAddrType)
                         ( -- Add this tx hash to the list of tx hashes.
-                          let updOwnerAddrTxHashes = txHash .: find (txOwner tx) txAccOfflineAddrsTxs
+                          let updOwnerAddrTxHashes = txHash .: find txOwner' txAccOfflineAddrsTxs
                            in -- Update the entry of this address with given list.
                               -- TODO: We could probably do the find and replace in single folding.
-                              (updateAddrsTxsList (txOwner tx) updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs)
+                              (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                         )
-                        (txAccOfflineAddrsTxs, undefined) -- TODO: Update once Merkle tree API is available.
-                    (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, _) =
+                        (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
+                    (resInputsAccIx, resInputsAccIsConsistent, _) =
                       Symbolic.List.foldl
-                        ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', inputsAccOnlineAddresses :: List s' (Address s'), ownerAddr :: Address s'), input :: Input s') ->
+                        ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', ownerAddr :: Address s'), input :: Input s') ->
                             let inputAddr = txoAddress (txiOutput input)
-                                (_inputAddrCir, inputAddrIx, inputAddrType) = preimage inputAddr -- If folding operation does not require context switching, we won't require fetching this pre-image here.
+                                (_inputAddrCir, inputAddrIx, _inputAddrType) = preimage inputAddr -- If folding operation does not require context switching, we won't require fetching this pre-image here.
                                 minputAddrIx = just inputAddrIx
                                 -- If index is not yet known, we update it with this input's index (provided this input is being "spent").
                                 newIx = ifThenElse (isNothing inputsAccIx) minputAddrIx inputsAccIx
-                                (newIsConsistent, newAddresses) =
+                                newIsConsistent =
                                   ifThenElse
                                     (inputAddr == ownerAddr)
                                     -- This input is being "spent" and thus it's address is relevant.
-                                    ( inputsAccIsConsistent && newIx == minputAddrIx -- Index must match.
-                                    , ifThenElse
-                                        (isOnline inputAddrType)
-                                        (inputAddr .: inputsAccOnlineAddresses)
-                                        (inputsAccOnlineAddresses)
-                                    )
+                                    (inputsAccIsConsistent && newIx == minputAddrIx) -- Index must match.
                                     -- This input is not relevant, we skip it.
-                                    (inputsAccIsConsistent, inputsAccOnlineAddresses)
-                             in (newIx, newIsConsistent, newAddresses, ownerAddr)
+                                    (inputsAccIsConsistent)
+                             in (newIx, newIsConsistent, ownerAddr)
                         )
-                        (txAccIx, txAccIsConsistent, txAccOnlineAddresses, txOwner tx)
+                        (txAccIx, txAccIsConsistent, txOwner')
                         (txInputs tx)
-                 in (resInputsAccIx, resInputsAccIsConsistent, resInputsAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
+                 in (resInputsAccIx, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )
             (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
             tbdwTransactions
    in isJust resTxAccIx
         && resTxAccIsConsistent
-        -- TODO: Don't add input addr to online addresses but rather simply add owner address.
         && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
         && (tbdOfflineTransactions == resTxAccOfflineAddrsTxs)
         && (tbdMerkleRoot == resTxAccOnlineAddrsTxs)
