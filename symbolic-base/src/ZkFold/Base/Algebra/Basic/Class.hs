@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}

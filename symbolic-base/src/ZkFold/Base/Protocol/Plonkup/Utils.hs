@@ -16,7 +16,7 @@ import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Base.Data.Vector                 (Vector, unsafeToVector)
-import           ZkFold.Prelude                          (iterateN, log2ceiling, replicate)
+import           ZkFold.Prelude                          (iterateN', log2ceiling, replicate)
 import           ZkFold.Symbolic.Class                   (Arithmetic)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
@@ -26,7 +26,7 @@ getParams n = findK' $ mkStdGen 0
                   Just o -> o
                   _      -> error "impossible"
 
-        hGroup = iterateN (*omega) (n -! 1) one
+        hGroup = iterateN' (*omega) (n -! 1) one
 
         hGroupS = S.fromList hGroup
         hGroup' k = S.fromList $ map (k*) hGroup

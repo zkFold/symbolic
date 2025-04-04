@@ -40,16 +40,16 @@ iterateM :: Monad m => Natural -> (a -> m a) -> a -> m a
 iterateM 0 _ x = return x
 iterateM n f x = f x >>= iterateM (n - 1) f
 
-iterate :: (a -> a) -> a -> [a]
-iterate f x =
+iterate' :: (a -> a) -> a -> [a]
+iterate' f x =
     let x' = f x
-    in x' `seq` (x : iterate f x')
+    in x' `seq` (x : iterate' f x')
 
-iterateN :: (a -> a) -> Natural -> a -> [a]
-iterateN _ 0 x = [x]
-iterateN f n x =
+iterateN' :: (a -> a) -> Natural -> a -> [a]
+iterateN' _ 0 x = [x]
+iterateN' f n x =
     let x' = f x
-    in x' `seq` (x : iterateN f (n - 1) x')
+    in x' `seq` (x : iterateN' f (n - 1) x')
 
 replicate :: Natural -> a -> [a]
 replicate n x
