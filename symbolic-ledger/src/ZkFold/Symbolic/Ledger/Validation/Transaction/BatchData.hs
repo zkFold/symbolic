@@ -1,19 +1,20 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments     #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData where
 
-import Data.Function ((&))
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Eq ((==))
-import ZkFold.Symbolic.Data.Hash (preimage)
-import ZkFold.Symbolic.Data.List (List, emptyList, (++), (.:))
-import qualified ZkFold.Symbolic.Data.List as Symbolic.List
-import ZkFold.Symbolic.Data.Maybe
-import ZkFold.Symbolic.Data.Morph
-import ZkFold.Symbolic.Ledger.Types
-import Prelude (fst, undefined, ($))
+import           Data.Function                    ((&))
+import           Prelude                          (fst, undefined, ($))
+
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
+import           ZkFold.Symbolic.Data.Eq          ((==))
+import           ZkFold.Symbolic.Data.Hash        (preimage)
+import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
+import           ZkFold.Symbolic.Data.List        (List, emptyList, (++), (.:))
+import           ZkFold.Symbolic.Data.Maybe
+import           ZkFold.Symbolic.Data.Morph
+import           ZkFold.Symbolic.Ledger.Types
 
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
   { tbdwTransactions :: List context (Transaction context)
