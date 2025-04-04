@@ -22,7 +22,7 @@ import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAs
 -- TODO: Use POSIXTime instead of UTCTime?
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data TransactionBatch context = TransactionBatch
-    { tbDataHashes       :: List context ((DAIndex context), HashSimple context)
+    { tbDataHashes       :: List context (DAIndex context, HashSimple context)
     -- ^ Hash of 'TransactionBatchData' indexed by the corresponding data availability source.
     , tbBridgeIn         :: HashSimple context
     -- ^ Hash of the 'AssetValues' that are bridged into the ledger.

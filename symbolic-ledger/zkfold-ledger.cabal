@@ -103,6 +103,7 @@ library
       ZkFold.Symbolic.Ledger.Types.Transaction.Core
       ZkFold.Symbolic.Ledger.Types.Value
       ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+      ZkFold.Symbolic.Ledger.Validation.Transaction.Batch
     build-depends:
       base                          >= 4.9 && < 5,
       symbolic-base                              ,

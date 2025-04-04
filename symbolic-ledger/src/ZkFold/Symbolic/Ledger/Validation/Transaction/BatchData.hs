@@ -1,14 +1,21 @@
-{-# LANGUAGE BlockArguments     #-}
-{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE ImpredicativeTypes   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData where
+module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData (
+  TransactionBatchDataWitness (..),
+  validateTransactionBatchData,
+  validateTransactionBatchData',
+) where
 
 import           Data.Function                    ((&))
+import           GHC.Generics                     (Generic)
 import           Prelude                          (fst, snd, undefined, ($))
 
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
-import           ZkFold.Symbolic.Data.Eq          ((==))
+import           ZkFold.Symbolic.Data.Class       (SymbolicData)
+import           ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
+import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
 import           ZkFold.Symbolic.Data.Hash        (Hash (..), hash, preimage)
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.List        (List, emptyList, (++), (.:))
@@ -18,9 +25,20 @@ import           ZkFold.Symbolic.Ledger.Types
 
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
   { tbdwTransactions :: List context (Transaction context)
+  -- REVIEW: Add data availability index here to perhaps make slight simplification?
   }
+  deriving stock Generic
 
-validateTransactionBatchData' :: forall context. Signature context => TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
+instance Signature context => SymbolicData (TransactionBatchDataWitness context)
+
+instance Signature context => Conditional (Bool context) (TransactionBatchDataWitness context)
+
+instance Signature context => Eq (TransactionBatchDataWitness context)
+
+validateTransactionBatchData :: forall context. Signature context => TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
+validateTransactionBatchData tbd tbdw = fst $ validateTransactionBatchData' tbd tbdw
+
+validateTransactionBatchData' :: forall context. Signature context => TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
 validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitness {..} =
   -- To check
   -- \* All addresses corresponding to spent inputs have same data availability source.
@@ -79,11 +97,13 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
             )
             (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
             tbdwTransactions
-   in isJust resTxAccIx
-        && resTxAccIsConsistent
-        && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
-        && (tbdOfflineTransactions == resTxAccOfflineAddrsTxs)
-        && (tbdMerkleRoot == resTxAccOnlineAddrsTxs)
+   in ( isJust resTxAccIx
+          && resTxAccIsConsistent
+          && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)
+          && (tbdOfflineTransactions == resTxAccOfflineAddrsTxs)
+          && (tbdMerkleRoot == resTxAccOnlineAddrsTxs)
+      , fromJust resTxAccIx
+      )
 
 {- | Update the entry for the given address with given list of transaction hashes.
 
