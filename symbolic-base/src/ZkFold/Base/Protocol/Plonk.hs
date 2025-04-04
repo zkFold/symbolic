@@ -74,7 +74,6 @@ instance forall i n l g1 g2 gt (ts :: Type) pv .
         , Witness (Plonkup i n l g1 g2 ts pv) ~ (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
         , Input (Plonkup i n l g1 g2 ts pv) ~ PlonkupInput l g1
         , Proof (Plonkup i n l g1 g2 ts pv) ~ PlonkupProof g1
-        , KnownNat n
         , Foldable l
         , Compressible g1
         , Pairing g1 g2 gt
@@ -85,6 +84,7 @@ instance forall i n l g1 g2 gt (ts :: Type) pv .
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
         , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , KnownNat n
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
         ) => NonInteractiveProof (Plonk i n l g1 g2 ts pv) where
