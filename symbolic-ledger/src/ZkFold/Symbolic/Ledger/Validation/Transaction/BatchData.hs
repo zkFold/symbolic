@@ -43,7 +43,9 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
           Symbolic.List.foldl
             ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
                 let txOwner' = txOwner tx
-                    (_ownerAddrCir, _ownerAddrIx, ownerAddrType) = txOwner' & preimage
+                    (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
+                    -- If we haven't found any index, we use the index of this owner.
+                    txAccIxFinal = ifThenElse (isNothing txAccIx) (just ownerAddrIx) txAccIx
                     txHash = hash tx & hHash
                     -- We assume that there is at least one input in the transaction from the address of the owner for following computation. Else the transaction validity check would fail.
                     (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs, newTxAccOnlineAddresses) =
@@ -62,18 +64,16 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                             let inputAddr = txoAddress (txiOutput input)
                                 (_inputAddrCir, inputAddrIx, _inputAddrType) = preimage inputAddr -- If folding operation does not require context switching, we won't require fetching this pre-image here.
                                 minputAddrIx = just inputAddrIx
-                                -- If index is not yet known, we update it with this input's index (provided this input is being "spent").
-                                newIx = ifThenElse (isNothing inputsAccIx) minputAddrIx inputsAccIx
                                 newIsConsistent =
                                   ifThenElse
                                     (inputAddr == ownerAddr)
                                     -- This input is being "spent" and thus it's address is relevant.
-                                    (inputsAccIsConsistent && newIx == minputAddrIx) -- Index must match.
+                                    (inputsAccIsConsistent && inputsAccIx == minputAddrIx) -- Index must match.
                                     -- This input is not relevant, we skip it.
                                     (inputsAccIsConsistent)
-                             in (newIx, newIsConsistent, ownerAddr)
+                             in (inputsAccIx, newIsConsistent, ownerAddr)
                         )
-                        (txAccIx, txAccIsConsistent, txOwner')
+                        (txAccIxFinal, txAccIsConsistent, txOwner')
                         (txInputs tx)
                  in (resInputsAccIx, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )
