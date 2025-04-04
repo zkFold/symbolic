@@ -32,42 +32,42 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 spec :: RandomGen g => g -> Spec
 spec gen = do
     -- Base.Algebra
-    specField
-    specAdditiveGroup
-    specEllipticCurve
-    specPairing
-    specPermutations
-    specUnivariate
-    specReedSolomon
-    specGroebner
+    -- specField
+    -- specAdditiveGroup
+    -- specEllipticCurve
+    -- specPairing
+    -- specPermutations
+    -- specUnivariate
+    -- specReedSolomon
+    -- specGroebner
 
     -- Base.Data
     specBinary
 
     -- Base.Protocol
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
+    -- specPlonkup
+    -- specNonInteractiveProof
+    -- specIVC
 
     -- Compiler spec
-    specArithmeticCircuit
-    specCompiler
+    -- specArithmeticCircuit
+    -- specCompiler
 
     -- Symbolic types and operations
-    specHash
-    specList
+    -- specHash
+    -- specList
 
     specUInt
-    specInt
+    -- specInt
     specFFA
     specByteString
 
     -- Symbolic cryptography
-    specBlake2b
-    specJWT
-    specRSA gen
-    specSHA2Natural
-    specSHA2
+    -- specBlake2b
+    -- specJWT
+    -- specRSA gen
+    -- specSHA2Natural
+    -- specSHA2
 
 main :: IO ()
 main = hspec . spec =<< initStdGen

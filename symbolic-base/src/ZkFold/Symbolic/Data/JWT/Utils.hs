@@ -27,7 +27,7 @@ import           ZkFold.Base.Data.HFunctor          (hmap)
 import qualified ZkFold.Base.Data.Vector            as V
 import           ZkFold.Base.Data.Vector            ((!!))
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), RegSize, concat, toWords)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.UInt
@@ -169,9 +169,10 @@ base64ToAscii
     :: forall n ctx
     .  Symbolic ctx
     => KnownNat n
+    => KnownNat (Div n 6)
     => Mod n 6 ~ 0
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector (ASCII n)))
+    => NFData (ctx (V.Vector 2))
+    => NFData (ctx (V.Vector (NumberOfRegisters (BaseField ctx) (ASCII n) (Fixed RegSize))))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
     where
@@ -195,7 +196,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
     -            62          45
     _            63          95
 -}
-word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 8))) => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 2))) => ByteString 6 ctx -> ByteString 8 ctx
 word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
     do
         let bitsSym = V.fromVector bits

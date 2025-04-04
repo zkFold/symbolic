@@ -34,7 +34,7 @@ import           ZkFold.Prelude                                      (length, re
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (fromVar, toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation p i n l a pv = PlonkupRelation
@@ -92,7 +92,8 @@ toPlonkupRelation ac =
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
-        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
+        rangeLookups = M.mapMaybeWithKey (\k a' -> bool Nothing (Just $ S.map (map $ fromVar @a) a') (isRange k)) (acLookup ac)
+        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems rangeLookups
 
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + length (tabulate @l id) + length xLookup

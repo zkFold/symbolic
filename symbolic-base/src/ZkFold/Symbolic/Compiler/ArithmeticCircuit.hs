@@ -21,7 +21,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- information about the system
         acSizeN,
         acSizeM,
-        acSizeR,
+        acSizeL,
+        acSizeLF,
         acSystem,
         acValue,
         acPrint,
@@ -70,7 +71,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
 import           ZkFold.Symbolic.Data.Combinators                        (expansion)
 import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
@@ -111,7 +111,7 @@ desugarRanges ::
   ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
 desugarRanges c =
   let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
-          [(head $ map toVar v, k) | (k', s) <- M.toList rm, v <- S.toList s, k <- S.toList k']
+          [(head v, k) | (k', s) <- M.toList rm, v <- S.toList s, k <- S.toList k']
       rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
       (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acLookup c)
   in r' { acLookup = tm, acOutput = acOutput c }
@@ -143,9 +143,13 @@ acSizeN = length . acSystem
 acSizeM :: ArithmeticCircuit a p i o -> Natural
 acSizeM = length . acWitness
 
--- | Calculates the number of range lookups in the system.
-acSizeR :: ArithmeticCircuit a p i o -> Natural
-acSizeR = sum . map length . M.elems . acLookup
+-- | Calculates the number of all lookups in the system.
+acSizeL :: ArithmeticCircuit a p i o -> Natural
+acSizeL = sum . map length . M.elems . acLookup
+
+-- | Calculates the number of all lookups in the system.
+acSizeLF :: ArithmeticCircuit a p i o -> Natural
+acSizeLF = length . elems . acLookupFunction
 
 acValue ::
   (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 U1 o -> o a

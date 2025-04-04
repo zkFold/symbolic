@@ -1,6 +1,8 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Cardano.Contracts.BabelFees (babelFees) where
 
-import           Prelude                              (($))
+import           Prelude                              (($), (.))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -8,7 +10,7 @@ import           ZkFold.Symbolic.Algorithms.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString      (ByteString (..))
+import           ZkFold.Symbolic.Data.ByteString      (ByteString (..), bitsToRegs)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Maybe
@@ -31,7 +33,8 @@ babelFees
 babelFees tx1 tx2 = consumesLiability && consumesOutput
     where
         tx1Hash :: ByteString 256 context
-        tx1Hash = resize $ ByteString $ binaryExpansion $ hash @context tx1
+        tx1Hash = resize @(ByteString (Log2 (Order (BaseField context) - 1) + 1) context) @(ByteString 256 context) $
+                ByteString $ bitsToRegs . binaryExpansion $ hash @context tx1
 
         consumesLiability :: Bool context
         consumesLiability = isJust $ find (\Input{..} -> outputRefId txiOutputRef == tx1Hash && outputRefIndex txiOutputRef == zero) $ txInputs tx2

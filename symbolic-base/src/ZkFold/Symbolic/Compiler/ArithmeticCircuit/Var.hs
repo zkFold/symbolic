@@ -8,14 +8,16 @@ import           Control.Applicative             ()
 import           Control.DeepSeq                 (NFData)
 import           Data.Aeson                      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
 import           Data.Binary                     (Binary)
+import           Data.Bool                       (bool)
 import           Data.ByteString                 (ByteString)
 import           Data.Functor.Rep                (Rep, Representable, index, tabulate)
 import           GHC.Generics                    (Generic)
 import           GHC.Show                        (Show)
-import           Prelude                         (Eq, Ord)
+import           Prelude                         (Eq, Ord, error, (&&), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Data.ByteString     ()
+import           ZkFold.Symbolic.Class           (Arithmetic)
 
 data NewVar
   = EqVar ByteString
@@ -52,6 +54,10 @@ data Var a i
 
 toVar :: Semiring a => SysVar i -> Var a i
 toVar x = LinVar one x zero
+
+fromVar :: Arithmetic a => Var a i -> SysVar i
+fromVar (LinVar k x b) = bool (error "this LinVar now equal x") x (k == one && b == zero)
+fromVar _              = error "can't select SysVar"
 
 imapVar ::
   (Representable i, Representable j) =>

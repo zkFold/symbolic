@@ -135,9 +135,9 @@ data ArithmeticCircuit a p i o = ArithmeticCircuit
         acSystem         :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
         acLookupFunction :: Map ByteString (LookupFunction a),
-        -- ^ The system of lookup functions
-        acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
-        -- ^ The range constraints [0, a] for the selected variables
+        -- ^ The set of lookup functions
+        acLookup         :: MonoidalMap (LookupType a) (S.Set [Var a i]),
+        -- ^ The lookup constraints for the selected variables
         acWitness        :: Map ByteString (CircuitWitness a p i),
         -- ^ The witness generation functions
         acFold           :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a p i)),
@@ -234,12 +234,12 @@ indexG witGen inputs = \case
 -------------------------------- "HProfunctor" ---------------------------------
 
 hlmap ::
-  (Representable i, Representable j, Ord (Rep j), Functor o) =>
+  (Representable i, Representable j, Ord (Rep j), Ord a, Functor o) =>
   (forall x . j x -> i x) -> ArithmeticCircuit a p i o -> ArithmeticCircuit a p j o
 hlmap f (ArithmeticCircuit s lf l w d o) = ArithmeticCircuit
   { acSystem = mapVars (imapSysVar f) <$> s
   , acLookupFunction = lf
-  , acLookup = S.map (map $ imapSysVar f) <$> l
+  , acLookup = S.map (map $ imapVar f) <$> l
   , acWitness = fmap (imapWitVar f) <$> w
   , acFold = bimap (imapVar f) (imapWitVar f <$>) <$> d
   , acOutput = imapVar f <$> o
@@ -331,7 +331,8 @@ instance
 
     rangeConstraint (LinVar k x b) upperBound = do
       v <- preparedVar
-      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [v])
+      let lt = LookupType $ Ranges (S.singleton (zero, upperBound))
+      zoom #acLookup . modify $ MM.insertWith S.union lt (S.singleton [toVar v])
       where
         preparedVar = if k == one && b == zero || k == negate one && b == upperBound
           then return x
@@ -347,6 +348,9 @@ instance
       if c <= upperBound
         then return ()
         else error "The constant does not belong to the interval"
+
+    lookupConstraint vars lt = do
+      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton $ toList vars))
 
     registerFunction f = do
       let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
@@ -453,7 +457,7 @@ exec ac = eval ac U1 U1
 
 -- | Applies the values of the first couple of inputs to the arithmetic circuit.
 apply ::
-  (Eq a, Field a, Ord (Rep j), Representable i, Functor o) =>
+  (Ord a, Field a, Ord (Rep j), Representable i, Functor o) =>
   i a -> ArithmeticCircuit a p (i :*: j) o -> ArithmeticCircuit a p j o
 apply xs ac = ac
   { acSystem = fmap (evalPolynomial evalMonomial varF) (acSystem ac)
@@ -478,11 +482,11 @@ apply xs ac = ac
     witF (WFoldVar i v)              = pure (WFoldVar i v)
     witF (WExVar v)                  = pure (WExVar v)
 
-    filterSet :: Ord (Rep j) => S.Set [SysVar (i :*: j)] ->  S.Set (Maybe [SysVar j])
+    filterSet :: (Ord (Rep j), Ord a) => S.Set [Var a (i :*: j)] ->  S.Set (Maybe [Var a j])
     filterSet = S.map (Just . mapMaybe (\case
-                    NewVar v        -> Just (NewVar v)
-                    InVar (Right v) -> Just (InVar v)
-                    _               -> Nothing))
+                    LinVar k (NewVar v) b        -> Just $ LinVar k (NewVar v) b
+                    LinVar k (InVar (Right v)) b -> Just $ LinVar k (InVar v) b
+                    _                            -> Nothing))
 
 -- TODO: Add proper symbolic application functions
 

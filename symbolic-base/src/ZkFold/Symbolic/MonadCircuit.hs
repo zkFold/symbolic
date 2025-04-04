@@ -8,7 +8,8 @@ import           Data.Binary                                       (Binary)
 import           Data.Function                                     ((.))
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Kind                                         (Type)
-import           Prelude                                           (Foldable, Integer)
+import           Data.Typeable
+import           Prelude                                           (Integer, Traversable)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field                   (Zp)
@@ -93,9 +94,11 @@ class ( Monad m, FromConstant a var
   -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
   rangeConstraint :: var -> a -> m ()
 
+  lookupConstraint :: (Traversable f, Typeable f) => f var -> LookupTable a f -> m ()
+
   -- | Adds new lookup function to the system.
   -- For example, @'registerFunction' f @ stores the function @f@.
-  registerFunction :: (Representable f, Binary (Rep f), Foldable g)
+  registerFunction :: (Representable f, Binary (Rep f), Traversable g)
     => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Creates new variable given a polynomial witness

@@ -7,13 +7,14 @@ import           Prelude                              hiding (Bool, Eq (..), all
                                                        (&&), (*), (+), (==))
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number     (Log2)
+import           ZkFold.Base.Algebra.Basic.Number     (Log2, type (+), type (-))
 import           ZkFold.Base.Data.Vector              (Vector, (!!))
 import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class                (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString      as Symbolic
+import           ZkFold.Symbolic.Data.ByteString      (bitsToRegs)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Eq
 
@@ -44,7 +45,8 @@ randomOracle c tx w =
         conditionPolicyId  = p == policyId
 
         -- The token's name is correct
-        conditionTokenName = name == resize (Symbolic.ByteString $ binaryExpansion r)
+        conditionTokenName = name == (resize @(ByteString (Log2 (Order (BaseField context) - 1) + 1) context) @(ByteString 256 context) $
+                (Symbolic.ByteString . bitsToRegs $ binaryExpansion r))
 
         -- The token's quantity is correct
         conditionQuantity  = n == one
