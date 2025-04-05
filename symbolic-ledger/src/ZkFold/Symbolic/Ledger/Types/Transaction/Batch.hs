@@ -13,7 +13,6 @@ import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, 
 import           ZkFold.Symbolic.Data.Conditional              (Conditional)
 import           ZkFold.Symbolic.Data.Eq                       (Eq)
 import           ZkFold.Symbolic.Data.List                     (List)
-import           ZkFold.Symbolic.Data.UTCTime                  (UTCTime)
 import           ZkFold.Symbolic.Ledger.Types.DataAvailability (DAIndex)
 import           ZkFold.Symbolic.Ledger.Types.Hash             (HashSimple)
 import           ZkFold.Symbolic.Ledger.Types.Interval         (Interval)

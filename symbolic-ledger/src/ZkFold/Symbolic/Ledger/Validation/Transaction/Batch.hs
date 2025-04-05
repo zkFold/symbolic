@@ -2,10 +2,8 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Batch (
-
+  validateTransactionBatch,
 ) where
-
-import           Prelude                                                 (undefined)
 
 import           ZkFold.Symbolic.Data.Bool                               (Bool, BoolType (true), (&&))
 import           ZkFold.Symbolic.Data.Eq

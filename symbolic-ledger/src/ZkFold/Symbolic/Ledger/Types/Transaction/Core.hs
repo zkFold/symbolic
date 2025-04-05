@@ -2,6 +2,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
     Transaction (txInputs, txOutputs, txValidityInterval, txOwner),
+    mkTransaction,
     TransactionId,
     txId,
     OutputIndex,

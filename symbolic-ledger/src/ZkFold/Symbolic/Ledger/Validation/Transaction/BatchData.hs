@@ -18,7 +18,7 @@ import           ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
 import           ZkFold.Symbolic.Data.Hash        (Hash (..), hash, preimage)
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
-import           ZkFold.Symbolic.Data.List        (List, emptyList, (++), (.:))
+import           ZkFold.Symbolic.Data.List        (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Maybe       hiding (find)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
@@ -94,7 +94,7 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
                                     (inputsAccIsConsistent)
                              in (inputsAccIx, newIsConsistent, ownerAddr)
                         )
-                        (txAccIxFinal, txAccIsConsistent, txOwner')
+                        (txAccIxFinal, newTxAccIsConsistent, txOwner')
                         (txInputs tx)
                  in (resInputsAccIx, txAccBatchInterval, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )

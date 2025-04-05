@@ -20,7 +20,6 @@ import           GHC.TypeLits                                  (KnownNat)
 import           ZkFold.Symbolic.Class                         (Symbolic (..))
 import           ZkFold.Symbolic.Data.Combinators              (Ceil, GetRegisterSize, KnownRegisters,
                                                                 RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.FieldElement             (FieldElement)
 import           ZkFold.Symbolic.Data.Hash                     (Hashable)
 import           ZkFold.Symbolic.Data.UInt                     (OrdWord)
 import           ZkFold.Symbolic.Fold                          (SymbolicFold)
