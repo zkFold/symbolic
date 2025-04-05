@@ -177,6 +177,7 @@ library
       ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
+      ZkFold.Symbolic.Algorithms.Mithril
       ZkFold.Symbolic.Algorithms.RSA
       ZkFold.Symbolic.Algorithms.FFT
       ZkFold.Symbolic.Class

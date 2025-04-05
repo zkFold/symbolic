@@ -3,7 +3,7 @@
     "haskell.toolchain": {
       "hls": "2.9.0.1",
       "cabal": "3.14.1.1",
-      "ghc": "9.12.1",
+      "ghc": "9.10.1",
       "stack": null
     }, 
     "haskell.formattingProvider": "stylish-haskell"

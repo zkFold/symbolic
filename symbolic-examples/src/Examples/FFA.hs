@@ -9,16 +9,13 @@ module Examples.FFA
   , exampleFFAinv097) where
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (Prime)
-import           ZkFold.Symbolic.Class            (Symbolic)
-import           ZkFold.Symbolic.Data.Combinators (RegisterSize (Fixed))
-import           ZkFold.Symbolic.Data.FFA         (FFA, KnownFFA)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta
+import           ZkFold.Symbolic.Class                   (Symbolic)
+import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (Fixed))
+import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
 
-type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
-type Prime256_2 = 28948022309329048855892746252171976963363056481941647379679742748393362948097
-
-instance Prime Prime256_1
-instance Prime Prime256_2
+type Prime256_1 = FpModulus
+type Prime256_2 = FqModulus
 
 type RegSize = Fixed 16
 
