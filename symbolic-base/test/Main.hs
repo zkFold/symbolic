@@ -27,6 +27,7 @@ import           Tests.Symbolic.Data.FFA            (specFFA)
 import           Tests.Symbolic.Data.Hash           (specHash)
 import           Tests.Symbolic.Data.Int            (specInt)
 import           Tests.Symbolic.Data.List           (specList)
+import           Tests.Symbolic.Data.MerkleTree     (specMerkleTree)
 import           Tests.Symbolic.Data.UInt           (specUInt)
 
 spec :: RandomGen g => g -> Spec
@@ -61,6 +62,7 @@ spec gen = do
     specInt
     specFFA
     specByteString
+    specMerkleTree
 
     -- Symbolic cryptography
     specBlake2b

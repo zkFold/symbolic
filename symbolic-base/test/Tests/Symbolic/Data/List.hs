@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments      #-}
 
 module Tests.Symbolic.Data.List (specList) where
 
@@ -18,14 +19,22 @@ import           ZkFold.Symbolic.Class                       (Arithmetic, Symbol
 import           ZkFold.Symbolic.Compiler                    (acOutput, compile, eval1)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Eq                     ((==))
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
-import           ZkFold.Symbolic.Data.List                   (List, emptyList, head, tail, (.:))
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Symbolic.Data.List                   (List, emptyList, foldr, head, lSize, tail, (.:))
+import           ZkFold.Symbolic.Data.Morph
+import           ZkFold.Symbolic.Fold                        (SymbolicFold)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x
 
 tailTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 tailTest x y = head (tail (x .: y .: emptyList)) == y
+
+foldrTest :: forall c. SymbolicFold c => FieldElement c -> FieldElement c -> Bool c
+foldrTest x y = lSize r == lSize l
+  where
+    l = x .: y .: emptyList
+    r = foldr (Morph \(a :: FieldElement s, b :: List s (FieldElement s)) -> a .: b) (emptyList @c @(FieldElement c)) l
 
 headFun :: Symbolic c => List c (FieldElement c) -> FieldElement c
 headFun = head
@@ -40,6 +49,8 @@ specList' = describe "List spec" $ do
   prop "Tail works fine" $ \x y ->
     eval1 (compile @a tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
-
+  prop "Foldr works fine" $ \x y ->
+    eval1 (compile @a foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+      Haskell.== one
 specList :: Spec
 specList = specList' @(Zp BLS12_381_Scalar)
