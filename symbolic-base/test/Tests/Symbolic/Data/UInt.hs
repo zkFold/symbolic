@@ -45,7 +45,7 @@ toss x = chooseNatural (0, x)
 toss1 :: Natural -> Gen Natural
 toss1 x = chooseNatural (1, x)
 
-type AC a = ArithmeticCircuit a U1 U1
+type AC a = ArithmeticCircuit a U1
 
 evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 evalBool (Bool ac) = exec1 ac

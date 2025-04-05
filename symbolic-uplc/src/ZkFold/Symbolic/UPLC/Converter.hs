@@ -27,7 +27,7 @@ data ScriptType
 -- 1. with arbitrary input;
 -- 2. with a single success/fail output;
 -- 3. over BLS base field.
-data SomeCircuit = forall p i. SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) p i Par1)
+data SomeCircuit = forall i. SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) i Par1)
 
 -- | Converter itself.
 convert ::

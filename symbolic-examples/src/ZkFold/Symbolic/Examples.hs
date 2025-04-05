@@ -21,6 +21,7 @@ import           Examples.Mithril                            (exampleMithril)
 import           Examples.Pasta                              (examplePallas_Add, examplePallas_Scale)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
+import           GHC.Generics                                (type (:*:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -39,26 +40,23 @@ type C a = ArithmeticCircuit a
 
 data ExampleOutput where
   ExampleOutput ::
-    forall a p i o.
-    (Representable p, Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
-    (() -> C a p i o) -> ExampleOutput
+    forall a i o.
+    (Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
+    (() -> C a i o) -> ExampleOutput
 
 exampleOutput ::
-  forall a p i o c f.
+  forall a i o c f.
   ( SymbolicData f
-  , c ~ C a p i
+  , c ~ C a i
   , Context f ~ c
   , Layout f ~ o
   , SymbolicInput (Support f)
   , Context (Support f) ~ c
-  , Layout (Support f) ~ i
-  , Payload (Support f) ~ p
-  , Representable i
-  , NFData (Rep i)
+  , i ~ Payload (Support f) :*: Layout (Support f)
   , NFData1 o
   , Binary a
   ) => f -> ExampleOutput
-exampleOutput = ExampleOutput @a @p @i @o . const . compile
+exampleOutput = ExampleOutput @a @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
 examples =
@@ -102,7 +100,7 @@ examples =
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("Fibonacci.100", exampleOutput @A $ exampleFibonacci 100)
-  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _ _)))
+  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)

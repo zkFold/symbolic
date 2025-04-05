@@ -32,9 +32,9 @@ testFunc x y =
 
 testResult ::
   forall a . (Arithmetic a, Binary a) =>
-  ArithmeticCircuit a (U1 :*: U1 :*: U1) (Par1 :*: Par1 :*: U1) Par1 ->
+  ArithmeticCircuit a ((U1 :*: U1 :*: U1) :*: Par1 :*: Par1 :*: U1) Par1 ->
   a -> a -> Haskell.Bool
-testResult r x y = fromConstant (unPar1 $ eval r (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1)) Haskell.==
+testResult r x y = fromConstant (unPar1 $ eval r ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)) Haskell.==
     testFunc @(Interpreter a) (fromConstant x) (fromConstant y)
 
 specArithmetization1 :: forall a . (Arithmetic a, Arbitrary a, Binary a, Show a) => Spec
