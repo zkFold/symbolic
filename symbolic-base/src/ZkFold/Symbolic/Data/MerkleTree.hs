@@ -99,6 +99,7 @@ instance forall c x d n.
   , 2 ^ (d-1) ~ n
   , 1 <= d
   ) => Iso (Vector n x) (MerkleTree d x) where
+  -- TODO: fix this instance
   from v = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) (hl V..: ls)
     where
       (h, checkL) = L.uncons hl

@@ -50,7 +50,7 @@ specList' = describe "List spec" $ do
     eval1 (compile @a tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
   prop "Foldr works fine" $ \x y ->
-    eval1 (compile @a foldrTest) (U1 :*: U1 :*: U1) (Par1 x :*: Par1 y :*: U1)
+    eval1 (compile @a foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
 specList :: Spec
 specList = specList' @(Zp BLS12_381_Scalar)
