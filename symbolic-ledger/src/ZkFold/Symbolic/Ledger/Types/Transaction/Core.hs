@@ -10,28 +10,29 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
     Input (..),
 ) where
 
-import           GHC.Generics                         (Generic)
-import           Prelude                              hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude                              as Haskell hiding ((||))
+import           GHC.Generics                          (Generic)
+import           Prelude                               hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import qualified Prelude                               as Haskell hiding ((||))
 
-import           ZkFold.Symbolic.Class                (Symbolic)
-import           ZkFold.Symbolic.Data.Bool            (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators     (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional     (Conditional, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq              (Eq (..))
-import           ZkFold.Symbolic.Data.Hash            (Hashable, hash)
-import qualified ZkFold.Symbolic.Data.List            as Symbolic.List
-import           ZkFold.Symbolic.Data.List            (List)
-import           ZkFold.Symbolic.Data.Maybe           (Maybe, just, nothing)
-import           ZkFold.Symbolic.Data.Morph           (MorphTo (..))
-import           ZkFold.Symbolic.Data.UInt            (UInt)
-import           ZkFold.Symbolic.Data.UTCTime         (UTCTime)
-import           ZkFold.Symbolic.Fold                 (SymbolicFold)
-import           ZkFold.Symbolic.Ledger.Types.Address (Address)
-import           ZkFold.Symbolic.Ledger.Types.Hash    (Hash, HashSimple)
-import           ZkFold.Symbolic.Ledger.Types.Output  (Output (..))
-import           ZkFold.Symbolic.Ledger.Types.Value   (KnownRegistersAssetQuantity)
+import           ZkFold.Symbolic.Class                 (Symbolic)
+import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
+import           ZkFold.Symbolic.Data.Eq               (Eq (..))
+import           ZkFold.Symbolic.Data.Hash             (Hashable, hash)
+import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
+import           ZkFold.Symbolic.Data.List             (List)
+import           ZkFold.Symbolic.Data.Maybe            (Maybe, just, nothing)
+import           ZkFold.Symbolic.Data.Morph            (MorphTo (..))
+import           ZkFold.Symbolic.Data.UInt             (UInt)
+import           ZkFold.Symbolic.Data.UTCTime          (UTCTime)
+import           ZkFold.Symbolic.Fold                  (SymbolicFold)
+import           ZkFold.Symbolic.Ledger.Types.Address  (Address)
+import           ZkFold.Symbolic.Ledger.Types.Hash     (Hash, HashSimple)
+import           ZkFold.Symbolic.Ledger.Types.Interval (Interval)
+import           ZkFold.Symbolic.Ledger.Types.Output   (Output (..))
+import           ZkFold.Symbolic.Ledger.Types.Value    (KnownRegistersAssetQuantity)
 
 -- TODO: Use POSIXTime instead of UTCTime?
 -- | Transaction in our symbolic ledger.
@@ -40,7 +41,7 @@ data Transaction context = Transaction
     -- ^ A list of inputs to the transaction.
     , txOutputs          :: List context (Output context)
     -- ^ A list of outputs of the transaction.
-    , txValidityInterval :: (UTCTime context, UTCTime context)
+    , txValidityInterval :: Interval context
     -- ^ The validity interval of the transaction. The bounds are inclusive.
     , txOwner            :: Address context
     -- ^ Inputs belonging to this address are considered spent whereas others are considered to be only referenced by this transaction.

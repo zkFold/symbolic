@@ -38,13 +38,13 @@ validateTransactionBatch ::
   TransactionBatchWitness context ->
   Bool context
 validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} TransactionBatchWitness {..} =
-  let (resBatchAccDataHashes :: List context (DAIndex context, HashSimple context), resBatchAccBatchesValid) =
+  let (resBatchAccDataHashes :: List context (DAIndex context, HashSimple context), resBatchAccBatchesValid, _) =
         Symbolic.List.foldl
-          ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
-              let (batchValid, batchDAIndex) = validateTransactionBatchData' tbd tbdw
-               in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid)
+          ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s, batchAccBatchValidityInterval :: Interval s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
+              let (batchValid, batchDAIndex) = validateTransactionBatchData' batchAccBatchValidityInterval tbd tbdw
+               in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval)
           )
-          (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context)
+          (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval)
           tbwBatchDatas
    in tbBridgeIn
         == hasher valBridgeIn

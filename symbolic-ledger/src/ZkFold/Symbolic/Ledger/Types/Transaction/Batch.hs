@@ -16,6 +16,7 @@ import           ZkFold.Symbolic.Data.List                     (List)
 import           ZkFold.Symbolic.Data.UTCTime                  (UTCTime)
 import           ZkFold.Symbolic.Ledger.Types.DataAvailability (DAIndex)
 import           ZkFold.Symbolic.Ledger.Types.Hash             (HashSimple)
+import           ZkFold.Symbolic.Ledger.Types.Interval         (Interval)
 import           ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
 import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAssetQuantity)
 
@@ -28,7 +29,7 @@ data TransactionBatch context = TransactionBatch
     -- ^ Hash of the 'AssetValues' that are bridged into the ledger.
     , tbBridgeOut        :: HashSimple context
     -- ^ Hash of the 'AssetValues' that are bridged out of the ledger.
-    , tbValidityInterval :: (UTCTime context, UTCTime context)
+    , tbValidityInterval :: Interval context
     -- ^ The validity interval of the transaction batch. The bounds are inclusive.
     , tbPreviousBatch    :: HashSimple context
     -- ^ Hash of the previous transaction batch.

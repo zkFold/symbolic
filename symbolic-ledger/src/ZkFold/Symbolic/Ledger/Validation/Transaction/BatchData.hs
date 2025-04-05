@@ -35,21 +35,23 @@ instance Signature context => Conditional (Bool context) (TransactionBatchDataWi
 
 instance Signature context => Eq (TransactionBatchDataWitness context)
 
-validateTransactionBatchData :: forall context. Signature context => TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
-validateTransactionBatchData tbd tbdw = fst $ validateTransactionBatchData' tbd tbdw
+validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
+validateTransactionBatchData tbInterval tbd tbdw = fst $ validateTransactionBatchData' tbInterval tbd tbdw
 
-validateTransactionBatchData' :: forall context. Signature context => TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
-validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitness {..} =
+validateTransactionBatchData' :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
+validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBatchDataWitness {..} =
   -- To check
   -- \* All addresses corresponding to spent inputs have same data availability source.
   -- \* Merkle root is computed correctly.
   -- \* Online addresses list is computed correctly.
   -- \* Offline txs list is computed correctly.
   -- \* Txs are valid.
-  -- TODO: Add more?
+  -- \* Interval of the overarching transaction batch is within the interval of individual transactions.
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
-        , -- Wether all relevant addresses have same data availability index.
+        , _resTxAccBatchInterval :: Interval context
+        , -- Whether all relevant addresses have same data availability index.
+          -- And whether the interval of the batch is within the intervals of individual transactions.
           resTxAccIsConsistent :: Bool context
         , -- List of online addresses corresponding to inputs that are being "spent". Note that this may contain duplicates which we'll need to remove later before comparing it with the field inside batch data.
           resTxAccOnlineAddresses :: List context (Address context)
@@ -59,7 +61,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
           resTxAccOnlineAddrsTxs :: Root (Address context, List context (HashSimple context))
         ) =
           Symbolic.List.foldl
-            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
+            ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccBatchInterval :: Interval s, txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
                 let txOwner' = txOwner tx
                     (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
                     -- If we haven't found any index, we use the index of this owner.
@@ -76,6 +78,7 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                               (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                         )
                         (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
+                    newTxAccIsConsistent = txAccIsConsistent && (contains (txValidityInterval tx) txAccBatchInterval)
                     (resInputsAccIx, resInputsAccIsConsistent, _) =
                       Symbolic.List.foldl
                         ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', ownerAddr :: Address s'), input :: Input s') ->
@@ -93,9 +96,9 @@ validateTransactionBatchData' TransactionBatchData {..} TransactionBatchDataWitn
                         )
                         (txAccIxFinal, txAccIsConsistent, txOwner')
                         (txInputs tx)
-                 in (resInputsAccIx, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
+                 in (resInputsAccIx, txAccBatchInterval, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )
-            (nothing :: Maybe context (DAIndex context), true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
+            (nothing :: Maybe context (DAIndex context), tbInterval, true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
             tbdwTransactions
    in ( isJust resTxAccIx
           && resTxAccIsConsistent
