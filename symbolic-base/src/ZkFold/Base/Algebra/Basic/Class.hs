@@ -9,7 +9,7 @@ module ZkFold.Base.Algebra.Basic.Class where
 import           Control.Applicative              (Applicative (..))
 import           Data.Bool                        (Bool (..), bool, otherwise, (&&))
 import           Data.Eq                          (Eq (..))
-import           Data.Foldable                    (Foldable (foldl, foldl', foldl1, foldr))
+import           Data.Foldable                    (Foldable (foldl', foldl1, foldr))
 import           Data.Function                    (const, id, ($), (.))
 import           Data.Functor                     (Functor (..))
 import           Data.Functor.Constant            (Constant (..))
@@ -242,7 +242,7 @@ natScale n a = sum $ zipWith f (binaryExpansion n) (iterate (\x -> x + x) a)
     f _ _ = Haskell.error "scale: This should never happen."
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
-sum = foldl (+) zero
+sum = foldl' (+) zero
 
 {- | A class of abelian groups.
 

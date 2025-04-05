@@ -1,12 +1,20 @@
-module ZkFold.Prelude where
+{-# LANGUAGE CPP #-}
+
+module ZkFold.Prelude (module ZkFold.Prelude, module Data.List) where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
 import           Data.List            (genericIndex)
+#if __GLASGOW_HASKELL__ < 912
+import           Data.List            (foldl')
+#endif
+#if __GLASGOW_HASKELL__ >= 910
+import           Data.List            (unsnoc)
+#endif
 import           Data.Map             (Map, lookup)
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
-import           Prelude              hiding (drop, lookup, readFile, replicate, take, writeFile, (!!))
+import           Prelude              hiding (drop, iterate, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger, shuffle)
 
 log2ceiling :: (Integral a, Integral b) => a -> b
@@ -31,6 +39,17 @@ splitAt n xs = (take n xs, drop n xs)
 iterateM :: Monad m => Natural -> (a -> m a) -> a -> m a
 iterateM 0 _ x = return x
 iterateM n f x = f x >>= iterateM (n - 1) f
+
+iterate' :: (a -> a) -> a -> [a]
+iterate' f x =
+    let x' = f x
+    in x' `seq` (x : iterate' f x')
+
+iterateN' :: (a -> a) -> Natural -> a -> [a]
+iterateN' _ 0 x = [x]
+iterateN' f n x =
+    let x' = f x
+    in x' `seq` (x : iterateN' f (n - 1) x')
 
 replicate :: Natural -> a -> [a]
 replicate n x
@@ -81,3 +100,10 @@ chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fr
 -- | Choose a list of length `l` from a list allowing repetitions.
 chooseFromList :: Natural -> [a] -> Gen [a]
 chooseFromList l as = take l <$> shuffle (concatMap (replicate l) as)
+
+#if __GLASGOW_HASKELL__ < 910
+unsnoc :: [a] -> Maybe ([a], a)
+unsnoc [] = Nothing
+unsnoc l =  Just (init l, last l)
+#endif
+

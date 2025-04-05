@@ -8,7 +8,6 @@ import           Data.Binary                                       (Binary)
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Maybe                                        (fromJust)
 import qualified Data.Vector                                       as V
-import           GHC.IsList                                        (IsList (..))
 import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
                                                                     (^))
 
@@ -20,7 +19,7 @@ import           ZkFold.Base.Algebra.Polynomials.Univariate        (UnivariateFi
                                                                     toPolyVec)
 import           ZkFold.Base.Data.Vector                           (Vector (..))
 import           ZkFold.Base.Protocol.Plonkup.Internal             (Plonkup (..), PlonkupPermutationSize,
-                                                                    PlonkupPolyExtendedLength, with4n6)
+                                                                    PlonkupPolyExtendedLength)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Base.Protocol.Plonkup.Relation             (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
@@ -89,21 +88,22 @@ plonkupSetup Plonkup {..} =
             1 -> k1 * (omega^i)
             2 -> k2 * (omega^i)
             _ -> error "setup: invalid index"
-        s = fromList $ map f $ fromPermutation @(PlonkupPermutationSize n) $ sigma
+
+        s = f <$> fromPermutation @(PlonkupPermutationSize n) sigma
         sigma1s = toPolyVec $ V.take (fromIntegral $ value @n) s
         sigma2s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ value @n) s
         sigma3s = toPolyVec $ V.take (fromIntegral $ value @n) $ V.drop (fromIntegral $ 2 * value @n) s
 
-        qmX = with4n6 @n (polyVecInLagrangeBasis omega qM)
-        qlX = with4n6 @n (polyVecInLagrangeBasis omega qL)
-        qrX = with4n6 @n (polyVecInLagrangeBasis omega qR)
-        qoX = with4n6 @n (polyVecInLagrangeBasis omega qO)
-        qcX = with4n6 @n (polyVecInLagrangeBasis omega qC)
-        qkX = with4n6 @n (polyVecInLagrangeBasis omega qK)
-        s1X = with4n6 @n (polyVecInLagrangeBasis omega sigma1s)
-        s2X = with4n6 @n (polyVecInLagrangeBasis omega sigma2s)
-        s3X = with4n6 @n (polyVecInLagrangeBasis omega sigma3s)
-        tX  = with4n6 @n (polyVecInLagrangeBasis omega t)
+        qmX = polyVecInLagrangeBasis omega qM
+        qlX = polyVecInLagrangeBasis omega qL
+        qrX = polyVecInLagrangeBasis omega qR
+        qoX = polyVecInLagrangeBasis omega qO
+        qcX = polyVecInLagrangeBasis omega qC
+        qkX = polyVecInLagrangeBasis omega qK
+        s1X = polyVecInLagrangeBasis omega sigma1s
+        s2X = polyVecInLagrangeBasis omega sigma2s
+        s3X = polyVecInLagrangeBasis omega sigma3s
+        tX  = polyVecInLagrangeBasis omega t
         polynomials = PlonkupCircuitPolynomials {..}
 
         com = bilinear

@@ -5,9 +5,16 @@
 module ZkFold.Symbolic.Data.JWT.RS256 (SigningKey (..), Certificate (..)) where
 
 import           Control.DeepSeq                    (NFData)
+import           Data.Aeson
+import qualified Data.Bits                          as B
+import qualified Data.ByteString                    as BS
+import qualified Data.ByteString.Base64.URL         as B64
 import           GHC.Generics                       (Generic)
+import           Prelude                            (pure, ($))
 import qualified Prelude                            as P
 
+import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Algebra.Basic.Number   (Natural)
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.ByteString    (ByteString)
@@ -45,6 +52,24 @@ instance
     ( SymbolicInput (PublicKey 2048 ctx)
     , Symbolic ctx
     ) => SymbolicInput (Certificate ctx)
+
+instance Symbolic ctx => FromJSON (Certificate ctx) where
+    parseJSON = withObject "Certificate" $ \v -> do
+        kid <- v .: "kid"
+        n <- v .: "n"
+        e <- v .: "e"
+        let nNat = bsToNat (B64.decodeLenient n)
+            eNat = bsToNat (B64.decodeLenient e)
+            nUInt = fromConstant nNat
+            eUInt = fromConstant eNat
+            kidBs = fromConstant @BS.ByteString kid
+
+            pubKey = PublicKey eUInt nUInt
+
+        pure $ Certificate kidBs pubKey
+
+bsToNat :: BS.ByteString -> Natural
+bsToNat bs = BS.foldl' (\i b -> (i `B.shiftL` 8) + P.fromIntegral b) 0 bs
 
 
 -- | RSA Private key with Key ID

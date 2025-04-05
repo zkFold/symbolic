@@ -1,8 +1,8 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE Unsafe              #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE Unsafe               #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Base.Protocol.NonInteractiveProof.Internal where
@@ -16,6 +16,7 @@ import           System.IO.Unsafe                           (unsafePerformIO)
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
 #endif
 
+import           Control.DeepSeq                            (NFData, force)
 import           Data.ByteString                            (ByteString)
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
@@ -23,11 +24,11 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Base.Algebra.Basic.Class            (Scale (..), Bilinear(..), sum)
-import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate (fromPolyVec, UnivariateRingPolyVec(..), PolyVec)
-import           ZkFold.Base.Data.ByteString
+import           ZkFold.Base.Algebra.Basic.Class            (Bilinear (..), Scale (..), sum)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat)
+import           ZkFold.Base.Algebra.EllipticCurve.Class    (CyclicGroup (..))
+import           ZkFold.Base.Algebra.Polynomials.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
+import           ZkFold.Base.Data.ByteString
 
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
@@ -97,7 +98,8 @@ class NonInteractiveProof a where
 instance
     ( CyclicGroup g
     , KnownNat size
+    , NFData g
     , f ~ ScalarFieldOf g
     , UnivariateRingPolyVec f (PolyVec f)
     ) => Bilinear (V.Vector g) (PolyVec f size) g where
-    bilinear gs f = sum $ V.zipWith scale (fromPolyVec f) gs
+    bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
