@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Ledger.Types.Transaction (
   module ZkFold.Symbolic.Ledger.Types.Transaction.Core,
-  module ZkFold.Symbolic.Ledger.Types.Transaction.Envelope,
   module ZkFold.Symbolic.Ledger.Types.Transaction.Batch,
   module ZkFold.Symbolic.Ledger.Types.Transaction.BatchData
 ) where
@@ -8,4 +7,3 @@ module ZkFold.Symbolic.Ledger.Types.Transaction (
 import           ZkFold.Symbolic.Ledger.Types.Transaction.Batch
 import           ZkFold.Symbolic.Ledger.Types.Transaction.BatchData
 import           ZkFold.Symbolic.Ledger.Types.Transaction.Core
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Envelope

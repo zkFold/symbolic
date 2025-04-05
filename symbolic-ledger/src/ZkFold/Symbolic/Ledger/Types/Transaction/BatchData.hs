@@ -3,30 +3,30 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.BatchData (
     TransactionBatchData (..),
 ) where
 
-import           GHC.Generics                                      (Generic)
-import           Prelude                                           hiding (Bool, Eq, length, splitAt, (*), (+))
+import           GHC.Generics                                  (Generic)
+import           Prelude                                       hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import           ZkFold.Symbolic.Class                             (Symbolic)
-import           ZkFold.Symbolic.Data.Bool                         (Bool)
-import           ZkFold.Symbolic.Data.Class                        (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators                  (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional                  (Conditional)
-import           ZkFold.Symbolic.Data.Eq                           (Eq)
-import           ZkFold.Symbolic.Data.List                         (List)
-import           ZkFold.Symbolic.Ledger.Types.Address              (Address)
-import           ZkFold.Symbolic.Ledger.Types.Root                 (Root)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Core     (KnownRegistersOutputIndex)
-import           ZkFold.Symbolic.Ledger.Types.Transaction.Envelope (TransactionEnvelope)
-import           ZkFold.Symbolic.Ledger.Types.Value                (KnownRegistersAssetQuantity)
+import           ZkFold.Symbolic.Class                         (Symbolic)
+import           ZkFold.Symbolic.Data.Bool                     (Bool)
+import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Conditional              (Conditional)
+import           ZkFold.Symbolic.Data.Eq                       (Eq)
+import           ZkFold.Symbolic.Data.List                     (List)
+import           ZkFold.Symbolic.Ledger.Types.Address          (Address)
+import           ZkFold.Symbolic.Ledger.Types.Hash             (HashSimple)
+import           ZkFold.Symbolic.Ledger.Types.Root             (Root)
+import           ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
+import           ZkFold.Symbolic.Ledger.Types.Value            (KnownRegistersAssetQuantity)
 
 -- | Transaction batch data, given to us by a data provider source. Thus all the 'Address' entries here must have same 'DAIndex'.
 data TransactionBatchData context = TransactionBatchData
-    { tbdMerkleRoot   :: Root (Address context, List context (TransactionEnvelope context))
-    -- ^ Merkle tree root of the addresses corresponding to online transactions that are associated with a particular data availability source.
-    , tbdAddresses    :: List context (Address context)
+    { tbdMerkleRoot          :: Root (Address context, List context (HashSimple context))
+    -- ^ Merkle tree root of the addresses corresponding to online transactions (represented by their transaction hash) that are associated with a particular data availability source.
+    , tbdOnlineAddresses     :: List context (Address context)
     -- ^ List of addresses included in the batch which correspond to online transactions and are associated with a particular data availability source.
-    , tbdTransactions :: List context ((Address context, List context (TransactionEnvelope context)))
-    -- ^ All offline transactions associated with a particular data availability source that are included in the batch.
+    , tbdOfflineTransactions :: List context ((Address context, List context (HashSimple context)))
+    -- ^ All offline transactions (represented by their transaction hash) associated with a particular data availability source that are included in the batch.
     }
     deriving stock Generic
 
