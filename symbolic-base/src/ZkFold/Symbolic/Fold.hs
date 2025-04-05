@@ -23,7 +23,7 @@ class Symbolic c => SymbolicFold c where
     (Binary (Rep f), NFData (Rep f), Ord (Rep f)) =>
     (forall a. Binary a => Binary (f a)) =>
     (Representable f, NFData1 f, Traversable f) =>
-    (Binary (Rep p), Representable p) =>
+    (Binary (Rep p), NFData (Rep p), Ord (Rep p), Representable p) =>
     (Binary (Rep g), NFData (Rep g), Ord (Rep g), Representable g) =>
     (forall a. Binary a => Binary (h a)) =>
     (WitnessField c ~ wc) =>

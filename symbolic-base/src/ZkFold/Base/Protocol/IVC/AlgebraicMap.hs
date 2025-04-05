@@ -4,10 +4,12 @@
 module ZkFold.Base.Protocol.IVC.AlgebraicMap (algebraicMap) where
 
 import           Data.ByteString                                     (ByteString)
+import           Data.Either                                         (Either (..))
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.List                                           (foldl')
 import           Data.Map.Strict                                     (Map, keys)
 import qualified Data.Map.Strict                                     as M
+import           GHC.Generics                                        ((:*:))
 import           Prelude                                             (fmap, zip, ($), (.), (<$>))
 import qualified Prelude                                             as P
 
@@ -41,18 +43,21 @@ algebraicMap :: forall d k a i p f .
     -> [f]
 algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
     where
-        sys :: [PM.Poly a (SysVar i) Natural]
+        sys :: [PM.Poly a (SysVar (i :*: p :*: i)) Natural]
         sys = M.elems (acSystem predicateCircuit)
 
         witness :: Map ByteString f
         witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
-        varMap :: SysVar i -> f
-        varMap (InVar inV)            = index pi inV
-        varMap (NewVar (EqVar newV))  = M.findWithDefault zero newV witness
-        varMap (NewVar (FoldVar _ _)) = P.error "unexpected FOLD constraint"
+        varMap :: SysVar (i :*: p :*: i) -> f
+        varMap (InVar (Left inV))        = index pi inV
+        varMap (InVar (Right (Left _)))  = P.error "constraints should not depend on payload"
+        varMap (InVar (Right (Right _))) = zero
+        varMap (NewVar (EqVar newV))     = M.findWithDefault zero newV witness
+        varMap (NewVar (FoldLVar _ _))   = P.error "unexpected FOLD constraint"
+        varMap (NewVar (FoldPVar _ _))   = P.error "unexpected FOLD constraint"
 
-        f_sps :: Vector (d+1) [PM.Poly a (SysVar i) Natural]
+        f_sps :: Vector (d+1) [PM.Poly a (SysVar (i :*: p :*: i)) Natural]
         f_sps = degreeDecomposition @d $ sys
 
         f_sps_uni :: Vector (d+1) [f]
