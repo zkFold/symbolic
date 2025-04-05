@@ -16,6 +16,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, toUInt)
 import           ZkFold.Symbolic.Data.UInt               (UInt)
 
+-- TODO: verify the actual message instead of a hash
 ecdsaVerify
   :: forall n point curve p q baseField scalarField ctx .
      ( S.Symbolic ctx
