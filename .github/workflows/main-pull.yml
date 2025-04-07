@@ -110,7 +110,7 @@ jobs:
 
     - name: Lint Haskell
       run: |
-        find ./ -name "*.hs" -exec sh -c 'for file do if ! grep -q -E -r "javascript_HOST_ARCH|type \(\*\)" "$file"; then stylish-haskell --inplace "$file"; fi; done' sh {} \;
+        find ./ -name "*.hs" -exec sh -c 'for file do if ! grep -q -E -r "javascript_HOST_ARCH|LANGUAGE CPP|type \(\*\)" "$file"; then stylish-haskell --inplace "$file"; fi; done' sh {} \;
 
     - name: Auto-commit lint
       uses: stefanzweifel/git-auto-commit-action@v4

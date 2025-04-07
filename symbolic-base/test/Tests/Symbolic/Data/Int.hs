@@ -48,7 +48,7 @@ toss1 (P.fromIntegral -> x) = do
 tossp :: Natural -> Gen Integer
 tossp (P.fromIntegral -> x) = chooseInteger (1, x)
 
-type AC a = ArithmeticCircuit a U1 U1
+type AC a = ArithmeticCircuit a U1
 
 evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 evalBool (Bool ac) = exec1 ac

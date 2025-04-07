@@ -15,6 +15,7 @@ import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust, mapMaybe)
 import qualified Data.Set                                            as S
+import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
@@ -36,7 +37,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation p i n l a pv = PlonkupRelation
+data PlonkupRelation i n l a pv = PlonkupRelation
     { qM       :: pv n
     , qL       :: pv n
     , qR       :: pv n
@@ -45,11 +46,11 @@ data PlonkupRelation p i n l a pv = PlonkupRelation
     , qK       :: pv n
     , t        :: pv n
     , sigma    :: Permutation (3 * n)
-    , witness  :: p a -> i a -> (pv n, pv n, pv n)
-    , pubInput :: p a -> i a -> l a
+    , witness  :: i a -> (pv n, pv n, pv n)
+    , pubInput :: i a -> l a
     }
 
-instance (Show a, Show (pv n)) => Show (PlonkupRelation p i n l a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation i n l a pv) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -65,22 +66,21 @@ instance
         ( KnownNat n
         , UnivariateRingPolyVec a pv
         , KnownNat (PlonkupPermutationSize n)
-        , Representable p
         , Representable i
         , Representable l
         , Foldable l
         , Ord (Rep i)
         , Arithmetic a
         , Binary a
-        , Arbitrary (ArithmeticCircuit a p i l)
-        ) => Arbitrary (PlonkupRelation p i n l a pv) where
-    arbitrary = fromJust . toPlonkupRelation @i @p @n @l @a @pv <$> arbitrary
+        , Arbitrary (ArithmeticCircuit a i l)
+        ) => Arbitrary (PlonkupRelation i n l a pv) where
+    arbitrary = fromJust . toPlonkupRelation @i @n @l @a @pv <$> arbitrary
 
 toPlonkupRelation ::
-  forall i p n l a pv .
+  forall i n l a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
-  , Representable p, Representable i, Representable l, Foldable l
-  ) => ArithmeticCircuit a p i l -> Maybe (PlonkupRelation p i n l a pv)
+  , Representable i, Representable l, Foldable l
+  ) => ArithmeticCircuit a i l -> Maybe (PlonkupRelation i n l a pv)
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
@@ -96,30 +96,30 @@ toPlonkupRelation ac =
         -- The total number of constraints in the relation.
         n'      = acSizeN ac + length (tabulate @l id) + length xLookup
 
-        plonkupSystem = concat
+        plonkupSystem = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup . LookupConstraint <$> xLookup
             , replicate (value @n -! n') ConsExtra
             ]
 
-        qM = toPolyVec $ fromList $ map (qm . getPlonkConstraint) plonkupSystem
-        qL = toPolyVec $ fromList $ map (ql . getPlonkConstraint) plonkupSystem
-        qR = toPolyVec $ fromList $ map (qr . getPlonkConstraint) plonkupSystem
-        qO = toPolyVec $ fromList $ map (qo . getPlonkConstraint) plonkupSystem
-        qC = toPolyVec $ fromList $ map (qc . getPlonkConstraint) plonkupSystem
-        qK = toPolyVec $ fromList $ map isLookupConstraint plonkupSystem
+        qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
+        qL = toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
+        qR = toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
+        qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
+        qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
+        qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
-        a  = map getA plonkupSystem
-        b  = map getB plonkupSystem
-        c  = map getC plonkupSystem
+        a  = fmap getA plonkupSystem
+        b  = fmap getB plonkupSystem
+        c  = fmap getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
-        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ fromList $ a ++ b ++ c)
+        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
-        w1 e i = toPolyVec $ fromList $ fmap (indexW ac e i) a
-        w2 e i = toPolyVec $ fromList $ fmap (indexW ac e i) b
-        w3 e i = toPolyVec $ fromList $ fmap (indexW ac e i) c
-        witness e i  = (w1 e i, w2 e i, w3 e i)
-        pubInput e i = fmap (indexW ac e i) xPub
+        w1 i = toPolyVec $ fmap (indexW ac i) a
+        w2 i = toPolyVec $ fmap (indexW ac i) b
+        w3 i = toPolyVec $ fmap (indexW ac i) c
+        witness i  = (w1 i, w2 i, w3 i)
+        pubInput i = fmap (indexW ac i) xPub
 
     in if max n' nLookup <= value @n
         then Just $ PlonkupRelation {..}

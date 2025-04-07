@@ -53,11 +53,11 @@ equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c i
 
 blake2bSymbolic :: Spec
 blake2bSymbolic =
-    let ac :: ArithmeticCircuit Fr (U1 :*: U1) (Vector 24 :*: U1) Par1
+    let ac :: ArithmeticCircuit Fr ((U1 :*: U1) :*: Vector 24 :*: U1) Par1
         ac    = compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
         ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
         input         = runInterpreter bs
-    in it "simple test with cardano-crypto " $ eval1 ac (U1 :*: U1) (input :*: U1) == 1
+    in it "simple test with cardano-crypto " $ eval1 ac ((U1 :*: U1) :*: input :*: U1) == 1
 
 specBlake2b :: Spec
 specBlake2b = describe "BLAKE2b self-test validation" $ do

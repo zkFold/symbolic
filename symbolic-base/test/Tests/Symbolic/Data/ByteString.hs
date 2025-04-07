@@ -37,7 +37,7 @@ import           ZkFold.Symbolic.Interpreter                 (Interpreter (Inter
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
-type AC a = ArithmeticCircuit a U1 U1
+type AC a = ArithmeticCircuit a U1
 
 eval ::
   forall a n . (Arithmetic a, Binary a) =>
@@ -108,7 +108,7 @@ testGrow
     .  KnownNat n
     => PrimeField (Zp p)
     => KnownNat m
-    => Resize (ByteString n (ArithmeticCircuit (Zp p) U1 U1)) (ByteString m (ArithmeticCircuit (Zp p) U1 U1))
+    => Resize (ByteString n (ArithmeticCircuit (Zp p) U1)) (ByteString m (ArithmeticCircuit (Zp p) U1))
     => Resize (ByteString n (Interpreter (Zp p))) (ByteString m (Interpreter (Zp p)))
     => Spec
 testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to length " <> show (value @m)) $ do

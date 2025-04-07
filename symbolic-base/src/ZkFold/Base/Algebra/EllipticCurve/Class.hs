@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RebindableSyntax      #-}
@@ -26,6 +27,7 @@ module ZkFold.Base.Algebra.EllipticCurve.Class
   , AffinePoint (..)
   ) where
 
+import           Control.DeepSeq                  (NFData)
 import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
@@ -162,6 +164,7 @@ class HasPointInf point where pointInf :: point
 with a phantom `WeierstrassCurve` @curve@. -}
 newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
   deriving Generic
+deriving anyclass instance NFData point => NFData (Weierstrass curve point)
 deriving newtype instance Prelude.Eq point
   => Prelude.Eq (Weierstrass curve point)
 deriving newtype instance Prelude.Show point
@@ -263,6 +266,8 @@ instance
 {- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
 with a phantom `TwistedEdwardsCurve` @curve@. -}
 newtype TwistedEdwards curve point = TwistedEdwards {pointTwistedEdwards :: point}
+  deriving Generic
+deriving anyclass instance NFData point => NFData (TwistedEdwards curve point)
 instance
   ( TwistedEdwardsCurve curve field
   , Field field
@@ -339,6 +344,7 @@ data Point field = Point
   , _y    :: field
   , _zBit :: BooleanOf field
   } deriving (Generic)
+deriving instance (NFData field, NFData (BooleanOf field)) => NFData (Point field)
 deriving instance (Prelude.Eq (BooleanOf field), Prelude.Eq field)
   => Prelude.Eq (Point field)
 instance
@@ -377,6 +383,7 @@ data CompressedPoint field = CompressedPoint
   , _yBit :: BooleanOf field
   , _zBit :: BooleanOf field
   } deriving Generic
+deriving instance (NFData field, NFData (BooleanOf field)) => NFData (CompressedPoint field)
 deriving instance (Prelude.Show (BooleanOf field), Prelude.Show field)
   => Prelude.Show (CompressedPoint field)
 deriving instance (Prelude.Eq (BooleanOf field), Prelude.Eq field)
@@ -394,6 +401,7 @@ data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   } deriving (Generic, Prelude.Eq)
+deriving instance NFData field => NFData (AffinePoint field)
 instance SymbolicOutput field => SymbolicData (AffinePoint field)
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)

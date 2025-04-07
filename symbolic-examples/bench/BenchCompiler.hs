@@ -15,9 +15,8 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples        (ExampleOutput (..), examples)
 
 benchmark ::
-  ( Arithmetic a, Binary a, NFData (Rep i)
-  , Representable p, Representable i, NFData1 o) =>
-  String -> (() -> ArithmeticCircuit a p i o) -> Benchmark
+  (Arithmetic a, Binary a, NFData (Rep i), Representable i, NFData1 o) =>
+  String -> (() -> ArithmeticCircuit a i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()
   , env (return $ force $ circuit ()) $ \c ->

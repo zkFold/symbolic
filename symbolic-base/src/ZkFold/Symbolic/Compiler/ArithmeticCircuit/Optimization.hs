@@ -1,4 +1,3 @@
-
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization where
 
 import           Data.Bifunctor                                          (bimap)
@@ -22,7 +21,6 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF (..))
 
 --------------------------------- High-level functions --------------------------------
 
@@ -31,16 +29,16 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (Witnes
 -- with a constant variable @fromConstant $ negate c // k@ in an arithmetic circuit
 -- and replaces variable with a constant in witness
 --
-optimize :: forall a p i o.
-  (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i), Binary a, Binary (Rep p)) =>
-  ArithmeticCircuit a p i o -> ArithmeticCircuit a p i o
+optimize :: forall a i o.
+  (Arithmetic a, Ord (Rep i), Functor o, Binary (Rep i), Binary a) =>
+  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
     acSystem = addInVarConstraints newS,
     acLookupFunction = lf,
     acLookup = optRanges vs r,
-    acWitness = (>>= optWitVar vs) <$>
+    acWitness = (>>= optSysVar) <$>
       M.filterWithKey (\k _ -> notMember (NewVar (EqVar k)) vs) w,
-    acFold = optimizeFold . bimap varF (>>= optWitVar vs) <$> f,
+    acFold = optimizeFold . bimap varF (>>= optSysVar) <$> f,
     acOutput = varF <$> o
   }
   where
@@ -52,7 +50,7 @@ optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
     addInVarConstraints :: Map ByteString (Poly a (SysVar i) Natural) -> Map ByteString (Poly a (SysVar i) Natural)
     addInVarConstraints p = p <> fromList [(polyId, poly) | (inVar, v) <- assocs $ filterWithKey (const . isInVar) vs,
                                                             let poly = var inVar - fromConstant v,
-                                                            let polyId = witToVar @a @p @i (pure (WSysVar inVar) - fromConstant v)]
+                                                            let polyId = witToVar @a @i (pure inVar - fromConstant v)]
 
     optRanges :: Map (SysVar i) a -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i]) -> MM.MonoidalMap (LookupType a) (S.Set [SysVar i])
     optRanges m = MM.mapMaybeWithKey (\k' v -> bool Nothing (maybeSet v $ fromRange k') (isRange k'))
@@ -65,16 +63,10 @@ optimize (ArithmeticCircuit s lf r w f o) = ArithmeticCircuit {
     inInterval :: S.Set (a, a) -> a -> Bool
     inInterval si v = and $ S.map (\(l', r') -> ((v >= l') && (v <= r')) :: Bool) si
 
-    optWitVar :: Map (SysVar i) a -> WitVar p i -> WitnessF a (WitVar p i)
-    optWitVar m = \case
-      (WSysVar sv) ->
-        case M.lookup sv m of
-          Just k  -> fromConstant k
-          Nothing -> pure $ WSysVar sv
-      we  -> pure we
-
     optimizeFold CircuitFold {..} =
       CircuitFold { foldStep = optimize foldStep, .. }
+
+    optSysVar sV = maybe (pure sV) fromConstant (M.lookup sV vs)
 
     varF lv@(LinVar k sV b) = maybe lv (ConstVar . (\t -> k * t + b)) (M.lookup sV vs)
     varF (ConstVar c)       = ConstVar c

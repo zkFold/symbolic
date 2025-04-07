@@ -17,6 +17,7 @@ import           Data.Zip                                   (Semialign (..), Zip
 import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
 import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($),
                                                              (.), (<$>))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class            (Scale, zero)
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+), type (-))
@@ -84,6 +85,7 @@ type RecursiveFunctionAssumptions algo d a i c f ctx =
     , Scale a f
     , Scale a (PolyVec f (d+1))
     , Scale f (c f)
+    , P.Eq f
     )
 
 type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx
@@ -145,7 +147,7 @@ recursivePredicate :: forall algo d k a i p c ctx0 ctx1 .
     ( RecursivePredicateAssumptions algo d k a i p c
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c)
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
     ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate func =
@@ -164,6 +166,6 @@ recursivePredicate func =
 
         predicateCircuit :: PredicateCircuit a (RecursiveI i) (RecursiveP d k i p c)
         predicateCircuit =
-            hlmap (U1 :*:) $
-            compileWith @a guessOutput (\(i :*: p) U1 -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
+            hlmap (\(i :*: p :*: j) -> (i :*: p) :*: j) $
+            compileWith @a guessOutput (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Compiler (
     module ZkFold.Symbolic.Compiler.ArithmeticCircuit,
@@ -14,11 +13,12 @@ import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Tuple                                 (fst, snd)
-import           GHC.Generics                               (Par1 (Par1), U1 (..))
+import           GHC.Generics                               (Par1 (Par1), U1 (..), (:*:))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
                                                              (++))
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.Product                   (fstP, sndP)
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -49,8 +49,9 @@ type RestoresFrom c y =
   (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
 compileInternal ::
-  (CompilesWith c0 s f, RestoresFrom c1 y, c1 ~ ArithmeticCircuit a p i
-  , Ord (Rep i), Binary (Rep i), Binary a, Binary (Rep p)) =>
+  ( CompilesWith c0 s f, RestoresFrom c1 y
+  , c1 ~ ArithmeticCircuit a i
+  , Ord (Rep i), Binary (Rep i), Binary a) =>
   (c0 (Layout f) -> c1 (Layout y)) ->
   c0 (Layout s) -> Payload s (WitnessField c0) -> f -> y
 compileInternal opts sLayout sPayload f =
@@ -66,48 +67,40 @@ compileInternal opts sLayout sPayload f =
 -- | @compileWith opts inputT@ compiles a function @f@ into an optimized
 -- arithmetic circuit packed inside a suitable 'SymbolicData'.
 compileWith ::
-  forall a y p i q j s f c0 c1.
-  ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a p i
-  , Representable p, Representable i
-  , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a q j
-  , Binary a, Binary (Rep p), Binary (Rep i), Binary (Rep j)
-  , Ord (Rep i), Ord (Rep j), Binary (Rep q)) =>
+  forall a y i j s f c0 c1.
+  ( CompilesWith c0 s f, c0 ~ ArithmeticCircuit a i
+  , Representable i
+  , RestoresFrom c1 y, c1 ~ ArithmeticCircuit a j
+  , Binary a, Binary (Rep i), Binary (Rep j)
+  , Ord (Rep i), Ord (Rep j)) =>
   -- | Circuit transformation to apply before optimization.
   (c0 (Layout f) -> c1 (Layout y)) ->
   -- | An algorithm to prepare support argument from the circuit input.
-  (forall x. p x -> i x -> (Payload s x, Layout s x)) ->
+  (forall x. i x -> (Payload s x, Layout s x)) ->
   -- | Function to compile.
   f -> y
 compileWith outputTransform inputTransform =
   compileInternal outputTransform
-    (naturalCircuit $ \p i -> snd (inputTransform p i))
-    (inputPayload $ \p i -> fst (inputTransform p i))
+    (naturalCircuit $ snd . inputTransform)
+    (inputPayload $ fst . inputTransform)
 
 -- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
 -- packed inside a suitable 'SymbolicData'.
 compile :: forall a y f c s.
   ( CompilesWith c s f, RestoresFrom c y, Layout y ~ Layout f
-  , c ~ ArithmeticCircuit a (Payload s) (Layout s), Binary a)
+  , c ~ ArithmeticCircuit a (Payload s :*: Layout s), Binary a)
   => f -> y
-compile = compileInternal id idCircuit (inputPayload const)
+compile = compileInternal id (naturalCircuit sndP) (inputPayload fstP)
 
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO ::
   forall a c p f s l .
-  ( c ~ ArithmeticCircuit a p l
-  , FromJSON a
-  , ToJSON a
-  , ToJSONKey a
-  , SymbolicData f
-  , Context f ~ c
-  , Support f ~ s
-  , ToJSON (Layout f (Var a l))
-  , SymbolicInput s
-  , Context s ~ c
-  , Layout s ~ l
-  , Payload s ~ p
-  , FromJSON (Rep l)
-  , ToJSON (Rep l), Binary a
+  ( c ~ ArithmeticCircuit a (p :*: l)
+  , FromJSON a, ToJSON a, ToJSONKey a, Binary a
+  , ToJSON (Layout f (Var a (p :*: l)))
+  , FromJSON (Rep l), FromJSON (Rep p)
+  , ToJSON (Rep l), ToJSON (Rep p)
+  , CompilesWith c s f, Layout s ~ l, Payload s ~ p
   ) => FilePath -> f -> IO ()
 compileIO scriptFile f = do
     let ac = compile f :: c (Layout f)

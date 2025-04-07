@@ -15,8 +15,9 @@ import           Control.Lens.Combinators                   (makeLenses)
 import           Data.Functor.Rep                           (Representable (..))
 import           Data.Type.Equality                         (type (~))
 import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, U1, (:*:))
+import           GHC.Generics                               (Generic, (:*:))
 import           Prelude                                    (Show, const, ($))
+import qualified Prelude                                    as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number           (KnownNat, type (+))
@@ -74,6 +75,7 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , k ~ 1
     , Zip i
     , Field f
+    , P.Eq f
     , HashAlgorithm algo f
     , RandomOracle algo f f
     , RandomOracle algo (i f) f
@@ -84,7 +86,7 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , Scale f (c f)
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c) U1
+    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c)
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
     )
 

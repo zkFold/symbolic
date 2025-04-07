@@ -7,6 +7,7 @@ module ZkFold.Base.Protocol.Plonkup (
     Plonkup (..)
 ) where
 
+import           Control.DeepSeq                                     (NFData)
 import           Data.Binary                                         (Binary)
 import           Data.Functor.Rep                                    (Rep, Representable)
 import qualified Data.Vector                                         as V
@@ -31,9 +32,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall p i n l g1 g2 gt ts pv .
+instance forall i n l g1 g2 gt ts pv .
         ( KnownNat n
-        , Representable p
         , Representable i
         , Representable l
         , Foldable l
@@ -48,31 +48,39 @@ instance forall p i n l g1 g2 gt ts pv .
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
         , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , NFData (pv (PlonkupPolyExtendedLength n))
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-        ) => NonInteractiveProof (Plonkup p i n l g1 g2 ts pv) where
-    type Transcript (Plonkup p i n l g1 g2 ts pv)  = ts
-    type SetupProve (Plonkup p i n l g1 g2 ts pv)  = PlonkupProverSetup p i n l g1 g2 pv
-    type SetupVerify (Plonkup p i n l g1 g2 ts pv) = PlonkupVerifierSetup p i n l g1 g2 pv
-    type Witness (Plonkup p i n l g1 g2 ts pv)     = (PlonkupWitnessInput p i g1, PlonkupProverSecret g1)
-    type Input (Plonkup p i n l g1 g2 ts pv)       = PlonkupInput l g1
-    type Proof (Plonkup p i n l g1 g2 ts pv)       = PlonkupProof g1
+        ) => NonInteractiveProof (Plonkup i n l g1 g2 ts pv) where
+    type Transcript (Plonkup i n l g1 g2 ts pv)  = ts
+    type SetupProve (Plonkup i n l g1 g2 ts pv)  = PlonkupProverSetup i n l g1 g2 pv
+    type SetupVerify (Plonkup i n l g1 g2 ts pv) = PlonkupVerifierSetup i n l g1 g2 pv
+    type Witness (Plonkup i n l g1 g2 ts pv)     = (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
+    type Input (Plonkup i n l g1 g2 ts pv)       = PlonkupInput l g1
+    type Proof (Plonkup i n l g1 g2 ts pv)       = PlonkupProof g1
 
-    setupProve :: Plonkup p i n l g1 g2 ts pv -> SetupProve (Plonkup p i n l g1 g2 ts pv)
+    setupProve ::
+      Plonkup i n l g1 g2 ts pv -> SetupProve (Plonkup i n l g1 g2 ts pv)
     setupProve plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts plonk
+        let PlonkupSetup {..} = plonkupSetup @i @n @l @g1 @g2 @gt @ts plonk
         in PlonkupProverSetup {..}
 
-    setupVerify :: Plonkup p i n l g1 g2 ts pv -> SetupVerify (Plonkup p i n l g1 g2 ts pv)
+    setupVerify ::
+      Plonkup i n l g1 g2 ts pv -> SetupVerify (Plonkup i n l g1 g2 ts pv)
     setupVerify plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @p @n @l @g1 @g2 @gt @ts plonk
+        let PlonkupSetup {..} = plonkupSetup @i @n @l @g1 @g2 @gt @ts plonk
         in PlonkupVerifierSetup {..}
 
-    prove :: SetupProve (Plonkup p i n l g1 g2 ts pv) -> Witness (Plonkup p i n l g1 g2 ts pv) -> (Input (Plonkup p i n l g1 g2 ts pv), Proof (Plonkup p i n l g1 g2 ts pv))
+    prove ::
+      SetupProve (Plonkup i n l g1 g2 ts pv) ->
+      Witness (Plonkup i n l g1 g2 ts pv) ->
+      (Input (Plonkup i n l g1 g2 ts pv), Proof (Plonkup i n l g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @p @i @n @l @g1 @g2 @ts @pv setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @i @n @l @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
-    verify :: SetupVerify (Plonkup p i n l g1 g2 ts pv) -> Input (Plonkup p i n l g1 g2 ts pv) -> Proof (Plonkup p i n l g1 g2 ts pv) -> Bool
-    verify = with4n6 @n $ plonkupVerify @p @i @n @l @g1 @g2 @gt @ts @pv
-
+    verify ::
+      SetupVerify (Plonkup i n l g1 g2 ts pv) ->
+      Input (Plonkup i n l g1 g2 ts pv) ->
+      Proof (Plonkup i n l g1 g2 ts pv) -> Bool
+    verify = with4n6 @n $ plonkupVerify @i @n @l @g1 @g2 @gt @ts @pv

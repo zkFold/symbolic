@@ -4,22 +4,25 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var where
 
-import           Control.Applicative             ()
-import           Control.DeepSeq                 (NFData)
-import           Data.Aeson                      (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
-import           Data.Binary                     (Binary)
-import           Data.ByteString                 (ByteString)
-import           Data.Functor.Rep                (Rep, Representable, index, tabulate)
-import           GHC.Generics                    (Generic)
-import           GHC.Show                        (Show)
-import           Prelude                         (Eq, Ord)
+import           Control.Applicative                                (Applicative (..))
+import           Control.DeepSeq                                    (NFData)
+import           Data.Aeson                                         (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import           Data.Binary                                        (Binary)
+import           Data.ByteString                                    (ByteString)
+import           Data.Functor.Rep                                   (Rep, Representable, index, tabulate)
+import           GHC.Generics                                       (Generic)
+import           GHC.Show                                           (Show)
+import           Prelude                                            (Eq, Ord)
 
 import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString     ()
+import           ZkFold.Base.Data.ByteString                        ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
+import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 
 data NewVar
   = EqVar ByteString
-  | FoldVar ByteString ByteString
+  | FoldLVar ByteString ByteString
+  | FoldPVar ByteString ByteString
   deriving
     ( Generic, Binary, FromJSON, FromJSONKey, ToJSON, ToJSONKey
     , Show, Eq, Ord, NFData)
@@ -59,13 +62,19 @@ imapVar ::
 imapVar f (LinVar k x b) = LinVar k (imapSysVar f x) b
 imapVar _ (ConstVar c)   = ConstVar c
 
-deriving anyclass instance (Binary (Rep i), Binary a) => Binary (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
-deriving anyclass instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
-deriving anyclass instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
+instance (Binary (Rep i), Binary a) => Binary (Var a i)
+instance (FromJSON (Rep i), FromJSON a) => FromJSON (Var a i)
+instance (FromJSON (Rep i), FromJSON a) => FromJSONKey (Var a i)
+instance (ToJSON (Rep i), ToJSON a) => ToJSONKey (Var a i)
+instance (ToJSON (Rep i), ToJSON a) => ToJSON (Var a i)
+instance (NFData (Rep i), NFData a) => NFData (Var a i)
 deriving stock instance (Show (Rep i), Show a) => Show (Var a i)
 deriving stock instance (Eq (Rep i), Eq a) => Eq (Var a i)
 deriving stock instance (Ord (Rep i), Ord a) => Ord (Var a i)
-deriving instance (NFData (Rep i), NFData a) => NFData (Var a i)
 instance FromConstant a (Var a i) where fromConstant = ConstVar
+
+type CircuitWitness a i = WitnessF a (SysVar i)
+
+instance Finite a => Witness (Var a i) (CircuitWitness a i) where
+  at (ConstVar cV)   = fromConstant cV
+  at (LinVar k sV b) = fromConstant k * pure sV + fromConstant b

@@ -36,7 +36,7 @@ import           Data.Function                     (on)
 import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..))
 import           Data.Kind                         (Type)
-import           Data.List                         (unfoldr, unsnoc, zip)
+import           Data.List                         (unfoldr, zip)
 import           Data.Map                          (fromList, (!))
 import           Data.Maybe                        (fromJust)
 import           Data.Traversable                  (for, traverse)
@@ -57,7 +57,7 @@ import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (length, replicate, replicateA, take)
+import           ZkFold.Prelude                    (length, replicate, replicateA, take, unsnoc)
 import           ZkFold.Symbolic.Algorithms.FFT    (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
