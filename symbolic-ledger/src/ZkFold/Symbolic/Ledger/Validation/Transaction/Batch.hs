@@ -45,7 +45,7 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} T
         ) =
           Symbolic.List.foldl
             ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s, batchAccBatchValidityInterval :: Interval s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
-                let (batchValid, batchDAIndex) = validateTransactionBatchData' batchAccBatchValidityInterval tbd tbdw
+                let (batchValid, batchDAIndex) = validateTransactionBatchDataWithIx batchAccBatchValidityInterval tbd tbdw
                  in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval)
             )
             (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval)
