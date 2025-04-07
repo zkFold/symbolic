@@ -19,7 +19,7 @@ import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
 import           ZkFold.Symbolic.Data.Hash        (Hash (..), hash, preimage)
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.List        (List, emptyList, (.:))
-import           ZkFold.Symbolic.Data.Maybe       hiding (findAddrTxs)
+import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
@@ -57,7 +57,7 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
         resTxAccIx :: Maybe context (DAIndex context)
         , _resTxAccBatchInterval :: Interval context
         , -- Whether all relevant addresses have same data availability index.
-          -- And whether the interval of the batch is within the intervals of individual transactions.
+          -- And whether the interval of the batch is within the interval of individual transactions.
           resTxAccIsConsistent :: Bool context
         , -- List of online addresses corresponding to inputs that are being "spent". Note that this may contain duplicates which we'll need to remove later before comparing it with the field inside batch data.
           resTxAccOnlineAddresses :: List context (Address context)
@@ -70,8 +70,9 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
             ( Morph \((txAccIx :: Maybe s (DAIndex s), txAccBatchInterval :: Interval s, txAccIsConsistent :: Bool s, txAccOnlineAddresses :: List s (Address s), txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s)), txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))), tx :: Transaction s) ->
                 let txOwner' = txOwner tx
                     (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
-                    -- If we haven't found any index, we use the index of this owner.
-                    txAccIxFinal = ifThenElse (isNothing txAccIx) (just ownerAddrIx) txAccIx
+                    jownerAddrIx = just ownerAddrIx
+                    -- If we haven't yet found any index, we use the index of this owner.
+                    txAccIxFinal = ifThenElse (isNothing txAccIx) jownerAddrIx txAccIx
                     txHash = hash tx & hHash
                     -- We assume that there is at least one input in the transaction from the address of the owner for following computation. Else the transaction validity check would fail.
                     (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs, newTxAccOnlineAddresses) =
@@ -80,29 +81,12 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
                         ( -- Add this tx hash to the list of tx hashes.
                           let updOwnerAddrTxHashes = txHash .: findAddrTxs txOwner' txAccOfflineAddrsTxs
                            in -- Update the entry of this address with given list.
-                              -- TODO: We could probably do the findAddrTxs and replace in single folding.
+                              -- TODO: We could probably do the findAddrTxs and replace in single folding. Circle back to it once symbolic list API is improved.
                               (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                         )
                         (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
-                    newTxAccIsConsistent = txAccIsConsistent && (contains (txValidityInterval tx) txAccBatchInterval)
-                    (resInputsAccIx, resInputsAccIsConsistent, _) =
-                      Symbolic.List.foldl
-                        ( Morph \((inputsAccIx :: Maybe s' (DAIndex s'), inputsAccIsConsistent :: Bool s', ownerAddr :: Address s'), input :: Input s') ->
-                            let inputAddr = txoAddress (txiOutput input)
-                                (_inputAddrCir, inputAddrIx, _inputAddrType) = preimage inputAddr -- If folding operation does not require context switching, we won't require fetching this pre-image here.
-                                minputAddrIx = just inputAddrIx
-                                newIsConsistent =
-                                  ifThenElse
-                                    (inputAddr == ownerAddr)
-                                    -- This input is being "spent" and thus it's address is relevant.
-                                    (inputsAccIsConsistent && inputsAccIx == minputAddrIx) -- Index must match.
-                                    -- This input is not relevant, we skip it.
-                                    (inputsAccIsConsistent)
-                             in (inputsAccIx, newIsConsistent, ownerAddr)
-                        )
-                        (txAccIxFinal, newTxAccIsConsistent, txOwner')
-                        (txInputs tx)
-                 in (resInputsAccIx, txAccBatchInterval, resInputsAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
+                    newTxAccIsConsistent = txAccIsConsistent && (contains (txValidityInterval tx) txAccBatchInterval) && (txAccIxFinal == jownerAddrIx)
+                 in (txAccIxFinal, txAccBatchInterval, newTxAccIsConsistent, newTxAccOnlineAddresses, newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs)
             )
             (nothing :: Maybe context (DAIndex context), tbInterval, true :: Bool context, emptyList :: List context (Address context), emptyList :: List context (Address context, List context (HashSimple context)), empty :: Root (Address context, List context (HashSimple context)))
             tbdwTransactions
