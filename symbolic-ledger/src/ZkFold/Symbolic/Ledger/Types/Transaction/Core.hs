@@ -91,7 +91,14 @@ mkTransaction inputs outputs validityInterval owner =
 -- | Transaction hash.
 type TransactionId context = Hash (Transaction context)
 
-txId :: (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context, Hashable (HashSimple context) (Transaction context)) => Transaction context -> TransactionId context
+txId ::
+  ( KnownRegistersAssetQuantity context
+  , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
+  , Symbolic context
+  , Hashable (HashSimple context) (Transaction context)
+  ) =>
+  Transaction context -> TransactionId context
 txId = hash
 
 -- | Index of an output in the transaction's output list.
