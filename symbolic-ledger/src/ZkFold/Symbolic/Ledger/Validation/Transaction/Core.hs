@@ -6,10 +6,12 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   validateTransactionWithAssetDiff,
 ) where
 
-import           Prelude                      (fst, undefined, ($), (.))
+import           Prelude                          (fst, undefined, ($), (.))
 
 import           ZkFold.Symbolic.Data.Bool
-import qualified ZkFold.Symbolic.Data.List    as Symbolic.List
+import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
+import           ZkFold.Symbolic.Data.Eq          ((==))
+import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
@@ -40,20 +42,33 @@ validateTransactionWithAssetDiff tx =
     resTxAccValidity :: Bool context = undefined
     -- Generated value.
     resTxAccOutValues :: AssetValues context =
-      Symbolic.List.foldl
-        ( Morph \(accOutValues :: AssetValues s, txOut :: Output s) ->
-            addAssetValue (txoValue txOut) accOutValues
-        )
-        (emptyAssetValues :: AssetValues context)
-        (txOutputs tx)
+      fst $
+        Symbolic.List.foldl
+          ( Morph \((accOutValues :: AssetValues s, accTxOwner :: Address s), txOut :: Output s) ->
+              ( ifThenElse
+                  (txoAddress txOut == accTxOwner)
+                  accOutValues
+                  (addAssetValue (txoValue txOut) accOutValues)
+              , accTxOwner
+              )
+          )
+          (emptyAssetValues :: AssetValues context, txOwner tx)
+          (txOutputs tx)
     -- Consumed value.
     resTxAccInValues :: AssetValues context =
-      Symbolic.List.foldl
-        ( Morph \(accInValues :: AssetValues s, txInput :: Input s) ->
-            (addAssetValue (txoValue $ txiOutput txInput) accInValues)
-        )
-        (emptyAssetValues :: AssetValues context)
-        (txInputs tx)
+      fst $
+        Symbolic.List.foldl
+          ( Morph \((accInValues :: AssetValues s, accTxOwner :: Address s), txInput :: Input s) ->
+              let out = txiOutput txInput
+               in ( ifThenElse
+                      (txoAddress out == accTxOwner)
+                      (accInValues)
+                      (addAssetValue (txoValue $ txiOutput txInput) accInValues)
+                  , accTxOwner
+                  )
+          )
+          (emptyAssetValues :: AssetValues context, txOwner tx)
+          (txInputs tx)
    in
     ( resTxAccValidity
     , addAssetValues resTxAccOutValues (negateAssetValues resTxAccInValues)
