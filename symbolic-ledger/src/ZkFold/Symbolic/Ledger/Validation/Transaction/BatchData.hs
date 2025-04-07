@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                         (SymbolicData)
 import           ZkFold.Symbolic.Data.Conditional                   (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq                            (Eq, (==))
-import           ZkFold.Symbolic.Data.Hash                          (preimage, Hashable (..))
+import           ZkFold.Symbolic.Data.Hash                          (Hashable (..), preimage)
 import qualified ZkFold.Symbolic.Data.List                          as Symbolic.List
 import           ZkFold.Symbolic.Data.List                          (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Maybe
@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (validateTra
 
 -- | Witness needed to validate a 'TransactionBatchData'.
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
-  { tbdwTransactions :: List context (Transaction context)
+  { tbdwTransactions :: List context ((Transaction context, (Circuit context, DAIndex context, DAType context)))
   -- REVIEW: Add data availability index here to perhaps make slight simplification?
   }
   deriving stock Generic
@@ -80,10 +80,9 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
                     , txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))
                     , txAccValuesDiff :: AssetValues s
                     )
-                  , tx :: Transaction s
+                  , (tx :: Transaction s, ownerAddrP@(_ownerAddrCir, ownerAddrIx, ownerAddrType) :: (Circuit s, DAIndex s, DAType s))
                   ) ->
                     let txOwner' = txOwner tx
-                        (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
                         jownerAddrIx = just ownerAddrIx
                         -- If we haven't yet found any index, we use the index of this owner.
                         txAccIxFinal = ifThenElse (isNothing txAccIx) jownerAddrIx txAccIx
@@ -100,7 +99,12 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
                             )
                             (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
                         (isTxValid, txValuesDiff) = validateTransactionWithAssetDiff tx
-                        newTxAccIsConsistent = txAccIsConsistent && (contains (txValidityInterval tx) txAccBatchInterval) && (txAccIxFinal == jownerAddrIx) && isTxValid
+                        newTxAccIsConsistent =
+                          txAccIsConsistent
+                            && (contains (txValidityInterval tx) txAccBatchInterval)
+                            && (txAccIxFinal == jownerAddrIx)
+                            && isTxValid
+                            && (hasher ownerAddrP == txOwner')
                      in ( txAccIxFinal
                         , txAccBatchInterval
                         , newTxAccIsConsistent
