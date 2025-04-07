@@ -51,6 +51,7 @@ type Signature context =
     , SymbolicFold context
     , KnownNat (Ceil (GetRegisterSize (BaseField context) 11 Auto) OrdWord)
     -- TODO: Can we derive 'Hashable h' based on constituents (using generic)?
+    -- TODO: Remove @ImpredicativeTypes@ extension from symbolic-ledger once above 'Hashable' issue is sorted.
     , Hashable (HashSimple context) (AssetValues context)
     , Hashable (HashSimple context) (Transaction context)
     , Hashable (HashSimple context) (TransactionBatch context)

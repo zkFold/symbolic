@@ -19,10 +19,11 @@ import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
 import           ZkFold.Symbolic.Data.Hash        (Hash (..), hash, preimage)
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.List        (List, emptyList, (.:))
-import           ZkFold.Symbolic.Data.Maybe       hiding (find)
+import           ZkFold.Symbolic.Data.Maybe       hiding (findAddrTxs)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
+-- | Witness needed to validate a 'TransactionBatchData'.
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
   { tbdwTransactions :: List context (Transaction context)
   -- REVIEW: Add data availability index here to perhaps make slight simplification?
@@ -35,19 +36,23 @@ instance Signature context => Conditional (Bool context) (TransactionBatchDataWi
 
 instance Signature context => Eq (TransactionBatchDataWitness context)
 
+-- | This function extracts boolean from 'validateTransactionBatchData', see it for more details.
 validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
 validateTransactionBatchData tbInterval tbd tbdw = fst $ validateTransactionBatchData' tbInterval tbd tbdw
 
+{- | Validate a 'TransactionBatchData'.
+
+To check:
+  * All addresses corresponding to spent inputs have same data availability source.
+  * Merkle root is computed correctly.
+  * Online addresses list is computed correctly.
+  * Offline txs list is computed correctly.
+  * Interval of the overarching transaction batch is within the interval of individual transactions.
+  * Txs are valid.
+  * Batch as a whole is balanced.
+-}
 validateTransactionBatchData' :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
 validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBatchDataWitness {..} =
-  -- To check
-  -- \* All addresses corresponding to spent inputs have same data availability source.
-  -- \* Merkle root is computed correctly.
-  -- \* Online addresses list is computed correctly.
-  -- \* Offline txs list is computed correctly.
-  -- \* Txs are valid.
-  -- \* Interval of the overarching transaction batch is within the interval of individual transactions.
-  -- \* Batch as a whole is balanced.
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
         , _resTxAccBatchInterval :: Interval context
@@ -73,9 +78,9 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
                       ifThenElse
                         (isOffline ownerAddrType)
                         ( -- Add this tx hash to the list of tx hashes.
-                          let updOwnerAddrTxHashes = txHash .: find txOwner' txAccOfflineAddrsTxs
+                          let updOwnerAddrTxHashes = txHash .: findAddrTxs txOwner' txAccOfflineAddrsTxs
                            in -- Update the entry of this address with given list.
-                              -- TODO: We could probably do the find and replace in single folding.
+                              -- TODO: We could probably do the findAddrTxs and replace in single folding.
                               (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                         )
                         (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
@@ -122,8 +127,8 @@ updateAddrsTxsList ::
   List context (Address context, List context (HashSimple context))
 updateAddrsTxsList addr addrTxs addrsTxs =
   let (_, _, newAddrsTxs, addrExists) =
-        Symbolic.List.foldl
-          ( Morph \((accAddrToFind :: Address s, accAddrTxs :: List s (HashSimple s), accAddrsTxs :: List s (Address s, List s (HashSimple s)), accFound :: Bool s), ((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s)))) ->
+        Symbolic.List.foldr
+          ( Morph \(((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s))), (accAddrToFind :: Address s, accAddrTxs :: List s (HashSimple s), accAddrsTxs :: List s (Address s, List s (HashSimple s)), accFound :: Bool s)) ->
               let elemMatches = accAddrToFind == iterAddr
                in ( accAddrToFind
                   , accAddrTxs
@@ -141,31 +146,33 @@ updateAddrsTxsList addr addrTxs addrsTxs =
         newAddrsTxs
         ((addr, addrTxs) .: addrsTxs)
 
+-- TODO: Refactor following once symbolic list is able to support more generic functions.
+
 {- | Find a transaction hash list corresponding to given address.
 
 If the address is not found, we return an empty list.
 -}
-find ::
+findAddrTxs ::
   forall context.
   Signature context =>
   Address context ->
   List context (Address context, List context (HashSimple context)) ->
   List context (HashSimple context)
-find a ls =
+findAddrTxs a ls =
   snd $
     Symbolic.List.foldl
       ( Morph \((accToFind :: Address s, accList :: List s (HashSimple s)), ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))) ->
           ( accToFind
           , ifThenElse
               (accToFind == addr)
-              (addrTxHashes)
-              (accList)
+              addrTxHashes
+              accList
           )
       )
       (a, emptyList :: List context (HashSimple context))
       ls
 
--- TODO: Use generic 'elem' from symbolic list module.
+-- TODO: Use generic 'elem' from symbolic list module once available.
 
 -- | Check if an item is present in the list.
 elem ::
@@ -185,7 +192,7 @@ elem x xs =
       (false :: Bool context, x :: Address context)
       xs
 
--- TODO: Use a generic function.
+-- TODO: Use a generic function once available.
 
 -- | Remove duplicates from list.
 removeDuplicates ::

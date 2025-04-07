@@ -11,17 +11,17 @@ import           ZkFold.Symbolic.Data.Bool                               (Bool, 
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Hash
 import qualified ZkFold.Symbolic.Data.List                               as Symbolic.List
-import           ZkFold.Symbolic.Data.List                               (List, (.:))
+import           ZkFold.Symbolic.Data.List                               (List)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
 
+-- | Witness for 'TransactionBatch' validation.
 data TransactionBatchWitness context = TransactionBatchWitness
   { tbwBatchDatas :: List context (TransactionBatchData context, TransactionBatchDataWitness context)
   }
 
--- TODO: Add comments.
-
+-- | Validate 'TransactionBatch'.
 validateTransactionBatch ::
   forall context.
   Signature context =>
@@ -37,26 +37,38 @@ validateTransactionBatch ::
   TransactionBatchWitness context ->
   Bool context
 validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} TransactionBatchWitness {..} =
-  let (resBatchAccDataHashes :: List context (DAIndex context, HashSimple context), resBatchAccBatchesValid, _) =
-        Symbolic.List.foldl
-          ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s, batchAccBatchValidityInterval :: Interval s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
-              let (batchValid, batchDAIndex) = validateTransactionBatchData' batchAccBatchValidityInterval tbd tbdw
-               in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval)
-          )
-          (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval)
-          tbwBatchDatas
-   in tbBridgeIn
+  let ( -- Batch data hashes as computed via provided witness.
+        resBatchAccDataHashes :: List context (DAIndex context, HashSimple context)
+        , -- Are individual batches valid? And is 'tbValidityInterval' within the interval of transactions present inside these batches?
+          resBatchAccBatchesValid
+        , _
+        ) =
+          Symbolic.List.foldl
+            ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s, batchAccBatchValidityInterval :: Interval s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
+                let (batchValid, batchDAIndex) = validateTransactionBatchData' batchAccBatchValidityInterval tbd tbdw
+                 in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval)
+            )
+            (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval)
+            tbwBatchDatas
+   in -- 'tbBridgeIn' represents correct hash.
+      -- TODO: We might not need to do this check if this is performed by smart contract. Same for 'tbBridgeOut' and 'tbPreviousBatch'
+      tbBridgeIn
         == hasher valBridgeIn
+        -- 'tbBridgeOut' represents correct hash.
         && tbBridgeOut
         == hasher valBridgeOut
+        -- 'tbPreviousBatch' represents correct hash.
         && tbPreviousBatch
         == hasher prevTB
+        -- 'tbDataHashes' is consistent with given batches.
         && tbDataHashes
         == resBatchAccDataHashes
-        && resBatchAccBatchesValid
+        -- There are no entries with duplicate data availability index.
         && noDuplicateIndicesInBatch tbDataHashes
+        -- Individual batches are valid and validity interval of batch is within validity interval of batch transactions.
+        && resBatchAccBatchesValid
 
--- TODO: Refactor this once improvements in symbolic list are merged.
+-- TODO: Refactor following once improvements in symbolic list are merged and it supports more utilities like 'elem'.
 
 -- | Check if there are no duplicate 'DAIndex' in the given list.
 noDuplicateIndicesInBatch :: forall context. Signature context => List context (DAIndex context, HashSimple context) -> Bool context
@@ -72,7 +84,7 @@ noDuplicateIndicesInBatch ls =
                     )
                     (ix, accNoDuplicateIndices)
                     accList
-           in (ix .: accList, curAccNoDuplicateIndices)
+           in (ix Symbolic.List..: accList, curAccNoDuplicateIndices)
       )
       (Symbolic.List.emptyList :: List context (DAIndex context), true :: Bool context)
       ls

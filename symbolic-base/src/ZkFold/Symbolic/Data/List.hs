@@ -15,7 +15,6 @@ import           Data.Traversable                  (traverse)
 import           Data.Tuple                        (fst, snd)
 import           Data.Type.Equality                (type (~))
 import           GHC.Generics                      (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
-import           Prelude                           (undefined)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number  (KnownNat)
@@ -247,38 +246,3 @@ concat ::
   List c (List c x) -> List c x
 concat xs = reverse $
   foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
-
--- | Check if an item is present in the list.
-elem ::
-  forall c x.
-  SymbolicOutput x =>
-  Context x ~ c =>
-  SymbolicFold c =>
-  Eq x =>
-  x ->
-  List c x -> Bool c
-elem x xs = undefined
-  -- fst $
-  --   foldl (
-  --     Morph \((acc :: Bool s, givenElement :: Switch s x), y :: Switch s x) ->
-  --       ( acc || givenElement == y
-  --       , givenElement
-  --       )
-  --   ) (false :: Bool c, x :: x) xs
-
--- Have it in ZkFold.Symbolic.Data.List.Extra module?
--- TODO: Give some examples.
--- | Remove duplicates from list.
-removeDuplicates ::
-  forall c x.
-  SymbolicOutput x =>
-  Context x ~ c =>
-  SymbolicFold c =>
-  Eq x =>
-  List c x -> List c x
-removeDuplicates ls = undefined
-  -- foldr (Morph \(l :: Switch s x, acc :: List s (Switch s x)) ->
-  --         ifThenElse (elem l acc)
-  --           acc
-  --           (l .: acc)
-  --       ) emptyList ls
