@@ -47,6 +47,7 @@ validateTransactionBatchData' tbInterval TransactionBatchData {..} TransactionBa
   -- \* Offline txs list is computed correctly.
   -- \* Txs are valid.
   -- \* Interval of the overarching transaction batch is within the interval of individual transactions.
+  -- \* Batch as a whole is balanced.
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
         , _resTxAccBatchInterval :: Interval context
