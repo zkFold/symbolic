@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                         (SymbolicData)
 import           ZkFold.Symbolic.Data.Conditional                   (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq                            (Eq, (==))
-import           ZkFold.Symbolic.Data.Hash                          (Hash (..), hash, preimage)
+import           ZkFold.Symbolic.Data.Hash                          (preimage, Hashable (..))
 import qualified ZkFold.Symbolic.Data.List                          as Symbolic.List
 import           ZkFold.Symbolic.Data.List                          (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Maybe
@@ -87,7 +87,7 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
                         jownerAddrIx = just ownerAddrIx
                         -- If we haven't yet found any index, we use the index of this owner.
                         txAccIxFinal = ifThenElse (isNothing txAccIx) jownerAddrIx txAccIx
-                        txHash = hash tx & hHash
+                        txHash = hasher tx
                         -- We assume that there is at least one input in the transaction from the address of the owner for following computation. Else the transaction validity check would fail.
                         (newTxAccOfflineAddrsTxs, newTxAccOnlineAddrsTxs, newTxAccOnlineAddresses) =
                           ifThenElse
