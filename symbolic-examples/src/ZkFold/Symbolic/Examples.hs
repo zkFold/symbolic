@@ -29,6 +29,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
+import Examples.MerkleTree (exampleMerkleTree)
 
 type A = Zp BLS12_381_Scalar
 type C a = ArithmeticCircuit a
@@ -92,6 +93,7 @@ examples =
   -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Scalar) exampleEd25519Scale)
   , ("Fibonacci.100", exampleOutput @A $ exampleFibonacci 100)
   , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
+  , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
