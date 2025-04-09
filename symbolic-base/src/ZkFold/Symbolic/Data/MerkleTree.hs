@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-
 module ZkFold.Symbolic.Data.MerkleTree where
 
 import           Data.Constraint                                (withDict)
@@ -59,7 +58,7 @@ layerFolding :: forall c x.
 layerFolding xs = res
   where
     (_, res) = foldr (Morph \(a :: Switch s x, (arr, l )) ->
-      ifThenElse (isNothing arr :: Bool s) (just a, l) (nothing, (newVer (fromJust arr) a) .: l))
+      ifThenElse (isNothing arr :: Bool s) (just a, l) (nothing, newVer (fromJust arr) a .: l))
         (nothing :: Maybe c x, emptyList :: List c x) xs
 
     -- (_, res) = foldr (Morph \(a :: Switch s x, (b :: Maybe s (Switch s x), l )) ->
@@ -70,9 +69,7 @@ layerFolding xs = res
 newVer ::
   forall s y. (Symbolic s, SymbolicData y)
   => Switch s y -> Switch s y -> Switch s y
-newVer l' r' = Switch (hashAux @s @y z (sLayout l') (sLayout r')) (sPayload l')
-  where
-    Bool z = false :: Bool s
+newVer l' r' = Switch (hashAux @s @y false (sLayout l') (sLayout r')) (sPayload l')
 
 
 zeroMerkleTree :: forall d x c.
@@ -125,12 +122,12 @@ instance forall c x d n.
 hashAux :: forall c x.
   ( Symbolic c
   , SymbolicData x)
-  => c Par1 -> c (Layout x) -> c (Layout x) -> c (Layout x)
-hashAux b' h g = do
-  let (Vec v1) = merkleHasher [Vec h, Vec g]
-      (Vec v2) = merkleHasher [Vec g, Vec h]
-  fromCircuit3F b' v1 v2 $ \ (Par1 b) x y ->
-    mzipWithMRep (\wx wy -> newAssigned ((one - ($ b)) * ($ wx) + ($ b) * ($ wy))) x y
+  => Bool c -> c (Layout x) -> c (Layout x) -> c (Layout x)
+hashAux b h g =
+  let v1 = merkleHasher [Vec h, Vec g]
+      v2 = merkleHasher [Vec g, Vec h]
+      Vec v3 = ifThenElse b v1 v2
+   in v3
   where
     merkleHasher :: [Vec (Layout x) c] -> Vec (Layout x) c
     merkleHasher = mimcHashN mimcConstants (zero :: BaseField c)
@@ -208,7 +205,7 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
     preimage :: c (Layout x)
     preimage =
       let gs = V.fromVector pairs
-          bs = V.fromVector path
+          bs = V.fromVector p
           hd = P.foldl (\h' (g', b') -> hashAux @c @x b' h' g') (arithmetize xP Proxy) $ zip gs bs
        in fromCircuit2F hd root $ \a b -> do
         _ <- mzipWithMRep (\wx wy -> constraint (($ wx) - ($ wy))) a b
@@ -263,15 +260,15 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
     preimage :: Vector (d - 1) (c (Layout x))
     preimage =
       let gs = V.fromVector pairs
-          bs = V.fromVector path
+          bs = V.fromVector p
        in  V.unsafeToVector @(d-1) $ helper (arithmetize xI Proxy) (zip gs bs)
 
-    helper :: c (Layout x) -> [(c (Layout x), c Par1)] -> [c (Layout x)]
+    helper :: c (Layout x) -> [(c (Layout x), Bool c)] -> [c (Layout x)]
     helper _ [] =  []
     helper h (pi:ps) =
       let (g, b) = pi
           hN = hashAux @c @x b h g
-      in hN : (helper hN ps)
+      in hN : helper hN ps
 
     path :: Vector (d - 1) (c Par1)
     path = P.fmap (\(Bool b) -> b) p
