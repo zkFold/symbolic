@@ -15,6 +15,7 @@ import           Examples.Eq                                 (exampleEq)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
 import           Examples.LEQ                                (exampleLEQ)
+import           Examples.MerkleTree                         (exampleMerkleTree)
 import           Examples.MiMCHash                           (exampleMiMC)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
@@ -29,7 +30,6 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
-import Examples.MerkleTree (exampleMerkleTree)
 
 type A = Zp BLS12_381_Scalar
 type C a = ArithmeticCircuit a
