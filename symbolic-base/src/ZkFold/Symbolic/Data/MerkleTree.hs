@@ -42,7 +42,6 @@ import           ZkFold.Symbolic.Data.Vec
 import           ZkFold.Symbolic.Fold                           (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
 
-
 data MerkleTree (d :: Natural) h = MerkleTree {
     mHash   :: (Context h) (Layout h)
   , mLevels :: Vector d (List (Context h) h)
@@ -71,7 +70,6 @@ newVer ::
   => Switch s y -> Switch s y -> Switch s y
 newVer l' r' = Switch (hashAux @s @y false (sLayout l') (sLayout r')) (sPayload l')
 
-
 zeroMerkleTree :: forall d x c.
   ( SymbolicFold c
   , SymbolicOutput x
@@ -81,9 +79,10 @@ zeroMerkleTree :: forall d x c.
   , KnownNat (2 ^ (d-1))
   , AdditiveMonoid x
   ) => MerkleTree d x
-zeroMerkleTree = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) (hl V..: ls)
+zeroMerkleTree = withDict (plusMinusInverse3 @1 @d) $
+  MerkleTree (arithmetize h Proxy) (hl V..: ls)
     where
-      (h, checkL) = L.uncons hl
+      h = L.head hl
       (hl :: List c x, ls :: Vector (d-1) (List c x)) =
         V.uncons @d @(List c x). V.reverse . Vector $ iterateN (P.fromIntegral $ value @d) layerFolding vs
       vs :: List c x = P.foldr (L..:) emptyList $ fromVector (pure zero :: Vector (2 ^ (d-1)) x)
@@ -96,10 +95,9 @@ instance forall c x d n.
   , 2 ^ (d-1) ~ n
   , 1 <= d
   ) => Iso (Vector n x) (MerkleTree d x) where
-  -- TODO: fix this instance
-  from v = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (bool (P.error "Invalid vector length") (arithmetize h Proxy) (L.null checkL)) (hl V..: ls)
+  from v = withDict (plusMinusInverse3 @1 @d) $ MerkleTree (arithmetize h Proxy) (hl V..: ls)
     where
-      (h, checkL) = L.uncons hl
+      h = L.head hl
       (hl :: List c x, ls :: Vector (d-1) (List c x)) =
         V.uncons @d @(List c x). V.reverse . Vector $ iterateN (P.fromIntegral $ value @d -! 1) layerFolding vs
       vs :: List c x = P.foldr (L..:) emptyList $ fromVector @n v
@@ -134,6 +132,8 @@ hashAux b h g =
 
 instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
+instance (SymbolicData h, KnownNat d, Context h ~ c) =>
+  Conditional (Bool c) (MerkleTree d h)
 
 -- | Finds an element satisfying the constraint
 find :: forall c h d.
@@ -206,10 +206,11 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
     preimage =
       let gs = V.fromVector pairs
           bs = V.fromVector p
-          hd = P.foldl (\h' (g', b') -> hashAux @c @x b' h' g') (arithmetize xP Proxy) $ zip gs bs
-       in fromCircuit2F hd root $ \a b -> do
+          rs = arithmetize xP Proxy
+          hd = P.foldl (\h' (g', b') -> hashAux @c @x b' h' g') rs $ zip gs bs
+       in fromCircuit3F rs hd root $ \r a b -> do
         _ <- mzipWithMRep (\wx wy -> constraint (($ wx) - ($ wy))) a b
-        return a
+        return r
 
     path :: Vector (d - 1) (c Par1)
     path = P.fmap (\(Bool b) -> b) p
@@ -288,8 +289,8 @@ replace :: forall x c d n.
   , KnownRegisters c d Auto
   , NumberOfBits (BaseField c) ~ n
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
-replace p t = withNumberOfRegisters @n @Auto @(BaseField c) $ withDict (minusNat @d @1) $
-  insertLeaf t (fromMaybe (P.error "That Leaf does not exist") $ findPath @x @c p t)
+replace p t x = withNumberOfRegisters @n @Auto @(BaseField c) $ withDict (minusNat @d @1) $
+  maybe t (\path -> insertLeaf t path x) (findPath @x @c p t)
 
 -- | Returns the next path in a tree
 incrementPath :: forall c d.
