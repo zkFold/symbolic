@@ -95,14 +95,17 @@ library
       ZkFold.Symbolic.Ledger.Types.DataAvailability
       ZkFold.Symbolic.Ledger.Types.Datum
       ZkFold.Symbolic.Ledger.Types.Hash
+      ZkFold.Symbolic.Ledger.Types.Interval
       ZkFold.Symbolic.Ledger.Types.Output
       ZkFold.Symbolic.Ledger.Types.Root
       ZkFold.Symbolic.Ledger.Types.Transaction
       ZkFold.Symbolic.Ledger.Types.Transaction.Batch
       ZkFold.Symbolic.Ledger.Types.Transaction.BatchData
       ZkFold.Symbolic.Ledger.Types.Transaction.Core
-      ZkFold.Symbolic.Ledger.Types.Transaction.Envelope
       ZkFold.Symbolic.Ledger.Types.Value
+      ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+      ZkFold.Symbolic.Ledger.Validation.Transaction.Batch
+      ZkFold.Symbolic.Ledger.Validation.Transaction.Core
     build-depends:
       base                          >= 4.9 && < 5,
       symbolic-base                              ,
