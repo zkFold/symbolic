@@ -102,6 +102,7 @@ library
       Examples.Fibonacci
       Examples.JWT
       Examples.LEQ
+      Examples.MerkleTree
       Examples.MiMCHash
       Examples.Mithril
       Examples.Pasta

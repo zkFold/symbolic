@@ -246,3 +246,23 @@ concat ::
   List c (List c x) -> List c x
 concat xs = reverse $
   foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
+
+findIndex ::
+  forall x c n.
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
+  (KnownNat n, KnownRegisters c n Auto
+  ) => MorphFrom c x (Bool c) -> List c x -> UInt n Auto c
+findIndex p xs = snd $ foldl (Morph \((m :: UInt n Auto s, y :: UInt n Auto s), x :: Switch s x) ->
+  (m + one, ifThenElse (p @ x :: Bool s) m y))
+  (zero :: UInt n Auto c, zero) xs
+
+insert ::
+  forall x c n.
+  (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
+  (KnownNat n, KnownRegisters c n Auto) =>
+  List c x -> UInt n Auto c -> x -> List c x
+insert xs n xi =
+  let (_, _, res) = foldr (Morph \(a :: Switch s x, (n' :: UInt n Auto s, xi', l')) ->
+        (n' - one, xi', ifThenElse (n' == zero :: Bool s) (xi' .: l') (a .: l'))) (n, xi, emptyList) xs
+   in res
+
