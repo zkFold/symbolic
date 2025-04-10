@@ -96,13 +96,16 @@ library
       Examples.ByteString
       Examples.Conditional
       Examples.Constant
+      Examples.ECDSA
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
       Examples.JWT
       Examples.LEQ
-      Examples.MiMCHash
       Examples.MerkleTree
+      Examples.MiMCHash
+      Examples.Mithril
+      Examples.Pasta
       Examples.ReverseList
       Examples.RSA
       Examples.UInt

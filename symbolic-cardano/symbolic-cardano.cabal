@@ -106,7 +106,6 @@ library
       ZkFold.Symbolic.Cardano.Types.Value
     build-depends:
       base                          >= 4.9 && < 5,
-      deepseq                                    ,
       containers                            < 0.7,
       constraints                                ,
       semialign                             < 1.4,

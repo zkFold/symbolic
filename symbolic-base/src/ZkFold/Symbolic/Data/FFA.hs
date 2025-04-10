@@ -46,6 +46,9 @@ type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
   FFAUIntSize p q = NumberOfBits (Zp (Ceil (p * p) q))
 
+isNative :: forall p r c. (Symbolic c, KnownFFA p r c) => Prelude.Bool
+isNative = value @p == value @(Order (BaseField c))
+
 type UIntFFA p r c = UInt (FFAUIntSize p (Order (BaseField c))) r c
 
 data FFA p r c = FFA
@@ -74,7 +77,9 @@ type KnownFFA p r c =
 instance (Symbolic c, KnownFFA p r c) => SymbolicData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
   isValid ffa@(FFA _ ux) =
-    isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
+    if isNative @p @r @c
+      then true
+      else isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
 instance (NFData (FieldElement c), NFData (UIntFFA p r c)) => NFData (FFA p r c)
 instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
@@ -149,7 +154,10 @@ toFFA n =
    in x :*: v
 
 instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) where
-  FFA nx ux * FFA ny uy = FFA nr ur
+  FFA nx ux * FFA ny uy =
+      if isNative @p @r @c
+        then FFA (nx * ny) zero
+        else FFA nr ur
     where
       p :: FromConstant Natural a => a
       p = fromConstant (value @p)
@@ -189,7 +197,10 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeMonoid (FFA p r c) where
   one = fromConstant (one :: Zp p)
 
 instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
-  FFA nx ux + FFA ny uy = FFA nr ur
+  FFA nx ux + FFA ny uy = 
+      if isNative @p @r @c
+        then FFA (nx + ny) zero
+        else FFA nr ur
     where
       p :: FromConstant Natural a => a
       p = fromConstant (value @p)
@@ -234,10 +245,13 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveMonoid (FFA p r c) where
 
 instance (Symbolic c, KnownFFA p r c) => AdditiveGroup (FFA p r c) where
   -- | negate cannot overflow if value is nonzero.
-  negate (FFA nx ux) = bool
-    (FFA (fromConstant (value @p) - nx) (fromConstant (value @p) - ux))
-    (FFA nx ux)
-    (nx == zero && ux == zero)
+  negate (FFA nx ux) =
+    if isNative @p @r @c
+      then FFA (negate nx) zero
+      else bool
+        (FFA (fromConstant (value @p) - nx) (fromConstant (value @p) - ux))
+        (FFA nx ux)
+        (nx == zero && ux == zero)
 
 instance (Symbolic c, KnownFFA p r c) => Semiring (FFA p r c)
 
@@ -252,7 +266,10 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer w
       neg = value @p -! (pos + 1)
 
 instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
-  finv (FFA nx ux) = FFA ny uy
+  finv (FFA nx ux) =
+      if isNative @p @r @c
+        then FFA (finv nx) zero
+        else FFA ny uy
     where
       p :: FromConstant Natural a => a
       p = fromConstant (value @p)
