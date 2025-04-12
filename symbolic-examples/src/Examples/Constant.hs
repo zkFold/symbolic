@@ -5,17 +5,17 @@ module Examples.Constant
     , exampleEqConst
     , exampleEqVectorConst) where
 
-import           Data.Function                     (const, ($))
-import           Examples.Conditional              (exampleConditional)
-import           Examples.Eq                       (exampleEq, exampleEqVector)
+import           Control.Monad.Representable.Reader (Representable (tabulate))
+import           Data.Function                      (const, ($))
+import           Examples.Conditional               (exampleConditional)
+import           Examples.Eq                        (exampleEq, exampleEqVector)
 
-import           ZkFold.Base.Algebra.Basic.Class   (FromConstant (..))
-import           ZkFold.Base.Algebra.Basic.Number  (Natural, KnownNat)
-import           ZkFold.Base.Data.Vector           (Vector)
-import           ZkFold.Symbolic.Class             (Symbolic)
-import           ZkFold.Symbolic.Data.Bool         (Bool)
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import Control.Monad.Representable.Reader (Representable(tabulate))
+import           ZkFold.Base.Algebra.Basic.Class    (FromConstant (..))
+import           ZkFold.Base.Algebra.Basic.Number   (KnownNat, Natural)
+import           ZkFold.Base.Data.Vector            (Vector)
+import           ZkFold.Symbolic.Class              (Symbolic)
+import           ZkFold.Symbolic.Data.Bool          (Bool)
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 
 
 exampleConst :: Symbolic c => FieldElement c
