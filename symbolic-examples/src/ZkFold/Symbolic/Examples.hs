@@ -10,10 +10,11 @@ import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
-import           Examples.Constant                           (exampleConst5, exampleEq5)
-import           Examples.Eq                                 (exampleEq)
+import           Examples.Constant
+import           Examples.Eq                                 (exampleEq, exampleEqVector)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
+import           Examples.FieldElement                       (exampleInvert)
 import           Examples.LEQ                                (exampleLEQ)
 import           Examples.MerkleTree                         (exampleMerkleTree)
 import           Examples.MiMCHash                           (exampleMiMC)
@@ -28,6 +29,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (FpModulus)
 import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
+import           ZkFold.Symbolic.Data.Bool                   (true)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
@@ -59,10 +61,16 @@ exampleOutput = ExampleOutput @a @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
 examples =
-  [ ("Constant.5", exampleOutput @A exampleConst5)
-  , ("Eq.Constant.5", exampleOutput @A exampleEq5)
-  , ("Eq", exampleOutput @A exampleEq)
-  , ("Conditional", exampleOutput @A exampleConditional)
+  [ ("Const", exampleOutput @A exampleConst)
+  , ("Invert", exampleOutput @A exampleInvert) -- TODO: should be 1 constraint, 1 variable
+  , ("Eq", exampleOutput @A exampleEq) -- TODO: should be 3 constraints, 3 variables
+  , ("Eq.Const", exampleOutput @A exampleEqConst) -- TODO: should be 2 constraints, 2 variables
+  , ("Eq.Vector", exampleOutput @A $ exampleEqVector @1) -- TODO: should be 3 constraints, 3 variables
+  , ("Eq.Vector.Const", exampleOutput @A $ exampleEqVectorConst @1) -- TODO: should be 2 constraints, 2 variables
+  , ("Conditional", exampleOutput @A exampleConditional) -- TODO: should be 4 constraints, 3 variables
+  , ("Conditional.True", exampleOutput @A $ exampleConditional true) -- TODO: should be 0 constraints, 0 variables
+  , ("Conditional.Const", exampleOutput @A exampleConditionalConst) -- TODO: should be 1 constraint, 1 variable
+  , ("Conditional.Const.Const", exampleOutput @A exampleConditionalConstConst)
   , ("LEQ", exampleOutput @A exampleLEQ)
   , ("ByteString.And.32", exampleOutput @A $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput @A $ exampleByteStringOr @64)

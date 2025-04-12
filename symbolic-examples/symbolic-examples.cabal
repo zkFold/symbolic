@@ -100,6 +100,7 @@ library
       Examples.Eq
       Examples.FFA
       Examples.Fibonacci
+      Examples.FieldElement
       Examples.JWT
       Examples.LEQ
       Examples.MerkleTree
