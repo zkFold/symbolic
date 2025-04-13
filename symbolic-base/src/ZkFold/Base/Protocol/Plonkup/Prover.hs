@@ -9,6 +9,7 @@ module ZkFold.Base.Protocol.Plonkup.Prover
 
 import           Control.DeepSeq                                 (NFData, force)
 import           Data.Bool                                       (bool)
+import           Data.Foldable                                   (length)
 import qualified Data.Vector                                     as V
 import           Data.Word                                       (Word8)
 import           GHC.IsList                                      (IsList (..))
@@ -203,7 +204,7 @@ plonkupProve PlonkupProverSetup {..}
         h1_xi'  = h1X `evalPolyVec` (xi * omega)
         h2_xi   = h2X `evalPolyVec` xi
         lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
-        l1_xi   = one // (scale n one * (xi - omega))
+        l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [0 .. fromIntegral (length wPub) -! 1]
 
         -- Round 6
 
