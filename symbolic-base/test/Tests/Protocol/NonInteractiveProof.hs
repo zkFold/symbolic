@@ -45,5 +45,5 @@ instance Arbitrary1 U1 where
 specNonInteractiveProof :: Spec
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32 (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
-    specNonInteractiveProof' @(Plonk (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
-    specNonInteractiveProof' @(Plonkup (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
+    specNonInteractiveProof' @(Plonk (Vector 1) 32 (Vector 0) (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
+    specNonInteractiveProof' @(Plonkup (Vector 1) 32 (Vector 0) (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))

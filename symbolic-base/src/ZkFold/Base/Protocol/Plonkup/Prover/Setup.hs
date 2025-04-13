@@ -11,7 +11,7 @@ import           ZkFold.Base.Protocol.Plonkup.Internal           (PlonkupPolyExt
 import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Base.Protocol.Plonkup.Relation           (PlonkupRelation (..))
 
-data PlonkupProverSetup i n l g1 g2 pv = PlonkupProverSetup
+data PlonkupProverSetup i n w l g1 g2 pv = PlonkupProverSetup
     { omega       :: ScalarFieldOf g1
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
@@ -19,7 +19,7 @@ data PlonkupProverSetup i n l g1 g2 pv = PlonkupProverSetup
     , sigma1s     :: pv n
     , sigma2s     :: pv n
     , sigma3s     :: pv n
-    , relation    :: PlonkupRelation i n l (ScalarFieldOf g1) pv
+    , relation    :: PlonkupRelation i n w l (ScalarFieldOf g1) pv
     , polynomials :: PlonkupCircuitPolynomials n g1 pv
     }
 
@@ -30,8 +30,8 @@ instance
         , Show (ScalarFieldOf g1)
         , Show (pv n)
         , Show (pv (PlonkupPolyExtendedLength n))
-        , Show (PlonkupRelation i n l (ScalarFieldOf g1) pv)
-        ) => Show (PlonkupProverSetup i n l g1 g2 pv) where
+        , Show (PlonkupRelation i n w l (ScalarFieldOf g1) pv)
+        ) => Show (PlonkupProverSetup i n w l g1 g2 pv) where
     show PlonkupProverSetup {..} =
         "Prover setup: "
         ++ show omega ++ " "

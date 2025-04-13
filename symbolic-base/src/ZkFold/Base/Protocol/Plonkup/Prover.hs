@@ -32,7 +32,7 @@ import           ZkFold.Base.Protocol.Plonkup.Testing            (PlonkupProverT
 import           ZkFold.Base.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Base.Protocol.Plonkup.Witness
 
-plonkupProve :: forall i n l g1 g2 ts pv .
+plonkupProve :: forall i n w l g1 g2 ts pv .
     ( Foldable l
     , Ord (ScalarFieldOf g1)
     , Compressible g1
@@ -45,12 +45,11 @@ plonkupProve :: forall i n l g1 g2 ts pv .
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     , NFData (pv (PlonkupPolyExtendedLength n))
-    ) => PlonkupProverSetup i n l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
+    ) => PlonkupProverSetup i n w l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
     where
-
         PlonkupCircuitPolynomials {..} = polynomials
         secret i = ps !! (i -! 1)
 

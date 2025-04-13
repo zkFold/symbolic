@@ -1,5 +1,7 @@
-{-# OPTIONS_GHC -Wno-orphans     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -10,7 +12,7 @@ import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
-import           GHC.Generics                                        (Par1 (..))
+import           GHC.Generics                                        (Par1 (..), (:*:) (..))
 import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
                                                                       (.), (<$>), (<))
 import qualified Prelude                                             as Haskell
@@ -61,6 +63,25 @@ instance
         ac <- arbitrary @(ArithmeticCircuit a i Par1)
         o  <- unsafeToVector <$> chooseFromList (value @l) (getAllVars ac)
         return ac {acOutput = toVar <$> o}
+
+instance
+  ( Arithmetic a
+  , Arbitrary a
+  , Binary a
+  , Arbitrary (Rep i)
+  , Binary (Rep i)
+  , Haskell.Ord (Rep i)
+  , NFData (Rep i)
+  , Representable i
+  , Haskell.Foldable i
+  , KnownNat w
+  , KnownNat l
+  ) => Arbitrary (ArithmeticCircuit a i (Vector w :*: Vector l)) where
+    arbitrary = do
+        ac <- arbitrary @(ArithmeticCircuit a i Par1)
+        w  <- unsafeToVector <$> chooseFromList (value @w) (getAllVars ac)
+        l  <- unsafeToVector <$> chooseFromList (value @l) (getAllVars ac)
+        return ac {acOutput = (toVar <$> w) :*: (toVar <$> l)}
 
 arbitrary' ::
   (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
