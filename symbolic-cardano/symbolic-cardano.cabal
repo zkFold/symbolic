@@ -93,6 +93,7 @@ library
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
       ZkFold.Symbolic.Cardano.Contracts.ZkPass
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
+      ZkFold.Symbolic.Cardano.Contracts.SmartWallet
       ZkFold.Symbolic.Cardano.Contracts.SponsoredTx
       ZkFold.Symbolic.Cardano.Contracts.ZkLogin
       ZkFold.Symbolic.Cardano.Types
