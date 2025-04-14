@@ -214,6 +214,32 @@ instance
     , Support y ~ Support z
     ) => SymbolicData (t, u, v, w, x, y, z) where
 
+instance
+    ( SymbolicData s
+    , SymbolicData t
+    , SymbolicData u
+    , SymbolicData v
+    , SymbolicData w
+    , SymbolicData x
+    , SymbolicData y
+    , SymbolicData z
+    , HApplicative (Context x)
+    , Context s ~ Context t
+    , Context t ~ Context u
+    , Context u ~ Context v
+    , Context v ~ Context w
+    , Context w ~ Context x
+    , Context x ~ Context y
+    , Context y ~ Context z
+    , Support s ~ Support t
+    , Support t ~ Support u
+    , Support u ~ Support v
+    , Support v ~ Support w
+    , Support w ~ Support x
+    , Support x ~ Support y
+    , Support y ~ Support z
+    ) => SymbolicData (s, t, u, v, w, x, y, z) where
+
 instance (SymbolicData x, KnownNat n) => SymbolicData (Vector n x) where
     type Context (Vector n x) = Context x
     type Support (Vector n x) = Support x

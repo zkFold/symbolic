@@ -22,16 +22,42 @@ import           ZkFold.Symbolic.Data.List                          (List, empty
 import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (TransactionWitness,
-                                                                     validateTransactionWithAssetDiff)
+import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (UtxoWitness, validateTransactionWithAssetDiff)
 
 -- | Witness needed to validate a 'TransactionBatchData'.
-type TransactionBatchDataWitness context = List context (Transaction context, (Circuit context, DAIndex context, DAType context), TransactionWitness context)
-  -- REVIEW: Add data availability index here to perhaps make slight simplification?
+data TransactionBatchDataWitness context = TransactionBatchDataWitness
+  { tbdwTransactions :: List context (Transaction context)
+  -- ^ List of transactions in the batch.
+  }
+  deriving stock Generic
+
+instance Signature context => SymbolicData (TransactionBatchDataWitness context)
+
+instance Signature context => Conditional (Bool context) (TransactionBatchDataWitness context)
+
+instance Signature context => Eq (TransactionBatchDataWitness context)
+
+data TransactionBatchDataAcc context = TransactionBatchDataAcc
+  { txAccIx              :: Maybe context (DAIndex context)
+  , txAccBatchInterval   :: Interval context
+  , txAccIsConsistent    :: Bool context
+  , txAccOnlineAddresses :: List context (Address context)
+  , txAccOfflineAddrsTxs :: List context (Address context, List context (HashSimple context))
+  , txAccOnlineAddrsTxs  :: Root (Address context, List context (HashSimple context))
+  , txAccValuesDiff      :: AssetValues context
+  , txAccUtxoWitness     :: UtxoWitness context
+  }
+  deriving stock Generic
+
+instance Signature context => SymbolicData (TransactionBatchDataAcc context)
+
+instance Signature context => Conditional (Bool context) (TransactionBatchDataAcc context)
+
+instance Signature context => Eq (TransactionBatchDataAcc context)
 
 -- | This function extracts boolean from 'validateTransactionBatchDataWithIx, see it for more details.
-validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
-validateTransactionBatchData tbInterval tbd tbdw = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw
+validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> UtxoWitness context -> Bool context
+validateTransactionBatchData tbInterval tbd tbdw utxoWitness = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw utxoWitness
 
 {- | Validate a 'TransactionBatchData'.
 
@@ -44,8 +70,8 @@ To check:
   * Txs are valid.
   * Batch as a whole is balanced.
 -}
-validateTransactionBatchDataWithIx :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
-validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTransactions =
+validateTransactionBatchDataWithIx :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> UtxoWitness context -> (Bool context, DAIndex context)
+validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} TransactionBatchDataWitness {..} utxoWitness =
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
         , _resTxAccBatchInterval :: Interval context
@@ -61,20 +87,15 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
           resTxAccOnlineAddrsTxs :: Root (Address context, List context (HashSimple context))
         , -- Accumulated difference between outputs and inputs across all transactions.
           resTxAccValuesDiff :: AssetValues context
+        , _ :: UtxoWitness context
         ) =
           Symbolic.List.foldl
             ( Morph
-                \( ( txAccIx :: Maybe s (DAIndex s)
-                    , txAccBatchInterval :: Interval s
-                    , txAccIsConsistent :: Bool s
-                    , txAccOnlineAddresses :: List s (Address s)
-                    , txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s))
-                    , txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))
-                    , txAccValuesDiff :: AssetValues s
-                    )
-                  , (tx :: Transaction s, ownerAddrP@(_ownerAddrCir, ownerAddrIx, ownerAddrType) :: (Circuit s, DAIndex s, DAType s), txw :: TransactionWitness s)
+                \( TransactionBatchDataAcc {..} :: TransactionBatchDataAcc s
+                  , (tx :: Transaction s)
                   ) ->
                     let txOwner' = txOwner tx
+                        (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
                         jownerAddrIx = just ownerAddrIx
                         -- If we haven't yet found any index, we use the index of this owner.
                         txAccIxFinal = ifThenElse (isNothing txAccIx) jownerAddrIx txAccIx
@@ -90,13 +111,12 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
                                   (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                             )
                             (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
-                        (isTxValid, txValuesDiff) = validateTransactionWithAssetDiff tx txw
+                        (isTxValid, txValuesDiff) = validateTransactionWithAssetDiff tx txAccUtxoWitness
                         newTxAccIsConsistent =
                           txAccIsConsistent
                             && (contains (txValidityInterval tx) txAccBatchInterval)
                             && (txAccIxFinal == jownerAddrIx)
                             && isTxValid
-                            && (hasher ownerAddrP == txOwner')
                      in ( txAccIxFinal
                         , txAccBatchInterval
                         , newTxAccIsConsistent
@@ -104,6 +124,7 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
                         , newTxAccOfflineAddrsTxs
                         , newTxAccOnlineAddrsTxs
                         , addAssetValues txAccValuesDiff txValuesDiff
+                        , txAccUtxoWitness
                         )
             )
             ( nothing :: Maybe context (DAIndex context)
@@ -113,8 +134,9 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
             , emptyList :: List context (Address context, List context (HashSimple context))
             , empty :: Root (Address context, List context (HashSimple context))
             , emptyAssetValues :: AssetValues context
+            , utxoWitness
             )
-            tbdwTransactions
+            (tbdwTransactions)
    in ( isJust resTxAccIx
           && resTxAccIsConsistent
           && (tbdOnlineAddresses == removeDuplicates resTxAccOnlineAddresses)

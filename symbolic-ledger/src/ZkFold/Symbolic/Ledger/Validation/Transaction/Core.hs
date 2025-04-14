@@ -3,8 +3,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
-  InputWitness (..),
-  TransactionWitness (..),
+  UtxoWitness (..),
   validateTransaction,
   validateTransactionWithAssetDiff,
 ) where
@@ -22,20 +21,19 @@ import           ZkFold.Symbolic.Data.Maybe       (Maybe)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
+{- | Common witness for 'Input's validation, i.e., to verify that input belongs to valid UTxO set.
 
--- | Witness for 'Input' validation, to verify that input belongs to valid UTxO set.
---
--- __Note__: Having it as a type synonym helps significantly with compilation times.
-type InputWitness context = (List context (TransactionBatchData context, Maybe context (List context (Transaction context))))
-  -- ^ History of transaction batches, starting from the tip till the batch which first contained the transaction that created this output.
-  --
-  -- We don't require transactions for those batches which did not spend any input belonging to the address of the owner of the output being validated.
-
--- | Witness for 'Transaction' validation.
---
--- __Note__: Having it as a type synonym helps significantly with compilation times.
-type TransactionWitness context = List context (InputWitness context)
-  -- ^ Witnesses for 'Input' validation.
+__Note__: Having it as a type synonym helps significantly with compilation times.
+-}
+type UtxoWitness context =
+  -- History of transaction batches, starting from the tip.
+  List
+    context
+    ( TransactionBatch context
+    , List
+        context
+        (TransactionBatchData context)
+    )
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction ::
@@ -44,7 +42,7 @@ validateTransaction ::
   -- | 'Transaction' to validate.
   Transaction context ->
   -- | Witness for 'Transaction' validation.
-  TransactionWitness context ->
+  UtxoWitness context ->
   -- | Validity of transaction.
   Bool context
 validateTransaction tx txw = fst $ validateTransactionWithAssetDiff tx txw
@@ -63,7 +61,7 @@ validateTransactionWithAssetDiff ::
   -- | 'Transaction' to validate.
   Transaction context ->
   -- | Witness for 'Transaction' validation.
-  TransactionWitness context ->
+  UtxoWitness context ->
   -- | Validity of transaction along with value difference between outputs and inputs.
   (Bool context, AssetValues context)
 validateTransactionWithAssetDiff tx txw =
