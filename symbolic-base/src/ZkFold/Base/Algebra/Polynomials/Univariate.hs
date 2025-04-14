@@ -323,11 +323,8 @@ newtype PolyVec c (size :: Natural) = PV (V.Vector c)
 
 class
     ( Ring c
-    , C pv ~ c
     , forall size . (KnownNat size) => AdditiveGroup (pv size)
     ) => UnivariateRingPolyVec c pv | pv -> c where
-
-    type C pv
 
 -- -- | Multiply the corresponding coefficients of two polynomials.
     (.*.) :: forall size . (KnownNat size) => pv size -> pv size -> pv size
@@ -399,8 +396,6 @@ class
 instance
     ( Ring c
     ) => UnivariateRingPolyVec c (PolyVec c) where
-
-    type C (PolyVec c) = c
 
     l .*. r = toPolyVec @_ @(PolyVec c) $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
 
