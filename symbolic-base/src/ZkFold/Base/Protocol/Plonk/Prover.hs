@@ -84,11 +84,11 @@ plonkProve PlonkupProverSetup {..}
         -- zeta = challenge ts1 :: ScalarFieldOf g1
 
         t_zeta = t relation
-        f_zeta = fromList $ zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (toList $ qK relation) (toList $ t relation) (toList w1) :: pv n
+        f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t relation) (fromPolyVec w1) :: pv n
 
         fX = with4n6 @n $ polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
 
-        s  = sortByList (toList f_zeta ++ toList t_zeta) (toList t_zeta)
+        s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
         h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: pv n
         h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
 
