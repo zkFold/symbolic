@@ -32,7 +32,11 @@ type UtxoWitness context =
     ( TransactionBatch context
     , List
         context
-        (TransactionBatchData context)
+        ( TransactionBatchData context
+        , -- We don't require transactions for those batches which did not spend any input belonging to the address of the owner of the output being validated. So, this list may be empty.
+          -- We could use 'Maybe' here to denote it but that would likely increase compilation times.
+          List context (Transaction context)
+        )
     )
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
