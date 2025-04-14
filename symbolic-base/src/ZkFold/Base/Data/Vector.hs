@@ -86,6 +86,9 @@ reverse (Vector lst) = Vector (V.reverse lst)
 head :: Vector size a -> a
 head (Vector as) = V.head as
 
+last :: Vector size a -> a
+last (Vector as) = V.last as
+
 tail :: Vector size a -> Vector (size - 1) a
 tail (Vector as) = Vector $ V.tail as
 

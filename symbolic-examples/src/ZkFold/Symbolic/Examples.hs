@@ -10,27 +10,33 @@ import           Data.Type.Equality                          (type (~))
 import           Examples.Blake2b                            (exampleBlake2b_224, exampleBlake2b_256)
 import           Examples.ByteString
 import           Examples.Conditional                        (exampleConditional)
-import           Examples.Constant                           (exampleConst5, exampleEq5)
-import           Examples.Eq                                 (exampleEq)
+import           Examples.Constant
+import           Examples.Eq                                 (exampleEq, exampleEqVector)
 import           Examples.FFA
 import           Examples.Fibonacci                          (exampleFibonacci)
+import           Examples.FieldElement                       (exampleInvert)
 import           Examples.LEQ                                (exampleLEQ)
+import           Examples.MerkleTree                         (exampleMerkleTree)
 import           Examples.MiMCHash                           (exampleMiMC)
+import           Examples.Pasta                              (examplePallas_Add, examplePallas_Scale)
 import           Examples.ReverseList                        (exampleReverseList)
 import           Examples.UInt
 import           GHC.Generics                                (type (:*:))
 
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (FpModulus)
 import           ZkFold.Base.Data.ByteString                 (Binary)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
+import           ZkFold.Symbolic.Data.Bool                   (true)
 import           ZkFold.Symbolic.Data.ByteString             (ByteString)
 import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
+type B = Zp FpModulus
 type C a = ArithmeticCircuit a
 
 data ExampleOutput where
@@ -55,10 +61,16 @@ exampleOutput = ExampleOutput @a @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
 examples =
-  [ ("Constant.5", exampleOutput @A exampleConst5)
-  , ("Eq.Constant.5", exampleOutput @A exampleEq5)
-  , ("Eq", exampleOutput @A exampleEq)
-  , ("Conditional", exampleOutput @A exampleConditional)
+  [ ("Const", exampleOutput @A exampleConst)
+  , ("Invert", exampleOutput @A exampleInvert) -- TODO: should be 1 constraint, 1 variable
+  , ("Eq", exampleOutput @A exampleEq) -- TODO: should be 3 constraints, 3 variables
+  , ("Eq.Const", exampleOutput @A exampleEqConst) -- TODO: should be 2 constraints, 2 variables
+  , ("Eq.Vector", exampleOutput @A $ exampleEqVector @1) -- TODO: should be 3 constraints, 3 variables
+  , ("Eq.Vector.Const", exampleOutput @A $ exampleEqVectorConst @1) -- TODO: should be 2 constraints, 2 variables
+  , ("Conditional", exampleOutput @A exampleConditional) -- TODO: should be 4 constraints, 3 variables
+  , ("Conditional.True", exampleOutput @A $ exampleConditional true) -- TODO: should be 0 constraints, 0 variables
+  , ("Conditional.Const", exampleOutput @A exampleConditionalConst) -- TODO: should be 1 constraint, 1 variable
+  , ("Conditional.Const.Const", exampleOutput @A exampleConditionalConstConst)
   , ("LEQ", exampleOutput @A exampleLEQ)
   , ("ByteString.And.32", exampleOutput @A $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput @A $ exampleByteStringOr @64)
@@ -78,20 +90,25 @@ examples =
   , ("UInt.DivMod.32.Auto", exampleOutput @A $ exampleUIntDivMod @32 @Auto)
   , ("UInt.ExpMod.32.16.64.Auto", exampleOutput @A $ exampleUIntExpMod @32 @16 @64 @Auto)
   , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput @A $ exampleUIntExpMod @256 @64 @1024 @Auto)
-  , ("FFA.Add.337", exampleOutput @A exampleFFAadd337)
   , ("FFA.Add.097", exampleOutput @A exampleFFAadd097)
-  , ("FFA.Mul.337", exampleOutput @A exampleFFAmul337)
   , ("FFA.Mul.097", exampleOutput @A exampleFFAmul097)
-  , ("FFA.Inv.337", exampleOutput @A exampleFFAinv337)
   , ("FFA.Inv.097", exampleOutput @A exampleFFAinv097)
+  , ("FFA.Add.Native", exampleOutput @B exampleFFAadd337)
+  , ("FFA.Mul.Native", exampleOutput @B exampleFFAmul337)
+  , ("FFA.Inv.Native", exampleOutput @B exampleFFAinv337)
+  , ("Pallas.Add", exampleOutput @B examplePallas_Add)
+  , ("Pallas.Scale", exampleOutput @B examplePallas_Scale)
+  -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
+  -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Base) exampleEd25519Scale)
+  -- , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
+  -- , ("Mithril.256.2", exampleOutput @B $ exampleMithril @256 @2)
   , ("Blake2b_224", exampleOutput @A $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
-  -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
-  -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Scalar) exampleEd25519Scale)
   , ("Fibonacci.100", exampleOutput @A $ exampleFibonacci 100)
   , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
+  , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)

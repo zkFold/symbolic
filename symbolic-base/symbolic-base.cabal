@@ -177,6 +177,7 @@ library
       ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithms.Hash.SHA2
       ZkFold.Symbolic.Algorithms.Hash.SHA2.Constants
+      ZkFold.Symbolic.Algorithms.Mithril
       ZkFold.Symbolic.Algorithms.RSA
       ZkFold.Symbolic.Algorithms.FFT
       ZkFold.Symbolic.Class
@@ -216,6 +217,7 @@ library
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
@@ -223,6 +225,7 @@ library
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.VarByteString
+      ZkFold.Symbolic.Data.Vec
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
@@ -341,6 +344,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.9 && < 5,
