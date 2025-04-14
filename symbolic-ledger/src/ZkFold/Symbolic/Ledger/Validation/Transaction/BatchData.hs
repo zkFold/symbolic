@@ -22,11 +22,12 @@ import           ZkFold.Symbolic.Data.List                          (List, empty
 import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (validateTransactionWithAssetDiff)
+import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (TransactionWitness,
+                                                                     validateTransactionWithAssetDiff)
 
 -- | Witness needed to validate a 'TransactionBatchData'.
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
-  { tbdwTransactions :: List context (Transaction context)
+  { tbdwTransactions :: List context (Transaction context, TransactionWitness context)
   -- REVIEW: Add data availability index here to perhaps make slight simplification?
   }
   deriving stock Generic
