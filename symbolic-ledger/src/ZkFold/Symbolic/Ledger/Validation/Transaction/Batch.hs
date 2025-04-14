@@ -17,9 +17,7 @@ import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
 
 -- | Witness for 'TransactionBatch' validation.
-data TransactionBatchWitness context = TransactionBatchWitness
-  { tbwBatchDatas :: List context (TransactionBatchData context, TransactionBatchDataWitness context)
-  }
+type TransactionBatchWitness context = List context (TransactionBatchData context, TransactionBatchDataWitness context)
 
 -- | Validate 'TransactionBatch'.
 validateTransactionBatch ::
@@ -36,7 +34,7 @@ validateTransactionBatch ::
   -- | Witness used for validation.
   TransactionBatchWitness context ->
   Bool context
-validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} TransactionBatchWitness {..} =
+validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} tbwBatchDatas =
   let ( -- Batch data hashes as computed via provided witness.
         resBatchAccDataHashes :: List context (DAIndex context, HashSimple context)
         , -- Are individual batches valid? And is 'tbValidityInterval' within the interval of transactions present inside these batches?

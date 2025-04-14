@@ -22,33 +22,20 @@ import           ZkFold.Symbolic.Data.Maybe       (Maybe)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
+
 -- | Witness for 'Input' validation, to verify that input belongs to valid UTxO set.
-data InputWitness context = InputWitness
-  { iwBatchHistory :: List context (TransactionBatch context, List context (TransactionBatchData context, Maybe context (List context (Transaction context))))
+--
+-- __Note__: Having it as a type synonym helps significantly with compilation times.
+type InputWitness context = (List context (TransactionBatchData context, Maybe context (List context (Transaction context))))
   -- ^ History of transaction batches, starting from the tip till the batch which first contained the transaction that created this output.
   --
   -- We don't require transactions for those batches which did not spend any input belonging to the address of the owner of the output being validated.
-  }
-  deriving stock Generic
-
-instance Signature context => SymbolicData (InputWitness context)
-
-instance Signature context => Conditional (Bool context) (InputWitness context)
-
-instance Signature context => Eq (InputWitness context)
 
 -- | Witness for 'Transaction' validation.
-data TransactionWitness context = TransactionWitness
-  { twInputWitness :: List context (InputWitness context)
+--
+-- __Note__: Having it as a type synonym helps significantly with compilation times.
+type TransactionWitness context = List context (InputWitness context)
   -- ^ Witnesses for 'Input' validation.
-  }
-  deriving stock Generic
-
-instance Signature context => SymbolicData (TransactionWitness context)
-
-instance Signature context => Conditional (Bool context) (TransactionWitness context)
-
-instance Signature context => Eq (TransactionWitness context)
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction ::
