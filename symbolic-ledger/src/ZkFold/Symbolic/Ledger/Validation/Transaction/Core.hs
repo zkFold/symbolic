@@ -3,41 +3,23 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
-  UtxoWitness (..),
+  UTxO,
   validateTransaction,
   validateTransactionWithAssetDiff,
 ) where
 
-import           GHC.Generics                     (Generic)
-import           Prelude                          (fst, undefined, ($), (.))
+import           Prelude                          (fst, undefined, ($))
 
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class       (SymbolicData)
-import           ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq          (Eq, (==))
+import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
+import           ZkFold.Symbolic.Data.Eq          ((==))
 import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
 import           ZkFold.Symbolic.Data.List        (List)
-import           ZkFold.Symbolic.Data.Maybe       (Maybe)
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
-{- | Common witness for 'Input's validation, i.e., to verify that input belongs to valid UTxO set.
-
-__Note__: Having it as a type synonym helps significantly with compilation times.
--}
-type UtxoWitness context =
-  -- History of transaction batches, starting from the tip.
-  List
-    context
-    ( TransactionBatch context
-    , List
-        context
-        ( TransactionBatchData context
-        , -- We don't require transactions for those batches which did not spend any input belonging to the address of the owner of the output being validated. So, this list may be empty.
-          -- We could use 'Maybe' here to denote it but that would likely increase compilation times.
-          List context (Transaction context)
-        )
-    )
+-- | UTxO set.
+type UTxO context = List context (Input context)
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction ::
@@ -46,10 +28,11 @@ validateTransaction ::
   -- | 'Transaction' to validate.
   Transaction context ->
   -- | Witness for 'Transaction' validation.
-  UtxoWitness context ->
+  UTxO context ->
+  List context (Address context) ->
   -- | Validity of transaction.
   Bool context
-validateTransaction tx txw = fst $ validateTransactionWithAssetDiff tx txw
+validateTransaction tx utxos txOwners = fst $ validateTransactionWithAssetDiff tx utxos txOwners
 
 {- | Validate a 'Transaction'.
 
@@ -64,11 +47,13 @@ validateTransactionWithAssetDiff ::
   Signature context =>
   -- | 'Transaction' to validate.
   Transaction context ->
-  -- | Witness for 'Transaction' validation.
-  UtxoWitness context ->
+  -- | UTxO set.
+  UTxO context ->
+  -- | List of owners of inputs.
+  List context (Address context) ->
   -- | Validity of transaction along with value difference between outputs and inputs.
   (Bool context, AssetValues context)
-validateTransactionWithAssetDiff tx txw =
+validateTransactionWithAssetDiff tx utxos txOwners =
   let
     -- Is transaction valid?
     resTxAccValidity :: Bool context = undefined
