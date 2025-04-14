@@ -11,13 +11,13 @@ import           ZkFold.Symbolic.Data.Conditional     (Conditional)
 import           ZkFold.Symbolic.Data.Eq              (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address (Address)
 import           ZkFold.Symbolic.Ledger.Types.Datum   (Datum)
-import           ZkFold.Symbolic.Ledger.Types.Value   (AssetValue, KnownRegistersAssetQuantity)
+import           ZkFold.Symbolic.Ledger.Types.Value   (AssetValues, KnownRegistersAssetQuantity)
 
 -- | Transaction output.
 data Output context = Output
         { txoAddress :: Address context
         -- ^ 'Address' at which the value is locked.
-        , txoValue   :: AssetValue context
+        , txoValue   :: AssetValues context
         -- ^ 'AssetValue' locked by the output.
         , txoDatum   :: Datum context
         -- ^ 'Datum' associated with the output.

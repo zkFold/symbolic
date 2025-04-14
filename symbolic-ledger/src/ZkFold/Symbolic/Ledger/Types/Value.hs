@@ -20,13 +20,14 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   addAssetValue,
   negateAssetValues,
   addAssetValues,
+  assetValuesNonNegative,
 ) where
 
 import           Data.Coerce                          (coerce)
 import           Data.Function                        ((&))
 import           GHC.Generics                         (Generic)
 import           Prelude                              hiding (Bool, Eq, Int, all, foldr, length, negate, null, splitAt,
-                                                       (&&), (*), (+), (==), (||))
+                                                       (&&), (*), (+), (==), (>=), (||))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Symbolic.Class                (Symbolic)
@@ -39,6 +40,7 @@ import           ZkFold.Symbolic.Data.Int             (Int)
 import qualified ZkFold.Symbolic.Data.List            as Symbolic.List
 import           ZkFold.Symbolic.Data.List            (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Morph           (MorphTo (..))
+import           ZkFold.Symbolic.Data.Ord             ((>=))
 import           ZkFold.Symbolic.Fold                 (SymbolicFold)
 import           ZkFold.Symbolic.Ledger.Types.Address (Address)
 import           ZkFold.Symbolic.Ledger.Types.Datum   (Datum)
@@ -165,3 +167,18 @@ addAssetValues as (UnsafeAssetValues bs) =
     )
     as
     bs
+
+-- | Check if all asset values are non-negative.
+assetValuesNonNegative ::
+  forall context.
+  SymbolicFold context =>
+  KnownRegistersAssetQuantity context =>
+  AssetValues context ->
+  Bool context
+assetValuesNonNegative (UnsafeAssetValues ls) =
+  Symbolic.List.foldl
+    ( Morph \(acc :: Bool s, b :: AssetValue s) ->
+        acc && (assetQuantity b >= zero)
+    )
+    true
+    ls

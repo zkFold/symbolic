@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                         (SymbolicData)
 import           ZkFold.Symbolic.Data.Conditional                   (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq                            (Eq, (==))
-import           ZkFold.Symbolic.Data.Hash                          (preimage, Hashable (..))
+import           ZkFold.Symbolic.Data.Hash                          (Hashable (..), preimage)
 import qualified ZkFold.Symbolic.Data.List                          as Symbolic.List
 import           ZkFold.Symbolic.Data.List                          (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Maybe
