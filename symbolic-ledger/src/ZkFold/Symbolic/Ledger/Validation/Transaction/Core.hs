@@ -5,7 +5,6 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   UTxO,
   validateTransaction,
-  validateTransactionWithAssetDiff,
 ) where
 
 import           Prelude                          (fst, undefined, ($))
@@ -21,19 +20,6 @@ import           ZkFold.Symbolic.Ledger.Types
 -- | UTxO set.
 type UTxO context = List context (Input context)
 
--- | This function extracts boolean from 'validateTransaction', see it for more details.
-validateTransaction ::
-  forall context.
-  Signature context =>
-  -- | 'Transaction' to validate.
-  Transaction context ->
-  -- | Witness for 'Transaction' validation.
-  UTxO context ->
-  List context (Address context) ->
-  -- | Validity of transaction.
-  Bool context
-validateTransaction tx utxos txOwners = fst $ validateTransactionWithAssetDiff tx utxos txOwners
-
 {- | Validate a 'Transaction'.
 
 To check:
@@ -42,18 +28,16 @@ To check:
   * All outputs contain non-negative value.
   * Circuit corresponding to owner's address outputs 0.
 -}
-validateTransactionWithAssetDiff ::
+validateTransaction ::
   forall context.
   Signature context =>
   -- | 'Transaction' to validate.
   Transaction context ->
   -- | UTxO set.
   UTxO context ->
-  -- | List of owners of inputs.
-  List context (Address context) ->
   -- | Validity of transaction along with value difference between outputs and inputs.
   (Bool context, AssetValues context)
-validateTransactionWithAssetDiff tx utxos txOwners =
+validateTransaction tx utxos =
   let
     -- Is transaction valid?
     resTxAccValidity :: Bool context = undefined

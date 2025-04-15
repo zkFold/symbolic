@@ -22,7 +22,7 @@ import           ZkFold.Symbolic.Data.List                          (List, empty
 import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (UTxO, validateTransactionWithAssetDiff)
+import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (UTxO, validateTransaction)
 
 -- | Witness needed to validate a 'TransactionBatchData'.
 type TransactionBatchDataWitness context = List context (Transaction context)
@@ -44,8 +44,6 @@ data TransactionBatchDataAcc context = TransactionBatchDataAcc
   -- ^ Accumulated difference between outputs and inputs across all transactions.
   , txAccUtxos           :: UTxO context
   -- ^ UTxO set.
-  , txAccTxOwners        :: List context (Address context)
-  -- ^ List of owners of inputs.
   }
   deriving stock Generic
 
@@ -56,8 +54,15 @@ instance Signature context => Conditional (Bool context) (TransactionBatchDataAc
 instance Signature context => Eq (TransactionBatchDataAcc context)
 
 -- | This function extracts boolean from 'validateTransactionBatchDataWithIx, see it for more details.
-validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> UTxO context -> List context (Address context) -> Bool context
-validateTransactionBatchData tbInterval tbd tbdw utxos txOwners = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw utxos txOwners
+validateTransactionBatchData ::
+  forall context.
+  Signature context =>
+  Interval context ->
+  TransactionBatchData context ->
+  TransactionBatchDataWitness context ->
+  UTxO context ->
+  Bool context
+validateTransactionBatchData tbInterval tbd tbdw utxos = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw utxos
 
 {- | Validate a 'TransactionBatchData'.
 
@@ -70,8 +75,15 @@ To check:
   * Txs are valid.
   * Batch as a whole is balanced.
 -}
-validateTransactionBatchDataWithIx :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> UTxO context -> List context (Address context) -> (Bool context, DAIndex context)
-validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTransactions utxos txOwners =
+validateTransactionBatchDataWithIx ::
+  forall context.
+  Signature context =>
+  Interval context ->
+  TransactionBatchData context ->
+  TransactionBatchDataWitness context ->
+  UTxO context ->
+  (Bool context, DAIndex context)
+validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTransactions utxos =
   let TransactionBatchDataAcc {..} :: TransactionBatchDataAcc context =
         Symbolic.List.foldl
           ( Morph
@@ -95,7 +107,7 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
                                 (updateAddrsTxsList txOwner' updOwnerAddrTxHashes txAccOfflineAddrsTxs, txAccOnlineAddrsTxs, txAccOnlineAddresses)
                           )
                           (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
-                      (isTxValid, txValuesDiff) = validateTransactionWithAssetDiff tx txAccUtxos txAccTxOwners
+                      (isTxValid, txValuesDiff) = validateTransaction tx txAccUtxos
                       newTxAccIsConsistent =
                         txAccIsConsistent
                           && (contains (txValidityInterval tx) txAccBatchInterval)
@@ -110,7 +122,6 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
                         , txAccOnlineAddrsTxs = newTxAccOnlineAddrsTxs
                         , txAccValuesDiff = addAssetValues txAccValuesDiff txValuesDiff
                         , txAccUtxos = txAccUtxos
-                        , txAccTxOwners = txAccTxOwners
                         }
           )
           ( TransactionBatchDataAcc
@@ -122,7 +133,6 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
               , txAccOnlineAddrsTxs = empty
               , txAccValuesDiff = emptyAssetValues
               , txAccUtxos = utxos
-              , txAccTxOwners = txOwners
               }
           )
           (tbdwTransactions)

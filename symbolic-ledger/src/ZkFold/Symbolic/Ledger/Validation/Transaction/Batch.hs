@@ -69,7 +69,7 @@ validateTransactionBatch ::
   TransactionBatchWitness context ->
   Bool context
 validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} tbw@TransactionBatchWitness {..} =
-  let (utxos, txOwners, utxosValid) = computeUtxo tbw
+  let (utxos, utxosValid) = computeUtxo tbw
 
       ( -- Batch data hashes as computed via provided witness.
         resBatchAccDataHashes :: List context (DAIndex context, HashSimple context)
@@ -77,7 +77,6 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} t
           resBatchAccBatchesValid :: Bool context
         , _ :: Interval context
         , _ :: UTxO context
-        , _ :: List context (Address context)
         ) =
           Symbolic.List.foldl
             ( Morph
@@ -85,14 +84,13 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} t
                     , batchAccBatchesValid :: Bool s
                     , batchAccBatchValidityInterval :: Interval s
                     , batchAccUtxos :: UTxO s
-                    , batchAccTxOwners :: List s (Address s)
                     )
                   , (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)
                   ) ->
-                    let (batchValid, batchDAIndex) = validateTransactionBatchDataWithIx batchAccBatchValidityInterval tbd tbdw batchAccUtxos batchAccTxOwners
-                     in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval, batchAccUtxos, batchAccTxOwners)
+                    let (batchValid, batchDAIndex) = validateTransactionBatchDataWithIx batchAccBatchValidityInterval tbd tbdw batchAccUtxos
+                     in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval, batchAccUtxos)
             )
-            (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval, utxos, txOwners)
+            (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval, utxos)
             tbwBatchDatas
    in -- 'tbBridgeIn' represents correct hash.
       -- TODO: We might not need to do this check if this is performed by smart contract. Same for 'tbBridgeOut' and 'tbPreviousBatch'
@@ -149,7 +147,7 @@ transactionOwners TransactionBatchWitness {..} =
     (Symbolic.List.emptyList :: List context (Address context))
     (tbwBatchDatas)
 
-computeUtxo :: forall context. Signature context => TransactionBatchWitness context -> (UTxO context, List context (Address context), Bool context)
+computeUtxo :: forall context. Signature context => TransactionBatchWitness context -> (UTxO context, Bool context)
 computeUtxo tbw@TransactionBatchWitness {..} = undefined
 
 -- let
