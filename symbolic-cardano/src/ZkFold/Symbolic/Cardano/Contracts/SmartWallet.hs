@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     , expModProof
     ) where
 
+import           Control.DeepSeq                             (NFData)
 import           Data.Foldable                               (foldrM)
 import           Data.Proxy
 import           Data.Word                                   (Word8)
@@ -19,7 +20,7 @@ import           Prelude                                     (const, ($), (<$>))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import qualified ZkFold.Base.Algebra.Basic.Number            as Number
-import           ZkFold.Base.Algebra.Basic.Number            (Natural, type (^))
+import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (^))
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
                                                               BLS12_381_G2_Point, Fr)
 import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec)
@@ -43,12 +44,8 @@ import           ZkFold.Symbolic.MonadCircuit                (newAssigned)
 
 type NGates = 2^19
 
-type ExpModLayout = (((Vector 1
-                                  :*: Vector 17)
-                                 :*: (Vector 17 :*: Par1))
-                                :*: U1)
-type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1)
-                           :*: ExpModLayout
+type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
+type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
 
 type PlonkupTs t = Plonkup ExpModCompiledInput NGates Par1 BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
@@ -81,9 +78,12 @@ deriving instance
 expModCircuit
     :: forall c
     .  Symbolic c
+    => KnownNat (NumberOfRegisters (BaseField c) 4096 Auto)
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) 4096 Auto) OrdWord)
+    => NFData (c (Vector (NumberOfRegisters (BaseField c) 4096 Auto)))
     => ExpModInput c
     -> FieldElement c
-expModCircuit (ExpModInput RSA.PublicKey{..} sig tokenName) = hashAsFE * tokenName
+expModCircuit (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
     where
         msgHash :: UInt 2048 Auto c
         msgHash = expMod @c @2048 @RSA.PubExponentSize @2048 sig pubE pubN
@@ -118,13 +118,14 @@ data ExpModProofInput =
 
 expModProof
     :: forall t
-    .  TranscriptConstraints t 
+    .  TranscriptConstraints t
     => Fr
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModProofInput
     -> Proof (PlonkupTs t)
 expModProof x ps ExpModProofInput{..} = proof
     where
+        ac :: ArithmeticCircuit Fr ExpModCompiledInput Par1
         ac = C.compile @Fr expModCircuit
 
         input :: ExpModInput (Interpreter Fr)
@@ -136,11 +137,15 @@ expModProof x ps ExpModProofInput{..} = proof
                 (fromConstant piSignature)
                 (fromConstant piTokenName)
 
-        witnessInputs   = runInterpreter $ arithmetize input Proxy
+        witnessInputs :: ExpModLayout Fr
+        witnessInputs = runInterpreter $ arithmetize input Proxy
+
+        paddedWitnessInputs :: ExpModCompiledInput Fr
+        paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
         (omega, k1, k2) = getParams (Number.value @NGates)
         (gs, h1) = getSecrectParams @NGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
         plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs t
         setupP  = setupProve @(PlonkupTs t) plonkup
-        witness = (PlonkupWitnessInput @ExpModLayout @BLS12_381_G1_Point (witnessInputs :*: U1), ps)
+        witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_Point paddedWitnessInputs, ps)
         (_, proof) = prove @(PlonkupTs t) setupP witness
