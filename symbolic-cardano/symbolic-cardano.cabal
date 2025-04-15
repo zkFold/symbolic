@@ -109,6 +109,7 @@ library
       base                          >= 4.9 && < 5,
       containers                            < 0.7,
       constraints                                ,
+      deepseq                                    ,
       semialign                             < 1.4,
       symbolic-base                              ,
     hs-source-dirs: src
