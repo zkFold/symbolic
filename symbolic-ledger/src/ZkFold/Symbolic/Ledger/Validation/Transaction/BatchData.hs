@@ -16,7 +16,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class                         (SymbolicData)
 import           ZkFold.Symbolic.Data.Conditional                   (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq                            (Eq, (==))
-import           ZkFold.Symbolic.Data.Hash                          (Hashable (..), preimage)
+import           ZkFold.Symbolic.Data.Hash                          (Hashable (..))
 import qualified ZkFold.Symbolic.Data.List                          as Symbolic.List
 import           ZkFold.Symbolic.Data.List                          (List, emptyList, (.:))
 import           ZkFold.Symbolic.Data.Maybe
@@ -25,7 +25,7 @@ import           ZkFold.Symbolic.Ledger.Types
 import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (UTxO, validateTransaction)
 
 -- | Witness needed to validate a 'TransactionBatchData'.
-type TransactionBatchDataWitness context = List context (Transaction context)
+type TransactionBatchDataWitness context = List context (Transaction context, (Circuit context, DAIndex context, DAType context))
 
 data TransactionBatchDataAcc context = TransactionBatchDataAcc
   { txAccIx              :: Maybe context (DAIndex context)
@@ -88,10 +88,9 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
         Symbolic.List.foldl
           ( Morph
               \( TransactionBatchDataAcc {..} :: TransactionBatchDataAcc s
-                , (tx :: Transaction s)
+                , (tx :: Transaction s, ownerAddrP@(_ownerAddrCir, ownerAddrIx, ownerAddrType) :: (Circuit s, DAIndex s, DAType s))
                 ) ->
                   let txOwner' = txOwner tx
-                      (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
                       jownerAddrIx = just ownerAddrIx
                       -- If we haven't yet found any index, we use the index of this owner.
                       txAccIxFinal = ifThenElse (isNothing txAccIx) jownerAddrIx txAccIx
@@ -113,6 +112,7 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} tbdwTran
                           && (contains (txValidityInterval tx) txAccBatchInterval)
                           && (txAccIxFinal == jownerAddrIx)
                           && isTxValid
+                          && (hasher ownerAddrP == txOwner')
                    in TransactionBatchDataAcc
                         { txAccIx = txAccIxFinal
                         , txAccBatchInterval = txAccBatchInterval

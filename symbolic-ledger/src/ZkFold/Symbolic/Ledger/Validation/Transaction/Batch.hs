@@ -136,9 +136,9 @@ noDuplicateIndicesInBatch ls =
 transactionOwners :: forall context. Signature context => TransactionBatchWitness context -> List context (Address context)
 transactionOwners TransactionBatchWitness {..} =
   Symbolic.List.foldl
-    ( Morph \((accBatch :: List s (Address s)), (_ :: TransactionBatchData s, txList :: List s (Transaction s))) ->
+    ( Morph \((accBatch :: List s (Address s)), (_ :: TransactionBatchData s, txList :: List s (Transaction s, (Circuit s, DAIndex s, DAType s)))) ->
         Symbolic.List.foldl
-          ( Morph \((accTx :: List s' (Address s')), tx :: Transaction s') ->
+          ( Morph \((accTx :: List s' (Address s')), (tx :: Transaction s', _ :: (Circuit s', DAIndex s', DAType s'))) ->
               (txOwner tx Symbolic.List..: accTx)
           )
           accBatch
