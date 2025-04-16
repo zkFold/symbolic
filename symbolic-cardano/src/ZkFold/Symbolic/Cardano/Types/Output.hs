@@ -14,6 +14,7 @@ import           Prelude                                    hiding (Bool, Eq, le
 import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes          (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum

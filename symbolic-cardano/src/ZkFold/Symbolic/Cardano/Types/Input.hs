@@ -9,6 +9,7 @@ import           Prelude                                 hiding (Bool, Eq, lengt
 import qualified Prelude                                 as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes       (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
@@ -19,7 +20,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators        (KnownRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input              (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.Input              (SymbolicInput)
 
 data Input tokens datum context = Input  {
         txiOutputRef :: OutputRef context,
