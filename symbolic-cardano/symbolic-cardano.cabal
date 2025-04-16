@@ -113,3 +113,16 @@ library
       semialign                             < 1.4,
       symbolic-base                              ,
     hs-source-dirs: src
+
+executable smart-wallet-creator
+  import:           options 
+  import:           options-exe
+  default-language: Haskell2010
+  ghc-options:      -rtsopts
+  main-is:          Main.hs
+  hs-source-dirs:   smart-wallet-creator
+  build-depends:
+    base              >= 4.9 && < 5,
+    bytestring                     ,
+    symbolic-base                  ,
+    symbolic-cardano               ,
