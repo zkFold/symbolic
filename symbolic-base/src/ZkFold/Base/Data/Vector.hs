@@ -11,7 +11,7 @@ import           Data.Aeson                       (FromJSON (..), ToJSON (..))
 import           Data.Constraint.Nat              (Max)
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
-import           Data.Functor.Classes             (Show1, Eq1)
+import           Data.Functor.Classes             (Eq1, Show1)
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V

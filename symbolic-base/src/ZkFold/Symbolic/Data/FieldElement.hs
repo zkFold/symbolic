@@ -4,30 +4,30 @@
 
 module ZkFold.Symbolic.Data.FieldElement where
 
-import           Control.DeepSeq                  (NFData)
-import           Data.Foldable                    (foldr)
-import           Data.Function                    (($), (.))
-import           Data.Functor                     (fmap, (<$>))
-import           Data.Tuple                       (snd)
-import           GHC.Generics                     (Generic, Par1 (..))
-import           Prelude                          (Integer)
-import qualified Prelude                          as Haskell
+import           Control.DeepSeq                   (NFData)
+import           Data.Foldable                     (foldr)
+import           Data.Function                     (($), (.))
+import           Data.Functor                      (fmap, (<$>))
+import           Data.Tuple                        (snd)
+import           GHC.Generics                      (Generic, Par1 (..))
+import           Prelude                           (Integer)
+import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor        (hmap)
-import           ZkFold.Base.Data.Vector          (Vector, fromVector, unsafeToVector)
+import           ZkFold.Base.Data.HFunctor         (hmap)
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
+import           ZkFold.Base.Data.Vector           (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
+import           ZkFold.Symbolic.Data.Bool         (Bool, BoolType (true))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
-import           ZkFold.Symbolic.Data.Conditional (Conditional)
-import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Combinators  (expansion, horner, runInvert)
+import           ZkFold.Symbolic.Data.Conditional  (Conditional)
+import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
-import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit      (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic

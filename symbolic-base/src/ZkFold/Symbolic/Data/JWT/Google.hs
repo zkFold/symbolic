@@ -16,6 +16,7 @@ import           Prelude                            (fmap, type (~), ($), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
+import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithms.RSA     as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.JWT
 import           ZkFold.Symbolic.Data.JWT.RS256
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
-import ZkFold.Base.Data.HFunctor.Classes (HEq, HShow)
 
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL

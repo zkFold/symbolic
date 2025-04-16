@@ -54,6 +54,7 @@ import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
 import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Base.Data.Product          (fstP, sndP)
 import qualified ZkFold.Base.Data.Vector           as V
 import           ZkFold.Base.Data.Vector           (Vector (..))
@@ -72,7 +73,6 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
                                                     newAssigned, newRanged)
-import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
 
 
 -- TODO (Issue #18): hide this constructor

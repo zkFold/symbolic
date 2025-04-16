@@ -42,6 +42,7 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, unsafeToVector)
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
@@ -56,7 +57,6 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord          ((<))
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit, newAssigned)
-import ZkFold.Base.Data.HFunctor.Classes (HEq, HShow, HNFData)
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
