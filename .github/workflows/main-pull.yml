@@ -88,7 +88,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         cabal: [3.14.1.1]
-        ghc: [9.12.1]
+        ghc: ["9.10"]
 
     runs-on: ${{ matrix.os }}
 
