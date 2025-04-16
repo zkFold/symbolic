@@ -9,6 +9,7 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     ( expModCircuit
     , expModSetup
     , expModProof
+    , ExpModProofInput (..)
     , PlonkupTs
     , NGates
     ) where

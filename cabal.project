@@ -11,6 +11,9 @@ packages:
     symbolic-cardano
     symbolic-uplc
 
+-- with-compiler: javascript-unknown-ghcjs-ghc
+-- with-hc-pkg:  javascript-unknown-ghcjs-ghc-pkg
+
 optimization: 2
 
 -- We never, ever, want this.
