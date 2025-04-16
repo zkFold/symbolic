@@ -9,6 +9,8 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     ( expModCircuit
     , expModSetup
     , expModProof
+    , PlonkupTs
+    , NGates
     ) where
 
 import           Control.DeepSeq                             (NFData)
