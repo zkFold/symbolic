@@ -13,16 +13,17 @@ module Main where
 import           Data.ByteString                                   (ByteString)
 import           GHC.Generics                                      (Generic)
 import           GHC.Natural                                       (naturalToInteger)
-import           Prelude                                           hiding (Bool, Eq (..), Fractional (..), Num (..),
-                                                                    length)
+import           Prelude                                           hiding (Fractional (..), Num (..), length)
 
-import           ZkFold.Base.Algebra.Basic.Class                   (zero)
+import           ZkFold.Base.Algebra.Basic.Class                   (zero, (+))
 import           ZkFold.Base.Algebra.Basic.Field                   (Zp, fromZp)
 import qualified ZkFold.Base.Algebra.Basic.Number                  as Number
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Base.Algebra.EllipticCurve.Class           (compress)
 import           ZkFold.Base.Data.ByteString                       (toByteString)
 import           ZkFold.Base.Protocol.NonInteractiveProof          as NP (NonInteractiveProof (..))
+import           ZkFold.Base.Protocol.Plonkup.Proof
+import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Prelude                                    (log2ceiling)
@@ -78,10 +79,77 @@ mkSetup PlonkupVerifierSetup {..} =
     , cmT1_bytes = convertG1 cmT1
     }
 
+data ProofBytes = ProofBytes {
+    cmA_bytes     :: ByteString
+  , cmB_bytes     :: ByteString
+  , cmC_bytes     :: ByteString
+  , cmF_bytes     :: ByteString
+  , cmH1_bytes    :: ByteString
+  , cmH2_bytes    :: ByteString
+  , cmZ1_bytes    :: ByteString
+  , cmZ2_bytes    :: ByteString
+  , cmQlow_bytes  :: ByteString
+  , cmQmid_bytes  :: ByteString
+  , cmQhigh_bytes :: ByteString
+  , proof1_bytes  :: ByteString
+  , proof2_bytes  :: ByteString
+  , a_xi_int      :: Integer
+  , b_xi_int      :: Integer
+  , c_xi_int      :: Integer
+  , s1_xi_int     :: Integer
+  , s2_xi_int     :: Integer
+  , f_xi_int      :: Integer
+  , t_xi_int      :: Integer
+  , t_xi'_int     :: Integer
+  , z1_xi'_int    :: Integer
+  , z2_xi'_int    :: Integer
+  , h1_xi'_int    :: Integer
+  , h2_xi_int     :: Integer
+  , l1_xi         :: Integer
+} deriving stock (Show, Generic)
+
+mkProof :: Proof (PlonkupTs ByteString) -> ProofBytes
+mkProof PlonkupProof {..} = ProofBytes
+  { cmA_bytes     = convertG1 cmA
+  , cmB_bytes     = convertG1 cmB
+  , cmC_bytes     = convertG1 cmC
+  , cmF_bytes     = convertG1 cmF
+  , cmH1_bytes    = convertG1 cmH1
+  , cmH2_bytes    = convertG1 cmH2
+  , cmZ1_bytes    = convertG1 cmZ1
+  , cmZ2_bytes    = convertG1 cmZ2
+  , cmQlow_bytes  = convertG1 cmQlow
+  , cmQmid_bytes  = convertG1 cmQmid
+  , cmQhigh_bytes = convertG1 cmQhigh
+  , proof1_bytes  = convertG1 proof1
+  , proof2_bytes  = convertG1 proof2
+  , a_xi_int      = convertZp a_xi
+  , b_xi_int      = convertZp b_xi
+  , c_xi_int      = convertZp c_xi
+  , s1_xi_int     = convertZp s1_xi
+  , s2_xi_int     = convertZp s2_xi
+  , f_xi_int      = convertZp f_xi
+  , t_xi_int      = convertZp t_xi
+  , t_xi'_int     = convertZp t_xi'
+  , z1_xi'_int    = convertZp z1_xi'
+  , z2_xi'_int    = convertZp z2_xi'
+  , h1_xi'_int    = convertZp h1_xi'
+  , h2_xi_int     = convertZp h2_xi
+  , l1_xi         = convertZp $ head l_xi
+  }
+
+genProof :: ExpModProofInput -> ProofBytes
+genProof = undefined -- mkProof . expModProof @ByteString zero (PlonkupProverSecret $ pure zero)
+
+foo :: ExpModProofInput -> Bool
+foo (ExpModProofInput a b c d) = a + b + c + d > 0
+
 main :: IO ()
 main = do
-    print bytes
+    putStrLn "Hello"
+    print $ foo (ExpModProofInput 1 1 1 1)
     where
-        bytes = mkSetup $ expModSetup @ByteString zero
+        --bytes = mkSetup $ expModSetup @ByteString zero
+        bytes = genProof (ExpModProofInput 1 1 1 1)
 
 
