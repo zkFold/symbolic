@@ -96,7 +96,7 @@ library
       ZkFold.Base.Algebra.Basic.Class
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Number
-      ZkFold.Base.Algebra.Basic.Permutations
+      ZkFold.Base.Algebra.Basic.Permutation
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
@@ -318,7 +318,7 @@ test-suite symbolic-base-test
       Tests.Algebra.GroebnerBasis
       Tests.Algebra.Group
       Tests.Algebra.Pairing
-      Tests.Algebra.Permutations
+      Tests.Algebra.Permutation
       Tests.Algebra.ReedSolomon
       Tests.Algebra.Univariate
       Tests.Algebra.Univariate.Poly

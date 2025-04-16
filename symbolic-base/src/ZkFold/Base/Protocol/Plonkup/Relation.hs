@@ -23,7 +23,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Basic.Permutations              (Permutation, fromCycles, mkIndexPartition)
+import           ZkFold.Base.Algebra.Basic.Permutation               (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Base.Algebra.Polynomials.Multivariate        (evalMonomial, evalPolynomial, var)
 import           ZkFold.Base.Algebra.Polynomials.Univariate          (UnivariateRingPolyVec (..), toPolyVec)
 import           ZkFold.Base.Protocol.Plonkup.Internal               (PlonkupPermutationSize)

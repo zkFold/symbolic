@@ -7,9 +7,9 @@ import           Test.Hspec                         (Spec, hspec)
 import           Tests.Algebra.EllipticCurve        (specEllipticCurve)
 import           Tests.Algebra.Field                (specField)
 import           Tests.Algebra.GroebnerBasis        (specGroebner)
-import           Tests.Algebra.Group                (specAdditiveGroup)
+import           Tests.Algebra.Group                (specGroup)
 import           Tests.Algebra.Pairing              (specPairing)
-import           Tests.Algebra.Permutations         (specPermutations)
+import           Tests.Algebra.Permutation          (specPermutation)
 import           Tests.Algebra.ReedSolomon          (specReedSolomon)
 import           Tests.Algebra.Univariate           (specUnivariate)
 import           Tests.Data.Binary                  (specBinary)
@@ -32,36 +32,35 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
-    -- Base.Algebra
+    -- Algebra
+    specGroup
     specField
-    specAdditiveGroup
     specEllipticCurve
     specPairing
-    specPermutations
+    specPermutation
     specUnivariate
     specReedSolomon
     specGroebner
 
-    -- Base.Data
+    -- Serialization
     specBinary
 
-    -- Base.Protocol
+    -- Protocols
     specPlonkup
     specNonInteractiveProof
     specIVC
 
-    -- Compiler spec
+    -- Symbolic compiler
     specArithmeticCircuit
     specCompiler
 
     -- Symbolic types and operations
-    specHash
-    specList
-
     specUInt
     specInt
     specFFA
     specByteString
+    specHash
+    specList
     specMerkleTree
 
     -- Symbolic cryptography

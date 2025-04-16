@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Base.Algebra.Basic.Permutations (
+module ZkFold.Base.Algebra.Basic.Permutation (
     IndexSet,
     IndexPartition,
     Permutation,
