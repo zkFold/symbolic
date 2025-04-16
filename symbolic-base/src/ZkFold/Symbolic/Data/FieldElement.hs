@@ -27,6 +27,7 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import Test.QuickCheck (Arbitrary (..))
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
@@ -115,3 +116,6 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
 
 instance (Symbolic c) => SymbolicInput (FieldElement c) where
   isValid _ = true
+
+instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where
+  arbitrary = FieldElement . embed . Par1 <$> arbitrary

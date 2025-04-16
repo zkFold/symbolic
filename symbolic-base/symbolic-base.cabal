@@ -341,6 +341,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Compiler.Test4
       Tests.Symbolic.Data.ByteString
       Tests.Symbolic.Data.FFA
+      Tests.Symbolic.Data.FieldElement
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
