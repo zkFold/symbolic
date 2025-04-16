@@ -16,7 +16,7 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector (..), fromVector)
+import           ZkFold.Base.Data.Vector          (fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class       (SymbolicData)
@@ -26,15 +26,15 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
+import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
 
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt n r c}
 
 deriving instance Generic (Int n r c)
-deriving instance (NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))) => NFData (Int n r c)
-deriving instance (Haskell.Eq (c (Vector (NumberOfRegisters (BaseField c) n r)))) => Haskell.Eq (Int n r c)
-deriving instance (Haskell.Show (BaseField c), Haskell.Show (c (Vector (NumberOfRegisters (BaseField c) n r))))
-    => Haskell.Show (Int n r c)
+deriving instance HNFData c => NFData (Int n r c)
+deriving instance HEq c => Haskell.Eq (Int n r c)
+deriving instance HShow c => Haskell.Show (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)

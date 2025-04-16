@@ -25,6 +25,7 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Class      (SymbolicData)
 import           ZkFold.Symbolic.Interpreter     (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit    (newAssigned)
+import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
 
 class BoolType b where
     true  :: b
@@ -58,9 +59,9 @@ instance BoolType Haskell.Bool where
 newtype Bool c = Bool (c Par1)
     deriving (Generic)
 
-deriving instance NFData (c Par1) => NFData (Bool c)
-deriving instance Eq (c Par1) => Eq (Bool c)
-deriving instance Show (c Par1) => Show (Bool c)
+deriving instance HNFData c => NFData (Bool c)
+deriving instance HEq c => Eq (Bool c)
+deriving instance HShow c => Show (Bool c)
 
 instance Symbolic c => SymbolicData (Bool c)
 

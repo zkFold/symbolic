@@ -20,13 +20,13 @@ import           Data.Aeson                         (FromJSON (..), genericParse
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
 import           Data.Constraint                    (withDict)
 import           Data.Kind                          (Type)
-import           GHC.Generics                       (Generic, Par1 (..))
+import           GHC.Generics                       (Generic)
 import           GHC.TypeLits                       (Symbol)
 import           Prelude                            (type (~), ($), (.))
 import qualified Prelude                            as P
 
 import           ZkFold.Base.Algebra.Basic.Number
-import qualified ZkFold.Base.Data.Vector            as V
+import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
@@ -86,24 +86,9 @@ data TokenHeader ctx
         }
     deriving Generic
 
-deriving instance
-    ( P.Eq (ctx (V.Vector 72))
-    , P.Eq (ctx (V.Vector 320))
-    , P.Eq (ctx (V.Vector 32))
-    , P.Eq (ctx Par1)
-    ) => P.Eq (TokenHeader ctx)
-deriving instance
-    ( P.Show (ctx (V.Vector 72))
-    , P.Show (ctx (V.Vector 320))
-    , P.Show (ctx (V.Vector 32))
-    , P.Show (ctx Par1)
-    ) => P.Show (TokenHeader ctx)
-deriving instance
-    ( NFData (ctx (V.Vector 72))
-    , NFData (ctx (V.Vector 320))
-    , NFData (ctx (V.Vector 32))
-    , NFData (ctx Par1)
-    ) => NFData (TokenHeader ctx)
+deriving instance HEq ctx => P.Eq (TokenHeader ctx)
+deriving instance HShow ctx => P.Show (TokenHeader ctx)
+deriving instance HNFData ctx => NFData (TokenHeader ctx)
 
 deriving instance Symbolic ctx => SymbolicData (TokenHeader ctx)
 deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
@@ -111,11 +96,7 @@ deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
     parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-instance
-    ( Symbolic ctx
-    , Context (TokenHeader ctx) ~ ctx
-    , NFData (VarByteString (MaxLength (TokenHeader ctx)) ctx)
-    ) => IsSymbolicJSON (TokenHeader ctx) where
+instance Symbolic ctx => IsSymbolicJSON (TokenHeader ctx) where
 
     type MaxLength (TokenHeader ctx) = 648
     toJsonBits TokenHeader{..} = force $
@@ -124,13 +105,7 @@ instance
         `VB.append` (fromType @"\",\"typ\":\"") @+ hdTyp
         `VB.append` (fromType @"\"}")
 
-instance
- ( Symbolic ctx
- , NFData (ctx (V.Vector 8))
- , NFData (ctx (V.Vector 648))
- , NFData (ctx (V.Vector 864))
- , NFData (ctx Par1)
- ) => IsBits (TokenHeader ctx) where
+instance Symbolic ctx => IsBits (TokenHeader ctx) where
     type BitCount (TokenHeader ctx) = 864
     toBits = toAsciiBits
 
@@ -140,21 +115,10 @@ toAsciiBits
     => Context a ~ ctx
     => KnownNat (MaxLength a)
     => Symbolic ctx
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector (ASCII (Next6 (MaxLength a)))))
     => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
-type TokenBits a =
-    ( NFData ((Context a) (V.Vector 8))
-    , NFData ((Context a) (V.Vector 648))
-    , NFData ((Context a) (V.Vector 864))
-    , NFData ((Context a) (V.Vector (BitCount a)))
-    , NFData ((Context a) (V.Vector (872 + BitCount a)))
-    , NFData ((Context a) Par1)
-    , IsBits a
-    , KnownNat (872 + BitCount a)
-    )
+type TokenBits a = (IsBits a, KnownNat (872 + BitCount a))
 
 tokenBits
     :: forall p ctx
@@ -168,4 +132,3 @@ tokenBits h p =  force $
        toBits h
     @+ (fromType @".")
     @+ toBits p
-

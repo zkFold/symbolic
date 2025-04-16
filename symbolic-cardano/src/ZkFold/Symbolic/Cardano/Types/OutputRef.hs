@@ -25,10 +25,7 @@ data OutputRef context = OutputRef {
     }
     deriving (Generic)
 
-deriving instance
-    ( Haskell.Eq (TxRefId context)
-    , Haskell.Eq (TxRefIndex context)
-    ) => Haskell.Eq (OutputRef context)
+deriving instance HEq context => Haskell.Eq (OutputRef context)
 
 instance (Symbolic context, KnownRegisters context 32 Auto)
     => SymbolicData (OutputRef context)

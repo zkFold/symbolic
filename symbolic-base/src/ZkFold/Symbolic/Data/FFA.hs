@@ -41,6 +41,7 @@ import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
+import ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -80,11 +81,11 @@ instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
     if isNative @p @r @c
       then true
       else isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
-instance (NFData (FieldElement c), NFData (UIntFFA p r c)) => NFData (FFA p r c)
+
+instance HNFData c => NFData (FFA p r c)
+deriving stock instance HShow c => Show (FFA p r c)
 instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
-deriving stock instance (Show (FieldElement c), Show (UIntFFA p r c)) =>
-  Show (FFA p r c)
 
 bezoutFFA ::
   forall p a. (KnownNat p, KnownNat (FFAUIntSize p (Order a))) => Integer

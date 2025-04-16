@@ -67,6 +67,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
+import ZkFold.Base.Data.HFunctor.Classes (HNFData, HEq, HShow)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -74,9 +75,9 @@ import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
     deriving (Generic)
 
-deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
-deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
-deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
+deriving stock instance HShow c => Haskell.Show (ByteString n c)
+deriving stock instance HEq c => Haskell.Eq (ByteString n c)
+deriving anyclass instance HNFData c => NFData (ByteString n c)
 deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
 deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
 deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)

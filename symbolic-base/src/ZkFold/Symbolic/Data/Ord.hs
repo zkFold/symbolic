@@ -29,6 +29,7 @@ import           ZkFold.Symbolic.Data.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering
@@ -131,8 +132,8 @@ instance KnownNat n => Ord (Zp n) where
 
 newtype Ordering c = Ordering (c Par1)
   deriving (Generic)
-deriving instance NFData (c Par1) => NFData (Ordering c)
-deriving instance Show (c Par1) => Show (Ordering c)
+deriving instance HNFData c => NFData (Ordering c)
+deriving instance HShow c => Show (Ordering c)
 deriving newtype instance Symbolic c => Conditional (Bool c) (Ordering c)
 deriving newtype instance Symbolic c => Eq (Ordering c)
 instance Symbolic c => SymbolicData (Ordering c)

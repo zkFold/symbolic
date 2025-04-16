@@ -11,12 +11,10 @@ module Examples.UInt (
     exampleUIntLeq,
   ) where
 
-import           Control.DeepSeq                  (NFData)
 import           Data.Type.Equality               (type (~))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (*))
-import           ZkFold.Base.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
                                                    NumberOfRegisters, resize)
@@ -56,7 +54,6 @@ exampleUIntExpMod
   => KnownNat (2 * m)
   => KnownRegisters c (2 * m) r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
-  => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
   => UInt n r c
   -> UInt p r c
   -> UInt m r c

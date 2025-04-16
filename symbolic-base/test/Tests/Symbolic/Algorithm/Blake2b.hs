@@ -15,6 +15,7 @@ import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Base.Data.HFunctor.Classes           (HEq)
 import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_224, blake2b_512)
 import           ZkFold.Symbolic.Class                       (Symbolic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile, eval1)
@@ -23,7 +24,7 @@ import           ZkFold.Symbolic.Data.ByteString             (ByteString (..))
 import qualified ZkFold.Symbolic.Data.Eq                     as Symbolic
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
 
-blake2bNumeric :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
+blake2bNumeric :: forall c . (Symbolic c, HEq c) => Spec
 blake2bNumeric =
     let a = blake2b_512 @0 @c $ fromConstant (0 :: Natural)
         c = hash 64 BI.empty BI.empty
@@ -41,7 +42,7 @@ Appendix A.  Example of BLAKE2b Computation
                         18 D3 8A A8 DB F1 92 5A B9 23 86 ED D4 00 99 23
 -}
 
-blake2bExampleRfc :: forall c . (Symbolic c, Eq (c (Vector 512))) => Spec
+blake2bExampleRfc :: forall c . (Symbolic c, HEq c) => Spec
 blake2bExampleRfc =
     let abc' = blake2b_512 @3 @c $ fromConstant $ fromString @BI.ByteString "abc"
         abc  = fromConstant @_ @(ByteString 512 _) $ hash 64 BI.empty "abc"

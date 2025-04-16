@@ -72,15 +72,16 @@ import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
                                                     newAssigned, newRanged)
+import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
 
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type) = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
 
 deriving instance Generic (UInt n r context)
-deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) n r)))) => NFData (UInt n r context)
-deriving instance (Haskell.Eq (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Eq (UInt n r context)
-deriving instance (Haskell.Show (BaseField context), Haskell.Show (context (Vector (NumberOfRegisters (BaseField context) n r)))) => Haskell.Show (UInt n r context)
+deriving instance HNFData context => NFData (UInt n r context)
+deriving instance HEq context => Haskell.Eq (UInt n r context)
+deriving instance HShow context => Haskell.Show (UInt n r context)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
@@ -119,7 +120,6 @@ expMod
     => KnownNat (2 * m)
     => KnownRegisters c (2 * m) r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
-    => NFData (c (Vector (NumberOfRegisters (BaseField c) (2 * m) r)))
     => UInt n r c
     -> UInt p r c
     -> UInt m r c
@@ -146,7 +146,6 @@ bitsPow
     => KnownNat p
     => KnownRegisters c n r
     => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
-    => NFData (c (Vector (NumberOfRegisters (BaseField c) n r)))
     => Natural
     -> ByteString p c
     -> UInt n r c

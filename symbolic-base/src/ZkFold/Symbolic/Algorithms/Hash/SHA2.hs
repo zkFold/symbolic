@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.Symbolic.Algorithms.Hash.SHA2
@@ -14,7 +15,7 @@ module ZkFold.Symbolic.Algorithms.Hash.SHA2
     , PaddedLength
     ) where
 
-import           Control.DeepSeq                                (NFData, force)
+import           Control.DeepSeq                                (force)
 import           Control.Monad                                  (forM_)
 import           Control.Monad.ST                               (ST, runST)
 import           Data.Bits                                      (shiftL)
@@ -60,8 +61,7 @@ import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
 -- This class links these varying parts with the appropriate algorithm.
 --
 class
-    (Symbolic context
-    , NFData (context (Vector (WordSize algorithm)))
+    ( Symbolic context
     , KnownNat (ChunkSize algorithm)
     , KnownNat (WordSize algorithm)
     , Mod (ChunkSize algorithm) (WordSize algorithm) ~ 0
@@ -93,10 +93,7 @@ class
     sumShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
     -- ^ Round rotation values for Sum in the internal loop.
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA256")))
-    ) => AlgorithmSetup "SHA256" c where
+instance Symbolic c => AlgorithmSetup "SHA256" c where
     type WordSize "SHA256" = 32
     type ChunkSize "SHA256" = 512
     type ResultSize "SHA256" = 256
@@ -107,10 +104,7 @@ instance
     sumShifts = (2, 13, 22, 6, 11, 25)
 
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA224")))
-    ) => AlgorithmSetup "SHA224" c where
+instance Symbolic c => AlgorithmSetup "SHA224" c where
     type WordSize "SHA224" = 32
     type ChunkSize "SHA224" = 512
     type ResultSize "SHA224" = 224
@@ -120,10 +114,7 @@ instance
     sigmaShifts = (7, 18, 3, 17, 19, 10)
     sumShifts = (2, 13, 22, 6, 11, 25)
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA512")))
-    )  => AlgorithmSetup "SHA512" c where
+instance Symbolic c => AlgorithmSetup "SHA512" c where
     type WordSize "SHA512" = 64
     type ChunkSize "SHA512" = 1024
     type ResultSize "SHA512" = 512
@@ -133,10 +124,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA384")))
-    ) => AlgorithmSetup "SHA384" c where
+instance Symbolic c => AlgorithmSetup "SHA384" c where
     type WordSize "SHA384" = 64
     type ChunkSize "SHA384" = 1024
     type ResultSize "SHA384" = 384
@@ -146,10 +134,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA512/224")))
-    ) => AlgorithmSetup "SHA512/224" c where
+instance Symbolic c => AlgorithmSetup "SHA512/224" c where
     type WordSize "SHA512/224" = 64
     type ChunkSize "SHA512/224" = 1024
     type ResultSize "SHA512/224" = 224
@@ -159,10 +144,7 @@ instance
     sigmaShifts = (1, 8, 7, 19, 61, 6)
     sumShifts = (28, 34, 39, 14, 18, 41)
 
-instance
-    (Symbolic c
-    , NFData (c (Vector (WordSize "SHA512/256" )))
-    ) => AlgorithmSetup "SHA512/256" c where
+instance Symbolic c => AlgorithmSetup "SHA512/256" c where
     type WordSize "SHA512/256" = 64
     type ChunkSize "SHA512/256" = 1024
     type ResultSize "SHA512/256" = 256
@@ -320,7 +302,7 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         getNextChunk :: FieldElement context -> FieldElement context
         getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
             feWords <- expansionW @(Log2 padTo) numWords e
-            d <- newAssigned $ \p -> (fromConstant $ value @padTo) - p (P.head feWords)
+            d <- newAssigned $ \p -> fromConstant (value @padTo) - p (P.head feWords)
             dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@
             res <- newAssigned $ \p -> p e + p (P.head dWords)
             pure $ Par1 res
@@ -442,7 +424,7 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
             toV $ bool @(Bool context)
                     (Vector @8 hn)
                     (Vector @8 $ processChunkPure @algorithm @context hn chunk)
-                    (len > (fromConstant $ ix * chunkSize))
+                    (len > fromConstant (ix * chunkSize))
 
 processChunkPure
     :: forall algorithm context
@@ -542,4 +524,3 @@ processChunk hn chunk = do
     where
         rounds :: Int
         rounds = V.length $ roundConstants @algorithm @context
-

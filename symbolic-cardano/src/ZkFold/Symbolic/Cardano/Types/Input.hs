@@ -41,23 +41,20 @@ instance
     , KnownRegisters context 64 Auto
     ) => Eq (Input tokens datum context)
 
-deriving instance
-    ( Haskell.Eq (OutputRef context)
-    , Haskell.Eq (Output tokens datum context)
-    ) => Haskell.Eq (Input tokens datum context)
+deriving instance HEq context => Haskell.Eq (Input tokens datum context)
 
 instance
   ( Symbolic context, KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
   ) => SymbolicData (Input tokens datum context)
+
 instance
   ( Symbolic context
   , KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
-  ) => SymbolicInput (Input tokens datum context) where
-  isValid (Input ior io) = isValid (ior, io)
+  ) => SymbolicInput (Input tokens datum context)
 
 txiAddress :: Input tokens datum context -> Address context
 txiAddress (Input _ txo) = txoAddress txo

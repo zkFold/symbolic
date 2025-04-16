@@ -27,24 +27,18 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
+import ZkFold.Base.Data.HFunctor.Classes (HShow, HEq, HNFData)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
 
-deriving stock instance Haskell.Show (c Par1) => Haskell.Show (FieldElement c)
-
-deriving stock instance Haskell.Eq (c Par1) => Haskell.Eq (FieldElement c)
-
-deriving stock instance Haskell.Ord (c Par1) => Haskell.Ord (FieldElement c)
-
-deriving newtype instance NFData (c Par1) => NFData (FieldElement c)
-
+deriving stock instance HShow c => Haskell.Show (FieldElement c)
+deriving stock instance HEq c => Haskell.Eq (FieldElement c)
+deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldElement c)
+deriving newtype instance HNFData c => NFData (FieldElement c)
 deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
-
 deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
-
 deriving newtype instance Symbolic c => Eq (FieldElement c)
-
 deriving newtype instance Symbolic c => Ord (FieldElement c)
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where

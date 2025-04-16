@@ -15,6 +15,7 @@ import qualified Prelude                            as P
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number   (Natural)
+import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Algorithms.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.ByteString    (ByteString)
@@ -32,18 +33,9 @@ data Certificate ctx
         }
     deriving Generic
 
-deriving instance
-    ( P.Eq (PublicKey 2048 ctx)
-    , P.Eq (VarByteString 320 ctx)
-    ) => P.Eq (Certificate ctx)
-deriving instance
-    ( P.Show (PublicKey 2048 ctx)
-    , P.Show (VarByteString 320 ctx)
-    ) => P.Show (Certificate ctx)
-deriving instance
-    ( NFData (PublicKey 2048 ctx)
-    , NFData (VarByteString 320 ctx)
-    ) => NFData (Certificate ctx)
+deriving instance HEq ctx => P.Eq (Certificate ctx)
+deriving instance HShow ctx => P.Show (Certificate ctx)
+deriving instance HNFData ctx => NFData (Certificate ctx)
 instance
     ( SymbolicData (PublicKey 2048 ctx)
     , Symbolic ctx
@@ -69,8 +61,7 @@ instance Symbolic ctx => FromJSON (Certificate ctx) where
         pure $ Certificate kidBs pubKey
 
 bsToNat :: BS.ByteString -> Natural
-bsToNat bs = BS.foldl' (\i b -> (i `B.shiftL` 8) + P.fromIntegral b) 0 bs
-
+bsToNat = BS.foldl' (\i b -> (i `B.shiftL` 8) + P.fromIntegral b) 0
 
 -- | RSA Private key with Key ID
 --
@@ -81,18 +72,9 @@ data SigningKey ctx
         }
     deriving Generic
 
-deriving instance
-    ( P.Eq (PrivateKey 2048 ctx)
-    , P.Eq (VarByteString 320 ctx)
-    ) => P.Eq (SigningKey ctx)
-deriving instance
-    ( P.Show (PrivateKey 2048 ctx)
-    , P.Show (VarByteString 320 ctx)
-    ) => P.Show (SigningKey ctx)
-deriving instance
-    ( NFData (PrivateKey 2048 ctx)
-    , NFData (VarByteString 320 ctx)
-    ) => NFData (SigningKey ctx)
+deriving instance HEq ctx => P.Eq (SigningKey ctx)
+deriving instance HShow ctx => P.Show (SigningKey ctx)
+deriving instance HNFData ctx => NFData (SigningKey ctx)
 instance
     ( SymbolicData (PrivateKey 2048 ctx)
     , Symbolic ctx
