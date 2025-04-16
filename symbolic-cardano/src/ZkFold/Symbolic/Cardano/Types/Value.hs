@@ -13,6 +13,7 @@ import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number    (KnownNat)
+import           ZkFold.Base.Data.HFunctor.Classes   (HEq)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))

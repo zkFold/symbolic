@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
@@ -8,6 +8,7 @@ import           GHC.Generics                        (Generic)
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
+import           ZkFold.Base.Data.HFunctor.Classes   (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
