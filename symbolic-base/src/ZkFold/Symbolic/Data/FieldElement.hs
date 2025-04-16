@@ -12,6 +12,7 @@ import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Generic, Par1 (..))
 import           Prelude                          (Integer)
 import qualified Prelude                          as Haskell
+import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
-import Test.QuickCheck (Arbitrary (..))
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
