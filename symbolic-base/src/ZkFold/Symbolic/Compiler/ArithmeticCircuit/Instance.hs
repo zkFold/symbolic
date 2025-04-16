@@ -1,5 +1,6 @@
-{-# OPTIONS_GHC -Wno-orphans     #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# OPTIONS_GHC -Wno-orphans     #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance where
 
@@ -11,8 +12,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           GHC.Generics                                        (Par1 (..))
-import           Prelude                                             (Show, head, mempty, pure, return, show, ($), (++),
-                                                                      (.), (<$>), (<))
+import           Prelude                                             (head, mempty, pure, return, ($), (.), (<$>), (<))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
@@ -96,13 +96,6 @@ createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par
       v' <- newAssigned (Haskell.const zero)
       rangeConstraint v' b
       return v
-
--- TODO: make it more readable
-instance (Show a, Show (o (Var a i)), Show (Var a i), Show (Rep i), Haskell.Ord (Rep i)) => Show (ArithmeticCircuit a i o) where
-    show r = "ArithmeticCircuit { acSystem = " ++ show (acSystem r)
-                          ++ "\n, acRange = " ++ show (acLookup r)
-                          ++ "\n, acOutput = " ++ show (acOutput r)
-                          ++ " }"
 
 -- TODO: add witness generation info to the JSON object
 instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), ToJSON (Rep i), ToJSON (LookupType a), ToJSONKey (LookupType a)) => ToJSON (ArithmeticCircuit a i o) where

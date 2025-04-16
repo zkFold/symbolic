@@ -83,6 +83,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Functor.Classes (Show1 (liftShowsPrec, liftShowList))
+import ZkFold.Base.Data.HFunctor.Classes (HShow (..), HNFData (..))
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -147,9 +149,27 @@ deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
 deriving via (GenericSemigroupMonoid (ArithmeticCircuit a i o))
   instance (Ord a, Ord (Rep i), o ~ U1) => Monoid (ArithmeticCircuit a i o)
 
-instance (NFData a, NFData1 o, NFData (Rep i))
-    => NFData (ArithmeticCircuit a i o) where
-  rnf (ArithmeticCircuit s lf l w f o) = rnf (s, lf, l, w, f) `seq` liftRnf rnf o
+instance (Show a, Show (Rep i), Ord (Rep i), Show1 o) =>
+    Show (ArithmeticCircuit a i o) where
+  showsPrec = hliftShowsPrec liftShowsPrec liftShowList
+
+-- TODO: make it more readable
+instance (Show a, Show (Rep i), Ord (Rep i)) =>
+    HShow (ArithmeticCircuit a i) where
+  hliftShowsPrec f _ _ r =
+    showString "ArithmeticCircuit "
+    . showString "{ acSystem = " . shows (acSystem r)
+    . showString "\n, acRange = " . shows (acLookup r)
+    . showString "\n, acOutput = " . f showsPrec showList 0 (acOutput r)
+    . showString " }"
+
+instance (NFData a, NFData (Rep i), NFData1 o) =>
+    NFData (ArithmeticCircuit a i o) where
+  rnf = hliftRnf liftRnf
+
+instance (NFData a, NFData (Rep i)) => HNFData (ArithmeticCircuit a i) where
+  hliftRnf r (ArithmeticCircuit s lf l w f o) =
+    rnf (s, lf, l, w, f) `seq` r rnf o
 
 -- | Variables are SHA256 digests (32 bytes)
 type VarField = Zp (2 ^ (32 * 8))

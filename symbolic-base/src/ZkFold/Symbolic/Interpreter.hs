@@ -6,22 +6,23 @@
 module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
 
 import           Control.Applicative                               (Applicative)
-import           Control.DeepSeq                                   (NFData)
+import           Control.DeepSeq                                   (NFData (..), NFData1 (..))
 import           Control.Monad                                     (Monad, return)
 import           Data.Aeson                                        (FromJSON, ToJSON)
-import           Data.Eq                                           (Eq)
-import           Data.Function                                     (id, ($), (.))
+import           Data.Eq                                           (Eq (..))
+import           Data.Function                                     (id, on, ($), (.))
 import           Data.Functor                                      (Functor, (<$>))
 import           Data.Functor.Identity                             (Identity (..))
 import           Data.List                                         (foldl')
 import           Data.List.Infinite                                (toList)
 import           Data.Tuple                                        (uncurry)
 import           GHC.Generics                                      (Generic, Par1 (..))
-import           Text.Show                                         (Show)
+import           Text.Show                                         (Show (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.HFunctor
+import           ZkFold.Base.Data.HFunctor.Classes                 (HEq (..), HNFData (..), HShow (..))
 import           ZkFold.Base.Data.Package
 import           ZkFold.Prelude                                    (take)
 import           ZkFold.Symbolic.Class
@@ -30,8 +31,20 @@ import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
 
 newtype Interpreter a f = Interpreter { runInterpreter :: f a }
-    deriving (Eq, Show, Generic, NFData)
+    deriving (Eq, Show, Generic)
     deriving newtype (FromJSON, ToJSON)
+
+instance Eq a => HEq (Interpreter a) where
+  hliftEq f = f (==) `on` runInterpreter
+
+instance Show a => HShow (Interpreter a) where
+  hliftShowsPrec f _ p = f showsPrec showList p . runInterpreter
+
+instance (NFData a, NFData1 f) => NFData (Interpreter a f) where
+  rnf = hliftRnf liftRnf
+
+instance NFData a => HNFData (Interpreter a) where
+  hliftRnf f (Interpreter x) = f rnf x
 
 instance HFunctor (Interpreter a) where
   hmap f (Interpreter x) = Interpreter (f x)
