@@ -15,7 +15,6 @@ jobs:
         os: [ubuntu-latest]
         cabal: [3.14.2.0]
         ghc: [9.12.2]
-        test-group: ['', 'Algebra', 'Serialization', 'Protocols', 'Symbolic compiler', 'Symbolic data', 'Symbolic cryptography']
 
     runs-on: ${{ matrix.os }}
 
@@ -70,12 +69,25 @@ jobs:
       run: |
         cabal build all -f Pedantic
 
-    - name: Test
-      if: matrix.test-group != ''
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', matrix.test-group) }}'
+    - name: Test Algebra
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}'
+    
+    - name: Test Serialization
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}'
+
+    - name: Test Protocols
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}'
+
+    - name: Test Symbolic compiler
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}'
+
+    - name: Test Symbolic data
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}'
+
+    - name: Test Symbolic cryptography
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}'
 
     - name: Compiler benchmark
-      if: matrix.test-group == ''
       run: cabal bench compiler-golden-stats
 
     # - name: Check cabal file
