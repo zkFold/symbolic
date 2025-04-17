@@ -15,16 +15,16 @@ import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
 specFieldElement' = do
-  describe ("FieldElement " ++ " specification") $ do
+  describe ("FieldElement" ++ " specification") $ do
     specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp"
-    specSymbolicData @(Zp p) @FieldElement "compiles correctly"
-    specSymbolicFunction2 @(Zp p) @FieldElement "adds correctly" (+)
-    specSymbolicFunction1 @(Zp p) @FieldElement "negates correctly" negate
-    specSymbolicFunction2 @(Zp p) @FieldElement "subtracts correctly" (-)
-    specSymbolicFunction2 @(Zp p) @FieldElement "multiplies correctly" (*)
-    specSymbolicFunction1 @(Zp p) @FieldElement "inverts correctly" finv
-    specSymbolicFunction2 @(Zp p) @FieldElement "divides correctly" (//)
-    specSymbolicFunction1WithPar @Integer @(Zp p) @FieldElement "powers correctly" (\e x -> x ^ e)
+    specSymbolicData @(Zp p) @FieldElement "FieldElement"
+    specSymbolicFunction2 @(Zp p) @FieldElement "addition" (+)
+    specSymbolicFunction1 @(Zp p) @FieldElement "negation" negate
+    specSymbolicFunction2 @(Zp p) @FieldElement "subtraction" (-)
+    specSymbolicFunction2 @(Zp p) @FieldElement "multiplication" (*)
+    specSymbolicFunction1 @(Zp p) @FieldElement "inversion" finv
+    specSymbolicFunction2 @(Zp p) @FieldElement "division" (//)
+    specSymbolicFunction1WithPar @Integer @(Zp p) @FieldElement "exponentiation" (\e x -> x ^ e)
     -- Type-specific tests go here
 
 specFieldElement :: Spec

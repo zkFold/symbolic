@@ -175,6 +175,7 @@ acPrint ac = do
 
 ---------------------------------- Testing -------------------------------------
 
+-- TODO: `checkClosedCircuit` should check all constraint types
 checkClosedCircuit
     :: forall a o
      . Arithmetic a
