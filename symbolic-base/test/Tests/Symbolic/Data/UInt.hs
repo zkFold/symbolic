@@ -11,7 +11,7 @@ import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint
 import           Data.Constraint.Nat                         (timesNat)
-import           Data.Function                               (($), id)
+import           Data.Function                               (id, ($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
@@ -20,6 +20,8 @@ import qualified Prelude                                     as P
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
+import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
+                                                              specSymbolicFunction1, specSymbolicFunction2)
 
 import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -37,7 +39,6 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -172,7 +173,7 @@ specUInt' = do
                 (s, t, _) = with2n @n (eea zpX zpY)
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
             return $ with2n @n ((zpX * s) `mod` zpY === one) .&. with2n @n ((zpY * t) `mod` zpX === one)
-        
+
         it "extends correctly" $ do
             x <- toss m
             let acUint =  with2n @n (fromConstant x) :: UInt n rs (AC (Zp p))

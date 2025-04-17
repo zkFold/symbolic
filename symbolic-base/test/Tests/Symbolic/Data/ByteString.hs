@@ -8,7 +8,7 @@ import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusNat)
-import           Data.Function                               (($), id)
+import           Data.Function                               (id, ($))
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
@@ -17,6 +17,8 @@ import qualified Prelude                                     as Haskell
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, Property, chooseInteger, withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
+import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
+                                                              specSymbolicFunction1, specSymbolicFunction2)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -32,7 +34,6 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)

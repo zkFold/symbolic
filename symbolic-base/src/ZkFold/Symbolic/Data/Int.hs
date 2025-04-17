@@ -24,10 +24,10 @@ import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt n r c}

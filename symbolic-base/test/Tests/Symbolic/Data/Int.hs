@@ -8,15 +8,16 @@ module Tests.Symbolic.Data.Int (specInt) where
 
 import           Control.Monad                               (return, when)
 import           Data.Binary                                 (Binary)
-import           Data.Function                               (($), id)
+import           Data.Function                               (id, ($))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
 import           Prelude                                     (Integer, show, type (~))
 import qualified Prelude                                     as P
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, chooseInteger, elements, (.&.), (.||.),
-                                                              (===))
+import           Test.QuickCheck                             (Gen, chooseInteger, elements, (.&.), (.||.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
+import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
+                                                              specSymbolicFunction1, specSymbolicFunction2)
 
 import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -33,7 +34,6 @@ import           ZkFold.Symbolic.Data.Int
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Integer
 toss (P.fromIntegral -> x) = chooseInteger (-x, x)
