@@ -117,6 +117,7 @@ library
       ZkFold.Base.Control.HApplicative
       ZkFold.Base.Data.ByteString
       ZkFold.Base.Data.HFunctor
+      ZkFold.Base.Data.HFunctor.Classes
       ZkFold.Base.Data.List.Infinite
       ZkFold.Base.Data.Matrix
       ZkFold.Base.Data.Orphans

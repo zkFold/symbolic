@@ -4,7 +4,6 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
--- import           Control.DeepSeq                         (NFData)
 -- import           Data.Type.Equality
 -- import           GHC.TypeLits                            (KnownNat, Log2)
 -- import qualified GHC.TypeNats
@@ -58,7 +57,6 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 --      , SemiEuclidean (UInt 256 'Auto context)
 --      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
 --      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      , NFData (context (Vector 64))
 --      )
 --     => ByteString 256 context
 --     -> ByteString 256 context
@@ -91,7 +89,6 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 --      , SemiEuclidean (UInt 256 'Auto context)
 --      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
 --      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      , NFData (context (Vector 64))
 --      )
 --     => ByteString 256 context
 --     -> ByteString 256 context
@@ -138,7 +135,6 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 --      , SemiEuclidean (UInt 256 'Auto context)
 --      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
 --      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      , NFData (context (Vector 64))
 --      )
 --     =>ZKPassResult context
 --     -> Bool context

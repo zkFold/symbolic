@@ -11,7 +11,7 @@ import           Data.Aeson                       (FromJSON (..), ToJSON (..))
 import           Data.Constraint.Nat              (Max)
 import           Data.Distributive                (Distributive (..))
 import           Data.Foldable                    (fold)
-import           Data.Functor.Classes             (Show1)
+import           Data.Functor.Classes             (Eq1, Show1)
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import           Data.These                       (These (..))
 import qualified Data.Vector                      as V
@@ -33,7 +33,7 @@ import           ZkFold.Base.Data.ByteString      (Binary (..))
 import           ZkFold.Prelude                   (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-    deriving (Show, Show1, Eq, Functor, Foldable, Traversable, Generic, NFData, NFData1, Ord)
+    deriving (Show, Show1, Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, Ord)
     deriving newtype (FromJSON, ToJSON)
 
 -- helper
