@@ -72,7 +72,7 @@ jobs:
 
     - name: Test
       if: matrix.test-group != ''
-      run: cabal test all --test-option="--match=Test group':' ${{ matrix.test-group }}"
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', matrix.test-group) }}'
 
     - name: Compiler benchmark
       if: matrix.test-group == ''
