@@ -16,6 +16,7 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import Tests.Symbolic.Data.Common (specSymbolicData)
 
 type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property
@@ -47,11 +48,9 @@ specFieldElement' = do
     it "has zero" $ execAcFieldElement @p zero === execInterpreterFieldElement zero
     it "has one" $ execAcFieldElement @p one === execInterpreterFieldElement one
     it "adds correctly" $ isHom @p (+) (+)
-    it "negates correctly" $ \(x :: Zp p) ->
-      execAcFieldElement @p (negate $ fromConstant x) === execInterpreterFieldElement (negate $ fromConstant x)
+    specSymbolicData @(Zp p) @(FieldElement) "negates correctly" negate
     it "multiplies correctly" $ isHom @p (*) (*)
-    it "inverts correctly" $ \(x :: Zp p) ->
-      execAcFieldElement @p (finv $ fromConstant x) === execInterpreterFieldElement @p (finv $ fromConstant x)
+    specSymbolicData @(Zp p) @(FieldElement) "inverts correctly" finv
     it "divides correctly" $ isHom @p (//) (//)
     it "powers correctly" $ \(x :: Zp p) (e :: Integer) ->
       execAcFieldElement @p (fromConstant x ^ e) === x ^ e
