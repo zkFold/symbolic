@@ -6,17 +6,15 @@
 module Tests.Symbolic.Data.Int (specInt) where
 
 
-import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
 import           Data.Binary                                 (Binary)
-import           Data.Function                               (($))
-import           Data.Functor                                ((<$>))
+import           Data.Function                               (($), id)
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
 import           Prelude                                     (Integer, show, type (~))
 import qualified Prelude                                     as P
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, Property, chooseInteger, elements, (.&.), (.||.),
+import           Test.QuickCheck                             (Gen, chooseInteger, elements, (.&.), (.||.),
                                                               (===))
 import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 
@@ -35,6 +33,7 @@ import           ZkFold.Symbolic.Data.Int
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Integer
 toss (P.fromIntegral -> x) = chooseInteger (-x, x)
@@ -64,24 +63,6 @@ execAcInt (Int (UInt v)) = exec v
 execZpInt :: forall a n r . Int n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
 execZpInt (Int (UInt (Interpreter v))) = v
 
-type BinaryOp a = a -> a -> a
-
-type UBinary n b r = BinaryOp (Int n b r)
-
-isHom
-    :: forall n p r
-    .  KnownNat n
-    => PrimeField (Zp p)
-    => KnownRegisterSize r
-    => UBinary n r (Interpreter (Zp p))
-    -> UBinary n r (AC (Zp p))
-    -> BinaryOp Integer
-    -> Integer
-    -> Integer
-    -> Property
-isHom f g h x y = execAcInt (fromConstant x `g` fromConstant y) === execZpInt (fromConstant x `f` fromConstant y)
-              .&. execZpInt (fromConstant x `f` fromConstant y) === execZpInt @(Zp p) @n @r (fromConstant $ x `h` y)
-
 -- with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
 -- with2n = withDict (timesNat @2 @n)
 
@@ -97,11 +78,14 @@ specInt' = do
     let n = value @n
         m = 2 ^ (n -! 1)
     describe ("Int" ++ show n ++ " specification") $ do
-        it "Zp embeds Integer" $ do
-            x <- toss m
-            return $ toConstant @(Int n rs (Interpreter (Zp p))) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: Int n rs (Interpreter (Zp p))) ->
-            fromConstant (toConstant x) === x
+        specConstantRoundtrip @(Zp p) @(Int n rs) ("Int" ++ show n) "Integer" (toss m)
+        specSymbolicFunction1 @(Zp p) @(Int n rs) "identity" id
+        specSymbolicFunction0 @(Zp p) @(Int n rs) "zero" zero
+        specSymbolicFunction2 @(Zp p) @(Int n rs) "addition" (+)
+        specSymbolicFunction1 @(Zp p) @(Int n rs) "negate" negate
+        specSymbolicFunction2 @(Zp p) @(Int n rs) "subtraction" (-)
+        specSymbolicFunction0 @(Zp p) @(Int n rs) "one" one
+        specSymbolicFunction2 @(Zp p) @(Int n rs) "multiplication" (*)
         it "IsNegative correct" $ do
             x <- tossp m
             return $ evalBoolVec @(Zp p) (isNegative @n @rs $ fromConstant x) === 0 .&.
@@ -115,16 +99,6 @@ specInt' = do
             return $ toConstant (abs (fromConstant (-x) :: Int n rs (Interpreter (Zp p)))) === x .&.
                     toConstant (abs (fromConstant x :: Int n rs (Interpreter (Zp p)))) === x .&.
                     toConstant (abs (zero :: Int n rs (Interpreter (Zp p)))) === 0
-        it "AC embeds Integer" $ do
-            x <- toss m
-            return $ execAcInt @(Zp p) @n @rs (fromConstant x) === execZpInt @_ @n @rs (fromConstant x)
-        it "adds correctly" $ isHom @n @p @rs (+) (+) (+) <$> toss m <*> toss m
-        it "has zero" $ execAcInt @(Zp p) @n @rs zero === execZpInt @_ @n @rs zero
-        it "negates correctly" $ do
-            x <- toss m
-            return $ execAcInt @(Zp p) @n @rs (negate (fromConstant x)) === execZpInt @_ @n @rs (negate (fromConstant x))
-        it "multiplies correctly" $ isHom @n @p @rs (*) (*) (*) <$> toss m <*> toss m
-        it "subtracts correctly" $ isHom @n @p @rs (-) (-) (-) <$> toss m <*> toss m
         it "iso uint correctly" $ do
             x <- toss m
             let ix = fromConstant x :: Int n rs (AC (Zp p))

@@ -7,21 +7,24 @@ import           Data.List                                   ((++))
 import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
 import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction1,
-                                                              specSymbolicFunction1WithPar, specSymbolicFunction2)
+                                                              specSymbolicFunction1WithPar, specSymbolicFunction2, specSymbolicFunction0)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import Test.QuickCheck (arbitrary)
 
 specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
 specFieldElement' = do
   describe ("FieldElement" ++ " specification") $ do
-    specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp"
+    specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp" arbitrary
     specSymbolicFunction1 @(Zp p) @FieldElement "identity" id
+    specSymbolicFunction0 @(Zp p) @FieldElement "zero" zero
     specSymbolicFunction2 @(Zp p) @FieldElement "addition" (+)
     specSymbolicFunction1 @(Zp p) @FieldElement "negation" negate
     specSymbolicFunction2 @(Zp p) @FieldElement "subtraction" (-)
+    specSymbolicFunction0 @(Zp p) @FieldElement "one" one
     specSymbolicFunction2 @(Zp p) @FieldElement "multiplication" (*)
     specSymbolicFunction1 @(Zp p) @FieldElement "inversion" finv
     specSymbolicFunction2 @(Zp p) @FieldElement "division" (//)

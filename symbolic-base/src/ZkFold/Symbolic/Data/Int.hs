@@ -27,6 +27,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt n r c}
@@ -36,6 +37,7 @@ deriving instance HNFData c => NFData (Int n r c)
 deriving instance HEq c => Haskell.Eq (Int n r c)
 deriving instance HShow c => Haskell.Show (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
+deriving instance (KnownRegisters c n r, KnownNat n, KnownRegisterSize r, Symbolic c) => SymbolicInput (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)

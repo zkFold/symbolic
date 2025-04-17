@@ -6,13 +6,12 @@
 
 module Tests.Symbolic.Data.UInt (specUInt) where
 
-import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return, when)
 import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint
 import           Data.Constraint.Nat                         (timesNat)
-import           Data.Function                               (($))
+import           Data.Function                               (($), id)
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (Par1 (Par1), U1)
@@ -38,6 +37,7 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -65,11 +65,6 @@ execAcUint (UInt v) = exec v
 
 execZpUint :: forall a n r . UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
 execZpUint (UInt (Interpreter v)) = v
-
-overflowSub :: forall n . KnownNat n => BinaryOp Natural
-overflowSub x y
-  | x > y = x -! y
-  | P.otherwise = 2 ^ value @n + x -! y
 
 type BinaryOp a = a -> a -> a
 
@@ -108,21 +103,25 @@ specUInt' = do
     let n = value @n
         m = 2 ^ n -! 1
     describe ("UInt" ++ show n ++ " specification") $ do
-        it "Zp embeds Integer" $ do
+        specConstantRoundtrip @(Zp p) @(UInt n rs) ("UInt" ++ show n) "Natural" (toss m)
+        specSymbolicFunction1 @(Zp p) @(UInt n rs) "identity" id
+        specSymbolicFunction0 @(Zp p) @(UInt n rs) "zero" zero
+        specSymbolicFunction2 @(Zp p) @(UInt n rs) "addition" (+)
+        specSymbolicFunction1 @(Zp p) @(UInt n rs) "negate" negate
+        specSymbolicFunction2 @(Zp p) @(UInt n rs) "subtraction" (-)
+        specSymbolicFunction0 @(Zp p) @(UInt n rs) "one" one
+        specSymbolicFunction2 @(Zp p) @(UInt n rs) "multiplication" (*)
+        it "strictly adds correctly" $ do
             x <- toss m
-            return $ toConstant @(UInt n rs (Interpreter (Zp p))) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: UInt n rs (Interpreter (Zp p))) ->
-            fromConstant (toConstant x) === x
-        it "AC embeds Integer" $ do
+            isHom @n @p @rs strictAdd strictAdd (+) x <$> toss (m -! x)
+        it "strictly subtracts correctly" $ do
             x <- toss m
-            return $ execAcUint @(Zp p) @n @rs (fromConstant x) === execZpUint @_ @n @rs (fromConstant x)
-        it "adds correctly" $ isHom @n @p @rs (+) (+) (+) <$> toss m <*> toss m
-        it "has zero" $ execAcUint @(Zp p) @n @rs zero === execZpUint @_ @n @rs zero
-        it "negates correctly" $ do
+            isHom @n @p @rs strictSub strictSub (-!) x <$> toss x
+        it "strictly multiplies correctly" $ do
             x <- toss m
-            return $ execAcUint @(Zp p) @n @rs (negate (fromConstant x)) === execZpUint @_ @n @rs (negate (fromConstant x))
-        it "multiplies correctly" $ isHom @n @p @rs (*) (*) (*) <$> toss m <*> toss m
-        it "subtracts correctly" $ isHom @n @p @rs (-) (-) (overflowSub @n) <$> toss m <*> toss m
+            isHom @n @p @rs strictMul strictMul (*) x <$> toss (m `P.div` x)
+
+        -- Type-specific tests go here
         it "iso uint correctly" $ do
             x <- toss m
             let bx = fromConstant x :: ByteString n (AC (Zp p))
@@ -173,17 +172,7 @@ specUInt' = do
                 (s, t, _) = with2n @n (eea zpX zpY)
             -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
             return $ with2n @n ((zpX * s) `mod` zpY === one) .&. with2n @n ((zpY * t) `mod` zpX === one)
-        it "has one" $ execAcUint @(Zp p) @n @rs one === execZpUint @_ @n @rs one
-        it "strictly adds correctly" $ do
-            x <- toss m
-            isHom @n @p @rs strictAdd strictAdd (+) x <$> toss (m -! x)
-        it "strictly subtracts correctly" $ do
-            x <- toss m
-            isHom @n @p @rs strictSub strictSub (-!) x <$> toss x
-        it "strictly multiplies correctly" $ do
-            x <- toss m
-            isHom @n @p @rs strictMul strictMul (*) x <$> toss (m `P.div` x)
-
+        
         it "extends correctly" $ do
             x <- toss m
             let acUint =  with2n @n (fromConstant x) :: UInt n rs (AC (Zp p))

@@ -5,6 +5,7 @@
 
 module Tests.Symbolic.Data.Common
   ( specConstantRoundtrip
+  , specSymbolicFunction0
   , specSymbolicFunction1
   , specSymbolicFunction1WithPar
   , specSymbolicFunction2
@@ -16,15 +17,15 @@ import           Data.Function                    (const, id, ($))
 import           Data.Functor.Rep                 (Representable (..))
 import           Data.Typeable                    (Proxy (..))
 import           GHC.Generics                     (U1 (..), type (:*:) (..))
-import           Prelude                          (String, type (~), (++))
+import           Prelude                          (String, type (~), (++), return)
 import           Test.Hspec                       (Spec, describe)
-import           Test.QuickCheck                  (Arbitrary (..), (===))
+import           Test.QuickCheck                  (Arbitrary (..), (===), Gen)
 import           Tests.Symbolic.ArithmeticCircuit (it)
 import           Text.Show                        (Show)
 
 import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), ToConstant (..))
 import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField))
-import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, checkCircuit, compileWith, eval)
+import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, checkCircuit, compileWith, eval, exec, checkClosedCircuit)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
@@ -39,19 +40,19 @@ import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 
 specConstantRoundtrip :: forall a x .
   ( Arbitrary (x (Interpreter a))
-  , Arbitrary (Const (x (Interpreter a)))
   , Eq (x (Interpreter a))
   , Eq (Const (x (Interpreter a)))
   , Show (x (Interpreter a))
   , Show (Const (x (Interpreter a)))
   , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
   , ToConstant (x (Interpreter a))
-  ) => String -> String -> Spec
-specConstantRoundtrip symType hType = do
+  ) => String -> String -> Gen (Const (x (Interpreter a))) -> Spec
+specConstantRoundtrip symType hType gen = do
   it (symType ++ " embeds " ++ hType) $
     \(x :: x (Interpreter a)) -> fromConstant (toConstant x :: Const (x (Interpreter a))) === x
-  it (hType ++ " embeds " ++ symType) $
-    \(x :: Const (x (Interpreter a))) -> toConstant (fromConstant x :: x (Interpreter a)) === x
+  it (hType ++ " embeds " ++ symType) $ do
+    (x :: Const (x (Interpreter a))) <- gen
+    return $ toConstant (fromConstant x :: x (Interpreter a)) === x
 
 type MatchingSymbolicInput x i c c' =
   ( SymbolicInput (x c)
@@ -78,6 +79,15 @@ type MatchingSymbolicOutput y o c c' =
   , BaseField (Context (y c)) ~ BaseField (Context (y c'))
   , Binary (BaseField (Context (y c)))
   )
+
+evalCircuit0 :: forall a x o . (Arithmetic a, Binary a, Representable o
+  , SymbolicInput (x (Interpreter a))
+  , Context (x (Interpreter a)) ~ Interpreter a
+  , Layout (x (Interpreter a)) ~ o
+  , Payload (x (Interpreter a)) ~ U1
+  ) => ArithmeticCircuit a U1 o -> x (Interpreter a)
+evalCircuit0 ac =
+  restore $ const (Interpreter $ exec ac, U1)
 
 evalCircuit1 :: forall a x y i o . (Arithmetic a, Binary a, Representable i, Representable o
   , SymbolicInput (x (Interpreter a))
@@ -111,6 +121,15 @@ evalCircuit2 ac x y =
     iy = runInterpreter $ arithmetize y Proxy
     input = ix :*: iy
 
+compileCircuit0 :: forall a x o . (Binary a
+  , SymbolicInput (x (ArithmeticCircuit a U1))
+  , Context (x (ArithmeticCircuit a U1)) ~ ArithmeticCircuit a U1
+  , Layout (x (ArithmeticCircuit a U1)) ~ o
+  , Payload (x (ArithmeticCircuit a U1)) ~ U1
+  ) => (forall c . Symbolic c => x c) -> ArithmeticCircuit a U1 o
+compileCircuit0 v =
+  compileWith @a id (\U1 -> (U1, U1)) $ v @(ArithmeticCircuit a U1)
+
 compileCircuit1 :: forall a x y i o . (Binary a, Representable i
   , SymbolicInput (x (ArithmeticCircuit a i))
   , Context (x (ArithmeticCircuit a i)) ~ ArithmeticCircuit a i
@@ -139,6 +158,20 @@ compileCircuit2 :: forall a x y z ix iy i o . (Binary a, Representable i
   ) => (forall c . Symbolic c => x c -> y c -> z c) -> ArithmeticCircuit a i o
 compileCircuit2 func =
   compileWith @a id (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1)) $ func @(ArithmeticCircuit a i)
+
+type SymbolicFunction0 x = forall c . Symbolic c
+  => x c
+
+specSymbolicFunction0 :: forall a x o .
+  ( Show a
+  , Eq (x (Interpreter a))
+  , Show (x (Interpreter a))
+  , MatchingSymbolicInput x o (Interpreter a) (ArithmeticCircuit a U1)
+  ) => String -> SymbolicFunction0 x -> Spec
+specSymbolicFunction0 desc v = describe desc $ do
+  it "evaluates correctly" $ evalCircuit0 @a (compileCircuit0 v) === v
+  it "satisfies constraints" $
+    checkClosedCircuit (compileCircuit0 @a v :: ArithmeticCircuit a U1 o)
 
 type SymbolicFunction1 x y = forall c . Symbolic c
   => x c -> y c

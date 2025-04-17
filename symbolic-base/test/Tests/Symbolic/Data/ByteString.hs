@@ -3,13 +3,12 @@
 
 module Tests.Symbolic.Data.ByteString (specByteString) where
 
-import           Control.Applicative                         ((<*>))
 import           Control.Monad                               (return)
 import           Data.Aeson                                  (decode, encode)
 import           Data.Binary                                 (Binary)
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusNat)
-import           Data.Function                               (($))
+import           Data.Function                               (($), id)
 import           Data.Functor                                ((<$>))
 import           Data.List                                   ((++))
 import           GHC.Generics                                (U1)
@@ -33,6 +32,7 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators            (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import Tests.Symbolic.Data.Common (specConstantRoundtrip, specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction0)
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -47,9 +47,6 @@ eval (ByteString bits) = ByteString $ Interpreter (exec bits)
 type BinaryOp a = a -> a -> a
 
 type UBinary n b = BinaryOp (ByteString n b)
-
-isHom :: (KnownNat n, PrimeField (Zp p)) => UBinary n (Interpreter (Zp p)) -> UBinary n (AC (Zp p)) -> Natural -> Natural -> Property
-isHom f g x y = eval (fromConstant x `g` fromConstant y) === fromConstant x `f` fromConstant y
 
 isRightNeutral
     :: (KnownNat n, PrimeField (Zp p))
@@ -142,15 +139,14 @@ specByteString' = do
     let n = Haskell.fromIntegral $ value @n
         m = 2 Haskell.^ n -! 1
     describe ("ByteString" ++ show n ++ " specification") $ do
-
-        it "Zp embeds Integer" $ do
-            x <- toss m
-            return $ toConstant @(ByteString n (Interpreter (Zp p))) (fromConstant x) === x
-        it "Integer embeds Zp" $ \(x :: ByteString n (Interpreter (Zp p))) ->
-            fromConstant (toConstant x) === x
-        it "AC embeds Integer" $ do
-            x <- toss m
-            return $ eval @(Zp p) @n (fromConstant x) === fromConstant x
+        specConstantRoundtrip @(Zp p) @(ByteString n) ("ByteString" ++ show n) "Natural" (toss m)
+        specSymbolicFunction1 @(Zp p) @(ByteString n) "identity" id
+        specSymbolicFunction0 @(Zp p) @(ByteString n) "true" true
+        specSymbolicFunction0 @(Zp p) @(ByteString n) "false" false
+        specSymbolicFunction2 @(Zp p) @(ByteString n) "bitwise OR" (||)
+        specSymbolicFunction2 @(Zp p) @(ByteString n) "bitwise XOR" xor
+        specSymbolicFunction2 @(Zp p) @(ByteString n) "bitwise AND" (&&)
+        specSymbolicFunction1 @(Zp p) @(ByteString n) "bitwise NOT" not
 
         -- TODO: remove withMaxSuccess when eval is optimised
         it "applies sum modulo n via UInt correctly" $ withMaxSuccess 10 $ do
@@ -166,18 +162,10 @@ specByteString' = do
 
 
             return $ eval acSum === zpSum
-        it "applies bitwise OR correctly" $ isHom @n @p (||) (||) <$> toss m <*> toss m
-        it "applies bitwise XOR correctly" $ isHom @n @p xor xor <$> toss m <*> toss m
-        it "has false" $ eval @(Zp p) @n false === false
         it "obeys left neutrality for OR" $ isLeftNeutral @n @p (||) (||) false false <$> toss m
         it "obeys right neutrality for OR" $ isRightNeutral @n @p (||) (||) false false <$> toss m
         it "obeys left neutrality for XOR" $ isLeftNeutral @n @p xor xor false false <$> toss m
         it "obeys right neutrality for XOR" $ isRightNeutral @n @p xor xor false false <$> toss m
-        it "applies bitwise NOT correctly" $ do
-            x <- toss m
-            return $ eval @(Zp p) @n (not (fromConstant x)) === not (fromConstant x)
-        it "Applies bitwise AND correctly" $ isHom @n @p (&&) (&&) <$> toss m <*> toss m
-        it "has true" $ eval @(Zp p) @n true === true
         it "obeys left multiplicative neutrality" $ isLeftNeutral @n @p (&&) (&&) true true <$> toss m
         it "obeys right multiplicative neutrality" $ isRightNeutral @n @p (&&) (&&) true true <$> toss m
         it "performs bit shifts correctly" $ do
