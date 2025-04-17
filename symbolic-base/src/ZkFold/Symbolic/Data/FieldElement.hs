@@ -12,6 +12,7 @@ import           Data.Tuple                        (snd)
 import           GHC.Generics                      (Generic, Par1 (..))
 import           Prelude                           (Integer)
 import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
