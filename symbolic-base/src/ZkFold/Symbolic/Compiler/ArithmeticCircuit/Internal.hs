@@ -44,12 +44,13 @@ import           Data.Bifunctor                                               (B
 import           Data.Binary                                                  (Binary)
 import           Data.ByteString                                              (ByteString)
 import           Data.Foldable                                                (fold, toList)
+import           Data.Functor.Classes                                         (Show1 (liftShowList, liftShowsPrec))
 import           Data.Functor.Rep
-import           Data.List.Infinite                                           (Infinite)
-import qualified Data.List.Infinite                                           as I
 #if __GLASGOW_HASKELL__ < 912
 import           Data.List                                                    (foldl')
 #endif
+import           Data.List.Infinite                                           (Infinite)
+import qualified Data.List.Infinite                                           as I
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
@@ -72,6 +73,7 @@ import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (P
 import           ZkFold.Base.Control.HApplicative
 import           ZkFold.Base.Data.ByteString                                  (fromByteString, toByteString)
 import           ZkFold.Base.Data.HFunctor
+import           ZkFold.Base.Data.HFunctor.Classes                            (HNFData (..), HShow (..))
 import           ZkFold.Base.Data.Package
 import           ZkFold.Base.Data.Product
 import           ZkFold.Prelude                                               (take)
@@ -83,8 +85,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Functor.Classes (Show1 (liftShowsPrec, liftShowList))
-import ZkFold.Base.Data.HFunctor.Classes (HShow (..), HNFData (..))
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural

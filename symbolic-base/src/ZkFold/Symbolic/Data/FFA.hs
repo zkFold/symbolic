@@ -26,6 +26,7 @@ import           Text.Show                         (Show)
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field   (Zp)
 import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), type (^), value)
+import           ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
 import           ZkFold.Base.Data.Vector           (Vector)
 import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
@@ -41,7 +42,6 @@ import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
-import ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -198,7 +198,7 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeMonoid (FFA p r c) where
   one = fromConstant (one :: Zp p)
 
 instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
-  FFA nx ux + FFA ny uy = 
+  FFA nx ux + FFA ny uy =
       if isNative @p @r @c
         then FFA (nx + ny) zero
         else FFA nr ur
