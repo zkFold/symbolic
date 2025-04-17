@@ -9,6 +9,7 @@ import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Property, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
+import           Tests.Symbolic.Data.Common                  (specSymbolicData)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -16,7 +17,6 @@ import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement))
 import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-import Tests.Symbolic.Data.Common (specSymbolicData)
 
 type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property

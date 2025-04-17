@@ -5,23 +5,21 @@
 
 module Tests.Symbolic.Data.Common (specSymbolicData) where
 
-import           Data.Binary                     (Binary)
-import           Data.Function                   (($), const)
-import           GHC.Generics                    (U1 (..))
-import           Prelude                         (type (~), String)
-import           Test.Hspec                      (Spec)
-import           Test.QuickCheck                 (Property, Arbitrary (..), (===))
-import           Text.Show                       (Show)
+import           Data.Binary                      (Binary)
+import           Data.Eq                          (Eq)
+import           Data.Function                    (const, ($))
+import           Data.Typeable                    (Proxy (..))
+import           GHC.Generics                     (U1 (..))
+import           Prelude                          (String, type (~))
+import           Test.Hspec                       (Spec)
+import           Test.QuickCheck                  (Arbitrary (..), Property, (===))
+import           Tests.Symbolic.ArithmeticCircuit (it)
+import           Text.Show                        (Show)
 
-import           ZkFold.Symbolic.Class           (Symbolic)
-import           ZkFold.Symbolic.Compiler        (ArithmeticCircuit, exec)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData(..))
-import Data.Typeable (Proxy(..))
-import ZkFold.Symbolic.Class (embed, Symbolic (BaseField))
-import Data.Eq (Eq)
-import Tests.Symbolic.ArithmeticCircuit (it)
-import ZkFold.Symbolic.Data.Class (SymbolicOutput)
+import           ZkFold.Symbolic.Class            (Symbolic (BaseField), embed)
+import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
+import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 
 {-
   For all symbolic types we need to do the following:
