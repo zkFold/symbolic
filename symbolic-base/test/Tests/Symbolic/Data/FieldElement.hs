@@ -2,11 +2,11 @@
 
 module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
-import           Data.Function                               (($))
+import           Data.Function                               (($), id)
 import           Data.List                                   ((++))
 import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
-import           Tests.Symbolic.Data.Common                  (specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction1WithPar, specSymbolicData, specConstantRoundtrip)
+import           Tests.Symbolic.Data.Common                  (specSymbolicFunction1, specConstantRoundtrip, specSymbolicFunction2, specSymbolicFunction1WithPar)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
@@ -17,7 +17,7 @@ specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
 specFieldElement' = do
   describe ("FieldElement" ++ " specification") $ do
     specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp"
-    specSymbolicData @(Zp p) @FieldElement "FieldElement"
+    specSymbolicFunction1 @(Zp p) @FieldElement "identity" id
     specSymbolicFunction2 @(Zp p) @FieldElement "addition" (+)
     specSymbolicFunction1 @(Zp p) @FieldElement "negation" negate
     specSymbolicFunction2 @(Zp p) @FieldElement "subtraction" (-)
