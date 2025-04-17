@@ -3,7 +3,7 @@ module Main where
 import           Prelude                            hiding (Bool, Fractional (..), Num (..), drop, length, replicate,
                                                      take, (==))
 import           System.Random                      (RandomGen, initStdGen)
-import           Test.Hspec                         (Spec, hspec, describe)
+import           Test.Hspec                         (Spec, describe, hspec)
 import           Tests.Algebra.EllipticCurve        (specEllipticCurve)
 import           Tests.Algebra.Field                (specField)
 import           Tests.Algebra.GroebnerBasis        (specGroebner)
