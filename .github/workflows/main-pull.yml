@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
-        ghc: [9.12.1]
+        cabal: [3.14.2.0]
+        ghc: [9.12.2]
         test-group: ['', 'Algebra', 'Serialization', 'Protocols', 'Symbolic compiler', 'Symbolic data', 'Symbolic cryptography']
 
     runs-on: ${{ matrix.os }}
@@ -90,7 +90,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
+        cabal: [3.14.2.0]
         ghc: ["9.10"]
 
     runs-on: ${{ matrix.os }}
