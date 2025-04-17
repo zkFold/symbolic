@@ -70,22 +70,22 @@ jobs:
         cabal build all -f Pedantic
 
     - name: Test Algebra
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}
     
     - name: Test Serialization
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}
 
     - name: Test Protocols
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}
 
     - name: Test Symbolic compiler
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}
 
     - name: Test Symbolic data
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}
 
     - name: Test Symbolic cryptography
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}'
+      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}
 
     - name: Compiler benchmark
       run: cabal bench compiler-golden-stats
