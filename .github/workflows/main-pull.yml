@@ -71,7 +71,6 @@ jobs:
         cabal build all -f Pedantic
 
     - name: Test
-      # run: cabal test all --test-option="--skip=SLOW"
       if: matrix.test-group != ''
       run: cabal test all --test-option="--match=Test group: ${{ matrix.test-group }}"
 
