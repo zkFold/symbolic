@@ -10,6 +10,7 @@
 
 module Main where
 
+import           Data.Aeson                                        (encodeFile, decodeFileStrict, eitherDecodeFileStrict)
 import           Data.ByteString                                   (ByteString)
 import           GHC.Generics                                      (Generic)
 import           GHC.Natural                                       (naturalToInteger)
@@ -138,18 +139,12 @@ mkProof PlonkupProof {..} = ProofBytes
   , l1_xi         = convertZp $ head l_xi
   }
 
-genProof :: ExpModProofInput -> ProofBytes
-genProof = undefined -- mkProof . expModProof @ByteString zero (PlonkupProverSecret $ pure zero)
-
-foo :: ExpModProofInput -> Bool
-foo (ExpModProofInput a b c d) = a + b + c + d > 0
-
 main :: IO ()
 main = do
-    putStrLn "Hello"
-    print $ foo (ExpModProofInput 1 1 1 1)
-    where
-        --bytes = mkSetup $ expModSetup @ByteString zero
-        bytes = genProof (ExpModProofInput 1 1 1 1)
+--    eitherC <- eitherDecodeFileStrict "expModCircuit.json"
+--    print eitherC
+    let setupBytes = mkSetup $ expModSetup @ByteString zero expModCircuit 
+        proofBytes = mkProof $ expModProof @ByteString zero (PlonkupProverSecret $ pure zero) expModCircuit (ExpModProofInput 1 1 1 1)
+    print setupBytes
 
 
