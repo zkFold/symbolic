@@ -14,6 +14,7 @@ import           Prelude                                    hiding (Bool, Eq, le
 import qualified Prelude                                    as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes          (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Address      (Address)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Output.Datum
@@ -32,7 +33,7 @@ data Liability context
         }
 
 deriving instance Generic (Liability context)
-deriving instance (Haskell.Eq (SingleAsset context)) => Haskell.Eq (Liability context)
+deriving instance HEq context => Haskell.Eq (Liability context)
 deriving instance (Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Liability context)
 
 -- TODO: derive this automatically
@@ -48,13 +49,8 @@ data Output tokens datum context = Output {
         txoDatumHash :: DatumHash context
     }
 
-deriving instance
-    ( Haskell.Eq (Address context)
-    , Haskell.Eq (Value tokens context)
-    , Haskell.Eq (DatumHash context)
-    ) => Haskell.Eq (Output tokens datum context)
-
 deriving instance Generic (Output tokens datum context)
+deriving instance HEq context => Haskell.Eq (Output tokens datum context)
 deriving instance (KnownNat tokens, Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Output tokens datum context)
 
 instance
@@ -75,4 +71,3 @@ instance
     , KnownNat tokens
     , KnownRegisters context 64 Auto
     ) => Eq (Output tokens datum context)
-

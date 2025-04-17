@@ -3,21 +3,23 @@
 
 module ZkFold.Symbolic.Data.Vec where
 
-import           Control.DeepSeq                  (NFData)
+import           Control.DeepSeq                   (NFData, NFData1)
+import           Data.Functor.Classes              (Eq1)
 import           Data.Functor.Rep
-import           Data.Traversable                 (Traversable (..))
-import           GHC.Generics                     (Generic)
-import           GHC.Num                          (Natural)
-import           Prelude                          (Integer, ($), (.))
-import qualified Prelude                          as Haskell
+import           Data.Traversable                  (Traversable (..))
+import           GHC.Generics                      (Generic)
+import           GHC.Num                           (Natural)
+import           Prelude                           (Integer, ($), (.))
+import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool)
+import           ZkFold.Symbolic.Data.Bool         (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
-import           ZkFold.Symbolic.Data.Conditional (Conditional)
-import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Combinators  (mzipWithMRep)
+import           ZkFold.Symbolic.Data.Conditional  (Conditional)
+import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -29,8 +31,8 @@ deriving newtype instance (Symbolic c, LayoutFunctor f) =>
   SymbolicInput (Vec f c)
 
 deriving instance Generic (Vec f c)
-deriving instance NFData (c f) => NFData (Vec f c)
-deriving instance Haskell.Eq (c f) => Haskell.Eq (Vec f c)
+deriving instance (HNFData c, NFData1 f) => NFData (Vec f c)
+deriving instance (HEq c, Eq1 f) => Haskell.Eq (Vec f c)
 
 deriving newtype instance (Symbolic c, LayoutFunctor f) => Eq (Vec f c)
 deriving newtype instance (Symbolic c, LayoutFunctor f) =>

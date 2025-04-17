@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -12,6 +13,7 @@ import qualified Prelude                             as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number    (KnownNat)
+import           ZkFold.Base.Data.HFunctor.Classes   (HEq)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
@@ -27,11 +29,12 @@ type SingleAsset context = ((PolicyId context, AssetName context), UInt 64 Auto 
 
 newtype Value n context = Value { getValue :: Vector n (SingleAsset context) }
 
-deriving instance (Haskell.Eq (ByteString 224 context), Haskell.Eq (ByteString 256 context), Haskell.Eq (UInt 64 Auto context))
-    => Haskell.Eq (Value n context)
-
-deriving instance (Haskell.Ord (ByteString 224 context), Haskell.Ord (ByteString 256 context), Haskell.Ord (UInt 64 Auto context))
-    => Haskell.Ord (Value n context)
+deriving instance HEq context => Haskell.Eq (Value n context)
+deriving instance ( HEq context
+                  , Haskell.Ord (ByteString 224 context)
+                  , Haskell.Ord (ByteString 256 context)
+                  , Haskell.Ord (UInt 64 Auto context)
+                  ) => Haskell.Ord (Value n context)
 
 deriving instance (Symbolic context, KnownNat n, KnownRegisters context 64 Auto) => SymbolicData (Value n context)
 

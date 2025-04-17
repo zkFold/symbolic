@@ -52,6 +52,7 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Base.Data.Package          (packWith, unpackWith)
 import           ZkFold.Base.Data.Utils            (zipWithM)
 import qualified ZkFold.Base.Data.Vector           as V
@@ -74,9 +75,9 @@ import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
     deriving (Generic)
 
-deriving stock instance Haskell.Show (c (Vector n)) => Haskell.Show (ByteString n c)
-deriving stock instance Haskell.Eq (c (Vector n)) => Haskell.Eq (ByteString n c)
-deriving anyclass instance NFData (c (Vector n)) => NFData (ByteString n c)
+deriving stock instance HShow c => Haskell.Show (ByteString n c)
+deriving stock instance HEq c => Haskell.Eq (ByteString n c)
+deriving anyclass instance HNFData c => NFData (ByteString n c)
 deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
 deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
 deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -20,14 +21,14 @@ import           Prelude                              (($))
 import qualified Prelude                              as P
 
 import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector              (Vector)
+import           ZkFold.Base.Data.HFunctor.Classes    (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2, sha2Var)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
-                                                       NumberOfRegisters, RegisterSize (..), Resize (..))
+                                                       RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
@@ -42,12 +43,9 @@ data PrivateKey keyLen ctx
         }
 
 deriving instance Generic (PrivateKey keyLen context)
-deriving instance (NFData (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))) => NFData (PrivateKey keyLen context)
-deriving instance (P.Eq (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto))))   => P.Eq   (PrivateKey keyLen context)
-deriving instance
-    ( P.Show (BaseField context)
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    ) => P.Show (PrivateKey keyLen context)
+deriving instance HNFData context => NFData (PrivateKey keyLen context)
+deriving instance HEq context => P.Eq (PrivateKey keyLen context)
+deriving instance HShow context => P.Show (PrivateKey keyLen context)
 
 deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
 
@@ -67,19 +65,9 @@ data PublicKey keyLen ctx
         }
 
 deriving instance Generic (PublicKey keyLen context)
-deriving instance
-    ( NFData (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , NFData (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
-    ) =>  NFData  (PublicKey keyLen context)
-deriving instance
-    ( P.Eq (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , P.Eq (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
-    ) =>  P.Eq    (PublicKey keyLen context)
-deriving instance
-    ( P.Show (context (Vector (NumberOfRegisters (BaseField context) keyLen 'Auto)))
-    , P.Show (context (Vector (NumberOfRegisters (BaseField context) PubExponentSize 'Auto)))
-    , P.Show (BaseField context)
-    ) =>  P.Show  (PublicKey keyLen context)
+deriving instance HNFData context => NFData (PublicKey keyLen context)
+deriving instance HEq context => P.Eq (PublicKey keyLen context)
+deriving instance HShow context => P.Show (PublicKey keyLen context)
 
 deriving instance
     ( Symbolic ctx
@@ -102,9 +90,6 @@ type RSA keyLen msgLen ctx =
    , KnownRegisters ctx keyLen 'Auto
    , KnownRegisters ctx (2 * keyLen) 'Auto
    , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
-   , NFData (ctx (Vector keyLen))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) keyLen 'Auto)))
-   , NFData (ctx (Vector (NumberOfRegisters (BaseField ctx) (2 * keyLen) 'Auto)))
    )
 
 sign

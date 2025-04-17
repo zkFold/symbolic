@@ -1,12 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.JWT.Utils where
 
-import           Control.DeepSeq                    (NFData, force)
+import           Control.DeepSeq                    (force)
 import qualified Data.Aeson                         as JSON
 import qualified Data.ByteString                    as BS
 import           Data.Constraint                    (Dict (..), withDict, (:-) (..))
@@ -144,7 +143,7 @@ padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
                 knownNumWords @n @ctx $
                     knownOneReg @n @ctx $
                         withDiv @(BufLen n) $
-                            ui `mod` (fromConstant @Natural 6)
+                            ui `mod` fromConstant @Natural 6
 
 
 -- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
@@ -170,8 +169,6 @@ base64ToAscii
     .  Symbolic ctx
     => KnownNat n
     => Mod n 6 ~ 0
-    => NFData (ctx (V.Vector 8))
-    => NFData (ctx (V.Vector (ASCII n)))
     => VarByteString n ctx -> VarByteString (ASCII n) ctx
 base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
     where
@@ -184,7 +181,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
                 withDiv @(BufLen n) $
                     knownOneReg @n @ctx $
                         knownNumWords @n @ctx $
-                            scale (4 :: Natural) . (uintToFe @n) . (`div` (fromConstant @Natural 3)) . (feToUInt @n) $ bsLength
+                            scale (4 :: Natural) . (uintToFe @n) . (`div` fromConstant @Natural 3) . (feToUInt @n) $ bsLength
 
 
 {-
@@ -195,7 +192,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
     -            62          45
     _            63          95
 -}
-word6ToAscii :: forall ctx . (Symbolic ctx, NFData (ctx (V.Vector 8))) => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii :: forall ctx . Symbolic ctx => ByteString 6 ctx -> ByteString 8 ctx
 word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
     do
         let bitsSym = V.fromVector bits
@@ -220,11 +217,11 @@ word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
         isdash <- newAssigned $ \p -> p ledash * (one - p le09)
         isus   <- newAssigned $ \p -> one - p ledash
 
-        asciiAZ   <- newAssigned $ \p -> p isAZ   * (p fe + (fromConstant @Natural 65))
-        asciiaz   <- newAssigned $ \p -> p isaz   * (p fe + (fromConstant @Natural 71))
-        ascii09   <- newAssigned $ \p -> p is09   * (p fe - (fromConstant @Natural 4 ))
-        asciidash <- newAssigned $ \p -> p isdash * (p fe - (fromConstant @Natural 17))
-        asciius   <- newAssigned $ \p -> p isus   * (p fe + (fromConstant @Natural 32))
+        asciiAZ   <- newAssigned $ \p -> p isAZ   * (p fe + fromConstant @Natural 65)
+        asciiaz   <- newAssigned $ \p -> p isaz   * (p fe + fromConstant @Natural 71)
+        ascii09   <- newAssigned $ \p -> p is09   * (p fe - fromConstant @Natural 4)
+        asciidash <- newAssigned $ \p -> p isdash * (p fe - fromConstant @Natural 17)
+        asciius   <- newAssigned $ \p -> p isus   * (p fe + fromConstant @Natural 32)
 
         s1 <- newAssigned $ \p -> p asciiAZ   + p asciiaz
         s2 <- newAssigned $ \p -> p ascii09   + p s1

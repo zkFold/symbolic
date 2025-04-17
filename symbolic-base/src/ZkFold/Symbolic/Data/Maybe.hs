@@ -7,13 +7,14 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, fromJust, isNothing, isJust, find
 ) where
 
-import           Data.Functor                     ((<$>))
-import           Data.Functor.Rep                 (pureRep)
-import           GHC.Generics                     (Generic, Par1 (..))
-import           Prelude                          (foldr, type (~), ($))
-import qualified Prelude                          as Haskell
+import           Data.Functor                      ((<$>))
+import           Data.Functor.Rep                  (pureRep)
+import           GHC.Generics                      (Generic)
+import           Prelude                           (foldr, type (~), ($))
+import qualified Prelude                           as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Base.Data.HFunctor.Classes (HEq)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
@@ -28,8 +29,7 @@ data Maybe context x = Maybe { isJust :: Bool context, fromJust :: x }
     , Generic
     )
 
-deriving stock instance (Haskell.Eq (context Par1), Haskell.Eq x) => Haskell.Eq (Maybe context x)
-
+deriving stock instance (HEq c, Haskell.Eq x) => Haskell.Eq (Maybe c x)
 instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x) where
 instance (SymbolicOutput x, Context x ~ c, Conditional (Bool c) x) => Conditional (Bool c) (Maybe c x)
 instance (Context x ~ c, SymbolicEq x) => Eq (Maybe c x)

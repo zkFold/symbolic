@@ -4,16 +4,15 @@
 
 module ZkFold.Symbolic.Data.JWT.Twitch (TwitchPayload (..)) where
 
-import           Control.DeepSeq                    (NFData)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
 import           Generic.Random                     (genericArbitrary, uniform)
-import           GHC.Generics                       (Generic, Par1 (..))
+import           GHC.Generics                       (Generic)
 import           Prelude                            (type (~), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
-import qualified ZkFold.Base.Data.Vector            as V
+import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HShow)
 import           ZkFold.Symbolic.Algorithms.RSA     as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -58,14 +57,8 @@ data PubSubPerms ctx =
         }
     deriving Generic
 
-deriving instance
-    ( P.Eq (ctx (V.Vector 2048))
-    , P.Eq (ctx Par1)
-    ) => P.Eq (PubSubPerms ctx)
-deriving instance
-    ( P.Show (ctx (V.Vector 2048))
-    , P.Show (ctx Par1)
-    ) => P.Show (PubSubPerms ctx)
+deriving instance HEq ctx => P.Eq (PubSubPerms ctx)
+deriving instance HShow ctx => P.Show (PubSubPerms ctx)
 deriving instance Symbolic ctx => SymbolicData (PubSubPerms ctx)
 deriving instance Symbolic ctx => SymbolicInput (PubSubPerms ctx)
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
@@ -81,23 +74,8 @@ instance (Symbolic ctx, Context (PubSubPerms ctx) ~ ctx) => IsSymbolicJSON (PubS
 instance Symbolic ctx => FromJSON (PubSubPerms ctx) where
     parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
 
-deriving instance
-    ( P.Eq (ctx (V.Vector 40))
-    , P.Eq (ctx (V.Vector 80))
-    , P.Eq (ctx (V.Vector 88))
-    , P.Eq (ctx (V.Vector 512))
-    , P.Eq (ctx (V.Vector 2048))
-    , P.Eq (ctx Par1)
-    ) => P.Eq (TwitchPayload ctx)
-
-deriving instance
-    ( P.Show (ctx (V.Vector 40))
-    , P.Show (ctx (V.Vector 80))
-    , P.Show (ctx (V.Vector 88))
-    , P.Show (ctx (V.Vector 512))
-    , P.Show (ctx (V.Vector 2048))
-    , P.Show (ctx Par1)
-    ) => P.Show (TwitchPayload ctx)
+deriving instance HEq ctx => P.Eq (TwitchPayload ctx)
+deriving instance HShow ctx => P.Show (TwitchPayload ctx)
 deriving instance Symbolic ctx => SymbolicData (TwitchPayload ctx)
 deriving instance Symbolic ctx => SymbolicInput (TwitchPayload ctx)
 instance Symbolic ctx => Arbitrary (TwitchPayload ctx) where
@@ -118,11 +96,7 @@ instance (Symbolic ctx) => IsSymbolicJSON (TwitchPayload ctx) where
         `VB.append` (fromType @"\",\"user_id\":\"") @+ twUserId
         `VB.append` (fromType @"\"}")
 
-instance
-  ( Symbolic ctx
-  , NFData (ctx (V.Vector 8))
-  , NFData (ctx (V.Vector 9056))
-  ) => IsBits (TwitchPayload ctx) where
+instance Symbolic ctx => IsBits (TwitchPayload ctx) where
     type BitCount (TwitchPayload ctx) = 9056
     toBits = toAsciiBits
 

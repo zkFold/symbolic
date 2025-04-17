@@ -42,6 +42,7 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Base.Data.Vector           (Vector, chunks, fromVector, unsafeToVector)
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
@@ -69,9 +70,9 @@ data VarByteString (maxLen :: Natural) (context :: (Type -> Type) -> Type) =
         }
     deriving (Generic)
 
-deriving stock instance (Haskell.Show (ctx (Vector n)), Haskell.Show (ctx Par1)) => Haskell.Show (VarByteString n ctx)
-deriving stock instance (Haskell.Eq (ctx (Vector n)), Haskell.Eq (ctx Par1)) => Haskell.Eq (VarByteString n ctx)
-deriving anyclass instance (NFData (ctx (Vector n)), NFData (ctx Par1)) => NFData (VarByteString n ctx)
+deriving stock instance HShow ctx => Haskell.Show (VarByteString n ctx)
+deriving stock instance HEq ctx => Haskell.Eq (VarByteString n ctx)
+deriving anyclass instance HNFData ctx => NFData (VarByteString n ctx)
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ctx)
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
 deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
@@ -114,7 +115,7 @@ fromNatural :: forall n ctx . (Symbolic ctx, KnownNat n) => Natural -> Natural -
 fromNatural numBits n = VarByteString (fromConstant numBits) (fromConstant n)
 
 fromByteString :: forall n ctx . (Symbolic ctx, KnownNat n) => ByteString n ctx -> VarByteString n ctx
-fromByteString bs = VarByteString (fromConstant $ value @n) bs
+fromByteString = VarByteString (fromConstant $ value @n)
 
 instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
     parseJSON v = fromString <$> parseJSON v
@@ -228,7 +229,7 @@ type WordSize ctx = Div (NumberOfBits (BaseField ctx)) 2
 natWordSize :: Natural -> Natural
 natWordSize n = (ilog2 (n -! 1) + 1) `div` 2
 
-withWordSize' :: forall a . (KnownNat (Order (BaseField a))) :- KnownNat (WordSize a)
+withWordSize' :: forall a . KnownNat (Order (BaseField a)) :- KnownNat (WordSize a)
 withWordSize' = Sub $ withKnownNat @(WordSize a) (unsafeSNat (natWordSize (value @(Order (BaseField a))))) Dict
 
 withWordSize :: forall a {r}. (KnownNat (Order (BaseField a))) => (KnownNat (WordSize a) => r) -> r
@@ -252,8 +253,8 @@ withWordCount =
 newtype Words n ctx = Words (ctx (Vector (WordCount n ctx)))
     deriving Generic
 
-deriving newtype instance NFData (ctx (Vector (WordCount n ctx))) => NFData (Words n ctx)
-deriving newtype instance Haskell.Show (ctx (Vector (WordCount n ctx))) => Haskell.Show (Words n ctx)
+deriving newtype instance HNFData ctx => NFData (Words n ctx)
+deriving newtype instance HShow ctx => Haskell.Show (Words n ctx)
 deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
 deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
 

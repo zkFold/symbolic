@@ -4,7 +4,6 @@
 
 module ZkFold.Symbolic.Data.JWT.Google (GooglePayload (..)) where
 
-import           Control.DeepSeq                    (NFData)
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import qualified Data.Aeson                         as JSON
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
@@ -12,12 +11,12 @@ import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
 import           Generic.Random                     (genericArbitrary, uniform)
-import           GHC.Generics                       (Generic, Par1 (..))
+import           GHC.Generics                       (Generic)
 import           Prelude                            (fmap, type (~), ($), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
-import qualified ZkFold.Base.Data.Vector            as V
+import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithms.RSA     as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
@@ -66,22 +65,8 @@ data GooglePayload ctx
         }
     deriving Generic
 
-deriving instance
-    ( P.Eq (ctx (V.Vector 40))
-    , P.Eq (ctx (V.Vector 80))
-    , P.Eq (ctx (V.Vector 256))
-    , P.Eq (ctx (V.Vector 512))
-    , P.Eq (ctx (V.Vector 1024))
-    , P.Eq (ctx Par1)
-    ) => P.Eq (GooglePayload ctx)
-deriving instance
-    ( P.Show (ctx (V.Vector 40))
-    , P.Show (ctx (V.Vector 80))
-    , P.Show (ctx (V.Vector 256))
-    , P.Show (ctx (V.Vector 512))
-    , P.Show (ctx (V.Vector 1024))
-    , P.Show (ctx Par1)
-    ) => P.Show (GooglePayload ctx)
+deriving instance HEq ctx => P.Eq (GooglePayload ctx)
+deriving instance HShow ctx => P.Show (GooglePayload ctx)
 deriving instance Symbolic ctx => SymbolicData (GooglePayload ctx)
 deriving instance Symbolic ctx => SymbolicInput (GooglePayload ctx)
 instance Symbolic ctx => Arbitrary (GooglePayload ctx) where
@@ -119,11 +104,7 @@ instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (Go
         `VB.append` (fromType @",\"exp\":")   @+ plExp
         `VB.append` (fromType @"}")
 
-instance
-  ( Symbolic ctx
-  , NFData (ctx (V.Vector 8))
-  , NFData (ctx (V.Vector 9456))
-  ) => IsBits (GooglePayload ctx) where
+instance Symbolic ctx => IsBits (GooglePayload ctx) where
     type BitCount (GooglePayload ctx) = 9456
     toBits = toAsciiBits
 

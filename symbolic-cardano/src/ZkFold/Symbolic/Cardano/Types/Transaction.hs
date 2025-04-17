@@ -8,6 +8,7 @@ import           Prelude                              hiding (Bool, Eq, length, 
 import qualified Prelude                              as Haskell
 
 import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Data.HFunctor.Classes    (HEq)
 import           ZkFold.Base.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Cardano.Types.Input  (Input)
@@ -28,28 +29,21 @@ data Transaction inputs rinputs outputs tokens mint datum context = Transaction 
     }
 
 deriving instance Generic (Transaction inputs rinputs outputs tokens mint datum context)
-deriving instance
-    ( Haskell.Eq (Vector rinputs (Input tokens datum context))
-    , Haskell.Eq (Vector inputs (Input tokens datum context))
-    , Haskell.Eq (Vector outputs (Output tokens datum context))
-    , Haskell.Eq (Liability context)
-    , Haskell.Eq (Value mint context)
-    , Haskell.Eq (UTCTime context)
-    ) => Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
+deriving instance HEq context =>
+    Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
 
 -- TODO: Think how to prettify this abomination
 deriving instance
     ( Symbolic context
     , KnownRegisters context 32 Auto
-    , KnownRegisters context  64 Auto
-    , KnownRegisters context  11 Auto
+    , KnownRegisters context 64 Auto
+    , KnownRegisters context 11 Auto
     , KnownNat tokens
     , KnownNat rinputs
     , KnownNat inputs
     , KnownNat outputs
     , KnownNat mint
     ) => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context)
-
 
 instance
     ( Symbolic context
