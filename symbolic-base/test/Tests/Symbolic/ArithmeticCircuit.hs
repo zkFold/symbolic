@@ -66,12 +66,6 @@ specArithmeticCircuit' = do
         it "has one" $ correctHom0 @a one
         it "inverts nonzero correctly" $ correctHom1 @a finv
         it "inverts zero correctly" $ correctHom0 @a (finv zero)
-        -- it "checks isZero(nonzero)" $ \(x :: a) ->
-        --   let Bool (r :: ArithmeticCircuit a U1 Par1) = isZero $ FieldElement (embed x)
-        --    in checkClosedCircuit r .&&. exec1 r === bool zero one (x Haskell.== zero)
-        -- it "checks isZero(0)" $
-        --   let Bool (r :: ArithmeticCircuit a U1 Par1) = isZero (zero :: FieldElement (ArithmeticCircuit a U1))
-        --    in withMaxSuccess 1 $ checkClosedCircuit r .&&. exec1 r === one
         it "computes binary expansion" $ \(x :: a) ->
           let rs = binaryExpansion (fromConstant x :: FieldElement (ArithmeticCircuit a U1))
               as = padBits (numberOfBits @a) $ fromConstant <$> binaryExpansion (toConstant x)
