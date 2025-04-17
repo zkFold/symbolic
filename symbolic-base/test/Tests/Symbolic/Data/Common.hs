@@ -3,14 +3,20 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Tests.Symbolic.Data.Common (specSymbolicFunction1, specSymbolicFunction2) where
+module Tests.Symbolic.Data.Common
+  ( specConstantRoundtrip
+  , specSymbolicData
+  , specSymbolicFunction1
+  , specSymbolicFunction1WithPar
+  , specSymbolicFunction2
+  ) where
 
 import           Data.Binary                      (Binary)
 import           Data.Eq                          (Eq)
 import           Data.Function                    (const, ($), id)
 import           Data.Typeable                    (Proxy (..))
 import           GHC.Generics                     (U1 (..))
-import           Prelude                          (String, type (~))
+import           Prelude                          (String, type (~), (++))
 import           Test.Hspec                       (Spec)
 import           Test.QuickCheck                  (Arbitrary (..), (===))
 import           Tests.Symbolic.ArithmeticCircuit (it)
@@ -20,14 +26,32 @@ import           ZkFold.Symbolic.Class            (Symbolic (BaseField), embed)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, exec, compileWith)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
+import ZkFold.Base.Algebra.Basic.Class (ToConstant (..), FromConstant (..))
 
 {-
   For all symbolic types we need to do the following:
   1. Check that `fromConstant` and `toConstant` are inverse functions.
-  2. Run all type-specific checks in the interpreter context.
-  3. For all related functions, check that the circuit evaluation is equivalent to the function evaluation.
-  4. For all related functions, Check that the circuit's constraints are satisfied by the respective witness.
+  2. For all related functions, check that the circuit evaluation is equivalent to the function evaluation and 
+     that the circuit's constraints are satisfied by the respective witness.
+  3. Run all type-specific checks in the interpreter context.
 -}
+
+specConstantRoundtrip :: forall a x .
+  ( Arbitrary (x (Interpreter a))
+  , Arbitrary (Const (x (Interpreter a)))
+  , Eq (x (Interpreter a))
+  , Eq (Const (x (Interpreter a)))
+  , Show (x (Interpreter a))
+  , Show (Const (x (Interpreter a)))
+  , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
+  , ToConstant (x (Interpreter a)) 
+  ) => String -> String -> Spec
+specConstantRoundtrip symType hType = do
+  it (symType ++ "embeds" ++ hType) $
+    \(x :: x (Interpreter a)) -> fromConstant (toConstant x :: Const (x (Interpreter a))) === x
+  it (hType ++ "embeds" ++ symType) $
+    \(x :: Const (x (Interpreter a))) -> toConstant (fromConstant x :: x (Interpreter a)) === x
+
 
 type MatchingSymbolicOutput x c c' =
   ( SymbolicOutput (x c)
@@ -53,6 +77,16 @@ toCircuit :: forall a x . MatchingSymbolicOutput x (Interpreter a) (ArithmeticCi
 toCircuit x =
   restore $ const (embed $ runInterpreter $ arithmetize x Proxy, U1)
 
+specSymbolicData :: forall a x .
+  ( Arbitrary (x (Interpreter a))
+  , Eq (x (Interpreter a))
+  , Show (x (Interpreter a))
+  , MatchingSymbolicOutput x (Interpreter a) (ArithmeticCircuit a U1)
+  , MatchingSymbolicOutput x (ArithmeticCircuit a U1) (Interpreter a)
+  ) => String -> Spec
+specSymbolicData desc = it desc $
+  \(x :: x (Interpreter a)) -> fromCircuit (toCircuit @a x) === x
+
 type SymbolicFunction1 x y = forall c . Symbolic c
   => x c -> y c
 
@@ -66,6 +100,19 @@ specSymbolicFunction1 :: forall a x y .
   ) => String -> SymbolicFunction1 x y -> Spec
 specSymbolicFunction1 desc func = it desc $
   \x -> fromCircuit (func @(ArithmeticCircuit a U1) $ toCircuit x) === func x
+
+specSymbolicFunction1WithPar :: forall par a x y .
+  ( Arbitrary par
+  , Arbitrary (x (Interpreter a))
+  , Eq (y (Interpreter a))
+  , Show par
+  , Show (x (Interpreter a))
+  , Show (y (Interpreter a))
+  , MatchingSymbolicOutput x (Interpreter a) (ArithmeticCircuit a U1)
+  , MatchingSymbolicOutput y (ArithmeticCircuit a U1) (Interpreter a)
+  ) => String -> (par -> SymbolicFunction1 x y) -> Spec
+specSymbolicFunction1WithPar desc func = it desc $
+  \par x -> fromCircuit (func par @(ArithmeticCircuit a U1) $ toCircuit x) === func par x
 
 type SymbolicFunction2 x y z = forall c . Symbolic c
   => x c -> y c -> z c

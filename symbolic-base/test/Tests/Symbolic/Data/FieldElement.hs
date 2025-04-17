@@ -4,48 +4,28 @@ module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
 import           Data.Function                               (($))
 import           Data.List                                   ((++))
-import           GHC.Generics                                (U1)
 import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             ((===))
-import           Tests.Symbolic.ArithmeticCircuit            (it)
-import           Tests.Symbolic.Data.Common                  (specSymbolicFunction1, specSymbolicFunction2)
+import           Tests.Symbolic.Data.Common                  (specSymbolicFunction1, specSymbolicFunction2, specSymbolicFunction1WithPar, specSymbolicData, specConstantRoundtrip)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)
 import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement))
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
-
-execAcFieldElement ::
-  forall p .
-  (PrimeField (Zp p)) =>
-  FieldElement (ArithmeticCircuit (Zp p) U1) -> Zp p
-execAcFieldElement (FieldElement x) =
-  toConstant $ (FieldElement $ Interpreter $ exec x)
-
-execInterpreterFieldElement ::
-  forall p . FieldElement (Interpreter (Zp p)) -> Zp p
-execInterpreterFieldElement = toConstant
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
 specFieldElement' = do
   describe ("FieldElement " ++ " specification") $ do
-    it "FieldElement embeds Zp" $ \(x :: Zp p) ->
-      toConstant (fromConstant x :: FieldElement (Interpreter (Zp p))) === x
-    it "Zp embeds FieldElement" $ \(x :: FieldElement (Interpreter (Zp p))) ->
-      fromConstant (toConstant x :: Zp p) === x
-    it "has zero" $ execAcFieldElement @p zero === execInterpreterFieldElement zero
-    it "has one" $ execAcFieldElement @p one === execInterpreterFieldElement one
-    specSymbolicFunction2 @(Zp p) @(FieldElement) "adds correctly" (+)
-    specSymbolicFunction1 @(Zp p) @(FieldElement) "negates correctly" negate
-    specSymbolicFunction2 @(Zp p) @(FieldElement) "subtracts correctly" (-)
-    specSymbolicFunction2 @(Zp p) @(FieldElement) "multiplies correctly" (*)
-    specSymbolicFunction1 @(Zp p) @(FieldElement) "inverts correctly" finv
-    specSymbolicFunction2 @(Zp p) @(FieldElement) "divides correctly" (//)
-    it "powers correctly" $ \(x :: Zp p) (e :: Integer) ->
-      execAcFieldElement @p (fromConstant x ^ e) === x ^ e
+    specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp"
+    specSymbolicData @(Zp p) @FieldElement "compiles correctly"
+    specSymbolicFunction2 @(Zp p) @FieldElement "adds correctly" (+)
+    specSymbolicFunction1 @(Zp p) @FieldElement "negates correctly" negate
+    specSymbolicFunction2 @(Zp p) @FieldElement "subtracts correctly" (-)
+    specSymbolicFunction2 @(Zp p) @FieldElement "multiplies correctly" (*)
+    specSymbolicFunction1 @(Zp p) @FieldElement "inverts correctly" finv
+    specSymbolicFunction2 @(Zp p) @FieldElement "divides correctly" (//)
+    specSymbolicFunction1WithPar @Integer @(Zp p) @FieldElement "powers correctly" (\e x -> x ^ e)
+    -- Type-specific tests go here
 
 specFieldElement :: Spec
 specFieldElement = do
