@@ -13,8 +13,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
-        ghc: [9.12.1]
+        cabal: [3.14.2.0]
+        ghc: [9.12.2]
+        test-group: ['', 'Algebra', 'Serialization', 'Protocols', 'Symbolic compiler', 'Symbolic data', 'Symbolic cryptography']
 
     runs-on: ${{ matrix.os }}
 
@@ -48,7 +49,7 @@ jobs:
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
         key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
-        restore-keys: ${{ env.key }}-
+        restore-keys: ${{ env.key }}
 
     - name: Install dependencies
       # If we had an exact cache hit, the dependencies will be up to date.
@@ -70,9 +71,12 @@ jobs:
         cabal build all -f Pedantic
 
     - name: Test
-      run: cabal test all --test-option="--skip=SLOW"
+      # run: cabal test all --test-option="--skip=SLOW"
+      if: matrix.test-group != ''
+      run: cabal test all --test-option="--match=Test group: ${{ matrix.test-group }}"
 
     - name: Compiler benchmark
+      if: matrix.test-group == ''
       run: cabal bench compiler-golden-stats
 
     # - name: Check cabal file
@@ -87,7 +91,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
+        cabal: [3.14.2.0]
         ghc: ["9.10"]
 
     runs-on: ${{ matrix.os }}
