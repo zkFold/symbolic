@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedLists  #-}
 {-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Algebra.Permutation (
@@ -34,7 +33,7 @@ type IndexSet = V.Vector Natural
 type IndexPartition a = Map a IndexSet
 
 mkIndexPartition :: Ord a => V.Vector a -> IndexPartition a
-mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) e [ix] m) empty $ V.zip vs [1 .. fromIntegral $ V.length vs]
+mkIndexPartition vs = fmap V.fromList $ V.foldl' (\m (e, ix) -> insertWith (<>) e [ix] m) empty $ V.zip vs (V.fromList [1 .. fromIntegral $ V.length vs])
 
 ------------------------------------- Permutations -------------------------------------------
 
@@ -63,16 +62,28 @@ applyPermutation (Permutation ps) as =
     in
         fmap (index as . naturalToZp) ps
 
-applyCycle :: V.Vector Natural -> Permutation n -> Permutation n
-applyCycle c (Permutation perm) = force $ Permutation $ fmap f perm
+fromCycles :: forall n a . IndexPartition a -> Permutation n
+fromCycles p = Permutation . Vector $ V.create $ do
+    ixes <- VM.generate (n P.+ 1) id -- "reverse" array, returns index by element
+    forM_ lists $ \cyc -> do
+        pos0 <- VM.read ixes (P.fromIntegral $ V.last cyc)
+        let cycLen = V.length cyc
+
+        -- ixes[cyc[cix + 1]] := ixes[cyc[cix]];
+        -- the position of the next element in the cycle becomes the position of the current one
+        forM_ [cycLen P.- 2, cycLen P.- 3 .. 0] $ \cix -> do
+            pos <- VM.read ixes (P.fromIntegral $ cyc V.! cix)
+            VM.write ixes (P.fromIntegral $ cyc V.! (cix P.+ 1)) pos
+        VM.write ixes (P.fromIntegral $ V.head cyc) pos0
+
+    frozenIxes <- V.unsafeFreeze ixes -- we're not going to modify @ixes@ anymore, so O(1) @unsafeFreeze@ is ok
+    res <- VM.new n
+    forM_ [1..n] $ \ix -> VM.write res ((frozenIxes V.! ix) P.- 1) (fromIntegral ix :: Natural)
+    pure res
+
     where
-        f :: Natural -> Natural
-        f i = case i `V.elemIndex` c of
-            Just j  -> c V.! ((j P.+ 1) `P.mod` V.length c)
-            Nothing -> i
+        lists :: V.Vector (V.Vector Natural)
+        lists = V.reverse . V.fromList $ elems p
 
-fromCycles :: KnownNat n => IndexPartition a -> Permutation n
-fromCycles p =
-    let n = fromIntegral $ V.length $ V.concat $ elems p
-    in foldr applyCycle (Permutation $ fromJust $ toVector [1 .. n]) $ elems p
-
+        n :: P.Int
+        n = P.sum $ V.length <$> lists

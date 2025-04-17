@@ -6,7 +6,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
-    ( expModCircuit
+    ( expModContract
+    , expModCircuit
     , expModSetup
     , expModProof
     , ExpModProofInput (..)
@@ -49,6 +50,7 @@ type NGates = 2^19
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
+type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
 
 type PlonkupTs t = Plonkup ExpModCompiledInput NGates Par1 BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
@@ -78,7 +80,7 @@ deriving instance
     , KnownRegisters ctx 2048 'Auto
     ) => SymbolicInput (ExpModInput ctx)
 
-expModCircuit
+expModContract
     :: forall c
     .  Symbolic c
     => KnownNat (NumberOfRegisters (BaseField c) 4096 Auto)
@@ -86,7 +88,7 @@ expModCircuit
     => NFData (c (Vector (NumberOfRegisters (BaseField c) 4096 Auto)))
     => ExpModInput c
     -> FieldElement c
-expModCircuit (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
+expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
     where
         msgHash :: UInt 2048 Auto c
         msgHash = expMod @c @2048 @RSA.PubExponentSize @2048 sig pubE pubN
@@ -101,11 +103,12 @@ expModCircuit (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tok
             z <- newAssigned (const zero)
             Par1 <$> foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
 
-expModSetup :: forall t .  TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs t)
-expModSetup x = setupV
-    where
-        ac = C.compile @Fr expModCircuit
+expModCircuit :: ExpModCircuit 
+expModCircuit = C.compile @Fr expModContract
 
+expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> SetupVerify (PlonkupTs t)
+expModSetup x ac = setupV
+    where
         (omega, k1, k2) = getParams (Number.value @NGates)
         (gs, h1) = getSecrectParams @NGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
         plonkup = Plonkup omega k1 k2 ac h1 gs
@@ -124,13 +127,11 @@ expModProof
     .  TranscriptConstraints t
     => Fr
     -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ExpModCircuit
     -> ExpModProofInput
     -> Proof (PlonkupTs t)
-expModProof x ps ExpModProofInput{..} = proof
+expModProof x ps ac ExpModProofInput{..} = proof
     where
-        ac :: ArithmeticCircuit Fr ExpModCompiledInput Par1
-        ac = C.compile @Fr expModCircuit
-
         input :: ExpModInput (Interpreter Fr)
         input =
             ExpModInput

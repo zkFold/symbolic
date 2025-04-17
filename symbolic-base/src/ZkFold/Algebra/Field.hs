@@ -38,7 +38,7 @@ import           ZkFold.Prelude                       (log2ceiling)
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
-    deriving (Generic, NFData)
+    deriving (Generic, NFData, ToJSONKey, FromJSONKey)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural

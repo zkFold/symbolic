@@ -123,6 +123,7 @@ executable smart-wallet-creator
   hs-source-dirs:   smart-wallet-creator
   build-depends:
     base              >= 4.9 && < 5,
+    aeson                          ,
     bytestring                     ,
     symbolic-base                  ,
     symbolic-cardano               ,
