@@ -2,11 +2,12 @@
 
 module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
-import           Data.Function                               (($), id)
+import           Data.Function                               (id, ($))
 import           Data.List                                   ((++))
 import           Prelude                                     (Integer)
 import           Test.Hspec                                  (Spec, describe)
-import           Tests.Symbolic.Data.Common                  (specSymbolicFunction1, specConstantRoundtrip, specSymbolicFunction2, specSymbolicFunction1WithPar)
+import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction1,
+                                                              specSymbolicFunction1WithPar, specSymbolicFunction2)
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Field             (Zp)

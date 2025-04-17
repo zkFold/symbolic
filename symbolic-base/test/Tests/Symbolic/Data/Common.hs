@@ -12,7 +12,8 @@ module Tests.Symbolic.Data.Common
 
 import           Data.Binary                      (Binary)
 import           Data.Eq                          (Eq)
-import           Data.Function                    (const, ($), id)
+import           Data.Function                    (const, id, ($))
+import           Data.Functor.Rep                 (Representable (..))
 import           Data.Typeable                    (Proxy (..))
 import           GHC.Generics                     (U1 (..), type (:*:) (..))
 import           Prelude                          (String, type (~), (++))
@@ -21,20 +22,17 @@ import           Test.QuickCheck                  (Arbitrary (..), (===))
 import           Tests.Symbolic.ArithmeticCircuit (it)
 import           Text.Show                        (Show)
 
-import           ZkFold.Symbolic.Class            (Symbolic (BaseField), Arithmetic)
-import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, compileWith)
+import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), ToConstant (..))
+import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic (BaseField))
+import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, checkCircuit, compileWith, eval)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-import ZkFold.Base.Algebra.Basic.Class (ToConstant (..), FromConstant (..))
-import ZkFold.Symbolic.Compiler (eval)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import Data.Functor.Rep (Representable(..))
-import ZkFold.Symbolic.Compiler (checkCircuit)
 
 {-
   For all symbolic types we need to do the following:
   1. Check that `fromConstant` and `toConstant` are inverse functions.
-  2. For all related functions, check that the circuit evaluation is equivalent to the function evaluation and 
+  2. For all related functions, check that the circuit evaluation is equivalent to the function evaluation and
      that the circuit's constraints are satisfied by the respective witness.
   3. Run all type-specific checks in the interpreter context.
 -}
@@ -47,7 +45,7 @@ specConstantRoundtrip :: forall a x .
   , Show (x (Interpreter a))
   , Show (Const (x (Interpreter a)))
   , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
-  , ToConstant (x (Interpreter a)) 
+  , ToConstant (x (Interpreter a))
   ) => String -> String -> Spec
 specConstantRoundtrip symType hType = do
   it (symType ++ " embeds " ++ hType) $
