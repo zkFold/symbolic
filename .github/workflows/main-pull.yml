@@ -69,23 +69,29 @@ jobs:
       run: |
         cabal build all -f Pedantic
 
-    - name: Test Algebra
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}
+    - name: Symbolic Base "Algebra" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}
     
-    - name: Test Serialization
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}
+    - name: Symbolic Base "Serialization" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}
 
-    - name: Test Protocols
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}
+    - name: Symbolic Base "Protocols" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}
 
-    - name: Test Symbolic compiler
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}
+    - name: Symbolic Base "Symbolic compiler" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}
 
-    - name: Test Symbolic data
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}
+    - name: Symbolic Base "Symbolic data" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}
 
-    - name: Test Symbolic cryptography
-      run: ${{ format('cabal test all --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}
+    - name: Symbolic Base "Symbolic cryptography" test
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}
+
+    - name: Symbolic Apps test
+      run: cabal test symbolic-apps-test
+
+    - name: UPLC Converter test
+      run: cabal test symbolic-uplc-test
 
     - name: Compiler benchmark
       run: cabal bench compiler-golden-stats
