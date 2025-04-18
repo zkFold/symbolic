@@ -12,40 +12,77 @@ permissions:
 jobs:
   on-main-update:
 
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cabal: [3.14.2.0]
+        ghc: [9.12.2]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: haskell-actions/setup@v2.6.2
-      with:
-        ghc-version: '9.12.1'
-        cabal-version: '3.14.1.1'
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Cache
-      uses: actions/cache@v4
-      env:
-        cache-name: cache-cabal
+    - name: Set up Haskell
+      uses: haskell-actions/setup@v2.6.2
+      id: setup
       with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+        cabal-update: true
 
-    - name: Build package
-      shell: bash
+    - name: Configure Cabal
       run: |
         cabal update
+        cabal configure --enable-tests --enable-benchmarks --enable-documentation
+
+    - name: Generate cache key
+      # Creates plan.json file
+      run: |
+        cabal build all --dry-run
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v4
+      id: cache
+      env:
+        key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ env.key }}
+
+    - name: Install dependencies
+      # If we had an exact cache hit, the dependencies will be up to date.
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cabal build all --only-dependencies
+
+    # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+    - name: Save cached dependencies
+      uses: actions/cache/save@v4
+      # If we had an exact cache hit, trying to save the cache would error because of key clash.
+      if: steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Build
+      run: |
         cabal build all -f Pedantic
 
-    - name: Upload package
+    # - name: Upload package
+    #   env:
+    #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+    #   shell: bash
+    #   run: |
+    #     cabal sdist symbolic-base
+    #     cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
+
+    - name: Upload documentation
       env:
         HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
       shell: bash
       run: |
-        cabal sdist symbolic-base
-        cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
-
         cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
         cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz

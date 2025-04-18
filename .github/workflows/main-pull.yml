@@ -69,41 +69,58 @@ jobs:
       run: |
         cabal build all -f Pedantic
 
-    - name: Symbolic Base "Algebra" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Algebra') }}
+    - name: Run symbolic-base-test (Algebra)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Algebra') }}
     
-    - name: Symbolic Base "Serialization" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Serialization') }}
+    - name: Run symbolic-base-test (Serialization)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Serialization') }}
 
-    - name: Symbolic Base "Protocols" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Protocols') }}
+    - name: Run symbolic-base-test (Protocols)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Protocols') }}
 
-    - name: Symbolic Base "Symbolic compiler" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic compiler') }}
+    - name: Run symbolic-base-test (Symbolic compiler)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Symbolic compiler') }}
 
-    - name: Symbolic Base "Symbolic data" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic data') }}
+    - name: Run symbolic-base-test (Symbolic data)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Symbolic data') }}
 
-    - name: Symbolic Base "Symbolic cryptography" test
-      run: ${{ format('cabal test symbolic-base-test --test-option="--match=Test group{0} {1}"', ':', 'Symbolic cryptography') }}
+    - name: Run symbolic-base-test (Symbolic cryptography)
+      run: ${{ format('cabal test symbolic-base-test --test-option="--match=symbolic-base-test{0} {1}"', ':', 'Symbolic cryptography') }}
 
-    - name: Symbolic Apps test
-      run: cabal test symbolic-apps-test
-
-    - name: UPLC Converter test
-      run: cabal test symbolic-uplc-test
+    - name: Run other tests
+      run: cabal test all --test-option="--skip=symbolic-base-test"
 
     - name: Compiler benchmark
       run: cabal bench compiler-golden-stats
 
-    # - name: Check cabal file
-    #   run: cabal check
+    - name: Check cabal files
+      run: |
+        cd symbolic-base
+        cabal check
 
-    # - name: Document package
-    #   run: cabal haddock all
+        cd ../symbolic-examples
+        cabal check
 
-    # - name: Prepare package for publishing
-    #   run: cabal sdist all
+        cd ../symbolic-apps
+        cabal check
+
+        cd ../symbolic-ledger
+        cabal check
+
+        cd ../symbolic-cardano
+        cabal check
+
+        cd ../symbolic-uplc
+        cabal check
+
+        cd..
+
+    - name: Document package
+      run: cabal haddock all
+
+    - name: Prepare package for publishing
+      run: cabal sdist all
+
   stylish-haskell-job:
     strategy:
       matrix:
