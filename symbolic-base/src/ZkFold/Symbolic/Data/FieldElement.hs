@@ -12,6 +12,7 @@ import           Data.Tuple                        (snd)
 import           GHC.Generics                      (Generic, Par1 (..))
 import           Prelude                           (Integer)
 import qualified Prelude                           as Haskell
+import           Test.QuickCheck                   (Arbitrary (..))
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number
@@ -109,3 +110,6 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
 
 instance (Symbolic c) => SymbolicInput (FieldElement c) where
   isValid _ = true
+
+instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where
+  arbitrary = FieldElement . embed . Par1 <$> arbitrary

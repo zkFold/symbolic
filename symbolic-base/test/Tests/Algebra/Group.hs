@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use -"                  #-}
 
-module Tests.Algebra.Group (specAdditiveGroup) where
+module Tests.Algebra.Group (specGroup) where
 
 import           Data.Data                                   (Typeable, typeOf)
 import           Prelude                                     hiding (Fractional (..), Num (..), length)
@@ -19,8 +19,8 @@ import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vest
 import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point)
 import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
 
-specAdditiveGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
-specAdditiveGroup' = do
+specGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
+specGroup' = do
     describe "Group specification" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do
             describe "Additive group axioms" $ do
@@ -33,20 +33,20 @@ specAdditiveGroup' = do
                 it "should satisfy additive inverse" $ do
                     property $ \(a :: a) -> a + negate a == zero
 
-specAdditiveGroup :: Spec
-specAdditiveGroup = do
-    specAdditiveGroup' @BN254_G1_Point
-    specAdditiveGroup' @BN254_G2_Point
+specGroup :: Spec
+specGroup = do
+    specGroup' @BN254_G1_Point
+    specGroup' @BN254_G2_Point
 
-    specAdditiveGroup' @BLS12_381_G1_Point
-    specAdditiveGroup' @BLS12_381_G2_Point
+    specGroup' @BLS12_381_G1_Point
+    specGroup' @BLS12_381_G2_Point
 
-    specAdditiveGroup' @Pallas_Point
-    specAdditiveGroup' @Vesta_Point
+    specGroup' @Pallas_Point
+    specGroup' @Vesta_Point
 
-    specAdditiveGroup' @Secp256k1_Point
+    specGroup' @Secp256k1_Point
 
-    specAdditiveGroup' @Ed25519_Point
+    specGroup' @Ed25519_Point
 
-    specAdditiveGroup' @Pluto_Point
-    specAdditiveGroup' @Eris_Point
+    specGroup' @Pluto_Point
+    specGroup' @Eris_Point

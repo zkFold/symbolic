@@ -96,7 +96,7 @@ library
       ZkFold.Base.Algebra.Basic.Class
       ZkFold.Base.Algebra.Basic.Field
       ZkFold.Base.Algebra.Basic.Number
-      ZkFold.Base.Algebra.Basic.Permutations
+      ZkFold.Base.Algebra.Basic.Permutation
       ZkFold.Base.Algebra.Basic.DFT
       ZkFold.Base.Algebra.Basic.VectorSpace
       ZkFold.Base.Algebra.EllipticCurve.BLS12_381
@@ -198,7 +198,6 @@ library
       ZkFold.Symbolic.Data.Class
       ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.Conditional
-      ZkFold.Symbolic.Data.DiscreteField
       ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
       ZkFold.Symbolic.Data.EllipticCurve.BN254
       ZkFold.Symbolic.Data.EllipticCurve.Ed25519
@@ -319,7 +318,7 @@ test-suite symbolic-base-test
       Tests.Algebra.GroebnerBasis
       Tests.Algebra.Group
       Tests.Algebra.Pairing
-      Tests.Algebra.Permutations
+      Tests.Algebra.Permutation
       Tests.Algebra.ReedSolomon
       Tests.Algebra.Univariate
       Tests.Algebra.Univariate.Poly
@@ -336,12 +335,10 @@ test-suite symbolic-base-test
       Tests.Symbolic.Compiler
       Tests.Symbolic.Compiler.CompileWith
       Tests.Symbolic.Compiler.Optimization
-      Tests.Symbolic.Compiler.Test1
-      Tests.Symbolic.Compiler.Test2
-      Tests.Symbolic.Compiler.Test3
-      Tests.Symbolic.Compiler.Test4
       Tests.Symbolic.Data.ByteString
+      Tests.Symbolic.Data.Common
       Tests.Symbolic.Data.FFA
+      Tests.Symbolic.Data.FieldElement
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List

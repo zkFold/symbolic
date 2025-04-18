@@ -175,6 +175,9 @@ acPrint ac = do
 
 ---------------------------------- Testing -------------------------------------
 
+-- TODO: move this closer to the test suite (?)
+
+-- TODO: `checkClosedCircuit` should check all constraint types
 checkClosedCircuit
     :: forall a o
      . Arithmetic a
@@ -189,18 +192,20 @@ checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acS
         varF (InVar v)  = absurd v
         varF (NewVar v) = w ! v
 
+-- TODO: `checkCircuit` should check all constraint types
 checkCircuit
-    :: Arbitrary (i a)
+    :: Arbitrary x
     => Arithmetic a
     => Binary a
     => Show a
     => Representable i
     => ArithmeticCircuit a i o
+    -> (x -> i a)
     -> Property
-checkCircuit c = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
+checkCircuit c f = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
     where
         testPoly p = do
-            ins <- arbitrary
+            ins <- f <$> arbitrary
             let w = witnessGenerator c ins
                 varF (InVar v)  = index ins v
                 varF (NewVar v) = w ! v

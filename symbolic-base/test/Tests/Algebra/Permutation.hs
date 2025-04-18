@@ -1,19 +1,19 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Tests.Algebra.Permutations (specPermutations) where
+module Tests.Algebra.Permutation (specPermutation) where
 
-import           Data.Map                               (elems)
-import qualified Data.Vector                            as V
-import qualified Data.Vector.Algorithms.Intro           as V
-import           Prelude                                hiding (Fractional (..), Num (..), length)
+import           Data.Map                              (elems)
+import qualified Data.Vector                           as V
+import qualified Data.Vector.Algorithms.Intro          as V
+import           Prelude                               hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Permutations
-import           ZkFold.Base.Data.Vector                (fromVector)
+import           ZkFold.Base.Algebra.Basic.Permutation
+import           ZkFold.Base.Data.Vector               (fromVector)
 
-specPermutations :: Spec
-specPermutations = do
+specPermutation :: Spec
+specPermutation = do
     describe "Permutations specification" $ do
         describe "Function: mkIndexPartition" $ do
             it "should preserve the total number of elements" $ property $

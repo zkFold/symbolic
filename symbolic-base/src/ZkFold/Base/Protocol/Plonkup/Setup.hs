@@ -12,7 +12,7 @@ import           Prelude                                           hiding (Num (
 
 import           ZkFold.Base.Algebra.Basic.Class
 import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, value)
-import           ZkFold.Base.Algebra.Basic.Permutations            (fromPermutation)
+import           ZkFold.Base.Algebra.Basic.Permutation             (fromPermutation)
 import           ZkFold.Base.Algebra.EllipticCurve.Class           (CyclicGroup (..), Pairing)
 import           ZkFold.Base.Algebra.Polynomials.Univariate        (UnivariateFieldPolyVec (..), polyVecInLagrangeBasis,
                                                                     toPolyVec)
