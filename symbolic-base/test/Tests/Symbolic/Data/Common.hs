@@ -104,26 +104,23 @@ evalCircuit0 :: forall x a o .
 evalCircuit0 ac =
   restore $ const (Interpreter $ exec ac, U1)
 
-evalCircuit1 :: forall x y a i o .
+evalCircuit1 :: forall x y a o .
   ( Arithmetic a
   , Binary a
-  , Representable i
   , Representable o
   , SymbolicInput x
   , Context x ~ Interpreter a
-  , Layout x ~ i
   , SymbolicOutput y
   , Context y ~ Interpreter a
   , Layout y ~ o
   , Payload y ~ U1
-  ) => ArithmeticCircuit a i o -> x -> y
+  ) => ArithmeticCircuit a (Layout x) o -> x -> y
 evalCircuit1 ac input =
   restore $ const (Interpreter $ eval ac $ runInterpreter $ arithmetize input Proxy, U1)
 
-evalCircuit2 :: forall x y z a i o .
+evalCircuit2 :: forall x y z a o .
   ( Arithmetic a
   , Binary a
-  , Representable i
   , Representable o
   , SymbolicInput x
   , Context x ~ Interpreter a
@@ -133,8 +130,7 @@ evalCircuit2 :: forall x y z a i o .
   , Context z ~ Interpreter a
   , Layout z ~ o
   , Payload z ~ U1
-  , i ~ Layout x :*: Layout y
-  ) => ArithmeticCircuit a i o -> x -> y -> z
+  ) => ArithmeticCircuit a (Layout x :*: Layout y) o -> x -> y -> z
 evalCircuit2 ac x y =
   restore $ const (Interpreter $ eval ac input, U1)
   where
@@ -163,19 +159,17 @@ compileCircuit1 :: forall a x y i o . (Binary a, Representable i
 compileCircuit1 func =
   compileWith @a id (\i -> (U1 :*: U1, i :*: U1)) $ func @(ArithmeticCircuit a i)
 
-compileCircuit2 :: forall a x y z ix iy i o . (Binary a, Representable i
+compileCircuit2 :: forall a x y z i o . (Binary a, Representable i
   , SymbolicInput (x (ArithmeticCircuit a i))
   , Context (x (ArithmeticCircuit a i)) ~ ArithmeticCircuit a i
-  , Layout (x (ArithmeticCircuit a i)) ~ ix
   , Payload (x (ArithmeticCircuit a i)) ~ U1
   , SymbolicInput (y (ArithmeticCircuit a i))
   , Context (y (ArithmeticCircuit a i)) ~ ArithmeticCircuit a i
-  , Layout (y (ArithmeticCircuit a i)) ~ iy
   , Payload (y (ArithmeticCircuit a i)) ~ U1
   , SymbolicOutput (z (ArithmeticCircuit a i))
   , Context (z (ArithmeticCircuit a i)) ~ ArithmeticCircuit a i
   , Layout (z (ArithmeticCircuit a i)) ~ o
-  , i ~ ix :*: iy
+  , i ~ Layout (x (ArithmeticCircuit a i)) :*: Layout (y (ArithmeticCircuit a i))
   ) => (forall c . Symbolic c => x c -> y c -> z c) -> ArithmeticCircuit a i o
 compileCircuit2 func =
   compileWith @a id (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1)) $ func @(ArithmeticCircuit a i)
