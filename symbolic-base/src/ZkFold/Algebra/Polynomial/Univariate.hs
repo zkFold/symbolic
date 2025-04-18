@@ -166,7 +166,10 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    P l * P r = removeZeros $ P $ mulAdaptive l r
+    P l * P r = removeZeros $ P $ mulAdaptive genericDft l r
+
+instance (Field c, Eq c, NFData c) => StrictMultiplicativeSemigroup (Poly c) where
+    P l *! P r = removeZeros $ P $ mulAdaptive genericDft' l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -174,8 +177,8 @@ padVector v l
   | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
 
-mulAdaptive :: forall c . (Field c, Eq c) => V.Vector c -> V.Vector c -> V.Vector c
-mulAdaptive l r
+mulAdaptive :: forall c . (Field c, Eq c) => (Integer -> c -> V.Vector c -> V.Vector c) -> V.Vector c -> V.Vector c -> V.Vector c
+mulAdaptive dft l r
       | V.null l = V.empty
       | V.null r = V.empty
       | Just (m, cm, c0) <- isShiftedMono r = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx l (fromIntegral m) cm c0
@@ -183,7 +186,7 @@ mulAdaptive l r
       | otherwise =
           case (maybeW2n, len <= 64) of
             (_, True)        -> mulVector l r
-            (Just w2n, _)    -> mulDft (p + 1) w2n lPaddedDft rPaddedDft
+            (Just w2n, _)    -> mulDft dft (p + 1) w2n lPaddedDft rPaddedDft
             (Nothing, False) -> mulKaratsuba lPaddedKaratsuba rPaddedKaratsuba
         where
             mulShiftedMonoIx :: V.Vector c -> Int -> c -> c -> Int -> c
@@ -215,8 +218,8 @@ mulAdaptive l r
             maybeW2n :: Maybe c
             maybeW2n = rootOfUnity $ fromIntegral (p P.+ 1)
 
-mulDft :: forall c . Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
-mulDft p w2n lPadded rPadded = c
+mulDft :: forall c . Field c => (Integer -> c -> V.Vector c -> V.Vector c) -> Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
+mulDft dft p w2n lPadded rPadded = c
   where
     pad :: Int
     pad = 2 P.^ p
@@ -228,14 +231,14 @@ mulDft p w2n lPadded rPadded = c
     nInv = one // fromConstant (fromIntegral @_ @Natural pad)
 
     v1Image, v2Image :: V.Vector c
-    v1Image = genericDft p w2n lPadded
-    v2Image = genericDft p w2n rPadded
+    v1Image = dft p w2n lPadded
+    v2Image = dft p w2n rPadded
 
     cImage :: V.Vector c
     cImage = V.zipWith (*) v1Image v2Image
 
     c :: V.Vector c
-    c = (* nInv) <$> genericDft p w2nInv cImage
+    c = (* nInv) <$> dft p w2nInv cImage
 
 mulKaratsuba :: forall a. (Field a, Eq a) => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2
@@ -258,15 +261,15 @@ mulKaratsuba v1 v2
 
 
     ac, bd :: V.Vector a
-    ac = padVector (mulAdaptive a c) partLen
-    bd = padVector (mulAdaptive b d) partLen
+    ac = padVector (mulAdaptive genericDft a c) partLen
+    bd = padVector (mulAdaptive genericDft b d) partLen
 
     apb, cpd :: V.Vector a
     apb = V.zipWith (+) a b
     cpd = V.zipWith (+) c d
 
     abcd :: V.Vector a
-    abcd = mulAdaptive apb cpd
+    abcd = mulAdaptive genericDft apb cpd
 
     mid :: V.Vector a
     mid = V.zipWith3 (\x y z -> x - y - z) (padVector abcd partLen) (padVector ac partLen) (padVector bd partLen)
@@ -395,7 +398,7 @@ instance
     ( Ring c
     ) => UnivariateRingPolyVec c (PolyVec c) where
 
-    l .*. r = toPolyVec @_ @(PolyVec c) $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+    l .*. r = toPolyVec @_ @(PolyVec c) $ V.zipWith (*) (fromPolyVec l) (fromPolyVec r)
 
     (PV cs) .* a = PV $ fmap (* a) cs
 
@@ -438,7 +441,7 @@ instance
     , UnivariateRingPolyVec c (PolyVec c)
     ) => UnivariateFieldPolyVec c (PolyVec c) where
 
-    l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+    l ./. r = toPolyVec $ V.zipWith (//) (fromPolyVec l) (fromPolyVec r)
 
     polyVecZero :: forall size . (KnownNat size) => Natural -> PolyVec c size
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
@@ -569,7 +572,10 @@ instance {-# OVERLAPPING #-} (Field c, Eq c, KnownNat size) => Scale (PolyVec c 
 
 -- TODO (Issue #18): check for overflow
 instance (Field c, Eq c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
-    (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
+    (PV l) * (PV r) = toPolyVec $ mulAdaptive genericDft l r
+
+instance (Field c, Eq c, NFData c, KnownNat size) => StrictMultiplicativeSemigroup (PolyVec c size) where
+    (PV l) *! (PV r) = toPolyVec $ mulAdaptive genericDft' l r
 
 instance (Field c, Eq c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
@@ -642,7 +648,7 @@ mulPolyDft (P v1) (P v2) = removeZeros $ P result
 
     pad = 2 P.^ p
 
-    result = mulDft @a p w2n
+    result = mulDft @a genericDft p w2n
         (v1 V.++ V.replicate (pad P.- V.length v1) zero)
         (v2 V.++ V.replicate (pad P.- V.length v2) zero)
 
