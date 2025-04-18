@@ -157,7 +157,7 @@ specSHA2bs
 specSHA2bs = do
     let n = value @n
         m = 2 ^ n -! 1
-    it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring (SLOW)") $ withMaxSuccess 2 $ do
+    it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring") $ withMaxSuccess 2 $ do
         x <- toss m
         let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
             ByteString (Interpreter hashZP) = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x

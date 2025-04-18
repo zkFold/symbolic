@@ -32,7 +32,7 @@ propNonInteractiveProof (a, w) =
 specNonInteractiveProof' :: forall a . (Typeable a, NonInteractiveProof a,
     Show a, Show (Witness a), Arbitrary a, Arbitrary (Witness a)) => Spec
 specNonInteractiveProof' = do
-    describe "Non-interactive proof protocol specification (SLOW)" $ do
+    describe "Non-interactive proof protocol specification" $ do
         describe ("Type: " ++ show (typeRep (Proxy :: Proxy a))) $ do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a
