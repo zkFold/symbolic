@@ -32,7 +32,7 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
-    describe "symbolic-base-test: Algebra" $ do
+    describe "symbolic-base-test (Algebra)" $ do
         specGroup
         specField
         specEllipticCurve
@@ -42,19 +42,19 @@ spec gen = do
         specReedSolomon
         specGroebner
 
-    describe "symbolic-base-test: Serialization" $ do
+    describe "symbolic-base-test (Serialization)" $ do
         specBinary
 
-    describe "symbolic-base-test: Protocols" $ do
+    describe "symbolic-base-test (Protocols)" $ do
         specPlonkup
         specNonInteractiveProof
         specIVC
 
-    describe "symbolic-base-test: Symbolic compiler" $ do
+    describe "symbolic-base-test (Symbolic compiler)" $ do
         specArithmeticCircuit
         specCompiler
 
-    describe "symbolic-base-test: Symbolic data" $ do
+    describe "symbolic-base-test (Symbolic data)" $ do
         specUInt
         specInt
         specFFA
@@ -63,7 +63,7 @@ spec gen = do
         specList
         specMerkleTree
 
-    describe "symbolic-base-test: Symbolic cryptography" $ do
+    describe "symbolic-base-test (Symbolic cryptography)" $ do
         specBlake2b
         specJWT
         specRSA gen

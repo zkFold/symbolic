@@ -121,9 +121,9 @@ library
       symbolic-cardano,
     hs-source-dirs: src
 
-benchmark bench-compilation-evaluation
+benchmark bench-compiler-performance
     import:           options-exe
-    main-is:          BenchCompiler.hs
+    main-is:          CompilerPerformance.hs
     hs-source-dirs:   bench
     type:             exitcode-stdio-1.0
     ghc-options:
@@ -139,9 +139,9 @@ benchmark bench-compilation-evaluation
       symbolic-examples,
       tasty-bench
 
-benchmark compiler-golden-stats
+benchmark bench-circuit-size
     import:           options-exe
-    main-is:          GoldenTest.hs
+    main-is:          CircuitSize.hs
     hs-source-dirs:   bench
     type:             exitcode-stdio-1.0
     ghc-options:      -O3

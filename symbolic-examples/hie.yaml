@@ -4,7 +4,7 @@ cradle:
       component: "lib:symbolic-examples"
 
     - path: "bench/BenchCompiler.hs"
-      component: "symbolic-examples:bench:bench-compilation-evaluation"
+      component: "symbolic-examples:bench:bench-compiler-performance"
 
     - path: "bench/GoldenTest.hs"
-      component: "symbolic-examples:bench:compiler-golden-stats"
+      component: "symbolic-examples:bench:bench-circuit-size"
