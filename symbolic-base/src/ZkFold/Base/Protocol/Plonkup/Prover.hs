@@ -44,6 +44,7 @@ plonkupProve :: forall i n l g1 g2 ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    , StrictMultiplicativeSemigroup (pv (PlonkupPolyExtendedLength n))
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     , NFData (pv (PlonkupPolyExtendedLength n))
     ) => PlonkupProverSetup i n l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
@@ -166,14 +167,14 @@ plonkupProve PlonkupProverSetup {..}
         -- TODO: even with all these @force@-s, @qX@ still generates somewhat big thunks, most of which are from @genericDft@.
         -- If this becomes critical in the future, we'll need to add strict multiplication.
         qX = (
-                force (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
-              + force ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
-              - force ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
-              + force ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
-              + force (qkX * (aX - fX) .* alpha3)
-              + force (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
-              - force ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
-              + force ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
+                (qmX *! aX *! bX + qlX *! aX + qrX *! bX + qoX *! cX + piX + qcX)
+              + ((aX + polyVecLinear beta gamma) *! (bX + polyVecLinear (beta * k1) gamma) *! (cX + polyVecLinear (beta * k2) gamma) *! z1X .* alpha)
+              - ((aX + (beta *. s1X) + gammaX) *! (bX + (beta *. s2X) + gammaX) *! (cX + (beta *. s3X) + gammaX) *! (z1X .*. omegas') .* alpha)
+              + ((z1X - one) *! polyVecLagrange (value @n) 1 omega .* alpha2)
+              + (qkX *! (aX - fX) .* alpha3)
+              + (z2X *! (one + deltaX) *! (epsilonX + fX) *! ((epsilonX *! (one + deltaX)) + tX + deltaX *! (tX .*. omegas')) .* alpha4)
+              - ((z2X .*. omegas') *! ((epsilonX *! (one + deltaX)) + h1X + deltaX *! h2X) *! ((epsilonX *! (one + deltaX)) + h2X + deltaX *! (h1X .*. omegas')) .* alpha4)
+              + ((z2X - one) *! polyVecLagrange (value @n) 1 omega .* alpha5)
             ) `polyVecDiv` zhX
         qlowX  = toPolyVec $ V.take (fromIntegral (n+2)) $ fromPolyVec qX
         qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX

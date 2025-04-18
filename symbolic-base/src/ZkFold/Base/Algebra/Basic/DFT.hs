@@ -1,5 +1,6 @@
-module ZkFold.Base.Algebra.Basic.DFT (genericDft) where
+module ZkFold.Base.Algebra.Basic.DFT (genericDft, genericDft') where
 
+import           Control.DeepSeq                 (NFData, force)
 import           Control.Monad                   (forM_)
 import qualified Data.STRef                      as ST
 import qualified Data.Vector                     as V
@@ -13,15 +14,16 @@ import           ZkFold.Base.Algebra.Basic.Class
 -- Does not apply scaling when it's inverse.
 -- Requires the vector to be of length 2^@n@.
 --
-genericDft
+genericDftInternal
     :: forall a
      . Ring a
-    => Integer
+    => (V.Vector a -> V.Vector a)
+    -> Integer
     -> a
     -> V.Vector a
     -> V.Vector a
-genericDft 0 _ v  = v
-genericDft n wn v = V.create $ do
+genericDftInternal _ 0 _ v  = v
+genericDftInternal f n wn v = f $ V.create $ do
     result <- VM.new (2 P.^ n)
     wRef <- ST.newSTRef one
     forM_ [0 .. halfLen P.- 1] $ \k -> do
@@ -36,8 +38,26 @@ genericDft n wn v = V.create $ do
 
     wn2 = wn * wn
 
-    a0Hat = genericDft (n P.- 1) wn2 a0
-    a1Hat = genericDft (n P.- 1) wn2 a1
+    a0Hat = genericDftInternal f (n P.- 1) wn2 a0
+    a1Hat = genericDftInternal f (n P.- 1) wn2 a1
 
     halfLen = 2 P.^ (n P.- 1)
 
+genericDft
+    :: forall a
+     . Ring a
+    => Integer
+    -> a
+    -> V.Vector a
+    -> V.Vector a
+genericDft = genericDftInternal id
+
+genericDft'
+    :: forall a
+     . Ring a
+    => NFData a
+    => Integer
+    -> a
+    -> V.Vector a
+    -> V.Vector a
+genericDft' = genericDftInternal force
