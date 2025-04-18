@@ -39,6 +39,22 @@ import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
   3. Run all type-specific checks in the interpreter context.
 -}
 
+specConstantRoundtrip' :: forall x .
+  ( Arbitrary x
+  , Eq x
+  , Eq (Const x)
+  , Show x
+  , Show (Const x)
+  , FromConstant (Const x) x
+  , ToConstant x
+  ) => String -> String -> Gen (Const x) -> Spec
+specConstantRoundtrip' symType hType gen = do
+  it (symType ++ " embeds " ++ hType) $
+    \(x :: x) -> fromConstant (toConstant x :: Const x) === x
+  it (hType ++ " embeds " ++ symType) $ do
+    (x :: Const x) <- gen
+    return $ toConstant (fromConstant x :: x) === x
+
 specConstantRoundtrip :: forall a x .
   ( Arbitrary (x (Interpreter a))
   , Eq (x (Interpreter a))
@@ -48,12 +64,7 @@ specConstantRoundtrip :: forall a x .
   , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
   , ToConstant (x (Interpreter a))
   ) => String -> String -> Gen (Const (x (Interpreter a))) -> Spec
-specConstantRoundtrip symType hType gen = do
-  it (symType ++ " embeds " ++ hType) $
-    \(x :: x (Interpreter a)) -> fromConstant (toConstant x :: Const (x (Interpreter a))) === x
-  it (hType ++ " embeds " ++ symType) $ do
-    (x :: Const (x (Interpreter a))) <- gen
-    return $ toConstant (fromConstant x :: x (Interpreter a)) === x
+specConstantRoundtrip = specConstantRoundtrip' @(x (Interpreter a))
 
 type MatchingSymbolicInput x i c c' =
   ( SymbolicInput (x c)
