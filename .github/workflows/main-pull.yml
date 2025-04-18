@@ -113,7 +113,7 @@ jobs:
         cd ../symbolic-uplc
         cabal check
 
-        cd..
+        cd ..
 
     - name: Document package
       run: cabal haddock all
