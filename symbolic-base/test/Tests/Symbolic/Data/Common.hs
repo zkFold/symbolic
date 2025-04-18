@@ -92,40 +92,49 @@ type MatchingSymbolicOutput y o c c' =
   , Binary (BaseField (Context (y c)))
   )
 
-evalCircuit0 :: forall a x o . (Arithmetic a, Binary a, Representable o
-  , SymbolicInput (x (Interpreter a))
-  , Context (x (Interpreter a)) ~ Interpreter a
-  , Layout (x (Interpreter a)) ~ o
-  , Payload (x (Interpreter a)) ~ U1
-  ) => ArithmeticCircuit a U1 o -> x (Interpreter a)
+evalCircuit0 :: forall x a o .
+  ( Arithmetic a
+  , Binary a
+  , Representable o
+  , SymbolicInput x
+  , Context x ~ Interpreter a
+  , Layout x ~ o
+  , Payload x ~ U1
+  ) => ArithmeticCircuit a U1 o -> x
 evalCircuit0 ac =
   restore $ const (Interpreter $ exec ac, U1)
 
-evalCircuit1 :: forall a x y i o . (Arithmetic a, Binary a, Representable i, Representable o
-  , SymbolicInput (x (Interpreter a))
-  , Context (x (Interpreter a)) ~ Interpreter a
-  , Layout (x (Interpreter a)) ~ i
-  , SymbolicOutput (y (Interpreter a))
-  , Context (y (Interpreter a)) ~ Interpreter a
-  , Layout (y (Interpreter a)) ~ o
-  , Payload (y (Interpreter a)) ~ U1
-  ) => ArithmeticCircuit a i o -> x (Interpreter a) -> y (Interpreter a)
+evalCircuit1 :: forall x y a i o .
+  ( Arithmetic a
+  , Binary a
+  , Representable i
+  , Representable o
+  , SymbolicInput x
+  , Context x ~ Interpreter a
+  , Layout x ~ i
+  , SymbolicOutput y
+  , Context y ~ Interpreter a
+  , Layout y ~ o
+  , Payload y ~ U1
+  ) => ArithmeticCircuit a i o -> x -> y
 evalCircuit1 ac input =
   restore $ const (Interpreter $ eval ac $ runInterpreter $ arithmetize input Proxy, U1)
 
-evalCircuit2 :: forall a x y z ix iy i o . (Arithmetic a, Binary a, Representable i, Representable o
-  , SymbolicInput (x (Interpreter a))
-  , Context (x (Interpreter a)) ~ Interpreter a
-  , Layout (x (Interpreter a)) ~ ix
-  , SymbolicInput (y (Interpreter a))
-  , Context (y (Interpreter a)) ~ Interpreter a
-  , Layout (y (Interpreter a)) ~ iy
-  , SymbolicOutput (z (Interpreter a))
-  , Context (z (Interpreter a)) ~ Interpreter a
-  , Layout (z (Interpreter a)) ~ o
-  , Payload (z (Interpreter a)) ~ U1
-  , i ~ ix :*: iy
-  ) => ArithmeticCircuit a i o -> x (Interpreter a) -> y (Interpreter a) -> z (Interpreter a)
+evalCircuit2 :: forall x y z a i o .
+  ( Arithmetic a
+  , Binary a
+  , Representable i
+  , Representable o
+  , SymbolicInput x
+  , Context x ~ Interpreter a
+  , SymbolicInput y
+  , Context y ~ Interpreter a
+  , SymbolicOutput z
+  , Context z ~ Interpreter a
+  , Layout z ~ o
+  , Payload z ~ U1
+  , i ~ Layout x :*: Layout y
+  ) => ArithmeticCircuit a i o -> x -> y -> z
 evalCircuit2 ac x y =
   restore $ const (Interpreter $ eval ac input, U1)
   where
@@ -181,7 +190,7 @@ specSymbolicFunction0 :: forall a x o .
   , MatchingSymbolicInput x o (Interpreter a) (ArithmeticCircuit a U1)
   ) => String -> SymbolicFunction0 x -> Spec
 specSymbolicFunction0 desc v = describe desc $ do
-  it "evaluates correctly" $ evalCircuit0 @a (compileCircuit0 v) === v
+  it "evaluates correctly" $ evalCircuit0 @(x (Interpreter a)) (compileCircuit0 v) === v
   it "satisfies constraints" $
     checkClosedCircuit (compileCircuit0 @a v :: ArithmeticCircuit a U1 o)
 
@@ -199,7 +208,7 @@ specSymbolicFunction1 :: forall a x y i o .
   ) => String -> SymbolicFunction1 x y -> Spec
 specSymbolicFunction1 desc func = describe desc $ do
   it "evaluates correctly" $
-    \(x :: x (Interpreter a)) -> evalCircuit1 @a (compileCircuit1 func) x === func x
+    \(x :: x (Interpreter a)) -> evalCircuit1 @(x (Interpreter a)) (compileCircuit1 func) x === func x
   it "satisfies constraints" $
     checkCircuit (compileCircuit1 @a func :: ArithmeticCircuit a i o) (\(x :: x (Interpreter a)) -> runInterpreter $ arithmetize x Proxy)
 
@@ -216,7 +225,7 @@ specSymbolicFunction1WithPar :: forall par a x y i o .
   ) => String -> (par -> SymbolicFunction1 x y) -> Spec
 specSymbolicFunction1WithPar desc func = describe desc $ do
   it "evaluates correctly" $
-    \par (x :: x (Interpreter a)) -> evalCircuit1 @a (compileCircuit1 $ func par) x === func par x
+    \par (x :: x (Interpreter a)) -> evalCircuit1 @(x (Interpreter a)) (compileCircuit1 $ func par) x === func par x
   it "satisfies constraints" $
     \par -> checkCircuit (compileCircuit1 @a $ func par :: ArithmeticCircuit a i o) (\(x :: x (Interpreter a)) -> runInterpreter $ arithmetize x Proxy)
 
