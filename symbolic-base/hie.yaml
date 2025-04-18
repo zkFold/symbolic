@@ -11,3 +11,6 @@ cradle:
 
     - path: "bench/BenchEC.hs"
       component: "symbolic-base:bench:bench-in-circuit-ec"
+
+    - path: "bench/BenchLagrangeBasis.hs"
+      component: "symbolic-base:bench:bench-lagrange-basis"

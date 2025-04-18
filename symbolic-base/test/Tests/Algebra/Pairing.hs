@@ -73,7 +73,7 @@ specPairing'
     => Show g1
     => Spec
 specPairing' = do
-    describe "Elliptic curve pairing specification (SLOW)" $ do
+    describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @g1 @g2))) $ do
             describe "Pairing axioms" $ do
                 it "should satisfy bilinearity" $ withMaxSuccess 10 $ do
