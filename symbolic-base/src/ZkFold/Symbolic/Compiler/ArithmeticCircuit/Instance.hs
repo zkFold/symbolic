@@ -11,6 +11,7 @@ import           Data.Bool                                           (bool)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
+import           Data.Typeable                                       (Typeable)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (head, mempty, pure, return, ($), (.), (<$>), (<))
 import qualified Prelude                                             as Haskell
@@ -33,6 +34,7 @@ instance
   ( Arithmetic a
   , Arbitrary a
   , Binary a
+  , Typeable a
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
@@ -49,6 +51,7 @@ instance
   ( Arithmetic a
   , Arbitrary a
   , Binary a
+  , Typeable a
   , Arbitrary (Rep i)
   , Binary (Rep i)
   , Haskell.Ord (Rep i)
@@ -63,7 +66,8 @@ instance
         return ac {acOutput = toVar <$> o}
 
 arbitrary' ::
-  (Arithmetic a, Binary a, Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
+  (Arithmetic a, Binary a, Typeable a) =>
+  (Binary (Rep i), Haskell.Ord (Rep i), NFData (Rep i)) =>
   (Representable i, Haskell.Foldable i) =>
   FieldElement (ArithmeticCircuit a i) -> Natural ->
   Gen (FieldElement (ArithmeticCircuit a i))
@@ -91,7 +95,7 @@ arbitrary' ac iter = do
 createRangeConstraint :: Symbolic c => FieldElement c -> BaseField c -> FieldElement c
 createRangeConstraint (FieldElement x) a = FieldElement $ fromCircuitF x (\ (Par1 v) ->  Par1 <$> solve v a)
   where
-    solve :: MonadCircuit var a w m => var -> a -> m var
+    solve :: (FiniteField a, MonadCircuit var a w m) => var -> a -> m var
     solve v b = do
       v' <- newAssigned (Haskell.const zero)
       rangeConstraint v' b
@@ -107,7 +111,7 @@ instance (ToJSON a, ToJSON (o (Var a i)), ToJSONKey a, FromJSONKey (Var a i), To
         ]
 
 -- TODO: properly restore the witness generation function
-instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i)) => FromJSON (ArithmeticCircuit a i o) where
+instance (FromJSON a, FromJSON (o (Var a i)), ToJSONKey (Var a i), FromJSONKey a, Haskell.Ord a, Haskell.Ord (Rep i), FromJSON (Rep i), Typeable a) => FromJSON (ArithmeticCircuit a i o) where
     parseJSON =
         withObject "ArithmeticCircuit" $ \v -> do
             acSystem   <- v .: "system"

@@ -102,6 +102,9 @@ testAlgorithm
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
     => KnownNat (Log2 (ChunkSize algorithm))
+    => 1 <= ChunkSize algorithm
+    => 1 <= WordSize algorithm
+    => KnownNat (ResultSize algorithm)
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => FilePath
     -> Spec
@@ -125,6 +128,9 @@ specSHA2Natural'
     .  KnownSymbol algorithm
     => SHA2N algorithm (Interpreter element)
     => KnownNat (Log2 (ChunkSize algorithm))
+    =>  1 <= ChunkSize algorithm
+    =>  1 <= WordSize algorithm
+    => KnownNat (ResultSize algorithm)
     => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
     => Spec
 specSHA2Natural' = do
@@ -160,9 +166,9 @@ specSHA2bs = do
     it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring (SLOW)") $ withMaxSuccess 2 $ do
         x <- toss m
         let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
-            ByteString (Interpreter hashZP) = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x
+            ByteString hashZP' = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x
+            Interpreter hashZP = hashZP'
         pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
-
 
 -- | Test the implementation of a hashing algorithm with @ArithmeticCircuit (Zp BLS12_381_Scalar)@ as base field for ByteStrings.
 --

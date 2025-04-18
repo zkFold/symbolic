@@ -96,7 +96,7 @@ instance
     ) => FromConstant Bytes.ByteString (ByteString n c) where
     fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
         . Haskell.fromIntegral
-        . Haskell.toInteger <$> (V.unsafeToVector @m paddedBytes)
+        . Haskell.toInteger <$> V.unsafeToVector @m paddedBytes
 
         where
             desiredLen = value @m

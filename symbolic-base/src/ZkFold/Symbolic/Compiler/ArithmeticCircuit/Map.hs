@@ -24,7 +24,7 @@ mapVarArithmeticCircuit ::
   (Field a, Eq a, Functor o, Ord (Rep i), Representable i, Foldable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 mapVarArithmeticCircuit ac =
-    let vars = [v | NewVar (EqVar v) <- getAllVars ac]
+    let vars = [ v | NewVar (EqVar v) <- getAllVars ac ]
         asc = [ toByteString @VarField (fromConstant @Natural x) | x <- [0..] ]
         forward = Map.fromAscList $ zip vars asc
         backward = Map.fromAscList $ zip asc vars

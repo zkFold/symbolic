@@ -80,5 +80,5 @@ instance Arithmetic a => Witness a a where
 instance Arithmetic a => MonadCircuit a a a (Witnesses a) where
   unconstrained = return
   constraint _ = return ()
-  rangeConstraint _ _ = return ()
+  lookupConstraint _ _ = return ()
   registerFunction _ = return (FunctionId "")

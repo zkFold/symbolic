@@ -32,8 +32,8 @@ import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, KnownRegisterSize,
+                                                              NumberOfRegisters, RegisterSize (..), Iso (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
@@ -140,16 +140,16 @@ specUInt' = do
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
                 (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` fromConstant d
                 (trueQ, trueR) = num `divMod` d
-                refQ = execZpUint (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
-                refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
+                refQ = execZpUint (fromConstant trueQ :: UInt n rs (Interpreter (Zp p)))
+                refR = execZpUint (fromConstant trueR :: UInt n rs (Interpreter (Zp p)))
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR) .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
 
         it "performs productMod correctly" $ do
             a <- toss  (2 ^ ((n `div` 2) -! 2))
             b <- toss  (2 ^ ((n `div` 2) -! 2))
             d <- toss1 (2 ^ ((n `div` 2) -! 2))
-            let (acQ, acR) = (productMod (fromConstant a :: UInt n rs (AC (Zp p))) (fromConstant b) (fromConstant d))
-                (zpQ, zpR) = (productMod (fromConstant a :: UInt n rs (Interpreter (Zp p))) (fromConstant b) (fromConstant d))
+            let (acQ, acR) = productMod (fromConstant a :: UInt n rs (AC (Zp p))) (fromConstant b) (fromConstant d)
+                (zpQ, zpR) = productMod (fromConstant a :: UInt n rs (Interpreter (Zp p))) (fromConstant b) (fromConstant d)
                 (trueQ, trueR) = (a * b) `divMod` d
                 refQ = execZpUint (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
                 refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))

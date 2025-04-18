@@ -4,6 +4,7 @@
 module Tests.Symbolic.Compiler.Test2 (specArithmetization2) where
 
 import           Data.Binary                                 (Binary)
+import           Data.Typeable                               (Typeable)
 import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
 import           Prelude                                     hiding (Bool, Eq (..), Num (..), not, replicate, (/), (^),
                                                               (||))
@@ -23,7 +24,8 @@ import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 tautology :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 tautology x y = (x /= y) || (x == y)
 
-testTautology :: forall a . (Arithmetic a, Binary a) => a -> a -> Haskell.Bool
+testTautology ::
+  forall a . (Arithmetic a, Binary a, Typeable a) => a -> a -> Haskell.Bool
 testTautology x y =
     let Bool ac = compile @a tautology
         b       = unPar1 (eval ac ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1))

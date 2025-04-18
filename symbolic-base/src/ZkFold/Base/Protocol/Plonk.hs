@@ -9,6 +9,7 @@ import           Data.Binary                                         (Binary)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Kind                                           (Type)
+import           Data.Typeable                                       (Typeable)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
@@ -33,7 +34,6 @@ import           ZkFold.Base.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
-
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
 data Plonk i (n :: Natural) l g1 g2 transcript pv = Plonk {
@@ -47,7 +47,7 @@ data Plonk i (n :: Natural) l g1 g2 transcript pv = Plonk {
 
 fromPlonkup ::
     ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
-    , Binary (Rep i), Ord (Rep i), Representable i
+    , Typeable (ScalarFieldOf g1), Binary (Rep i), Ord (Rep i), Representable i
     ) => Plonkup i n l g1 g2 ts pv -> Plonk i n l g1 g2 ts pv
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
@@ -62,9 +62,9 @@ instance ( Show1 l, Show (Rep i), Show (ScalarFieldOf g1)
                   ++ show h1 ++ " " ++ show gs'
 
 instance ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
-         , Binary (Rep i), Ord (Rep i), Representable i
-         , Arbitrary (Plonkup i n l g1 g2 t pv))
-        => Arbitrary (Plonk i n l g1 g2 t pv) where
+         , Typeable (ScalarFieldOf g1), Binary (Rep i), Ord (Rep i)
+         , Representable i, Arbitrary (Plonkup i n l g1 g2 t pv)
+         ) => Arbitrary (Plonk i n l g1 g2 t pv) where
     arbitrary = fromPlonkup <$> arbitrary
 
 instance forall i n l g1 g2 gt (ts :: Type) pv .

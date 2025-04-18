@@ -351,7 +351,7 @@ shiftWordsR (Words regs) p2
 
             z <- newAssigned (const zero)
 
-            (carry, newHi) <- case (hiRegSize Haskell.> remShift) of
+            (carry, newHi) <- case hiRegSize Haskell.> remShift of
                                 Haskell.True -> splitExpansion remShift (hiRegSize -! remShift) hi
                                 _            -> pure (hi, z)
 

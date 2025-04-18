@@ -1,4 +1,5 @@
 ByteString.Truncate.74.54
 Number of constraints: 295
 Number of variables: 294
-Number of range lookups: 0
+Number of all lookups: 0
+Number of all lookup functions: 1
