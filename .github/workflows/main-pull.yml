@@ -98,7 +98,7 @@ jobs:
     #   run: cabal bench bench-compiler-performance
 
     - name: Benchmark polynomial multiplication
-      run: cabal bench poly-mul
+      run: cabal bench bench-poly-mul
 
     - name: Benchmark in-circuit EC scalar multiplication
       run: cabal bench bench-in-circuit-ec
