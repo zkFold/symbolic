@@ -13,6 +13,7 @@ import           Data.Function                              (const, id, (.))
 import           Data.Functor.Rep                           (Rep, Representable)
 import           Data.Ord                                   (Ord)
 import           Data.Tuple                                 (fst, snd)
+import           Data.Typeable                              (Typeable)
 import           GHC.Generics                               (Par1 (Par1), U1 (..), (:*:))
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
                                                              (++))
@@ -26,7 +27,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (Bool))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit               (MonadCircuit (..))
-import Data.Typeable (Typeable)
 
 {-
     ZkFold Symbolic compiler module dependency order:

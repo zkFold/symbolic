@@ -50,7 +50,7 @@ data LookupType a = forall f. Typeable f => LookupType { lTable :: LookupTable a
 
 asRange :: LookupType a -> Maybe (Set (a, a))
 asRange (LookupType (Ranges rs)) = Just rs
-asRange _ = Nothing
+asRange _                        = Nothing
 
 deriving instance (Show a) => Show (LookupType a)
 

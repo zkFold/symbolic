@@ -5,6 +5,7 @@
 module Tests.Symbolic.Compiler.Test1 (specArithmetization1) where
 
 import           Data.Binary                       (Binary)
+import           Data.Typeable                     (Typeable)
 import           GHC.Generics                      (Par1 (..), U1 (..), (:*:) (..))
 import           Numeric.Natural                   (Natural)
 import           Prelude                           hiding (Bool, Eq (..), Num (..), not, replicate, (/), (>), (^), (||))
@@ -20,7 +21,6 @@ import           ZkFold.Symbolic.Data.Conditional  ((?))
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Interpreter       (Interpreter)
-import Data.Typeable (Typeable)
 
 -- f x y = if (2 / x > y) then (x ^ 2 + 3 * x + 5) else (4 * x ^ 3)
 testFunc :: forall c . Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
