@@ -70,7 +70,6 @@ jobs:
         cabal build all -f Pedantic
 
     - name: Test "symbolic-base-test (Algebra)"
-      run: 
       run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Algebra)"
     
     - name: Test "symbolic-base-test (Serialization)"

@@ -3,8 +3,8 @@ cradle:
     - path: "src"
       component: "lib:symbolic-examples"
 
-    - path: "bench/BenchCompiler.hs"
+    - path: "bench/CompilerPerformance.hs"
       component: "symbolic-examples:bench:bench-compiler-performance"
 
-    - path: "bench/GoldenTest.hs"
+    - path: "bench/CircuitSize.hs"
       component: "symbolic-examples:bench:bench-circuit-size"
