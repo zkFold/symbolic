@@ -43,11 +43,11 @@ library
       ZkFold.UPLC.BuiltinType
       ZkFold.UPLC.Term
     build-depends:
-      adjunctions  ,
-      base         ,
-      bytestring   ,
-      symbolic-base,
-      text         ,
+      adjunctions                                ,
+      base                          >= 4.9 && < 5,
+      bytestring                                 ,
+      symbolic-base                              ,
+      text                                       ,
       constraints
     hs-source-dirs:     src
 

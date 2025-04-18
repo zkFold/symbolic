@@ -115,7 +115,7 @@ library
       Examples.ZkLogin
     build-depends:
       adjunctions,
-      base,
+      base                          >= 4.9 && < 5,
       deepseq,
       symbolic-base,
       symbolic-cardano,
