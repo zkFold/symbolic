@@ -6,24 +6,24 @@
 
 module ZkFold.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                       (NFData (..), NFData1)
-import           Control.Lens                          ((^.))
-import           Control.Lens.Combinators              (makeLenses)
-import           Data.Binary                           (Binary)
-import           Data.Distributive                     (Distributive (..))
-import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
+import           Control.DeepSeq                  (NFData (..), NFData1)
+import           Control.Lens                     ((^.))
+import           Control.Lens.Combinators         (makeLenses)
+import           Data.Binary                      (Binary)
+import           Data.Distributive                (Distributive (..))
+import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
 import           GHC.Generics
-import           Prelude                               hiding (length, pi)
+import           Prelude                          hiding (length, pi)
 
-import           ZkFold.Algebra.Class       (Ring, Scale, zero)
-import           ZkFold.Algebra.Number      (KnownNat, type (+), type (-))
+import           ZkFold.Algebra.Class             (Ring, Scale, zero)
+import           ZkFold.Algebra.Number            (KnownNat, type (+), type (-))
 import           ZkFold.Data.ByteString           (Binary1)
 import           ZkFold.Data.Vector               (Vector)
 import           ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
 import           ZkFold.Protocol.IVC.Predicate    (Predicate)
-import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f

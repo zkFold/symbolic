@@ -8,11 +8,11 @@ module ZkFold.Algebra.VectorSpace where
 
 import           Control.Monad.State.Strict
 import           Data.Functor.Rep
-import           Data.Kind                       (Type)
-import           GHC.Generics                    hiding (Rep)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), div, divMod, length, mod, negate, product, replicate,
-                                                  sum, (/), (^))
+import           Data.Kind                  (Type)
+import           GHC.Generics               hiding (Rep)
+import           Numeric.Natural            (Natural)
+import           Prelude                    hiding (Num (..), div, divMod, length, mod, negate, product, replicate, sum,
+                                             (/), (^))
 
 import           ZkFold.Algebra.Class
 

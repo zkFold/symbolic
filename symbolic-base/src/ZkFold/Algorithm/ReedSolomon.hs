@@ -3,15 +3,15 @@
 module ZkFold.Algorithm.ReedSolomon where
 
 
-import           Data.Bool                                  (bool)
-import           Data.Vector                                as V hiding (sum)
-import           GHC.Natural                                (Natural)
-import           Prelude                                    (Eq, Int, Integer, Maybe (..), error, fromIntegral, iterate,
-                                                             min, ($), (.), (<=), (==))
-import qualified Prelude                                    as P
+import           Data.Bool                            (bool)
+import           Data.Vector                          as V hiding (sum)
+import           GHC.Natural                          (Natural)
+import           Prelude                              (Eq, Int, Integer, Maybe (..), error, fromIntegral, iterate, min,
+                                                       ($), (.), (<=), (==))
+import qualified Prelude                              as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number           (KnownNat, value)
+import           ZkFold.Algebra.Number                (KnownNat, value)
 import           ZkFold.Algebra.Polynomial.Univariate
 
 

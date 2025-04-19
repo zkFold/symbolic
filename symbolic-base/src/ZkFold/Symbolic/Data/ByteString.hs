@@ -51,13 +51,13 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor         (HFunctor (..))
-import           ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import           ZkFold.Data.Package          (packWith, unpackWith)
-import           ZkFold.Data.Utils            (zipWithM)
-import qualified ZkFold.Data.Vector           as V
-import           ZkFold.Data.Vector           (Vector (..))
-import           ZkFold.Prelude               (replicate, replicateA, (!!))
+import           ZkFold.Data.HFunctor              (HFunctor (..))
+import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
+import           ZkFold.Data.Package               (packWith, unpackWith)
+import           ZkFold.Data.Utils                 (zipWithM)
+import qualified ZkFold.Data.Vector                as V
+import           ZkFold.Data.Vector                (Vector (..))
+import           ZkFold.Prelude                    (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)

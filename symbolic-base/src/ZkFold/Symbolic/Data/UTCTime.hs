@@ -6,20 +6,20 @@
 
 module ZkFold.Symbolic.Data.UTCTime where
 
-import           GHC.Natural                       (Natural)
-import           GHC.TypeNats                      (KnownNat)
-import           Prelude                           hiding (Bool, Eq, Ord)
-import qualified Prelude                           as Haskell
+import           GHC.Natural                      (Natural)
+import           GHC.TypeNats                     (KnownNat)
+import           Prelude                          hiding (Bool, Eq, Ord)
+import qualified Prelude                          as Haskell
 
-import           ZkFold.Algebra.Class              (FromConstant)
-import           ZkFold.Data.HFunctor.Classes      (HEq)
+import           ZkFold.Algebra.Class             (FromConstant)
+import           ZkFold.Data.HFunctor.Classes     (HEq)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool         (Bool)
+import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators  (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
-import           ZkFold.Symbolic.Data.Conditional  (Conditional)
-import           ZkFold.Symbolic.Data.Eq           (Eq)
-import           ZkFold.Symbolic.Data.Ord          (Ord)
+import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
+import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Ord         (Ord)
 import           ZkFold.Symbolic.Data.UInt
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)

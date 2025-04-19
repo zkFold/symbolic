@@ -6,15 +6,15 @@ module ZkFold.Protocol.Plonkup.Verifier
     , plonkupVerify
     ) where
 
-import           Data.Word                                         (Word8)
-import           GHC.IsList                                        (IsList (..))
-import           Prelude                                           hiding (Num (..), Ord (..), drop, length, sum, take,
-                                                                    (!!), (/), (^))
+import           Data.Word                                    (Word8)
+import           GHC.IsList                                   (IsList (..))
+import           Prelude                                      hiding (Num (..), Ord (..), drop, length, sum, take, (!!),
+                                                               (/), (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                  (KnownNat, Natural, value)
 import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Algebra.Polynomial.Univariate        hiding (qr)
+import           ZkFold.Algebra.Number                        (KnownNat, Natural, value)
+import           ZkFold.Algebra.Polynomial.Univariate         hiding (qr)
 import           ZkFold.Protocol.NonInteractiveProof          hiding (verify)
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal

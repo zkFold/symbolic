@@ -29,7 +29,7 @@ import           Data.Traversable                   (Traversable, traverse)
 import           Data.Typeable                      (Typeable, cast)
 import           Prelude                            (error, foldr, fromIntegral, type (~))
 
-import           ZkFold.Algebra.Class    (AdditiveMonoid (zero), FromConstant (..),
+import           ZkFold.Algebra.Class               (AdditiveMonoid (zero), FromConstant (..),
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
 import           ZkFold.Algebra.Number              (Natural, value)
 import           ZkFold.Prelude                     (unsnoc, (!!))

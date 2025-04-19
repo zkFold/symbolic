@@ -1,24 +1,24 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization where
 
-import           Data.Bifunctor                                          (bimap)
-import           Data.Binary                                             (Binary)
-import           Data.Bool                                               (bool)
-import           Data.ByteString                                         (ByteString)
-import           Data.Functor.Rep                                        (Representable (..))
-import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                          take)
-import qualified Data.Map.Internal                                       as M
-import qualified Data.Map.Monoidal                                       as MM
-import qualified Data.Set                                                as S
-import           Prelude                                                 hiding (Num (..), drop, length, product,
-                                                                          splitAt, sum, take, (!!), (^))
+import           Data.Bifunctor                                      (bimap)
+import           Data.Binary                                         (Binary)
+import           Data.Bool                                           (bool)
+import           Data.ByteString                                     (ByteString)
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.Map                                            hiding (drop, foldl, foldr, map, null, splitAt,
+                                                                      take)
+import qualified Data.Map.Internal                                   as M
+import qualified Data.Map.Monoidal                                   as MM
+import qualified Data.Set                                            as S
+import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
+                                                                      sum, take, (!!), (^))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Multivariate            (evalMonomial)
-import           ZkFold.Algebra.Polynomial.Multivariate.Monomial   (Mono (..), oneM)
-import           ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
+import           ZkFold.Algebra.Polynomial.Multivariate              (evalMonomial)
+import           ZkFold.Algebra.Polynomial.Multivariate.Internal     (Poly (..), evalPolynomial, var)
+import           ZkFold.Algebra.Polynomial.Multivariate.Monomial     (Mono (..), oneM)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 

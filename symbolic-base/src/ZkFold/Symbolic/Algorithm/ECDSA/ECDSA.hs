@@ -4,17 +4,17 @@
 
 module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 import           Data.Type.Equality
-import           GHC.TypeLits                            (KnownNat)
+import           GHC.TypeLits                       (KnownNat)
 
-import           ZkFold.Algebra.Class         hiding (Euclidean (..))
+import           ZkFold.Algebra.Class               hiding (Euclidean (..))
 import           ZkFold.Algebra.EllipticCurve.Class
-import qualified ZkFold.Symbolic.Class                   as S
+import qualified ZkFold.Symbolic.Class              as S
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Combinators   (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, toUInt)
-import           ZkFold.Symbolic.Data.UInt               (UInt)
+import           ZkFold.Symbolic.Data.FFA           (FFA, KnownFFA, toUInt)
+import           ZkFold.Symbolic.Data.UInt          (UInt)
 
 -- TODO: verify the actual message instead of a hash
 ecdsaVerify

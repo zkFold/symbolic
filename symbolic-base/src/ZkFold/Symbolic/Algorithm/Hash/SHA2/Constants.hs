@@ -11,9 +11,9 @@ module ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants
     , word64RoundConstants
     ) where
 
-import qualified Data.Vector                     as V
-import           GHC.TypeNats                    (Natural)
-import           Prelude                         (($), (<$>))
+import qualified Data.Vector          as V
+import           GHC.TypeNats         (Natural)
+import           Prelude              (($), (<$>))
 
 import           ZkFold.Algebra.Class (FromConstant (..))
 

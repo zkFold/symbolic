@@ -17,20 +17,20 @@ import qualified Prelude                                             as P hiding
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Algebra.Polynomial.Univariate               hiding (qr)
-import           ZkFold.Data.Vector                                 (Vector)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate                hiding (qr)
+import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.NonInteractiveProof
-import           ZkFold.Protocol.Plonk.Prover                       (plonkProve)
-import           ZkFold.Protocol.Plonk.Verifier                     (plonkVerify)
+import           ZkFold.Protocol.Plonk.Prover                        (plonkProve)
+import           ZkFold.Protocol.Plonk.Verifier                      (plonkVerify)
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler                           (desugarRanges)
+import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 

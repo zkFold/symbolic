@@ -3,11 +3,11 @@
 
 module ZkFold.Protocol.IVC.FiatShamir where
 
-import           Data.Constraint                       (withDict)
-import           Data.Constraint.Nat                   (plusMinusInverse1)
-import           Prelude                               hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
+import           Data.Constraint                  (withDict)
+import           Data.Constraint.Nat              (plusMinusInverse1)
+import           Prelude                          hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
-import           ZkFold.Algebra.Number      (KnownNat, type (-))
+import           ZkFold.Algebra.Number            (KnownNat, type (-))
 import           ZkFold.Data.Vector               (Vector, init, item, scanl, unfold)
 import           ZkFold.Protocol.IVC.CommitOpen
 import           ZkFold.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle (..))

@@ -6,36 +6,36 @@
 
 module ZkFold.Symbolic.Data.Combinators where
 
-import           Control.Applicative              (Applicative)
-import           Control.Monad                    (mapM)
+import           Control.Applicative          (Applicative)
+import           Control.Monad                (mapM)
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
-import           Data.Foldable                    (foldlM)
-import           Data.Functor.Rep                 (Representable, mzipRep, mzipWithRep)
-import           Data.Kind                        (Type)
-import           Data.List                        (find, splitAt)
-import           Data.List.Split                  (chunksOf)
-import           Data.Maybe                       (fromMaybe)
-import           Data.Proxy                       (Proxy (..))
-import           Data.Ratio                       ((%))
-import           Data.Traversable                 (Traversable, for, sequenceA)
-import           Data.Type.Bool                   (If)
+import           Data.Foldable                (foldlM)
+import           Data.Functor.Rep             (Representable, mzipRep, mzipWithRep)
+import           Data.Kind                    (Type)
+import           Data.List                    (find, splitAt)
+import           Data.List.Split              (chunksOf)
+import           Data.Maybe                   (fromMaybe)
+import           Data.Proxy                   (Proxy (..))
+import           Data.Ratio                   ((%))
+import           Data.Traversable             (Traversable, for, sequenceA)
+import           Data.Type.Bool               (If)
 import           Data.Type.Ord
-import           GHC.Base                         (const, return)
-import           GHC.List                         (reverse)
-import           GHC.TypeLits                     (Symbol, UnconsSymbol)
+import           GHC.Base                     (const, return)
+import           GHC.List                     (reverse)
+import           GHC.TypeLits                 (Symbol, UnconsSymbol)
 import           GHC.TypeNats
-import           Prelude                          (error, head, pure, tail, ($), (.), (<$>), (<>))
-import qualified Prelude                          as Haskell
+import           Prelude                      (error, head, pure, tail, ($), (.), (<$>), (<>))
+import qualified Prelude                      as Haskell
 import           Type.Errors
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number (value)
-import qualified ZkFold.Data.Vector    as V
-import           ZkFold.Data.Vector    (Vector)
-import           ZkFold.Prelude        (take)
-import           ZkFold.Symbolic.Class (Arithmetic, BaseField)
+import           ZkFold.Algebra.Number        (value)
+import qualified ZkFold.Data.Vector           as V
+import           ZkFold.Data.Vector           (Vector)
+import           ZkFold.Prelude               (take)
+import           ZkFold.Symbolic.Class        (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep ::

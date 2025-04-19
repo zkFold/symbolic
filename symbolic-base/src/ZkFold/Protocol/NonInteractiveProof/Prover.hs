@@ -4,17 +4,17 @@
 
 module ZkFold.Protocol.NonInteractiveProof.Prover where
 
-import           Control.DeepSeq                          (NFData)
+import           Control.DeepSeq                     (NFData)
 import           Data.Aeson
 import           Data.Aeson.Types
-import           Data.ByteString                          (ByteString)
-import qualified Data.ByteString.Base64                   as B64
-import qualified Data.ByteString.Char8                    as BS
-import qualified Data.Text                                as T
-import           GHC.Generics                             (Generic)
-import           Optics                                   ((&))
+import           Data.ByteString                     (ByteString)
+import qualified Data.ByteString.Base64              as B64
+import qualified Data.ByteString.Char8               as BS
+import qualified Data.Text                           as T
+import           GHC.Generics                        (Generic)
+import           Optics                              ((&))
 import           Prelude
-import           Test.QuickCheck                          (Arbitrary (..), generate, vectorOf)
+import           Test.QuickCheck                     (Arbitrary (..), generate, vectorOf)
 
 import           ZkFold.Data.ByteString
 import           ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))

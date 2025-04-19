@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
     , zkLoginNoSig
     ) where
 
-import           Prelude                              (($))
+import           Prelude                             (($))
 
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import qualified ZkFold.Symbolic.Algorithm.RSA       as RSA

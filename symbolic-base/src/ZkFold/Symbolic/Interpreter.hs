@@ -22,9 +22,9 @@ import           Text.Show                                         (Show (..))
 import           ZkFold.Algebra.Class
 import           ZkFold.Control.HApplicative
 import           ZkFold.Data.HFunctor
-import           ZkFold.Data.HFunctor.Classes                     (HEq (..), HNFData (..), HShow (..))
+import           ZkFold.Data.HFunctor.Classes                      (HEq (..), HNFData (..), HShow (..))
 import           ZkFold.Data.Package
-import           ZkFold.Prelude                                   (take)
+import           ZkFold.Prelude                                    (take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
 import           ZkFold.Symbolic.Fold

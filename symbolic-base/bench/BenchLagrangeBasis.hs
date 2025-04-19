@@ -4,20 +4,20 @@
 
 module Main where
 
-import           Control.DeepSeq                             (NFData, force)
-import           Control.Exception                           (evaluate)
-import           Prelude                                     hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude                                     as P
-import           Test.QuickCheck.Arbitrary                   (Arbitrary (..))
-import           Test.QuickCheck.Gen                         (generate)
+import           Control.DeepSeq                        (NFData, force)
+import           Control.Exception                      (evaluate)
+import           Prelude                                hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude                                as P
+import           Test.QuickCheck.Arbitrary              (Arbitrary (..))
+import           Test.QuickCheck.Gen                    (generate)
 import           Test.Tasty.Bench
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.Polynomial.Univariate
-import           ZkFold.Prelude                              (log2ceiling)
+import           ZkFold.Prelude                         (log2ceiling)
 
 
 type F = Zp BLS12_381_Scalar

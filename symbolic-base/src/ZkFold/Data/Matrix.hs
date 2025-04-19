@@ -3,17 +3,17 @@
 
 module ZkFold.Data.Matrix where
 
-import qualified Data.List                        as List
-import           Data.Maybe                       (fromJust)
+import qualified Data.List             as List
+import           Data.Maybe            (fromJust)
 import           Data.These
-import           Data.Zip                         (Semialign (..), Zip (..))
-import           Prelude                          hiding (Num (..), length, sum, zip, zipWith)
-import           System.Random                    (Random (..))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Data.Zip              (Semialign (..), Zip (..))
+import           Prelude               hiding (Num (..), length, sum, zip, zipWith)
+import           System.Random         (Random (..))
+import           Test.QuickCheck       (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector          hiding (head, tail)
+import           ZkFold.Data.Vector    hiding (head, tail)
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations

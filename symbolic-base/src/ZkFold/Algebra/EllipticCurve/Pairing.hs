@@ -8,20 +8,20 @@ module ZkFold.Algebra.EllipticCurve.Pairing
   , finalExponentiation
   ) where
 
-import qualified Data.Bool                               as H
-import           Data.Function                           (($), (.))
-import           Data.Functor                            ((<$>))
-import           Data.Int                                (Int8)
-import           Data.Tuple                              (snd)
-import           Data.Type.Equality                      (type (~))
-import           Numeric.Natural                         (Natural)
-import           Prelude                                 (fromInteger)
+import qualified Data.Bool                          as H
+import           Data.Function                      (($), (.))
+import           Data.Functor                       ((<$>))
+import           Data.Int                           (Int8)
+import           Data.Tuple                         (snd)
+import           Data.Type.Equality                 (type (~))
+import           Numeric.Natural                    (Natural)
+import           Prelude                            (fromInteger)
 import qualified Prelude
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Symbolic.Data.Bool               hiding (Bool)
+import           ZkFold.Algebra.Field
+import           ZkFold.Symbolic.Data.Bool          hiding (Bool)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 

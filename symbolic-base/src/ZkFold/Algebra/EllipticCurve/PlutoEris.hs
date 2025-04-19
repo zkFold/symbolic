@@ -12,9 +12,9 @@ module ZkFold.Algebra.EllipticCurve.PlutoEris
  ) where
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
 
 -- Designations of curve parameters are as in:

@@ -17,19 +17,19 @@ module ZkFold.Algebra.EllipticCurve.BN254
   , BN254_GT
   ) where
 
-import           Control.Monad                              (return, (>>))
-import           Data.Binary                                (Binary (..))
-import           Data.Bool                                  ((&&))
-import           Data.Function                              (($))
-import           Prelude                                    (Bool, Integer)
+import           Control.Monad                        (return, (>>))
+import           Data.Binary                          (Binary (..))
+import           Data.Bool                            ((&&))
+import           Data.Function                        (($))
+import           Prelude                              (Bool, Integer)
 import qualified Prelude
-import           Text.Show                                  (Show)
+import           Text.Show                            (Show)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field            (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.EllipticCurve.Pairing
+import           ZkFold.Algebra.Field                 (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
+import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq

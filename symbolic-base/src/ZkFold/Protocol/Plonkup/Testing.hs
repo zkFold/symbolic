@@ -1,9 +1,9 @@
 module ZkFold.Protocol.Plonkup.Testing where
 
-import           Prelude                                 hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
+import           Prelude                            hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
 
-import           ZkFold.Algebra.EllipticCurve.Class      (CyclicGroup (ScalarFieldOf))
-import           ZkFold.Protocol.Plonkup.Internal        (PlonkupPolyExtended)
+import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
+import           ZkFold.Protocol.Plonkup.Internal   (PlonkupPolyExtended)
 
 data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     { omega         :: ScalarFieldOf g1

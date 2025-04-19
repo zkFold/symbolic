@@ -2,10 +2,10 @@
 
 module ZkFold.Data.Package where
 
-import           Data.Foldable             (Foldable)
-import           Data.Function             ((.))
-import           Data.Functor              (Functor (..))
-import           GHC.Generics              (Par1 (..), (:.:) (..))
+import           Data.Foldable        (Foldable)
+import           Data.Function        ((.))
+import           Data.Functor         (Functor (..))
+import           GHC.Generics         (Par1 (..), (:.:) (..))
 
 import           ZkFold.Data.HFunctor (HFunctor (..))
 

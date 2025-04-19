@@ -5,32 +5,32 @@
 
 module ZkFold.Data.Vector where
 
-import           Control.DeepSeq                  (NFData, NFData1)
-import           Control.Monad.State.Strict       (runState, state)
-import           Data.Aeson                       (FromJSON (..), ToJSON (..))
-import           Data.Constraint.Nat              (Max)
-import           Data.Distributive                (Distributive (..))
-import           Data.Foldable                    (fold)
-import           Data.Functor.Classes             (Eq1, Show1)
-import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
-import           Data.These                       (These (..))
-import qualified Data.Vector                      as V
-import           Data.Vector.Binary               ()
-import qualified Data.Vector.Split                as V
-import           Data.Zip                         (Semialign (..), Unzip (..), Zip (..))
-import           GHC.Generics                     (Generic)
-import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (concat, drop, head, length, mod, negate, replicate, sum, tail,
-                                                   take, unzip, zip, zipWith, (*), (+), (-))
-import qualified Prelude                          as P
-import           System.Random                    (Random (..))
-import           Test.QuickCheck                  (Arbitrary (..), Arbitrary1 (..), arbitrary1)
+import           Control.DeepSeq            (NFData, NFData1)
+import           Control.Monad.State.Strict (runState, state)
+import           Data.Aeson                 (FromJSON (..), ToJSON (..))
+import           Data.Constraint.Nat        (Max)
+import           Data.Distributive          (Distributive (..))
+import           Data.Foldable              (fold)
+import           Data.Functor.Classes       (Eq1, Show1)
+import           Data.Functor.Rep           (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
+import           Data.These                 (These (..))
+import qualified Data.Vector                as V
+import           Data.Vector.Binary         ()
+import qualified Data.Vector.Split          as V
+import           Data.Zip                   (Semialign (..), Unzip (..), Zip (..))
+import           GHC.Generics               (Generic)
+import           GHC.IsList                 (IsList (..))
+import           Prelude                    hiding (concat, drop, head, length, mod, negate, replicate, sum, tail, take,
+                                             unzip, zip, zipWith, (*), (+), (-))
+import qualified Prelude                    as P
+import           System.Random              (Random (..))
+import           Test.QuickCheck            (Arbitrary (..), Arbitrary1 (..), arbitrary1)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.ByteString      (Binary (..))
-import           ZkFold.Prelude                   (length)
+import           ZkFold.Data.ByteString     (Binary (..))
+import           ZkFold.Prelude             (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
     deriving (Show, Show1, Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, Ord)

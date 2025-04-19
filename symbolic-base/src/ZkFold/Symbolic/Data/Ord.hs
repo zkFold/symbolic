@@ -9,27 +9,27 @@ module ZkFold.Symbolic.Data.Ord
   , GOrd (..)
   ) where
 
-import           Control.DeepSeq                   (NFData)
-import           Data.Foldable                     (fold, toList)
-import           Data.Function                     (on)
-import           Data.List                         (concatMap, reverse, zipWith)
-import           Data.Traversable                  (traverse)
+import           Control.DeepSeq                  (NFData)
+import           Data.Foldable                    (fold, toList)
+import           Data.Function                    (on)
+import           Data.List                        (concatMap, reverse, zipWith)
+import           Data.Traversable                 (traverse)
 import           GHC.Generics
-import           Prelude                           (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
+import           Prelude                          (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor.Classes (HNFData, HShow)
+import           ZkFold.Data.HFunctor.Classes     (HNFData, HShow)
 import           ZkFold.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators  (expansion)
+import           ZkFold.Symbolic.Data.Combinators (expansion)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.MonadCircuit      (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering

@@ -4,10 +4,10 @@
 
 module ZkFold.Protocol.Plonkup.Prover.Secret where
 
-import           Data.Aeson.Types                            (FromJSON (..), ToJSON (..))
-import           GHC.Generics                                (Generic)
-import           Prelude                                     hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-import           Test.QuickCheck                             (Arbitrary (..))
+import           Data.Aeson.Types                       (FromJSON (..), ToJSON (..))
+import           GHC.Generics                           (Generic)
+import           Prelude                                hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Test.QuickCheck                        (Arbitrary (..))
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import           ZkFold.Algebra.EllipticCurve.Class     (CyclicGroup (..))

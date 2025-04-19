@@ -7,30 +7,30 @@ module ZkFold.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
-import           Control.DeepSeq                                 (NFData, force)
-import           Data.Bool                                       (bool)
-import           Data.Foldable                                   (length)
-import qualified Data.Vector                                     as V
-import           Data.Word                                       (Word8)
-import           GHC.IsList                                      (IsList (..))
-import           Prelude                                         hiding (Num (..), drop, length, pi, sum, take, (!!),
-                                                                  (/), (^))
+import           Control.DeepSeq                            (NFData, force)
+import           Data.Bool                                  (bool)
+import           Data.Foldable                              (length)
+import qualified Data.Vector                                as V
+import           Data.Word                                  (Word8)
+import           GHC.IsList                                 (IsList (..))
+import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, (!!), (/),
+                                                             (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                           (KnownNat, Natural, value)
-import           ZkFold.Algebra.EllipticCurve.Class              (Compressible (..), CyclicGroup (..))
-import           ZkFold.Algebra.Polynomial.Univariate           hiding (qr)
-import           ZkFold.Data.Vector                              ((!!))
+import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
+import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
+import           ZkFold.Algebra.Polynomial.Univariate       hiding (qr)
+import           ZkFold.Data.Vector                         ((!!))
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input
-import           ZkFold.Protocol.Plonkup.Internal                (PlonkupPolyExtended, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Internal           (PlonkupPolyExtended, PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Protocol.Plonkup.Prover.Setup
-import           ZkFold.Protocol.Plonkup.Relation                (PlonkupRelation (..))
-import           ZkFold.Protocol.Plonkup.Testing                 (PlonkupProverTestInfo (..))
-import           ZkFold.Protocol.Plonkup.Utils                   (sortByList)
+import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..))
+import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
+import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
 
 plonkupProve :: forall i n l g1 g2 ts pv .

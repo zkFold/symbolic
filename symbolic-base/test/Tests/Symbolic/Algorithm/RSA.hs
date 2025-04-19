@@ -3,20 +3,20 @@
 
 module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
-import           Codec.Crypto.RSA                            (generateKeyPair)
-import qualified Codec.Crypto.RSA                            as R
-import           Data.Function                               (($))
-import           GHC.Generics                                (Par1 (..))
-import           Prelude                                     (pure)
-import qualified Prelude                                     as P
-import           System.Random                               (RandomGen)
-import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, withMaxSuccess, (.&.), (===))
-import           Tests.Symbolic.ArithmeticCircuit            (it)
+import           Codec.Crypto.RSA                       (generateKeyPair)
+import qualified Codec.Crypto.RSA                       as R
+import           Data.Function                          (($))
+import           GHC.Generics                           (Par1 (..))
+import           Prelude                                (pure)
+import qualified Prelude                                as P
+import           System.Random                          (RandomGen)
+import           Test.Hspec                             (Spec, describe)
+import           Test.QuickCheck                        (Gen, withMaxSuccess, (.&.), (===))
+import           Tests.Symbolic.ArithmeticCircuit       (it)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Algebra.Number
 import           ZkFold.Prelude                         (chooseNatural)
 import           ZkFold.Symbolic.Algorithm.RSA
 import           ZkFold.Symbolic.Data.Bool

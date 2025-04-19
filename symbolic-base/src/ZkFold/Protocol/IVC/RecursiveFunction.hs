@@ -8,20 +8,20 @@
 
 module ZkFold.Protocol.IVC.RecursiveFunction where
 
-import           Control.DeepSeq                            (NFData, NFData1)
-import           Data.Binary                                (Binary)
-import           Data.Distributive                          (Distributive (..))
-import           Data.Functor.Rep                           (Representable (..), collectRep, distributeRep)
-import           Data.These                                 (These (..))
-import           Data.Zip                                   (Semialign (..), Zip (..))
-import           GHC.Generics                               (Generic, Generic1, U1 (..), (:*:) (..))
-import           Prelude                                    (Foldable, Functor, Show, Traversable, fmap, type (~), ($),
-                                                             (.), (<$>))
-import qualified Prelude                                    as P
+import           Control.DeepSeq                       (NFData, NFData1)
+import           Data.Binary                           (Binary)
+import           Data.Distributive                     (Distributive (..))
+import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
+import           Data.These                            (These (..))
+import           Data.Zip                              (Semialign (..), Zip (..))
+import           GHC.Generics                          (Generic, Generic1, U1 (..), (:*:) (..))
+import           Prelude                               (Foldable, Functor, Show, Traversable, fmap, type (~), ($), (.),
+                                                        (<$>))
+import qualified Prelude                               as P
 
-import           ZkFold.Algebra.Class            (Scale, zero)
-import           ZkFold.Algebra.Number           (KnownNat, type (+), type (-))
-import           ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import           ZkFold.Algebra.Class                  (Scale, zero)
+import           ZkFold.Algebra.Number                 (KnownNat, type (+), type (-))
+import           ZkFold.Algebra.Polynomial.Univariate  (PolyVec)
 import           ZkFold.Data.ByteString                (Binary1)
 import           ZkFold.Data.Orphans                   ()
 import           ZkFold.Data.Package                   (packed, unpacked)
@@ -31,15 +31,15 @@ import           ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), 
 import           ZkFold.Protocol.IVC.Commit            (HomomorphicCommit)
 import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
-                                                             predicate)
+                                                        predicate)
 import           ZkFold.Protocol.IVC.StepFunction      (StepFunction, StepFunctionAssumptions)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compileWith, guessOutput, hlmap)
-import           ZkFold.Symbolic.Data.Bool                  (Bool (..))
-import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor, SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional           (bool)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement), fromFieldElement)
-import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
-import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
+import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
+import           ZkFold.Symbolic.Data.Bool             (Bool (..))
+import           ZkFold.Symbolic.Data.Class            (LayoutFunctor, SymbolicData (..))
+import           ZkFold.Symbolic.Data.Conditional      (bool)
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (FieldElement), fromFieldElement)
+import           ZkFold.Symbolic.Data.Input            (SymbolicInput)
+import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f

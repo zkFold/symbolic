@@ -5,22 +5,22 @@
 
 module Tests.Protocol.NonInteractiveProof (specNonInteractiveProof) where
 
-import           Data.ByteString                             (ByteString)
-import           Data.Typeable                               (Proxy (..), Typeable, typeRep)
-import           GHC.Generics                                (U1 (..))
-import           Prelude                                     hiding (Fractional (..), Num (..), length)
-import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (Arbitrary (..), Arbitrary1 (..), Testable (property),
-                                                              withMaxSuccess)
+import           Data.ByteString                        (ByteString)
+import           Data.Typeable                          (Proxy (..), Typeable, typeRep)
+import           GHC.Generics                           (U1 (..))
+import           Prelude                                hiding (Fractional (..), Num (..), length)
+import           Test.Hspec                             (Spec, describe, it)
+import           Test.QuickCheck                        (Arbitrary (..), Arbitrary1 (..), Testable (property),
+                                                         withMaxSuccess)
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Algebra.EllipticCurve.Class          (ScalarFieldOf)
-import           ZkFold.Algebra.Polynomial.Univariate       (PolyVec)
-import           ZkFold.Data.Vector                          (Vector)
-import           ZkFold.Protocol.KZG                         (KZG)
-import           ZkFold.Protocol.NonInteractiveProof         (NonInteractiveProof (..))
-import           ZkFold.Protocol.Plonk                       (Plonk)
-import           ZkFold.Protocol.Plonkup                     (Plonkup)
+import           ZkFold.Algebra.EllipticCurve.Class     (ScalarFieldOf)
+import           ZkFold.Algebra.Polynomial.Univariate   (PolyVec)
+import           ZkFold.Data.Vector                     (Vector)
+import           ZkFold.Protocol.KZG                    (KZG)
+import           ZkFold.Protocol.NonInteractiveProof    (NonInteractiveProof (..))
+import           ZkFold.Protocol.Plonk                  (Plonk)
+import           ZkFold.Protocol.Plonkup                (Plonkup)
 
 propNonInteractiveProof :: forall a . (NonInteractiveProof a) => (a, Witness a) -> Bool
 propNonInteractiveProof (a, w) =

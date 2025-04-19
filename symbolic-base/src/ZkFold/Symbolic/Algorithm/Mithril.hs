@@ -4,19 +4,19 @@
 
 module ZkFold.Symbolic.Algorithm.Mithril where
 
-import           Data.Foldable                           (foldl')
+import           Data.Foldable                         (foldl')
 import           Data.Type.Equality
-import           GHC.TypeLits                            (KnownNat)
+import           GHC.TypeLits                          (KnownNat)
 
-import           ZkFold.Algebra.Class                    hiding (Euclidean (..))
+import           ZkFold.Algebra.Class                  hiding (Euclidean (..))
 import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Data.Vector                      (Vector)
-import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA  (ecdsaVerify)
-import           ZkFold.Symbolic.Class                   (BaseField, Symbolic)
-import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import           ZkFold.Data.Vector                    (Vector)
+import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
+import           ZkFold.Symbolic.Class                 (BaseField, Symbolic)
+import           ZkFold.Symbolic.Data.Combinators      (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)
-import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
+import           ZkFold.Symbolic.Data.FFA              (FFA, KnownFFA)
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
 
 type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 

@@ -15,7 +15,7 @@ import           GHC.Show                                           (Show)
 import           Prelude                                            (Eq, Ord)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.ByteString                        ()
+import           ZkFold.Data.ByteString                             ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 

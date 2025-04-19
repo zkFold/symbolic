@@ -2,30 +2,29 @@
 
 module Tests.Protocol.IVC (specIVC) where
 
-import           Data.Functor.Constant                       (Constant)
-import           GHC.Generics                                (U1 (..))
-import           GHC.IsList                                  (IsList (..))
-import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+))
-import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (property, withMaxSuccess)
+import           Data.Functor.Constant                  (Constant)
+import           GHC.Generics                           (U1 (..))
+import           GHC.IsList                             (IsList (..))
+import           Prelude                                hiding (Num (..), pi, replicate, sum, (+))
+import           Test.Hspec                             (Spec, describe, it)
+import           Test.QuickCheck                        (property, withMaxSuccess)
 
-import           ZkFold.Algebra.Class                        (FromConstant (..))
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.Number                       (Natural, type (-))
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1_Point, BLS12_381_Scalar)
-import           ZkFold.Algebra.Polynomial.Univariate       (PolyVec, evalPolyVec)
-import           ZkFold.Data.Vector                          (Vector (..), item, singleton)
-import           ZkFold.Protocol.IVC.Accumulator             (Accumulator (..), AccumulatorInstance (..),
-                                                              emptyAccumulator)
-import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
-import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
-import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
-import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Protocol.IVC.Oracle                  (MiMCHash)
-import           ZkFold.Protocol.IVC.Predicate               (Predicate (..), predicate)
-import           ZkFold.Protocol.IVC.SpecialSound            (specialSoundProtocol)
-import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Algebra.Class                   (FromConstant (..))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Algebra.Number                  (Natural, type (-))
+import           ZkFold.Algebra.Polynomial.Univariate   (PolyVec, evalPolyVec)
+import           ZkFold.Data.Vector                     (Vector (..), item, singleton)
+import           ZkFold.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
+import           ZkFold.Protocol.IVC.AccumulatorScheme  as Acc
+import           ZkFold.Protocol.IVC.CommitOpen         (commitOpen)
+import           ZkFold.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
+import           ZkFold.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Protocol.IVC.Oracle             (MiMCHash)
+import           ZkFold.Protocol.IVC.Predicate          (Predicate (..), predicate)
+import           ZkFold.Protocol.IVC.SpecialSound       (specialSoundProtocol)
+import           ZkFold.Symbolic.Class                  (BaseField, Symbolic)
+import           ZkFold.Symbolic.Data.FieldElement      (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
 type C = Constant BLS12_381_G1_Point

@@ -5,41 +5,41 @@
 
 module ZkFold.Symbolic.Data.MerkleTree where
 
-import           Data.Constraint                                (withDict)
-import           Data.Constraint.Nat                            (minusNat, plusMinusInverse3)
-import           Data.Functor.Rep                               (pureRep)
-import qualified Data.List                                      as LL
-import           Data.Proxy                                     (Proxy (Proxy))
-import           Data.Type.Equality                             (type (~))
-import           Data.Vector                                    (iterateN)
-import           GHC.Generics                                   hiding (Rep, UInt, from)
+import           Data.Constraint                               (withDict)
+import           Data.Constraint.Nat                           (minusNat, plusMinusInverse3)
+import           Data.Functor.Rep                              (pureRep)
+import qualified Data.List                                     as LL
+import           Data.Proxy                                    (Proxy (Proxy))
+import           Data.Type.Equality                            (type (~))
+import           Data.Vector                                   (iterateN)
+import           GHC.Generics                                  hiding (Rep, UInt, from)
 import           GHC.TypeNats
-import           Prelude                                        (const, pure, return, zip, ($), (.))
-import qualified Prelude                                        as P
+import           Prelude                                       (const, pure, return, zip, ($), (.))
+import qualified Prelude                                       as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                           (value)
+import           ZkFold.Algebra.Number                         (value)
 import           ZkFold.Data.Package
-import qualified ZkFold.Data.Vector                             as V
-import           ZkFold.Data.Vector                             hiding ((.:))
+import qualified ZkFold.Data.Vector                            as V
+import           ZkFold.Data.Vector                            hiding ((.:))
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (false))
+import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters, RegisterSize (Auto),
-                                 expansion, horner, mzipWithMRep, withNumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators              (Iso (from), KnownRegisters, RegisterSize (Auto),
+                                                                expansion, horner, mzipWithMRep, withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (FieldElement, fromFieldElement))
-import           ZkFold.Symbolic.Data.Input                     (SymbolicInput)
-import qualified ZkFold.Symbolic.Data.List                      as L
+import           ZkFold.Symbolic.Data.FieldElement             (FieldElement (FieldElement, fromFieldElement))
+import           ZkFold.Symbolic.Data.Input                    (SymbolicInput)
+import qualified ZkFold.Symbolic.Data.List                     as L
 import           ZkFold.Symbolic.Data.List
 import           ZkFold.Symbolic.Data.Maybe
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Data.Switch
-import           ZkFold.Symbolic.Data.UInt                      (UInt (..), strictConv)
+import           ZkFold.Symbolic.Data.UInt                     (UInt (..), strictConv)
 import           ZkFold.Symbolic.Data.Vec
-import           ZkFold.Symbolic.Fold                           (SymbolicFold)
+import           ZkFold.Symbolic.Fold                          (SymbolicFold)
 import           ZkFold.Symbolic.MonadCircuit
 
 data MerkleTree (d :: Natural) h = MerkleTree {

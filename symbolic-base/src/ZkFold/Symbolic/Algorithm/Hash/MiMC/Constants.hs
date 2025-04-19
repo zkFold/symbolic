@@ -1,10 +1,10 @@
 module ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants) where
 
-import           Crypto.Hash.SHA256              (hash)
-import           Data.Maybe                      (fromJust)
+import           Crypto.Hash.SHA256     (hash)
+import           Data.Maybe             (fromJust)
 import           Prelude
 
-import           ZkFold.Algebra.Class (FromConstant (..))
+import           ZkFold.Algebra.Class   (FromConstant (..))
 import           ZkFold.Data.ByteString
 
 mimcSeed :: LittleEndian

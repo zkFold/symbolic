@@ -4,20 +4,20 @@
 
 module ZkFold.Protocol.Plonkup.Utils where
 
-import           Data.Bifunctor                          (first)
-import           Data.Bool                               (bool)
-import           Data.Map                                (fromList, insertWith, toList)
-import qualified Data.Set                                as S
-import           Prelude                                 hiding (Num (..), drop, length, replicate, sum, take, (!!),
-                                                          (/), (^))
-import           System.Random                           (RandomGen, mkStdGen, uniformR)
+import           Data.Bifunctor                     (first)
+import           Data.Bool                          (bool)
+import           Data.Map                           (fromList, insertWith, toList)
+import qualified Data.Set                           as S
+import           Prelude                            hiding (Num (..), drop, length, replicate, sum, take, (!!), (/),
+                                                     (^))
+import           System.Random                      (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.Class      (CyclicGroup (..))
-import           ZkFold.Data.Vector                      (Vector, unsafeToVector)
-import           ZkFold.Prelude                          (iterateN', log2ceiling, replicate)
-import           ZkFold.Symbolic.Class                   (Arithmetic)
+import           ZkFold.Data.Vector                 (Vector, unsafeToVector)
+import           ZkFold.Prelude                     (iterateN', log2ceiling, replicate)
+import           ZkFold.Symbolic.Class              (Arithmetic)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0

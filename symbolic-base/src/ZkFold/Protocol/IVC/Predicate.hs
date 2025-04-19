@@ -2,17 +2,17 @@
 
 module ZkFold.Protocol.IVC.Predicate where
 
-import           Data.Binary                           (Binary)
-import           GHC.Generics                          (U1 (..), (:*:) (..))
-import           Prelude                               hiding (Num (..), drop, head, replicate, take, zipWith)
+import           Data.Binary                       (Binary)
+import           GHC.Generics                      (U1 (..), (:*:) (..))
+import           Prelude                           hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Data.Package              (packed, unpacked)
-import           ZkFold.Protocol.IVC.StepFunction (StepFunction, StepFunctionAssumptions)
+import           ZkFold.Data.Package               (packed, unpacked)
+import           ZkFold.Protocol.IVC.StepFunction  (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
-import           ZkFold.Symbolic.Data.Class            (LayoutFunctor)
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
+import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, guessOutput, hlmap)
+import           ZkFold.Symbolic.Data.Class        (LayoutFunctor)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p :*: i) U1
 

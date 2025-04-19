@@ -4,18 +4,17 @@
 
 module ZkFold.Algebra.Polynomial.Multivariate.Monomial where
 
-import           Control.DeepSeq                 (NFData)
-import           Data.Aeson                      (FromJSON, ToJSON)
-import           Data.List                       (intercalate)
-import           Data.Map.Strict                 (Map, differenceWith, empty, filter, foldrWithKey, fromListWith,
-                                                  intersectionWith, isSubmapOfBy, lookup, mapKeys, unionWith)
-import qualified Data.Map.Strict                 as Map
-import           GHC.Generics                    (Generic)
-import           GHC.IsList                      (IsList (..))
-import           Numeric.Natural                 (Natural)
-import           Prelude                         hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!),
-                                                  (/), (^))
-import           Test.QuickCheck                 (Arbitrary (..))
+import           Control.DeepSeq      (NFData)
+import           Data.Aeson           (FromJSON, ToJSON)
+import           Data.List            (intercalate)
+import           Data.Map.Strict      (Map, differenceWith, empty, filter, foldrWithKey, fromListWith, intersectionWith,
+                                       isSubmapOfBy, lookup, mapKeys, unionWith)
+import qualified Data.Map.Strict      as Map
+import           GHC.Generics         (Generic)
+import           GHC.IsList           (IsList (..))
+import           Numeric.Natural      (Natural)
+import           Prelude              hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!), (/), (^))
+import           Test.QuickCheck      (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
 

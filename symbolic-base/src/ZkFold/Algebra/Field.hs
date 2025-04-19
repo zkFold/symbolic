@@ -15,25 +15,25 @@ module ZkFold.Algebra.Field (
     Ext3(..)
     ) where
 
-import           Control.Applicative                        ((<|>))
-import           Control.DeepSeq                            (NFData (..))
-import           Data.Aeson                                 (FromJSON (..), ToJSON (..))
-import           Data.Bifunctor                             (first)
-import           Data.Bool                                  (bool)
-import qualified Data.Vector                                as V
-import           GHC.Generics                               (Generic)
-import           GHC.Real                                   ((%))
-import           GHC.TypeLits                               (Symbol)
-import           Prelude                                    hiding (Fractional (..), Num (..), div, length, (^))
-import qualified Prelude                                    as Haskell
-import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
-import           Test.QuickCheck                            hiding (scale)
+import           Control.Applicative                  ((<|>))
+import           Control.DeepSeq                      (NFData (..))
+import           Data.Aeson                           (FromJSON (..), ToJSON (..))
+import           Data.Bifunctor                       (first)
+import           Data.Bool                            (bool)
+import qualified Data.Vector                          as V
+import           GHC.Generics                         (Generic)
+import           GHC.Real                             ((%))
+import           GHC.TypeLits                         (Symbol)
+import           Prelude                              hiding (Fractional (..), Num (..), div, length, (^))
+import qualified Prelude                              as Haskell
+import           System.Random                        (Random (..), RandomGen, mkStdGen, uniformR)
+import           Test.QuickCheck                      hiding (scale)
 
-import           ZkFold.Algebra.Class            hiding (Euclidean (..))
+import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.ByteString
-import           ZkFold.Prelude                             (log2ceiling)
+import           ZkFold.Prelude                       (log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 

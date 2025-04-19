@@ -15,24 +15,24 @@ module ZkFold.Symbolic.Algorithm.RSA
     , Signature
     ) where
 
-import           Control.DeepSeq                      (NFData, force)
-import           GHC.Generics                         (Generic)
-import           Prelude                              (($))
-import qualified Prelude                              as P
+import           Control.DeepSeq                     (NFData, force)
+import           GHC.Generics                        (Generic)
+import           Prelude                             (($))
+import qualified Prelude                             as P
 
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor.Classes         (HEq, HNFData, HShow)
+import           ZkFold.Data.HFunctor.Classes        (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool            (Bool, (&&))
-import           ZkFold.Symbolic.Data.ByteString      (ByteString)
+import           ZkFold.Symbolic.Data.Bool           (Bool, (&&))
+import           ZkFold.Symbolic.Data.ByteString     (ByteString)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators     (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
-                                                       RegisterSize (..), Resize (..))
+import           ZkFold.Symbolic.Data.Combinators    (Ceil, GetRegisterSize, Iso (..), KnownRegisters,
+                                                      RegisterSize (..), Resize (..))
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input           (SymbolicInput, isValid)
-import           ZkFold.Symbolic.Data.UInt            (OrdWord, UInt, expMod)
-import           ZkFold.Symbolic.Data.VarByteString   (VarByteString)
+import           ZkFold.Symbolic.Data.Input          (SymbolicInput, isValid)
+import           ZkFold.Symbolic.Data.UInt           (OrdWord, UInt, expMod)
+import           ZkFold.Symbolic.Data.VarByteString  (VarByteString)
 
 type Signature keyLen ctx = ByteString keyLen ctx
 

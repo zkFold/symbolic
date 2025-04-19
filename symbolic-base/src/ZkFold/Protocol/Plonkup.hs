@@ -13,12 +13,12 @@ import           Data.Functor.Rep                                    (Rep, Repre
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
-                                    sum, take, (!!), (/), (^))
+                                                                      sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class                  (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.Class                 (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input

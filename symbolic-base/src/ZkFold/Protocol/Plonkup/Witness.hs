@@ -2,11 +2,11 @@
 
 module ZkFold.Protocol.Plonkup.Witness where
 
-import           Data.Functor                            ((<$>))
-import           Data.Functor.Classes                    (Show1)
-import           Data.List                               ((++))
-import           Test.QuickCheck                         (Arbitrary (..), Arbitrary1, arbitrary1)
-import           Text.Show                               (Show, show)
+import           Data.Functor                       ((<$>))
+import           Data.Functor.Classes               (Show1)
+import           Data.List                          ((++))
+import           Test.QuickCheck                    (Arbitrary (..), Arbitrary1, arbitrary1)
+import           Text.Show                          (Show, show)
 
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 

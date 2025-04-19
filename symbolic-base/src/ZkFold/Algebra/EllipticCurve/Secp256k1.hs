@@ -12,9 +12,9 @@ module ZkFold.Algebra.EllipticCurve.Secp256k1
   ) where
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.Class
 
 type Secp256k1_Scalar = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 instance Prime Secp256k1_Scalar

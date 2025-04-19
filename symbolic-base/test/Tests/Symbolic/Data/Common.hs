@@ -26,7 +26,7 @@ import           Text.Show                        (Show)
 import           ZkFold.Algebra.Class             (FromConstant (..), ToConstant (..))
 import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, checkCircuit, checkClosedCircuit, compileWith,
-                           eval, exec)
+                                                   eval, exec)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))

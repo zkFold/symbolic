@@ -3,7 +3,7 @@
 
 module ZkFold.Protocol.Plonkup.Proof where
 
-import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Prelude                            hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 

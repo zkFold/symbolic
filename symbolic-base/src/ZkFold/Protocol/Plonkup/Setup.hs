@@ -3,26 +3,25 @@
 
 module ZkFold.Protocol.Plonkup.Setup where
 
-import           Data.Binary                                       (Binary)
-import           Data.Functor.Rep                                  (Rep, Representable)
-import           Data.Maybe                                        (fromJust)
-import qualified Data.Vector                                       as V
-import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
-                                                                    (^))
+import           Data.Binary                                  (Binary)
+import           Data.Functor.Rep                             (Rep, Representable)
+import           Data.Maybe                                   (fromJust)
+import qualified Data.Vector                                  as V
+import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                             (KnownNat, value)
-import           ZkFold.Algebra.Permutation                        (fromPermutation)
-import           ZkFold.Algebra.EllipticCurve.Class                (CyclicGroup (..), Pairing)
-import           ZkFold.Algebra.Polynomial.Univariate             (UnivariateFieldPolyVec (..), polyVecInLagrangeBasis,
-                                                                    toPolyVec)
-import           ZkFold.Data.Vector                                (Vector (..))
-import           ZkFold.Protocol.Plonkup.Internal                  (Plonkup (..), PlonkupPermutationSize,
-                                                                    PlonkupPolyExtendedLength)
-import           ZkFold.Protocol.Plonkup.Prover.Polynomials        (PlonkupCircuitPolynomials (..))
-import           ZkFold.Protocol.Plonkup.Relation                  (PlonkupRelation (..), toPlonkupRelation)
-import           ZkFold.Protocol.Plonkup.Verifier.Commitments      (PlonkupCircuitCommitments (..))
-import           ZkFold.Symbolic.Class                             (Arithmetic)
+import           ZkFold.Algebra.EllipticCurve.Class           (CyclicGroup (..), Pairing)
+import           ZkFold.Algebra.Number                        (KnownNat, value)
+import           ZkFold.Algebra.Permutation                   (fromPermutation)
+import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPolyVec (..), polyVecInLagrangeBasis,
+                                                               toPolyVec)
+import           ZkFold.Data.Vector                           (Vector (..))
+import           ZkFold.Protocol.Plonkup.Internal             (Plonkup (..), PlonkupPermutationSize,
+                                                               PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
+import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..), toPlonkupRelation)
+import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
+import           ZkFold.Symbolic.Class                        (Arithmetic)
 
 data PlonkupSetup i n l g1 g2 pv = PlonkupSetup
     { omega       :: ScalarFieldOf g1

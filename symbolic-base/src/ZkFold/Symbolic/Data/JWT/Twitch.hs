@@ -12,8 +12,8 @@ import           Prelude                            (type (~), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
-import           ZkFold.Data.HFunctor.Classes  (HEq, HShow)
-import           ZkFold.Symbolic.Algorithm.RSA     as RSA
+import           ZkFold.Data.HFunctor.Classes       (HEq, HShow)
+import           ZkFold.Symbolic.Algorithm.RSA      as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class

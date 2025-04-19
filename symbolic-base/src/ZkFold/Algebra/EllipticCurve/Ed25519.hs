@@ -12,9 +12,9 @@ module ZkFold.Algebra.EllipticCurve.Ed25519
   ) where
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.EllipticCurve.Class
 
 -- | 2^252 + 27742317777372353535851937790883648493 is the order of the multiplicative group in Ed25519
 -- with the generator point defined below in @instance EllipticCurve (Ed25519 Void r)@

@@ -4,16 +4,16 @@
 
 module Tests.Algebra.Univariate.Poly (specUnivariatePoly) where
 
-import           Data.Data                                   (typeOf)
-import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (Fractional (..), Num (..), (^))
+import           Data.Data                              (typeOf)
+import qualified Data.Vector                            as V
+import           Prelude                                hiding (Fractional (..), Num (..), (^))
 import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Algebra.Polynomial.Univariate  (Poly, fromPoly, toPoly)
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Polynomial.Univariate   (Poly, fromPoly, toPoly)
 import           ZkFold.Prelude
 
 -- TODO: derive naive multiplication for univariate polynomials from multivariate polynomial multiplication

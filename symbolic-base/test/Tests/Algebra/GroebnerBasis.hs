@@ -1,8 +1,8 @@
 module Tests.Algebra.GroebnerBasis (specGroebner) where
 
-import           Data.Map                                     (empty, fromList)
-import           GHC.Natural                                  (Natural)
-import           Prelude                                      hiding (Eq (..), Num (..), (/), (^))
+import           Data.Map                               (empty, fromList)
+import           GHC.Natural                            (Natural)
+import           Prelude                                hiding (Eq (..), Num (..), (/), (^))
 import           Test.Hspec
 
 import           ZkFold.Algebra.Class

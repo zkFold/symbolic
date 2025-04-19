@@ -6,26 +6,26 @@
 
 module ZkFold.Protocol.IVC.AccumulatorScheme where
 
-import           Control.Lens                               ((^.))
-import           Data.Constraint                            (withDict)
-import           Data.Constraint.Nat                        (plusMinusInverse1)
-import           Data.Functor.Rep                           (Representable (..))
-import           Data.Zip                                   (Zip (..))
-import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    (fmap, ($), (.), (<$>))
-import qualified Prelude                                    as P
+import           Control.Lens                         ((^.))
+import           Data.Constraint                      (withDict)
+import           Data.Constraint.Nat                  (plusMinusInverse1)
+import           Data.Functor.Rep                     (Representable (..))
+import           Data.Zip                             (Zip (..))
+import           GHC.IsList                           (IsList (..))
+import           Prelude                              (fmap, ($), (.), (<$>))
+import qualified Prelude                              as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import qualified ZkFold.Algebra.Polynomial.Univariate as PU
-import           ZkFold.Data.Vector                    (Vector, init, mapWithIx, tail, unsafeToVector)
+import           ZkFold.Data.Vector                   (Vector, init, mapWithIx, tail, unsafeToVector)
 import           ZkFold.Protocol.IVC.Accumulator
-import           ZkFold.Protocol.IVC.AlgebraicMap      (algebraicMap)
-import           ZkFold.Protocol.IVC.Commit            (HomomorphicCommit (..))
-import           ZkFold.Protocol.IVC.FiatShamir        (transcript)
-import           ZkFold.Protocol.IVC.NARK              (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Protocol.IVC.Oracle            (HashAlgorithm, RandomOracle (..))
-import           ZkFold.Protocol.IVC.Predicate         (Predicate)
+import           ZkFold.Protocol.IVC.AlgebraicMap     (algebraicMap)
+import           ZkFold.Protocol.IVC.Commit           (HomomorphicCommit (..))
+import           ZkFold.Protocol.IVC.FiatShamir       (transcript)
+import           ZkFold.Protocol.IVC.NARK             (NARKInstanceProof (..), NARKProof (..))
+import           ZkFold.Protocol.IVC.Oracle           (HashAlgorithm, RandomOracle (..))
+import           ZkFold.Protocol.IVC.Predicate        (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme

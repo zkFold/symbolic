@@ -3,14 +3,14 @@
 
 module ZkFold.Symbolic.Algorithm.Hash.MiMC where
 
-import           Data.Foldable                                  (toList)
-import           Data.Functor.Rep                               (fmapRep, liftR3, pureRep)
-import           Data.List.NonEmpty                             (NonEmpty ((:|)), nonEmpty)
-import           Data.Proxy                                     (Proxy (..))
-import           GHC.Generics                                   (Par1 (..), (:*:) (..))
-import           Numeric.Natural                                (Natural)
-import           Prelude                                        hiding (Eq (..), Num (..), any, length, not, (!!), (/),
-                                                                 (^), (||))
+import           Data.Foldable                                 (toList)
+import           Data.Functor.Rep                              (fmapRep, liftR3, pureRep)
+import           Data.List.NonEmpty                            (NonEmpty ((:|)), nonEmpty)
+import           Data.Proxy                                    (Proxy (..))
+import           GHC.Generics                                  (Par1 (..), (:*:) (..))
+import           Numeric.Natural                               (Natural)
+import           Prelude                                       hiding (Eq (..), Num (..), any, length, not, (!!), (/),
+                                                                (^), (||))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Control.HApplicative                   (hpair)

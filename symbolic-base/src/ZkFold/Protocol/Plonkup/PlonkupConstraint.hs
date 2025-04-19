@@ -5,10 +5,10 @@ import           Prelude                                             hiding (Num
                                                                       take, (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Protocol.Plonkup.LookupConstraint       (LookupConstraint (..))
-import           ZkFold.Protocol.Plonkup.PlonkConstraint        (PlonkConstraint (..), toPlonkConstraint)
+import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (..))
+import           ZkFold.Protocol.Plonkup.PlonkConstraint             (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (toVar)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 data PlonkupConstraint i a = ConsPlonk (PlonkConstraint i a) | ConsLookup (LookupConstraint i a) | ConsExtra
 

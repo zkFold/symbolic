@@ -12,8 +12,8 @@ import           Prelude                                             hiding (Num
 import           Test.QuickCheck                                     (Arbitrary (..))
 
 import           ZkFold.Algebra.Class                                (Scale)
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
+import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()

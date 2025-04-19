@@ -7,20 +7,20 @@
 
 module ZkFold.Protocol.KZG where
 
-import           Control.Monad                              (replicateM)
-import           Data.ByteString                            (ByteString, empty)
-import           Data.Map.Strict                            (Map, fromList, insert, keys, toList, (!))
-import qualified Data.Vector                                as V
-import           Data.Vector.Binary                         ()
-import           Data.Word                                  (Word8)
-import           Prelude                                    hiding (Num (..), length, sum, (/), (^))
-import           Test.QuickCheck                            (Arbitrary (..), chooseInt)
+import           Control.Monad                        (replicateM)
+import           Data.ByteString                      (ByteString, empty)
+import           Data.Map.Strict                      (Map, fromList, insert, keys, toList, (!))
+import qualified Data.Vector                          as V
+import           Data.Vector.Binary                   ()
+import           Data.Word                            (Word8)
+import           Prelude                              hiding (Num (..), length, sum, (/), (^))
+import           Test.QuickCheck                      (Arbitrary (..), chooseInt)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
-import           ZkFold.Data.ByteString                (Binary)
+import           ZkFold.Data.ByteString               (Binary)
 import           ZkFold.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol

@@ -2,19 +2,19 @@
 
 module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
-import           Data.Function                               (id, ($))
-import           Data.List                                   ((++))
-import           Prelude                                     (Integer)
-import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (arbitrary)
-import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
-                                                              specSymbolicFunction1, specSymbolicFunction1WithPar,
-                                                              specSymbolicFunction2)
+import           Data.Function                          (id, ($))
+import           Data.List                              ((++))
+import           Prelude                                (Integer)
+import           Test.Hspec                             (Spec, describe)
+import           Test.QuickCheck                        (arbitrary)
+import           Tests.Symbolic.Data.Common             (specConstantRoundtrip, specSymbolicFunction0,
+                                                         specSymbolicFunction1, specSymbolicFunction1WithPar,
+                                                         specSymbolicFunction2)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Symbolic.Data.FieldElement      (FieldElement)
 
 specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
 specFieldElement' = do

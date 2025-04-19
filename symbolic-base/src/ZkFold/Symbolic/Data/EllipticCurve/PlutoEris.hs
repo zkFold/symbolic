@@ -6,13 +6,13 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.PlutoEris (Pluto_Point, Eris_Point) where
 
-import           Prelude                                     (fromInteger, ($))
+import           Prelude                                (fromInteger, ($))
 import qualified Prelude
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.EllipticCurve.PlutoEris (PlutoEris_p, PlutoEris_q)
+import           ZkFold.Algebra.Number
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString

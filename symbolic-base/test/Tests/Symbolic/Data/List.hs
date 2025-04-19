@@ -3,26 +3,26 @@
 
 module Tests.Symbolic.Data.List (specList) where
 
-import           Data.Binary                                 (Binary)
-import qualified Data.Eq                                     as Haskell
-import           Data.Function                               (($))
-import           GHC.Generics                                (Par1 (..), U1 (..), type (:*:) (..))
-import           Test.Hspec                                  (Spec, describe)
-import           Test.Hspec.QuickCheck                       (prop)
-import           Test.QuickCheck                             (Arbitrary)
-import           Text.Show                                   (Show)
+import           Data.Binary                            (Binary)
+import qualified Data.Eq                                as Haskell
+import           Data.Function                          (($))
+import           GHC.Generics                           (Par1 (..), U1 (..), type (:*:) (..))
+import           Test.Hspec                             (Spec, describe)
+import           Test.Hspec.QuickCheck                  (prop)
+import           Test.QuickCheck                        (Arbitrary)
+import           Text.Show                              (Show)
 
-import           ZkFold.Algebra.Class                        (one)
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
-import           ZkFold.Symbolic.Class                       (Arithmetic, Symbolic)
-import           ZkFold.Symbolic.Compiler                    (acOutput, compile, eval1)
-import           ZkFold.Symbolic.Data.Bool                   (Bool)
-import           ZkFold.Symbolic.Data.Eq                     ((==))
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
-import           ZkFold.Symbolic.Data.List                   (List, emptyList, foldr, head, lSize, tail, (.:))
+import           ZkFold.Algebra.Class                   (one)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Symbolic.Class                  (Arithmetic, Symbolic)
+import           ZkFold.Symbolic.Compiler               (acOutput, compile, eval1)
+import           ZkFold.Symbolic.Data.Bool              (Bool)
+import           ZkFold.Symbolic.Data.Eq                ((==))
+import           ZkFold.Symbolic.Data.FieldElement      (FieldElement (..))
+import           ZkFold.Symbolic.Data.List              (List, emptyList, foldr, head, lSize, tail, (.:))
 import           ZkFold.Symbolic.Data.Morph
-import           ZkFold.Symbolic.Fold                        (SymbolicFold)
+import           ZkFold.Symbolic.Fold                   (SymbolicFold)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x

@@ -58,7 +58,7 @@ import           Test.QuickCheck                                         (Arbitr
 import           Text.Pretty.Simple                                      (pPrint)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Polynomial.Multivariate                 (evalMonomial, evalPolynomial)
+import           ZkFold.Algebra.Polynomial.Multivariate                  (evalMonomial, evalPolynomial)
 import           ZkFold.Data.HFunctor                                    (hmap)
 import           ZkFold.Data.Product                                     (fstP, sndP)
 import           ZkFold.Prelude                                          (length)

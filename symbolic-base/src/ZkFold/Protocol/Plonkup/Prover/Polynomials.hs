@@ -2,7 +2,7 @@
 
 module ZkFold.Protocol.Plonkup.Prover.Polynomials where
 
-import           Prelude                                 hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+import           Prelude                            hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Protocol.Plonkup.Internal   (PlonkupPolyExtended, PlonkupPolyExtendedLength)

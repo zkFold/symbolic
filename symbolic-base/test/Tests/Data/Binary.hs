@@ -6,13 +6,13 @@ import           Test.Hspec
 import           Test.Hspec.QuickCheck
 import           Test.QuickCheck
 
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                BLS12_381_G2_CompressedPoint, BLS12_381_G2_Point,
-                                BLS12_381_Scalar)
-import           ZkFold.Algebra.EllipticCurve.BN254          (BN254_G1_Point, BN254_G2_Point)
-import           ZkFold.Algebra.EllipticCurve.Pasta          (Pallas_Point, Vesta_Point)
-import           ZkFold.Data.ByteString                      (LittleEndian, fromByteString, toByteString)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
+                                                         BLS12_381_G2_CompressedPoint, BLS12_381_G2_Point,
+                                                         BLS12_381_Scalar)
+import           ZkFold.Algebra.EllipticCurve.BN254     (BN254_G1_Point, BN254_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Data.ByteString                 (LittleEndian, fromByteString, toByteString)
 
 doesRoundtrip :: (Binary a, Eq a, Show a) => a -> Property
 doesRoundtrip x = do

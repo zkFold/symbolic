@@ -12,8 +12,8 @@ import           Prelude                             hiding (Bool, Eq, length, r
 import qualified Prelude                             as Haskell
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number    (KnownNat)
-import           ZkFold.Data.HFunctor.Classes   (HEq)
+import           ZkFold.Algebra.Number               (KnownNat)
+import           ZkFold.Data.HFunctor.Classes        (HEq)
 import           ZkFold.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))

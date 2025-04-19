@@ -1,15 +1,15 @@
 module ZkFold.Algebra.Polynomial.Multivariate.Groebner where
 
-import           Data.Bool                                               (bool)
-import           Data.List                                               (sortBy)
-import           GHC.Natural                                             (Natural)
-import           Prelude                                                 hiding (Num (..), drop, lcm, length, sum, take,
-                                                                          (!!), (/))
+import           Data.Bool                                       (bool)
+import           Data.List                                       (sortBy)
+import           GHC.Natural                                     (Natural)
+import           Prelude                                         hiding (Num (..), drop, lcm, length, sum, take, (!!),
+                                                                  (/))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import           ZkFold.Algebra.Polynomial.Multivariate.Internal
-import           ZkFold.Prelude                                          (length, (!!))
+import           ZkFold.Algebra.Polynomial.Multivariate.Monomial
+import           ZkFold.Prelude                                  (length, (!!))
 
 reducable :: Polynomial c i j  => Poly c i j -> Poly c i j -> Bool
 reducable l r = dividable (snd $ lt l) (snd $ lt r)

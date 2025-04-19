@@ -1,15 +1,15 @@
 module ZkFold.Data.Sparse.Vector where
 
-import           Data.Map                         (Map, empty, filter, fromList, map, toList)
-import           Data.These                       (These (..))
-import           Data.Zip                         (Semialign (..), Zip (..))
-import           Prelude                          hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Data.Map               (Map, empty, filter, fromList, map, toList)
+import           Data.These             (These (..))
+import           Data.Zip               (Semialign (..), Zip (..))
+import           Prelude                hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
+import           Test.QuickCheck        (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field  (Zp)
-import           ZkFold.Algebra.Number (KnownNat)
-import           ZkFold.Data.ByteString      (Binary (..))
+import           ZkFold.Algebra.Field   (Zp)
+import           ZkFold.Algebra.Number  (KnownNat)
+import           ZkFold.Data.ByteString (Binary (..))
 
 newtype SVector size a = SVector { fromSVector :: Map (Zp size) a }
     deriving (Show, Eq)

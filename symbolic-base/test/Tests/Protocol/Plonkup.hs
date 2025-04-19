@@ -19,22 +19,22 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field                     (fromZp)
-import           ZkFold.Algebra.Number                    (KnownNat, Natural)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381   (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import           ZkFold.Algebra.EllipticCurve.Class       (CyclicGroup (..))
-import           ZkFold.Algebra.Polynomial.Multivariate  as PM
+import           ZkFold.Algebra.EllipticCurve.BLS12_381              (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
+import           ZkFold.Algebra.Field                                (fromZp)
+import           ZkFold.Algebra.Number                               (KnownNat, Natural)
+import           ZkFold.Algebra.Polynomial.Multivariate              as PM
 import           ZkFold.Algebra.Polynomial.Univariate
-import           ZkFold.Data.Vector                       (Vector)
-import           ZkFold.Protocol.NonInteractiveProof      (setupProve)
-import           ZkFold.Protocol.Plonkup                  hiding (omega)
+import           ZkFold.Data.Vector                                  (Vector)
+import           ZkFold.Protocol.NonInteractiveProof                 (setupProve)
+import           ZkFold.Protocol.Plonkup                             hiding (omega)
 import           ZkFold.Protocol.Plonkup.PlonkConstraint
-import           ZkFold.Protocol.Plonkup.Prover           (plonkupProve)
+import           ZkFold.Protocol.Plonkup.Prover                      (plonkupProve)
 import           ZkFold.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Protocol.Plonkup.Relation         (PlonkupRelation (..))
+import           ZkFold.Protocol.Plonkup.Relation                    (PlonkupRelation (..))
 import           ZkFold.Protocol.Plonkup.Testing
-import           ZkFold.Protocol.Plonkup.Utils            (sortByList)
-import           ZkFold.Protocol.Plonkup.Witness          (PlonkupWitnessInput)
+import           ZkFold.Protocol.Plonkup.Utils                       (sortByList)
+import           ZkFold.Protocol.Plonkup.Witness                     (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 

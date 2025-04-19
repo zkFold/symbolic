@@ -3,12 +3,12 @@
 
 module ZkFold.Protocol.IVC.SpecialSound where
 
-import           Data.Binary                           (Binary)
-import           Data.Function                         (($))
-import           Data.Functor.Rep                      (Representable (..))
-import           Data.Map.Strict                       (elems)
-import           GHC.Generics                          ((:*:) (..))
-import           Prelude                               (undefined)
+import           Data.Binary                      (Binary)
+import           Data.Function                    (($))
+import           Data.Functor.Rep                 (Representable (..))
+import           Data.Map.Strict                  (elems)
+import           GHC.Generics                     ((:*:) (..))
+import           Prelude                          (undefined)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number

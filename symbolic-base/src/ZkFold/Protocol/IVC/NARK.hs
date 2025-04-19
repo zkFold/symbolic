@@ -2,12 +2,12 @@
 
 module ZkFold.Protocol.IVC.NARK where
 
-import           Control.DeepSeq                       (NFData (..))
-import           Data.Zip                              (unzip)
+import           Control.DeepSeq                  (NFData (..))
+import           Data.Zip                         (unzip)
 import           GHC.Generics
-import           Prelude                               hiding (head, length, pi, unzip)
+import           Prelude                          hiding (head, length, pi, unzip)
 
-import           ZkFold.Algebra.Class       (Ring, zero)
+import           ZkFold.Algebra.Class             (Ring, zero)
 import           ZkFold.Data.Vector               (Vector)
 import           ZkFold.Protocol.IVC.FiatShamir   (FiatShamir)
 import           ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))

@@ -21,7 +21,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 import           Text.Show                                           (Show)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Polynomial.Multivariate             (Poly, evalMonomial, evalPolynomial, polynomial,
+import           ZkFold.Algebra.Polynomial.Multivariate              (Poly, evalMonomial, evalPolynomial, polynomial,
                                                                       var, variables)
 import           ZkFold.Data.ByteString                              (toByteString)
 import           ZkFold.Prelude                                      (length, take)

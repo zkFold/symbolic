@@ -7,7 +7,7 @@ module Examples.Pasta (
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Algebra.EllipticCurve.Pasta  (FpModulus, FqModulus)
+import           ZkFold.Algebra.EllipticCurve.Pasta       (FpModulus, FqModulus)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Combinators         (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)

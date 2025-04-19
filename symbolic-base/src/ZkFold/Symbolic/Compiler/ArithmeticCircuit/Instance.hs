@@ -18,7 +18,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector                                   (Vector, unsafeToVector)
+import           ZkFold.Data.Vector                                  (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (chooseFromList, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

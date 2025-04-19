@@ -5,28 +5,28 @@
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-import           Control.Applicative                         ((<*>))
-import           Control.Monad                               (return)
-import           Data.Eq                                     (Eq)
-import           Data.Function                               (const, ($))
-import           Data.Functor                                (Functor, (<$>))
-import qualified Data.Text                                   as T
-import           GHC.Generics                                (Par1 (..), U1 (..), (:*:) (..))
-import           Prelude                                     (type (~), (.))
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (describe, hspec)
-import           Test.Hspec.QuickCheck                       (prop)
+import           Control.Applicative                        ((<*>))
+import           Control.Monad                              (return)
+import           Data.Eq                                    (Eq)
+import           Data.Function                              (const, ($))
+import           Data.Functor                               (Functor, (<$>))
+import qualified Data.Text                                  as T
+import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..))
+import           Prelude                                    (type (~), (.))
+import           System.IO                                  (IO)
+import           Test.Hspec                                 (describe, hspec)
+import           Test.Hspec.QuickCheck                      (prop)
 import           Test.QuickCheck
-import           Text.Show                                   (Show)
+import           Text.Show                                  (Show)
 
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Base)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (eval)
-import           ZkFold.Symbolic.Data.Bool                   (false, true)
-import           ZkFold.Symbolic.Data.Class                  (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Input                  (SymbolicInput)
-import           ZkFold.Symbolic.UPLC.Converter              (contractV3)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Base)
+import           ZkFold.Algebra.Field                       (Zp)
+import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit, compile)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval)
+import           ZkFold.Symbolic.Data.Bool                  (false, true)
+import           ZkFold.Symbolic.Data.Class                 (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Input                 (SymbolicInput)
+import           ZkFold.Symbolic.UPLC.Converter             (contractV3)
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.Term
 

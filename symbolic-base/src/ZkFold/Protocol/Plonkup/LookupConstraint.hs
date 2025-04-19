@@ -9,7 +9,7 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Data.ByteString                         (toByteString)
+import           ZkFold.Data.ByteString                              (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 newtype LookupConstraint i a = LookupConstraint { lkVar :: SysVar i }

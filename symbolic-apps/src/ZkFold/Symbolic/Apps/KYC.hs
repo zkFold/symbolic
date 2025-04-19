@@ -17,7 +17,7 @@ import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters,
-                           RegisterSize (..))
+                                                   RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq          (Eq ((==)), elem)
 import           ZkFold.Symbolic.Data.Ord         (Ord ((>=)))
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, UInt)

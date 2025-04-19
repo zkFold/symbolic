@@ -12,17 +12,17 @@ import           Control.Monad
 import           Data.Bits
 import           Data.Foldable
 import           Data.Word
-import           Prelude                                    hiding (Num (..), (/), (^))
+import           Prelude                              hiding (Num (..), (/), (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field
-import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.EllipticCurve.Pairing
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.ByteString
-import qualified ZkFold.Symbolic.Data.Conditional           as Symbolic
-import qualified ZkFold.Symbolic.Data.Eq                    as Symbolic
+import qualified ZkFold.Symbolic.Data.Conditional     as Symbolic
+import qualified ZkFold.Symbolic.Data.Eq              as Symbolic
 
 -------------------------------- Introducing Fields ----------------------------------
 

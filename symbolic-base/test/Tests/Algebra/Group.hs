@@ -6,8 +6,8 @@
 
 module Tests.Algebra.Group (specGroup) where
 
-import           Data.Data                                   (Typeable, typeOf)
-import           Prelude                                     hiding (Fractional (..), Num (..), length)
+import           Data.Data                              (Typeable, typeOf)
+import           Prelude                                hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 

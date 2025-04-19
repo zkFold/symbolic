@@ -7,27 +7,27 @@
 module ZkFold.Symbolic.Data.Int where
 
 import           Control.DeepSeq
-import qualified Data.Bool                         as Haskell
-import           Data.Kind                         (Type)
-import           GHC.Generics                      (Generic, Par1 (..))
-import           Prelude                           (Integer, ($), (.))
-import qualified Prelude                           as Haskell hiding ((-))
-import           Test.QuickCheck                   (Arbitrary (..))
+import qualified Data.Bool                        as Haskell
+import           Data.Kind                        (Type)
+import           GHC.Generics                     (Generic, Par1 (..))
+import           Prelude                          (Integer, ($), (.))
+import qualified Prelude                          as Haskell hiding ((-))
+import           Test.QuickCheck                  (Arbitrary (..))
 
-import           ZkFold.Algebra.Class              hiding (Euclidean (..))
+import           ZkFold.Algebra.Class             hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
-import           ZkFold.Data.Vector                (fromVector)
+import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData, HShow)
+import           ZkFold.Data.Vector               (fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
+import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt n r c}

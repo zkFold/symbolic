@@ -2,9 +2,9 @@
 
 module ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants ( blake2b_iv, sigma ) where
 
-import           GHC.IsList                      (IsList (..))
-import           Numeric.Natural                 (Natural)
-import           Prelude                         (Int, map, type (~), ($), (<$>))
+import           GHC.IsList           (IsList (..))
+import           Numeric.Natural      (Natural)
+import           Prelude              (Int, map, type (~), ($), (<$>))
 
 import           ZkFold.Algebra.Class (FromConstant (..))
 

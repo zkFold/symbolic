@@ -2,8 +2,8 @@
 
 module ZkFold.Control.HApplicative where
 
-import           Data.Function             (const, ($), (.))
-import           GHC.Generics              (U1 (..), (:*:) (..))
+import           Data.Function        (const, ($), (.))
+import           GHC.Generics         (U1 (..), (:*:) (..))
 
 import           ZkFold.Data.HFunctor
 

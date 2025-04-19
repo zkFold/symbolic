@@ -3,23 +3,23 @@
 
 module ZkFold.Symbolic.Data.Vec where
 
-import           Control.DeepSeq                   (NFData, NFData1)
-import           Data.Functor.Classes              (Eq1)
+import           Control.DeepSeq                  (NFData, NFData1)
+import           Data.Functor.Classes             (Eq1)
 import           Data.Functor.Rep
-import           Data.Traversable                  (Traversable (..))
-import           GHC.Generics                      (Generic)
-import           GHC.Num                           (Natural)
-import           Prelude                           (Integer, ($), (.))
-import qualified Prelude                           as Haskell
+import           Data.Traversable                 (Traversable (..))
+import           GHC.Generics                     (Generic)
+import           GHC.Num                          (Natural)
+import           Prelude                          (Integer, ($), (.))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.HFunctor.Classes (HEq, HNFData)
+import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool   (Bool)
+import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators  (mzipWithMRep)
-import           ZkFold.Symbolic.Data.Conditional  (Conditional)
-import           ZkFold.Symbolic.Data.Eq           (Eq)
+import           ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
+import           ZkFold.Symbolic.Data.Conditional (Conditional)
+import           ZkFold.Symbolic.Data.Eq          (Eq)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit
 

@@ -26,21 +26,20 @@ module ZkFold.Algebra.Polynomial.Univariate
     , UnivariateFieldPolyVec(..)
     ) where
 
-import           Control.DeepSeq                  (NFData (..))
-import           Control.Monad                    (forM_)
-import qualified Data.Vector                      as V
-import qualified Data.Vector.Mutable              as VM
-import           GHC.Generics                     (Generic)
-import           GHC.IsList                       (IsList (..))
-import           Prelude                          hiding (Num (..), drop, length, product, replicate, sum, take, (/),
-                                                   (^))
-import qualified Prelude                          as P
-import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
+import           Control.DeepSeq       (NFData (..))
+import           Control.Monad         (forM_)
+import qualified Data.Vector           as V
+import qualified Data.Vector.Mutable   as VM
+import           GHC.Generics          (Generic)
+import           GHC.IsList            (IsList (..))
+import           Prelude               hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import qualified Prelude               as P
+import           Test.QuickCheck       (Arbitrary (..), chooseInt)
 
-import           ZkFold.Algebra.Class             hiding (Euclidean (..))
-import           ZkFold.Algebra.DFT               (genericDft)
+import           ZkFold.Algebra.Class  hiding (Euclidean (..))
+import           ZkFold.Algebra.DFT    (genericDft)
 import           ZkFold.Algebra.Number
-import           ZkFold.Prelude                   (log2ceiling, replicate, zipWithDefault)
+import           ZkFold.Prelude        (log2ceiling, replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
 infixl 6 .+, +.

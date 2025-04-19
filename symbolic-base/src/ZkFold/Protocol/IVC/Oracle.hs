@@ -4,15 +4,15 @@
 
 module ZkFold.Protocol.IVC.Oracle where
 
-import qualified Data.Vector                                    as V
+import qualified Data.Vector                                   as V
 import           GHC.Generics
-import           Prelude                                        (map, (.))
-import qualified Prelude                                        as P
+import           Prelude                                       (map, (.))
+import qualified Prelude                                       as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHashN')
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants)
-import           ZkFold.Symbolic.Class                          (Arithmetic)
+import           ZkFold.Symbolic.Class                         (Arithmetic)
 
 -- TODO: add more specific instances for efficiency
 

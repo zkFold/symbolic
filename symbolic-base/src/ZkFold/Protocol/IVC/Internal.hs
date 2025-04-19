@@ -9,19 +9,19 @@
 
 module ZkFold.Protocol.IVC.Internal where
 
-import           Control.DeepSeq                            (NFData)
-import           Control.Lens                               ((^.))
-import           Control.Lens.Combinators                   (makeLenses)
-import           Data.Functor.Rep                           (Representable (..))
-import           Data.Type.Equality                         (type (~))
-import           Data.Zip                                   (Zip (..), unzip)
-import           GHC.Generics                               (Generic, (:*:))
-import           Prelude                                    (Show, const, ($))
-import qualified Prelude                                    as P
+import           Control.DeepSeq                       (NFData)
+import           Control.Lens                          ((^.))
+import           Control.Lens.Combinators              (makeLenses)
+import           Data.Functor.Rep                      (Representable (..))
+import           Data.Type.Equality                    (type (~))
+import           Data.Zip                              (Zip (..), unzip)
+import           GHC.Generics                          (Generic, (:*:))
+import           Prelude                               (Show, const, ($))
+import qualified Prelude                               as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number           (KnownNat, type (+))
-import           ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import           ZkFold.Algebra.Number                 (KnownNat, type (+))
+import           ZkFold.Algebra.Polynomial.Univariate  (PolyVec)
 import           ZkFold.Data.Vector                    (Vector, singleton)
 import           ZkFold.Protocol.IVC.Accumulator       hiding (pi)
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme as Acc
@@ -34,11 +34,11 @@ import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate         (Predicate (..), predicate)
 import           ZkFold.Protocol.IVC.RecursiveFunction
 import           ZkFold.Protocol.IVC.SpecialSound      (SpecialSoundProtocol (..), specialSoundProtocol,
-                                                             specialSoundProtocol')
+                                                        specialSoundProtocol')
 import           ZkFold.Protocol.IVC.StepFunction      (StepFunction)
-import           ZkFold.Symbolic.Compiler                   (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
-import           ZkFold.Symbolic.Interpreter                (Interpreter)
+import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.FieldElement     (FieldElement)
+import           ZkFold.Symbolic.Interpreter           (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f

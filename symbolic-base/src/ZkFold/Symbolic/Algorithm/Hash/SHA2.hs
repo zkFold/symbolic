@@ -15,46 +15,46 @@ module ZkFold.Symbolic.Algorithm.Hash.SHA2
     , PaddedLength
     ) where
 
-import           Control.DeepSeq                                (force)
-import           Control.Monad                                  (forM_)
-import           Control.Monad.ST                               (ST, runST)
-import           Data.Bits                                      (shiftL)
+import           Control.DeepSeq                               (force)
+import           Control.Monad                                 (forM_)
+import           Control.Monad.ST                              (ST, runST)
+import           Data.Bits                                     (shiftL)
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
-import           Data.Kind                                      (Type)
-import qualified Data.STRef                                     as ST
-import           Data.Type.Bool                                 (If)
-import           Data.Type.Equality                             (type (~))
-import qualified Data.Vector                                    as V
-import qualified Data.Vector.Mutable                            as VM
-import           GHC.Generics                                   (Par1 (..))
-import           GHC.TypeLits                                   (Symbol)
-import           GHC.TypeNats                                   (type (<=?), withKnownNat)
-import           Prelude                                        (Int, id, pure, zip, ($!), ($), (.), (>>=))
-import qualified Prelude                                        as P
+import           Data.Kind                                     (Type)
+import qualified Data.STRef                                    as ST
+import           Data.Type.Bool                                (If)
+import           Data.Type.Equality                            (type (~))
+import qualified Data.Vector                                   as V
+import qualified Data.Vector.Mutable                           as VM
+import           GHC.Generics                                  (Par1 (..))
+import           GHC.TypeLits                                  (Symbol)
+import           GHC.TypeNats                                  (type (<=?), withKnownNat)
+import           Prelude                                       (Int, id, pure, zip, ($!), ($), (.), (>>=))
+import qualified Prelude                                       as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor                      (hmap)
-import           ZkFold.Data.Vector                        (Vector (..), fromVector, reverse, unsafeToVector)
+import           ZkFold.Data.HFunctor                          (hmap)
+import           ZkFold.Data.Vector                            (Vector (..), fromVector, reverse, unsafeToVector)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants (sha224InitialHashes, sha256InitialHashes,
-                                                                 sha384InitialHashes, sha512InitialHashes,
-                                                                 sha512_224InitialHashes, sha512_256InitialHashes,
-                                                                 word32RoundConstants, word64RoundConstants)
-import           ZkFold.Symbolic.Class                          (BaseField, Symbolic, fromCircuitF)
-import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString                (ByteString (..), ShiftBits (..), concat, set, toWords,
-                                                                 truncate)
-import           ZkFold.Symbolic.Data.Combinators               (Iso (..), RegisterSize (..), Resize (..), expansionW,
-                                                                 ilog2)
+                                                                sha384InitialHashes, sha512InitialHashes,
+                                                                sha512_224InitialHashes, sha512_256InitialHashes,
+                                                                word32RoundConstants, word64RoundConstants)
+import           ZkFold.Symbolic.Class                         (BaseField, Symbolic, fromCircuitF)
+import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString               (ByteString (..), ShiftBits (..), concat, set, toWords,
+                                                                truncate)
+import           ZkFold.Symbolic.Data.Combinators              (Iso (..), RegisterSize (..), Resize (..), expansionW,
+                                                                ilog2)
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (..))
+import           ZkFold.Symbolic.Data.FieldElement             (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Data.UInt                      (UInt)
-import qualified ZkFold.Symbolic.Data.VarByteString             as VB
-import           ZkFold.Symbolic.Data.VarByteString             (VarByteString (..))
-import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
+import           ZkFold.Symbolic.Data.UInt                     (UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString            as VB
+import           ZkFold.Symbolic.Data.VarByteString            (VarByteString (..))
+import           ZkFold.Symbolic.MonadCircuit                  (newAssigned)
 
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.

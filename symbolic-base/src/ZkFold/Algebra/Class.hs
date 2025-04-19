@@ -6,25 +6,25 @@
 
 module ZkFold.Algebra.Class where
 
-import           Control.Applicative              (Applicative (..))
-import           Data.Bool                        (Bool (..), bool, otherwise, (&&))
-import           Data.Eq                          (Eq (..))
-import           Data.Foldable                    (Foldable (foldl', foldl1, foldr))
-import           Data.Function                    (const, id, ($), (.))
-import           Data.Functor                     (Functor (..))
-import           Data.Functor.Constant            (Constant (..))
-import           Data.Kind                        (Type)
-import           Data.List                        (iterate, map, repeat, zipWith, (++))
-import           Data.Maybe                       (Maybe (..))
-import           Data.Ord                         (Ord (..), Ordering (..))
-import           Data.Ratio                       (Rational)
-import           Data.Type.Equality               (type (~))
-import           GHC.Natural                      (naturalFromInteger)
-import           Prelude                          (Integer)
-import qualified Prelude                          as Haskell
+import           Control.Applicative   (Applicative (..))
+import           Data.Bool             (Bool (..), bool, otherwise, (&&))
+import           Data.Eq               (Eq (..))
+import           Data.Foldable         (Foldable (foldl', foldl1, foldr))
+import           Data.Function         (const, id, ($), (.))
+import           Data.Functor          (Functor (..))
+import           Data.Functor.Constant (Constant (..))
+import           Data.Kind             (Type)
+import           Data.List             (iterate, map, repeat, zipWith, (++))
+import           Data.Maybe            (Maybe (..))
+import           Data.Ord              (Ord (..), Ordering (..))
+import           Data.Ratio            (Rational)
+import           Data.Type.Equality    (type (~))
+import           GHC.Natural           (naturalFromInteger)
+import           Prelude               (Integer)
+import qualified Prelude               as Haskell
 
 import           ZkFold.Algebra.Number
-import           ZkFold.Prelude                   (length, replicate)
+import           ZkFold.Prelude        (length, replicate)
 
 infixl 7 *, /
 infixl 6 +, -, -!

@@ -59,7 +59,7 @@ import           ZkFold.Data.Product               (fstP, sndP)
 import qualified ZkFold.Data.Vector                as V
 import           ZkFold.Data.Vector                (Vector (..))
 import           ZkFold.Prelude                    (length, replicate, replicateA, take, unsnoc)
-import           ZkFold.Symbolic.Algorithm.FFT    (fft, ifft)
+import           ZkFold.Symbolic.Algorithm.FFT     (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString

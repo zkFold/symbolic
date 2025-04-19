@@ -2,18 +2,18 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash where
 
-import           Crypto.Hash.SHA256              (hash)
-import           Data.Binary                     (Binary (..))
-import           Data.ByteString                 (ByteString)
-import           Data.Function                   ((.))
-import           Data.Maybe                      (Maybe (..))
-import           GHC.Generics                    (Generic)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         (Integer, error)
+import           Crypto.Hash.SHA256           (hash)
+import           Data.Binary                  (Binary (..))
+import           Data.ByteString              (ByteString)
+import           Data.Function                ((.))
+import           Data.Maybe                   (Maybe (..))
+import           GHC.Generics                 (Generic)
+import           Numeric.Natural              (Natural)
+import           Prelude                      (Integer, error)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field (Zp)
-import           ZkFold.Data.ByteString (toByteString)
+import           ZkFold.Algebra.Field         (Zp)
+import           ZkFold.Data.ByteString       (toByteString)
 import           ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }

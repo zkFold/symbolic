@@ -2,8 +2,7 @@
 
 module ZkFold.Protocol.Plonkup.Verifier.Setup where
 
-import           Prelude                                           hiding (Num (..), drop, length, sum, take, (!!), (/),
-                                                                    (^))
+import           Prelude                                      hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.EllipticCurve.Class           (CyclicGroup (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))

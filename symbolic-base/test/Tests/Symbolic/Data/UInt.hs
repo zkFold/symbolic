@@ -6,39 +6,39 @@
 
 module Tests.Symbolic.Data.UInt (specUInt) where
 
-import           Control.Monad                               (return, when)
-import           Data.Aeson                                  (decode, encode)
-import           Data.Binary                                 (Binary)
+import           Control.Monad                          (return, when)
+import           Data.Aeson                             (decode, encode)
+import           Data.Binary                            (Binary)
 import           Data.Constraint
-import           Data.Constraint.Nat                         (timesNat)
-import           Data.Function                               (id, ($))
-import           Data.Functor                                ((<$>))
-import           Data.List                                   ((++))
-import           GHC.Generics                                (Par1 (Par1), U1)
-import           Prelude                                     (show, type (~))
-import qualified Prelude                                     as P
-import           Test.Hspec                                  (Spec, describe)
-import           Test.QuickCheck                             (Gen, Property, withMaxSuccess, (.&.), (===))
-import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
-import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
-                                                              specSymbolicFunction1, specSymbolicFunction2)
+import           Data.Constraint.Nat                    (timesNat)
+import           Data.Function                          (id, ($))
+import           Data.Functor                           ((<$>))
+import           Data.List                              ((++))
+import           GHC.Generics                           (Par1 (Par1), U1)
+import           Prelude                                (show, type (~))
+import qualified Prelude                                as P
+import           Test.Hspec                             (Spec, describe)
+import           Test.QuickCheck                        (Gen, Property, withMaxSuccess, (.&.), (===))
+import           Tests.Symbolic.ArithmeticCircuit       (exec1, it)
+import           Tests.Symbolic.Data.Common             (specConstantRoundtrip, specSymbolicFunction0,
+                                                         specSymbolicFunction1, specSymbolicFunction2)
 
-import           ZkFold.Algebra.Class                        hiding (Euclidean (..))
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Class                   hiding (Euclidean (..))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Data.Vector                          (Vector)
-import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Class                       (Arithmetic)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Vector                     (Vector)
+import           ZkFold.Prelude                         (chooseNatural)
+import           ZkFold.Symbolic.Class                  (Arithmetic)
+import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators            (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
-                                                              NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators       (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
+                                                         NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)

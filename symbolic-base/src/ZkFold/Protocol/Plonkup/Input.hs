@@ -2,16 +2,16 @@
 
 module ZkFold.Protocol.Plonkup.Input where
 
-import           Data.Function                           (($))
-import           Data.Functor                            (Functor, (<$>))
-import           Data.Functor.Classes                    (Show1)
-import           Data.List                               ((++))
-import           Test.QuickCheck                         (Arbitrary (..))
-import           Text.Show                               (Show, show)
+import           Data.Function                      (($))
+import           Data.Functor                       (Functor, (<$>))
+import           Data.Functor.Classes               (Show1)
+import           Data.List                          ((++))
+import           Test.QuickCheck                    (Arbitrary (..))
+import           Text.Show                          (Show, show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import           ZkFold.Symbolic.Compiler          ()
+import           ZkFold.Symbolic.Compiler           ()
 
 newtype PlonkupInput l g = PlonkupInput { unPlonkupInput :: l (ScalarFieldOf g) }
 

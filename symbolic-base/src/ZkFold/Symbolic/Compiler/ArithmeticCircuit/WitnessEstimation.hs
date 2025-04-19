@@ -11,7 +11,7 @@ import           GHC.Natural                                    (Natural)
 import           Prelude                                        (Eq, Maybe (..), ($), (.), (==))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.ByteString                    ()
+import           ZkFold.Data.ByteString                         ()
 import           ZkFold.Symbolic.Class                          (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))

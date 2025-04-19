@@ -1,9 +1,9 @@
 module ZkFold.Data.Sparse.Matrix where
 
-import           Data.Map                         (Map)
-import           Data.Zip                         (Semialign (..), Zip (..))
-import           Prelude                          hiding (length, sum, zip, zipWith, (*))
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Data.Map              (Map)
+import           Data.Zip              (Semialign (..), Zip (..))
+import           Prelude               hiding (length, sum, zip, zipWith, (*))
+import           Test.QuickCheck       (Arbitrary (..))
 
 import           ZkFold.Algebra.Field  (Zp)
 import           ZkFold.Algebra.Number (KnownNat)

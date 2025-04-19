@@ -15,11 +15,11 @@ import qualified Prelude                                             as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import qualified ZkFold.Algebra.Polynomial.Multivariate        as PM
+import qualified ZkFold.Algebra.Polynomial.Multivariate              as PM
 import           ZkFold.Algebra.Polynomial.Multivariate
-import qualified ZkFold.Data.Vector                             as V
-import           ZkFold.Data.Vector                             (Vector)
-import           ZkFold.Protocol.IVC.Predicate                  (Predicate (..))
+import qualified ZkFold.Data.Vector                                  as V
+import           ZkFold.Data.Vector                                  (Vector)
+import           ZkFold.Protocol.IVC.Predicate                       (Predicate (..))
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq

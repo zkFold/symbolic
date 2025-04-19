@@ -2,9 +2,8 @@
 
 module ZkFold.Protocol.Plonkup.Prover.Setup where
 
-import qualified Data.Vector                                     as V
-import           Prelude                                         hiding (Num (..), drop, length, sum, take, (!!), (/),
-                                                                  (^))
+import qualified Data.Vector                                as V
+import           Prelude                                    hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.EllipticCurve.Class         (CyclicGroup (..))
 import           ZkFold.Protocol.Plonkup.Internal           (PlonkupPolyExtendedLength)

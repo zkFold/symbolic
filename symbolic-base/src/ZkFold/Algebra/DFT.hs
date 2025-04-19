@@ -1,11 +1,11 @@
 module ZkFold.Algebra.DFT (genericDft) where
 
-import           Control.Monad                   (forM_)
-import qualified Data.STRef                      as ST
-import qualified Data.Vector                     as V
-import qualified Data.Vector.Mutable             as VM
-import           Prelude                         hiding (mod, sum, (*), (+), (-), (/), (^))
-import qualified Prelude                         as P
+import           Control.Monad        (forM_)
+import qualified Data.STRef           as ST
+import qualified Data.Vector          as V
+import qualified Data.Vector.Mutable  as VM
+import           Prelude              hiding (mod, sum, (*), (+), (-), (/), (^))
+import qualified Prelude              as P
 
 import           ZkFold.Algebra.Class
 
