@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE PolyKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -10,49 +11,178 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     , expModCircuit
     , expModSetup
     , expModProof
+    , ExpModCircuitGates
     , ExpModProofInput (..)
     , PlonkupTs
-    , NGates
+
+    , expModSetupMock
+    , expModProofMock
+    , ExpModCircuitGatesMock
+
+    , mkProof
+    , mkSetup
     ) where
 
-import           Control.DeepSeq                             (NFData)
-import           Data.Foldable                               (foldrM)
+import           Data.ByteString                                   (ByteString)
+import           Data.Foldable                                     (foldrM)
 import           Data.Proxy
-import           Data.Word                                   (Word8)
-import           GHC.Generics                                (Generic, Par1 (..), U1 (..), type (:*:) (..))
-import           Prelude                                     (const, ($), (<$>))
+import           Data.Word                                         (Word8)
+import           GHC.Generics                                      (Generic, Par1 (..), U1 (..), type (:*:) (..))
+import           GHC.Natural                                       (naturalToInteger)
+import           Prelude                                           hiding (Fractional (..), Num (..), length)
+import qualified Prelude                                           as P
 
 import           ZkFold.Base.Algebra.Basic.Class
-import qualified ZkFold.Base.Algebra.Basic.Number            as Number
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, type (^))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                                              BLS12_381_G2_Point, Fr)
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (PolyVec)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup                (Plonkup (..))
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret  (PlonkupProverSecret (..))
-import           ZkFold.Base.Protocol.Plonkup.Utils          (getParams, getSecrectParams)
-import           ZkFold.Base.Protocol.Plonkup.Witness        (PlonkupWitnessInput (..))
-import qualified ZkFold.Symbolic.Algorithms.RSA              as RSA
-import           ZkFold.Symbolic.Class                       (Symbolic (..))
-import qualified ZkFold.Symbolic.Compiler                    as C
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit (..))
+import           ZkFold.Base.Algebra.Basic.Field                   (Zp, fromZp, toZp)
+import qualified ZkFold.Base.Algebra.Basic.Number                  as Number
+import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, Natural, type (^))
+import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
+                                                                    BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
+import           ZkFold.Base.Algebra.EllipticCurve.Class           (compress)
+import           ZkFold.Base.Algebra.Polynomials.Univariate        (PolyVec)
+import           ZkFold.Base.Data.ByteString                       (toByteString)
+import           ZkFold.Base.Data.Vector                           (Vector)
+import           ZkFold.Base.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
+                                                                          ToTranscript (..))
+import           ZkFold.Base.Protocol.Plonkup                      (Plonkup (..))
+import           ZkFold.Base.Protocol.Plonkup.Proof
+import           ZkFold.Base.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
+import           ZkFold.Base.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
+import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
+import           ZkFold.Base.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
+import           ZkFold.Prelude                                    (log2ceiling)
+import qualified ZkFold.Symbolic.Algorithms.RSA                    as RSA
+import           ZkFold.Symbolic.Class                             (Symbolic (..))
+import qualified ZkFold.Symbolic.Compiler                          as C
+import           ZkFold.Symbolic.Compiler                          (ArithmeticCircuit (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.Data.UInt
+import           ZkFold.Symbolic.Data.UInt                         (OrdWord, UInt (..), expMod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                      (newAssigned)
 
-type NGates = 2^19
+-- TODO:
+-- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
+--
+convertZp :: Zp p -> Integer
+convertZp = naturalToInteger . fromZp
+
+convertG1 :: BLS12_381_G1_Point -> ByteString
+convertG1 = toByteString . compress
+
+convertG2 :: BLS12_381_G2_Point -> ByteString
+convertG2 = toByteString . compress
+
+data SetupBytes = SetupBytes {
+    n          :: Integer
+  , pow        :: Integer
+  , omega_int  :: Integer
+  , k1_int     :: Integer
+  , k2_int     :: Integer
+  , h1_bytes   :: ByteString
+  , cmQm_bytes :: ByteString
+  , cmQl_bytes :: ByteString
+  , cmQr_bytes :: ByteString
+  , cmQo_bytes :: ByteString
+  , cmQc_bytes :: ByteString
+  , cmQk_bytes :: ByteString
+  , cmS1_bytes :: ByteString
+  , cmS2_bytes :: ByteString
+  , cmS3_bytes :: ByteString
+  , cmT1_bytes :: ByteString
+} deriving stock (Show, Generic)
+
+mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> SetupBytes
+mkSetup PlonkupVerifierSetup {..} =
+  let PlonkupCircuitCommitments {..} = commitments
+  in SetupBytes
+    { n          = fromIntegral (Number.value @n)
+    , pow        = log2ceiling (Number.value @n)
+    , omega_int  = convertZp omega
+    , k1_int     = convertZp k1
+    , k2_int     = convertZp k2
+    , h1_bytes   = convertG2 h1
+    , cmQm_bytes = convertG1 cmQm
+    , cmQl_bytes = convertG1 cmQl
+    , cmQr_bytes = convertG1 cmQr
+    , cmQo_bytes = convertG1 cmQo
+    , cmQc_bytes = convertG1 cmQc
+    , cmQk_bytes = convertG1 cmQk
+    , cmS1_bytes = convertG1 cmS1
+    , cmS2_bytes = convertG1 cmS2
+    , cmS3_bytes = convertG1 cmS3
+    , cmT1_bytes = convertG1 cmT1
+    }
+
+data ProofBytes = ProofBytes {
+    cmA_bytes     :: ByteString
+  , cmB_bytes     :: ByteString
+  , cmC_bytes     :: ByteString
+  , cmF_bytes     :: ByteString
+  , cmH1_bytes    :: ByteString
+  , cmH2_bytes    :: ByteString
+  , cmZ1_bytes    :: ByteString
+  , cmZ2_bytes    :: ByteString
+  , cmQlow_bytes  :: ByteString
+  , cmQmid_bytes  :: ByteString
+  , cmQhigh_bytes :: ByteString
+  , proof1_bytes  :: ByteString
+  , proof2_bytes  :: ByteString
+  , a_xi_int      :: Integer
+  , b_xi_int      :: Integer
+  , c_xi_int      :: Integer
+  , s1_xi_int     :: Integer
+  , s2_xi_int     :: Integer
+  , f_xi_int      :: Integer
+  , t_xi_int      :: Integer
+  , t_xi'_int     :: Integer
+  , z1_xi'_int    :: Integer
+  , z2_xi'_int    :: Integer
+  , h1_xi'_int    :: Integer
+  , h2_xi_int     :: Integer
+  , l1_xi         :: Integer
+} deriving stock (Show, Generic)
+
+mkProof :: forall i (n :: Natural) . Proof (PlonkupTs i n ByteString) -> ProofBytes
+mkProof PlonkupProof {..} = ProofBytes
+  { cmA_bytes     = convertG1 cmA
+  , cmB_bytes     = convertG1 cmB
+  , cmC_bytes     = convertG1 cmC
+  , cmF_bytes     = convertG1 cmF
+  , cmH1_bytes    = convertG1 cmH1
+  , cmH2_bytes    = convertG1 cmH2
+  , cmZ1_bytes    = convertG1 cmZ1
+  , cmZ2_bytes    = convertG1 cmZ2
+  , cmQlow_bytes  = convertG1 cmQlow
+  , cmQmid_bytes  = convertG1 cmQmid
+  , cmQhigh_bytes = convertG1 cmQhigh
+  , proof1_bytes  = convertG1 proof1
+  , proof2_bytes  = convertG1 proof2
+  , a_xi_int      = convertZp a_xi
+  , b_xi_int      = convertZp b_xi
+  , c_xi_int      = convertZp c_xi
+  , s1_xi_int     = convertZp s1_xi
+  , s2_xi_int     = convertZp s2_xi
+  , f_xi_int      = convertZp f_xi
+  , t_xi_int      = convertZp t_xi
+  , t_xi'_int     = convertZp t_xi'
+  , z1_xi'_int    = convertZp z1_xi'
+  , z2_xi'_int    = convertZp z2_xi'
+  , h1_xi'_int    = convertZp h1_xi'
+  , h2_xi_int     = convertZp h2_xi
+  , l1_xi         = convertZp $ head l_xi
+  }
+
+type ExpModCircuitGates = 2^16
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
 type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
 
-type PlonkupTs t = Plonkup ExpModCompiledInput NGates Par1 BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i n Par1 BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
 type TranscriptConstraints ts =
     ( ToTranscript ts Word8
@@ -85,7 +215,6 @@ expModContract
     .  Symbolic c
     => KnownNat (NumberOfRegisters (BaseField c) 4096 Auto)
     => KnownNat (Ceil (GetRegisterSize (BaseField c) 4096 Auto) OrdWord)
-    => NFData (c (Vector (NumberOfRegisters (BaseField c) 4096 Auto)))
     => ExpModInput c
     -> FieldElement c
 expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
@@ -103,16 +232,16 @@ expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * to
             z <- newAssigned (const zero)
             Par1 <$> foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
 
-expModCircuit :: ExpModCircuit 
+expModCircuit :: ExpModCircuit
 expModCircuit = C.compile @Fr expModContract
 
-expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> SetupVerify (PlonkupTs t)
+expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
 expModSetup x ac = setupV
     where
-        (omega, k1, k2) = getParams (Number.value @NGates)
-        (gs, h1) = getSecrectParams @NGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
+        (gs, h1) = getSecrectParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
         plonkup = Plonkup omega k1 k2 ac h1 gs
-        setupV  = setupVerify @(PlonkupTs t) plonkup
+        setupV  = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
 data ExpModProofInput =
     ExpModProofInput
@@ -129,7 +258,7 @@ expModProof
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModCircuit
     -> ExpModProofInput
-    -> Proof (PlonkupTs t)
+    -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
 expModProof x ps ac ExpModProofInput{..} = proof
     where
         input :: ExpModInput (Interpreter Fr)
@@ -147,9 +276,50 @@ expModProof x ps ac ExpModProofInput{..} = proof
         paddedWitnessInputs :: ExpModCompiledInput Fr
         paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
-        (omega, k1, k2) = getParams (Number.value @NGates)
-        (gs, h1) = getSecrectParams @NGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs t
-        setupP  = setupProve @(PlonkupTs t) plonkup
+        (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
+        (gs, h1) = getSecrectParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
+        setupP  = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
         witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_Point paddedWitnessInputs, ps)
-        (_, proof) = prove @(PlonkupTs t) setupP witness
+        (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
+
+
+-------------------------------------------------------------------------------------------------------------------
+--  Mock circuit. To be replaced with the full circuit after optimisations
+-------------------------------------------------------------------------------------------------------------------
+
+
+type ExpModCircuitGatesMock = 2^2
+
+identityCircuit :: ArithmeticCircuit Fr Par1 Par1
+identityCircuit = C.idCircuit
+
+expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
+expModSetupMock x = setupV
+    where
+        (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
+        (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        setupV  = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
+
+expModProofMock
+    :: forall t
+    .  TranscriptConstraints t
+    => Fr
+    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> ExpModProofInput
+    -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+expModProofMock x ps ExpModProofInput{..} = proof
+    where
+        input :: Natural
+        input = ((piSignature P.^ piPubE) `P.mod` piPubE) `P.mod` (Number.value @BLS12_381_Scalar) P.* piTokenName
+
+        witnessInputs :: Par1 Fr
+        witnessInputs = Par1 $ toZp (fromIntegral input)
+
+        (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
+        (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
+        witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
+        (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
