@@ -9,10 +9,10 @@ module ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point, Vesta_Point) wher
 import           Prelude                                 (fromInteger, ($))
 import qualified Prelude
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString

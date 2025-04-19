@@ -9,8 +9,8 @@ import           Prelude                               hiding (Fractional (..), 
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Permutation
-import           ZkFold.Base.Data.Vector               (fromVector)
+import           ZkFold.Algebra.Permutation
+import           ZkFold.Data.Vector                   (fromVector)
 
 specPermutation :: Spec
 specPermutation = do

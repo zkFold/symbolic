@@ -14,15 +14,15 @@ import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck                             (Gen, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Algorithms.RSA
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Prelude                         (chooseNatural)
+import           ZkFold.Symbolic.Algorithm.RSA
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (ilog2)
-import           ZkFold.Symbolic.Data.VarByteString          (fromNatural)
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import           ZkFold.Symbolic.Data.Combinators       (ilog2)
+import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
+import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
 
 type I = Interpreter Fr
 

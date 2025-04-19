@@ -13,12 +13,12 @@ import           Test.Hspec                                  (Spec, describe)
 import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck                             (Arbitrary, Gen)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number                       (KnownNat, Natural, value)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
+import qualified ZkFold.Data.Vector                          as V
+import           ZkFold.Data.Vector                          (Vector (..))
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                    (compile)

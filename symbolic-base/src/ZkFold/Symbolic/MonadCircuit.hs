@@ -10,8 +10,8 @@ import           Data.Functor.Rep                                  (Rep, Represe
 import           Data.Kind                                         (Type)
 import           Prelude                                           (Foldable, Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                   (Zp)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                              (Zp)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 -- | A 'ResidueField' is a 'FiniteField'

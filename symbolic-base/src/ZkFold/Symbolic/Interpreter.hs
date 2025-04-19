@@ -19,12 +19,12 @@ import           Data.Tuple                                        (uncurry)
 import           GHC.Generics                                      (Generic, Par1 (..))
 import           Text.Show                                         (Show (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.HFunctor
-import           ZkFold.Base.Data.HFunctor.Classes                 (HEq (..), HNFData (..), HShow (..))
-import           ZkFold.Base.Data.Package
-import           ZkFold.Prelude                                    (take)
+import           ZkFold.Algebra.Class
+import           ZkFold.Control.HApplicative
+import           ZkFold.Data.HFunctor
+import           ZkFold.Data.HFunctor.Classes                     (HEq (..), HNFData (..), HShow (..))
+import           ZkFold.Data.Package
+import           ZkFold.Prelude                                   (take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
 import           ZkFold.Symbolic.Fold

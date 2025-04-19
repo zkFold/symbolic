@@ -13,9 +13,9 @@ module Examples.UInt (
 
 import           Data.Type.Equality               (type (~))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat, type (*))
-import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number (KnownNat, type (*))
+import           ZkFold.Symbolic.Class (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisterSize, KnownRegisters,
                                                    NumberOfRegisters, resize)
 import           ZkFold.Symbolic.Data.UInt        (OrdWord, StrictNum (..), UInt, expMod, productMod)

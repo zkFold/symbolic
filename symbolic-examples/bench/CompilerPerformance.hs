@@ -9,7 +9,7 @@ import           Data.String                     (String)
 import           System.IO                       (IO)
 import           Test.Tasty.Bench
 
-import           ZkFold.Base.Algebra.Basic.Class (zero)
+import           ZkFold.Algebra.Class (zero)
 import           ZkFold.Symbolic.Class           (Arithmetic)
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Examples        (ExampleOutput (..), examples)

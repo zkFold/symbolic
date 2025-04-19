@@ -18,11 +18,11 @@ import qualified GHC.Generics                     as G
 import           Prelude                          (return, type (~), ($))
 import qualified Prelude                          as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Package
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Package
+import           ZkFold.Data.Vector
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), BoolType (..), all, any)
 import           ZkFold.Symbolic.Data.Class

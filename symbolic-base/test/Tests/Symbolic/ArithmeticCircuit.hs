@@ -16,17 +16,17 @@ import qualified Test.Hspec
 import           Test.Hspec                                  (Spec, describe)
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Data.Vector                          as V
+import           ZkFold.Data.Vector                          (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.Ord                    ((<=))
+import           ZkFold.Symbolic.Data.Ord                   ((<=))
 
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a) =>

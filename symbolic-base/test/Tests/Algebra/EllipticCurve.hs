@@ -10,14 +10,14 @@ import           Prelude                                     hiding (Num (..))
 import           Test.Hspec
 import           Test.QuickCheck                             hiding (scale)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.BN254
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta
-import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris
-import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.EllipticCurve.BN254
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.EllipticCurve.Ed25519
+import           ZkFold.Algebra.EllipticCurve.Pasta
+import           ZkFold.Algebra.EllipticCurve.PlutoEris
+import           ZkFold.Algebra.EllipticCurve.Secp256k1
 import           ZkFold.Symbolic.Data.Eq                     (BooleanOf)
 
 specEllipticCurve :: Spec

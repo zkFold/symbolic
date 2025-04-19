@@ -3,9 +3,9 @@ module ZkFold.Symbolic.Cardano.Contracts.SponsoredTx (sponsoredTx) where
 import           Prelude                              (($))
 import qualified Prelude                              as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))

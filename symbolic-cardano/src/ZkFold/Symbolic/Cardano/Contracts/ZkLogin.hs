@@ -6,8 +6,8 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
 
 import           Prelude                              (($))
 
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2
-import qualified ZkFold.Symbolic.Algorithms.RSA       as RSA
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2
+import qualified ZkFold.Symbolic.Algorithm.RSA       as RSA
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Eq

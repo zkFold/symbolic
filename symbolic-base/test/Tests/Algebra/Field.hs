@@ -11,10 +11,10 @@ import           Prelude                                     hiding (Fractional 
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
-import qualified ZkFold.Base.Algebra.EllipticCurve.BN254     as BN254
-import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta     as Pasta
+import           ZkFold.Algebra.Class
+import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as BLS12_381
+import qualified ZkFold.Algebra.EllipticCurve.BN254     as BN254
+import qualified ZkFold.Algebra.EllipticCurve.Pasta     as Pasta
 
 specField' :: forall a . (Field a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
 specField' = do

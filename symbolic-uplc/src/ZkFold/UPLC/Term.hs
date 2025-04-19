@@ -11,7 +11,7 @@ import           Data.Word                                   (Word64)
 import           Numeric.Natural                             (Natural)
 import           Prelude                                     (Integer)
 
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.UPLC.BuiltinFunction                 (BuiltinFunction)
 import           ZkFold.UPLC.BuiltinType                     (BuiltinType (..))
 

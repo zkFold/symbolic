@@ -13,11 +13,11 @@ import qualified Data.Set                                                as S
 import           Prelude                                                 hiding (Num (..), drop, length, product,
                                                                           splitAt, sum, take, (!!), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Monomial   (Mono (..), oneM)
-import           ZkFold.Base.Algebra.Polynomials.Multivariate.Polynomial (Poly (..), evalPolynomial, var)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Multivariate            (evalMonomial)
+import           ZkFold.Algebra.Polynomial.Multivariate.Monomial   (Mono (..), oneM)
+import           ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup

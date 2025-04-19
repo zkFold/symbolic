@@ -7,9 +7,9 @@ import           Data.Zip                             (zip)
 import           Numeric.Natural                      (Natural)
 import           Prelude                              hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector              (Vector, fromVector, toVector)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.Vector                   (Vector, fromVector, toVector)
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..), all)

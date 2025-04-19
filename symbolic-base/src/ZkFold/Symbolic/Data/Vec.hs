@@ -12,10 +12,10 @@ import           GHC.Num                           (Natural)
 import           Prelude                           (Integer, ($), (.))
 import qualified Prelude                           as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData)
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool         (Bool)
+import           ZkFold.Symbolic.Data.Bool   (Bool)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators  (mzipWithMRep)
 import           ZkFold.Symbolic.Data.Conditional  (Conditional)

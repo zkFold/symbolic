@@ -23,10 +23,10 @@ import           Examples.ReverseList                        (exampleReverseList
 import           Examples.UInt
 import           GHC.Generics                                (type (:*:))
 
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (FpModulus)
-import           ZkFold.Base.Data.ByteString                 (Binary)
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
+import           ZkFold.Algebra.EllipticCurve.Pasta          (FpModulus)
+import           ZkFold.Data.ByteString                      (Binary)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Data.Bool                   (true)

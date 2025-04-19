@@ -30,12 +30,12 @@ import           Prelude                          (error, head, pure, tail, ($),
 import qualified Prelude                          as Haskell
 import           Type.Errors
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number (value)
-import qualified ZkFold.Base.Data.Vector          as V
-import           ZkFold.Base.Data.Vector          (Vector)
-import           ZkFold.Prelude                   (take)
-import           ZkFold.Symbolic.Class            (Arithmetic, BaseField)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number (value)
+import qualified ZkFold.Data.Vector    as V
+import           ZkFold.Data.Vector    (Vector)
+import           ZkFold.Prelude        (take)
+import           ZkFold.Symbolic.Class (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep ::

@@ -1,6 +1,6 @@
 module Examples.RSA (exampleRSA) where
 
-import           ZkFold.Symbolic.Algorithms.RSA  (PrivateKey, PublicKey, RSA, sign, verify)
+import           ZkFold.Symbolic.Algorithm.RSA  (PrivateKey, PublicKey, RSA, sign, verify)
 import           ZkFold.Symbolic.Cardano.Types   (Bool)
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
 

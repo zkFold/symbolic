@@ -8,8 +8,8 @@ module Examples.FFA
   , exampleFFAinv337
   , exampleFFAinv097) where
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Pasta
 import           ZkFold.Symbolic.Class                   (Symbolic)
 import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (Fixed))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA)

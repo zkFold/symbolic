@@ -25,13 +25,13 @@ import           Test.QuickCheck                             (Gen, withMaxSucces
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Text.Regex.TDFA
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
+import           ZkFold.Data.Vector                          (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool

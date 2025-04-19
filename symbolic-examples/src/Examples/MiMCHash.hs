@@ -1,8 +1,8 @@
 module Examples.MiMCHash (exampleMiMC) where
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC           (mimcHash2)
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants (mimcConstants)
+import           ZkFold.Algebra.Class
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHash2)
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import           ZkFold.Symbolic.Class                          (Symbolic (..))
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement)
 

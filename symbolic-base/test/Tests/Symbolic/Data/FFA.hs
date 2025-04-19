@@ -13,10 +13,10 @@ import           Test.QuickCheck                             (Property, (===))
 import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Text.Show                                   (show)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (Prime, value)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number                       (Prime, value)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Combinators            (KnownRegisterSize (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.FFA                    (FFA (FFA), KnownFFA)

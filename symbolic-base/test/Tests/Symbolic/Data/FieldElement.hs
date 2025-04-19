@@ -11,9 +11,9 @@ import           Tests.Symbolic.Data.Common                  (specConstantRoundt
                                                               specSymbolicFunction1, specSymbolicFunction1WithPar,
                                                               specSymbolicFunction2)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Data.FieldElement           (FieldElement)
 
 specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec

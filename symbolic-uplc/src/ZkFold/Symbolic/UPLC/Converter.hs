@@ -5,8 +5,8 @@ module ZkFold.Symbolic.UPLC.Converter where
 import           Data.Function                               (($))
 import           GHC.Generics                                (Par1)
 
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)
 import           ZkFold.Symbolic.Data.Maybe                  (isJust)

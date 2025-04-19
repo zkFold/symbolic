@@ -9,14 +9,14 @@ module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 import           Prelude                                   (fromInteger, ($))
 import qualified Prelude
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf, Ed25519_Scalar)
-import           ZkFold.Symbolic.Class                     (Symbolic (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf, Ed25519_Scalar)
+import           ZkFold.Symbolic.Class                (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators          (RegisterSize (Auto), from)
+import           ZkFold.Symbolic.Data.Combinators     (RegisterSize (Auto), from)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 

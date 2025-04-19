@@ -1,9 +1,9 @@
 module Examples.ECDSA
   (exampleECDSA) where
 
-import           ZkFold.Base.Algebra.Basic.Number         (KnownNat)
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta  (FpModulus, FqModulus)
-import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA   (ecdsaVerify)
+import           ZkFold.Algebra.Number                    (KnownNat)
+import           ZkFold.Algebra.EllipticCurve.Pasta       (FpModulus, FqModulus)
+import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA   (ecdsaVerify)
 import           ZkFold.Symbolic.Class                    (BaseField, Symbolic)
 import           ZkFold.Symbolic.Data.Bool                (Bool)
 import           ZkFold.Symbolic.Data.Combinators         (GetRegisterSize, NumberOfRegisters, RegisterSize (..))

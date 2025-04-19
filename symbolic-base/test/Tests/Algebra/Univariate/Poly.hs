@@ -10,10 +10,10 @@ import           Prelude                                     hiding (Fractional 
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, fromPoly, toPoly)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Polynomial.Univariate  (Poly, fromPoly, toPoly)
 import           ZkFold.Prelude
 
 -- TODO: derive naive multiplication for univariate polynomials from multivariate polynomial multiplication

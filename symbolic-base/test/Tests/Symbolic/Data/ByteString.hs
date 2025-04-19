@@ -20,12 +20,12 @@ import           Tests.Symbolic.ArithmeticCircuit            (it)
 import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
                                                               specSymbolicFunction1, specSymbolicFunction2)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import qualified ZkFold.Data.Vector                          as V
+import           ZkFold.Data.Vector                          (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)

@@ -9,11 +9,11 @@ module ZkFold.Symbolic.Data.EllipticCurve.BN254 (BN254_G1_Point) where
 import           Prelude                                 (fromInteger, ($))
 import qualified Prelude
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BN254 (BN254_Base, BN254_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Symbolic.Class                   (Symbolic (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BN254 (BN254_Base, BN254_Scalar)
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Symbolic.Class              (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators        (RegisterSize (Auto), from)

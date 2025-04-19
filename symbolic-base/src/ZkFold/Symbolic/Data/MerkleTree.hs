@@ -17,18 +17,18 @@ import           GHC.TypeNats
 import           Prelude                                        (const, pure, return, zip, ($), (.))
 import qualified Prelude                                        as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number               (value)
-import           ZkFold.Base.Data.Package
-import qualified ZkFold.Base.Data.Vector                        as V
-import           ZkFold.Base.Data.Vector                        hiding ((.:))
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC.Constants
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number                           (value)
+import           ZkFold.Data.Package
+import qualified ZkFold.Data.Vector                             as V
+import           ZkFold.Data.Vector                             hiding ((.:))
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool                      (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators               (Iso (from), KnownRegisters, RegisterSize (Auto),
-                                                                 expansion, horner, mzipWithMRep, withNumberOfRegisters)
+                                 expansion, horner, mzipWithMRep, withNumberOfRegisters)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement              (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input                     (SymbolicInput)

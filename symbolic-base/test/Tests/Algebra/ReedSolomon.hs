@@ -12,13 +12,13 @@ import qualified Prelude                                     as P
 import           Test.Hspec
 import           Test.QuickCheck
 
-import qualified ZkFold.Base.Algebra.Basic.Class             as C
-import           ZkFold.Base.Algebra.Basic.Class             hiding ((*), (+))
-import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
-import qualified ZkFold.Base.Algebra.EllipticCurve.BN254     as BN254
-import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta     as Pasta
-import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Algorithm.ReedSolomon
+import qualified ZkFold.Algebra.Class                        as C
+import           ZkFold.Algebra.Class                        hiding ((*), (+))
+import qualified ZkFold.Algebra.EllipticCurve.BLS12_381      as BLS12_381
+import qualified ZkFold.Algebra.EllipticCurve.BN254          as BN254
+import qualified ZkFold.Algebra.EllipticCurve.Pasta          as Pasta
+import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Algorithm.ReedSolomon
 
 
 data ReedSolomonExample f = ReedSolomonExample

@@ -49,15 +49,15 @@ import           Prelude                           (Integer, const, drop, fmap, 
 import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
-import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import           ZkFold.Base.Data.Package          (packWith, unpackWith)
-import           ZkFold.Base.Data.Utils            (zipWithM)
-import qualified ZkFold.Base.Data.Vector           as V
-import           ZkFold.Base.Data.Vector           (Vector (..))
-import           ZkFold.Prelude                    (replicate, replicateA, (!!))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor         (HFunctor (..))
+import           ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
+import           ZkFold.Data.Package          (packWith, unpackWith)
+import           ZkFold.Data.Utils            (zipWithM)
+import qualified ZkFold.Data.Vector           as V
+import           ZkFold.Data.Vector           (Vector (..))
+import           ZkFold.Prelude               (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)

@@ -8,10 +8,10 @@ import           Data.Proxy                       (Proxy (..))
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Par1 (..), U1 (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative (hunit)
-import           ZkFold.Symbolic.Class            (Symbolic (..))
-import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..), true)
+import           ZkFold.Algebra.Class
+import           ZkFold.Control.HApplicative (hunit)
+import           ZkFold.Symbolic.Class       (Symbolic (..))
+import           ZkFold.Symbolic.Data.Bool   (Bool (..), BoolType (..), true)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
 import           ZkFold.Symbolic.Data.Eq

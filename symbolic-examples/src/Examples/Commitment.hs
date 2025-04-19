@@ -2,8 +2,8 @@ module Examples.Commitment (
     exampleCommitment
   ) where
 
-import           ZkFold.Base.Data.Vector                    (Vector)
-import           ZkFold.Base.Protocol.IVC.Commit            (HomomorphicCommit (..))
+import           ZkFold.Data.Vector                         (Vector)
+import           ZkFold.Protocol.IVC.Commit                 (HomomorphicCommit (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point)
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 

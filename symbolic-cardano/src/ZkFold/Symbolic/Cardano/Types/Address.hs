@@ -7,7 +7,7 @@ import           GHC.Generics                        (Generic)
 import           Prelude                             hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
-import           ZkFold.Base.Data.HFunctor.Classes   (HEq)
+import           ZkFold.Data.HFunctor.Classes   (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class

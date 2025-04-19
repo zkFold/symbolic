@@ -16,9 +16,9 @@ import           Prelude                                             (head, memp
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector                             (Vector, unsafeToVector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Vector                                   (Vector, unsafeToVector)
 import           ZkFold.Prelude                                      (chooseFromList, length)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal

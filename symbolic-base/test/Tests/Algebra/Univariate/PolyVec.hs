@@ -18,11 +18,11 @@ import           Prelude                                     (abs)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Prelude                              (length, take)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Prelude                          (length, take)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>

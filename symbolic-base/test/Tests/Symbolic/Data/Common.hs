@@ -23,10 +23,10 @@ import           Test.QuickCheck                  (Arbitrary (..), Gen, (===))
 import           Tests.Symbolic.ArithmeticCircuit (it)
 import           Text.Show                        (Show)
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (..), ToConstant (..))
+import           ZkFold.Algebra.Class             (FromConstant (..), ToConstant (..))
 import           ZkFold.Symbolic.Class            (Arithmetic, Symbolic)
 import           ZkFold.Symbolic.Compiler         (ArithmeticCircuit, checkCircuit, checkClosedCircuit, compileWith,
-                                                   eval, exec)
+                           eval, exec)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))

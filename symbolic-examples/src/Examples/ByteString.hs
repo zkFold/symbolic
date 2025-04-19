@@ -8,9 +8,9 @@ module Examples.ByteString (
     exampleSHA
   ) where
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number     (KnownNat)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2 (SHA2, sha2)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number               (KnownNat)
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2)
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString      (ByteString)

@@ -1,6 +1,6 @@
 module Examples.ZkLogin (exampleZkLoginNoSig) where
 
-import qualified ZkFold.Symbolic.Algorithms.RSA            as RSA
+import qualified ZkFold.Symbolic.Algorithm.RSA            as RSA
 import           ZkFold.Symbolic.Cardano.Contracts.ZkLogin (PublicInput, zkLoginNoSig)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString

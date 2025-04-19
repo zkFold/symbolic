@@ -14,10 +14,10 @@ import           Prelude                           (Integer, ($), (.))
 import qualified Prelude                           as Haskell hiding ((-))
 import           Test.QuickCheck                   (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class   hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import           ZkFold.Base.Data.Vector           (fromVector)
+import           ZkFold.Algebra.Class              hiding (Euclidean (..))
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
+import           ZkFold.Data.Vector                (fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)

@@ -11,10 +11,10 @@ import           GHC.Natural                         (Natural)
 import           Prelude                             hiding (Bool, Eq, length, replicate, splitAt, (*), (+))
 import qualified Prelude                             as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number    (KnownNat)
-import           ZkFold.Base.Data.HFunctor.Classes   (HEq)
-import           ZkFold.Base.Data.Vector
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number    (KnownNat)
+import           ZkFold.Data.HFunctor.Classes   (HEq)
+import           ZkFold.Data.Vector
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class

@@ -13,9 +13,9 @@ import           Test.Hspec.QuickCheck                       (prop)
 import           Test.QuickCheck                             (Arbitrary)
 import           Text.Show                                   (Show)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_Scalar)
 import           ZkFold.Symbolic.Class                       (Arithmetic, Symbolic)
 import           ZkFold.Symbolic.Compiler                    (compile, eval1)
 import           ZkFold.Symbolic.Data.Bool                   (Bool)

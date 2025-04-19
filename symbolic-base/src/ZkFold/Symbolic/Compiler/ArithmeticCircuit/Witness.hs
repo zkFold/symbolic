@@ -10,7 +10,7 @@ import           Data.Functor                    (Functor)
 import           Numeric.Natural                 (Natural)
 import           Prelude                         (Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.MonadCircuit    (ResidueField (..))
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)

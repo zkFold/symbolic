@@ -3,10 +3,10 @@
 module Examples.Mithril
   (exampleMithril) where
 
-import           ZkFold.Base.Algebra.Basic.Number         (KnownNat)
-import           ZkFold.Base.Algebra.EllipticCurve.Class  (CyclicGroup (ScalarFieldOf))
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta  (FpModulus, FqModulus)
-import           ZkFold.Symbolic.Algorithms.Mithril       (StakeDistribution, mithril)
+import           ZkFold.Algebra.Number                   (KnownNat)
+import           ZkFold.Algebra.EllipticCurve.Class      (CyclicGroup (ScalarFieldOf))
+import           ZkFold.Algebra.EllipticCurve.Pasta      (FpModulus, FqModulus)
+import           ZkFold.Symbolic.Algorithm.Mithril       (StakeDistribution, mithril)
 import           ZkFold.Symbolic.Class                    (BaseField, Symbolic)
 import           ZkFold.Symbolic.Data.Combinators         (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)

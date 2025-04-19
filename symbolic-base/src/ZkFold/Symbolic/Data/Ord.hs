@@ -18,11 +18,11 @@ import           GHC.Generics
 import           Prelude                           (Monoid, Semigroup, Show, fmap, map, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
-import           ZkFold.Base.Data.Package
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor.Classes (HNFData, HShow)
+import           ZkFold.Data.Package
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class

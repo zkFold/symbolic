@@ -23,11 +23,11 @@ import           Tests.Symbolic.ArithmeticCircuit            (exec1, it)
 import           Tests.Symbolic.Data.Common                  (specConstantRoundtrip, specSymbolicFunction0,
                                                               specSymbolicFunction1, specSymbolicFunction2)
 
-import           ZkFold.Base.Algebra.Basic.Class             hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Algebra.Class                        hiding (Euclidean (..))
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Data.Vector                          (Vector)
 import           ZkFold.Prelude                              (chooseNatural)
 import           ZkFold.Symbolic.Class                       (Arithmetic)
 import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)

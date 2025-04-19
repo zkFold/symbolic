@@ -12,11 +12,11 @@ import           Test.QuickCheck.Arbitrary                   (Arbitrary (..))
 import           Test.QuickCheck.Gen                         (generate)
 import           Test.Tasty.Bench
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Prelude                              (log2ceiling)
 
 

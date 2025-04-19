@@ -6,10 +6,10 @@ module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 import           Prelude                              hiding (Bool, Eq (..), all, length, maybe, splitAt, zip, (!!),
                                                        (&&), (*), (+), (==))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number     (Log2)
-import           ZkFold.Base.Data.Vector              (Vector, (!!))
-import           ZkFold.Symbolic.Algorithms.Hash.MiMC (hash)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number                (Log2)
+import           ZkFold.Data.Vector                   (Vector, (!!))
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
 import           ZkFold.Symbolic.Cardano.Types
 import           ZkFold.Symbolic.Class                (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool            (BoolType (..))

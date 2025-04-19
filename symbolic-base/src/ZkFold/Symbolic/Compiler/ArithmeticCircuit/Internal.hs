@@ -65,17 +65,16 @@ import           Optics                                                       hi
 import           Prelude                                                      hiding (Num (..), drop, length, product,
                                                                                splitAt, sum, take, (!!), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                              (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Multivariate                 (Poly, evalMonomial, evalPolynomial,
-                                                                               mapVars, var)
-import           ZkFold.Base.Control.HApplicative
-import           ZkFold.Base.Data.ByteString                                  (fromByteString, toByteString)
-import           ZkFold.Base.Data.HFunctor
-import           ZkFold.Base.Data.HFunctor.Classes                            (HNFData (..), HShow (..))
-import           ZkFold.Base.Data.Package
-import           ZkFold.Base.Data.Product
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                                         (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Multivariate                      (Poly, evalMonomial, evalPolynomial, mapVars, var)
+import           ZkFold.Control.HApplicative
+import           ZkFold.Data.ByteString                                       (fromByteString, toByteString)
+import           ZkFold.Data.HFunctor
+import           ZkFold.Data.HFunctor.Classes                                 (HNFData (..), HShow (..))
+import           ZkFold.Data.Package
+import           ZkFold.Data.Product
 import           ZkFold.Prelude                                               (take)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup

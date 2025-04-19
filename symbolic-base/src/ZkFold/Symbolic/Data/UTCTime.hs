@@ -11,8 +11,8 @@ import           GHC.TypeNats                      (KnownNat)
 import           Prelude                           hiding (Bool, Eq, Ord)
 import qualified Prelude                           as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Class   (FromConstant)
-import           ZkFold.Base.Data.HFunctor.Classes (HEq)
+import           ZkFold.Algebra.Class              (FromConstant)
+import           ZkFold.Data.HFunctor.Classes      (HEq)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool)
 import           ZkFold.Symbolic.Data.Class

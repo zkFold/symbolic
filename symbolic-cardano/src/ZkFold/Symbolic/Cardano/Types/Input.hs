@@ -8,8 +8,8 @@ import           GHC.Generics                            (Generic)
 import           Prelude                                 hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude                                 as Haskell
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor.Classes       (HEq)
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor.Classes            (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Address   (Address)
 import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txoAddress, txoDatumHash, txoTokens)
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
