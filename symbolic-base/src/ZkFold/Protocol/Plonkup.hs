@@ -46,7 +46,6 @@ instance forall i n l g1 g2 gt ts pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , StrictMultiplicativeSemigroup (pv (PlonkupPolyExtendedLength n))
         , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
