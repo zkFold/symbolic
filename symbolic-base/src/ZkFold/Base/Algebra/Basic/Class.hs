@@ -7,7 +7,6 @@
 module ZkFold.Base.Algebra.Basic.Class where
 
 import           Control.Applicative              (Applicative (..))
-import           Control.DeepSeq                  (NFData, force)
 import           Data.Bool                        (Bool (..), bool, otherwise, (&&))
 import           Data.Eq                          (Eq (..))
 import           Data.Foldable                    (Foldable (foldl', foldl1, foldr))
@@ -115,11 +114,6 @@ class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
     --
     -- [Associativity] @x * (y * z) == (x * y) * z@
     (*) :: a -> a -> a
-
-class MultiplicativeSemigroup a => StrictMultiplicativeSemigroup a where
-    (*!) :: a -> a -> a
-    default (*!) :: NFData a => a -> a -> a
-    a *! b = force $ a * b
 
 product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
 product1 = foldl1 (*)

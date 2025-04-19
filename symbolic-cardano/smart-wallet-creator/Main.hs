@@ -16,7 +16,6 @@ import           Prelude                                       hiding (Fractiona
 import           ZkFold.Base.Algebra.Basic.Class               (zero)
 import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Symbolic.Cardano.Contracts.SmartWallet
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit    as Circuit
 
 
 main :: IO ()

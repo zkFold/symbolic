@@ -39,7 +39,7 @@ import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..), chooseInt)
 
 import           ZkFold.Base.Algebra.Basic.Class  hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.DFT    (genericDft, genericDft)
+import           ZkFold.Base.Algebra.Basic.DFT    (genericDft)
 import           ZkFold.Base.Algebra.Basic.Number
 import           ZkFold.Prelude                   (log2ceiling, replicate, zipWithDefault)
 
@@ -169,9 +169,6 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
     P l * P r = removeZeros $ P $ mulAdaptive genericDft l r
-
-instance (Field c, Eq c) => StrictMultiplicativeSemigroup (Poly c) where
-    P l *! P r = removeZeros $ P $ mulAdaptive genericDft l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -575,9 +572,6 @@ instance {-# OVERLAPPING #-} (Field c, Eq c, KnownNat size) => Scale (PolyVec c 
 -- TODO (Issue #18): check for overflow
 instance (Field c, Eq c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
     (PV l) * (PV r) = toPolyVec $ mulAdaptive genericDft l r
-
-instance (Field c, Eq c, KnownNat size) => StrictMultiplicativeSemigroup (PolyVec c size) where
-    (PV l) *! (PV r) = toPolyVec $ mulAdaptive genericDft l r
 
 instance (Field c, Eq c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
