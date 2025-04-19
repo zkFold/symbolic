@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Symbolic.Apps.KYC where
 
 import           Data.Aeson
@@ -8,10 +9,10 @@ import           Data.Maybe                       (fromJust)
 import           GHC.Generics                     (Generic)
 import           Prelude                          (String, error, ($), (.))
 
-import           ZkFold.Base.Algebra.Basic.Class  (FromConstant (fromConstant))
-import           ZkFold.Base.Algebra.Basic.Field  (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector, head, tail, toVector)
+import           ZkFold.Algebra.Class             (FromConstant (fromConstant))
+import           ZkFold.Algebra.Field             (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Vector               (Vector, head, tail, toVector)
 import           ZkFold.Symbolic.Class            (Symbolic (BaseField))
 import           ZkFold.Symbolic.Data.Bool        (Bool, not, (&&))
 import           ZkFold.Symbolic.Data.ByteString  (ByteString, Resize (resize), concat, toWords)

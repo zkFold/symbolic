@@ -2,24 +2,24 @@
 
 module ZkFold.Symbolic.Class where
 
-import           Control.DeepSeq                   (NFData)
+import           Control.DeepSeq              (NFData)
 import           Control.Monad
-import           Data.Eq                           (Eq)
-import           Data.Foldable                     (Foldable)
-import           Data.Function                     ((.))
-import           Data.Functor                      ((<$>))
-import           Data.Kind                         (Type)
-import           Data.Ord                          (Ord)
-import           Data.Type.Equality                (type (~))
-import           GHC.Generics                      (type (:.:) (unComp1))
-import           Numeric.Natural                   (Natural)
-import           Prelude                           (Integer)
+import           Data.Eq                      (Eq)
+import           Data.Foldable                (Foldable)
+import           Data.Function                ((.))
+import           Data.Functor                 ((<$>))
+import           Data.Kind                    (Type)
+import           Data.Ord                     (Ord)
+import           Data.Type.Equality           (type (~))
+import           GHC.Generics                 (type (:.:) (unComp1))
+import           Numeric.Natural              (Natural)
+import           Prelude                      (Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative  (HApplicative (hpair, hunit))
-import           ZkFold.Base.Data.HFunctor.Classes (HNFData)
-import           ZkFold.Base.Data.Package          (Package (pack))
-import           ZkFold.Base.Data.Product          (uncurryP)
+import           ZkFold.Algebra.Class
+import           ZkFold.Control.HApplicative  (HApplicative (hpair, hunit))
+import           ZkFold.Data.HFunctor.Classes (HNFData)
+import           ZkFold.Data.Package          (Package (pack))
+import           ZkFold.Data.Product          (uncurryP)
 import           ZkFold.Symbolic.MonadCircuit
 
 -- | Field of residues with decidable equality and ordering

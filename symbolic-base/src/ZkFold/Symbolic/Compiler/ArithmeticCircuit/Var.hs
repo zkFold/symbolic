@@ -14,8 +14,8 @@ import           GHC.Generics                                       (Generic)
 import           GHC.Show                                           (Show)
 import           Prelude                                            (Eq, Ord)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.ByteString                        ()
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.ByteString                             ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 

@@ -11,8 +11,8 @@ import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
 import           Prelude                          (($), (.))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Vector          (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.Vector               (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class

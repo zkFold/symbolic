@@ -2,16 +2,16 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness where
 
-import           Control.Applicative             (Applicative (..))
-import           Control.DeepSeq                 (NFData (..), rwhnf)
-import           Control.Monad                   (Monad (..), ap)
-import           Data.Function                   ((.))
-import           Data.Functor                    (Functor)
-import           Numeric.Natural                 (Natural)
-import           Prelude                         (Integer)
+import           Control.Applicative          (Applicative (..))
+import           Control.DeepSeq              (NFData (..), rwhnf)
+import           Control.Monad                (Monad (..), ap)
+import           Data.Function                ((.))
+import           Data.Functor                 (Functor)
+import           Numeric.Natural              (Natural)
+import           Prelude                      (Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Symbolic.MonadCircuit    (ResidueField (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 

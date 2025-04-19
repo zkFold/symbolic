@@ -16,12 +16,12 @@ import           Data.Tuple                        (fst, snd)
 import           Data.Type.Equality                (type (~))
 import           GHC.Generics                      (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat)
-import           ZkFold.Base.Data.HFunctor         (hmap)
-import           ZkFold.Base.Data.List.Infinite    ()
-import           ZkFold.Base.Data.Orphans          ()
-import           ZkFold.Base.Data.Product          (fstP, sndP)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number             (KnownNat)
+import           ZkFold.Data.HFunctor              (hmap)
+import           ZkFold.Data.List.Infinite         ()
+import           ZkFold.Data.Orphans               ()
+import           ZkFold.Data.Product               (fstP, sndP)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class

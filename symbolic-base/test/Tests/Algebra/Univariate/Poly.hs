@@ -4,16 +4,16 @@
 
 module Tests.Algebra.Univariate.Poly (specUnivariatePoly) where
 
-import           Data.Data                                   (typeOf)
-import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (Fractional (..), Num (..), (^))
+import           Data.Data                              (typeOf)
+import qualified Data.Vector                            as V
+import           Prelude                                hiding (Fractional (..), Num (..), (^))
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, fromPoly, toPoly)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Polynomial.Univariate   (Poly, fromPoly, toPoly)
 import           ZkFold.Prelude
 
 -- TODO: derive naive multiplication for univariate polynomials from multivariate polynomial multiplication
@@ -34,7 +34,7 @@ specUnivariatePoly = do
                 it "should correctly multiply polynomials" $ do
                     property $ propMultiplication @(Zp BLS12_381_Scalar)
         describe ("Type: " ++ show (typeOf @(Poly Fq12) zero)) $
-            describe "No roots of unity (SLOW)" $ do
+            describe "No roots of unity" $ do
                 it "should correctly multiply polynomials" $ do
                     property $ propMultiplication @Fq12
 

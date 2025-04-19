@@ -17,8 +17,8 @@ import           GHC.Generics                               (Par1 (Par1), U1 (..
 import           Prelude                                    (FilePath, IO, Show (..), putStrLn, return, type (~), ($),
                                                              (++))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.Product                   (fstP, sndP)
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.Product                        (fstP, sndP)
 import           ZkFold.Prelude                             (writeFileJSON)
 import           ZkFold.Symbolic.Class                      (Symbolic (..), fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit

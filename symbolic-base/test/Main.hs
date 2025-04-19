@@ -3,7 +3,7 @@ module Main where
 import           Prelude                            hiding (Bool, Fractional (..), Num (..), drop, length, replicate,
                                                      take, (==))
 import           System.Random                      (RandomGen, initStdGen)
-import           Test.Hspec                         (Spec, hspec)
+import           Test.Hspec                         (Spec, describe, hspec)
 import           Tests.Algebra.EllipticCurve        (specEllipticCurve)
 import           Tests.Algebra.Field                (specField)
 import           Tests.Algebra.GroebnerBasis        (specGroebner)
@@ -32,43 +32,43 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
-    -- Algebra
-    specGroup
-    specField
-    specEllipticCurve
-    specPairing
-    specPermutation
-    specUnivariate
-    specReedSolomon
-    specGroebner
+    describe "symbolic-base-test (Algebra)" $ do
+        specGroup
+        specField
+        specEllipticCurve
+        specPairing
+        specPermutation
+        specUnivariate
+        specReedSolomon
+        specGroebner
 
-    -- Serialization
-    specBinary
+    describe "symbolic-base-test (Serialization)" $ do
+        specBinary
 
-    -- Protocols
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
+    describe "symbolic-base-test (Protocols)" $ do
+        specPlonkup
+        specNonInteractiveProof
+        specIVC
 
-    -- Symbolic compiler
-    specArithmeticCircuit
-    specCompiler
+    describe "symbolic-base-test (Symbolic compiler)" $ do
+        specArithmeticCircuit
+        specCompiler
 
-    -- Symbolic types and operations
-    specUInt
-    specInt
-    specFFA
-    specByteString
-    specHash
-    specList
-    specMerkleTree
+    describe "symbolic-base-test (Symbolic data)" $ do
+        specUInt
+        specInt
+        specFFA
+        specByteString
+        specHash
+        specList
+        specMerkleTree
 
-    -- Symbolic cryptography
-    specBlake2b
-    specJWT
-    specRSA gen
-    specSHA2Natural
-    specSHA2
+    describe "symbolic-base-test (Symbolic cryptography)" $ do
+        specBlake2b
+        specJWT
+        specRSA gen
+        specSHA2Natural
+        specSHA2
 
 main :: IO ()
 main = hspec . spec =<< initStdGen

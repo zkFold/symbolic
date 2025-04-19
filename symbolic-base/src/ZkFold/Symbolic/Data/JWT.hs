@@ -25,8 +25,8 @@ import           GHC.TypeLits                       (Symbol)
 import           Prelude                            (type (~), ($), (.))
 import qualified Prelude                            as P
 
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HNFData, HShow)
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor.Classes       (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class

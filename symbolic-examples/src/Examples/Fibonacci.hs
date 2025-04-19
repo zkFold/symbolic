@@ -5,7 +5,7 @@ module Examples.Fibonacci (exampleFibonacci) where
 import           Data.Foldable                     (foldl)
 import           Prelude                           (Integer)
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool         (Bool)
 import           ZkFold.Symbolic.Data.Conditional  (bool)

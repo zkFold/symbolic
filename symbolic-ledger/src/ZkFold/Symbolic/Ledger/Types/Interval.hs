@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Ledger.Types.Interval (
 
 import           Prelude                          (type (~))
 
-import           ZkFold.Base.Algebra.Basic.Number (KnownNat)
+import           ZkFold.Algebra.Number            (KnownNat)
 import           ZkFold.Symbolic.Class            (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Combinators

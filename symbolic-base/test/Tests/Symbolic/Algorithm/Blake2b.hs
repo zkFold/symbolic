@@ -3,26 +3,26 @@
 
 module Tests.Symbolic.Algorithm.Blake2b where
 
-import           Crypto.Hash.BLAKE2.BLAKE2b                  (hash)
-import qualified Data.ByteString.Internal                    as BI
-import           GHC.Exts                                    (IsString (fromString))
-import           GHC.Generics                                hiding (from)
-import           Numeric.Natural                             (Natural)
-import           Prelude                                     (Eq (..), ($))
-import           Test.Hspec                                  (Spec, describe, it)
+import           Crypto.Hash.BLAKE2.BLAKE2b             (hash)
+import qualified Data.ByteString.Internal               as BI
+import           GHC.Exts                               (IsString (fromString))
+import           GHC.Generics                           hiding (from)
+import           Numeric.Natural                        (Natural)
+import           Prelude                                (Eq (..), ($))
+import           Test.Hspec                             (Spec, describe, it)
 
-import           ZkFold.Base.Algebra.Basic.Class             (FromConstant (..))
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
-import           ZkFold.Base.Data.HFunctor.Classes           (HEq)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Symbolic.Algorithms.Hash.Blake2b     (blake2b_224, blake2b_512)
-import           ZkFold.Symbolic.Class                       (Symbolic)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, compile, eval1)
-import           ZkFold.Symbolic.Data.Bool                   (Bool)
-import           ZkFold.Symbolic.Data.ByteString             (ByteString (..))
-import qualified ZkFold.Symbolic.Data.Eq                     as Symbolic
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
+import           ZkFold.Algebra.Class                   (FromConstant (..))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Data.HFunctor.Classes           (HEq)
+import           ZkFold.Data.Vector                     (Vector)
+import           ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_512)
+import           ZkFold.Symbolic.Class                  (Symbolic)
+import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, compile, eval1)
+import           ZkFold.Symbolic.Data.Bool              (Bool)
+import           ZkFold.Symbolic.Data.ByteString        (ByteString (..))
+import qualified ZkFold.Symbolic.Data.Eq                as Symbolic
+import           ZkFold.Symbolic.Interpreter            (Interpreter (..))
 
 blake2bNumeric :: forall c . (Symbolic c, HEq c) => Spec
 blake2bNumeric =

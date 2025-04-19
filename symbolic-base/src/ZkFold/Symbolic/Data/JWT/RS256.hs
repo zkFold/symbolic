@@ -13,10 +13,10 @@ import           GHC.Generics                       (Generic)
 import           Prelude                            (pure, ($))
 import qualified Prelude                            as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number   (Natural)
-import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HNFData, HShow)
-import           ZkFold.Symbolic.Algorithms.RSA
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number              (Natural)
+import           ZkFold.Data.HFunctor.Classes       (HEq, HNFData, HShow)
+import           ZkFold.Symbolic.Algorithm.RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.ByteString    (ByteString)
 import           ZkFold.Symbolic.Data.Class

@@ -28,7 +28,7 @@ import           GHC.Generics                         (Generic)
 import           Prelude                              hiding (Bool, Eq, Int, all, foldr, length, negate, null, splitAt,
                                                        (&&), (*), (+), (==), (||))
 
-import           ZkFold.Base.Algebra.Basic.Class
+import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Class                (Symbolic)
 import           ZkFold.Symbolic.Data.Bool            (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))

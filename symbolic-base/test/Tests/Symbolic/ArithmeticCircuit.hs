@@ -5,28 +5,28 @@
 
 module Tests.Symbolic.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
 
-import           Data.Binary                                 (Binary)
-import           Data.Bool                                   (bool)
-import           Data.Functor                                ((<$>))
-import           Data.Functor.Rep                            (Representable (..))
-import           GHC.Generics                                (Par1, U1 (..))
-import           Prelude                                     (Foldable, Ord, Show, String, id, return, ($))
-import qualified Prelude                                     as Haskell
+import           Data.Binary                            (Binary)
+import           Data.Bool                              (bool)
+import           Data.Functor                           ((<$>))
+import           Data.Functor.Rep                       (Representable (..))
+import           GHC.Generics                           (Par1, U1 (..))
+import           Prelude                                (Foldable, Ord, Show, String, id, return, ($))
+import qualified Prelude                                as Haskell
 import qualified Test.Hspec
-import           Test.Hspec                                  (Spec, describe)
+import           Test.Hspec                             (Spec, describe)
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Field                   (Zp)
+import qualified ZkFold.Data.Vector                     as V
+import           ZkFold.Data.Vector                     (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
-import           ZkFold.Symbolic.Data.Ord                    ((<=))
+import           ZkFold.Symbolic.Data.Ord               ((<=))
 
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a) =>

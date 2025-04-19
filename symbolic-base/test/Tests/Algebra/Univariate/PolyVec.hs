@@ -7,22 +7,22 @@
 
 module Tests.Algebra.Univariate.PolyVec (specUnivariatePolyVec) where
 
-import           Data.Bool                                   (bool)
-import           Data.Data                                   (Typeable, typeOf)
-import           Data.List                                   ((\\))
-import qualified Data.Vector                                 as V
-import qualified Data.Vector.Algorithms.Intro                as VA
-import           Prelude                                     hiding (Fractional (..), Num (..), drop, length, take,
-                                                              (!!), (^))
-import           Prelude                                     (abs)
+import           Data.Bool                              (bool)
+import           Data.Data                              (Typeable, typeOf)
+import           Data.List                              ((\\))
+import qualified Data.Vector                            as V
+import qualified Data.Vector.Algorithms.Intro           as VA
+import           Prelude                                hiding (Fractional (..), Num (..), drop, length, take, (!!),
+                                                         (^))
+import           Prelude                                (abs)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (Fr)
-import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Prelude                              (length, take)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Prelude                         (length, take)
 
 propToPolyVec :: forall c s .
     (Ring c, KnownNat s) =>

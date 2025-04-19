@@ -20,11 +20,11 @@ import           GHC.TypeLits                       (withKnownNat)
 import           Prelude                            (fmap, pure, type (~), ($), (.), (<$>))
 import qualified Prelude                            as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.HFunctor          (hmap)
-import qualified ZkFold.Base.Data.Vector            as V
-import           ZkFold.Base.Data.Vector            ((!!))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor               (hmap)
+import qualified ZkFold.Data.Vector                 as V
+import           ZkFold.Data.Vector                 ((!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), concat, toWords)
 import           ZkFold.Symbolic.Data.Combinators

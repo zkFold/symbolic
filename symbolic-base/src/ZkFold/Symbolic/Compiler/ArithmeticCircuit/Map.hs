@@ -13,9 +13,9 @@ import           Numeric.Natural                                     (Natural)
 import           Prelude                                             hiding (Num (..), drop, length, product, splitAt,
                                                                       sum, take, (!!), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate
-import           ZkFold.Base.Data.ByteString                         (toByteString)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Polynomial.Multivariate
+import           ZkFold.Data.ByteString                              (toByteString)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 -- This module contains functions for mapping variables in arithmetic circuits.

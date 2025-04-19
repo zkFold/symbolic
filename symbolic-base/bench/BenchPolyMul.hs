@@ -3,20 +3,20 @@
 
 module Main where
 
-import           Control.DeepSeq                             (force)
-import           Control.Exception                           (evaluate)
-import           Control.Monad                               (forM_, replicateM)
-import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude                                     as P
-import           System.Random                               (randomIO)
+import           Control.DeepSeq                        (force)
+import           Control.Exception                      (evaluate)
+import           Control.Monad                          (forM_, replicateM)
+import qualified Data.Vector                            as V
+import           Prelude                                hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude                                as P
+import           System.Random                          (randomIO)
 import           Test.Tasty.Bench
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number            (Prime)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number                  (Prime)
+import           ZkFold.Algebra.Polynomial.Univariate
 
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.

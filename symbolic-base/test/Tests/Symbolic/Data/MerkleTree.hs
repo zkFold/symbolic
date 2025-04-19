@@ -5,34 +5,34 @@ module Tests.Symbolic.Data.MerkleTree
   ( specMerkleTree
   ) where
 
-import           Data.Binary                                 (Binary)
-import           GHC.Generics                                (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
-import           Prelude                                     (return, ($), (.))
-import qualified Prelude                                     as Haskell
-import           Test.Hspec                                  (Spec, describe)
-import           Test.Hspec.QuickCheck                       (prop)
-import           Test.QuickCheck                             (Arbitrary, Gen)
+import           Data.Binary                                (Binary)
+import           GHC.Generics                               (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
+import           Prelude                                    (return, ($), (.))
+import qualified Prelude                                    as Haskell
+import           Test.Hspec                                 (Spec, describe)
+import           Test.Hspec.QuickCheck                      (prop)
+import           Test.QuickCheck                            (Arbitrary, Gen)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number            (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import qualified ZkFold.Base.Data.Vector                     as V
-import           ZkFold.Base.Data.Vector                     (Vector (..))
-import           ZkFold.Prelude                              (chooseNatural)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                       (Zp)
+import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
+import qualified ZkFold.Data.Vector                         as V
+import           ZkFold.Data.Vector                         (Vector (..))
+import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                    (compile)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit  (eval1)
+import           ZkFold.Symbolic.Compiler                   (compile)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Combinators            (Iso (..))
+import           ZkFold.Symbolic.Data.Combinators           (Iso (..))
 import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (FieldElement))
-import qualified ZkFold.Symbolic.Data.List                   as L
-import           ZkFold.Symbolic.Data.List                   (emptyList, lSize)
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement))
+import qualified ZkFold.Symbolic.Data.List                  as L
+import           ZkFold.Symbolic.Data.List                  (emptyList, lSize)
 import           ZkFold.Symbolic.Data.MerkleTree
-import           ZkFold.Symbolic.Data.Morph                  (MorphTo (..))
+import           ZkFold.Symbolic.Data.Morph                 (MorphTo (..))
 import           ZkFold.Symbolic.Fold
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (..))
+import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
 
 -- evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 -- evalBool (Bool ac) = exec1 ac

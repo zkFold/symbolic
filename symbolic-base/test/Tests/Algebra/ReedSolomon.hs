@@ -2,23 +2,23 @@
 
 module Tests.Algebra.ReedSolomon where
 
-import           Data.Bool                                   (bool)
-import           Data.List                                   (sort)
-import           Data.Typeable                               (Typeable, typeOf)
-import qualified Data.Vector                                 as V
-import           GHC.Natural                                 (Natural)
+import           Data.Bool                              (bool)
+import           Data.List                              (sort)
+import           Data.Typeable                          (Typeable, typeOf)
+import qualified Data.Vector                            as V
+import           GHC.Natural                            (Natural)
 import           Prelude
-import qualified Prelude                                     as P
+import qualified Prelude                                as P
 import           Test.Hspec
 import           Test.QuickCheck
 
-import qualified ZkFold.Base.Algebra.Basic.Class             as C
-import           ZkFold.Base.Algebra.Basic.Class             hiding ((*), (+))
-import qualified ZkFold.Base.Algebra.EllipticCurve.BLS12_381 as BLS12_381
-import qualified ZkFold.Base.Algebra.EllipticCurve.BN254     as BN254
-import qualified ZkFold.Base.Algebra.EllipticCurve.Pasta     as Pasta
-import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Algorithm.ReedSolomon
+import qualified ZkFold.Algebra.Class                   as C
+import           ZkFold.Algebra.Class                   hiding ((*), (+))
+import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as BLS12_381
+import qualified ZkFold.Algebra.EllipticCurve.BN254     as BN254
+import qualified ZkFold.Algebra.EllipticCurve.Pasta     as Pasta
+import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Algorithm.ReedSolomon
 
 
 data ReedSolomonExample f = ReedSolomonExample

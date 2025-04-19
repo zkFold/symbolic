@@ -57,10 +57,10 @@ import           Test.QuickCheck                                         (Arbitr
                                                                           property, withMaxSuccess, (===))
 import           Text.Pretty.Simple                                      (pPrint)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Polynomials.Multivariate            (evalMonomial, evalPolynomial)
-import           ZkFold.Base.Data.HFunctor                               (hmap)
-import           ZkFold.Base.Data.Product                                (fstP, sndP)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Polynomial.Multivariate                  (evalMonomial, evalPolynomial)
+import           ZkFold.Data.HFunctor                                    (hmap)
+import           ZkFold.Data.Product                                     (fstP, sndP)
 import           ZkFold.Prelude                                          (length)
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()

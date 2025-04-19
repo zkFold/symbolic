@@ -1,13 +1,13 @@
 module Tests.Algebra.GroebnerBasis (specGroebner) where
 
-import           Data.Map                                     (empty, fromList)
-import           GHC.Natural                                  (Natural)
-import           Prelude                                      hiding (Eq (..), Num (..), (/), (^))
+import           Data.Map                               (empty, fromList)
+import           GHC.Natural                            (Natural)
+import           Prelude                                hiding (Eq (..), Num (..), (/), (^))
 import           Test.Hspec
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.Polynomials.Multivariate
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.Polynomial.Multivariate
 
 testPoly :: [Poly Fr Natural Integer]
 testPoly = [

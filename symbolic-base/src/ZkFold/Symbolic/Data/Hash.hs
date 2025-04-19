@@ -10,8 +10,8 @@ import           Data.Traversable                 (traverse)
 import           Data.Type.Equality               (type (~))
 import           GHC.Generics                     (Generic, Par1 (..), (:*:) (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Control.HApplicative (hunit)
+import           ZkFold.Algebra.Class
+import           ZkFold.Control.HApplicative      (hunit)
 import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
 import           ZkFold.Symbolic.Data.Bool        (Bool (..))
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)

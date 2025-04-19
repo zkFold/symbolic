@@ -11,21 +11,21 @@ module ZkFold.Symbolic.Data.Bool (
     or
 ) where
 
-import           Control.DeepSeq                   (NFData)
-import           Data.Eq                           (Eq (..))
-import           Data.Foldable                     (Foldable (..))
-import           Data.Function                     (($), (.))
-import           Data.Functor                      (Functor, fmap, (<$>))
-import           GHC.Generics                      (Generic, Par1 (..))
-import qualified Prelude                           as Haskell
-import           Text.Show                         (Show)
+import           Control.DeepSeq              (NFData)
+import           Data.Eq                      (Eq (..))
+import           Data.Foldable                (Foldable (..))
+import           Data.Function                (($), (.))
+import           Data.Functor                 (Functor, fmap, (<$>))
+import           GHC.Generics                 (Generic, Par1 (..))
+import qualified Prelude                      as Haskell
+import           Text.Show                    (Show)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
+import           ZkFold.Algebra.Class
+import           ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
-import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (newAssigned)
+import           ZkFold.Symbolic.Data.Class   (SymbolicData)
+import           ZkFold.Symbolic.Interpreter  (Interpreter (..))
+import           ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 class BoolType b where
     true  :: b

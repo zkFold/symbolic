@@ -1,6 +1,6 @@
 module Examples.BatchTransfer (exampleBatchTransfer) where
 
-import           ZkFold.Base.Data.Vector                         (Vector)
+import           ZkFold.Data.Vector                              (Vector)
 import           ZkFold.Symbolic.Cardano.Contracts.BatchTransfer (Tx, TxOut, batchTransfer)
 import           ZkFold.Symbolic.Cardano.Types                   (Bool, ByteString)
 import           ZkFold.Symbolic.Class                           (Symbolic (..))

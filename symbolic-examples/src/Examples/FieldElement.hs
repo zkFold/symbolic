@@ -1,6 +1,6 @@
 module Examples.FieldElement (exampleInvert) where
 
-import           ZkFold.Base.Algebra.Basic.Class   (finv)
+import           ZkFold.Algebra.Class              (finv)
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 

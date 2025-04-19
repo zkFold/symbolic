@@ -23,11 +23,11 @@ import           Prelude                           (Integer)
 import qualified Prelude
 import           Text.Show                         (Show)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat, Prime, type (*), type (^), value)
-import           ZkFold.Base.Data.HFunctor.Classes (HNFData, HShow)
-import           ZkFold.Base.Data.Vector           (Vector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field              (Zp)
+import           ZkFold.Algebra.Number             (KnownNat, Prime, type (*), type (^), value)
+import           ZkFold.Data.HFunctor.Classes      (HNFData, HShow)
+import           ZkFold.Data.Vector                (Vector)
 import           ZkFold.Symbolic.Class             (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString   (ByteString)
