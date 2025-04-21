@@ -3,10 +3,10 @@ cabal-version:      3.0
 name:               symbolic-ledger
 version:            0.1.0.0
 tested-with:        GHC == 9.12.1
-synopsis:           zkFold Ledger
+synopsis:           Symbolic Ledger
 homepage:           https://zkfold.io/
 category:           Blockchain, Cryptography, DSL, Math, Symbolic Computation
-author:             Vladimir Sinyakov, Pavel Sokolov, Vladimir Morozov, Eitan Chatav, Ilya Baryshnikov, Anna Hovanskaya, Evgenii Samodelov, Maxim Churilov
+author:             Vladimir Sinyakov, Sourabh Aggarwal, Pavel Sokolov, Vladimir Morozov, Eitan Chatav
 maintainer:         vlasin@zkfold.io
 license:            MIT
 license-file:       LICENSE
