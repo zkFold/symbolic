@@ -6,18 +6,18 @@
 
 module Tests.Algebra.Group (specGroup) where
 
-import           Data.Data                                   (Typeable, typeOf)
-import           Prelude                                     hiding (Fractional (..), Num (..), length)
+import           Data.Data                              (Typeable, typeOf)
+import           Prelude                                hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.BN254
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point)
-import           ZkFold.Base.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.EllipticCurve.BN254
+import           ZkFold.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
+import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
+import           ZkFold.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point)
+import           ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
 
 specGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
 specGroup' = do

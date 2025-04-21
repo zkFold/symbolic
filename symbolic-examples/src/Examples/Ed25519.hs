@@ -4,9 +4,9 @@ module Examples.Ed25519 (
     exampleEd25519Scale
   ) where
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519  (Ed25519_Base, Ed25519_Scalar)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.EllipticCurve.Ed25519       (Ed25519_Base, Ed25519_Scalar)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (Auto))
 import           ZkFold.Symbolic.Data.EllipticCurve.Ed25519

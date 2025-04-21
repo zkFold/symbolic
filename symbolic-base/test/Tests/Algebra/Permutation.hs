@@ -2,15 +2,15 @@
 
 module Tests.Algebra.Permutation (specPermutation) where
 
-import           Data.Map                              (elems)
-import qualified Data.Vector                           as V
-import qualified Data.Vector.Algorithms.Intro          as V
-import           Prelude                               hiding (Fractional (..), Num (..), length)
+import           Data.Map                     (elems)
+import qualified Data.Vector                  as V
+import qualified Data.Vector.Algorithms.Intro as V
+import           Prelude                      hiding (Fractional (..), Num (..), length)
 import           Test.Hspec
 import           Test.QuickCheck
 
-import           ZkFold.Base.Algebra.Basic.Permutation
-import           ZkFold.Base.Data.Vector               (fromVector)
+import           ZkFold.Algebra.Permutation
+import           ZkFold.Data.Vector           (fromVector)
 
 specPermutation :: Spec
 specPermutation = do

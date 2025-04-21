@@ -18,7 +18,6 @@ import           GHC.Base
 import           GHC.Generics     (Generic, Par1, (:*:))
 import           Prelude          (Show)
 
-
 data LookupType a = forall f. (Functor f, Typeable f) => LookupType { lTable :: LookupTable a f }
 
 deriving instance (Show a) => Show (LookupType a)

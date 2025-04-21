@@ -49,17 +49,17 @@ import           Prelude                           (Integer, const, error, flip,
 import qualified Prelude                           as Haskell
 import           Test.QuickCheck                   (Arbitrary (..), chooseInteger)
 
-import           ZkFold.Base.Algebra.Basic.Class   hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.Field   (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Control.HApplicative  (HApplicative (..))
-import           ZkFold.Base.Data.HFunctor         (HFunctor (..))
-import           ZkFold.Base.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import           ZkFold.Base.Data.Product          (fstP, sndP)
-import qualified ZkFold.Base.Data.Vector           as V
-import           ZkFold.Base.Data.Vector           (Vector (..))
+import           ZkFold.Algebra.Class              hiding (Euclidean (..))
+import           ZkFold.Algebra.Field              (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Control.HApplicative       (HApplicative (..))
+import           ZkFold.Data.HFunctor              (HFunctor (..))
+import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
+import           ZkFold.Data.Product               (fstP, sndP)
+import qualified ZkFold.Data.Vector                as V
+import           ZkFold.Data.Vector                (Vector (..))
 import           ZkFold.Prelude                    (length, replicate, replicateA, take, unsnoc)
-import           ZkFold.Symbolic.Algorithms.FFT    (fft, ifft)
+import           ZkFold.Symbolic.Algorithm.FFT     (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
