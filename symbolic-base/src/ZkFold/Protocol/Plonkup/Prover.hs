@@ -84,13 +84,14 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
-        -- zeta = challenge ts1 :: ScalarFieldOf g1
+        zeta = challenge ts1 :: ScalarFieldOf g1
 
-        !t_zeta = t1 relation
-        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t1 relation) (fromPolyVec w1) :: pv n
+        !f_zeta' = w1 + zeta *. (w2 + zeta *. w3)
+        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t1 relation) (fromPolyVec f_zeta') :: pv n
+        !t_zeta = t1 relation + zeta *. (t2 relation + zeta *. t3 relation)
 
         !fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
-        !tX = t1X
+        !tX = t1X + zeta *. (t2X + zeta *. t3X) :: PlonkupPolyExtended n g1 pv
 
         !s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
         !h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: pv n
@@ -166,7 +167,7 @@ plonkupProve PlonkupProverSetup {..}
               + ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
               - ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
               + ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
-              + (qkX * (aX - fX) .* alpha3)
+              + (qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3)
               + (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
               - ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
               + ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
@@ -228,7 +229,7 @@ plonkupProve PlonkupProverSetup {..}
                         - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
                     )
               + (alpha2 * lag1_xi) *. (z1X - one)
-              + (alpha3 * (a_xi - f_xi)) *. qkX
+              + (alpha3 * (a_xi + zeta * (b_xi + zeta * c_xi) - f_xi)) *. qkX
               + alpha4 *. (((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
                         - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi')) *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
                     )

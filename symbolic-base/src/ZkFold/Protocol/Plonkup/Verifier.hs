@@ -50,6 +50,7 @@ plonkupVerify
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
+        zeta = challenge ts1
 
         ts2 = ts1
             `transcript` compress cmF
@@ -108,7 +109,7 @@ plonkupVerify
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
-        cmT_zeta = cmT1
+        cmT_zeta = cmT1 + zeta `scale` (cmT2 + zeta `scale` cmT3)
 
         -- Step 9: Compute r0
         r0 = pi_xi
@@ -122,7 +123,7 @@ plonkupVerify
                 (a_xi * b_xi) `scale` cmQm + a_xi `scale` cmQl + b_xi `scale` cmQr + c_xi `scale` cmQo + cmQc
               + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma) * alpha + lagrange1_xi * alpha2) `scale` cmZ1
               - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi') `scale` cmS3
-              + ((a_xi - f_xi) * alpha3) `scale` cmQk
+              + ((a_xi + zeta * (b_xi + zeta * c_xi) - f_xi) * alpha3) `scale` cmQk
               + ((one + delta) * (epsilon + f_xi) * (epsilon * (one + delta) + t_xi + delta * t_xi') * alpha4 + lagrange1_xi * alpha5) `scale` cmZ2
               - (z2_xi' * (epsilon * (one + delta) + h2_xi + delta * h1_xi') * alpha4) `scale` cmH1
               - zhX_xi `scale` (cmQlow + (xi^(n+2)) `scale` cmQmid + (xi^(2*n+4)) `scale` cmQhigh)
