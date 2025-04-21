@@ -44,7 +44,9 @@ data PlonkupRelation i n l a pv = PlonkupRelation
     , qO       :: pv n
     , qC       :: pv n
     , qK       :: pv n
-    , t        :: pv n
+    , t1       :: pv n
+    , t2       :: pv n
+    , t3       :: pv n
     , sigma    :: Permutation (3 * n)
     , witness  :: i a -> (pv n, pv n, pv n)
     , pubInput :: i a -> l a
@@ -59,7 +61,9 @@ instance (Show a, Show (pv n)) => Show (PlonkupRelation i n l a pv) where
         ++ show qO ++ " "
         ++ show qC ++ " "
         ++ show qK ++ " "
-        ++ show t ++ " "
+        ++ show t1 ++ " "
+        ++ show t2 ++ " "
+        ++ show t3 ++ " "
         ++ show sigma
 
 instance
@@ -86,8 +90,12 @@ toPlonkupRelation ac =
         pubInputConstraints = map var (toList xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
         rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
+
         -- TODO: We are expecting at most one range.
-        t = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        t1 = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        t2 = toPolyVec $ fromList []
+        t3 = toPolyVec $ fromList []
+
         -- Number of elements in the set `t`.
         nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.

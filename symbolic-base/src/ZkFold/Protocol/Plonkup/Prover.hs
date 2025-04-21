@@ -63,8 +63,7 @@ plonkupProve PlonkupProverSetup {..}
         !w2X = polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv
         !w3X = polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
-        -- Is this really correct?
-        -- How is \(n\) related to the length of public input?
+        -- Extending public input to the polynomial domain
         !pi  = toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n
         !piX = polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
@@ -87,10 +86,11 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmC :: ts
         -- zeta = challenge ts1 :: ScalarFieldOf g1
 
-        !t_zeta = t relation
-        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t relation) (fromPolyVec w1) :: pv n
+        !t_zeta = t1 relation
+        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t1 relation) (fromPolyVec w1) :: pv n
 
         !fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
+        !tX = t1X
 
         !s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
         !h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: pv n

@@ -14,10 +14,12 @@ data PlonkupCircuitPolynomials n g pv = PlonkupCircuitPolynomials {
         qmX :: PlonkupPolyExtended n g pv,
         qcX :: PlonkupPolyExtended n g pv,
         qkX :: PlonkupPolyExtended n g pv,
+        t1X :: PlonkupPolyExtended n g pv,
+        t2X :: PlonkupPolyExtended n g pv,
+        t3X :: PlonkupPolyExtended n g pv,
         s1X :: PlonkupPolyExtended n g pv,
         s2X :: PlonkupPolyExtended n g pv,
-        s3X :: PlonkupPolyExtended n g pv,
-        tX  :: PlonkupPolyExtended n g pv
+        s3X :: PlonkupPolyExtended n g pv
     }
 instance
     ( Show (ScalarFieldOf g)
@@ -31,6 +33,9 @@ instance
         ++ show qmX ++ " "
         ++ show qcX ++ " "
         ++ show qkX ++ " "
+        ++ show t1X ++ " "
+        ++ show t2X ++ " "
+        ++ show t3X ++ " "
         ++ show s1X ++ " "
         ++ show s2X ++ " "
         ++ show s3X

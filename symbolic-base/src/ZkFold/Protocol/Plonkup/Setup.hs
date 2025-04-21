@@ -97,10 +97,12 @@ plonkupSetup Plonkup {..} =
         qoX = polyVecInLagrangeBasis omega qO
         qcX = polyVecInLagrangeBasis omega qC
         qkX = polyVecInLagrangeBasis omega qK
+        t1X = polyVecInLagrangeBasis omega t1
+        t2X = polyVecInLagrangeBasis omega t2
+        t3X = polyVecInLagrangeBasis omega t3
         s1X = polyVecInLagrangeBasis omega sigma1s
         s2X = polyVecInLagrangeBasis omega sigma2s
         s3X = polyVecInLagrangeBasis omega sigma3s
-        tX  = polyVecInLagrangeBasis omega t
         polynomials = PlonkupCircuitPolynomials {..}
 
         com = bilinear
@@ -110,10 +112,12 @@ plonkupSetup Plonkup {..} =
         cmQm = gs `com` qmX
         cmQc = gs `com` qcX
         cmQk = gs `com` qkX
+        cmT1 = gs `com` t1X
+        cmT2 = gs `com` t2X
+        cmT3 = gs `com` t3X
         cmS1 = gs `com` s1X
         cmS2 = gs `com` s2X
         cmS3 = gs `com` s3X
-        cmT1 = gs `com` tX
         commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}
