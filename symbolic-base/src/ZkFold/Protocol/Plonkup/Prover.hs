@@ -7,18 +7,18 @@ module ZkFold.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
-import           Data.Bool                                       (bool)
-import           Data.Foldable                                   (length)
-import qualified Data.Vector                                     as V
-import           Data.Word                                       (Word8)
-import           GHC.IsList                                      (IsList (..))
-import           Prelude                                         hiding (Num (..), drop, length, pi, sum, take, (!!),
-                                                                  (/), (^))
+import           Data.Bool                                  (bool)
+import           Data.Foldable                              (length)
+import qualified Data.Vector                                as V
+import           Data.Word                                  (Word8)
+import           GHC.IsList                                 (IsList (..))
+import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, (!!), (/),
+                                                             (^))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                (KnownNat, Natural, value)
 import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
-import           ZkFold.Algebra.Polynomial.Univariate      hiding (qr)
+import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
+import           ZkFold.Algebra.Polynomial.Univariate       hiding (qr)
 import           ZkFold.Data.Vector                         ((!!))
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input

@@ -10,21 +10,21 @@ module ZkFold.Algebra.Permutation (
     fromCycles
 ) where
 
-import           Control.DeepSeq                  (NFData)
-import           Control.Monad                    (forM_)
-import           Data.Functor.Rep                 (Representable (index))
-import           Data.Map.Strict                  (Map, elems, empty, insertWith)
-import qualified Data.Vector                      as V
-import qualified Data.Vector.Mutable              as VM
-import           GHC.Generics                     (Generic)
-import           Prelude                          hiding (Num (..), drop, length, mod, (!!))
-import qualified Prelude                          as P
-import           Test.QuickCheck                  (Arbitrary (..))
+import           Control.DeepSeq       (NFData)
+import           Control.Monad         (forM_)
+import           Data.Functor.Rep      (Representable (index))
+import           Data.Map.Strict       (Map, elems, empty, insertWith)
+import qualified Data.Vector           as V
+import qualified Data.Vector.Mutable   as VM
+import           GHC.Generics          (Generic)
+import           Prelude               hiding (Num (..), drop, length, mod, (!!))
+import qualified Prelude               as P
+import           Test.QuickCheck       (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector          (Vector (..), unsafeToVector)
-import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
+import           ZkFold.Data.Vector    (Vector (..), unsafeToVector)
+import           ZkFold.Prelude        (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
 

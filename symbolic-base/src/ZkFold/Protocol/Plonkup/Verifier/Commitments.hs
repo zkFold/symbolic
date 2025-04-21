@@ -34,4 +34,4 @@ instance (Show g) => Show (PlonkupCircuitCommitments g) where
         ++ show cmS1 ++ " "
         ++ show cmS2 ++ " "
         ++ show cmS3
-        
+
