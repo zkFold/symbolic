@@ -107,10 +107,14 @@ library
       ZkFold.Symbolic.Cardano.Types.Value
     build-depends:
       base                          >= 4.9 && < 5,
+      aeson                                      ,
       bytestring                                 ,
+      base16-bytestring                          ,
       containers                            < 0.7,
       constraints                                ,
+      deriving-aeson                             ,
       semialign                             < 1.4,
+      text                                       ,
       symbolic-base                              ,
     hs-source-dirs: src
 
