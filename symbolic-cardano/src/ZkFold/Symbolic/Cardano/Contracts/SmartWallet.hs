@@ -19,15 +19,26 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     , expModProofMock
     , ExpModCircuitGatesMock
 
+    , ZKSetupBytes (..)
+    , ZKProofBytes (..)
+    , ZKF (..)
+    , ByteStringFromHex (..)
     , mkProof
     , mkSetup
     ) where
 
+import           Data.Aeson                                        (withText)
+import qualified Data.Aeson                                        as Aeson
 import           Data.ByteString                                   (ByteString)
+import qualified Data.ByteString.Base16                            as BS16
+import           Data.Coerce                                       (coerce)
 import           Data.Foldable                                     (foldrM)
 import           Data.Proxy
+import           Data.Text                                         (Text)
+import           Data.Text.Encoding                                (decodeUtf8, encodeUtf8)
 import           Data.Word                                         (Word8)
-import           GHC.Generics                                      (Generic, Par1 (..), U1 (..), type (:*:) (..))
+import           Deriving.Aeson
+import           GHC.Generics                                      (Par1 (..), U1 (..), type (:*:) (..))
 import           GHC.Natural                                       (naturalToInteger)
 import           Prelude                                           hiding (Fractional (..), Num (..), length)
 import qualified Prelude                                           as P
@@ -64,7 +75,6 @@ import           ZkFold.Symbolic.Data.UInt                         (OrdWord, UIn
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                      (newAssigned)
 
--- TODO:
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
 convertZp :: Zp p -> Integer
@@ -76,7 +86,7 @@ convertG1 = toByteString . compress
 convertG2 :: BLS12_381_G2_Point -> ByteString
 convertG2 = toByteString . compress
 
-data SetupBytes = SetupBytes {
+data ZKSetupBytes = ZKSetupBytes {
     n          :: Integer
   , pow        :: Integer
   , omega_int  :: Integer
@@ -95,10 +105,10 @@ data SetupBytes = SetupBytes {
   , cmT1_bytes :: ByteString
 } deriving stock (Show, Generic)
 
-mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> SetupBytes
+mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
-  in SetupBytes
+  in ZKSetupBytes
     { n          = fromIntegral (Number.value @n)
     , pow        = log2ceiling (Number.value @n)
     , omega_int  = convertZp omega
@@ -117,50 +127,79 @@ mkSetup PlonkupVerifierSetup {..} =
     , cmT1_bytes = convertG1 cmT1
     }
 
-data ProofBytes = ProofBytes {
-    cmA_bytes     :: ByteString
-  , cmB_bytes     :: ByteString
-  , cmC_bytes     :: ByteString
-  , cmF_bytes     :: ByteString
-  , cmH1_bytes    :: ByteString
-  , cmH2_bytes    :: ByteString
-  , cmZ1_bytes    :: ByteString
-  , cmZ2_bytes    :: ByteString
-  , cmQlow_bytes  :: ByteString
-  , cmQmid_bytes  :: ByteString
-  , cmQhigh_bytes :: ByteString
-  , proof1_bytes  :: ByteString
-  , proof2_bytes  :: ByteString
-  , a_xi_int      :: Integer
-  , b_xi_int      :: Integer
-  , c_xi_int      :: Integer
-  , s1_xi_int     :: Integer
-  , s2_xi_int     :: Integer
-  , f_xi_int      :: Integer
-  , t_xi_int      :: Integer
-  , t_xi'_int     :: Integer
-  , z1_xi'_int    :: Integer
-  , z2_xi'_int    :: Integer
-  , h1_xi'_int    :: Integer
-  , h2_xi_int     :: Integer
-  , l1_xi         :: Integer
-} deriving stock (Show, Generic)
+-- | Field element.
+newtype ZKF = ZKF Integer
+  deriving stock (Show, Eq, Ord, Generic)
+  deriving newtype (FromJSON, ToJSON)
 
-mkProof :: forall i (n :: Natural) . Proof (PlonkupTs i n ByteString) -> ProofBytes
-mkProof PlonkupProof {..} = ProofBytes
-  { cmA_bytes     = convertG1 cmA
-  , cmB_bytes     = convertG1 cmB
-  , cmC_bytes     = convertG1 cmC
-  , cmF_bytes     = convertG1 cmF
-  , cmH1_bytes    = convertG1 cmH1
-  , cmH2_bytes    = convertG1 cmH2
-  , cmZ1_bytes    = convertG1 cmZ1
-  , cmZ2_bytes    = convertG1 cmZ2
-  , cmQlow_bytes  = convertG1 cmQlow
-  , cmQmid_bytes  = convertG1 cmQmid
-  , cmQhigh_bytes = convertG1 cmQhigh
-  , proof1_bytes  = convertG1 proof1
-  , proof2_bytes  = convertG1 proof2
+-- | 'ByteString' whose on wire representation is given in hexadecimal encoding.
+newtype ByteStringFromHex = ByteStringFromHex ByteString
+  deriving stock (Generic)
+  deriving newtype (Eq, Ord)
+
+byteStringFromHexToHex :: ByteStringFromHex -> Text
+byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
+
+instance Show ByteStringFromHex where
+  showsPrec d bs =
+    showParen (d > 10) $
+      showString "ByteStringFromHex "
+        . showsPrec 11 (byteStringFromHexToHex bs)
+
+instance FromJSON ByteStringFromHex where
+  parseJSON = withText "ByteStringFromHex" $ \t ->
+    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
+
+instance ToJSON ByteStringFromHex where
+  toJSON = Aeson.String . byteStringFromHexToHex
+
+-- | ZK proof bytes, assuming hex encoding for relevant bytes.
+data ZKProofBytes = ZKProofBytes
+  { cmA_bytes     :: !ByteStringFromHex
+  , cmB_bytes     :: !ByteStringFromHex
+  , cmC_bytes     :: !ByteStringFromHex
+  , cmF_bytes     :: !ByteStringFromHex
+  , cmH1_bytes    :: !ByteStringFromHex
+  , cmH2_bytes    :: !ByteStringFromHex
+  , cmZ1_bytes    :: !ByteStringFromHex
+  , cmZ2_bytes    :: !ByteStringFromHex
+  , cmQlow_bytes  :: !ByteStringFromHex
+  , cmQmid_bytes  :: !ByteStringFromHex
+  , cmQhigh_bytes :: !ByteStringFromHex
+  , proof1_bytes  :: !ByteStringFromHex
+  , proof2_bytes  :: !ByteStringFromHex
+  , a_xi_int      :: !Integer
+  , b_xi_int      :: !Integer
+  , c_xi_int      :: !Integer
+  , s1_xi_int     :: !Integer
+  , s2_xi_int     :: !Integer
+  , f_xi_int      :: !Integer
+  , t_xi_int      :: !Integer
+  , t_xi'_int     :: !Integer
+  , z1_xi'_int    :: !Integer
+  , z2_xi'_int    :: !Integer
+  , h1_xi'_int    :: !Integer
+  , h2_xi_int     :: !Integer
+  , l1_xi         :: !ZKF
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass (FromJSON, ToJSON)
+
+mkProof :: forall i (n :: Natural) . Proof (PlonkupTs i n ByteString) -> ZKProofBytes
+mkProof PlonkupProof {..} = ZKProofBytes
+  { cmA_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmA
+  , cmB_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmB
+  , cmC_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmC
+  , cmF_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmF
+  , cmH1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH1
+  , cmH2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH2
+  , cmZ1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ1
+  , cmZ2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ2
+  , cmQlow_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQlow
+  , cmQmid_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQmid
+  , cmQhigh_bytes = ByteStringFromHex . BS16.encode $ convertG1 cmQhigh
+  , proof1_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof1
+  , proof2_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof2
   , a_xi_int      = convertZp a_xi
   , b_xi_int      = convertZp b_xi
   , c_xi_int      = convertZp c_xi
@@ -173,7 +212,7 @@ mkProof PlonkupProof {..} = ProofBytes
   , z2_xi'_int    = convertZp z2_xi'
   , h1_xi'_int    = convertZp h1_xi'
   , h2_xi_int     = convertZp h2_xi
-  , l1_xi         = convertZp $ head l_xi
+  , l1_xi         = ZKF $ convertZp $ head l_xi
   }
 
 type ExpModCircuitGates = 2^16
