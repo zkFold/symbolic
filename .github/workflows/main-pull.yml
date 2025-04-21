@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
-        ghc: [9.12.1]
+        cabal: [3.14.2.0]
+        ghc: [9.12.2]
 
     runs-on: ${{ matrix.os }}
 
@@ -48,7 +48,7 @@ jobs:
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
         key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
-        restore-keys: ${{ env.key }}-
+        restore-keys: ${{ env.key }}
 
     - name: Install dependencies
       # If we had an exact cache hit, the dependencies will be up to date.
@@ -69,26 +69,77 @@ jobs:
       run: |
         cabal build all -f Pedantic
 
-    - name: Test
-      run: cabal test all --test-option="--skip=SLOW"
+    - name: Test "symbolic-base-test (Algebra)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Algebra)"
+    
+    - name: Test "symbolic-base-test (Serialization)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Serialization)"
 
-    - name: Compiler benchmark
-      run: cabal bench compiler-golden-stats
+    - name: Test "symbolic-base-test (Protocols)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Protocols)"
 
-    # - name: Check cabal file
-    #   run: cabal check
+    - name: Test "symbolic-base-test (Symbolic compiler)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Symbolic compiler)"
 
-    # - name: Document package
-    #   run: cabal haddock all
+    - name: Test "symbolic-base-test (Symbolic data)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Symbolic data)"
 
-    # - name: Prepare package for publishing
-    #   run: cabal sdist all
+    - name: Test "symbolic-base-test (Symbolic cryptography)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Symbolic cryptography)"
+
+    - name: Run other tests
+      run: cabal test all --test-option="--skip=symbolic-base-test"
+
+    - name: Benchmark circuit size
+      run: cabal bench bench-circuit-size
+
+    # TODO: Uncomment when the benchmark is fixed
+    # - name: Benchmark compiler performance
+    #   run: cabal bench bench-compiler-performance
+
+    - name: Benchmark polynomial multiplication
+      run: cabal bench bench-poly-mul
+
+    - name: Benchmark in-circuit EC scalar multiplication
+      run: cabal bench bench-in-circuit-ec
+
+    - name: Benchmark Lagrange basis computation
+      run: cabal bench bench-lagrange-basis
+
+    - name: Check cabal files
+      run: |
+        cd symbolic-base
+        cabal check
+
+        cd ../symbolic-examples
+        cabal check
+
+        cd ../symbolic-apps
+        cabal check
+
+        cd ../symbolic-ledger
+        cabal check
+
+        cd ../symbolic-cardano
+        cabal check
+
+        cd ../symbolic-uplc
+        cabal check
+
+        cd ..
+
+    - name: Document package
+      run: cabal haddock all
+
+    - name: Prepare package for publishing
+      run: cabal sdist all
+
   stylish-haskell-job:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        cabal: [3.14.1.1]
-        ghc: ["9.10"]
+        cabal: [3.14.2.0]
+        ghc: [9.10.1]
 
     runs-on: ${{ matrix.os }}
 
