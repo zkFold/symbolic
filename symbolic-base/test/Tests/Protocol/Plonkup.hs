@@ -16,7 +16,7 @@ import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (U1 (..))
 import           GHC.IsList                                          (IsList (fromList))
 import           Test.Hspec
-import           Test.QuickCheck
+import           Test.QuickCheck                                     hiding (witness)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381              (BLS12_381_G1_Point, BLS12_381_G2_Point)
