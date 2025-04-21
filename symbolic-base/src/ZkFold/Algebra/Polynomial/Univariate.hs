@@ -395,7 +395,7 @@ instance
     ( Ring c
     ) => UnivariateRingPolyVec c (PolyVec c) where
 
-    l .*. r = toPolyVec @_ @(PolyVec c) $ fromList $ zipWith (*) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+    l .*. r = toPolyVec @_ @(PolyVec c) $ V.zipWith (*) (fromPolyVec l) (fromPolyVec r)
 
     (PV cs) .* a = PV $ fmap (* a) cs
 
@@ -438,7 +438,7 @@ instance
     , UnivariateRingPolyVec c (PolyVec c)
     ) => UnivariateFieldPolyVec c (PolyVec c) where
 
-    l ./. r = toPolyVec $ fromList $ zipWith (//) (toList $ fromPolyVec l) (toList $ fromPolyVec r)
+    l ./. r = toPolyVec $ V.zipWith (//) (fromPolyVec l) (fromPolyVec r)
 
     polyVecZero :: forall size . (KnownNat size) => Natural -> PolyVec c size
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)

@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Algebra.Field (
+module ZkFold.Base.Algebra.Basic.Field (
     IrreduciblePoly(..),
     Zp,
     toZp,
@@ -15,30 +15,31 @@ module ZkFold.Algebra.Field (
     Ext3(..)
     ) where
 
-import           Control.Applicative                  ((<|>))
-import           Control.DeepSeq                      (NFData (..))
-import           Data.Aeson                           (FromJSON (..), ToJSON (..))
-import           Data.Bifunctor                       (first)
-import           Data.Bool                            (bool)
-import qualified Data.Vector                          as V
-import           GHC.Generics                         (Generic)
-import           GHC.Real                             ((%))
-import           GHC.TypeLits                         (Symbol)
-import           Prelude                              hiding (Fractional (..), Num (..), div, length, (^))
-import qualified Prelude                              as Haskell
-import           System.Random                        (Random (..), RandomGen, mkStdGen, uniformR)
-import           Test.QuickCheck                      hiding (scale)
+import           Control.Applicative                        ((<|>))
+import           Control.DeepSeq                            (NFData (..))
+import           Data.Aeson                                 (FromJSON (..), FromJSONKey (..), ToJSON (..),
+                                                             ToJSONKey (..))
+import           Data.Bifunctor                             (first)
+import           Data.Bool                                  (bool)
+import qualified Data.Vector                                as V
+import           GHC.Generics                               (Generic)
+import           GHC.Real                                   ((%))
+import           GHC.TypeLits                               (Symbol)
+import           Prelude                                    hiding (Fractional (..), Num (..), div, length, (^))
+import qualified Prelude                                    as Haskell
+import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
+import           Test.QuickCheck                            hiding (scale)
 
-import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
-import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Univariate
-import           ZkFold.Data.ByteString
-import           ZkFold.Prelude                       (log2ceiling)
+import           ZkFold.Base.Algebra.Basic.Class            hiding (Euclidean (..))
+import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Base.Algebra.Polynomials.Univariate
+import           ZkFold.Base.Data.ByteString
+import           ZkFold.Prelude                             (log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
-    deriving (Generic, NFData)
+    deriving (Generic, NFData, ToJSONKey, FromJSONKey)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural

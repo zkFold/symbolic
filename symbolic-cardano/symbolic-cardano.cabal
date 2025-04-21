@@ -93,6 +93,7 @@ library
       ZkFold.Symbolic.Cardano.Contracts.BatchTransfer
       ZkFold.Symbolic.Cardano.Contracts.ZkPass
       ZkFold.Symbolic.Cardano.Contracts.RandomOracle
+      ZkFold.Symbolic.Cardano.Contracts.SmartWallet
       ZkFold.Symbolic.Cardano.Contracts.SponsoredTx
       ZkFold.Symbolic.Cardano.Contracts.ZkLogin
       ZkFold.Symbolic.Cardano.Types
@@ -106,8 +107,26 @@ library
       ZkFold.Symbolic.Cardano.Types.Value
     build-depends:
       base                          >= 4.9 && < 5,
+      aeson                                      ,
+      bytestring                                 ,
+      base16-bytestring                          ,
       containers                            < 0.7,
       constraints                                ,
+      deriving-aeson                             ,
       semialign                             < 1.4,
+      text                                       ,
       symbolic-base                              ,
     hs-source-dirs: src
+
+executable smart-wallet-creator
+  import:           options 
+  import:           options-exe
+  default-language: Haskell2010
+  ghc-options:      -rtsopts
+  main-is:          Main.hs
+  hs-source-dirs:   smart-wallet-creator
+  build-depends:
+    base              >= 4.9 && < 5,
+    bytestring                     ,
+    symbolic-base                  ,
+    symbolic-cardano               ,
