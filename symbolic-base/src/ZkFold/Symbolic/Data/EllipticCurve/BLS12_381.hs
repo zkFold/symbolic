@@ -6,14 +6,14 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point) where
 
-import           Prelude                                     (fromInteger, ($))
+import           Prelude                                (fromInteger, ($))
 import qualified Prelude
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Symbolic.Class                       (Symbolic (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Symbolic.Class                  (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators

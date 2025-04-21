@@ -1,7 +1,7 @@
 module Examples.Eq (exampleEq, exampleEqVector) where
 
-import           ZkFold.Base.Algebra.Basic.Number  (KnownNat)
-import           ZkFold.Base.Data.Vector           (Vector)
+import           ZkFold.Algebra.Number             (KnownNat)
+import           ZkFold.Data.Vector                (Vector)
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool         (Bool)
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))

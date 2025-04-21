@@ -3,23 +3,23 @@
 
 module Main where
 
-import           Control.DeepSeq                             (NFData)
-import           GHC.Generics                                (U1)
-import           Prelude                                     hiding (sum, (*), (+), (-), (/), (^))
-import           System.Random                               (randomRIO)
+import           Control.DeepSeq                            (NFData)
+import           GHC.Generics                               (U1)
+import           Prelude                                    hiding (sum, (*), (+), (-), (/), (^))
+import           System.Random                              (randomRIO)
 import           Test.Tasty.Bench
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.Ed25519   hiding (Ed25519_Point)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.EllipticCurve.Ed25519       hiding (Ed25519_Point)
+import           ZkFold.Algebra.Field
+import           ZkFold.Algebra.Number
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import           ZkFold.Symbolic.Data.Combinators            (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.EllipticCurve.Ed25519  (Ed25519_Point)
+import           ZkFold.Symbolic.Data.Combinators           (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point)
 import           ZkFold.Symbolic.Data.FFA
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
-import           ZkFold.Symbolic.Data.UInt                   (UInt (..))
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
+import           ZkFold.Symbolic.Data.UInt                  (UInt (..))
 import           ZkFold.Symbolic.Interpreter
 
 type I = Interpreter (Zp BLS12_381_Scalar)

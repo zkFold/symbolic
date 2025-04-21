@@ -10,8 +10,8 @@ import           Prelude                                    (Show, return, ($))
 import           Test.Hspec
 import           Test.QuickCheck.Property                   ((.&.), (===))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number           (Natural)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number                      (Natural)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler                   (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit

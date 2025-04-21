@@ -4,40 +4,40 @@
 
 module Tests.Symbolic.Algorithm.SHA2 (specSHA2Natural, specSHA2) where
 
-import           Control.Monad                               (forM_)
-import           Data.Binary                                 (Binary)
-import           Data.Bits                                   (shiftR)
-import           Data.Function                               (($))
-import           Data.Functor                                ((<$>))
-import           Data.List                                   (isPrefixOf, isSuffixOf, take, (++))
-import           Data.List.Split                             (splitOn)
-import           Data.Proxy                                  (Proxy (..))
-import           GHC.Generics                                (U1)
-import           GHC.TypeLits                                (KnownSymbol, Symbol, symbolVal)
-import           Prelude                                     (String, otherwise, pure, read, (<>), (==))
-import qualified Prelude                                     as Haskell
-import           System.Directory                            (listDirectory)
-import           System.Environment                          (lookupEnv)
+import           Control.Monad                          (forM_)
+import           Data.Binary                            (Binary)
+import           Data.Bits                              (shiftR)
+import           Data.Function                          (($))
+import           Data.Functor                           ((<$>))
+import           Data.List                              (isPrefixOf, isSuffixOf, take, (++))
+import           Data.List.Split                        (splitOn)
+import           Data.Proxy                             (Proxy (..))
+import           GHC.Generics                           (U1)
+import           GHC.TypeLits                           (KnownSymbol, Symbol, symbolVal)
+import           Prelude                                (String, otherwise, pure, read, (<>), (==))
+import qualified Prelude                                as Haskell
+import           System.Directory                       (listDirectory)
+import           System.Environment                     (lookupEnv)
 import           System.FilePath.Posix
-import           System.IO                                   (IO)
-import           Test.Hspec                                  (Spec, describe, runIO, shouldBe)
-import           Test.QuickCheck                             (Gen, withMaxSuccess, (===))
-import           Tests.Symbolic.ArithmeticCircuit            (it)
+import           System.IO                              (IO)
+import           Test.Hspec                             (Spec, describe, runIO, shouldBe)
+import           Test.QuickCheck                        (Gen, withMaxSuccess, (===))
+import           Tests.Symbolic.ArithmeticCircuit       (it)
 import           Text.Regex.TDFA
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field             (Zp)
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Base.Data.Vector                     (Vector)
-import           ZkFold.Prelude                              (chooseNatural)
-import           ZkFold.Symbolic.Algorithms.Hash.SHA2
-import           ZkFold.Symbolic.Class                       (Arithmetic)
-import           ZkFold.Symbolic.Compiler                    (ArithmeticCircuit, exec)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Vector                     (Vector)
+import           ZkFold.Prelude                         (chooseNatural)
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2
+import           ZkFold.Symbolic.Class                  (Arithmetic)
+import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.VarByteString          (fromNatural)
-import           ZkFold.Symbolic.Interpreter                 (Interpreter (Interpreter))
+import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
+import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.

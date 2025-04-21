@@ -16,8 +16,8 @@ import           Prelude                            (fmap, type (~), ($), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
 
-import           ZkFold.Base.Data.HFunctor.Classes  (HEq, HShow)
-import qualified ZkFold.Symbolic.Algorithms.RSA     as RSA
+import           ZkFold.Data.HFunctor.Classes       (HEq, HShow)
+import qualified ZkFold.Symbolic.Algorithm.RSA      as RSA
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class

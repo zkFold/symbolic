@@ -5,21 +5,21 @@
 
 module Tests.Algebra.Pairing (specPairing) where
 
-import           Control.DeepSeq                             (NFData)
-import           Data.Kind                                   (Type)
-import           Data.Typeable                               (Typeable, typeOf)
-import qualified Data.Vector                                 as V
-import           Prelude                                     hiding (Fractional (..), Num (..), length, (^))
+import           Control.DeepSeq                        (NFData)
+import           Data.Kind                              (Type)
+import           Data.Typeable                          (Typeable, typeOf)
+import qualified Data.Vector                            as V
+import           Prelude                                hiding (Fractional (..), Num (..), length, (^))
 import           Test.Hspec
-import           Test.QuickCheck                             hiding (scale)
+import           Test.QuickCheck                        hiding (scale)
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Base.Algebra.EllipticCurve.BN254
-import           ZkFold.Base.Algebra.EllipticCurve.Class
-import           ZkFold.Base.Algebra.Polynomials.Univariate  (Poly, PolyVec, deg, evalPolyVec, polyVecConstant,
-                                                              polyVecDiv, toPolyVec, vec2poly)
-import           ZkFold.Base.Protocol.NonInteractiveProof    ()
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
+import           ZkFold.Algebra.EllipticCurve.BN254
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.Polynomial.Univariate   (Poly, PolyVec, deg, evalPolyVec, polyVecConstant, polyVecDiv,
+                                                         toPolyVec, vec2poly)
+import           ZkFold.Protocol.NonInteractiveProof    ()
 
 propVerificationKZG
     :: forall g1 g2 gt f
