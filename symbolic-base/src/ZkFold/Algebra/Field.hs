@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Base.Algebra.Basic.Field (
+module ZkFold.Algebra.Field (
     IrreduciblePoly(..),
     Zp,
     toZp,
@@ -30,10 +30,10 @@ import qualified Prelude                                    as Haskell
 import           System.Random                              (Random (..), RandomGen, mkStdGen, uniformR)
 import           Test.QuickCheck                            hiding (scale)
 
-import           ZkFold.Base.Algebra.Basic.Class            hiding (Euclidean (..))
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Algebra.Polynomials.Univariate
-import           ZkFold.Base.Data.ByteString
+import           ZkFold.Algebra.Class            hiding (Euclidean (..))
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Data.ByteString
 import           ZkFold.Prelude                             (log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------

@@ -1,4 +1,4 @@
-module ZkFold.Base.Algebra.Basic.DFT (genericDft) where
+module ZkFold.Algebra.DFT (genericDft) where
 
 import           Data.Bits                        ((.<<.), (.>>.), (.|.))
 import qualified Data.STRef                       as ST
@@ -7,8 +7,8 @@ import qualified Data.Vector.Mutable              as VM
 import           Prelude                          hiding (mod, sum, (*), (+), (-), (/), (^))
 import qualified Prelude                          as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
 
 -- | Generif FFT algorithm. Can be both direct and inverse depending on @wn@ (root of unity or its inverse) supplied.
 -- Does not apply scaling when it's inverse.

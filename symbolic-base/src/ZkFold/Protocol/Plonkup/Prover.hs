@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ZkFold.Base.Protocol.Plonkup.Prover
-    ( module ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
-    , module ZkFold.Base.Protocol.Plonkup.Prover.Secret
-    , module ZkFold.Base.Protocol.Plonkup.Prover.Setup
+module ZkFold.Protocol.Plonkup.Prover
+    ( module ZkFold.Protocol.Plonkup.Prover.Polynomials
+    , module ZkFold.Protocol.Plonkup.Prover.Secret
+    , module ZkFold.Protocol.Plonkup.Prover.Setup
     , plonkupProve
     ) where
 
@@ -15,22 +15,22 @@ import           GHC.IsList                                      (IsList (..))
 import           Prelude                                         hiding (Num (..), drop, length, pi, sum, take, (!!),
                                                                   (/), (^))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number                (KnownNat, Natural, value)
-import           ZkFold.Base.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
-import           ZkFold.Base.Algebra.Polynomials.Univariate      hiding (qr)
-import           ZkFold.Base.Data.Vector                         ((!!))
-import           ZkFold.Base.Protocol.NonInteractiveProof
-import           ZkFold.Base.Protocol.Plonkup.Input
-import           ZkFold.Base.Protocol.Plonkup.Internal           (PlonkupPolyExtended, PlonkupPolyExtendedLength)
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover.Polynomials
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Base.Protocol.Plonkup.Prover.Setup
-import           ZkFold.Base.Protocol.Plonkup.Relation           (PlonkupRelation (..))
-import           ZkFold.Base.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
-import           ZkFold.Base.Protocol.Plonkup.Utils              (sortByList)
-import           ZkFold.Base.Protocol.Plonkup.Witness
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number                (KnownNat, Natural, value)
+import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
+import           ZkFold.Algebra.Polynomial.Univariate      hiding (qr)
+import           ZkFold.Data.Vector                         ((!!))
+import           ZkFold.Protocol.NonInteractiveProof
+import           ZkFold.Protocol.Plonkup.Input
+import           ZkFold.Protocol.Plonkup.Internal           (PlonkupPolyExtended, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Proof
+import           ZkFold.Protocol.Plonkup.Prover.Polynomials
+import           ZkFold.Protocol.Plonkup.Prover.Secret
+import           ZkFold.Protocol.Plonkup.Prover.Setup
+import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..))
+import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
+import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
+import           ZkFold.Protocol.Plonkup.Witness
 
 plonkupProve :: forall i n l g1 g2 ts pv .
     ( Foldable l

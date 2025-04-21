@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Base.Algebra.Basic.Permutation (
+module ZkFold.Algebra.Permutation (
     IndexSet,
     IndexPartition,
     Permutation,
@@ -21,9 +21,9 @@ import           Prelude                          hiding (Num (..), drop, length
 import qualified Prelude                          as P
 import           Test.QuickCheck                  (Arbitrary (..))
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Number
-import           ZkFold.Base.Data.Vector          (Vector (..), unsafeToVector)
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.Vector          (Vector (..), unsafeToVector)
 import           ZkFold.Prelude                   (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer

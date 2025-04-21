@@ -43,27 +43,27 @@ import           GHC.Natural                                       (naturalToInt
 import           Prelude                                           hiding (Fractional (..), Num (..), length)
 import qualified Prelude                                           as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                   (Zp, fromZp, toZp)
-import qualified ZkFold.Base.Algebra.Basic.Number                  as Number
-import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, Natural, type (^))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                   (Zp, fromZp, toZp)
+import qualified ZkFold.Algebra.Number                  as Number
+import           ZkFold.Algebra.Number                  (KnownNat, Natural, type (^))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
                                                                     BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
-import           ZkFold.Base.Algebra.EllipticCurve.Class           (compress)
-import           ZkFold.Base.Algebra.Polynomials.Univariate        (PolyVec)
-import           ZkFold.Base.Data.ByteString                       (toByteString)
-import           ZkFold.Base.Data.Vector                           (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
+import           ZkFold.Algebra.EllipticCurve.Class           (compress)
+import           ZkFold.Algebra.Polynomial.Univariate        (PolyVec)
+import           ZkFold.Data.ByteString                       (toByteString)
+import           ZkFold.Data.Vector                           (Vector)
+import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
                                                                           ToTranscript (..))
-import           ZkFold.Base.Protocol.Plonkup                      (Plonkup (..))
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
-import           ZkFold.Base.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
-import           ZkFold.Base.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
+import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
+import           ZkFold.Protocol.Plonkup.Proof
+import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
+import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Verifier.Commitments
+import           ZkFold.Protocol.Plonkup.Verifier.Setup
+import           ZkFold.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
 import           ZkFold.Prelude                                    (log2ceiling)
-import qualified ZkFold.Symbolic.Algorithms.RSA                    as RSA
+import qualified ZkFold.Symbolic.Algorithm.RSA                    as RSA
 import           ZkFold.Symbolic.Class                             (Symbolic (..))
 import qualified ZkFold.Symbolic.Compiler                          as C
 import           ZkFold.Symbolic.Compiler                          (ArithmeticCircuit (..))
