@@ -73,7 +73,7 @@ fromCycles p = Permutation . Vector $ V.create $ do
         -- ixes[cyc[cix + 1]] := ixes[cyc[cix]];
         -- the position of the next element in the cycle becomes the position of the current one
         forM_ [cycLen P.- 2, cycLen P.- 3 .. 0] $ \cix -> do
-            pos <- VM.read ixes (P.fromIntegral $ cyc V.! cix)
+            !pos <- VM.read ixes (P.fromIntegral $ cyc V.! cix)
             VM.write ixes (P.fromIntegral $ cyc V.! (cix P.+ 1)) pos
         VM.write ixes (P.fromIntegral $ V.head cyc) pos0
 
@@ -84,7 +84,7 @@ fromCycles p = Permutation . Vector $ V.create $ do
 
     where
         lists :: V.Vector (V.Vector Natural)
-        lists = V.reverse . V.fromList $ elems p
+        !lists = V.reverse . V.fromList $ elems p
 
         n :: P.Int
         n = P.sum $ V.length <$> lists
