@@ -13,8 +13,8 @@ module Main where
 import           Data.ByteString                               (ByteString)
 import           Prelude                                       hiding (Fractional (..), Num (..), length)
 
-import           ZkFold.Base.Algebra.Basic.Class               (zero)
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret
+import           ZkFold.Algebra.Class                          (zero)
+import           ZkFold.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Symbolic.Cardano.Contracts.SmartWallet
 
 

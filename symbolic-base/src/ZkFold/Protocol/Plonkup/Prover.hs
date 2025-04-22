@@ -7,7 +7,6 @@ module ZkFold.Protocol.Plonkup.Prover
     , plonkupProve
     ) where
 
-import           Control.DeepSeq                            (NFData, force)
 import           Data.Bool                                  (bool)
 import           Data.Foldable                              (length)
 import qualified Data.Vector                                as V

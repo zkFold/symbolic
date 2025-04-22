@@ -10,11 +10,12 @@ module ZkFold.Algebra.Permutation (
     fromCycles
 ) where
 
-import           Control.DeepSeq       (NFData, force)
+import           Control.DeepSeq       (NFData)
+import           Control.Monad         (forM_)
 import           Data.Functor.Rep      (Representable (index))
 import           Data.Map.Strict       (Map, elems, empty, insertWith)
-import           Data.Maybe            (fromJust)
 import qualified Data.Vector           as V
+import qualified Data.Vector.Mutable   as VM
 import           GHC.Generics          (Generic)
 import           Prelude               hiding (Num (..), drop, length, mod, (!!))
 import qualified Prelude               as P
@@ -22,7 +23,7 @@ import           Test.QuickCheck       (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector    (Vector (..), toVector, unsafeToVector)
+import           ZkFold.Data.Vector    (Vector (..), unsafeToVector)
 import           ZkFold.Prelude        (chooseNatural, drop, length, (!!))
 
 -- TODO (Issue #18): make the code safer
@@ -72,7 +73,7 @@ fromCycles p = Permutation . Vector $ V.create $ do
         -- ixes[cyc[cix + 1]] := ixes[cyc[cix]];
         -- the position of the next element in the cycle becomes the position of the current one
         forM_ [cycLen P.- 2, cycLen P.- 3 .. 0] $ \cix -> do
-            pos <- VM.read ixes (P.fromIntegral $ cyc V.! cix)
+            !pos <- VM.read ixes (P.fromIntegral $ cyc V.! cix)
             VM.write ixes (P.fromIntegral $ cyc V.! (cix P.+ 1)) pos
         VM.write ixes (P.fromIntegral $ V.head cyc) pos0
 
@@ -83,7 +84,7 @@ fromCycles p = Permutation . Vector $ V.create $ do
 
     where
         lists :: V.Vector (V.Vector Natural)
-        lists = V.reverse . V.fromList $ elems p
+        !lists = V.reverse . V.fromList $ elems p
 
         n :: P.Int
         n = P.sum $ V.length <$> lists

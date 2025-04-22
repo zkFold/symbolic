@@ -27,53 +27,53 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     , mkSetup
     ) where
 
-import           Data.Aeson                                        (withText)
-import qualified Data.Aeson                                        as Aeson
-import           Data.ByteString                                   (ByteString)
-import qualified Data.ByteString.Base16                            as BS16
-import           Data.Coerce                                       (coerce)
-import           Data.Foldable                                     (foldrM)
+import           Data.Aeson                                   (withText)
+import qualified Data.Aeson                                   as Aeson
+import           Data.ByteString                              (ByteString)
+import qualified Data.ByteString.Base16                       as BS16
+import           Data.Coerce                                  (coerce)
+import           Data.Foldable                                (foldrM)
 import           Data.Proxy
-import           Data.Text                                         (Text)
-import           Data.Text.Encoding                                (decodeUtf8, encodeUtf8)
-import           Data.Word                                         (Word8)
+import           Data.Text                                    (Text)
+import           Data.Text.Encoding                           (decodeUtf8, encodeUtf8)
+import           Data.Word                                    (Word8)
 import           Deriving.Aeson
-import           GHC.Generics                                      (Par1 (..), U1 (..), type (:*:) (..))
-import           GHC.Natural                                       (naturalToInteger)
-import           Prelude                                           hiding (Fractional (..), Num (..), length)
-import qualified Prelude                                           as P
+import           GHC.Generics                                 (Par1 (..), U1 (..), type (:*:) (..))
+import           GHC.Natural                                  (naturalToInteger)
+import           Prelude                                      hiding (Fractional (..), Num (..), length)
+import qualified Prelude                                      as P
 
-import           ZkFold.Base.Algebra.Basic.Class
-import           ZkFold.Base.Algebra.Basic.Field                   (Zp, fromZp, toZp)
-import qualified ZkFold.Base.Algebra.Basic.Number                  as Number
-import           ZkFold.Base.Algebra.Basic.Number                  (KnownNat, Natural, type (^))
-import           ZkFold.Base.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                                                    BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
-import           ZkFold.Base.Algebra.EllipticCurve.Class           (compress)
-import           ZkFold.Base.Algebra.Polynomials.Univariate        (PolyVec)
-import           ZkFold.Base.Data.ByteString                       (toByteString)
-import           ZkFold.Base.Data.Vector                           (Vector)
-import           ZkFold.Base.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
-                                                                          ToTranscript (..))
-import           ZkFold.Base.Protocol.Plonkup                      (Plonkup (..))
-import           ZkFold.Base.Protocol.Plonkup.Proof
-import           ZkFold.Base.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
-import           ZkFold.Base.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Commitments
-import           ZkFold.Base.Protocol.Plonkup.Verifier.Setup
-import           ZkFold.Base.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
-import           ZkFold.Prelude                                    (log2ceiling)
-import qualified ZkFold.Symbolic.Algorithms.RSA                    as RSA
-import           ZkFold.Symbolic.Class                             (Symbolic (..))
-import qualified ZkFold.Symbolic.Compiler                          as C
-import           ZkFold.Symbolic.Compiler                          (ArithmeticCircuit (..))
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
+                                                               BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
+import           ZkFold.Algebra.EllipticCurve.Class           (compress)
+import           ZkFold.Algebra.Field                         (Zp, fromZp, toZp)
+import qualified ZkFold.Algebra.Number                        as Number
+import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
+import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
+import           ZkFold.Data.ByteString                       (toByteString)
+import           ZkFold.Data.Vector                           (Vector)
+import           ZkFold.Prelude                               (log2ceiling)
+import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
+                                                                     ToTranscript (..))
+import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
+import           ZkFold.Protocol.Plonkup.Proof
+import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
+import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Verifier.Commitments
+import           ZkFold.Protocol.Plonkup.Verifier.Setup
+import           ZkFold.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
+import qualified ZkFold.Symbolic.Algorithm.RSA                as RSA
+import           ZkFold.Symbolic.Class                        (Symbolic (..))
+import qualified ZkFold.Symbolic.Compiler                     as C
+import           ZkFold.Symbolic.Compiler                     (ArithmeticCircuit (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.Data.UInt                         (OrdWord, UInt (..), expMod)
+import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), expMod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                      (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --

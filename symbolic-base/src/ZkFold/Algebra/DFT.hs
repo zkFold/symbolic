@@ -1,6 +1,5 @@
 module ZkFold.Algebra.DFT (genericDft) where
 
-import           Control.Monad         (forM_)
 import           Data.Bits             ((.<<.), (.>>.), (.|.))
 import qualified Data.STRef            as ST
 import qualified Data.Vector           as V

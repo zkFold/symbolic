@@ -17,7 +17,7 @@ module ZkFold.Algebra.Field (
 
 import           Control.Applicative                  ((<|>))
 import           Control.DeepSeq                      (NFData (..))
-import           Data.Aeson                           (FromJSON (..), ToJSON (..))
+import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
 import           Data.Bifunctor                       (first)
 import           Data.Bool                            (bool)
 import qualified Data.Vector                          as V
