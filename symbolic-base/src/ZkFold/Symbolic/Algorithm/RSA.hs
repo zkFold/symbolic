@@ -56,7 +56,7 @@ instance
   ) => SymbolicInput (PrivateKey keyLen ctx) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
-type PubExponentSize = 18 
+type PubExponentSize = 18
 
 data PublicKey keyLen ctx
     = PublicKey

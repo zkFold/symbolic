@@ -7,8 +7,8 @@
 
 module ZkFold.Data.Orphans where
 
-import Data.Aeson (ToJSON, FromJSON)
 import           Control.DeepSeq  (NFData, NFData1)
+import           Data.Aeson       (FromJSON, ToJSON)
 import           Data.Binary      (Binary)
 import           Data.Eq          (Eq)
 import           Data.Functor     (Functor)
