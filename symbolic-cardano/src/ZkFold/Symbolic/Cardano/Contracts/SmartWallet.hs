@@ -218,7 +218,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
-type ExpModCircuitGates = 2^16
+type ExpModCircuitGates = 2^19
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
