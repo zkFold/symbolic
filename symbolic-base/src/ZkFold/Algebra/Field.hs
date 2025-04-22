@@ -17,7 +17,7 @@ module ZkFold.Algebra.Field (
 
 import           Control.Applicative                  ((<|>))
 import           Control.DeepSeq                      (NFData (..))
-import           Data.Aeson                           (FromJSON (..), ToJSON (..))
+import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
 import           Data.Bifunctor                       (first)
 import           Data.Bool                            (bool)
 import qualified Data.Vector                          as V
@@ -38,7 +38,7 @@ import           ZkFold.Prelude                       (log2ceiling)
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
-    deriving (Generic, NFData)
+    deriving (Generic, NFData, ToJSONKey, FromJSONKey)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
