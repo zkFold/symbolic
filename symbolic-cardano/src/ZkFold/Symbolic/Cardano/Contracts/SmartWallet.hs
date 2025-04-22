@@ -186,34 +186,37 @@ data ZKProofBytes = ZKProofBytes
   deriving anyclass (FromJSON, ToJSON)
 
 mkProof :: forall i (n :: Natural) . Proof (PlonkupTs i n ByteString) -> ZKProofBytes
-mkProof PlonkupProof {..} = ZKProofBytes
-  { cmA_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmA
-  , cmB_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmB
-  , cmC_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmC
-  , cmF_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmF
-  , cmH1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH1
-  , cmH2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH2
-  , cmZ1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ1
-  , cmZ2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ2
-  , cmQlow_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQlow
-  , cmQmid_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQmid
-  , cmQhigh_bytes = ByteStringFromHex . BS16.encode $ convertG1 cmQhigh
-  , proof1_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof1
-  , proof2_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof2
-  , a_xi_int      = convertZp a_xi
-  , b_xi_int      = convertZp b_xi
-  , c_xi_int      = convertZp c_xi
-  , s1_xi_int     = convertZp s1_xi
-  , s2_xi_int     = convertZp s2_xi
-  , f_xi_int      = convertZp f_xi
-  , t_xi_int      = convertZp t_xi
-  , t_xi'_int     = convertZp t_xi'
-  , z1_xi'_int    = convertZp z1_xi'
-  , z2_xi'_int    = convertZp z2_xi'
-  , h1_xi'_int    = convertZp h1_xi'
-  , h2_xi_int     = convertZp h2_xi
-  , l1_xi         = ZKF $ convertZp $ head l_xi
-  }
+mkProof PlonkupProof {..} =
+    case l_xi of
+      [] -> error "mkProof: empty inputs"
+      (xi:_) -> ZKProofBytes
+        { cmA_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmA
+        , cmB_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmB
+        , cmC_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmC
+        , cmF_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmF
+        , cmH1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH1
+        , cmH2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH2
+        , cmZ1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ1
+        , cmZ2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ2
+        , cmQlow_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQlow
+        , cmQmid_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQmid
+        , cmQhigh_bytes = ByteStringFromHex . BS16.encode $ convertG1 cmQhigh
+        , proof1_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof1
+        , proof2_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof2
+        , a_xi_int      = convertZp a_xi
+        , b_xi_int      = convertZp b_xi
+        , c_xi_int      = convertZp c_xi
+        , s1_xi_int     = convertZp s1_xi
+        , s2_xi_int     = convertZp s2_xi
+        , f_xi_int      = convertZp f_xi
+        , t_xi_int      = convertZp t_xi
+        , t_xi'_int     = convertZp t_xi'
+        , z1_xi'_int    = convertZp z1_xi'
+        , z2_xi'_int    = convertZp z2_xi'
+        , h1_xi'_int    = convertZp h1_xi'
+        , h2_xi_int     = convertZp h2_xi
+        , l1_xi         = ZKF $ convertZp xi
+        }
 
 type ExpModCircuitGates = 2^16
 
