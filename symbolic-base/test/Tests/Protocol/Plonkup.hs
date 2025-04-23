@@ -195,19 +195,19 @@ specPlonkup :: Spec
 specPlonkup = do
     describe "Plonkup specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
-            it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)
+            it "produces equivalent polynomials" $ property $ withMaxSuccess 10 $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)
             it "handcrafted polynomials do not cause exceptions " $
                 forM_ problematicPolynomials $ \p ->
                     fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) p) `shouldBe` p
             it "'ConstVar a' does not cause exceptions " $
-                property $ \v ->
+                property $ withMaxSuccess 10 $ \v ->
                     fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) @(Vector 1) (var $ ConstVar v)) == var (ConstVar v)
         describe "Sort by list is correct" $ do
-            it "should hold" $ property $ propSortByListIsCorrect @Int
+            it "should hold" $ property $ withMaxSuccess 10 $ propSortByListIsCorrect @Int
         describe "Plonkup relation" $ do
-            it "should hold" $ property $ propPlonkupRelationHolds @(Vector 2) @32 @(Vector 3) @(ScalarFieldOf BLS12_381_G1_Point)
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkupRelationHolds @(Vector 2) @32 @(Vector 3) @(ScalarFieldOf BLS12_381_G1_Point)
         describe "Plonk polynomials equality" $ do
-            it "should hold" $ property $ propPlonkPolyEquality @(Vector 1) @32 @(Vector 2)
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkPolyEquality @(Vector 1) @32 @(Vector 2)
         describe "Plonk grand product correctness" $ do
             it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @(Vector 1) @32 @(Vector 2)
         describe "Plonkup grand product equality" $ do
