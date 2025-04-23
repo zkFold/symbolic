@@ -9,6 +9,7 @@ import           Control.Monad                                       (foldM)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
 import           Data.Foldable                                       (Foldable)
+import           Data.Function                                       (const, (.))
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
@@ -20,14 +21,12 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector                                  (Vector, unsafeToVector)
-import           ZkFold.Prelude                                      (chooseVector)
+import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Function (const, (.))
 
 ------------------------------------- Instances -------------------------------------
 
@@ -66,6 +65,8 @@ arbitraryConstraint ac = do
   con <- elements [arbitraryPolynomialConstraint, arbitraryLookupConstraint]
   con ac
 
+-- | Add a random Plonk constraint to the circuit.
+-- TODO: generalize the constraint
 arbitraryPolynomialConstraint :: forall a i o . ArbitraryConstraints a i
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
 arbitraryPolynomialConstraint ac = do
@@ -86,6 +87,8 @@ arbitraryPolynomialConstraint ac = do
     _ <- solve i j
     return k
 
+-- | Add a random range constraint to the circuit.
+-- TODO: generalize the constraint
 arbitraryLookupConstraint :: forall a i o . ArbitraryConstraints a i
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
 arbitraryLookupConstraint ac = do
