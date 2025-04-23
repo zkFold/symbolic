@@ -13,7 +13,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           Data.Ord                                            (Ord)
-import           GHC.Generics                                        (Par1 (..))
+import           GHC.Generics                                        (Par1 (..), U1)
 import           Prelude                                             (mempty, pure, return, ($), (<$>))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
@@ -27,6 +27,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Function (const, (.))
 
 ------------------------------------- Instances -------------------------------------
 
@@ -42,18 +43,22 @@ type ArbitraryConstraints a i =
   )
 
 instance
+  ArbitraryConstraints a i => Arbitrary (ArithmeticCircuit a i U1) where
+    arbitrary = foldM (\acc _ -> arbitraryConstraint acc) mempty [1:: Natural .. 10]
+
+instance
   ArbitraryConstraints a i => Arbitrary (ArithmeticCircuit a i Par1) where
     arbitrary = do
-      ac <- foldM (\acc _ -> arbitraryConstraint acc) mempty [1:: Natural .. 10]
-      outVar <- toVar @a <$> elements (getAllVars ac)
-      return $ crown ac (Par1 outVar)
+      ac  <- arbitrary @(ArithmeticCircuit a i U1)
+      out <- Par1 . toVar @a <$> elements (getAllVars ac)
+      return $ ac `crown` out
 
 instance
   (ArbitraryConstraints a i, KnownNat l) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
     arbitrary = do
-        ac <- arbitrary @(ArithmeticCircuit a i Par1)
-        o  <- unsafeToVector <$> chooseVector (value @l) (getAllVars ac)
-        return ac {acOutput = toVar <$> o}
+        ac  <- arbitrary @(ArithmeticCircuit a i U1)
+        out <- tabulate . const . toVar <$> elements (getAllVars ac)
+        return $ ac `crown` out
 
 arbitraryConstraint :: forall a i o . ArbitraryConstraints a i
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
