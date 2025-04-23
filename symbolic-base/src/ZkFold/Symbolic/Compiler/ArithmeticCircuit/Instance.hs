@@ -9,28 +9,28 @@ import           Control.Monad                                       (foldM)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
 import           Data.Foldable                                       (Foldable)
-import           Data.Function                                       (const, (.))
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           Data.Ord                                            (Ord)
-import           GHC.Generics                                        (Par1 (..), U1)
+import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (mempty, pure, return, ($), (<$>))
 import qualified Prelude                                             as Haskell
 import           Test.QuickCheck                                     (Arbitrary (arbitrary), Gen, elements)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Prelude (elementsRep)
+import Data.Functor (fmap)
 
 ------------------------------------- Instances -------------------------------------
 
-type ArbitraryConstraints a i =
+type ArbitraryConstraints a i o =
   ( Arbitrary a
   , Arithmetic a
   , Binary a
@@ -39,27 +39,17 @@ type ArbitraryConstraints a i =
   , Binary (Rep i)
   , Ord (Rep i)
   , NFData (Rep i)
+  , Representable o
   )
 
 instance
-  ArbitraryConstraints a i => Arbitrary (ArithmeticCircuit a i U1) where
-    arbitrary = foldM (\acc _ -> arbitraryConstraint acc) mempty [1:: Natural .. 10]
-
-instance
-  ArbitraryConstraints a i => Arbitrary (ArithmeticCircuit a i Par1) where
+  ArbitraryConstraints a i o => Arbitrary (ArithmeticCircuit a i o) where
     arbitrary = do
-      ac  <- arbitrary @(ArithmeticCircuit a i U1)
-      out <- Par1 . toVar @a <$> elements (getAllVars ac)
+      ac  <- foldM (\acc _ -> arbitraryConstraint acc) mempty [1:: Natural .. 10]
+      out <- fmap (toVar @a) <$> elementsRep (getAllVars ac)
       return $ ac `crown` out
 
-instance
-  (ArbitraryConstraints a i, KnownNat l) => Arbitrary (ArithmeticCircuit a i (Vector l)) where
-    arbitrary = do
-        ac  <- arbitrary @(ArithmeticCircuit a i U1)
-        out <- tabulate . const . toVar <$> elements (getAllVars ac)
-        return $ ac `crown` out
-
-arbitraryConstraint :: forall a i o . ArbitraryConstraints a i
+arbitraryConstraint :: forall a i o . ArbitraryConstraints a i o
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
 arbitraryConstraint ac = do
   con <- elements [arbitraryPolynomialConstraint, arbitraryLookupConstraint]
@@ -67,7 +57,7 @@ arbitraryConstraint ac = do
 
 -- | Add a random Plonk constraint to the circuit.
 -- TODO: generalize the constraint
-arbitraryPolynomialConstraint :: forall a i o . ArbitraryConstraints a i
+arbitraryPolynomialConstraint :: forall a i o . ArbitraryConstraints a i o
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
 arbitraryPolynomialConstraint ac = do
   qm <- arbitrary :: Gen a
@@ -89,7 +79,7 @@ arbitraryPolynomialConstraint ac = do
 
 -- | Add a random range constraint to the circuit.
 -- TODO: generalize the constraint
-arbitraryLookupConstraint :: forall a i o . ArbitraryConstraints a i
+arbitraryLookupConstraint :: forall a i o . ArbitraryConstraints a i o
   => ArithmeticCircuit a i o -> Gen (ArithmeticCircuit a i o)
 arbitraryLookupConstraint ac = do
   let solve :: forall var w m . MonadCircuit var a w m => var -> a -> m var

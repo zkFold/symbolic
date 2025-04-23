@@ -16,6 +16,7 @@ import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
 import           Prelude              hiding (drop, iterate, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger, elements)
+import Data.Functor.Rep (Representable, tabulate)
 
 log2ceiling :: (Integral a, Integral b) => a -> b
 log2ceiling = ceiling @Double . logBase 2 . fromIntegral
@@ -97,9 +98,8 @@ assert statement obj x = if statement then x else error $ show obj
 chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
 
--- | Choose a vector of length `l` from a list allowing repetitions.
-chooseVector :: Natural -> [a] -> Gen [a]
-chooseVector l as = mapM (const $ elements as) [1 .. l]
+elementsRep :: Representable f => [a] -> Gen (f a)
+elementsRep xs = tabulate . const <$> elements xs
 
 #if __GLASGOW_HASKELL__ < 910
 unsnoc :: [a] -> Maybe ([a], a)
