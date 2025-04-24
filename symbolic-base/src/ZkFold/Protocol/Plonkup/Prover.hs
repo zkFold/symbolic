@@ -87,15 +87,16 @@ plonkupProve PlonkupProverSetup {..}
         zeta = challenge ts1 :: ScalarFieldOf g1
 
         !f_zeta' = w1 + zeta *. (w2 + zeta *. w3)
-        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t1 relation) (fromPolyVec f_zeta') :: pv n
         !t_zeta = t1 relation + zeta *. (t2 relation + zeta *. t3 relation)
+        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec t_zeta) (fromPolyVec f_zeta') :: pv n
 
         !fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
         !tX = t1X + zeta *. (t2X + zeta *. t3X) :: PlonkupPolyExtended n g1 pv
 
         !s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
-        !h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: pv n
-        !h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
+        -- In the paper, vectors are indexed from 1, but in Haskell from 0, so h1 contains even indices and h2 odd
+        !h1 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
+        !h2 = toPolyVec $ V.ifilter (\i _ -> odd i)  $ fromList s :: pv n
 
         !h1X = polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1 pv
         !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv

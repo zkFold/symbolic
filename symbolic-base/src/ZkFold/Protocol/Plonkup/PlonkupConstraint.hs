@@ -27,10 +27,10 @@ getA ConsExtra      = x1 (toPlonkConstraint zero)
 
 getB :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
 getB (ConsPlonk c)  = x2 c
-getB (ConsLookup c) = toVar $ lkVar c
+getB (ConsLookup _) = ConstVar zero
 getB ConsExtra      = x2 (toPlonkConstraint zero)
 
 getC :: forall a i . (Ord a, FiniteField a, Ord (Rep i)) => PlonkupConstraint i a -> Var a i
 getC (ConsPlonk c)  = x3 c
-getC (ConsLookup c) = toVar $ lkVar c
+getC (ConsLookup _) = ConstVar zero
 getC ConsExtra      = x3 (toPlonkConstraint zero)

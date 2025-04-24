@@ -43,9 +43,13 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , delta         :: ScalarFieldOf g1
     , epsilon       :: ScalarFieldOf g1
     , xi            :: ScalarFieldOf g1
+    , zeta          :: ScalarFieldOf g1
+    , f_zeta        :: pv n
+    , t_zeta        :: pv n
     , omegas        :: pv n
     , omegas'       :: PlonkupPolyExtended n g1 pv
     , grandProduct1 :: pv n
+    , grandProduct2 :: pv n
     , w1            :: pv n
     , w2            :: pv n
     , w3            :: pv n

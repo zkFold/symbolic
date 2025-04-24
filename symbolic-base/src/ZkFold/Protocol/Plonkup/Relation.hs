@@ -26,7 +26,7 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Permutation                          (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Algebra.Polynomial.Multivariate              (evalMonomial, evalPolynomial, var)
 import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateRingPolyVec (..), toPolyVec)
-import           ZkFold.Prelude                                      (length, replicate)
+import           ZkFold.Prelude                                      (length, replicate, iterateN')
 import           ZkFold.Protocol.Plonkup.Internal                    (PlonkupPermutationSize)
 import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (..))
 import           ZkFold.Protocol.Plonkup.PlonkConstraint             (PlonkConstraint (..), toPlonkConstraint)
@@ -89,15 +89,15 @@ toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
         plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
-        rs :: [Natural] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map (toConstant . snd) $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
+        rs :: [a] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map snd $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
+        -- Number of elements in the set `t`.
+        nLookup = toConstant $ bool zero (head rs + one) (not $ null rs)
 
         -- TODO: We are expecting at most one range.
-        t1 = toPolyVec $ fromList $ map fromConstant $ bool [] (replicate (value @n -! length rs + 1) 0 ++ [ 0 .. head rs ]) (not $ null rs)
+        t1 = toPolyVec $ fromList $ replicate (value @n -! nLookup) zero ++ iterateN' nLookup ((+) one) zero
         t2 = toPolyVec $ fromList []
         t3 = toPolyVec $ fromList []
 
-        -- Number of elements in the set `t`.
-        nLookup = bool 0 (head rs + 1) (not $ null rs)
         -- Lookup queries.
         xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
 
