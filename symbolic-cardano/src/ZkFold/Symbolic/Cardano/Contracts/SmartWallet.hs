@@ -27,54 +27,57 @@ module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
     , mkSetup
     ) where
 
-import           Data.Aeson                                   (withText)
-import qualified Data.Aeson                                   as Aeson
-import           Data.ByteString                              (ByteString)
-import qualified Data.ByteString.Base16                       as BS16
-import           Data.Coerce                                  (coerce)
-import           Data.Foldable                                (foldrM)
+import           Data.Aeson                                     (withText)
+import qualified Data.Aeson                                     as Aeson
+import           Data.ByteString                                (ByteString)
+import qualified Data.ByteString.Base16                         as BS16
+import           Data.Coerce                                    (coerce)
+import           Data.Foldable                                  (foldrM)
 import           Data.Proxy
-import           Data.Text                                    (Text)
-import           Data.Text.Encoding                           (decodeUtf8, encodeUtf8)
-import           Data.Word                                    (Word8)
+import           Data.Text                                      (Text)
+import           Data.Text.Encoding                             (decodeUtf8, encodeUtf8)
+import           Data.Word                                      (Word8)
 import           Deriving.Aeson
-import           GHC.Generics                                 (Par1 (..), U1 (..), type (:*:) (..))
-import           GHC.Natural                                  (naturalToInteger)
-import           Prelude                                      hiding (Fractional (..), Num (..), length)
-import qualified Prelude                                      as P
+import           GHC.Generics                                   (Par1 (..), U1 (..), type (:*:) (..))
+import           GHC.Natural                                    (naturalToInteger)
+import           Prelude                                        hiding (Fractional (..), Num (..), length)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                                               BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
-import           ZkFold.Algebra.EllipticCurve.Class           (compress)
-import           ZkFold.Algebra.Field                         (Zp, fromZp, toZp)
-import qualified ZkFold.Algebra.Number                        as Number
-import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
-import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
-import           ZkFold.Data.ByteString                       (toByteString)
-import           ZkFold.Data.Vector                           (Vector)
-import           ZkFold.Prelude                               (log2ceiling)
-import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
-                                                                     ToTranscript (..))
-import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
+                                                                 BLS12_381_G2_Point, Fr)
+import           ZkFold.Algebra.EllipticCurve.Class             (compress)
+import           ZkFold.Algebra.Field                           (Zp, fromZp, toZp)
+import qualified ZkFold.Algebra.Number                          as Number
+import           ZkFold.Algebra.Number                          (KnownNat, Natural, type (^))
+import           ZkFold.Algebra.Polynomial.Univariate           (PolyVec)
+import           ZkFold.Data.ByteString                         (toByteString)
+import           ZkFold.Data.Vector                             (Vector)
+import           ZkFold.Prelude                                 (log2ceiling)
+import           ZkFold.Protocol.NonInteractiveProof            as NP (FromTranscript (..), NonInteractiveProof (..),
+                                                                       ToTranscript (..))
+import           ZkFold.Protocol.Plonkup                        (Plonkup (..))
 import           ZkFold.Protocol.Plonkup.Proof
-import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
-import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Prover.Secret          (PlonkupProverSecret (..))
+import           ZkFold.Protocol.Plonkup.Utils                  (getParams, getSecrectParams)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
-import           ZkFold.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
-import qualified ZkFold.Symbolic.Algorithm.RSA                as RSA
-import           ZkFold.Symbolic.Class                        (Symbolic (..))
-import qualified ZkFold.Symbolic.Compiler                     as C
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var                     as V
-import           ZkFold.Symbolic.Compiler                     (ArithmeticCircuit (..))
+import           ZkFold.Protocol.Plonkup.Witness                (PlonkupWitnessInput (..))
+import qualified ZkFold.Symbolic.Algorithm.RSA                  as RSA
+import           ZkFold.Symbolic.Class                          (Symbolic (..))
+import qualified ZkFold.Symbolic.Compiler                       as C
+import           ZkFold.Symbolic.Compiler                       (ArithmeticCircuit (..))
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var as V
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), expMod)
+import           ZkFold.Symbolic.Data.UInt                      (OrdWord, UInt (..), expMod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                   (newAssigned)
+
+
+
+import Debug.Trace
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -334,15 +337,15 @@ expModProof x ps ac ExpModProofInput{..} = proof
 
 type ExpModCircuitGatesMock = 2^2
 
-identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = C.emptyCircuit { acOutput = Par1 (V.ConstVar (fromConstant @Natural 42)) }
+constCircuit :: ArithmeticCircuit Fr Par1 Par1
+constCircuit = C.emptyCircuit { acOutput = Par1 (V.ConstVar (fromConstant @Natural 0)) }
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModSetupMock x = setupV
+expModSetupMock x = trace (show $ C.eval1 constCircuit (Par1 (fromConstant @Natural 1))) setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
         (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        plonkup = Plonkup omega k1 k2 constCircuit h1 gs
         setupV  = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
 expModProofMock
@@ -352,17 +355,14 @@ expModProofMock
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModProofInput
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps ExpModProofInput{..} = proof
+expModProofMock x ps _ = proof
     where
-        input :: Natural
-        input = ((piSignature P.^ piPubE) `P.mod` piPubN) `P.mod` (Number.value @BLS12_381_Scalar) P.* piTokenName
-
         witnessInputs :: Par1 Fr
-        witnessInputs = Par1 $ toZp (fromIntegral input)
+        witnessInputs = Par1 $ toZp 0 
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
         (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        plonkup = Plonkup omega k1 k2 constCircuit h1 gs
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
