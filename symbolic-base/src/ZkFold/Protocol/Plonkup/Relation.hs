@@ -26,7 +26,7 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Permutation                          (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Algebra.Polynomial.Multivariate              (evalMonomial, evalPolynomial, var)
 import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateRingPolyVec (..), toPolyVec)
-import           ZkFold.Prelude                                      (length, replicate, iterateN')
+import           ZkFold.Prelude                                      (iterateN', length, replicate)
 import           ZkFold.Protocol.Plonkup.Internal                    (PlonkupPermutationSize)
 import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (..))
 import           ZkFold.Protocol.Plonkup.PlonkConstraint             (PlonkConstraint (..), toPlonkConstraint)

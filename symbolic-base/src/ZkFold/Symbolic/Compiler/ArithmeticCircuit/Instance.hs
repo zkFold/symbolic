@@ -9,6 +9,7 @@ import           Control.Monad                                       (foldM)
 import           Data.Aeson                                          hiding (Bool)
 import           Data.Binary                                         (Binary)
 import           Data.Foldable                                       (Foldable)
+import           Data.Functor                                        (fmap)
 import           Data.Functor.Rep                                    (Representable (..))
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
@@ -20,13 +21,12 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
+import           ZkFold.Prelude                                      (elementsRep)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupType)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Prelude (elementsRep)
-import Data.Functor (fmap)
 
 ------------------------------------- Instances -------------------------------------
 
