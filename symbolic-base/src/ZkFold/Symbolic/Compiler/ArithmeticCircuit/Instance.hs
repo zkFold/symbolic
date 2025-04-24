@@ -90,7 +90,7 @@ arbitraryLookupConstraint ac = do
   let vars = getAllVars ac
   v <- toVar @a <$> elements vars
   return $ fromCircuit2F (crown ac $ Par1 v) ac $ \(Par1 i) k -> do
-    _ <- solve i (fromConstant (8 :: Natural))
+    _ <- solve i (fromConstant (7 :: Natural))
     return k
 
 -- TODO: add witness generation info to the JSON object

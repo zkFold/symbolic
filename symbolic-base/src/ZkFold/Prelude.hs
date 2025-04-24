@@ -46,11 +46,11 @@ iterate' f x =
     let x' = f x
     in x' `seq` (x : iterate' f x')
 
-iterateN' :: (a -> a) -> Natural -> a -> [a]
-iterateN' _ 0 x = [x]
-iterateN' f n x =
+iterateN' :: Natural -> (a -> a) -> a -> [a]
+iterateN' 0 _ x = [x]
+iterateN' n f x =
     let x' = f x
-    in x' `seq` (x : iterateN' f (n - 1) x')
+    in x' `seq` (x : iterateN' (n - 1) f x')
 
 replicate :: Natural -> a -> [a]
 replicate n x
