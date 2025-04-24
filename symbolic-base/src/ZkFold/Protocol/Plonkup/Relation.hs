@@ -94,7 +94,7 @@ toPlonkupRelation ac =
         nLookup = toConstant $ bool zero (head rs + one) (not $ null rs)
 
         -- TODO: We are expecting at most one range.
-        t1 = toPolyVec $ fromList $ replicate (value @n -! nLookup) zero ++ iterateN' (nLookup -! 1) ((+) one) zero
+        t1 = toPolyVec $ fromList $ replicate (value @n -! nLookup) zero ++ iterateN' nLookup ((+) one) zero
         t2 = toPolyVec $ fromList []
         t3 = toPolyVec $ fromList []
 

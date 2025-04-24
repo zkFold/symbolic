@@ -26,7 +26,7 @@ getParams n = findK' $ mkStdGen 0
                   Just o -> o
                   _      -> error "impossible"
 
-        hGroup = iterateN' (n -! 1) (*omega) one
+        hGroup = iterateN' n (*omega) one
 
         hGroupS = S.fromList hGroup
         hGroup' k = S.fromList $ map (k*) hGroup
