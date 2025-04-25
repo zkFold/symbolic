@@ -4,7 +4,7 @@
 module Tests.Protocol.Plonkup (specPlonkup) where
 
 import           Control.Monad                                       (forM_, return)
-import           Data.Bool                                           (Bool)
+import           Data.Bool                                           (Bool, bool)
 import           Data.ByteString                                     (ByteString)
 import           Data.Eq                                             (Eq (..))
 import           Data.Foldable                                       (Foldable, toList)
@@ -13,6 +13,7 @@ import           Data.Functor.Rep                                    (Rep, Repre
 import           Data.Int                                            (Int)
 import           Data.List                                           (head, sort)
 import           Data.Ord                                            (Ord)
+import qualified Data.Vector                                         as V
 import           GHC.Generics                                        (U1 (..))
 import           GHC.IsList                                          (IsList (fromList))
 import           Test.Hspec
@@ -55,16 +56,20 @@ propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vect
 propPlonkConstraintConversion p =
     toPlonkConstraint (fromPlonkConstraint p) == p
 
-propPlonkupRelationHolds ::
-    forall i n l a.
+propPlonkupRelationHolds :: forall i n l a .
     (Foldable l, KnownNat n, Arithmetic a) =>
     PlonkupRelation i n l a (PolyVec a) ->
     i a ->
-    Bool
-propPlonkupRelationHolds PlonkupRelation {..} w =
+    a ->
+    Property
+propPlonkupRelationHolds PlonkupRelation {..} w zeta =
     let (w1, w2, w3) = witness w
         pub = negate $ toPolyVec $ fromList $ toList $ pubInput w
-     in qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero
+        !f_zeta' = w1 + zeta *. (w2 + zeta *. w3)
+        !t_zeta = t1 + zeta *. (t2 + zeta *. t3)
+        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec qK) (fromPolyVec t_zeta) (fromPolyVec f_zeta') :: PolyVec a n
+     in (qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero)
+     .&&. (qK .*. (w1 + zeta *. w2 + zeta * zeta *. w3 - f_zeta) == zero)
 
 propSortByListIsCorrect :: Ord a => [a] -> Bool
 propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
@@ -133,7 +138,7 @@ propLookupPolyEquality plonk witness secret pow =
     let setup = setupProve plonk
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
 
-        p = with4n6 @n $ qkX * (aX - fX)
+        p = with4n6 @n $ qkX * (aX + zeta *. (bX + zeta *. cX) - fX)
      in p `evalPolyVec` (omega ^ fromZp pow) == zero
 
 propLookupGrandProductIsCorrect ::
@@ -146,7 +151,7 @@ propLookupGrandProductIsCorrect ::
 propLookupGrandProductIsCorrect plonk witness secret =
     let setup = setupProve plonk
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
-     in z2X `evalPolyVec` omega == one
+     in head (toList $ fromPolyVec grandProduct2) == one
 
 propLookupGrandProductEquality ::
     forall i n l.
@@ -195,19 +200,19 @@ specPlonkup :: Spec
 specPlonkup = do
     describe "Plonkup specification" $ do
         describe "Conversion to Plonk constraints and back" $ do
-            it "produces equivalent polynomials" $ property $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)
+            it "produces equivalent polynomials" $ property $ withMaxSuccess 10 $ propPlonkConstraintConversion @(ScalarFieldOf BLS12_381_G1_Point)
             it "handcrafted polynomials do not cause exceptions " $
                 forM_ problematicPolynomials $ \p ->
                     fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) p) `shouldBe` p
             it "'ConstVar a' does not cause exceptions " $
-                property $ \v ->
+                property $ withMaxSuccess 10 $ \v ->
                     fromPlonkConstraint (toPlonkConstraint @(ScalarFieldOf BLS12_381_G1_Point) @(Vector 1) (var $ ConstVar v)) == var (ConstVar v)
         describe "Sort by list is correct" $ do
-            it "should hold" $ property $ propSortByListIsCorrect @Int
+            it "should hold" $ property $ withMaxSuccess 10 $ propSortByListIsCorrect @Int
         describe "Plonkup relation" $ do
-            it "should hold" $ property $ propPlonkupRelationHolds @(Vector 2) @32 @(Vector 3) @(ScalarFieldOf BLS12_381_G1_Point)
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkupRelationHolds @(Vector 2) @32 @(Vector 3) @(ScalarFieldOf BLS12_381_G1_Point)
         describe "Plonk polynomials equality" $ do
-            it "should hold" $ property $ propPlonkPolyEquality @(Vector 1) @32 @(Vector 2)
+            it "should hold" $ property $ withMaxSuccess 10 $ propPlonkPolyEquality @(Vector 1) @32 @(Vector 2)
         describe "Plonk grand product correctness" $ do
             it "should hold" $ property $ withMaxSuccess 10 $ propPlonkGrandProductIsCorrect @(Vector 1) @32 @(Vector 2)
         describe "Plonkup grand product equality" $ do

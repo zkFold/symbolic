@@ -14,14 +14,17 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , qoX           :: PlonkupPolyExtended n g1 pv
     , qmX           :: PlonkupPolyExtended n g1 pv
     , qcX           :: PlonkupPolyExtended n g1 pv
+    , qkX           :: PlonkupPolyExtended n g1 pv
+    , t1X           :: PlonkupPolyExtended n g1 pv
+    , t2X           :: PlonkupPolyExtended n g1 pv
+    , t3X           :: PlonkupPolyExtended n g1 pv
+    , s1X           :: PlonkupPolyExtended n g1 pv
+    , s2X           :: PlonkupPolyExtended n g1 pv
+    , s3X           :: PlonkupPolyExtended n g1 pv
     , aX            :: PlonkupPolyExtended n g1 pv
     , bX            :: PlonkupPolyExtended n g1 pv
     , cX            :: PlonkupPolyExtended n g1 pv
     , piX           :: PlonkupPolyExtended n g1 pv
-    , s1X           :: PlonkupPolyExtended n g1 pv
-    , s2X           :: PlonkupPolyExtended n g1 pv
-    , s3X           :: PlonkupPolyExtended n g1 pv
-    , qkX           :: PlonkupPolyExtended n g1 pv
     , tX            :: PlonkupPolyExtended n g1 pv
     , z1X           :: PlonkupPolyExtended n g1 pv
     , z2X           :: PlonkupPolyExtended n g1 pv
@@ -40,9 +43,13 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , delta         :: ScalarFieldOf g1
     , epsilon       :: ScalarFieldOf g1
     , xi            :: ScalarFieldOf g1
+    , zeta          :: ScalarFieldOf g1
+    , f_zeta        :: pv n
+    , t_zeta        :: pv n
     , omegas        :: pv n
     , omegas'       :: PlonkupPolyExtended n g1 pv
     , grandProduct1 :: pv n
+    , grandProduct2 :: pv n
     , w1            :: pv n
     , w2            :: pv n
     , w3            :: pv n

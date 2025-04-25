@@ -63,8 +63,7 @@ plonkupProve PlonkupProverSetup {..}
         !w2X = polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv
         !w3X = polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
-        -- Is this really correct?
-        -- How is \(n\) related to the length of public input?
+        -- Extending public input to the polynomial domain
         !pi  = toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n
         !piX = polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
@@ -85,16 +84,19 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
-        -- zeta = challenge ts1 :: ScalarFieldOf g1
+        zeta = challenge ts1 :: ScalarFieldOf g1
 
-        !t_zeta = t relation
-        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec $ t relation) (fromPolyVec w1) :: pv n
+        !f_zeta' = w1 + zeta *. (w2 + zeta *. w3)
+        !t_zeta = t1 relation + zeta *. (t2 relation + zeta *. t3 relation)
+        !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec $ qK relation) (fromPolyVec t_zeta) (fromPolyVec f_zeta') :: pv n
 
         !fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
+        !tX = t1X + zeta *. (t2X + zeta *. t3X) :: PlonkupPolyExtended n g1 pv
 
         !s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
-        !h1 = toPolyVec $ V.ifilter (\i _ -> odd i) $ fromList s  :: pv n
-        !h2 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
+        -- In the paper, vectors are indexed from 1, but in Haskell from 0, so h1 contains even indices and h2 odd
+        !h1 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
+        !h2 = toPolyVec $ V.ifilter (\i _ -> odd i)  $ fromList s :: pv n
 
         !h1X = polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1 pv
         !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
@@ -166,7 +168,7 @@ plonkupProve PlonkupProverSetup {..}
               + ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
               - ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
               + ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
-              + (qkX * (aX - fX) .* alpha3)
+              + (qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3)
               + (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
               - ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
               + ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
@@ -228,7 +230,7 @@ plonkupProve PlonkupProverSetup {..}
                         - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
                     )
               + (alpha2 * lag1_xi) *. (z1X - one)
-              + (alpha3 * (a_xi - f_xi)) *. qkX
+              + (alpha3 * (a_xi + zeta * (b_xi + zeta * c_xi) - f_xi)) *. qkX
               + alpha4 *. (((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
                         - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi')) *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
                     )
