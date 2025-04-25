@@ -4,6 +4,7 @@ module ZkFold.Prelude (module ZkFold.Prelude, module Data.List) where
 
 import           Data.Aeson           (FromJSON, ToJSON, decode, encode)
 import           Data.ByteString.Lazy (readFile, writeFile)
+import           Data.Functor.Rep     (Representable, tabulate)
 import           Data.List            (genericIndex)
 #if __GLASGOW_HASKELL__ < 912
 import           Data.List            (foldl')
@@ -16,7 +17,6 @@ import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
 import           Prelude              hiding (drop, iterate, lookup, readFile, replicate, take, writeFile, (!!))
 import           Test.QuickCheck      (Gen, chooseInteger, elements)
-import Data.Functor.Rep (Representable, tabulate)
 
 log2ceiling :: (Integral a, Integral b) => a -> b
 log2ceiling = ceiling @Double . logBase 2 . fromIntegral
@@ -103,12 +103,11 @@ assert statement obj x = if statement then x else error $ show obj
 chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
 
-elementsRep :: Representable f => [a] -> Gen (f a)
-elementsRep xs = tabulate . const <$> elements xs
+elementsRep :: (Representable f, Traversable f) => [a] -> Gen (f a)
+elementsRep xs = sequence $ tabulate $ const $ elements xs
 
 #if __GLASGOW_HASKELL__ < 910
 unsnoc :: [a] -> Maybe ([a], a)
 unsnoc [] = Nothing
 unsnoc l =  Just (init l, last l)
 #endif
-
