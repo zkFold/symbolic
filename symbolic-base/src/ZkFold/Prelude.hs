@@ -104,7 +104,7 @@ chooseNatural :: (Natural, Natural) -> Gen Natural
 chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (fromIntegral lo, fromIntegral hi)
 
 elementsRep :: (Representable f, Traversable f) => [a] -> Gen (f a)
-elementsRep xs = sequence $ tabulate $ const $ elements xs
+elementsRep = sequence . tabulate . const . elements
 
 #if __GLASGOW_HASKELL__ < 910
 unsnoc :: [a] -> Maybe ([a], a)
