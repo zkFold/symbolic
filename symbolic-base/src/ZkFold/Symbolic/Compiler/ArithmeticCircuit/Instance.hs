@@ -14,6 +14,7 @@ import           Data.Functor.Rep                                    (Representa
 import           Data.Map                                            hiding (drop, foldl, foldl', foldr, map, null,
                                                                       splitAt, take, toList)
 import           Data.Ord                                            (Ord)
+import           Data.Traversable                                    (Traversable)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (mempty, pure, return, ($), (<$>))
 import qualified Prelude                                             as Haskell
@@ -40,6 +41,7 @@ type ArbitraryConstraints a i o =
   , Ord (Rep i)
   , NFData (Rep i)
   , Representable o
+  , Traversable o
   )
 
 instance
