@@ -71,6 +71,8 @@ jobs:
       run: |
         cabal build all -f Pedantic
 
+    # TODO: Upload package and documentation to a Hackage server
+
     # - name: Upload package
     #   env:
     #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
@@ -79,10 +81,10 @@ jobs:
     #     cabal sdist symbolic-base
     #     cabal upload --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/sdist/*.tar.gz
 
-    - name: Upload documentation
-      env:
-        HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-      shell: bash
-      run: |
-        cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
-        cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz
+    # - name: Upload documentation
+    #   env:
+    #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+    #   shell: bash
+    #   run: |
+    #     cabal v2-haddock symbolic-base --haddock-for-hackage --enable-doc
+    #     cabal upload --documentation --username=VladimirSinyakov --password="$HACKAGE_PASSWORD" dist-newstyle/*-docs.tar.gz
