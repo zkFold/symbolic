@@ -7,13 +7,18 @@
 
 module ZkFold.Protocol.NonInteractiveProof.Internal where
 
-#if defined(javascript_HOST_ARCH)
+#if defined(javascript_HOST_ARCH) || defined(wasm32_HOST_ARCH)
 import qualified Data.ByteString.Char8                      as C
 import           Data.String                                (IsString(fromString))
-import           GHC.JS.Prim
 import           System.IO.Unsafe                           (unsafePerformIO)
 #else
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
+#endif
+#if defined(javascript_HOST_ARCH)
+import           GHC.JS.Prim
+#elif defined(wasm32_HOST_ARCH)
+import           GHC.Wasm.Prim
+import           Data.Int (Int32)
 #endif
 
 import           Control.DeepSeq                            (NFData, force)
@@ -53,7 +58,17 @@ instance Binary a => FromTranscript ByteString a where
             hsBlake2b :: Int -> ByteString -> ByteString -> ByteString
             hsBlake2b a b c =
                 fromString $ fromJSString (unsafePerformIO $ blake2b (toJSString $ C.unpack c) (toJSString $ C.unpack b) (toJSInt a) jsNull jsNull)
+#elif defined(wasm32_HOST_ARCH)
 
+foreign import javascript unsafe "blake2b"
+    blake2b :: JSString -> JSString -> Int32 -> Int32 -> Int32 -> IO JSString
+
+instance Binary a => FromTranscript ByteString a where
+    fromTranscript = fromJust . fromByteString . (hsBlake2b 28 mempty)
+        where
+            hsBlake2b :: Int -> ByteString -> ByteString -> ByteString
+            hsBlake2b a b c =
+                fromString $ fromJSString (unsafePerformIO $ blake2b (toJSString $ C.unpack c) (toJSString $ C.unpack b) (fromIntegral a) 0 0)
 #else
 
 instance Binary a => FromTranscript ByteString a where
