@@ -11,14 +11,18 @@ packages:
     symbolic-cardano
     symbolic-uplc
 
+if arch(wasm32)
+  shared: True
+
 optimization: 2
 
 -- We never, ever, want this.
 write-ghc-environment-files: never
 
--- Always build tests and benchmarks.
-tests: true
-benchmarks: true
+if !arch(wasm32)
+    -- Always build tests and benchmarks.
+    tests: true
+    benchmarks: true
 
 -- The only sensible test display option, since it allows us to have colourized
 -- 'tasty' output.

@@ -37,7 +37,9 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -threaded
+    if !arch(wasm32)
+      ghc-options:
+        -threaded
     if impl(ghc >=9.8)
       ghc-options:
         -Wno-x-partial
@@ -230,11 +232,14 @@ library
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
-    if arch(javascript)
+    if arch(javascript) || arch(wasm32)
       js-sources:
         js-src/blake2b.js
 
-    if arch(javascript)
+    if arch(wasm32)
+      build-depends:
+        ghc-experimental
+    if arch(javascript) || arch(wasm32)
       build-depends:
         base                          >= 4.9 && < 5,
         adjunctions                           < 4.5,
