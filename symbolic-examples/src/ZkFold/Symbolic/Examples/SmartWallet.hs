@@ -42,6 +42,9 @@ import           GHC.Generics                                 (Par1 (..), U1 (..
 import           GHC.Natural                                  (naturalToInteger)
 import           Prelude                                      hiding (Fractional (..), Num (..), length)
 import qualified Prelude                                      as P
+import Foreign.Marshal.Array
+import Foreign.Ptr
+import Foreign.C.String
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
@@ -366,3 +369,12 @@ expModProofMock x ps ExpModProofInput{..} = proof
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+
+foreign export ccall mkProofBytesWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
+foreign export ccall mkProofBytesMockWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
+
+mkProofBytesWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
+mkProofBytesWasm xPtr psPtr proofInputPtr = pure proofInputPtr 
+
+mkProofBytesMockWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
+mkProofBytesMockWasm xPtr psPtr proofInputPtr = pure proofInputPtr 
