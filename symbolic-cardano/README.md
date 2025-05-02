@@ -44,3 +44,7 @@ deno index.mjs
 
 This should print ProofBytes for some random input in `index.mjs`.
 
+
+Further reading:
+https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html
+https://finley.dev/blog/2024-08-24-ghc-wasm.html
