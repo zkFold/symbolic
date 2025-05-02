@@ -30,6 +30,7 @@ module ZkFold.Symbolic.Examples.SmartWallet
 import           Data.Aeson                                   (withText)
 import qualified Data.Aeson                                   as Aeson
 import           Data.ByteString                              (ByteString)
+import qualified Data.ByteString                              as BS
 import qualified Data.ByteString.Base16                       as BS16
 import           Data.Coerce                                  (coerce)
 import           Data.Foldable                                (foldrM)
@@ -38,13 +39,13 @@ import           Data.Text                                    (Text)
 import           Data.Text.Encoding                           (decodeUtf8, encodeUtf8)
 import           Data.Word                                    (Word8)
 import           Deriving.Aeson
+import           Foreign.C.String
+import           Foreign.C.Types
+import           Foreign.Marshal.Array
 import           GHC.Generics                                 (Par1 (..), U1 (..), type (:*:) (..))
 import           GHC.Natural                                  (naturalToInteger)
 import           Prelude                                      hiding (Fractional (..), Num (..), length)
 import qualified Prelude                                      as P
-import Foreign.Marshal.Array
-import Foreign.Ptr
-import Foreign.C.String
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
@@ -55,6 +56,7 @@ import qualified ZkFold.Algebra.Number                        as Number
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
 import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
 import           ZkFold.Data.ByteString                       (toByteString)
+import qualified ZkFold.Data.Vector                           as V
 import           ZkFold.Data.Vector                           (Vector)
 import           ZkFold.Prelude                               (log2ceiling)
 import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
@@ -370,11 +372,32 @@ expModProofMock x ps ExpModProofInput{..} = proof
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
-foreign export ccall mkProofBytesWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
-foreign export ccall mkProofBytesMockWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
+foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 
-mkProofBytesWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
-mkProofBytesWasm xPtr psPtr proofInputPtr = pure proofInputPtr 
+mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+mkProofBytesWasm xPtr psPtr proofInputPtr = do
+    (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
+    let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
+    let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
+    newArray json
 
-mkProofBytesMockWasm :: CString -> Ptr CString -> Ptr CString -> IO (Ptr CString)
-mkProofBytesMockWasm xPtr psPtr proofInputPtr = pure proofInputPtr 
+mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
+mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
+    (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
+    let mockProofBytes = mkProof $ expModProofMock @ByteString x ps proofInput
+    let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
+    newArray json
+
+readPointers :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_Point, ExpModProofInput)
+readPointers xPtr psPtr proofInputPtr = do
+    xStr <- peekCString xPtr
+    let x = toZp $ read xStr
+
+    psStr <- peekCString psPtr
+    let ps = PlonkupProverSecret $ V.unsafeToVector $ (toZp . read) <$> words psStr
+
+    [e, m, s, t] <- words <$> peekCString proofInputPtr
+    let empi = ExpModProofInput (read e) (read m) (read s) (read t)
+
+    pure (x, ps, empi)
