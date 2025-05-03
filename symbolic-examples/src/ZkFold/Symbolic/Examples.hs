@@ -91,7 +91,7 @@ examples =
   , ("UInt.DivMod.32.Auto", exampleOutput @A $ exampleUIntDivMod @32 @Auto)
   , ("UInt.ExpMod.32.16.64.Auto", exampleOutput @A $ exampleUIntExpMod @32 @16 @64 @Auto)
   , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput @A $ exampleUIntExpMod @256 @64 @1024 @Auto)
-  , ("UInt.ExpMod.2048.64.2048.Auto", exampleOutput @A $ exampleUIntExpMod @2048 @64 @2048 @Auto)
+  -- , ("UInt.ExpMod.2048.64.2048.Auto", exampleOutput @A $ exampleUIntExpMod @2048 @64 @2048 @Auto)
   , ("FFA.Add.097", exampleOutput @A exampleFFAadd097)
   , ("FFA.Mul.097", exampleOutput @A exampleFFAmul097)
   , ("FFA.Inv.097", exampleOutput @A exampleFFAinv097)
