@@ -11,6 +11,7 @@ import           Examples.Blake2b                       (exampleBlake2b_224, exa
 import           Examples.ByteString
 import           Examples.Conditional                   (exampleConditional)
 import           Examples.Constant
+import           Examples.ECDSA                         (exampleECDSA)
 import           Examples.Eq                            (exampleEq, exampleEqVector)
 import           Examples.FFA
 import           Examples.Fibonacci                     (exampleFibonacci)
@@ -90,6 +91,7 @@ examples =
   , ("UInt.DivMod.32.Auto", exampleOutput @A $ exampleUIntDivMod @32 @Auto)
   , ("UInt.ExpMod.32.16.64.Auto", exampleOutput @A $ exampleUIntExpMod @32 @16 @64 @Auto)
   , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput @A $ exampleUIntExpMod @256 @64 @1024 @Auto)
+  , ("UInt.ExpMod.2048.64.2048.Auto", exampleOutput @A $ exampleUIntExpMod @2048 @64 @2048 @Auto)
   , ("FFA.Add.097", exampleOutput @A exampleFFAadd097)
   , ("FFA.Mul.097", exampleOutput @A exampleFFAmul097)
   , ("FFA.Inv.097", exampleOutput @A exampleFFAinv097)
@@ -100,7 +102,7 @@ examples =
   , ("Pallas.Scale", exampleOutput @B examplePallas_Scale)
   -- , ("BLS12_381.Scale", exampleOutput @A exampleBLS12_381Scale)
   -- , ("Ed25519.Scale", exampleOutput @(Zp Ed25519_Base) exampleEd25519Scale)
-  -- , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
+  , ("ECDSA.Pallas.256", exampleOutput @B exampleECDSA)
   -- , ("Mithril.256.2", exampleOutput @B $ exampleMithril @256 @2)
   , ("Blake2b_224", exampleOutput @A $ exampleBlake2b_224 @32)
   , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
