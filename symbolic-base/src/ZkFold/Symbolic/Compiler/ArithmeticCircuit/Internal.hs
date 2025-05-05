@@ -4,6 +4,7 @@
 {-# LANGUAGE DerivingVia           #-}
 {-# LANGUAGE NoStarIsType          #-}
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
@@ -28,6 +29,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         -- input mapping
         hlmap,
         -- evaluation functions
+        lookupFunction,
         witnessGenerator,
         eval,
         eval1,
@@ -84,6 +86,9 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
+import Data.Typeable (Typeable)
+import Data.Kind (Type)
+import qualified Type.Reflection as R
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
@@ -120,8 +125,25 @@ instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
 data LookupFunction a =
-  forall f g. (Representable f, Traversable g) =>
+  forall f g. (Representable f, Traversable g, Typeable f, Typeable g) =>
   LookupFunction (forall x. ResidueField x => f x -> g x)
+
+type FunctionRegistry a = Map ByteString (LookupFunction a)
+
+lookupFunction ::
+    forall f g (a :: Type). (Typeable f, Typeable g) =>
+    FunctionRegistry a -> FunctionId (f a -> g a) ->
+    (forall x. ResidueField x => f x -> g x)
+lookupFunction m (FunctionId i) = case m M.! i of
+    LookupFunction f -> cast1 . f . cast1
+    where
+      cast1 :: forall h k b. (Typeable h, Typeable k) => h b -> k b
+      cast1 x
+        | Just R.HRefl <- th `R.eqTypeRep` tk = x
+        | otherwise = error "types are not equal"
+        where
+          th = R.typeRep :: R.TypeRep h
+          tk = R.typeRep :: R.TypeRep k
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -131,7 +153,7 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem         :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acLookupFunction :: Map ByteString (LookupFunction a),
+        acLookupFunction :: FunctionRegistry a,
         -- ^ The set of lookup functions
         acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
         -- ^ The lookup constraints for the selected variables
@@ -466,7 +488,7 @@ apply xs ac = ac
 --     {
 --         acInput = tail ins,
 --         acWitness = acWitness f . (singleton (head ins) (eval x empty)  `union`)
---     })
+--     }
 
 -- applySym :: [ArithmeticCircuit a] -> State (ArithmeticCircuit a) ()
 -- applySym = foldr ((>>) . applySymOne) (return ())

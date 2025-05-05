@@ -96,7 +96,7 @@ class ( Monad m, FromConstant a var
   -- | Registers new lookup function in the system to be used in lookup tables
   -- (see 'lookupConstraint').
   registerFunction ::
-    (Representable f, Binary (Rep f), Traversable g) =>
+    (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g) =>
     (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.

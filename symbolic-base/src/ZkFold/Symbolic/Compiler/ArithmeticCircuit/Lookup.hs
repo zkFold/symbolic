@@ -21,6 +21,8 @@ import           Prelude                (Show, undefined)
 import qualified Type.Reflection        as R
 
 import           ZkFold.Data.ByteString ()
+import Data.Foldable (Foldable)
+import Data.Functor (Functor)
 
 newtype FunctionId f = FunctionId { funcHash :: ByteString }
   deriving (Eq, Ord, Show, Generic, NFData, ToJSON)
@@ -33,7 +35,9 @@ data LookupTable a f where
   -- | @Product t u@ is a cartesian product of tables @t@ and @u@.
   Product :: LookupTable a f -> LookupTable a g -> LookupTable a (f :*: g)
   -- | @Plot f x@ is a plot of a function @f@ with @x@ as a domain.
-  Plot :: FunctionId (f a -> g a) -> LookupTable a f -> LookupTable a (f :*: g)
+  Plot ::
+    (Functor f, Functor g, Typeable f, Typeable g) =>
+    FunctionId (f a -> g a) -> LookupTable a f -> LookupTable a (f :*: g)
 
 deriving instance Eq a => Eq (LookupTable a f)
 deriving instance Ord a => Ord (LookupTable a f)
@@ -49,7 +53,7 @@ instance NFData a => NFData (LookupTable a f) where
 instance (ToJSON a, ToJSONKey a) => ToJSONKey (LookupTable a f)
 
 data LookupType a =
-  forall f. Typeable f => LookupType { lTable :: LookupTable a f }
+  forall f. (Foldable f, Typeable f) => LookupType { lTable :: LookupTable a f }
 
 asRange :: LookupType a -> Maybe (Set (a, a))
 asRange (LookupType (Ranges rs)) = Just rs

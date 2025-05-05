@@ -33,7 +33,7 @@ import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.ByteString
-import           ZkFold.Prelude                       (log2ceiling)
+import           ZkFold.Prelude                       (log2ceiling, iterate')
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -64,6 +64,16 @@ instance KnownNat p => Eq (Zp p) where
 
 instance KnownNat p => Ord (Zp p) where
     Zp a <= Zp b = residue @p a <= residue @p b
+
+instance KnownNat p => Enum (Zp p) where
+    succ = (+ one)
+    pred x = x - one
+    toEnum = Zp . toEnum
+    fromEnum (Zp x) = fromEnum x
+    enumFrom = enumFromThen <*> succ
+    enumFromThen x x' = let !d = x' - x in iterate' (+ d) x
+    enumFromTo = enumFromThenTo <*> succ
+    enumFromThenTo x x' y = takeWhile (/= y) (enumFromThen x x') ++ [y]
 
 instance KnownNat p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = toZp (a + b)
