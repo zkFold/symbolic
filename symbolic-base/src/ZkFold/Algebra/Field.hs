@@ -33,7 +33,7 @@ import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.ByteString
-import           ZkFold.Prelude                       (log2ceiling, iterate')
+import           ZkFold.Prelude                       (iterate', log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 

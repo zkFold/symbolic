@@ -11,7 +11,7 @@ import           Test.QuickCheck                                     (Arbitrary 
 
 import           ZkFold.Algebra.Class                                (Semiring)
 import           ZkFold.Data.ByteString                              (toByteString)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Var, SysVar (..), NewVar (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (NewVar (..), SysVar (..), Var)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 data LookupConstraint i a = LookupConstraint

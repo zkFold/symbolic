@@ -10,6 +10,8 @@ import           Data.Aeson.TH          (deriveToJSON)
 import           Data.Bool              (otherwise)
 import           Data.ByteString        (ByteString)
 import           Data.Eq                (Eq (..))
+import           Data.Foldable          (Foldable)
+import           Data.Functor           (Functor)
 import           Data.Maybe             (Maybe (..))
 import           Data.Ord               (Ord (..))
 import           Data.Semigroup         (Semigroup (..))
@@ -21,8 +23,6 @@ import           Prelude                (Show, undefined)
 import qualified Type.Reflection        as R
 
 import           ZkFold.Data.ByteString ()
-import Data.Foldable (Foldable)
-import Data.Functor (Functor)
 
 newtype FunctionId f = FunctionId { funcHash :: ByteString }
   deriving (Eq, Ord, Show, Generic, NFData, ToJSON)

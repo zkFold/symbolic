@@ -10,17 +10,25 @@ module ZkFold.Protocol.Plonkup.Relation where
 import           Data.Binary                                         (Binary)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
-import           Data.Foldable                                       (toList, Foldable, foldMap)
+import           Data.Foldable                                       (Foldable, foldMap, toList)
+import           Data.Function                                       (flip, id, ($), (.))
+import           Data.Functor                                        (fmap, (<$>))
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
+import           Data.List                                           ((++))
+import qualified Data.List                                           as L
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
-import           Data.Maybe                                          (fromJust, Maybe (..))
+import           Data.Maybe                                          (Maybe (..), fromJust)
+import           Data.Monoid                                         (Sum (..), (<>))
+import           Data.Ord                                            (Ord, Ordering (..), compare, max, (<=))
 import qualified Data.Set                                            as S
 import           Data.Vector                                         (Vector)
 import qualified Data.Vector                                         as V
+import           GHC.Generics                                        (Par1 (..), (:*:) (..))
 import           GHC.IsList                                          (fromList)
-import GHC.Generics ((:*:) (..), Par1 (..))
+import qualified Prelude                                             as P
 import           Test.QuickCheck                                     (Arbitrary (..))
+import           Text.Show                                           (Show (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
@@ -36,15 +44,7 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupTable (..), LookupType (LookupType))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
-import Data.Functor ((<$>), fmap)
-import Data.Function ((.), ($), id, flip)
-import Data.List ((++))
-import qualified Data.List as L
-import Data.Monoid (Sum (..), (<>))
-import qualified Prelude as P
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import Data.Ord (Ord, (<=), max, Ordering (..), compare)
-import Text.Show (Show (..))
+import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i n l a pv = PlonkupRelation
