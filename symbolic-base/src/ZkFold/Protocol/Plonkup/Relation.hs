@@ -52,6 +52,7 @@ data PlonkupRelation i o (p :: Type -> Type) n a pv = PlonkupRelation
     , sigma    :: Permutation (3 * n)
     , witness  :: i a -> (pv n, pv n, pv n)
     , pubInput :: i a -> o a
+    , cNum     :: Natural
     -- ^ The actual number of constraints in the relation.
     }
 
@@ -108,12 +109,12 @@ toPlonkupRelation ac =
         -- Lookup queries.
         xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
 
-        n' = acSizeN ac + length (tabulate @o id) + length xLookup
+        cNum = acSizeN ac + length (tabulate @o id) + length xLookup
 
         plonkupSystem = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup . LookupConstraint <$> xLookup
-            , replicate (n -! n') ConsExtra
+            , replicate (n -! cNum) ConsExtra
             ]
 
         qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
@@ -122,14 +123,13 @@ toPlonkupRelation ac =
         qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
         qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
         qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
-
         
-        n'' = n' + length prvInputConstraints
+        cNum' = cNum + length prvInputConstraints
         plonkupSystem' = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup . LookupConstraint <$> xLookup
             , map (ConsPlonk . toPlonkConstraint) prvInputConstraints
-            , replicate (n -! n'') ConsExtra
+            , replicate (n -! cNum') ConsExtra
             ]
 
         a  = fmap getA plonkupSystem'
@@ -144,6 +144,6 @@ toPlonkupRelation ac =
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = fmap (indexW ac i) xPub
 
-    in if max n'' nLookup <= n
+    in if max cNum' nLookup <= n
         then Just $ PlonkupRelation {..}
         else Nothing

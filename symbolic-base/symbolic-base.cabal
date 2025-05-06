@@ -161,6 +161,7 @@ library
       ZkFold.Protocol.Plonkup.Relation
       ZkFold.Protocol.Plonkup.Setup
       ZkFold.Protocol.Plonkup.Testing
+      ZkFold.Protocol.Plonkup.Update
       ZkFold.Protocol.Plonkup.Utils
       ZkFold.Protocol.Plonkup.Verifier
       ZkFold.Protocol.Plonkup.Verifier.Commitments
