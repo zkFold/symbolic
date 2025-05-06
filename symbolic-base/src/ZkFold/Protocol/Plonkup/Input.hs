@@ -22,5 +22,5 @@ instance (Arbitrary (o (ScalarFieldOf g))) => Arbitrary (PlonkupInput o g) where
     arbitrary = PlonkupInput <$> arbitrary
 
 plonkupVerifierInput ::
-  (Functor l, Field (ScalarFieldOf g)) => l (ScalarFieldOf g) -> PlonkupInput l g
+  (Functor o, Field (ScalarFieldOf g)) => o (ScalarFieldOf g) -> PlonkupInput o g
 plonkupVerifierInput input = PlonkupInput $ negate <$> input

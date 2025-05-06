@@ -32,7 +32,7 @@ import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestIn
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
 
-plonkupProve :: forall i o n g1 g2 ts pv .
+plonkupProve :: forall i o p n g1 g2 ts pv .
     ( Foldable o
     , Ord (ScalarFieldOf g1)
     , Compressible g1
@@ -44,7 +44,7 @@ plonkupProve :: forall i o n g1 g2 ts pv .
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    ) => PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput o g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
+    ) => PlonkupProverSetup i o p n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput o g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})

@@ -46,4 +46,4 @@ specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1_Point BLS12_381_G2_Point 32 (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
     -- TODO: fix `desugarRanges`
     -- specNonInteractiveProof' @(Plonk (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
-    specNonInteractiveProof' @(Plonkup (Vector 1) (Vector 2) 32 BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
+    specNonInteractiveProof' @(Plonkup (Vector 1) (Vector 2) U1 32 BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
