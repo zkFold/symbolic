@@ -66,10 +66,7 @@ function mkProofBytesMock(instance, x, ps, empi) {
 }
 
 const x = 123n;
-let ps = [];
-for (let i=0; i<19; i++) {
-    ps.push(BigInt(i + 1));
-};
+const ps = new Array(19).fill(0n);
 const empi = {
     e: 10n,
     n: 100n,
