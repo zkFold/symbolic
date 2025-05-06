@@ -224,7 +224,7 @@ type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
 type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
 
-type PlonkupTs i n t = Plonkup i n Par1 BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
 type TranscriptConstraints ts =
     ( ToTranscript ts Word8

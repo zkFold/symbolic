@@ -13,12 +13,12 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Symbolic.Compiler           ()
 
-newtype PlonkupInput l g = PlonkupInput { unPlonkupInput :: l (ScalarFieldOf g) }
+newtype PlonkupInput o g = PlonkupInput { unPlonkupInput :: o (ScalarFieldOf g) }
 
-instance (Show1 l, Show (ScalarFieldOf g)) => Show (PlonkupInput l g) where
+instance (Show1 o, Show (ScalarFieldOf g)) => Show (PlonkupInput o g) where
     show (PlonkupInput v) = "Plonkup Input: " ++ show v
 
-instance (Arbitrary (l (ScalarFieldOf g))) => Arbitrary (PlonkupInput l g) where
+instance (Arbitrary (o (ScalarFieldOf g))) => Arbitrary (PlonkupInput o g) where
     arbitrary = PlonkupInput <$> arbitrary
 
 plonkupVerifierInput ::

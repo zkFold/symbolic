@@ -20,8 +20,8 @@ import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
 
-plonkVerify :: forall i n l g1 g2 gt ts pv .
-    ( Foldable l
+plonkVerify :: forall i o n g1 g2 gt ts pv .
+    ( Foldable o
     , Pairing g1 g2 gt
     , Compressible g1
     , Eq gt
@@ -32,7 +32,7 @@ plonkVerify :: forall i n l g1 g2 gt ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-    ) => PlonkupVerifierSetup i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
+    ) => PlonkupVerifierSetup i o n g1 g2 pv -> PlonkupInput o g1 -> PlonkupProof g1 -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)

@@ -37,7 +37,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation i n l a pv = PlonkupRelation
+data PlonkupRelation i o n a pv = PlonkupRelation
     { qM       :: pv n
     , qL       :: pv n
     , qR       :: pv n
@@ -49,10 +49,12 @@ data PlonkupRelation i n l a pv = PlonkupRelation
     , t3       :: pv n
     , sigma    :: Permutation (3 * n)
     , witness  :: i a -> (pv n, pv n, pv n)
-    , pubInput :: i a -> l a
+    , pubInput :: i a -> o a
+    , cNum     :: Natural
+    -- ^ The actual number of constraints in the relation.
     }
 
-instance (Show a, Show (pv n)) => Show (PlonkupRelation i n l a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -71,20 +73,20 @@ instance
         , UnivariateRingPolyVec a pv
         , KnownNat (PlonkupPermutationSize n)
         , Representable i
-        , Representable l
-        , Foldable l
+        , Representable o
+        , Foldable o
         , Ord (Rep i)
         , Arithmetic a
         , Binary a
-        , Arbitrary (ArithmeticCircuit a i l)
-        ) => Arbitrary (PlonkupRelation i n l a pv) where
-    arbitrary = fromJust . toPlonkupRelation @i @n @l @a @pv <$> arbitrary
+        , Arbitrary (ArithmeticCircuit a i o)
+        ) => Arbitrary (PlonkupRelation i o n a pv) where
+    arbitrary = fromJust . toPlonkupRelation @i @o @n @a @pv <$> arbitrary
 
 toPlonkupRelation ::
-  forall i n l a pv .
+  forall i o n a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
-  , Representable i, Representable l, Foldable l
-  ) => ArithmeticCircuit a i l -> Maybe (PlonkupRelation i n l a pv)
+  , Representable i, Representable o, Foldable o
+  ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation ac =
     let xPub                = acOutput ac
         pubInputConstraints = map var (toList xPub)
@@ -101,13 +103,12 @@ toPlonkupRelation ac =
         -- Lookup queries.
         xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
 
-        -- The total number of constraints in the relation.
-        n'      = acSizeN ac + length (tabulate @l id) + length xLookup
+        cNum = acSizeN ac + length (tabulate @o id) + length xLookup
 
         plonkupSystem = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup . LookupConstraint <$> xLookup
-            , replicate (value @n -! n') ConsExtra
+            , replicate (value @n -! cNum) ConsExtra
             ]
 
         qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
@@ -129,6 +130,6 @@ toPlonkupRelation ac =
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = fmap (indexW ac i) xPub
 
-    in if max n' nLookup <= value @n
+    in if max cNum nLookup <= value @n
         then Just $ PlonkupRelation {..}
         else Nothing
