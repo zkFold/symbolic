@@ -11,11 +11,13 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
 import           Data.Foldable                                       (toList)
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
+import           Data.Kind                                           (Type)
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
 import           Data.Maybe                                          (fromJust, mapMaybe)
 import qualified Data.Set                                            as S
 import qualified Data.Vector                                         as V
+import           GHC.Generics                                        ((:*:) (..))
 import           GHC.IsList                                          (fromList)
 import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
                                                                       take, (!!), (/), (^))
@@ -35,8 +37,6 @@ import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
-import GHC.Generics ((:*:) (..))
-import Data.Kind (Type)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o (p :: Type -> Type) n a pv = PlonkupRelation
@@ -92,7 +92,7 @@ toPlonkupRelation ::
   ) => ArithmeticCircuit a i (o :*: p) -> Maybe (PlonkupRelation i o p n a pv)
 toPlonkupRelation ac =
     let n = value @n
-        
+
         (xPub :*: xPrv)     = acOutput ac
         pubInputConstraints = map var (toList xPub)
         prvInputConstraints = map var (toList xPrv)
@@ -123,7 +123,7 @@ toPlonkupRelation ac =
         qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
         qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
         qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
-        
+
         cNum' = cNum + length prvInputConstraints
         plonkupSystem' = fromList $ concat
             [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)

@@ -5,22 +5,23 @@
 
 module ZkFold.Protocol.Plonkup.Update where
 
-import           Data.Foldable                                       (toList)
-import qualified Data.Vector                                         as V
-import           GHC.IsList                                          (fromList)
-import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
-                                                                      take, (!!), (/), (^))
+import           Data.Foldable                                (toList)
+import qualified Data.Vector                                  as V
+import           GHC.IsList                                   (fromList)
+import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take,
+                                                               (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class           (ScalarFieldOf)
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateRingPolyVec (..), toPolyVec, UnivariateFieldPolyVec (..))
-import           ZkFold.Prelude                                      (length, replicate, take)
-import           ZkFold.Protocol.Plonkup.Internal                    (PlonkupPolyExtendedLength, PlonkupPolyExtended)
-import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
-import ZkFold.Protocol.Plonkup.Setup (PlonkupSetup (..))
-import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
-import ZkFold.Protocol.Plonkup.Prover.Polynomials (PlonkupCircuitPolynomials (..))
-import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
+import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPolyVec (..), UnivariateRingPolyVec (..),
+                                                               toPolyVec)
+import           ZkFold.Prelude                               (length, replicate, take)
+import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
+import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
+import           ZkFold.Protocol.Plonkup.Setup                (PlonkupSetup (..))
+import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
 nextGroupElement :: forall i o p n g1 g2 pv .
     ( KnownNat n
@@ -65,6 +66,6 @@ updateSetup setup@PlonkupSetup {..} inputs =
 
         polynomials' = polynomials { qlX = qlX', qcX = qcX' }
 
-        commitments' = commitments { cmQl = gs `bilinear` qlX', cmQc = gs `bilinear` qcX' }        
+        commitments' = commitments { cmQl = gs `bilinear` qlX', cmQc = gs `bilinear` qcX' }
     in
         setup { relation = relation' , polynomials = polynomials', commitments = commitments' }

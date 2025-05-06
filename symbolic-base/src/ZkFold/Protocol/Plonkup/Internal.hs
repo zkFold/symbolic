@@ -7,6 +7,7 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
+import           GHC.Generics                                        ((:*:))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -18,7 +19,6 @@ import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
-import GHC.Generics ((:*:))
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

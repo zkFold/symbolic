@@ -11,6 +11,7 @@ import           Data.Functor.Rep                                    (Rep, Repre
 import           Data.Kind                                           (Type)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
+import           GHC.Generics                                        ((:*:))
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
@@ -32,7 +33,6 @@ import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler                            (desugarRanges)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import GHC.Generics ((:*:))
 
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}

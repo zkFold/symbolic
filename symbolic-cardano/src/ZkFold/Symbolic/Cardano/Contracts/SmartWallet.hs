@@ -52,6 +52,7 @@ import qualified ZkFold.Algebra.Number                        as Number
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
 import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
 import           ZkFold.Data.ByteString                       (toByteString)
+import           ZkFold.Data.HFunctor                         (hmap)
 import           ZkFold.Data.Vector                           (Vector)
 import           ZkFold.Prelude                               (log2ceiling)
 import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
@@ -74,7 +75,6 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), expMod)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
-import ZkFold.Data.HFunctor (hmap)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
