@@ -360,7 +360,7 @@ expModProofMock
 expModProofMock x ps ExpModProofInput{..} = proof
     where
         input :: Natural
-        input = ((piSignature P.^ piPubE) `P.mod` piPubN) `P.mod` (Number.value @BLS12_381_Scalar) P.* piTokenName
+        input = (((piSignature P.^ piPubE) `P.mod` piPubN) P.* piTokenName) `P.mod` (Number.value @BLS12_381_Scalar)
 
         witnessInputs :: Par1 Fr
         witnessInputs = Par1 $ toZp (fromIntegral input)
