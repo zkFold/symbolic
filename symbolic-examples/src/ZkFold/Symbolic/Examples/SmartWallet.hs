@@ -380,14 +380,14 @@ mkProofBytesWasm xPtr psPtr proofInputPtr = do
     (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
     let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
     let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
-    newArray json
+    newArray (json <> [CChar 0])
 
 mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
     (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
     let mockProofBytes = mkProof $ expModProofMock @ByteString x ps proofInput
     let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
-    newArray json
+    newArray (json <> [CChar 0])
 
 readPointers :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_Point, ExpModProofInput)
 readPointers xPtr psPtr proofInputPtr = do
