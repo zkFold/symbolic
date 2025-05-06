@@ -7,6 +7,7 @@ module ZkFold.Protocol.Plonkup.Utils where
 import           Data.Bifunctor                     (first)
 import           Data.Bool                          (bool)
 import           Data.List                          (sortOn)
+import qualified Data.Map                           as M
 import qualified Data.Set                           as S
 import           Prelude                            hiding (Num (..), drop, length, replicate, sum, take, (!!), (/),
                                                      (^))
@@ -18,7 +19,6 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                 (Vector, unsafeToVector)
 import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
-import qualified Data.Map as M
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' $ mkStdGen 0
