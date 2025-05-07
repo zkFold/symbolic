@@ -1,13 +1,9 @@
-{-# LANGUAGE BlockArguments        #-}
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DerivingVia           #-}
-{-# LANGUAGE NoStarIsType          #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE NoStarIsType         #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -40,37 +36,53 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         witToVar
     ) where
 
+import           Control.Applicative                                          (liftA2, pure)
 import           Control.DeepSeq                                              (NFData (..), NFData1 (..), rwhnf)
+import           Control.Monad                                                (return, (>>=))
 import           Control.Monad.State                                          (State, modify, runState)
 import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
+import           Data.Bool                                                    (Bool (..), otherwise, (&&))
 import           Data.ByteString                                              (ByteString)
-import           Data.Foldable                                                (fold, toList)
+import           Data.Either                                                  (Either (..))
+import           Data.Eq                                                      (Eq, (==))
+import           Data.Foldable                                                (Foldable, fold, foldl', toList)
+import           Data.Function                                                (const, flip, id, ($), (.))
+import           Data.Functor                                                 (Functor, fmap, (<$>))
 import           Data.Functor.Classes                                         (Show1 (liftShowList, liftShowsPrec))
 import           Data.Functor.Rep
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                                    (foldl')
-#endif
+import           Data.Kind                                                    (Type)
+import           Data.List                                                    (map, (++))
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
 import qualified Data.Map.Strict                                              as M
-import           Data.Maybe                                                   (catMaybes, fromJust, fromMaybe, mapMaybe)
+import           Data.Maybe                                                   (Maybe (..), catMaybes, fromJust,
+                                                                               fromMaybe, mapMaybe)
+import           Data.Monoid                                                  (Monoid, mempty)
+import           Data.Ord                                                     (Ord)
 import           Data.Semialign                                               (unzipDefault)
+import           Data.Semigroup                                               (Semigroup, (<>))
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
-import           Data.Traversable                                             (for)
+import           Data.Traversable                                             (Traversable, for, traverse)
+import           Data.Tuple                                                   (fst, snd, uncurry)
+import           Data.Type.Equality                                           (type (~))
+import           Data.Typeable                                                (Typeable)
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
-import           Prelude                                                      hiding (Num (..), drop, length, product,
-                                                                               splitAt, sum, take, (!!), (^))
+import           Prelude                                                      (error, seq)
+import           Text.Show                                                    (Show, show, showList, showString, shows,
+                                                                               showsPrec)
+import qualified Type.Reflection                                              as R
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field                                         (Zp)
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Multivariate                      (Poly, evalMonomial, evalPolynomial, mapVars, var)
+import           ZkFold.Algebra.Polynomial.Multivariate                       (Poly, evalMonomial, evalPolynomial,
+                                                                               mapVars, var)
 import           ZkFold.Control.HApplicative
 import           ZkFold.Data.ByteString                                       (fromByteString, toByteString)
 import           ZkFold.Data.HFunctor
@@ -86,9 +98,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Typeable (Typeable)
-import Data.Kind (Type)
-import qualified Type.Reflection as R
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint c i = Poly c (SysVar i) Natural
