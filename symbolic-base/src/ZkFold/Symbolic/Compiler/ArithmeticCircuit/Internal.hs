@@ -1,12 +1,9 @@
-{-# LANGUAGE BlockArguments        #-}
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DerivingVia           #-}
-{-# LANGUAGE NoStarIsType          #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE NoStarIsType         #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         ArithmeticCircuit(..),
@@ -28,6 +25,7 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         -- input mapping
         hlmap,
         -- evaluation functions
+        lookupFunction,
         witnessGenerator,
         eval,
         eval1,
@@ -38,37 +36,53 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (
         witToVar
     ) where
 
+import           Control.Applicative                                          (liftA2, pure)
 import           Control.DeepSeq                                              (NFData (..), NFData1 (..), rwhnf)
+import           Control.Monad                                                (return, (>>=))
 import           Control.Monad.State                                          (State, modify, runState)
 import           Data.Bifunctor                                               (Bifunctor (..))
 import           Data.Binary                                                  (Binary)
+import           Data.Bool                                                    (Bool (..), otherwise, (&&))
 import           Data.ByteString                                              (ByteString)
-import           Data.Foldable                                                (fold, toList)
+import           Data.Either                                                  (Either (..))
+import           Data.Eq                                                      (Eq, (==))
+import           Data.Foldable                                                (Foldable, fold, foldl', toList)
+import           Data.Function                                                (const, flip, id, ($), (.))
+import           Data.Functor                                                 (Functor, fmap, (<$>))
 import           Data.Functor.Classes                                         (Show1 (liftShowList, liftShowsPrec))
 import           Data.Functor.Rep
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                                    (foldl')
-#endif
+import           Data.Kind                                                    (Type)
+import           Data.List                                                    (map, (++))
 import           Data.List.Infinite                                           (Infinite)
 import qualified Data.List.Infinite                                           as I
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
 import           Data.Map.Strict                                              (Map)
 import qualified Data.Map.Strict                                              as M
-import           Data.Maybe                                                   (catMaybes, fromJust, fromMaybe, mapMaybe)
+import           Data.Maybe                                                   (Maybe (..), catMaybes, fromJust,
+                                                                               fromMaybe, mapMaybe)
+import           Data.Monoid                                                  (Monoid, mempty)
+import           Data.Ord                                                     (Ord)
 import           Data.Semialign                                               (unzipDefault)
+import           Data.Semigroup                                               (Semigroup, (<>))
 import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
 import qualified Data.Set                                                     as S
-import           Data.Traversable                                             (for)
+import           Data.Traversable                                             (Traversable, for, traverse)
+import           Data.Tuple                                                   (fst, snd, uncurry)
+import           Data.Type.Equality                                           (type (~))
+import           Data.Typeable                                                (Typeable)
 import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
 import           Optics                                                       hiding (at)
-import           Prelude                                                      hiding (Num (..), drop, length, product,
-                                                                               splitAt, sum, take, (!!), (^))
+import           Prelude                                                      (error, seq)
+import           Text.Show                                                    (Show, show, showList, showString, shows,
+                                                                               showsPrec)
+import qualified Type.Reflection                                              as R
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field                                         (Zp)
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Multivariate                      (Poly, evalMonomial, evalPolynomial, mapVars, var)
+import           ZkFold.Algebra.Polynomial.Multivariate                       (Poly, evalMonomial, evalPolynomial,
+                                                                               mapVars, var)
 import           ZkFold.Control.HApplicative
 import           ZkFold.Data.ByteString                                       (fromByteString, toByteString)
 import           ZkFold.Data.HFunctor
@@ -120,7 +134,25 @@ instance (NFData a, NFData v) => NFData (CircuitFold a v w) where
   rnf CircuitFold {..} = rnf (foldStep, foldCount) `seq` liftRnf rnf foldSeed
 
 data LookupFunction a =
-  forall f g. LookupFunction (forall x. (ResidueField x, Representable f, Traversable g) => f x -> g x)
+  forall f g. (Representable f, Traversable g, Typeable f, Typeable g) =>
+  LookupFunction (forall x. ResidueField x => f x -> g x)
+
+type FunctionRegistry a = Map ByteString (LookupFunction a)
+
+lookupFunction ::
+    forall f g (a :: Type). (Typeable f, Typeable g) =>
+    FunctionRegistry a -> FunctionId (f a -> g a) ->
+    (forall x. ResidueField x => f x -> g x)
+lookupFunction m (FunctionId i) = case m M.! i of
+    LookupFunction f -> cast1 . f . cast1
+    where
+      cast1 :: forall h k b. (Typeable h, Typeable k) => h b -> k b
+      cast1 x
+        | Just R.HRefl <- th `R.eqTypeRep` tk = x
+        | otherwise = error "types are not equal"
+        where
+          th = R.typeRep :: R.TypeRep h
+          tk = R.typeRep :: R.TypeRep k
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -130,10 +162,10 @@ data ArithmeticCircuit a i o = ArithmeticCircuit
     {
         acSystem         :: Map ByteString (Constraint a i),
         -- ^ The system of polynomial constraints
-        acLookupFunction :: Map ByteString (LookupFunction a),
-        -- ^ The system of lookup functions
+        acLookupFunction :: FunctionRegistry a,
+        -- ^ The set of lookup functions
         acLookup         :: MonoidalMap (LookupType a) (S.Set [SysVar i]),
-        -- ^ The range constraints [0, a] for the selected variables
+        -- ^ The lookup constraints for the selected variables
         acWitness        :: Map ByteString (CircuitWitness a i),
         -- ^ The witness generation functions
         acFold           :: Map ByteString (CircuitFold a (Var a i) (CircuitWitness a i)),
@@ -312,29 +344,24 @@ instance
                     else error "The constraint is non-zero"
         Nothing -> zoom #acSystem . modify $ M.insert (witToVar (p at)) (p evalConstVar)
 
-    rangeConstraint (LinVar k x b) upperBound = do
-      v <- preparedVar
-      zoom #acLookup . modify $ MM.insertWith S.union (LookupType $ Ranges (S.singleton (zero, upperBound))) (S.singleton [v])
+    lookupConstraint vars lt = do
+      vs <- traverse prepare (toList vars)
+      zoom #acLookup $ modify (MM.insertWith S.union (LookupType lt) (S.singleton vs))
+      return ()
       where
-        preparedVar = if k == one && b == zero || k == negate one && b == upperBound
-          then return x
-          else do
-            let
-              wf = at $ LinVar k x b
-              v = witToVar @a wf
-            -- TODO: forbid reassignment of variables
-            zoom #acWitness $ modify (M.insert v wf)
-            return (NewVar (EqVar v))
-
-    rangeConstraint (ConstVar c) upperBound =
-      if c <= upperBound
-        then return ()
-        else error "The constant does not belong to the interval"
+        prepare (LinVar k x b) | k == one && b == zero = return x
+        prepare src = do
+          let w = at src
+              b = witToVar @a w
+              v = NewVar (EqVar b)
+          zoom #acWitness $ modify (M.insert b w)
+          constraint (($ LinVar one v zero) - ($ src))
+          return v
 
     registerFunction f = do
-      let b = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
-      zoom #acLookupFunction $ modify (M.insert b $ LookupFunction f)
-      return $ FunctionId b
+      let functionId = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
+      zoom #acLookupFunction $ modify (M.insert functionId $ LookupFunction f)
+      return $ FunctionId functionId
 
 -- | Generates new variable index given a witness for it.
 --
@@ -470,7 +497,7 @@ apply xs ac = ac
 --     {
 --         acInput = tail ins,
 --         acWitness = acWitness f . (singleton (head ins) (eval x empty)  `union`)
---     })
+--     }
 
 -- applySym :: [ArithmeticCircuit a] -> State (ArithmeticCircuit a) ()
 -- applySym = foldr ((>>) . applySymOne) (return ())

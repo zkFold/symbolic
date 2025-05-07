@@ -1,4 +1,5 @@
 UInt.DivMod.32.Auto
-Number of constraints: 96
+Number of polynomial constraints: 96
 Number of variables: 166
-Number of range lookups: 84
+Number of lookup constraints: 84
+Number of lookup tables: 3

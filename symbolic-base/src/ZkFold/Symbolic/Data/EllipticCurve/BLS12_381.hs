@@ -1,12 +1,10 @@
-{-# LANGUAGE RebindableSyntax     #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point) where
 
-import           Prelude                                (fromInteger, ($))
+import           Prelude                                (($))
 import qualified Prelude
 
 import           ZkFold.Algebra.Class

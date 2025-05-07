@@ -6,7 +6,8 @@ module ZkFold.Protocol.Plonkup.Utils where
 
 import           Data.Bifunctor                     (first)
 import           Data.Bool                          (bool)
-import           Data.Map                           (fromList, insertWith, toList)
+import           Data.List                          (sortOn)
+import qualified Data.Map                           as M
 import qualified Data.Set                           as S
 import           Prelude                            hiding (Num (..), drop, length, replicate, sum, take, (!!), (/),
                                                      (^))
@@ -16,7 +17,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                 (Vector, unsafeToVector)
-import           ZkFold.Prelude                     (iterateN', log2ceiling, replicate)
+import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
@@ -55,7 +56,12 @@ getSecrectParams x =
     in (gs, h1)
 
 sortByList :: Ord a => [a] -> [a] -> [a]
+-- ^ Given two lists @l1@ and @l2@,
+-- sorts elements from @l1@ according to the order specified in @l2@.
+--
+-- Preconditions:
+-- * @all (`elem` l2) l1@
+-- * @map head (group l2) == nub l2@
 sortByList f t =
-    let m  = fromList $ zip t (repeat @Natural 0)
-        m' = foldl (\acc x -> insertWith (+) x 1 acc) m f
-    in concatMap (\(k, v) -> replicate v k) $ toList m'
+    let ixMap = M.fromList (zip t [(0 :: Int)..])
+     in sortOn (ixMap M.!) f

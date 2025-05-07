@@ -21,7 +21,8 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         -- information about the system
         acSizeN,
         acSizeM,
-        acSizeR,
+        acSizeL,
+        acSizeT,
         acSystem,
         acValue,
         acPrint,
@@ -41,7 +42,7 @@ import           Control.DeepSeq                                         (NFData
 import           Control.Monad                                           (foldM)
 import           Control.Monad.State                                     (execState)
 import           Data.Binary                                             (Binary)
-import           Data.Bool                                               (bool)
+import           Data.Either                                             (partitionEithers)
 import           Data.Foldable                                           (for_)
 import           Data.Functor.Rep                                        (Representable (..), mzipRep)
 import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
@@ -61,7 +62,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Polynomial.Multivariate                  (evalMonomial, evalPolynomial)
 import           ZkFold.Data.HFunctor                                    (hmap)
 import           ZkFold.Data.Product                                     (fstP, sndP)
-import           ZkFold.Prelude                                          (length)
+import           ZkFold.Prelude                                          (assert, length)
 import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
@@ -77,30 +78,19 @@ import           ZkFold.Symbolic.MonadCircuit                            (MonadC
 
 desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
 desugarRange i (a, b)
+  | a /= zero = error "non-zero lower bound not supported yet"
   | b == negate one = return ()
   | otherwise = do
     let bs = binaryExpansion (toConstant b)
-        as = binaryExpansion (toConstant a)
-    isb <- expansion (length bs) i
-    case dropWhile ((== one) . fst) (zip bs isb) of
+    is <- expansion (length bs) i
+    case dropWhile ((== one) . fst) (zip bs is) of
       [] -> return ()
       ((_, k0):ds) -> do
         z <- newAssigned (one - ($ k0))
         ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
         constraint (($ ge) - one)
-    isa <- expansion (length as) i
-    case dropWhile ((== zero) . fst) (zip bs isa) of
-      [] -> return ()
-      ((_, k0):ds) -> do
-        z <- newAssigned (one - ($ k0))
-        ge <- foldM (\j (c, k) -> newAssigned $ forceLE j c k) z ds
-        constraint (($ ge) - one)
   where forceGE j c k
           | c == zero = ($ j) * (one - ($ k))
-          | otherwise = one + ($ k) * (($ j) - one)
-
-        forceLE j c k
-          | c == one = ($ j) * (one - ($ k))
           | otherwise = one + ($ k) * (($ j) - one)
 
 -- | Desugars range constraints into polynomial constraints
@@ -108,11 +98,16 @@ desugarRanges ::
   (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
   ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 desugarRanges c =
-  let r' = flip execState c {acOutput = U1} . traverse (uncurry desugarRange) $
-          [(head $ map toVar v, k) | (k', s) <- M.toList rm, v <- S.toList s, k <- S.toList k']
-      rm = M.mapKeys (\k -> bool (error "There should only be a range-lookups here") (fromRange k) (isRange k)) rm'
-      (rm', tm) = M.partitionWithKey (\k _ -> isRange k) (acLookup c)
-  in r' { acLookup = tm, acOutput = acOutput c }
+  let (rm, tm) = partitionEithers
+                    [ maybe (Right (k, v)) (Left . (, v)) (asRange k)
+                    | (k, v) <- M.assocs (acLookup c)
+                    ]
+      r' = flip execState c {acOutput = U1} $ traverse (uncurry desugarRange)
+              -- TODO: @v@ should belong to either of segments
+              [ (toVar v, assert (length k == 1) (length k) (head k))
+              | (S.toList -> k, s) <- rm, [v] <- S.toList s
+              ]
+  in r' { acLookup = M.fromList tm, acOutput = acOutput c }
 
 -- | Payload of an input to arithmetic circuit.
 -- To be used as an argument to 'compileWith'.
@@ -131,7 +126,7 @@ guessOutput c = fromCircuit2F (hlmap fstP c) (hmap sndP idCircuit) $ \o o' -> do
 
 ----------------------------------- Information -----------------------------------
 
--- | Calculates the number of constraints in the system.
+-- | Calculates the number of polynomial constraints in the system.
 acSizeN :: ArithmeticCircuit a i o -> Natural
 acSizeN = length . acSystem
 
@@ -139,9 +134,13 @@ acSizeN = length . acSystem
 acSizeM :: ArithmeticCircuit a i o -> Natural
 acSizeM = length . acWitness
 
--- | Calculates the number of range lookups in the system.
-acSizeR :: ArithmeticCircuit a i o -> Natural
-acSizeR = sum . map length . M.elems . acLookup
+-- | Calculates the number of all lookup constraints in the system.
+acSizeL :: ArithmeticCircuit a i o -> Natural
+acSizeL = sum . fmap length . acLookup
+
+-- | Calculates the number of lookup tables in the system.
+acSizeT :: ArithmeticCircuit a i o -> Natural
+acSizeT = length . acLookup
 
 acValue ::
   (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 o -> o a

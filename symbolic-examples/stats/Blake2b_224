@@ -1,4 +1,5 @@
 Blake2b_224
-Number of constraints: 220347
+Number of polynomial constraints: 220347
 Number of variables: 340667
-Number of range lookups: 123152
+Number of lookup constraints: 123152
+Number of lookup tables: 2

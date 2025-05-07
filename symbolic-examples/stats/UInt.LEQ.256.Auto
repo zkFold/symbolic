@@ -1,4 +1,5 @@
 UInt.LEQ.256.Auto
-Number of constraints: 746
+Number of polynomial constraints: 746
 Number of variables: 1317
-Number of range lookups: 656
+Number of lookup constraints: 656
+Number of lookup tables: 2

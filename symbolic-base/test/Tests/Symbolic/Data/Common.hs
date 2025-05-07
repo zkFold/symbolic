@@ -142,8 +142,7 @@ compileCircuit1 :: forall x y a i o .
   , Context y ~ ArithmeticCircuit a i
   , Layout y ~ o
   ) => (x -> y) -> ArithmeticCircuit a i o
-compileCircuit1 func =
-  compileWith @a id (\i -> (U1 :*: U1, i :*: U1)) func
+compileCircuit1 = compileWith @a id (\i -> (U1 :*: U1, i :*: U1))
 
 compileCircuit2 :: forall x y z a i o .
   ( Binary a
@@ -159,8 +158,8 @@ compileCircuit2 :: forall x y z a i o .
   , Layout z ~ o
   , i ~ Layout x :*: Layout y
   ) => (x -> y -> z) -> ArithmeticCircuit a i o
-compileCircuit2 func =
-  compileWith @a id (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1)) func
+compileCircuit2 =
+  compileWith @a id (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1))
 
 type SymbolicFunction0 x = forall c . Symbolic c
   => x c
@@ -168,7 +167,7 @@ type SymbolicFunction0 x = forall c . Symbolic c
 specSymbolicFunction0 :: forall a x o .
   ( MatchingSymbolicInput a U1 o x
   , MatchingSymbolicOutput a U1 o x
-  ) =>String -> SymbolicFunction0 x -> Spec
+  ) => String -> SymbolicFunction0 x -> Spec
 specSymbolicFunction0 desc v = describe desc $ do
   it "evaluates correctly" $ evalCircuit0 @(x (Interpreter a)) (compileCircuit0 v) === v
   it "satisfies constraints" $

@@ -101,11 +101,9 @@ tossPow m = chooseNatural (0, (2 :: Natural) ^ m -! 1)
 --   a <- replicateM (fromIntegral $ value @n) (tossPow m)
   -- return $ V.unsafeToVector a
 
-specMerkleTree' :: forall a d.
-  ( PrimeField a
-  , KnownNat d
-  , Arbitrary a, Arithmetic a, Binary a, Haskell.Show a
-  ) => Spec
+specMerkleTree' ::
+  forall a d.
+  (Arbitrary a, Arithmetic a, Binary a, Haskell.Show a, KnownNat d) => Spec
 specMerkleTree' = do
     describe "MerkleTree specification" $ do
       prop "testId2" $ \x y ->
