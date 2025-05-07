@@ -1,4 +1,5 @@
 LEQ
-Number of constraints: 1033
+Number of polynomial constraints: 1033
 Number of variables: 1532
-Number of range lookups: 510
+Number of lookup constraints: 510
+Number of lookup tables: 1

@@ -3,40 +3,49 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Protocol.Plonkup.Relation where
 
 import           Data.Binary                                         (Binary)
-import           Data.Bool                                           (bool)
 import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (timesNat)
-import           Data.Foldable                                       (toList)
+import           Data.Foldable                                       (Foldable, foldMap, toList)
+import           Data.Function                                       (flip, id, ($), (.))
+import           Data.Functor                                        (fmap, (<$>))
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
 import           Data.Kind                                           (Type)
+import           Data.List                                           ((++))
+import qualified Data.List                                           as L
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
-import           Data.Maybe                                          (fromJust, mapMaybe)
+import           Data.Maybe                                          (Maybe (..), fromJust)
+import           Data.Monoid                                         (Sum (..), (<>))
+import           Data.Ord                                            (Ord, Ordering (..), compare, max, (<=))
 import qualified Data.Set                                            as S
+import           Data.Vector                                         (Vector)
 import qualified Data.Vector                                         as V
-import           GHC.Generics                                        ((:*:) (..))
+import           GHC.Generics                                        (Par1 (..), (:*:) (..))
 import           GHC.IsList                                          (fromList)
-import           Prelude                                             hiding (Num (..), drop, length, replicate, sum,
-                                                                      take, (!!), (/), (^))
+import qualified Prelude                                             as P
 import           Test.QuickCheck                                     (Arbitrary (..))
+import           Text.Show                                           (Show (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Permutation                          (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Algebra.Polynomial.Multivariate              (evalMonomial, evalPolynomial, var)
 import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateRingPolyVec (..), toPolyVec)
-import           ZkFold.Prelude                                      (iterateN', length, replicate)
+import           ZkFold.Prelude                                      (length, replicate, uncurry3)
 import           ZkFold.Protocol.Plonkup.Internal                    (PlonkupPermutationSize)
-import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (..))
+import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (LookupConstraint))
 import           ZkFold.Protocol.Plonkup.PlonkConstraint             (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Protocol.Plonkup.PlonkupConstraint
 import           ZkFold.Symbolic.Compiler
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupTable (..), LookupType (LookupType))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
+import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o (p :: Type -> Type) n a pv = PlonkupRelation
@@ -85,6 +94,62 @@ instance
         ) => Arbitrary (PlonkupRelation i o p n a pv) where
     arbitrary = fromJust . toPlonkupRelation @i @o @p @n @a @pv <$> arbitrary
 
+instance {-# INCOHERENT #-} FromConstant c a => FromConstant c (Vector a) where
+    fromConstant = V.singleton . fromConstant
+
+instance {-# INCOHERENT #-} Scale c a => Scale c (Vector a) where
+    scale = fmap . scale
+
+instance Exponent a b => Exponent (Vector a) b where
+    x ^ e = fmap (^ e) x
+
+instance AdditiveSemigroup a => AdditiveSemigroup (Vector a) where
+    (+) = zipLongest (+)
+
+instance AdditiveMonoid a => AdditiveMonoid (Vector a) where
+    zero = V.singleton zero
+
+instance AdditiveGroup a => AdditiveGroup (Vector a) where
+    negate = fmap negate
+
+instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Vector a) where
+    (*) = zipLongest (*)
+
+instance MultiplicativeMonoid a => MultiplicativeMonoid (Vector a) where
+    one = V.singleton one
+
+instance Semiring a => Semiring (Vector a) where
+
+instance Ring a => Ring (Vector a) where
+
+instance Field a => Field (Vector a) where
+    finv = fmap finv
+
+instance SemiEuclidean a => SemiEuclidean (Vector a) where
+    div = zipLongest div
+    mod = zipLongest mod
+
+instance Euclidean a => Euclidean (Vector a) where
+    gcd = zipLongest gcd
+    bezoutL = zipLongest bezoutL
+    bezoutR = zipLongest bezoutR
+
+instance Finite a => Finite (Vector a) where
+    type Order (Vector a) = Order a
+
+instance ResidueField a => ResidueField (Vector a) where
+    type IntegralOf (Vector a) = Vector (IntegralOf a)
+    fromIntegral = fmap fromIntegral
+    toIntegral = fmap toIntegral
+
+zipLongest :: (a -> b -> c) -> Vector a -> Vector b -> Vector c
+zipLongest f xs ys =
+    let (xn, yn) = (V.length xs, V.length ys)
+     in case xn `compare` yn of
+        LT -> V.zipWith f (xs <> V.replicate (yn P.- xn) (V.last xs)) ys
+        EQ -> V.zipWith f xs ys
+        GT -> V.zipWith f xs (ys <> V.replicate (xn P.- yn) (V.last ys))
+
 toPlonkupRelation ::
   forall i o p n a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
@@ -94,26 +159,65 @@ toPlonkupRelation ac =
     let n = value @n
 
         (xPub :*: xPrv)     = acOutput ac
-        pubInputConstraints = map var (toList xPub)
-        prvInputConstraints = map var (toList xPrv)
-        plonkConstraints    = map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
-        rs :: [a] = concat . mapMaybe (\rc -> bool Nothing (Just . toList . S.map snd $ fromRange rc) (isRange rc)) . M.keys $ acLookup ac
-        -- Number of elements in the set `t`.
-        nLookup = toConstant $ bool zero (head rs + one) (not $ null rs)
+        pubInputConstraints = L.map var (toList xPub)
+        prvInputConstraints = L.map var (toList xPrv)
+        plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
 
-        -- TODO: We are expecting at most one range.
-        t1 = toPolyVec $ fromList $ replicate (value @n -! nLookup) zero ++ iterateN' nLookup ((+) one) zero
-        t2 = toPolyVec $ fromList []
-        t3 = toPolyVec $ fromList []
+        toTriple :: [t] -> (t, t, t)
+        toTriple [x]       = (x, x, x)
+        toTriple [x, y]    = (x, x, y)
+        toTriple [x, y, z] = (x, y, z)
+        toTriple ws        = P.error ("Expected list of length 1-3, got " ++ show (length ws))
+
+        unfold :: LookupTable a f -> (Natural, (Vector a -> Vector a) -> f (Vector a))
+        unfold (Ranges rs) =
+            let segs = S.toList rs
+             in ( sum [ toConstant (hi - lo + one) | (lo, hi) <- segs ]
+                , Par1 . ($ V.concat [ V.enumFromTo lo hi | (lo, hi) <- segs ]))
+        unfold (Product t u) =
+            let (!m, ts) = unfold t
+                (!k, us) = unfold u
+             in ( m * n
+                , \f -> ts (f . V.concatMap (V.replicate (P.fromIntegral k)))
+                    :*: us (f . V.concat . L.replicate (P.fromIntegral m)))
+        unfold (Plot g t) =
+            let (!k, ts) = unfold t
+                g'       = lookupFunction (acLookupFunction ac) g
+             in (k, \f -> let !ts' = ts id in f <$> (ts' :*: g' ts'))
+
+        lkup ::
+            Foldable f => LookupTable a f -> [[Var a i]] ->
+            ([LookupConstraint i a], Sum Natural, (Vector a, Vector a, Vector a))
+        lkup lt vs =
+            let (!k, !ts) = unfold lt
+             in ( L.map (uncurry3 LookupConstraint . toTriple) vs
+                , Sum k
+                , toTriple $ toList (ts id))
 
         -- Lookup queries.
-        xLookup :: [SysVar i] = concat . concatMap S.toList $ M.elems (acLookup ac)
+        (!xLookup, Sum !nLookup, (!xs, !ys, !zs)) = case M.assocs (acLookup ac) of
+            [] -> ([], 0, (V.empty, V.empty, V.empty))
+            [(LookupType lt, vs)] -> lkup lt [ L.map toVar v | v <- S.toList vs ]
+            asscs -> flip foldMap (L.zip [(0 :: Natural)..] asscs) $
+                          -- ^ Folding concatenates tuples pointwise, so:
+                          -- * lists of constraints get concatenated
+                          -- * vectors of values get concatenated, too
+                          -- Just as planned!
+                \(fromConstant -> i, (LookupType lt, vs)) ->
+                    lkup (Ranges (S.singleton (i, i)) `Product` lt)
+                         [ fromConstant i : L.map toVar v | v <- S.toList vs ]
+                         -- NOTE we use constant variables
+                         -- to encode № of a lookup table
+
+        t1 = toPolyVec xs
+        t2 = toPolyVec ys
+        t3 = toPolyVec zs
 
         cNum = acSizeN ac + length (tabulate @o id) + length xLookup
 
-        plonkupSystem = fromList $ concat
-            [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
-            , ConsLookup . LookupConstraint <$> xLookup
+        plonkupSystem = fromList $ L.concat
+            [ L.map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
+            , ConsLookup <$> xLookup
             , replicate (n -! cNum) ConsExtra
             ]
 
@@ -125,10 +229,10 @@ toPlonkupRelation ac =
         qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
         cNum' = cNum + length prvInputConstraints
-        plonkupSystem' = fromList $ concat
-            [ map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
-            , ConsLookup . LookupConstraint <$> xLookup
-            , map (ConsPlonk . toPlonkConstraint) prvInputConstraints
+        plonkupSystem' = fromList $ L.concat
+            [ L.map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
+            , ConsLookup <$> xLookup
+            , L.map (ConsPlonk . toPlonkConstraint) prvInputConstraints
             , replicate (n -! cNum') ConsExtra
             ]
 

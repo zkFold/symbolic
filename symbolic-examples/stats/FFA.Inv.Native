@@ -1,4 +1,5 @@
 FFA.Inv.Native
-Number of constraints: 2
+Number of polynomial constraints: 2
 Number of variables: 2
-Number of range lookups: 0
+Number of lookup constraints: 0
+Number of lookup tables: 0

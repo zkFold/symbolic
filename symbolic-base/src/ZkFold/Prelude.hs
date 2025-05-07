@@ -21,6 +21,9 @@ import           Test.QuickCheck      (Gen, chooseInteger, elements)
 log2ceiling :: (Integral a, Integral b) => a -> b
 log2ceiling = ceiling @Double . logBase 2 . fromIntegral
 
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (x, y, z) = f x y z
+
 length :: Foldable t => t a -> Natural
 length = foldl' (\c _ -> c + 1) 0
 

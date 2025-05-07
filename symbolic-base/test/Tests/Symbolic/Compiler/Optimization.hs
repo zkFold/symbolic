@@ -29,9 +29,9 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
     return (Par1 i5)
 
 testBool ::
-  forall a . (Arithmetic a, Binary a) =>
+  (Arithmetic a, Binary a) =>
   ArithmeticCircuit a ((U1 :*: U1) :*: Par1 :*: U1) Par1
-testBool = compile @a identBool
+testBool = compile identBool
     where
         identBool :: Bool c -> Bool c
         identBool x = x

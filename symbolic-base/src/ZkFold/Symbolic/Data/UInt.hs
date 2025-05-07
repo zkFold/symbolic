@@ -71,8 +71,7 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..), constraint,
-                                                    newAssigned, newRanged)
+import           ZkFold.Symbolic.MonadCircuit
 
 
 -- TODO (Issue #18): hide this constructor
@@ -524,11 +523,9 @@ instance
     negate :: UInt n r c -> UInt n r c
     negate (UInt x) = UInt $ symbolicF x
         (\v -> naturalToVector @c @n @r $ (2 ^ value @n) -! vectorToNatural v (registerSize @(BaseField c) @n @r))
-        (\xv -> if (Haskell.length (V.fromVector xv) Haskell.== 0)
-            then
-                return $ xv
-            else
-                do
+        (\xv -> if Haskell.null (V.fromVector xv)
+            then return xv
+            else do
                 j <- newAssigned (Haskell.const zero)
                 let xs = V.fromVector xv
                     y = 2 ^ registerSize @(BaseField c) @n @r
@@ -539,7 +536,7 @@ instance
                         | otherwise = (y : ys) <> [y']
                     (init_ns, last_ns) = fromJust $ unsnoc ns
                     (init_xs, last_xs) = fromJust $ unsnoc xs
-                (zs, p) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN (init_ns) (init_xs))
+                (zs, p) <- flip runStateT j $ traverse StateT (Haskell.zipWith negateN init_ns init_xs)
                 (zp_head, _) <- negateNH last_ns last_xs p
                 return $ V.unsafeToVector (zs <> [zp_head])
         )

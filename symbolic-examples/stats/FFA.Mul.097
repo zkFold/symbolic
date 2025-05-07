@@ -1,4 +1,5 @@
 FFA.Mul.097
-Number of constraints: 5344
+Number of polynomial constraints: 5344
 Number of variables: 8095
-Number of range lookups: 3317
+Number of lookup constraints: 3317
+Number of lookup tables: 6

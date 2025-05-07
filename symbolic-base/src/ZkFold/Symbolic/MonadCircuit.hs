@@ -5,10 +5,15 @@ module ZkFold.Symbolic.MonadCircuit where
 
 import           Control.Monad                                     (Monad (return))
 import           Data.Binary                                       (Binary)
-import           Data.Function                                     ((.))
+import           Data.Foldable                                     (Foldable)
+import           Data.Function                                     (($), (.))
 import           Data.Functor.Rep                                  (Rep, Representable)
 import           Data.Kind                                         (Type)
-import           Prelude                                           (Foldable, Integer)
+import           Data.Set                                          (singleton)
+import           Data.Traversable                                  (Traversable)
+import           Data.Typeable                                     (Typeable)
+import           GHC.Generics                                      (Par1 (..))
+import           Prelude                                           (Integer)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field                              (Zp)
@@ -85,18 +90,21 @@ class ( Monad m, FromConstant a var
   -- | Adds new polynomial constraint to the system.
   -- E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
   --
-  -- NOTE: it is not checked (yet) whether provided constraint is in
-  -- appropriate form for zkSNARK in use.
+  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   constraint :: ClosedPoly var a -> m ()
 
-  -- | Adds new range constraint to the system.
-  -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
-  rangeConstraint :: var -> a -> m ()
+  -- | Registers new lookup function in the system to be used in lookup tables
+  -- (see 'lookupConstraint').
+  registerFunction ::
+    (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g) =>
+    (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
-  -- | Adds new lookup function to the system.
-  -- For example, @'registerFunction' f @ stores the function @f@.
-  registerFunction :: (Representable f, Binary (Rep f), Foldable g)
-    => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
+  -- | Adds new lookup constraint to the system.
+  -- For examples of lookup constraints, see 'rangeConstraint'.
+  --
+  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
+  lookupConstraint ::
+    (Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
 
   -- | Creates new variable given a polynomial witness
   -- AND adds a corresponding polynomial constraint.
@@ -107,17 +115,25 @@ class ( Monad m, FromConstant a var
   --
   -- NOTE: this adds a polynomial constraint to the system.
   --
-  -- NOTE: is is not checked (yet) whether the corresponding constraint is in
-  -- appropriate form for zkSNARK in use.
+  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   newAssigned :: ClosedPoly var a -> m var
   newAssigned p = newConstrained (\x var -> p x - x var) (p at)
+
+-- | Adds new range constraint to the system.
+-- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
+--
+-- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
+-- For now, this is handled partially with the help of 'desugarRanges' function.
+rangeConstraint :: (AdditiveMonoid a, MonadCircuit var a w m) => var -> a -> m ()
+rangeConstraint v upperBound =
+  lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
 -- NOTE: this adds a range constraint to the system.
-newRanged :: MonadCircuit var a w m => a -> w -> m var
+newRanged :: (AdditiveMonoid a, MonadCircuit var a w m) => a -> w -> m var
 newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
@@ -130,8 +146,7 @@ newRanged upperBound witness = do
 --
 -- NOTE: this adds a polynomial constraint to the system.
 --
--- NOTE: it is not checked (yet) whether provided constraint is in
--- appropriate form for zkSNARK in use.
+-- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
 newConstrained :: MonadCircuit var a w m => NewConstraint var a -> w -> m var
 newConstrained poly witness = do
   v <- unconstrained witness

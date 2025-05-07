@@ -13,7 +13,7 @@ import           Data.Ord                     (Ord)
 import           Data.Type.Equality           (type (~))
 import           GHC.Generics                 (type (:.:) (unComp1))
 import           Numeric.Natural              (Natural)
-import           Prelude                      (Integer)
+import           Prelude                      (Enum, Integer)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Control.HApplicative  (HApplicative (hpair, hunit))
@@ -26,7 +26,7 @@ import           ZkFold.Symbolic.MonadCircuit
 -- is called an ``arithmetic'' field.
 type Arithmetic a = ( ResidueField a, IntegralOf a ~ Integer
                     , ToConstant a, Const a ~ Natural
-                    , Eq a, Ord a, NFData a)
+                    , Eq a, Ord a, Enum a, NFData a)
 
 -- | A type of mappings between functors inside a circuit.
 -- @fs@ are input functors, @g@ is an output functor, @c@ is context.

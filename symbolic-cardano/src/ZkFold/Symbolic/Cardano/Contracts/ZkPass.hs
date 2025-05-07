@@ -148,7 +148,7 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 --     validatorAddress
 --     validatorSignature
 --     publicKey
---    ) =
+--     ) =
 --     let
 --         conditionAllocatorSignatureCorrect = verifyAllocatorSignature @point @n @context @curve @baseField
 --             taskId validatorAddress allocatorAddress allocatorSignature publicKey

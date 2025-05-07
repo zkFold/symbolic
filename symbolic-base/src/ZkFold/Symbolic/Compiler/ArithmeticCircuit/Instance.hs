@@ -70,7 +70,7 @@ arbitraryPolynomialConstraint ac = do
   let solve :: forall var w m . MonadCircuit var a w m => var -> var -> m var
       solve l r = do
         let p :: ClosedPoly var a
-            p = \x -> scale qm one * x l * x r + scale ql one * x l + scale qr one * x r + scale qc one
+            p x = scale qm one * x l * x r + scale ql one * x l + scale qr one * x r + scale qc one
         newConstrained (\x o -> p x + scale qo one * x o) (negate $ p at // fromConstant qo)
   let vars = getAllVars ac
   l <- toVar @a <$> elements vars
@@ -87,7 +87,7 @@ arbitraryLookupConstraint ac = do
   let solve :: forall var w m . MonadCircuit var a w m => var -> a -> m var
       solve v b = do
         let w :: w
-            w = fromIntegral $ toIntegral (at v :: w) `mod` (toIntegral $ fromConstant @_ @w (b + one))
+            w = fromIntegral $ toIntegral (at v :: w) `mod` toIntegral (fromConstant @_ @w (b + one))
         newRanged b w
   let vars = getAllVars ac
   v <- toVar @a <$> elements vars

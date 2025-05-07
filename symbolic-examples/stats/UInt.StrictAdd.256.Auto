@@ -1,4 +1,5 @@
 UInt.StrictAdd.256.Auto
-Number of constraints: 543
+Number of polynomial constraints: 543
 Number of variables: 1051
-Number of range lookups: 518
+Number of lookup constraints: 518
+Number of lookup tables: 3

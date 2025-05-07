@@ -1,4 +1,5 @@
 ByteString.Extend.1.512
-Number of constraints: 1
+Number of polynomial constraints: 1
 Number of variables: 1
-Number of range lookups: 0
+Number of lookup constraints: 0
+Number of lookup tables: 0

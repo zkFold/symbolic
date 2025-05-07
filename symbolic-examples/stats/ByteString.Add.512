@@ -1,4 +1,5 @@
 ByteString.Add.512
-Number of constraints: 5635
+Number of polynomial constraints: 5635
 Number of variables: 6146
-Number of range lookups: 522
+Number of lookup constraints: 522
+Number of lookup tables: 3

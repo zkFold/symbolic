@@ -1,4 +1,5 @@
 SHA256.32
-Number of constraints: 47100
+Number of polynomial constraints: 47100
 Number of variables: 57217
-Number of range lookups: 10996
+Number of lookup constraints: 10996
+Number of lookup tables: 2
