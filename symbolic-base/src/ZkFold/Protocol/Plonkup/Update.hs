@@ -46,7 +46,7 @@ updateRelation r@PlonkupRelation {..} inputs =
         n = value @n
         l = length inputs
         qL' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qL) ++ replicate l one ++ replicate (n -! (cNum + l)) zero
-        qC' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qC) ++ (toList inputs) ++ replicate (n -! (cNum + l)) zero
+        qC' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qC) ++ (negate <$> toList inputs) ++ replicate (n -! (cNum + l)) zero
     in
         r { qL = qL', qC = qC', cNum = cNum + l }
 
