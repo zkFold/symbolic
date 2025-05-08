@@ -28,11 +28,10 @@ import           ZkFold.Protocol.Plonkup.Setup
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Kind (Type)
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall i o (p :: Type -> Type) n g1 g2 gt ts pv .
+instance forall i o n g1 g2 gt ts pv .
         ( KnownNat n
         , Representable i
         , Representable o
@@ -50,36 +49,36 @@ instance forall i o (p :: Type -> Type) n g1 g2 gt ts pv .
         , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-        ) => NonInteractiveProof (Plonkup i o p n g1 g2 ts pv) where
-    type Transcript (Plonkup i o p n g1 g2 ts pv)  = ts
-    type SetupProve (Plonkup i o p n g1 g2 ts pv)  = PlonkupProverSetup i o p n g1 g2 pv
-    type SetupVerify (Plonkup i o p n g1 g2 ts pv) = PlonkupVerifierSetup i o p n g1 g2 pv
-    type Witness (Plonkup i o p n g1 g2 ts pv)     = (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
-    type Input (Plonkup i o p n g1 g2 ts pv)       = PlonkupInput g1
-    type Proof (Plonkup i o p n g1 g2 ts pv)       = PlonkupProof g1
+        ) => NonInteractiveProof (Plonkup i o n g1 g2 ts pv) where
+    type Transcript (Plonkup i o n g1 g2 ts pv)  = ts
+    type SetupProve (Plonkup i o n g1 g2 ts pv)  = PlonkupProverSetup i o n g1 g2 pv
+    type SetupVerify (Plonkup i o n g1 g2 ts pv) = PlonkupVerifierSetup i o n g1 g2 pv
+    type Witness (Plonkup i o n g1 g2 ts pv)     = (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
+    type Input (Plonkup i o n g1 g2 ts pv)       = PlonkupInput g1
+    type Proof (Plonkup i o n g1 g2 ts pv)       = PlonkupProof g1
 
     setupProve ::
-      Plonkup i o p n g1 g2 ts pv -> SetupProve (Plonkup i o p n g1 g2 ts pv)
+      Plonkup i o n g1 g2 ts pv -> SetupProve (Plonkup i o n g1 g2 ts pv)
     setupProve plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @o @p @n @g1 @g2 @gt @ts plonk
+        let PlonkupSetup {..} = plonkupSetup @i @o @n @g1 @g2 @gt @ts plonk
         in PlonkupProverSetup {..}
 
     setupVerify ::
-      Plonkup i o p n g1 g2 ts pv -> SetupVerify (Plonkup i o p n g1 g2 ts pv)
+      Plonkup i o n g1 g2 ts pv -> SetupVerify (Plonkup i o n g1 g2 ts pv)
     setupVerify plonk =
-        let PlonkupSetup {..} = plonkupSetup @i @o @p @n @g1 @g2 @gt @ts plonk
+        let PlonkupSetup {..} = plonkupSetup @i @o @n @g1 @g2 @gt @ts plonk
         in PlonkupVerifierSetup {..}
 
     prove ::
-      SetupProve (Plonkup i o p n g1 g2 ts pv) ->
-      Witness (Plonkup i o p n g1 g2 ts pv) ->
-      (Input (Plonkup i o p n g1 g2 ts pv), Proof (Plonkup i o p n g1 g2 ts pv))
+      SetupProve (Plonkup i o n g1 g2 ts pv) ->
+      Witness (Plonkup i o n g1 g2 ts pv) ->
+      (Input (Plonkup i o n g1 g2 ts pv), Proof (Plonkup i o n g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @p @n @g1 @g2 @ts @pv setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
     verify ::
-      SetupVerify (Plonkup i o p n g1 g2 ts pv) ->
-      Input (Plonkup i o p n g1 g2 ts pv) ->
-      Proof (Plonkup i o p n g1 g2 ts pv) -> Bool
-    verify = with4n6 @n $ plonkupVerify @i @o @p @n @g1 @g2 @gt @ts @pv
+      SetupVerify (Plonkup i o n g1 g2 ts pv) ->
+      Input (Plonkup i o n g1 g2 ts pv) ->
+      Proof (Plonkup i o n g1 g2 ts pv) -> Bool
+    verify = with4n6 @n $ plonkupVerify @i @o @n @g1 @g2 @gt @ts @pv

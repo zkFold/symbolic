@@ -10,7 +10,6 @@ import           Text.Show                          (Show, show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import           ZkFold.Symbolic.Compiler           ()
 
 newtype PlonkupInput g = PlonkupInput { unPlonkupInput :: [ScalarFieldOf g] }
 

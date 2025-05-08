@@ -14,7 +14,6 @@ import           Data.Foldable                                       (Foldable, 
 import           Data.Function                                       (flip, id, ($), (.))
 import           Data.Functor                                        (fmap, (<$>))
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
-import           Data.Kind                                           (Type)
 import           Data.List                                           ((++))
 import qualified Data.List                                           as L
 import           Data.Map                                            (elems)
@@ -49,7 +48,7 @@ import           ZkFold.Symbolic.MonadCircuit                        (ResidueFie
 import Data.List (map)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation i (o :: Type -> Type) (p :: Type -> Type) n a pv = PlonkupRelation
+data PlonkupRelation i o n a pv = PlonkupRelation
     { qM       :: pv n
     , qL       :: pv n
     , qR       :: pv n
@@ -66,7 +65,7 @@ data PlonkupRelation i (o :: Type -> Type) (p :: Type -> Type) n a pv = PlonkupR
     -- ^ The number of private inputs.
     }
 
-instance (Show a, Show (pv n)) => Show (PlonkupRelation i o p n a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -87,13 +86,12 @@ instance
         , Representable i
         , Representable o
         , Foldable o
-        , Foldable p
         , Ord (Rep i)
         , Arithmetic a
         , Binary a
         , Arbitrary (ArithmeticCircuit a i o)
-        ) => Arbitrary (PlonkupRelation i o p n a pv) where
-    arbitrary = fromJust . toPlonkupRelation @i @o @p @n @a @pv <$> arbitrary
+        ) => Arbitrary (PlonkupRelation i o n a pv) where
+    arbitrary = fromJust . toPlonkupRelation @i @o @n @a @pv <$> arbitrary
 
 instance {-# INCOHERENT #-} FromConstant c a => FromConstant c (Vector a) where
     fromConstant = V.singleton . fromConstant
@@ -152,10 +150,10 @@ zipLongest f xs ys =
         GT -> V.zipWith f xs (ys <> V.replicate (xn P.- yn) (V.last ys))
 
 toPlonkupRelation ::
-  forall i o p n a pv .
+  forall i o n a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
   , Representable i, Representable o, Foldable o
-  ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o p n a pv)
+  ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation ac =
     let n = value @n
 

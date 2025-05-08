@@ -23,7 +23,7 @@ import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import           ZkFold.Symbolic.Class                        (Arithmetic)
 
-data PlonkupSetup i o p n g1 g2 pv = PlonkupSetup
+data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
     { omega       :: ScalarFieldOf g1
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
@@ -33,7 +33,7 @@ data PlonkupSetup i o p n g1 g2 pv = PlonkupSetup
     , sigma1s     :: pv n
     , sigma2s     :: pv n
     , sigma3s     :: pv n
-    , relation    :: PlonkupRelation i o p n (ScalarFieldOf g1) pv
+    , relation    :: PlonkupRelation i o n (ScalarFieldOf g1) pv
     , polynomials :: PlonkupCircuitPolynomials n g1 pv
     , commitments :: PlonkupCircuitCommitments g1
     }
@@ -44,8 +44,8 @@ instance
         , Show (ScalarFieldOf g1)
         , Show (pv n)
         , Show (pv (PlonkupPolyExtendedLength n))
-        , Show (PlonkupRelation i o p n (ScalarFieldOf g1) pv)
-        ) => Show (PlonkupSetup i o p n g1 g2 pv) where
+        , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
+        ) => Show (PlonkupSetup i o n g1 g2 pv) where
     show PlonkupSetup {..} =
         "Setup: "
         ++ show omega ++ " "
@@ -61,7 +61,7 @@ instance
         ++ show polynomials ++ " "
         ++ show commitments
 
-plonkupSetup :: forall i o p n g1 g2 gt ts pv .
+plonkupSetup :: forall i o n g1 g2 gt ts pv .
     ( Representable i
     , Representable o
     , Foldable o
@@ -73,12 +73,12 @@ plonkupSetup :: forall i o p n g1 g2 gt ts pv .
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    ) => Plonkup i o p n g1 g2 ts pv -> PlonkupSetup i o p n g1 g2 pv
+    ) => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =
     let gs = toV gs'
         h0 = pointGen
 
-        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation i o p n (ScalarFieldOf g1) pv
+        relation@PlonkupRelation{..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation i o n (ScalarFieldOf g1) pv
 
         f i = case (i-!1) `Prelude.div` value @n of
             0 -> omega^i
