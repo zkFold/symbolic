@@ -6,6 +6,7 @@
 module ZkFold.Protocol.Plonkup.Update where
 
 import           Data.Foldable                                (toList)
+import           Data.Functor.Rep                             (Representable (..))
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (fromList)
 import           Prelude                                      hiding (Num (..), drop, length, pi, replicate, sum, take,
@@ -24,7 +25,6 @@ import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (
 import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import           ZkFold.Protocol.Plonkup.Verifier.Setup       (PlonkupVerifierSetup (..))
-import Data.Functor.Rep (Representable (..))
 
 nextGroupElement :: forall i o n g1 g2 pv .
     ( KnownNat n
