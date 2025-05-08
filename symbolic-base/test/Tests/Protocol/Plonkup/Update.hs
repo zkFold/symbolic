@@ -4,6 +4,7 @@ module Tests.Protocol.Plonkup.Update (specPlonkupUpdate) where
 
 import           Data.Bool                                           (Bool (..))
 import           Data.ByteString                                     (ByteString)
+import           Data.Foldable                                       (toList)
 import           Data.Function                                       (($))
 import           Data.Functor.Rep                                    (Rep, Representable)
 import           Data.Ord                                            (Ord)
@@ -23,7 +24,6 @@ import           ZkFold.Protocol.Plonkup.Update                      (nextGroupE
                                                                       updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness                     (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.Foldable (toList)
 
 type P i n = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 

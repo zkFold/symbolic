@@ -17,6 +17,7 @@ import qualified Data.Vector                                         as V
 import           GHC.IsList                                          (IsList (fromList))
 import           Test.Hspec
 import           Test.QuickCheck                                     hiding (witness)
+import           Tests.Protocol.Plonkup.Update                       (specPlonkupUpdate)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381              (BLS12_381_G1_Point, BLS12_381_G2_Point)
@@ -37,7 +38,6 @@ import           ZkFold.Protocol.Plonkup.Utils                       (sortByList
 import           ZkFold.Protocol.Plonkup.Witness                     (PlonkupWitnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-import Tests.Protocol.Plonkup.Update (specPlonkupUpdate)
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a (Vector 1)) Natural]

@@ -6,21 +6,21 @@ module ZkFold.Protocol.Plonk.Verifier
 
 import           Data.Word                                    (Word8)
 import           GHC.IsList                                   (IsList (..))
-import           Prelude                                      hiding (Num (..), Ord, drop, length, sum, take, replicate, (!!), (/),
-                                                               (^))
+import           Prelude                                      hiding (Num (..), Ord, drop, length, replicate, sum, take,
+                                                               (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, value)
 import           ZkFold.Algebra.Polynomial.Univariate         hiding (qr)
+import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Protocol.NonInteractiveProof          hiding (verify)
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
 import           ZkFold.Protocol.Plonkup.Proof
+import           ZkFold.Protocol.Plonkup.Relation             (prvNum)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
-import ZkFold.Protocol.Plonkup.Relation (prvNum)
-import ZkFold.Prelude (replicate)
 
 plonkVerify :: forall i o n g1 g2 gt ts pv .
     ( Pairing g1 g2 gt

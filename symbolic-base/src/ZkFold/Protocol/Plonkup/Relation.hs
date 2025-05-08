@@ -14,7 +14,7 @@ import           Data.Foldable                                       (Foldable, 
 import           Data.Function                                       (flip, id, ($), (.))
 import           Data.Functor                                        (fmap, (<$>))
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
-import           Data.List                                           ((++))
+import           Data.List                                           (map, (++))
 import qualified Data.List                                           as L
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
@@ -45,7 +45,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupTable (..), LookupType (LookupType))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
-import Data.List (map)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation

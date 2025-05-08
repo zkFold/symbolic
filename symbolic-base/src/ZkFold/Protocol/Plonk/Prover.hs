@@ -9,14 +9,15 @@ import           Data.Foldable                              (length)
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, replicate, (!!), (/),
-                                                             (^))
+import           Prelude                                    hiding (Num (..), drop, length, pi, replicate, sum, take,
+                                                             (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
 import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
 import           ZkFold.Algebra.Polynomial.Univariate       hiding (qr)
 import           ZkFold.Data.Vector                         ((!!))
+import           ZkFold.Prelude                             (replicate)
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup                    (with4n6)
 import           ZkFold.Protocol.Plonkup.Input
@@ -29,7 +30,6 @@ import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..
 import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
-import ZkFold.Prelude (replicate)
 
 plonkProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)

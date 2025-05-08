@@ -8,7 +8,7 @@ module ZkFold.Protocol.Plonkup.Update where
 import           Data.Foldable                                (toList)
 import qualified Data.Vector                                  as V
 import           GHC.IsList                                   (fromList)
-import           Prelude                                      hiding (Num (..), drop, length, replicate, sum, take, pi,
+import           Prelude                                      hiding (Num (..), drop, length, pi, replicate, sum, take,
                                                                (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
@@ -16,7 +16,7 @@ import           ZkFold.Algebra.EllipticCurve.Class           (ScalarFieldOf)
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPolyVec (..), UnivariateRingPolyVec (..),
                                                                toPolyVec)
-import           ZkFold.Prelude                               (length, take, drop)
+import           ZkFold.Prelude                               (drop, length, take)
 import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Protocol.Plonkup.Prover.Setup         (PlonkupProverSetup (..))
