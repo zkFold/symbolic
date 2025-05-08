@@ -20,16 +20,19 @@ import           ZkFold.Prelude                               (length, replicate
 import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
-import           ZkFold.Protocol.Plonkup.Setup                (PlonkupSetup (..))
+-- import           ZkFold.Protocol.Plonkup.Setup                (PlonkupSetup (..))
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
+import ZkFold.Protocol.Plonkup.Prover.Setup (PlonkupProverSetup (..))
+import ZkFold.Protocol.Plonkup.Verifier (PlonkupVerifierSetup)
+import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup(..))
 
 nextGroupElement :: forall i o p n g1 g2 pv .
     ( KnownNat n
     , KnownNat ((4 * n) + 6)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    ) => PlonkupSetup i o p n g1 g2 pv -> g1
-nextGroupElement PlonkupSetup {..} =
+    ) => PlonkupProverSetup i o p n g1 g2 pv -> g1
+nextGroupElement PlonkupProverSetup {..} =
     let
         p :: PlonkupPolyExtended n g1 pv
         p = polyVecLagrange (value @n) (cNum relation + 1) omega
@@ -45,27 +48,42 @@ updateRelation r@PlonkupRelation {..} inputs =
     let
         n = value @n
         l = length inputs
-        qL' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qL) ++ replicate l one ++ replicate (n -! (cNum + l)) zero
+        qO' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qO) ++ replicate l one ++ replicate (n -! (cNum + l)) zero
         qC' = toPolyVec $ fromList $ take cNum (toList $ fromPolyVec qC) ++ (negate <$> toList inputs) ++ replicate (n -! (cNum + l)) zero
     in
-        r { qL = qL', qC = qC', cNum = cNum + l }
+        r { qO = qO', qC = qC', cNum = cNum + l }
 
-updateSetup :: forall i o p n g1 g2 pv p' .
+updateProverSetup :: forall i o p n g1 g2 pv p' .
     ( KnownNat n
     , KnownNat ((4 * n) + 6)
     , Foldable p'
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    ) => PlonkupSetup i o p n g1 g2 pv -> p' (ScalarFieldOf g1) -> PlonkupSetup i o p n g1 g2 pv
-updateSetup setup@PlonkupSetup {..} inputs =
+    ) => PlonkupProverSetup i o p n g1 g2 pv -> p' (ScalarFieldOf g1) -> PlonkupProverSetup i o p n g1 g2 pv
+updateProverSetup setup@PlonkupProverSetup {..} inputs =
     let
         relation'@PlonkupRelation {..} = updateRelation relation inputs
 
-        qlX' = polyVecInLagrangeBasis omega qL
+        qoX' = polyVecInLagrangeBasis omega qO
         qcX' = polyVecInLagrangeBasis omega qC
 
-        polynomials' = polynomials { qlX = qlX', qcX = qcX' }
+        polynomials' = polynomials { qoX = qoX', qcX = qcX' }
 
-        commitments' = commitments { cmQl = gs `bilinear` qlX', cmQc = gs `bilinear` qcX' }
+        -- commitments' = commitments { cmQl = gs `bilinear` qlX', cmQc = gs `bilinear` qcX' }
     in
-        setup { relation = relation' , polynomials = polynomials', commitments = commitments' }
+        setup { relation = relation' , polynomials = polynomials' }
+
+updateVerifierSetup :: forall i o p n g1 g2 pv p' .
+    ( KnownNat n
+    , Foldable p'
+    , AdditiveGroup g1
+    , Scale (ScalarFieldOf g1) g1
+    , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    ) => PlonkupVerifierSetup i o p n g1 g2 pv -> p' (ScalarFieldOf g1) -> p' g1 -> PlonkupVerifierSetup i o p n g1 g2 pv
+updateVerifierSetup setup@PlonkupVerifierSetup {..} inputs hs =
+    let
+        relation' = updateRelation relation inputs
+        PlonkupCircuitCommitments {..} = commitments
+
+        commitments' = commitments { cmQo = cmQo + sum hs, cmQc = cmQc - sum (zipWith scale (toList inputs) (toList hs)) }
+    in
+        setup { relation = relation' , commitments = commitments' }
