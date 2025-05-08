@@ -6,7 +6,7 @@ module ZkFold.Protocol.Plonk.Verifier
 
 import           Data.Word                                    (Word8)
 import           GHC.IsList                                   (IsList (..))
-import           Prelude                                      hiding (Num (..), Ord, drop, length, sum, take, (!!), (/),
+import           Prelude                                      hiding (Num (..), Ord, drop, length, sum, take, replicate, (!!), (/),
                                                                (^))
 
 import           ZkFold.Algebra.Class
@@ -19,6 +19,8 @@ import           ZkFold.Protocol.Plonkup.Internal
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
+import ZkFold.Protocol.Plonkup.Relation (prvNum)
+import ZkFold.Prelude (replicate)
 
 plonkVerify :: forall i o n g1 g2 gt ts pv .
     ( Pairing g1 g2 gt
@@ -101,7 +103,7 @@ plonkVerify
 
         -- Step 7: Compute public polynomial evaluation
         pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @_ @(PlonkupPolyExtendedLength n) omega
-            (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n)
+            (toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment

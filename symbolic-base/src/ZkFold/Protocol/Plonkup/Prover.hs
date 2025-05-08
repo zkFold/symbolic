@@ -12,7 +12,7 @@ import           Data.Foldable                              (length)
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, (!!), (/),
+import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, replicate, (!!), (/),
                                                              (^))
 
 import           ZkFold.Algebra.Class
@@ -31,6 +31,7 @@ import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..
 import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
+import ZkFold.Prelude (replicate)
 
 plonkupProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
@@ -63,7 +64,7 @@ plonkupProve PlonkupProverSetup {..}
         !w3X = polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
         -- Extending public input to the polynomial domain
-        !pi  = toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n
+        !pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n
         !piX = polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
         -- Round 1
@@ -201,6 +202,7 @@ plonkupProve PlonkupProverSetup {..}
         !h1_xi'  = h1X `evalPolyVec` (xi * omega)
         !h2_xi   = h2X `evalPolyVec` xi
         !lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
+        !l1_xi   = one // (scale n one * (xi - omega))
         !l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [prvNum relation + 1 :: Natural .. fromIntegral (length wPub)]
 
         -- Round 6

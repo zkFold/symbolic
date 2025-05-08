@@ -9,7 +9,7 @@ import           Data.Foldable                              (length)
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, (!!), (/),
+import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, replicate, (!!), (/),
                                                              (^))
 
 import           ZkFold.Algebra.Class
@@ -29,6 +29,7 @@ import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..
 import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestInfo (..))
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
+import ZkFold.Prelude (replicate)
 
 plonkProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
@@ -60,7 +61,7 @@ plonkProve PlonkupProverSetup {..}
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv
         w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
-        pi  = toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n
+        pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n
         piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
         -- Round 1
@@ -196,6 +197,7 @@ plonkProve PlonkupProverSetup {..}
         h1_xi'  = h1X `evalPolyVec` (xi * omega)
         h2_xi   = h2X `evalPolyVec` xi
         lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
+        l1_xi   = one // (scale n one * (xi - omega))
         l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [prvNum relation + 1 :: Natural .. fromIntegral (length wPub)]
 
         -- Round 6

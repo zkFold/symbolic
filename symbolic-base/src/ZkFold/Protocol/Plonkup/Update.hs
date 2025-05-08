@@ -16,7 +16,7 @@ import           ZkFold.Algebra.EllipticCurve.Class           (ScalarFieldOf)
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPolyVec (..), UnivariateRingPolyVec (..),
                                                                toPolyVec)
-import           ZkFold.Prelude                               (length, take, drop, replicate)
+import           ZkFold.Prelude                               (length, take, drop)
 import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Protocol.Plonkup.Prover.Setup         (PlonkupProverSetup (..))
@@ -52,7 +52,7 @@ updateRelation r@PlonkupRelation {..} inputs =
             , (negate <$> toList inputs)
             , drop l (toList $ fromPolyVec qC)
             ]
-        pubInput' pi = replicate prvNum' zero ++ drop prvNum' (pubInput pi)
+        pubInput' pi = drop l (pubInput pi)
     in
         r { qC = qC', pubInput = pubInput', prvNum = prvNum' }
 
