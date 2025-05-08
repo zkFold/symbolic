@@ -46,9 +46,10 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupTable (..), LookupType (LookupType))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
+import Data.List (map)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation i o (p :: Type -> Type) n a pv = PlonkupRelation
+data PlonkupRelation i (o :: Type -> Type) (p :: Type -> Type) n a pv = PlonkupRelation
     { qM       :: pv n
     , qL       :: pv n
     , qR       :: pv n
@@ -60,9 +61,9 @@ data PlonkupRelation i o (p :: Type -> Type) n a pv = PlonkupRelation
     , t3       :: pv n
     , sigma    :: Permutation (3 * n)
     , witness  :: i a -> (pv n, pv n, pv n)
-    , pubInput :: i a -> o a
-    , cNum     :: Natural
-    -- ^ The actual number of constraints in the relation.
+    , pubInput :: i a -> [a]
+    , prvNum   :: Natural
+    -- ^ The number of private inputs.
     }
 
 instance (Show a, Show (pv n)) => Show (PlonkupRelation i o p n a pv) where
@@ -90,7 +91,7 @@ instance
         , Ord (Rep i)
         , Arithmetic a
         , Binary a
-        , Arbitrary (ArithmeticCircuit a i (o :*: p))
+        , Arbitrary (ArithmeticCircuit a i o)
         ) => Arbitrary (PlonkupRelation i o p n a pv) where
     arbitrary = fromJust . toPlonkupRelation @i @o @p @n @a @pv <$> arbitrary
 
@@ -153,14 +154,13 @@ zipLongest f xs ys =
 toPlonkupRelation ::
   forall i o p n a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
-  , Representable i, Representable o, Foldable o, Foldable p
-  ) => ArithmeticCircuit a i (o :*: p) -> Maybe (PlonkupRelation i o p n a pv)
+  , Representable i, Representable o, Foldable o
+  ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o p n a pv)
 toPlonkupRelation ac =
     let n = value @n
 
-        (xPub :*: xPrv)     = acOutput ac
+        xPub                = acOutput ac
         pubInputConstraints = L.map var (toList xPub)
-        prvInputConstraints = L.map var (toList xPrv)
         plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
 
         toTriple :: [t] -> (t, t, t)
@@ -228,17 +228,9 @@ toPlonkupRelation ac =
         qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
         qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
-        cNum' = cNum + length prvInputConstraints
-        plonkupSystem' = fromList $ L.concat
-            [ L.map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
-            , ConsLookup <$> xLookup
-            , L.map (ConsPlonk . toPlonkConstraint) prvInputConstraints
-            , replicate (n -! cNum') ConsExtra
-            ]
-
-        a  = fmap getA plonkupSystem'
-        b  = fmap getB plonkupSystem'
-        c  = fmap getC plonkupSystem'
+        a  = fmap getA plonkupSystem
+        b  = fmap getB plonkupSystem
+        c  = fmap getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
@@ -246,8 +238,10 @@ toPlonkupRelation ac =
         w2 i = toPolyVec $ fmap (indexW ac i) b
         w3 i = toPolyVec $ fmap (indexW ac i) c
         witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = fmap (indexW ac i) xPub
+        pubInput i = map (indexW ac i) $ toList xPub
 
-    in if max cNum' nLookup <= n
+        prvNum = 0
+
+    in if max cNum nLookup <= n
         then Just $ PlonkupRelation {..}
         else Nothing

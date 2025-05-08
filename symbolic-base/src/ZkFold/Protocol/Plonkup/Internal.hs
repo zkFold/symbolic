@@ -7,7 +7,6 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
-import           GHC.Generics                                        ((:*:))
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
@@ -29,7 +28,7 @@ data Plonkup i o p (n :: Natural) g1 g2 transcript pv = Plonkup {
         omega :: ScalarFieldOf g1,
         k1    :: ScalarFieldOf g1,
         k2    :: ScalarFieldOf g1,
-        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i (o :*: p),
+        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
         gs'   :: Vector (n + 5) g1
     }
@@ -58,7 +57,7 @@ instance
   , CyclicGroup g1
   , CyclicGroup g2
   , Scale (ScalarFieldOf g1) g2
-  , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) i (o :*: p))
+  , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) i o)
   ) => Arbitrary (Plonkup i o p n g1 g2 t pv) where
     arbitrary = do
         ac <- arbitrary

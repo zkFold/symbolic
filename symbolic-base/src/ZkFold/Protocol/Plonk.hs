@@ -11,7 +11,6 @@ import           Data.Functor.Rep                                    (Rep, Repre
 import           Data.Kind                                           (Type)
 import qualified Data.Vector                                         as V
 import           Data.Word                                           (Word8)
-import           GHC.Generics                                        ((:*:))
 import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
                                                                       sum, take, (!!), (/), (^))
 import qualified Prelude                                             as P hiding (length)
@@ -41,7 +40,7 @@ data Plonk i o p (n :: Natural) g1 g2 transcript pv = Plonk {
         omega :: ScalarFieldOf g1,
         k1    :: ScalarFieldOf g1,
         k2    :: ScalarFieldOf g1,
-        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i (o :*: p),
+        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
         gs'   :: Vector (n + 5) g1
     }
@@ -73,9 +72,8 @@ instance forall i o p n g1 g2 gt (ts :: Type) pv .
         , SetupProve (Plonkup i o p n g1 g2 ts pv) ~ PlonkupProverSetup i o p n g1 g2 pv
         , SetupVerify (Plonkup i o p n g1 g2 ts pv) ~ PlonkupVerifierSetup i o p n g1 g2 pv
         , Witness (Plonkup i o p n g1 g2 ts pv) ~ (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
-        , Input (Plonkup i o p n g1 g2 ts pv) ~ PlonkupInput o g1
+        , Input (Plonkup i o p n g1 g2 ts pv) ~ PlonkupInput g1
         , Proof (Plonkup i o p n g1 g2 ts pv) ~ PlonkupProof g1
-        , Foldable o
         , Compressible g1
         , Pairing g1 g2 gt
         , Eq gt
@@ -93,7 +91,7 @@ instance forall i o p n g1 g2 gt (ts :: Type) pv .
     type SetupProve (Plonk i o p n g1 g2 ts pv)  = PlonkupProverSetup i o p n g1 g2 pv
     type SetupVerify (Plonk i o p n g1 g2 ts pv) = PlonkupVerifierSetup i o p n g1 g2 pv
     type Witness (Plonk i o p n g1 g2 ts pv)     = (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
-    type Input (Plonk i o p n g1 g2 ts pv)       = PlonkupInput o g1
+    type Input (Plonk i o p n g1 g2 ts pv)       = PlonkupInput g1
     type Proof (Plonk i o p n g1 g2 ts pv)       = PlonkupProof g1
 
     setupProve ::

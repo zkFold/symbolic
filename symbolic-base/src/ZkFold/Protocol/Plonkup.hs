@@ -28,15 +28,15 @@ import           ZkFold.Protocol.Plonkup.Setup
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Kind (Type)
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall i o p n g1 g2 gt ts pv .
+instance forall i o (p :: Type -> Type) n g1 g2 gt ts pv .
         ( KnownNat n
         , Representable i
         , Representable o
         , Foldable o
-        , Foldable p
         , Ord (Rep i)
         , Pairing g1 g2 gt
         , Compressible g1
@@ -55,7 +55,7 @@ instance forall i o p n g1 g2 gt ts pv .
     type SetupProve (Plonkup i o p n g1 g2 ts pv)  = PlonkupProverSetup i o p n g1 g2 pv
     type SetupVerify (Plonkup i o p n g1 g2 ts pv) = PlonkupVerifierSetup i o p n g1 g2 pv
     type Witness (Plonkup i o p n g1 g2 ts pv)     = (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
-    type Input (Plonkup i o p n g1 g2 ts pv)       = PlonkupInput o g1
+    type Input (Plonkup i o p n g1 g2 ts pv)       = PlonkupInput g1
     type Proof (Plonkup i o p n g1 g2 ts pv)       = PlonkupProof g1
 
     setupProve ::

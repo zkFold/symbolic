@@ -65,7 +65,6 @@ plonkupSetup :: forall i o p n g1 g2 gt ts pv .
     ( Representable i
     , Representable o
     , Foldable o
-    , Foldable p
     , Ord (Rep i)
     , Arithmetic (ScalarFieldOf g1)
     , Binary (ScalarFieldOf g2)
