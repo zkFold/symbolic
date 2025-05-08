@@ -64,7 +64,7 @@ plonkupProve PlonkupProverSetup {..}
         !w3X = polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
         -- Extending public input to the polynomial domain
-        !pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n
+        !pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub :: pv n
         !piX = polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
         -- Round 1

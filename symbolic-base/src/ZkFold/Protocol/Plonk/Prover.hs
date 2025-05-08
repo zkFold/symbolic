@@ -61,7 +61,7 @@ plonkProve PlonkupProverSetup {..}
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv
         w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
-        pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n
+        pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub :: pv n
         piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
         -- Round 1

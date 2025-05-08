@@ -103,7 +103,7 @@ plonkVerify
 
         -- Step 7: Compute public polynomial evaluation
         pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @_ @(PlonkupPolyExtendedLength n) omega
-            (toPolyVec $ fromList $ replicate (prvNum relation) zero ++ wPub :: pv n)
+            (toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub :: pv n)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
