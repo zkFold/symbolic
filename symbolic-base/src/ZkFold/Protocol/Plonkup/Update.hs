@@ -24,6 +24,7 @@ import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (
 import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import           ZkFold.Protocol.Plonkup.Verifier.Setup       (PlonkupVerifierSetup (..))
+import Data.Functor.Rep (Representable (..))
 
 nextGroupElement :: forall i o n g1 g2 pv .
     ( KnownNat n
@@ -39,11 +40,13 @@ nextGroupElement PlonkupProverSetup {..} =
         gs `bilinear` p
 
 updateRelation :: forall i o n a pv .
-    ( KnownNat n
+    ( Representable i
+    , KnownNat n
     , UnivariateRingPolyVec a pv
     ) => PlonkupRelation i o n a pv -> [a] -> PlonkupRelation i o n a pv
 updateRelation r@PlonkupRelation {..} inputs =
     let
+        lmax = length $ pubInput $ tabulate $ const zero
         l = length inputs
         prvNum' = prvNum + l
         qC' = toPolyVec $ fromList $ concat
@@ -53,10 +56,13 @@ updateRelation r@PlonkupRelation {..} inputs =
             ]
         pubInput' pi = drop l (pubInput pi)
     in
-        r { qC = qC', pubInput = pubInput', prvNum = prvNum' }
+        if l > lmax
+            then error "updateRelation: too many inputs"
+            else r { qC = qC', pubInput = pubInput', prvNum = prvNum' }
 
 updateProverSetup :: forall i o n g1 g2 pv .
-    ( KnownNat n
+    ( Representable i
+    , KnownNat n
     , KnownNat ((4 * n) + 6)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     ) => PlonkupProverSetup i o n g1 g2 pv -> [ScalarFieldOf g1] -> PlonkupProverSetup i o n g1 g2 pv
@@ -68,7 +74,8 @@ updateProverSetup setup@PlonkupProverSetup {..} inputs =
         setup { relation = relation', polynomials = polynomials' }
 
 updateVerifierSetup :: forall i o n g1 g2 pv .
-    ( KnownNat n
+    ( Representable i
+    , KnownNat n
     , AdditiveGroup g1
     , Scale (ScalarFieldOf g1) g1
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv

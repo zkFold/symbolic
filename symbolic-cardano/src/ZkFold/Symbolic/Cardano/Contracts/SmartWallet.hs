@@ -52,7 +52,6 @@ import qualified ZkFold.Algebra.Number                        as Number
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
 import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
 import           ZkFold.Data.ByteString                       (toByteString)
-import           ZkFold.Data.HFunctor                         (hmap)
 import           ZkFold.Data.Vector                           (Vector)
 import           ZkFold.Prelude                               (log2ceiling)
 import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
@@ -223,9 +222,9 @@ type ExpModCircuitGates = 2^19
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
-type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput (Par1 :*: U1)
+type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
 
-type PlonkupTs i n t = Plonkup i Par1 U1 n BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
 type TranscriptConstraints ts =
     ( ToTranscript ts Word8
@@ -276,7 +275,7 @@ expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * to
             Par1 <$> foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
 
 expModCircuit :: ExpModCircuit
-expModCircuit = hmap (\o -> o :*: U1) $ C.compile @Fr expModContract
+expModCircuit = C.compile @Fr expModContract
 
 expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
 expModSetup x ac = setupV
@@ -334,8 +333,8 @@ expModProof x ps ac ExpModProofInput{..} = proof
 
 type ExpModCircuitGatesMock = 2^2
 
-identityCircuit :: ArithmeticCircuit Fr Par1 (Par1 :*: U1)
-identityCircuit = hmap (\o -> o :*: U1) C.idCircuit
+identityCircuit :: ArithmeticCircuit Fr Par1 Par1
+identityCircuit = C.idCircuit
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV
