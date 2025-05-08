@@ -23,6 +23,7 @@ import           ZkFold.Protocol.Plonkup.Update                      (nextGroupE
                                                                       updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness                     (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.Foldable (toList)
 
 type P i n = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
@@ -31,7 +32,7 @@ propUpdateSetupIsCorrect ::
     => P i n -> Witness (P i n) -> Bool
 propUpdateSetupIsCorrect plonkup witness =
     let pi = witnessInput $ fst witness
-        par = eval (ac plonkup) pi
+        par = toList $ eval (ac plonkup) pi
 
         setupP  = setupProve plonkup
         setupP' = updateProverSetup setupP par
@@ -39,7 +40,7 @@ propUpdateSetupIsCorrect plonkup witness =
 
         h = nextGroupElement setupP
         setupV = setupVerify plonkup
-        setupV' = updateVerifierSetup setupV par (Par1 h)
+        setupV' = updateVerifierSetup setupV par [h]
     in verify @(P i n) setupV' input proof
 
 specPlonkupUpdate :: Spec

@@ -38,11 +38,10 @@ nextGroupElement PlonkupProverSetup {..} =
     in
         gs `bilinear` p
 
-updateRelation :: forall i o n a pv p' .
+updateRelation :: forall i o n a pv .
     ( KnownNat n
-    , Foldable p'
     , UnivariateRingPolyVec a pv
-    ) => PlonkupRelation i o n a pv -> p' a -> PlonkupRelation i o n a pv
+    ) => PlonkupRelation i o n a pv -> [a] -> PlonkupRelation i o n a pv
 updateRelation r@PlonkupRelation {..} inputs =
     let
         l = length inputs
@@ -56,12 +55,11 @@ updateRelation r@PlonkupRelation {..} inputs =
     in
         r { qC = qC', pubInput = pubInput', prvNum = prvNum' }
 
-updateProverSetup :: forall i o n g1 g2 pv p' .
+updateProverSetup :: forall i o n g1 g2 pv .
     ( KnownNat n
     , KnownNat ((4 * n) + 6)
-    , Foldable p'
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    ) => PlonkupProverSetup i o n g1 g2 pv -> p' (ScalarFieldOf g1) -> PlonkupProverSetup i o n g1 g2 pv
+    ) => PlonkupProverSetup i o n g1 g2 pv -> [ScalarFieldOf g1] -> PlonkupProverSetup i o n g1 g2 pv
 updateProverSetup setup@PlonkupProverSetup {..} inputs =
     let
         relation'@PlonkupRelation {..} = updateRelation relation inputs
@@ -69,13 +67,12 @@ updateProverSetup setup@PlonkupProverSetup {..} inputs =
     in
         setup { relation = relation', polynomials = polynomials' }
 
-updateVerifierSetup :: forall i o n g1 g2 pv p' .
+updateVerifierSetup :: forall i o n g1 g2 pv .
     ( KnownNat n
-    , Foldable p'
     , AdditiveGroup g1
     , Scale (ScalarFieldOf g1) g1
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    ) => PlonkupVerifierSetup i o n g1 g2 pv -> p' (ScalarFieldOf g1) -> p' g1 -> PlonkupVerifierSetup i o n g1 g2 pv
+    ) => PlonkupVerifierSetup i o n g1 g2 pv -> [ScalarFieldOf g1] -> [g1] -> PlonkupVerifierSetup i o n g1 g2 pv
 updateVerifierSetup setup@PlonkupVerifierSetup {..} inputs hs =
     let
         relation' = updateRelation relation inputs
