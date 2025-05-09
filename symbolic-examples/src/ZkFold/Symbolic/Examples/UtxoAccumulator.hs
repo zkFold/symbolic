@@ -1,22 +1,23 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
-    
+
+import           Data.Function                       (const, ($))
+import           Data.Functor                        (fmap)
+import           Data.Functor.Rep                    (tabulate)
+import           GHC.Generics                        (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+
+import           ZkFold.Algebra.Number               (KnownNat)
+import           ZkFold.Data.ByteString              (Binary)
+import           ZkFold.Data.HFunctor                (hmap)
 import           ZkFold.Data.Vector                  (Vector)
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
-import           ZkFold.Symbolic.Class               (Symbolic, Arithmetic)
-import           ZkFold.Symbolic.Data.Bool           (Bool (..), BoolType (..), any, all)
+import           ZkFold.Symbolic.Class               (Arithmetic, Symbolic)
+import           ZkFold.Symbolic.Compiler            (ArithmeticCircuit, compile, hlmap)
+import           ZkFold.Symbolic.Data.Bool           (Bool (..), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Eq             (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElement)
-import ZkFold.Symbolic.Data.Eq (Eq(..))
-import ZkFold.Symbolic.Compiler (ArithmeticCircuit, compile, hlmap)
-import ZkFold.Algebra.Number (KnownNat)
-import Data.Function (($), const)
-import ZkFold.Data.ByteString (Binary)
-import GHC.Generics (Par1 (..), (:.:) (..), (:*:) (..), U1 (..))
-import Data.Functor.Rep (tabulate)
-import Data.Functor (fmap)
-import ZkFold.Data.HFunctor (hmap)
 
 utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
