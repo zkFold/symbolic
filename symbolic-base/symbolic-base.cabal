@@ -161,6 +161,7 @@ library
       ZkFold.Protocol.Plonkup.Relation
       ZkFold.Protocol.Plonkup.Setup
       ZkFold.Protocol.Plonkup.Testing
+      ZkFold.Protocol.Plonkup.Update
       ZkFold.Protocol.Plonkup.Utils
       ZkFold.Protocol.Plonkup.Verifier
       ZkFold.Protocol.Plonkup.Verifier.Commitments
@@ -327,6 +328,7 @@ test-suite symbolic-base-test
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
+      Tests.Protocol.Plonkup.Update
       Tests.Symbolic.Algorithm.Blake2b
       Tests.Symbolic.Algorithm.JWT
       Tests.Symbolic.Algorithm.RSA

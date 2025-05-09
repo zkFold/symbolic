@@ -9,14 +9,15 @@ import           Data.Foldable                              (length)
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
 import           GHC.IsList                                 (IsList (..))
-import           Prelude                                    hiding (Num (..), drop, length, pi, sum, take, (!!), (/),
-                                                             (^))
+import           Prelude                                    hiding (Num (..), drop, length, pi, replicate, sum, take,
+                                                             (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), CyclicGroup (..))
 import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
 import           ZkFold.Algebra.Polynomial.Univariate       hiding (qr)
 import           ZkFold.Data.Vector                         ((!!))
+import           ZkFold.Prelude                             (replicate)
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup                    (with4n6)
 import           ZkFold.Protocol.Plonkup.Input
@@ -30,9 +31,8 @@ import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestIn
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
 
-plonkProve :: forall i n l g1 g2 ts pv .
-    ( Foldable l
-    , Ord (ScalarFieldOf g1)
+plonkProve :: forall i o n g1 g2 ts pv .
+    ( Ord (ScalarFieldOf g1)
     , Compressible g1
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
@@ -42,7 +42,7 @@ plonkProve :: forall i n l g1 g2 ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    ) => PlonkupProverSetup i n l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
+    ) =>PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (with4n6 @n $ PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
@@ -61,7 +61,7 @@ plonkProve PlonkupProverSetup {..}
         w2X = with4n6 @n $ polyVecInLagrangeBasis omega w2 :: PlonkupPolyExtended n g1 pv
         w3X = with4n6 @n $ polyVecInLagrangeBasis omega w3 :: PlonkupPolyExtended n g1 pv
 
-        pi  = toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n
+        pi  = toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub :: pv n
         piX = with4n6 @n $ polyVecInLagrangeBasis omega pi  :: PlonkupPolyExtended n g1 pv
 
         -- Round 1
@@ -197,7 +197,8 @@ plonkProve PlonkupProverSetup {..}
         h1_xi'  = h1X `evalPolyVec` (xi * omega)
         h2_xi   = h2X `evalPolyVec` xi
         lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
-        l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [1 :: Natural .. fromIntegral (length wPub)]
+        l1_xi   = one // (scale n one * (xi - omega))
+        l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [prvNum relation + 1 :: Natural .. fromIntegral (length wPub)]
 
         -- Round 6
 

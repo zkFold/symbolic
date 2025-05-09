@@ -33,6 +33,7 @@ data PlonkupProof g = PlonkupProof {
         z2_xi'  :: ScalarFieldOf g,
         h1_xi'  :: ScalarFieldOf g,
         h2_xi   :: ScalarFieldOf g,
+        l1_xi   :: ScalarFieldOf g,
         l_xi    :: [ScalarFieldOf g]
         -- ^ The denominator in the L_i polynomial evaluation
     }
@@ -64,4 +65,5 @@ instance (Show (ScalarFieldOf g), Show g) => Show (PlonkupProof g) where
         ++ show z2_xi' ++ " "
         ++ show h1_xi' ++ " "
         ++ show h2_xi ++ " "
+        ++ show l1_xi ++ " "
         ++ show l_xi

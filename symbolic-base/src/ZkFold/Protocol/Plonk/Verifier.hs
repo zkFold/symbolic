@@ -6,23 +6,24 @@ module ZkFold.Protocol.Plonk.Verifier
 
 import           Data.Word                                    (Word8)
 import           GHC.IsList                                   (IsList (..))
-import           Prelude                                      hiding (Num (..), Ord, drop, length, sum, take, (!!), (/),
-                                                               (^))
+import           Prelude                                      hiding (Num (..), Ord, drop, length, replicate, sum, take,
+                                                               (!!), (/), (^))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, value)
 import           ZkFold.Algebra.Polynomial.Univariate         hiding (qr)
+import           ZkFold.Prelude                               (replicate)
 import           ZkFold.Protocol.NonInteractiveProof          hiding (verify)
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
 import           ZkFold.Protocol.Plonkup.Proof
+import           ZkFold.Protocol.Plonkup.Relation             (prvNum)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
 
-plonkVerify :: forall i n l g1 g2 gt ts pv .
-    ( Foldable l
-    , Pairing g1 g2 gt
+plonkVerify :: forall i o n g1 g2 gt ts pv .
+    ( Pairing g1 g2 gt
     , Compressible g1
     , Eq gt
     , ToTranscript ts Word8
@@ -32,7 +33,7 @@ plonkVerify :: forall i n l g1 g2 gt ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-    ) => PlonkupVerifierSetup i n l g1 g2 pv -> PlonkupInput l g1 -> PlonkupProof g1 -> Bool
+    ) =>PlonkupVerifierSetup i o n g1 g2 pv -> PlonkupInput g1 -> PlonkupProof g1 -> Bool
 plonkVerify
     PlonkupVerifierSetup {..}
     (PlonkupInput wPub)
@@ -102,7 +103,7 @@ plonkVerify
 
         -- Step 7: Compute public polynomial evaluation
         pi_xi = with4n6 @n $ polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @_ @(PlonkupPolyExtendedLength n) omega
-            (toPolyVec $ fromList $ foldMap (\x -> [negate x]) wPub :: pv n)
+            (toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub :: pv n)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment

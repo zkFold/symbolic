@@ -14,7 +14,7 @@ import           Data.Foldable                                       (Foldable, 
 import           Data.Function                                       (flip, id, ($), (.))
 import           Data.Functor                                        (fmap, (<$>))
 import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
-import           Data.List                                           ((++))
+import           Data.List                                           (map, (++))
 import qualified Data.List                                           as L
 import           Data.Map                                            (elems)
 import qualified Data.Map.Monoidal                                   as M
@@ -47,7 +47,7 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
-data PlonkupRelation i n l a pv = PlonkupRelation
+data PlonkupRelation i o n a pv = PlonkupRelation
     { qM       :: pv n
     , qL       :: pv n
     , qR       :: pv n
@@ -59,10 +59,12 @@ data PlonkupRelation i n l a pv = PlonkupRelation
     , t3       :: pv n
     , sigma    :: Permutation (3 * n)
     , witness  :: i a -> (pv n, pv n, pv n)
-    , pubInput :: i a -> l a
+    , pubInput :: i a -> [a]
+    , prvNum   :: Natural
+    -- ^ The number of private inputs.
     }
 
-instance (Show a, Show (pv n)) => Show (PlonkupRelation i n l a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
     show PlonkupRelation {..} =
         "Plonkup Relation: "
         ++ show qM ++ " "
@@ -81,14 +83,14 @@ instance
         , UnivariateRingPolyVec a pv
         , KnownNat (PlonkupPermutationSize n)
         , Representable i
-        , Representable l
-        , Foldable l
+        , Representable o
+        , Foldable o
         , Ord (Rep i)
         , Arithmetic a
         , Binary a
-        , Arbitrary (ArithmeticCircuit a i l)
-        ) => Arbitrary (PlonkupRelation i n l a pv) where
-    arbitrary = fromJust . toPlonkupRelation @i @n @l @a @pv <$> arbitrary
+        , Arbitrary (ArithmeticCircuit a i o)
+        ) => Arbitrary (PlonkupRelation i o n a pv) where
+    arbitrary = fromJust . toPlonkupRelation @i @o @n @a @pv <$> arbitrary
 
 instance {-# INCOHERENT #-} FromConstant c a => FromConstant c (Vector a) where
     fromConstant = V.singleton . fromConstant
@@ -147,12 +149,14 @@ zipLongest f xs ys =
         GT -> V.zipWith f xs (ys <> V.replicate (xn P.- yn) (V.last ys))
 
 toPlonkupRelation ::
-  forall i n l a pv .
+  forall i o n a pv .
   ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
-  , Representable i, Representable l, Foldable l
-  ) => ArithmeticCircuit a i l -> Maybe (PlonkupRelation i n l a pv)
+  , Representable i, Representable o, Foldable o
+  ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation ac =
-    let xPub                = acOutput ac
+    let n = value @n
+
+        xPub                = acOutput ac
         pubInputConstraints = L.map var (toList xPub)
         plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
 
@@ -169,22 +173,22 @@ toPlonkupRelation ac =
                 , Par1 . ($ V.concat [ V.enumFromTo lo hi | (lo, hi) <- segs ]))
         unfold (Product t u) =
             let (!m, ts) = unfold t
-                (!n, us) = unfold u
+                (!k, us) = unfold u
              in ( m * n
-                , \f -> ts (f . V.concatMap (V.replicate (P.fromIntegral n)))
+                , \f -> ts (f . V.concatMap (V.replicate (P.fromIntegral k)))
                     :*: us (f . V.concat . L.replicate (P.fromIntegral m)))
         unfold (Plot g t) =
-            let (!n, ts) = unfold t
+            let (!k, ts) = unfold t
                 g'       = lookupFunction (acLookupFunction ac) g
-             in (n, \f -> let !ts' = ts id in f <$> (ts' :*: g' ts'))
+             in (k, \f -> let !ts' = ts id in f <$> (ts' :*: g' ts'))
 
         lkup ::
             Foldable f => LookupTable a f -> [[Var a i]] ->
             ([LookupConstraint i a], Sum Natural, (Vector a, Vector a, Vector a))
         lkup lt vs =
-            let (!n, !ts) = unfold lt
+            let (!k, !ts) = unfold lt
              in ( L.map (uncurry3 LookupConstraint . toTriple) vs
-                , Sum n
+                , Sum k
                 , toTriple $ toList (ts id))
 
         -- Lookup queries.
@@ -206,13 +210,12 @@ toPlonkupRelation ac =
         t2 = toPolyVec ys
         t3 = toPolyVec zs
 
-        -- The total number of constraints in the relation.
-        n' = acSizeN ac + length (tabulate @l id) + length xLookup
+        cNum = acSizeN ac + length (tabulate @o id) + length xLookup
 
         plonkupSystem = fromList $ L.concat
             [ L.map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup <$> xLookup
-            , replicate (value @n -! n') ConsExtra
+            , replicate (n -! cNum) ConsExtra
             ]
 
         qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
@@ -232,8 +235,10 @@ toPlonkupRelation ac =
         w2 i = toPolyVec $ fmap (indexW ac i) b
         w3 i = toPolyVec $ fmap (indexW ac i) c
         witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = fmap (indexW ac i) xPub
+        pubInput i = map (indexW ac i) $ toList xPub
 
-    in if max n' nLookup <= value @n
+        prvNum = 0
+
+    in if max cNum nLookup <= n
         then Just $ PlonkupRelation {..}
         else Nothing
