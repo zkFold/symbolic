@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Examples.Ed25519 (
+module ZkFold.Symbolic.Examples.Ed25519 (
     exampleEd25519Scale
   ) where
 

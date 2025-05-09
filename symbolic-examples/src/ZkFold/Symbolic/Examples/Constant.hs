@@ -1,4 +1,4 @@
-module Examples.Constant
+module ZkFold.Symbolic.Examples.Constant
     ( exampleConst
     , exampleConditionalConst
     , exampleConditionalConstConst
@@ -7,8 +7,8 @@ module Examples.Constant
 
 import           Control.Monad.Representable.Reader (Representable (tabulate))
 import           Data.Function                      (const, ($))
-import           Examples.Conditional               (exampleConditional)
-import           Examples.Eq                        (exampleEq, exampleEqVector)
+import           ZkFold.Symbolic.Examples.Conditional               (exampleConditional)
+import           ZkFold.Symbolic.Examples.Eq                        (exampleEq, exampleEqVector)
 
 import           ZkFold.Algebra.Class               (FromConstant (..))
 import           ZkFold.Algebra.Number              (KnownNat, Natural)

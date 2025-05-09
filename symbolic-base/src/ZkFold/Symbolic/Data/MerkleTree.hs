@@ -23,7 +23,6 @@ import           ZkFold.Data.Package
 import qualified ZkFold.Data.Vector                            as V
 import           ZkFold.Data.Vector                            hiding ((.:))
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class

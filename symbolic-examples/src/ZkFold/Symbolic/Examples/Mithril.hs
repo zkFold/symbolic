@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Examples.Mithril
+module ZkFold.Symbolic.Examples.Mithril
   (exampleMithril) where
 
 import           ZkFold.Algebra.EllipticCurve.Class       (CyclicGroup (ScalarFieldOf))

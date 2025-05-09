@@ -7,21 +7,21 @@ import           Data.Function                          (const, ($), (.))
 import           Data.Functor.Rep                       (Rep, Representable)
 import           Data.String                            (String)
 import           Data.Type.Equality                     (type (~))
-import           Examples.Blake2b                       (exampleBlake2b_224, exampleBlake2b_256)
-import           Examples.ByteString
-import           Examples.Conditional                   (exampleConditional)
-import           Examples.Constant
-import           Examples.ECDSA                         (exampleECDSA)
-import           Examples.Eq                            (exampleEq, exampleEqVector)
-import           Examples.FFA
-import           Examples.Fibonacci                     (exampleFibonacci)
-import           Examples.FieldElement                  (exampleInvert)
-import           Examples.LEQ                           (exampleLEQ)
-import           Examples.MerkleTree                    (exampleMerkleTree)
-import           Examples.MiMCHash                      (exampleMiMC)
-import           Examples.Pasta                         (examplePallas_Add, examplePallas_Scale)
-import           Examples.ReverseList                   (exampleReverseList)
-import           Examples.UInt
+import           ZkFold.Symbolic.Examples.Blake2b                       (exampleBlake2b_224, exampleBlake2b_256)
+import           ZkFold.Symbolic.Examples.ByteString
+import           ZkFold.Symbolic.Examples.Conditional                   (exampleConditional)
+import           ZkFold.Symbolic.Examples.Constant
+import           ZkFold.Symbolic.Examples.ECDSA                         (exampleECDSA)
+import           ZkFold.Symbolic.Examples.Eq                            (exampleEq, exampleEqVector)
+import           ZkFold.Symbolic.Examples.FFA
+import           ZkFold.Symbolic.Examples.Fibonacci                     (exampleFibonacci)
+import           ZkFold.Symbolic.Examples.FieldElement                  (exampleInvert)
+import           ZkFold.Symbolic.Examples.LEQ                           (exampleLEQ)
+import           ZkFold.Symbolic.Examples.MerkleTree                    (exampleMerkleTree)
+import           ZkFold.Symbolic.Examples.MiMCHash                      (exampleMiMC)
+import           ZkFold.Symbolic.Examples.Pasta                         (examplePallas_Add, examplePallas_Scale)
+import           ZkFold.Symbolic.Examples.ReverseList                   (exampleReverseList)
+import           ZkFold.Symbolic.Examples.UInt
 import           GHC.Generics                           (type (:*:))
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -115,5 +115,4 @@ examples =
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
   -- , ("PedersonCommitment", exampleOutput @A exampleCommitment)
-  -- , ("BatchTransfer", exampleOutput @A exampleBatchTransfer)
   ]

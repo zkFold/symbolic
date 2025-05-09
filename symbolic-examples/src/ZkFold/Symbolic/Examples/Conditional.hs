@@ -1,4 +1,4 @@
-module Examples.Conditional (exampleConditional) where
+module ZkFold.Symbolic.Examples.Conditional (exampleConditional) where
 
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool         (Bool)
