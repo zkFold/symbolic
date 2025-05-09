@@ -19,12 +19,13 @@ import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPo
                                                                toPolyVec)
 import           ZkFold.Prelude                               (drop, length, take)
 import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Prover               (PlonkupProverSetup (..))
+import qualified ZkFold.Protocol.Plonkup.Prover               as Prover
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
-import           ZkFold.Protocol.Plonkup.Prover.Setup         (PlonkupProverSetup (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
-import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup)
+import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup (..))
+import qualified ZkFold.Protocol.Plonkup.Verifier             as Verifier
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
-import           ZkFold.Protocol.Plonkup.Verifier.Setup       (PlonkupVerifierSetup (..))
 
 nextGroupElement :: forall i o n g1 g2 pv .
     ( KnownNat n
@@ -71,7 +72,7 @@ updateProverSetup setup@PlonkupProverSetup {..} inputs =
         relation'@PlonkupRelation {..} = updateRelation relation inputs
         polynomials' = polynomials { qcX = polyVecInLagrangeBasis omega qC }
     in
-        setup { relation = relation', polynomials = polynomials' }
+        setup { Prover.relation = relation', polynomials = polynomials' }
 
 updateVerifierSetup :: forall i o n g1 g2 pv .
     ( Representable i
@@ -86,4 +87,4 @@ updateVerifierSetup setup@PlonkupVerifierSetup {..} inputs hs =
         PlonkupCircuitCommitments {..} = commitments
         commitments' = commitments { cmQc = cmQc - sum (zipWith scale (toList inputs) (toList hs)) }
     in
-        setup { relation = relation', commitments = commitments' }
+        setup { Verifier.relation = relation', commitments = commitments' }
