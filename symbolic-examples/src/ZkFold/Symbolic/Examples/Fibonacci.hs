@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module Examples.Fibonacci (exampleFibonacci) where
+module ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacci) where
 
 import           Data.Foldable                     (foldl)
 import           Prelude                           (Integer)

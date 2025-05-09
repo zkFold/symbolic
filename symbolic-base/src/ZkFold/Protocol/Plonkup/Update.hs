@@ -19,12 +19,12 @@ import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPo
                                                                toPolyVec)
 import           ZkFold.Prelude                               (drop, length, take)
 import           ZkFold.Protocol.Plonkup.Internal             (PlonkupPolyExtended, PlonkupPolyExtendedLength)
-import           ZkFold.Protocol.Plonkup.Prover               (PlonkupProverSetup (..))
 import qualified ZkFold.Protocol.Plonkup.Prover               as Prover
+import           ZkFold.Protocol.Plonkup.Prover               (PlonkupProverSetup (..))
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
-import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup (..))
 import qualified ZkFold.Protocol.Plonkup.Verifier             as Verifier
+import           ZkFold.Protocol.Plonkup.Verifier             (PlonkupVerifierSetup (..))
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
 nextGroupElement :: forall i o n g1 g2 pv .

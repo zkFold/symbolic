@@ -1,4 +1,4 @@
-module Examples.Eq (exampleEq, exampleEqVector) where
+module ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector) where
 
 import           ZkFold.Algebra.Number             (KnownNat)
 import           ZkFold.Data.Vector                (Vector)

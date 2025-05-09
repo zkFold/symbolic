@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Examples.UInt (
+module ZkFold.Symbolic.Examples.UInt (
     exampleUIntMul,
     exampleUIntProductMod,
     exampleUIntDivMod,

@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Cardano.Contracts.SmartWallet
+module ZkFold.Symbolic.Examples.SmartWallet
     ( expModContract
     , expModCircuit
     , expModSetup

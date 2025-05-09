@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Examples.Pasta (
+module ZkFold.Symbolic.Examples.Pasta (
     examplePallas_Add
   , examplePallas_Scale
   ) where

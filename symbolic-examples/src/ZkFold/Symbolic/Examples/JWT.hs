@@ -1,4 +1,4 @@
-module Examples.JWT (exampleJWTSerialisation) where
+module ZkFold.Symbolic.Examples.JWT (exampleJWTSerialisation) where
 
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.JWT

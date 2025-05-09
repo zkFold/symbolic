@@ -1,4 +1,4 @@
-module Examples.LEQ (exampleLEQ) where
+module ZkFold.Symbolic.Examples.LEQ (exampleLEQ) where
 
 import           ZkFold.Symbolic.Class             (Symbolic)
 import           ZkFold.Symbolic.Data.Bool         (Bool)

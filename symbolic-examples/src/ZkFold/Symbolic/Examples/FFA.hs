@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Examples.FFA
+module ZkFold.Symbolic.Examples.FFA
   ( exampleFFAadd337
   , exampleFFAadd097
   , exampleFFAmul337

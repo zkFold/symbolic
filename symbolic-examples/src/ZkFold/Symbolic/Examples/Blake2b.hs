@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256) where
+module ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256) where
 
 import           ZkFold.Algebra.Number                   (KnownNat, type (*))
 import           ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_256)
