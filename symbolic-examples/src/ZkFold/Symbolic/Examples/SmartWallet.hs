@@ -298,6 +298,7 @@ data ExpModProofInput =
         , piSignature :: Natural
         , piTokenName :: Natural
         }
+    deriving P.Show
 
 expModProof
     :: forall t
@@ -359,11 +360,11 @@ expModProofMock
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModProofMock x ps ExpModProofInput{..} = proof
     where
-        input :: Natural
-        input = (((piSignature P.^ piPubE) `P.mod` piPubN) P.* piTokenName) `P.mod` (Number.value @BLS12_381_Scalar)
+        input :: Fr 
+        input = toZp (fromIntegral $ (piSignature P.^ piPubE) `P.mod` piPubN) * toZp (fromIntegral piTokenName)
 
         witnessInputs :: Par1 Fr
-        witnessInputs = Par1 $ toZp (fromIntegral input)
+        witnessInputs = Par1 input 
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
         (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x

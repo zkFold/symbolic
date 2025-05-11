@@ -34,10 +34,10 @@ common options
       -Wpartial-fields
       -Wredundant-constraints
       -Wunused-packages
-      -O2
     if !arch(wasm32)
       ghc-options:
         -threaded
+        -O2
     if flag(pedantic)
       ghc-options:
         -Werror
@@ -132,5 +132,7 @@ executable smart-wallet-creator
   build-depends:
     base              >= 4.9 && < 5,
     bytestring                     ,
+    base64-bytestring,
+    blake2,
     symbolic-base                  ,
     symbolic-cardano               ,
