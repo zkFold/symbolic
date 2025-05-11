@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP                 #-}
 
 module ZkFold.Protocol.Plonkup.Prover
     ( module ZkFold.Protocol.Plonkup.Prover.Polynomials
@@ -111,13 +112,13 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmF
             `transcript` compress cmH1
             `transcript` compress cmH2
-        !beta    = challenge (ts2 `transcript` (1 :: Word8))
-        !gamma   = challenge (ts2 `transcript` (2 :: Word8))
-        !delta   = challenge (ts2 `transcript` (3 :: Word8))
-        !epsilon = challenge (ts2 `transcript` (4 :: Word8))
+        !beta    = traceS "beta: " $ challenge (ts2 `transcript` (1 :: Word8))
+        !gamma   = traceS "gamma: " $ challenge (ts2 `transcript` (2 :: Word8))
+        !delta   = traceS "delta: " $ challenge (ts2 `transcript` (3 :: Word8))
+        !epsilon = traceS "epsilon: " $ challenge (ts2 `transcript` (4 :: Word8))
 
-        !omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
-        !omegas' = toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
+        !omegas  = traceS "omegas: " $ toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
+        !omegas' = traceS "omegas tick: " $ toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
 
         cumprod :: pv n -> pv n
         cumprod = toPolyVec . V.scanl1' (*) . fromPolyVec
@@ -129,7 +130,7 @@ plonkupProve PlonkupProverSetup {..}
         rotL p = toPolyVec $ V.drop 1 (fromPolyVec p) V.++ V.take 1 (fromPolyVec p)
 
         -- TODO: check operation order
-        !grandProduct1 = rotR . cumprod $
+        !grandProduct1 = traceS "grandProduct1: " . rotR . cumprod $
                 (w1 + (beta *. omegas) .+ gamma)
             .*. (w2 + ((beta * k1) *. omegas) .+ gamma)
             .*. (w3 + ((beta * k2) *. omegas) .+ gamma)
@@ -138,15 +139,15 @@ plonkupProve PlonkupProverSetup {..}
             ./. (w3 + (beta *. sigma3s) .+ gamma)
         !z1X = polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n g1 pv
 
-        !grandProduct2 = rotR . cumprod $
+        !grandProduct2 = traceS "grandProduct2: " . rotR . cumprod $
                 (one + delta) *. (epsilon +. f_zeta)
             .*. ((epsilon * (one + delta)) +. t_zeta + delta *. rotL t_zeta)
             ./. ((epsilon * (one + delta)) +. h1 + delta *. h2)
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
         !z2X = polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n g1 pv
 
-        !cmZ1 = gs `com` z1X
-        !cmZ2 = gs `com` z2X
+        !cmZ1 = gs `com` (traceS "z1X: " z1X)
+        !cmZ2 = gs `com` (traceS "z2X: " z2X)
 
         -- Round 4
 
