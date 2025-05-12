@@ -18,7 +18,7 @@ import           ZkFold.Symbolic.Compiler            (ArithmeticCircuit, compile
 import           ZkFold.Symbolic.Data.Bool           (Bool (..), BoolType (..), all, any)
 import           ZkFold.Symbolic.Data.Eq             (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElement (..))
-import ZkFold.Protocol.Plonkup (Plonkup (..), PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup (Plonkup (..), PlonkupPolyExtendedLength)
 import ZkFold.Algebra.Class (fromConstant, toConstant, (+), (-!), zero, one)
 import ZkFold.Protocol.Plonkup.Utils (getParams, getSecrectParams)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
