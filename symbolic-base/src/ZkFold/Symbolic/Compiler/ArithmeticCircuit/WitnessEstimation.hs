@@ -1,14 +1,15 @@
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
-import           Control.Applicative                            ()
 import           Data.Bool                                      (otherwise)
+import           Data.Eq                                        (Eq, (==))
+import           Data.Function                                  ((.))
 import           Data.Functor                                   (Functor, fmap)
-import           Prelude                                        (Eq, Integral, Maybe (..), (.), (==))
+import           Data.Maybe                                     (Maybe (..))
+import           Prelude                                        (Integral)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.ByteString                         ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
+import           ZkFold.Symbolic.MonadCircuit                   (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 

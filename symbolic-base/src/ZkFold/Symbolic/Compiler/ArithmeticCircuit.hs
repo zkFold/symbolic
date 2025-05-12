@@ -1,19 +1,16 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
-        ArithmeticCircuit,
-        Constraint,
-        Var,
-        witnessGenerator,
+        ArithmeticCircuit (..),
         -- high-level functions
+        solder,
         optimize,
         desugarRanges,
-        emptyCircuit,
         idCircuit,
         naturalCircuit,
-        inputPayload,
-        guessOutput,
-        -- low-level functions
+        -- evaluation functions
+        witnessGenerator,
         eval,
         eval1,
         exec,
@@ -23,154 +20,155 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
         acSizeM,
         acSizeL,
         acSizeT,
-        acSystem,
-        acValue,
         acPrint,
-        -- Variable mapping functions
-        hlmap,
-        mapVarArithmeticCircuit,
-        -- Arithmetization type fields
-        acWitness,
-        acInput,
-        acOutput,
         -- Testing functions
         checkCircuit,
         checkClosedCircuit,
     ) where
 
 import           Control.DeepSeq                                         (NFData)
-import           Control.Monad                                           (foldM)
-import           Control.Monad.State                                     (execState)
+import           Control.Monad                                           (return)
+import           Data.Aeson                                              (FromJSON, ToJSON)
 import           Data.Binary                                             (Binary)
-import           Data.Either                                             (partitionEithers)
-import           Data.Foldable                                           (for_)
-import           Data.Functor.Rep                                        (Representable (..), mzipRep)
-import           Data.Map                                                hiding (drop, foldl, foldr, map, null, splitAt,
-                                                                          take)
-import qualified Data.Map.Monoidal                                       as M
-import qualified Data.Set                                                as S
-import           Data.Void                                               (absurd)
-import           GHC.Generics                                            (U1 (..), (:*:))
+import           Data.Foldable                                           (Foldable, toList)
+import           Data.Function                                           (id, ($), (.))
+import           Data.Functor                                            (Functor, fmap, (<$>))
+import           Data.Functor.Classes                                    (Show1)
+import           Data.Functor.Rep                                        (Rep, Representable, index, tabulate)
+import           Data.Kind                                               (Type)
+import qualified Data.Map                                                as M
+import           Data.Maybe                                              (fromJust)
+import           Data.Traversable                                        (Traversable)
+import           GHC.Generics                                            (Generic, Par1 (..), U1 (..))
 import           Numeric.Natural                                         (Natural)
-import           Prelude                                                 hiding (Num (..), drop, length, product,
-                                                                          splitAt, sum, take, (!!), (^))
+import           Optics                                                  (over)
+import           System.IO                                               (IO, putStr)
 import           Test.QuickCheck                                         (Arbitrary, Property, arbitrary, conjoin,
                                                                           property, withMaxSuccess, (===))
 import           Text.Pretty.Simple                                      (pPrint)
+import           Text.Show                                               (Show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Polynomial.Multivariate                  (evalMonomial, evalPolynomial)
-import           ZkFold.Data.HFunctor                                    (hmap)
-import           ZkFold.Data.Product                                     (fstP, sndP)
-import           ZkFold.Prelude                                          (assert, length)
-import           ZkFold.Symbolic.Class                                   (fromCircuit2F)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance     ()
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (toVar)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness      (WitnessF)
-import           ZkFold.Symbolic.Data.Combinators                        (expansion)
-import           ZkFold.Symbolic.MonadCircuit                            (MonadCircuit (..))
+import           ZkFold.Data.ByteString                                  (fromByteString, toByteString)
+import           ZkFold.Prelude                                          (length)
+import           ZkFold.Symbolic.Class                                   (Arithmetic)
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary    as Arbitrary
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context      (CircuitContext (..), allWitnesses,
+                                                                          emptyContext, getAllVars)
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring   as Desugaring
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization as Optimization
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (NewVar (..), evalVar, toVar)
 
---------------------------------- High-level functions --------------------------------
+-- | Arithmetic circuit in the form of a system of polynomial constraints.
+newtype ArithmeticCircuit a (i :: Type -> Type) o =
+    ArithmeticCircuit { acContext :: CircuitContext a o }
+    deriving Generic
+    deriving newtype (FromJSON, ToJSON, NFData, Show)
 
-desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
-desugarRange i (a, b)
-  | a /= zero = error "non-zero lower bound not supported yet"
-  | b == negate one = return ()
-  | otherwise = do
-    let bs = binaryExpansion (toConstant b)
-    is <- expansion (length bs) i
-    case dropWhile ((== one) . fst) (zip bs is) of
-      [] -> return ()
-      ((_, k0):ds) -> do
-        z <- newAssigned (one - ($ k0))
-        ge <- foldM (\j (c, k) -> newAssigned $ forceGE j c k) z ds
-        constraint (($ ge) - one)
-  where forceGE j c k
-          | c == zero = ($ j) * (one - ($ k))
-          | otherwise = one + ($ k) * (($ j) - one)
+instance ( Arbitrary a, Arithmetic a, Binary a
+         , Foldable i, Representable i, Binary (Rep i)
+         , Representable o, Traversable o
+         ) => Arbitrary (ArithmeticCircuit a i o) where
+    arbitrary = ArithmeticCircuit <$> Arbitrary.arbitraryContext allInputs 10
+        where allInputs = toList $ tabulate @i (EqVar . toByteString)
 
--- | Desugars range constraints into polynomial constraints
+---------------------------- High-level functions ------------------------------
+
+solder ::
+    (Representable i, Binary (Rep i)) =>
+    (i NewVar -> CircuitContext a o) -> ArithmeticCircuit a i o
+solder = ArithmeticCircuit . ($ tabulate (EqVar . toByteString))
+
 desugarRanges ::
-  (Arithmetic a, Binary a, Binary (Rep i), Ord (Rep i), Representable i) =>
-  ArithmeticCircuit a i o -> ArithmeticCircuit a i o
-desugarRanges c =
-  let (rm, tm) = partitionEithers
-                    [ maybe (Right (k, v)) (Left . (, v)) (asRange k)
-                    | (k, v) <- M.assocs (acLookup c)
-                    ]
-      r' = flip execState c {acOutput = U1} $ traverse (uncurry desugarRange)
-              -- TODO: @v@ should belong to either of segments
-              [ (toVar v, assert (length k == 1) (length k) (head k))
-              | (S.toList -> k, s) <- rm, [v] <- S.toList s
-              ]
-  in r' { acLookup = M.fromList tm, acOutput = acOutput c }
+    (Arithmetic a, Binary a) =>
+    ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+desugarRanges = over #acContext Desugaring.desugarRanges
 
--- | Payload of an input to arithmetic circuit.
--- To be used as an argument to 'compileWith'.
-inputPayload ::
-  (Representable i) => (forall x. i x -> o x) -> o (WitnessF a (SysVar i))
-inputPayload f = f $ tabulate (pure . InVar)
+optimize ::
+    forall a i o. (Arithmetic a, Binary a, Binary (Rep i), Functor o) =>
+    ArithmeticCircuit a i o -> ArithmeticCircuit a i o
+optimize = over #acContext $ Optimization.optimize (Optimization.isInputVar @i)
 
-guessOutput ::
-  (Arithmetic a, Binary a, Binary (Rep i), Binary (Rep o)) =>
-  (Ord (Rep i), Ord (Rep o), NFData (Rep i), NFData (Rep o)) =>
-  (Representable i, Representable o, Foldable o) =>
-  ArithmeticCircuit a i o -> ArithmeticCircuit a (i :*: o) U1
-guessOutput c = fromCircuit2F (hlmap fstP c) (hmap sndP idCircuit) $ \o o' -> do
-  for_ (mzipRep o o') $ \(i, j) -> constraint (\x -> x i - x j)
-  return U1
+-- | Given a natural transformation from input @i@ to output @o@,
+-- returns a corresponding arithmetic circuit.
+naturalCircuit ::
+    (Arithmetic a, Representable i, Binary (Rep i)) =>
+    (forall x. i x -> o x) -> ArithmeticCircuit a i o
+naturalCircuit f = ArithmeticCircuit emptyContext { acOutput = f acInput }
+    where acInput = tabulate (toVar . EqVar . toByteString)
 
------------------------------------ Information -----------------------------------
+-- | Identity circuit which returns its input @i@ and doesn't use the payload.
+idCircuit ::
+    (Arithmetic a, Representable i, Binary (Rep i)) => ArithmeticCircuit a i i
+idCircuit = naturalCircuit id
+
+----------------------------- Evaluation functions -----------------------------
+
+witnessGenerator ::
+    (Arithmetic a, Representable i, Binary (Rep i)) =>
+    ArithmeticCircuit a i o -> i a -> NewVar -> a
+witnessGenerator ArithmeticCircuit {..} =
+    allWitnesses acContext . (. fromJust . fromByteString) . index
+
+-- | Evaluates the arithmetic circuit using the supplied input map.
+eval ::
+    (Arithmetic a, Representable i, Binary (Rep i), Functor o) =>
+    ArithmeticCircuit a i o -> i a -> o a
+eval ac i = evalVar (witnessGenerator ac i) <$> acOutput (acContext ac)
+
+-- | Evaluates the arithmetic circuit with one output using the supplied input map.
+eval1 ::
+    (Arithmetic a, Representable i, Binary (Rep i)) =>
+    ArithmeticCircuit a i Par1 -> i a -> a
+eval1 ac i = unPar1 (eval ac i)
+
+-- | Evaluates the arithmetic circuit with no inputs.
+exec :: (Arithmetic a, Functor o) => ArithmeticCircuit a U1 o -> o a
+exec ac = eval ac U1
+
+-- | Evaluates the arithmetic circuit with no inputs and one output.
+exec1 :: Arithmetic a => ArithmeticCircuit a U1 Par1 -> a
+exec1 ac = eval1 ac U1
+
+-------------------------------- Information -----------------------------------
 
 -- | Calculates the number of polynomial constraints in the system.
 acSizeN :: ArithmeticCircuit a i o -> Natural
-acSizeN = length . acSystem
+acSizeN = length . acSystem . acContext
 
 -- | Calculates the number of variables in the system.
 acSizeM :: ArithmeticCircuit a i o -> Natural
-acSizeM = length . acWitness
+acSizeM = length . acWitness . acContext
 
 -- | Calculates the number of all lookup constraints in the system.
 acSizeL :: ArithmeticCircuit a i o -> Natural
-acSizeL = sum . fmap length . acLookup
+acSizeL = sum . fmap length . acLookup . acContext
 
 -- | Calculates the number of lookup tables in the system.
 acSizeT :: ArithmeticCircuit a i o -> Natural
-acSizeT = length . acLookup
-
-acValue ::
-  (Arithmetic a, Binary a, Functor o) => ArithmeticCircuit a U1 o -> o a
-acValue = exec
+acSizeT = length . acLookup . acContext
 
 -- | Prints the constraint system, the witness, and the output.
 --
 -- TODO: Move this elsewhere (?)
--- TODO: Check that all arguments have been applied.
 acPrint ::
-  (Arithmetic a, Binary a, Show a) =>
-  (Show (o (Var a U1)), Show (o a), Functor o) =>
+  (Arithmetic a, Show a, Show1 o, Functor o) =>
   ArithmeticCircuit a U1 o -> IO ()
-acPrint ac = do
-    let m = elems (acSystem ac)
-        w = witnessGenerator ac U1
-        v = acValue ac
-        o = acOutput ac
+acPrint ac@(ArithmeticCircuit ctx) = do
+    let w = witnessGenerator ac U1
     putStr "System size: "
     pPrint $ acSizeN ac
     putStr "Variable size: "
     pPrint $ acSizeM ac
     putStr "Matrices: "
-    pPrint m
+    pPrint $ M.elems (acSystem ctx)
     putStr "Witness: "
-    pPrint w
+    pPrint $ M.fromList [ (var, w var) | var <- getAllVars ctx ]
     putStr "Output: "
-    pPrint o
+    pPrint $ acOutput ctx
     putStr "Value: "
-    pPrint v
+    pPrint $ exec ac
 
 ---------------------------------- Testing -------------------------------------
 
@@ -180,32 +178,29 @@ acPrint ac = do
 checkClosedCircuit
     :: forall a o
      . Arithmetic a
-    => Binary a
     => Show a
     => ArithmeticCircuit a U1 o
     -> Property
-checkClosedCircuit c = withMaxSuccess 1 $ conjoin [ testPoly p | p <- elems (acSystem c) ]
+checkClosedCircuit c@(ArithmeticCircuit ctx) =
+    withMaxSuccess 1 $ conjoin [ testPoly p | p <- M.elems (acSystem ctx) ]
     where
         w = witnessGenerator c U1
-        testPoly p = evalPolynomial evalMonomial varF p === zero
-        varF (InVar v)  = absurd v
-        varF (NewVar v) = w ! v
+        testPoly p = evalPolynomial evalMonomial w p === zero
 
 -- TODO: `checkCircuit` should check all constraint types
 checkCircuit
     :: Arbitrary x
     => Arithmetic a
-    => Binary a
     => Show a
     => Representable i
+    => Binary (Rep i)
     => ArithmeticCircuit a i o
     -> (x -> i a)
     -> Property
-checkCircuit c f = conjoin [ property (testPoly p) | p <- elems (acSystem c) ]
+checkCircuit c@(ArithmeticCircuit ctx) f =
+    conjoin [ property (testPoly p) | p <- M.elems (acSystem ctx) ]
     where
         testPoly p = do
             ins <- f <$> arbitrary
             let w = witnessGenerator c ins
-                varF (InVar v)  = index ins v
-                varF (NewVar v) = w ! v
-            return $ evalPolynomial evalMonomial varF p === zero
+            return $ evalPolynomial evalMonomial w p === zero

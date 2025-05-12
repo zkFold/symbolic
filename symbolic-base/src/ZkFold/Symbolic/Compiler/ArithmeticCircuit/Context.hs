@@ -1,63 +1,67 @@
-{-# LANGUAGE DerivingVia   #-}
-{-# LANGUAGE NoStarIsType  #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DerivingVia    #-}
+{-# LANGUAGE NoStarIsType   #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context where
 
-import           Control.DeepSeq                                   (NFData, NFData1, liftRnf, rnf, rwhnf)
-import           Data.Binary                                       (Binary)
-import           Data.Bool                                         (otherwise, (&&), Bool (..))
-import           Data.ByteString                                   (ByteString)
-import           Data.Foldable                                     (toList, fold)
-import           Data.Function                                     (($), (.), flip)
-import           Data.Functor                                      (fmap, (<$>), Functor)
-import           Data.Functor.Classes                              (Show1, liftShowList, liftShowsPrec)
-import           Data.Functor.Rep                                  (Rep, Representable, imapRep, tabulate)
-import           Data.Kind                                         (Type)
-import           Data.List.Infinite                                (Infinite)
-import           Data.Map                                          (Map)
-import qualified Data.Map                                          as M
-import           Data.Map.Monoidal                                 (MonoidalMap)
-import qualified Data.Map.Monoidal                                 as MM
-import           Data.Maybe                                        (Maybe (..))
-import Data.Monoid ( Monoid, mempty )
-import           Data.Ord                                          (Ord)
-import           Data.Semigroup                                    (Semigroup, (<>))
-import           Data.Semigroup.Generic                            (GenericSemigroupMonoid (..))
-import           Data.Set                                          (Set)
-import           Data.Traversable                                  (Traversable, traverse)
-import           Data.Type.Equality                                (type (~))
-import           Data.Typeable                                     (Typeable)
-import           GHC.Generics                                      (Generic, U1 (..), (:*:) (..), Par1 (..))
-import           Prelude                                           (error, seq)
-import           Text.Show                                         (Show, showList, showString, shows, showsPrec)
-import qualified Type.Reflection                                   as R
+import           Control.Applicative                                          (liftA2, pure)
+import           Control.DeepSeq                                              (NFData, NFData1, liftRnf, rnf, rwhnf)
+import           Control.Monad.State                                          (State, modify, runState)
+import           Data.Aeson                                                   ((.:), (.=))
+import qualified Data.Aeson.Types                                             as Aeson
+import           Data.Binary                                                  (Binary)
+import           Data.Bool                                                    (Bool (..), otherwise, (&&))
+import           Data.ByteString                                              (ByteString)
+import           Data.Either                                                  (Either (..))
+import           Data.Eq                                                      ((==))
+import           Data.Foldable                                                (Foldable, fold, foldl', for_, toList)
+import           Data.Function                                                (flip, ($), (.))
+import           Data.Functor                                                 (Functor, fmap, (<$>), (<&>))
+import           Data.Functor.Classes                                         (Show1, liftShowList, liftShowsPrec)
+import           Data.Functor.Rep
+import           Data.Kind                                                    (Type)
+import           Data.List.Infinite                                           (Infinite)
+import qualified Data.List.Infinite                                           as I
+import           Data.Map                                                     (Map)
+import qualified Data.Map                                                     as M
+import           Data.Map.Monoidal                                            (MonoidalMap)
+import qualified Data.Map.Monoidal                                            as MM
+import           Data.Maybe                                                   (Maybe (..), fromJust, fromMaybe)
+import           Data.Monoid                                                  (Monoid, mempty)
+import           Data.Ord                                                     (Ord)
+import           Data.Semialign                                               (unzipDefault)
+import           Data.Semigroup                                               (Semigroup, (<>))
+import           Data.Semigroup.Generic                                       (GenericSemigroupMonoid (..))
+import           Data.Set                                                     (Set)
+import qualified Data.Set                                                     as S
+import           Data.Traversable                                             (Traversable, traverse)
+import           Data.Tuple                                                   (fst, snd, uncurry)
+import           Data.Type.Equality                                           (type (~))
+import           Data.Typeable                                                (Typeable)
+import           GHC.Generics                                                 (Generic, Par1 (..), U1 (..), (:*:) (..))
+import           Optics                                                       (over, set, zoom)
+import           Prelude                                                      (error, seq)
+import           Text.Show
+import qualified Type.Reflection                                              as R
 
-import           ZkFold.Algebra.Field                              (Zp)
+import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Multivariate            (Poly, var)
-import           ZkFold.Data.ByteString                            (toByteString)
-import           ZkFold.Data.HFunctor.Classes                      (HNFData, HShow, hliftRnf, hliftShowsPrec)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var    (CircuitWitness, NewVar (..), Var (..), toVar)
+import           ZkFold.Algebra.Polynomial.Multivariate                       (Poly, var)
+import           ZkFold.Control.HApplicative                                  (HApplicative, hliftA2, hpure)
+import           ZkFold.Data.ByteString                                       (fromByteString, toByteString)
+import           ZkFold.Data.HFunctor                                         (HFunctor, hmap)
+import           ZkFold.Data.HFunctor.Classes
+import           ZkFold.Data.Package                                          (Package, packWith, unpackWith)
+import           ZkFold.Prelude                                               (take)
+import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup            (FunctionId (..), LookupType (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash        (MerkleHash (..), merkleHash, runHash)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness           (WitnessF (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation (UVar (..))
+import           ZkFold.Symbolic.Fold                                         (SymbolicFold, sfoldl)
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Data.HFunctor (HFunctor, hmap)
-import ZkFold.Control.HApplicative (HApplicative, hpure, hliftA2)
-import ZkFold.Data.Package (Package, unpackWith, packWith)
-import ZkFold.Symbolic.Class (Arithmetic, BaseField, WitnessField, Symbolic, witnessF, fromCircuitF)
-import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
-import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation (UVar(..))
-import Control.Monad.State (State, modify, runState)
-import Data.Either (Either(..))
-import Optics (zoom, set, over)
-import Control.Applicative (liftA2, pure)
-import Data.Semialign (unzipDefault)
-import Data.Tuple (uncurry, fst)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash (merkleHash, runHash, MerkleHash (..))
-import Data.Eq ((==))
-import qualified Data.Set as S
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural
@@ -84,6 +88,9 @@ data LookupFunction a =
     forall f g. (Representable f, Traversable g, Typeable f, Typeable g) =>
     LookupFunction (forall x. ResidueField x => f x -> g x)
 
+instance NFData (LookupFunction a) where
+    rnf = rwhnf
+
 type FunctionRegistry a = Map ByteString (LookupFunction a)
 
 lookupFunction ::
@@ -100,9 +107,6 @@ lookupFunction m (FunctionId i) = case m M.! i of
             where
                 th = R.typeRep :: R.TypeRep h
                 tk = R.typeRep :: R.TypeRep k
-
-instance NFData (LookupFunction a) where
-    rnf = rwhnf
 
 -- | Circuit context in the form of a system of polynomial constraints.
 data CircuitContext a o = CircuitContext
@@ -127,6 +131,13 @@ deriving via (GenericSemigroupMonoid (CircuitContext a o))
 deriving via (GenericSemigroupMonoid (CircuitContext a o))
     instance (Ord a, o ~ U1) => Monoid (CircuitContext a o)
 
+instance (NFData a, NFData1 o) => NFData (CircuitContext a o) where
+    rnf = hliftRnf liftRnf
+
+instance NFData a => HNFData (CircuitContext a) where
+    hliftRnf r (CircuitContext s lf l w f o) =
+        rnf (s, lf, l, w, f) `seq` r rnf o
+
 instance (Show a, Show1 o) => Show (CircuitContext a o) where
     showsPrec = hliftShowsPrec liftShowsPrec liftShowList
 
@@ -139,12 +150,28 @@ instance Show a => HShow (CircuitContext a) where
         . showString "\n, acOutput = " . f showsPrec showList 0 (acOutput r)
         . showString " }"
 
-instance (NFData a, NFData1 o) => NFData (CircuitContext a o) where
-    rnf = hliftRnf liftRnf
+-- TODO: add witness generation info to the JSON object
+instance (Aeson.ToJSON a, Aeson.ToJSONKey a, Aeson.ToJSON1 o) =>
+         Aeson.ToJSON (CircuitContext a o) where
+    toJSON CircuitContext {..} = Aeson.object
+        [
+            "system" .= acSystem,
+            "lookup" .= acLookup,
+            Aeson.explicitToField Aeson.toJSON1 "output" acOutput
+        ]
 
-instance NFData a => HNFData (CircuitContext a) where
-    hliftRnf r (CircuitContext s lf l w f o) =
-        rnf (s, lf, l, w, f) `seq` r rnf o
+-- TODO: properly restore the witness generation function
+instance (Ord a, Aeson.FromJSON a, Aeson.FromJSONKey a, Aeson.FromJSON1 o) =>
+         Aeson.FromJSON (CircuitContext a o) where
+    parseJSON =
+        Aeson.withObject "ArithmeticCircuit" $ \v -> do
+            acSystem <- v .: "system"
+            acLookup <- v .: "lookup"
+            acOutput <- Aeson.explicitParseField Aeson.parseJSON1 v "output"
+            let acWitness        = M.empty
+                acFold           = M.empty
+                acLookupFunction = M.empty
+            pure CircuitContext {..}
 
 ---------------------------- Context constructors ------------------------------
 
@@ -162,13 +189,10 @@ behead = liftA2 (,) (set #acOutput U1) acOutput
 
 --------------------------------- Variables ------------------------------------
 
--- | Variables are SHA256 digests (32 bytes)
-type VarField = Zp (2 ^ (32 * 8))
-
 getAllVars :: CircuitContext a o -> [NewVar]
 getAllVars ac =
     fmap EqVar (M.keys $ acWitness ac)
-    <> M.foldMapWithKey ((. keys) . \fi -> fmap (FoldLVar fi)) (acFold ac)
+    <> M.foldMapWithKey ((. keys) . fmap . FoldLVar) (acFold ac)
     where
         keys :: CircuitFold a -> [ByteString]
         keys CircuitFold {..} =
@@ -178,40 +202,35 @@ getAllVars ac =
 
 allWitnesses ::
     Arithmetic a => CircuitContext a o -> (ByteString -> a) -> (NewVar -> a)
-allWitnesses CircuitContext {..} inputs = error "TODO"
-     {-
-     let evalSysVar = \case
-            InVar iV -> index inputs iV
-            NewVar (EqVar eqV) -> eqVars M.! eqV
-            NewVar (FoldLVar fldID fldV) -> fst (foldVars M.! fldID) M.! fldV
-            NewVar (FoldPVar fldID fldV) -> snd (foldVars M.! fldID) fldV
-          evalVar = \case
-            LinVar k sV b -> k * evalSysVar sV + b
-            ConstVar c -> c
-          evalWitness k = runWitnessF k evalSysVar
-          eqVars = evalWitness <$> acWitness circuit
-          foldVars = acFold circuit <&> \CircuitFold {..} ->
-            let foldList =
-                  take (toConstant $ evalVar foldCount) (I.toList foldStream)
+allWitnesses ctx inputs =
+    let evNewVar = \case
+            EqVar eqV -> fromMaybe (inputs eqV) (eqVars M.!? eqV)
+            FoldLVar fldID fldV -> fst (foldVars M.! fldID) M.! fldV
+            FoldPVar fldID fldV -> snd (foldVars M.! fldID) fldV
+        evVar = evalVar evNewVar
+        evWitness k = runWitnessF k evNewVar
+        fromBS :: Binary b => ByteString -> b
+        fromBS = fromJust . fromByteString
+        eqVars = evWitness <$> acWitness ctx
+        foldVars = acFold ctx <&> \CircuitFold {..} ->
+            let foldCnt = toConstant (evVar foldCount)
+                foldList = take foldCnt (I.toList foldStream)
                 (resultL, resultP) =
-                  foldl' (\(xc, xp) y ->
-                    let input = xc :*: fmap evalWitness y
-                        (wg, pg) = allWitnesses foldStep (xp :*: input)
-                    in (indexG wg (xp :*: input) <$> acOutput foldStep
-                        , foldStepP <&> flip runWitnessF \case
-                            InVar (Left pV) -> index xp pV
-                            InVar (Right inV) -> index input inV
-                            NewVar (FoldPVar fldID fV) -> (pg M.! fldID) fV
-                            NewVar nV -> wg M.! nV
-                        ))
-                     (evalVar <$> foldSeed, evalWitness <$> foldSeedP)
-                     foldList
-            in (M.fromList $ toList $ mzipRep (tabulate toByteString) resultL,
-                index resultP . fromJust . fromByteString)
-        in (M.mapKeysMonotonic EqVar eqVars
-            <> M.unions (M.mapWithKey ((. fst) . M.mapKeysMonotonic . FoldLVar) foldVars),
-            snd <$> foldVars)
-    -}
+                    foldl' (\(xs, xp) y ->
+                        let (stepL, stepP) = foldStep $
+                                tabulate (EqVar . toByteString)
+                            xj = evWitness <$> y
+                            getW = index (xp :*: xs :*: xj)
+                            wg = allWitnesses stepL (getW . fromBS)
+                         in ( evalVar wg <$> acOutput stepL
+                            , stepP <&> flip runWitnessF wg
+                            )
+                    )
+                    (evVar <$> foldSeed, evWitness <$> foldSeedP)
+                    foldList
+             in ( M.fromList $ toList $ mzipRep (tabulate toByteString) resultL
+                , index resultP . fromBS)
+     in evNewVar
 
 --------------------------- Symbolic compiler context --------------------------
 
@@ -247,26 +266,40 @@ instance (Arithmetic a, Binary a) => SymbolicFold (CircuitContext a) where
             fc = emptyContext { acFold = M.singleton fldID CircuitFold {..} }
          in ((sc <> cc <> fc) { acOutput = resultC }, at <$> resultP)
 
+-------------------------------- Compiler API ----------------------------------
+
+-- | Payload of an input to arithmetic circuit.
+-- To be used as an argument to 'compileWith'.
+inputPayload ::
+    (Representable i, Binary (Rep i)) =>
+    (forall x. i x -> o x) -> o (CircuitWitness a)
+inputPayload f = f $ tabulate (pure . EqVar . toByteString)
+
+guessOutput ::
+    (Arithmetic a, Binary a, Representable o, Foldable o) =>
+    (i NewVar -> CircuitContext a o) ->
+    (i :*: o) NewVar -> CircuitContext a U1
+guessOutput f (i :*: o) = fromCircuit2F (f i) (fool o) $ \o1 o2 -> do
+    for_ (mzipRep o1 o2) $ \(j, k) -> constraint (\x -> x j - x k)
+    pure U1
+
 ----------------------------- MonadCircuit instance ----------------------------
 
 instance
-    (Arithmetic a, Binary a, o ~ U1) =>
+    (Arithmetic a, Binary a) =>
     MonadCircuit (Var a) a (CircuitWitness a) (State (CircuitContext a o)) where
 
     unconstrained wf = case runWitnessF wf (\sV -> LinUVar one sV zero) of
         ConstUVar c -> pure (ConstVar c)
         LinUVar k x b -> pure (LinVar k x b)
-        _ -> do
+        More -> do
             let v = witToVar @a wf
             -- TODO: forbid reassignment of variables
             zoom #acWitness $ modify (M.insert v wf)
             pure $ toVar (EqVar v)
 
     constraint p =
-        let evalConstVar = \case
-                LinVar k sysV b -> fromConstant k * var sysV + fromConstant b
-                ConstVar cV -> fromConstant cV
-            evalMaybe = \case
+        let evalMaybe = \case
                 ConstVar cV -> Just cV
                 _ -> Nothing
          in case p evalMaybe of
@@ -274,7 +307,7 @@ instance
                           then pure ()
                           else error "The constraint is non-zero"
                 Nothing -> zoom #acSystem . modify $
-                    M.insert (witToVar (p at)) (p evalConstVar)
+                    M.insert (witToVar (p at)) (p $ evalVar var)
 
     lookupConstraint vars lt = do
         vs <- traverse prepare (toList vars)
@@ -288,7 +321,7 @@ instance
                     b = witToVar @a w
                     v = EqVar b
                 zoom #acWitness $ modify (M.insert b w)
-                constraint (($ LinVar one v zero) - ($ src))
+                constraint (($ toVar v) - ($ src))
                 pure v
 
     registerFunction f = do
