@@ -81,6 +81,8 @@ import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
 
+import Debug.Trace 
+
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
 convertZp :: Zp p -> Integer
@@ -358,10 +360,13 @@ expModProofMock
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModProofInput
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps ExpModProofInput{..} = proof
+expModProofMock x ps ExpModProofInput{..} = trace ("Hash: " <> show hash <> "; input: " <> show i) proof
     where
+        hash :: Natural
+        hash = ((piSignature P.^ piPubE) `P.mod` piPubN) `P.mod` (2 P.^ 256)
+
         input :: Fr 
-        input = toZp (fromIntegral $ (piSignature P.^ piPubE) `P.mod` piPubN) * toZp (fromIntegral piTokenName)
+        input = toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
 
         witnessInputs :: Par1 Fr
         witnessInputs = Par1 input 
@@ -371,7 +376,7 @@ expModProofMock x ps ExpModProofInput{..} = proof
         plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
-        (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+        (i, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
 foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
