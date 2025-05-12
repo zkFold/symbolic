@@ -19,11 +19,12 @@ import           ZkFold.Algebra.Number                               (KnownNat)
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.NonInteractiveProof                 (NonInteractiveProof (..))
-import           ZkFold.Protocol.Plonkup                             hiding (omega)
-import           ZkFold.Protocol.Plonkup.Update                      (nextGroupElement, updateProverSetup,
-                                                                      updateVerifierSetup)
+import           ZkFold.Protocol.Plonkup                             (Plonkup(ac), lagrangeBasisGroupElements, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Update                      (updateProverSetup, updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness                     (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import Data.List (head)
+import ZkFold.Protocol.Plonkup.Prover (PlonkupProverSetup (..))
 
 type P i n = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
@@ -38,7 +39,7 @@ propUpdateSetupIsCorrect plonkup witness =
         setupP' = updateProverSetup setupP par
         (input, proof) = prove @(P i n) setupP' witness
 
-        h = nextGroupElement setupP
+        h = head $ lagrangeBasisGroupElements @n @_ @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) (omega setupP) (gs setupP)
         setupV = setupVerify plonkup
         setupV' = updateVerifierSetup setupV par [h]
     in verify @(P i n) setupV' input proof

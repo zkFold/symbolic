@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -11,13 +12,15 @@ import           Prelude                                             hiding (Num
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                                (Scale)
+import           ZkFold.Algebra.Class                                (Scale, Bilinear (..))
 import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
+import ZkFold.Algebra.Polynomial.Univariate (UnivariateFieldPolyVec (..))
+import qualified Data.Vector as V
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
@@ -65,3 +68,12 @@ instance
         let (omega, k1, k2) = getParams (value @n)
         let (gs, h1) = getSecrectParams x
         return $ Plonkup omega k1 k2 ac h1 gs
+
+lagrangeBasisGroupElements :: forall n g1 pv .
+    ( KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    ) => ScalarFieldOf g1 -> V.Vector g1 -> [g1]
+lagrangeBasisGroupElements omega gs =
+    map (\i -> gs `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 .. ]
