@@ -8,19 +8,19 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
+import qualified Data.Vector                                         as V
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                                (Scale, Bilinear (..))
+import           ZkFold.Algebra.Class                                (Bilinear (..), Scale)
 import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
 import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateFieldPolyVec (..))
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
-import ZkFold.Algebra.Polynomial.Univariate (UnivariateFieldPolyVec (..))
-import qualified Data.Vector as V
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

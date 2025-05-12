@@ -7,6 +7,7 @@ import           Data.ByteString                                     (ByteString
 import           Data.Foldable                                       (toList)
 import           Data.Function                                       (($))
 import           Data.Functor.Rep                                    (Rep, Representable)
+import           Data.List                                           (head)
 import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (fst)
@@ -19,12 +20,12 @@ import           ZkFold.Algebra.Number                               (KnownNat)
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.NonInteractiveProof                 (NonInteractiveProof (..))
-import           ZkFold.Protocol.Plonkup                             (Plonkup(ac), lagrangeBasisGroupElements, PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup                             (Plonkup (ac), PlonkupPolyExtendedLength,
+                                                                      lagrangeBasisGroupElements)
+import           ZkFold.Protocol.Plonkup.Prover                      (PlonkupProverSetup (..))
 import           ZkFold.Protocol.Plonkup.Update                      (updateProverSetup, updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness                     (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import Data.List (head)
-import ZkFold.Protocol.Plonkup.Prover (PlonkupProverSetup (..))
 
 type P i n = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
