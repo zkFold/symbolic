@@ -81,6 +81,8 @@ import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
 
+import Debug.Trace
+
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
 convertZp :: Zp p -> Integer
@@ -358,7 +360,7 @@ expModProofMock
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModProofInput
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps ExpModProofInput{..} = proof
+expModProofMock x ps ExpModProofInput{..} = trace ("hash: " <> show hash <> "; input: " <> show input) proof
     where
         expm :: Natural
         expm = (piSignature P.^ piPubE) `P.mod` piPubN
