@@ -45,7 +45,7 @@ plonkupProve :: forall i o n g1 g2 ts pv .
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    ) =>PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
+    ) => PlonkupProverSetup i n l g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput l g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
     = (PlonkupInput wPub, PlonkupProof {..}, PlonkupProverTestInfo {..})
@@ -112,13 +112,13 @@ plonkupProve PlonkupProverSetup {..}
             `transcript` compress cmF
             `transcript` compress cmH1
             `transcript` compress cmH2
-        !beta    = traceS "beta: " $ challenge (ts2 `transcript` (1 :: Word8))
-        !gamma   = traceS "gamma: " $ challenge (ts2 `transcript` (2 :: Word8))
-        !delta   = traceS "delta: " $ challenge (ts2 `transcript` (3 :: Word8))
-        !epsilon = traceS "epsilon: " $ challenge (ts2 `transcript` (4 :: Word8))
+        !beta    = challenge (ts2 `transcript` (1 :: Word8))
+        !gamma   = challenge (ts2 `transcript` (2 :: Word8))
+        !delta   = challenge (ts2 `transcript` (3 :: Word8))
+        !epsilon = challenge (ts2 `transcript` (4 :: Word8))
 
-        !omegas  = traceS "omegas: " $ toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
-        !omegas' = traceS "omegas tick: " $ toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
+        !omegas  = toPolyVec $ V.iterateN (fromIntegral n) (* omega) omega
+        !omegas' = toPolyVec $ V.iterateN (fromIntegral $ value @(PlonkupPolyExtendedLength n)) (* omega) one
 
         cumprod :: pv n -> pv n
         cumprod = toPolyVec . V.scanl1' (*) . fromPolyVec
@@ -130,7 +130,7 @@ plonkupProve PlonkupProverSetup {..}
         rotL p = toPolyVec $ V.drop 1 (fromPolyVec p) V.++ V.take 1 (fromPolyVec p)
 
         -- TODO: check operation order
-        !grandProduct1 = traceS "grandProduct1: " . rotR . cumprod $
+        !grandProduct1 = rotR . cumprod $
                 (w1 + (beta *. omegas) .+ gamma)
             .*. (w2 + ((beta * k1) *. omegas) .+ gamma)
             .*. (w3 + ((beta * k2) *. omegas) .+ gamma)
@@ -139,15 +139,15 @@ plonkupProve PlonkupProverSetup {..}
             ./. (w3 + (beta *. sigma3s) .+ gamma)
         !z1X = polyVecQuadratic (secret 14) (secret 15) (secret 16) * zhX + polyVecInLagrangeBasis omega grandProduct1 :: PlonkupPolyExtended n g1 pv
 
-        !grandProduct2 = traceS "grandProduct2: " . rotR . cumprod $
+        !grandProduct2 = rotR . cumprod $
                 (one + delta) *. (epsilon +. f_zeta)
             .*. ((epsilon * (one + delta)) +. t_zeta + delta *. rotL t_zeta)
             ./. ((epsilon * (one + delta)) +. h1 + delta *. h2)
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
         !z2X = polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n g1 pv
 
-        !cmZ1 = gs `com` (traceS "z1X: " z1X)
-        !cmZ2 = gs `com` (traceS "z2X: " z2X)
+        !cmZ1 = gs `com` z1X
+        !cmZ2 = gs `com` z2X
 
         -- Round 4
 

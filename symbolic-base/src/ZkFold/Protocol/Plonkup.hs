@@ -46,9 +46,6 @@ instance forall i o n g1 g2 gt ts pv .
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
         , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-        , Show (pv (PlonkupPolyExtendedLength n)) 
-        , Show (pv n) 
-        , Show (ScalarFieldOf g1)
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
         ) => NonInteractiveProof (Plonkup i o n g1 g2 ts pv) where

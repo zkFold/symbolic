@@ -13,36 +13,31 @@ import           Data.String                                (IsString(fromString
 import           System.IO.Unsafe                           (unsafePerformIO)
 #else
 import           Crypto.Hash.BLAKE2.BLAKE2b                 (hash)
-import qualified Data.ByteString                            as BS
 #endif
 #if defined(javascript_HOST_ARCH)
 import           GHC.JS.Prim
 #elif defined(wasm32_HOST_ARCH)
-import           System.IO.Unsafe (unsafeDupablePerformIO)
+import           System.IO.Unsafe      (unsafeDupablePerformIO)
 import           GHC.Wasm.Prim
-import           Data.Int (Int32)
-import qualified Data.ByteString                            as BS
+import           Data.Int              (Int32)
+import qualified Data.ByteString       as BS
 import           Foreign.Marshal.Array (newArray)
-import           Foreign.Ptr (Ptr)
+import           Foreign.Ptr           (Ptr)
 #endif
 
 import           Control.DeepSeq                            (NFData, force)
 import           Data.ByteString                            (ByteString)
-import qualified Data.ByteString.Base64                     as B64
 import           Data.Maybe                                 (fromJust)
 import qualified Data.Vector                                as V
 import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Algebra.Class            (Bilinear (..), Scale (..), sum)
-import           ZkFold.Algebra.Number           (KnownNat)
-import           ZkFold.Algebra.EllipticCurve.Class    (CyclicGroup (..))
+import           ZkFold.Algebra.Class                 (Bilinear (..), Scale (..), sum)
+import           ZkFold.Algebra.Number                (KnownNat)
+import           ZkFold.Algebra.EllipticCurve.Class   (CyclicGroup (..))
 import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
 import           ZkFold.Data.ByteString
-
-import Data.ByteString.Base64.URL (encode)
-import Debug.Trace
 
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
@@ -79,6 +74,8 @@ foreign import javascript unsafe "new Uint8Array(__exports.memory.buffer, $1, $2
 foreign import javascript unsafe "console.log($1)"
   js_print :: JSString -> IO ()
 
+-- | traces do not work in wasm. For pure debug logs in wasm, this function must me used.
+--
 mentallyBrokenJsTrace :: Show a => String -> a -> a
 mentallyBrokenJsTrace string expr = unsafePerformIO $ do
     js_print $ toJSString (string <> show expr)
@@ -100,10 +97,7 @@ instance Binary a => FromTranscript ByteString a where
 #else
 
 instance Binary a => FromTranscript ByteString a where
-    fromTranscript = fromJust . fromByteString . intercept
-        where
-            intercept a = let h = hash 28 mempty a
-                           in trace ("hash(" <> show (BS.unpack a) <> ") = " <> show (encode h)) h
+    fromTranscript = fromJust . fromByteString . hash 28 mempty
 
 #endif
 
