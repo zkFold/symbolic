@@ -360,8 +360,11 @@ expModProofMock
     -> PlonkupProverSecret BLS12_381_G1_Point
     -> ExpModProofInput
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps ExpModProofInput{..} = trace ("hash: " <> show hash <> "; input: " <> show input) proof
+--expModProofMock x ps ExpModProofInput{..} = trace ("hash: " <> show hash <> "; input: " <> show input <> "; expected input: " <> show i <> "; verifier: " <> show v) proof
+expModProofMock x ps ExpModProofInput{..} = proof
     where
+ --       v = verify @(PlonkupTs Par1 ExpModCircuitGatesMock t) (expModSetupMock @t zero) i proof
+        
         expm :: Natural
         expm = (piSignature P.^ piPubE) `P.mod` piPubN
 
@@ -379,6 +382,7 @@ expModProofMock x ps ExpModProofInput{..} = trace ("hash: " <> show hash <> "; i
         plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
+--        (i, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
