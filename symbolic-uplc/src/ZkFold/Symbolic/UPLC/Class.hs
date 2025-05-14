@@ -60,10 +60,6 @@ data ExValue c = forall t v. IsData t v c => ExValue v
 -- it is also 'Typeable'.
 type Sym c = (SymbolicFold c, Typeable c)
 
---------------------------- BUILTINS INTERPRETATION ----------------------------
-
--- This part is meant to be changed when completing the Converter implementation.
-
 type IntLength = 64
 instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
   asPair _ = Nothing
