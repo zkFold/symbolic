@@ -146,7 +146,8 @@ newtype ByteStringFromHex = ByteStringFromHex ByteString
   deriving newtype (Eq, Ord)
 
 byteStringFromHexToHex :: ByteStringFromHex -> Text
-byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
+-- byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
+byteStringFromHexToHex = decodeUtf8 . coerce
 
 instance Show ByteStringFromHex where
   showsPrec d bs =
@@ -156,7 +157,8 @@ instance Show ByteStringFromHex where
 
 instance FromJSON ByteStringFromHex where
   parseJSON = withText "ByteStringFromHex" $ \t ->
-    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
+    (pure . ByteStringFromHex) $ encodeUtf8 t
+--    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
 
 instance ToJSON ByteStringFromHex where
   toJSON = Aeson.String . byteStringFromHexToHex
