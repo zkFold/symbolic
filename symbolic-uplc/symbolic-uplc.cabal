@@ -36,9 +36,11 @@ common options
 library
     import:             options
     exposed-modules:
+      ZkFold.Symbolic.UPLC.Class
       ZkFold.Symbolic.UPLC.Converter
       ZkFold.Symbolic.UPLC.Data
       ZkFold.Symbolic.UPLC.Evaluation
+      ZkFold.Symbolic.UPLC.Fun
       ZkFold.UPLC.BuiltinFunction
       ZkFold.UPLC.BuiltinType
       ZkFold.UPLC.Term
