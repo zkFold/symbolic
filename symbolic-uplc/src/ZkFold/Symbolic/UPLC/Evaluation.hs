@@ -15,42 +15,42 @@
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
-import           Control.Monad                      (return)
-import           Data.Either                        (Either (..))
-import           Data.Function                      (($), (.))
-import           Data.Functor                       ((<$>))
-import           Data.List                          (map, null, (++))
-import           Data.Maybe                         (Maybe (..), fromJust)
-import           Data.Ord                           ((<))
-import           Data.Proxy                         (Proxy (..))
-import           Data.Text                          (unpack)
-import           Data.Traversable                   (traverse)
-import           Data.Typeable                      (cast)
-import           Prelude                            (error, foldr, fromIntegral)
+import           Control.Monad                       (return)
+import           Data.Either                         (Either (..))
+import           Data.Function                       (($), (.))
+import           Data.Functor                        ((<$>))
+import           Data.List                           (map, null, (++))
+import           Data.Maybe                          (Maybe (..), fromJust)
+import           Data.Ord                            ((<))
+import           Data.Proxy                          (Proxy (..))
+import           Data.Text                           (unpack)
+import           Data.Traversable                    (traverse)
+import           Data.Typeable                       (cast)
+import           Prelude                             (error, foldr, fromIntegral)
 
-import           ZkFold.Algebra.Class               (AdditiveMonoid (zero), FromConstant (..),
-                                                     MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
-import           ZkFold.Algebra.Number              (Natural, value)
-import           ZkFold.Prelude                     (unsnoc, (!!))
-import           ZkFold.Symbolic.Class              (BaseField)
-import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
+import           ZkFold.Algebra.Class                (AdditiveMonoid (zero), FromConstant (..),
+                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
+import           ZkFold.Algebra.Number               (Natural, value)
+import           ZkFold.Prelude                      (unsnoc, (!!))
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
+import           ZkFold.Symbolic.Class               (BaseField)
+import           ZkFold.Symbolic.Data.Bool           (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString     (ByteString, dropN, truncate)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional   (bool)
-import qualified ZkFold.Symbolic.Data.Eq            as Symbolic
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
+import           ZkFold.Symbolic.Data.Conditional    (bool)
+import qualified ZkFold.Symbolic.Data.Eq             as Symbolic
+import           ZkFold.Symbolic.Data.FieldElement   (FieldElement)
 import           ZkFold.Symbolic.Data.Int
-import qualified ZkFold.Symbolic.Data.List          as L
-import qualified ZkFold.Symbolic.Data.Maybe         as Symbolic
-import qualified ZkFold.Symbolic.Data.Ord           as Symbolic
-import           ZkFold.Symbolic.Data.UInt          (OrdWord, UInt)
+import qualified ZkFold.Symbolic.Data.List           as L
+import qualified ZkFold.Symbolic.Data.Maybe          as Symbolic
+import qualified ZkFold.Symbolic.Data.Ord            as Symbolic
+import           ZkFold.Symbolic.Data.UInt           (OrdWord, UInt)
 import           ZkFold.Symbolic.Data.VarByteString
 import           ZkFold.Symbolic.UPLC.Class
 import           ZkFold.Symbolic.UPLC.Fun
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
-import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------

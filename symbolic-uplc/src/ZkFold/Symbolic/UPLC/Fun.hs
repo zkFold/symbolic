@@ -15,10 +15,10 @@
 
 module ZkFold.Symbolic.UPLC.Fun (Fun (..)) where
 
-import           Data.Function                      ((.))
+import           Data.Function              ((.))
 
-import           ZkFold.Algebra.Class               (FromConstant (..))
-import qualified ZkFold.Symbolic.Data.Maybe         as Symbolic
+import           ZkFold.Algebra.Class       (FromConstant (..))
+import qualified ZkFold.Symbolic.Data.Maybe as Symbolic
 import           ZkFold.Symbolic.UPLC.Class
 import           ZkFold.UPLC.BuiltinType
 
