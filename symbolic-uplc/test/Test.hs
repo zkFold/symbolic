@@ -1,21 +1,21 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MonoLocalBinds   #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE MonoLocalBinds    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE TypeOperators     #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import           Control.Applicative                        ((<*>))
 import           Control.Monad                              (return)
-import           Data.Eq                                    (Eq)
-import qualified Data.Text.Encoding                         as TE
 import qualified Data.ByteString.Base16                     as B16
+import           Data.Eq                                    (Eq)
 import           Data.Function                              (const, ($))
 import           Data.Functor                               (Functor, (<$>))
 import qualified Data.Text                                  as T
+import qualified Data.Text.Encoding                         as TE
 import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..))
-import           Prelude                                    (type (~), (.), either, id, error)
+import           Prelude                                    (either, error, id, type (~), (.))
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (describe, hspec)
 import           Test.Hspec.QuickCheck                      (prop)
