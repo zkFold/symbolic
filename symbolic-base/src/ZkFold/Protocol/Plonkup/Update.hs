@@ -70,6 +70,6 @@ updateVerifierSetup setup@PlonkupVerifierSetup {..} inputs hs =
     let
         relation' = updateRelation relation inputs
         PlonkupCircuitCommitments {..} = commitments
-        commitments' = commitments { cmQc = cmQc - sum (zipWith scale (toList inputs) (toList hs)) }
+        commitments' = commitments { cmQc = cmQc - sum (zipWith scale inputs hs) }
     in
         setup { Verifier.relation = relation', commitments = commitments' }

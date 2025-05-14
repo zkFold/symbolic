@@ -202,8 +202,8 @@ plonkupProve PlonkupProverSetup {..}
         !h1_xi'  = h1X `evalPolyVec` (xi * omega)
         !h2_xi   = h2X `evalPolyVec` xi
         !lag1_xi = polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
-        !l1_xi   = one // (scale n one * (xi - omega))
-        !l_xi    = map (\i -> one // (scale n one * (xi - omega^i))) [prvNum relation + 1 :: Natural .. fromIntegral (length wPub)]
+        !l1_xi   = finv (scale n (xi - omega))
+        !l_xi    = map (\i -> finv (scale n (xi - omega^i))) [prvNum relation + 1 :: Natural .. fromIntegral (length wPub)]
 
         -- Round 6
 
