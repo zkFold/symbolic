@@ -26,7 +26,7 @@ import           Data.Proxy                         (Proxy (..))
 import           Data.Text                          (unpack)
 import           Data.Traversable                   (traverse)
 import           Data.Typeable                      (cast)
-import           Prelude                            (error, foldr, fromIntegral, undefined)
+import           Prelude                            (error, foldr, fromIntegral)
 
 import           ZkFold.Algebra.Class               (AdditiveMonoid (zero), FromConstant (..),
                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
@@ -50,6 +50,7 @@ import           ZkFold.Symbolic.UPLC.Fun
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
+import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
@@ -337,7 +338,7 @@ evalMono (BMFString EqualsString)                 = equalsStringFun
 evalMono (BMFString EncodeUtf8)                   = encodeUtf8Fun
 evalMono (BMFString DecodeUtf8)                   = decodeUtf8Fun
 
-evalMono (BMFAlgorithm SHA3_256)                  = error "FIXME: UPLC Algorithms support"
+evalMono (BMFAlgorithm SHA2_256)                  = sha2_256Fun
 evalMono (BMFAlgorithm _)                         = error "FIXME: UPLC Algorithms support"
 evalMono (BMFData _)                              = error "FIXME: UPLC Data support"
 evalMono (BMFCurve _)                             = error "FIXME: UPLC Curve support"
@@ -453,6 +454,5 @@ decodeUtf8Fun = fromConstant (\(VarByteString l b) -> Symbolic.just @c $ VarByte
 
 --------------------------------------------------------------------------------
 
-sha3_256Fun :: forall c. (Sym c) => Fun '[BTByteString] BTByteString c
-sha3_256Fun = undefined -- fromConstant (\v -> Symbolic.just @c $ sha3_256 v)
--- TODO: Remove import of undefined
+sha2_256Fun :: forall c. (Sym c) => Fun '[BTByteString] BTByteString c
+sha2_256Fun = fromConstant (\v -> Symbolic.just @c $ VarByteString (fromConstant (256 :: Natural)) (resize $ sha2Var @"SHA256" v))
