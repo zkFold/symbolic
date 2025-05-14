@@ -146,8 +146,7 @@ newtype ByteStringFromHex = ByteStringFromHex ByteString
   deriving newtype (Eq, Ord)
 
 byteStringFromHexToHex :: ByteStringFromHex -> Text
--- byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
-byteStringFromHexToHex = decodeUtf8 . coerce
+byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
 
 instance Show ByteStringFromHex where
   showsPrec d bs =
@@ -157,8 +156,7 @@ instance Show ByteStringFromHex where
 
 instance FromJSON ByteStringFromHex where
   parseJSON = withText "ByteStringFromHex" $ \t ->
-    (pure . ByteStringFromHex) $ encodeUtf8 t
---    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
+    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
 
 instance ToJSON ByteStringFromHex where
   toJSON = Aeson.String . byteStringFromHexToHex
@@ -200,19 +198,19 @@ mkProof PlonkupProof {..} =
     case l_xi of
       [] -> error "mkProof: empty inputs"
       (xi:_) -> ZKProofBytes
-        { cmA_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmA
-        , cmB_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmB
-        , cmC_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmC
-        , cmF_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmF
-        , cmH1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH1
-        , cmH2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH2
-        , cmZ1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ1
-        , cmZ2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ2
-        , cmQlow_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQlow
-        , cmQmid_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQmid
-        , cmQhigh_bytes = ByteStringFromHex . BS16.encode $ convertG1 cmQhigh
-        , proof1_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof1
-        , proof2_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof2
+        { cmA_bytes     = ByteStringFromHex $ convertG1 cmA
+        , cmB_bytes     = ByteStringFromHex $ convertG1 cmB
+        , cmC_bytes     = ByteStringFromHex $ convertG1 cmC
+        , cmF_bytes     = ByteStringFromHex $ convertG1 cmF
+        , cmH1_bytes    = ByteStringFromHex $ convertG1 cmH1
+        , cmH2_bytes    = ByteStringFromHex $ convertG1 cmH2
+        , cmZ1_bytes    = ByteStringFromHex $ convertG1 cmZ1
+        , cmZ2_bytes    = ByteStringFromHex $ convertG1 cmZ2
+        , cmQlow_bytes  = ByteStringFromHex $ convertG1 cmQlow
+        , cmQmid_bytes  = ByteStringFromHex $ convertG1 cmQmid
+        , cmQhigh_bytes = ByteStringFromHex $ convertG1 cmQhigh
+        , proof1_bytes  = ByteStringFromHex $ convertG1 proof1
+        , proof2_bytes  = ByteStringFromHex $ convertG1 proof2
         , a_xi_int      = convertZp a_xi
         , b_xi_int      = convertZp b_xi
         , c_xi_int      = convertZp c_xi
