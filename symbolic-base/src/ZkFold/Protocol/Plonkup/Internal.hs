@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -7,13 +8,15 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
+import qualified Data.Vector                                         as V
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                                (Scale)
+import           ZkFold.Algebra.Class                                (Bilinear (..), Scale)
 import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
 import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateFieldPolyVec (..))
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
@@ -65,3 +68,12 @@ instance
         let (omega, k1, k2) = getParams (value @n)
         let (gs, h1) = getSecrectParams x
         return $ Plonkup omega k1 k2 ac h1 gs
+
+lagrangeBasisGroupElements :: forall n g1 pv .
+    ( KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    ) => ScalarFieldOf g1 -> V.Vector g1 -> [g1]
+lagrangeBasisGroupElements omega gs =
+    map (\i -> gs `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 .. ]

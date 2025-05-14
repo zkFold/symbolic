@@ -7,6 +7,7 @@ import           Data.ByteString                                     (ByteString
 import           Data.Foldable                                       (toList)
 import           Data.Function                                       (($))
 import           Data.Functor.Rep                                    (Rep, Representable)
+import           Data.List                                           (head)
 import           Data.Ord                                            (Ord)
 import           GHC.Generics                                        (Par1 (..))
 import           Prelude                                             (fst)
@@ -19,9 +20,10 @@ import           ZkFold.Algebra.Number                               (KnownNat)
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.NonInteractiveProof                 (NonInteractiveProof (..))
-import           ZkFold.Protocol.Plonkup                             hiding (omega)
-import           ZkFold.Protocol.Plonkup.Update                      (nextGroupElement, updateProverSetup,
-                                                                      updateVerifierSetup)
+import           ZkFold.Protocol.Plonkup                             (Plonkup (ac), PlonkupPolyExtendedLength,
+                                                                      lagrangeBasisGroupElements)
+import           ZkFold.Protocol.Plonkup.Prover                      (PlonkupProverSetup (..))
+import           ZkFold.Protocol.Plonkup.Update                      (updateProverSetup, updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness                     (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
@@ -38,7 +40,7 @@ propUpdateSetupIsCorrect plonkup witness =
         setupP' = updateProverSetup setupP par
         (input, proof) = prove @(P i n) setupP' witness
 
-        h = nextGroupElement setupP
+        h = head $ lagrangeBasisGroupElements @n @_ @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) (omega setupP) (gs setupP)
         setupV = setupVerify plonkup
         setupV' = updateVerifierSetup setupV par [h]
     in verify @(P i n) setupV' input proof

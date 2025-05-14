@@ -1,7 +1,10 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Algorithm.Hash.MiMC where
+module ZkFold.Symbolic.Algorithm.Hash.MiMC
+  ( module ZkFold.Symbolic.Algorithm.Hash.MiMC
+  , mimcConstants
+  ) where
 
 import           Data.Foldable                                 (toList)
 import           Data.Functor.Rep                              (fmapRep, liftR3, pureRep)

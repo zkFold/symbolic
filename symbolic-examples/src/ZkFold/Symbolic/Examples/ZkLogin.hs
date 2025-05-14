@@ -1,8 +1,4 @@
-module ZkFold.Symbolic.Cardano.Contracts.ZkLogin
-    ( PublicInput
-    , zkLogin
-    , zkLoginNoSig
-    ) where
+module ZkFold.Symbolic.Examples.ZkLogin where
 
 import           Prelude                             (($))
 
@@ -36,7 +32,6 @@ zkLogin jHeader jPayload jSignature amount recipient certificate pi = tokenValid
         truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
         piValid = truePi == pi
 
-
 zkLoginNoSig
     :: forall ctx
     .  RSA.RSA 2048 10328 ctx
@@ -54,3 +49,17 @@ zkLoginNoSig jHeader jPayload _ amount recipient _ pi = piValid
         tokenHash = sha2Var @"SHA256" $ tokenBits jHeader jPayload
         truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
         piValid = truePi == pi
+
+exampleZkLoginNoSig
+    :: forall ctx
+    .  RSA.RSA 2048 10328 ctx
+    => TokenBits (GooglePayload ctx)
+    => TokenHeader ctx
+    -> GooglePayload ctx
+    -> Signature "RS256" ctx
+    -> ByteString 64 ctx
+    -> ByteString 256 ctx
+    -> Certificate ctx
+    -> PublicInput ctx
+    -> Bool ctx
+exampleZkLoginNoSig = zkLoginNoSig

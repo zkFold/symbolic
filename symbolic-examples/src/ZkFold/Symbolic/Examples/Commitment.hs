@@ -1,4 +1,4 @@
-module Examples.Commitment (
+module ZkFold.Symbolic.Examples.Commitment (
     exampleCommitment
   ) where
 
