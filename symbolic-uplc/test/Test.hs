@@ -2,17 +2,20 @@
 {-# LANGUAGE MonoLocalBinds   #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import           Control.Applicative                        ((<*>))
 import           Control.Monad                              (return)
 import           Data.Eq                                    (Eq)
+import qualified Data.Text.Encoding                         as TE
+import qualified Data.ByteString.Base16                     as B16
 import           Data.Function                              (const, ($))
 import           Data.Functor                               (Functor, (<$>))
 import qualified Data.Text                                  as T
 import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..))
-import           Prelude                                    (type (~), (.))
+import           Prelude                                    (type (~), (.), either, id, error)
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (describe, hspec)
 import           Test.Hspec.QuickCheck                      (prop)
@@ -106,3 +109,15 @@ main = hspec $ describe "UPLC tests" $ do
                                                $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString12
                                                                                               $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)))
     (const false)
+  prop "sha2_256 on small (length < 256) string is correct" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFByteString EqualsByteString)
+                                                  $$ (TConstant (CByteString $ either (error "absurd") id $ B16.decode "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"))
+                                                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ (TConstant (CByteString . TE.encodeUtf8 $ "ab")))))
+    (const true)
+  prop "sha2_256 on large (length > 256) string is correct" $ areSame contractV3
+    (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
+                                               $$ (TBuiltin (BFMono $ BMFByteString EqualsByteString)
+                                                  $$ (TConstant (CByteString $ either (error "absurd") id $ B16.decode "ac137fce49837c7c2945f6160d3c0e679e6f40070850420a22bc10e0692cbdc7"))
+                                                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ (TConstant (CByteString . TE.encodeUtf8 $ "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+    (const true)

@@ -60,6 +60,7 @@ test-suite symbolic-uplc-test
     build-depends:
       adjunctions  ,
       base         ,
+      base16-bytestring,
       hspec        ,
       symbolic-base,
       text,
