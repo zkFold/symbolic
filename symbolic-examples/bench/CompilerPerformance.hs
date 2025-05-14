@@ -1,6 +1,6 @@
 module Main where
 
-import           Control.DeepSeq          (NFData, NFData1, force)
+import           Control.DeepSeq          (NFData1, force)
 import           Control.Monad            (return)
 import           Data.Binary              (Binary)
 import           Data.Function            (const, ($))
@@ -11,11 +11,11 @@ import           Test.Tasty.Bench
 
 import           ZkFold.Algebra.Class     (zero)
 import           ZkFold.Symbolic.Class    (Arithmetic)
-import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, witnessGenerator)
 import           ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
 
 benchmark ::
-  (Arithmetic a, Binary a, NFData (Rep i), Representable i, NFData1 o) =>
+  (Arithmetic a, Representable i, Binary (Rep i), NFData1 o) =>
   String -> (() -> ArithmeticCircuit a i o) -> Benchmark
 benchmark name circuit = bgroup name
   [ bench "compilation" $ nf circuit ()

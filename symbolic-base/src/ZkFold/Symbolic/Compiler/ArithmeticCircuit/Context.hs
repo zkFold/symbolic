@@ -27,7 +27,7 @@ import           Data.Map                                                     (M
 import qualified Data.Map                                                     as M
 import           Data.Map.Monoidal                                            (MonoidalMap)
 import qualified Data.Map.Monoidal                                            as MM
-import           Data.Maybe                                                   (Maybe (..), fromJust, fromMaybe)
+import           Data.Maybe                                                   (Maybe (..), fromJust)
 import           Data.Monoid                                                  (Monoid, mempty)
 import           Data.Ord                                                     (Ord)
 import           Data.Semialign                                               (unzipDefault)
@@ -204,7 +204,7 @@ allWitnesses ::
     Arithmetic a => CircuitContext a o -> (ByteString -> a) -> (NewVar -> a)
 allWitnesses ctx inputs =
     let evNewVar = \case
-            EqVar eqV -> fromMaybe (inputs eqV) (eqVars M.!? eqV)
+            EqVar eqV -> M.findWithDefault (inputs eqV) eqV eqVars
             FoldLVar fldID fldV -> fst (foldVars M.! fldID) M.! fldV
             FoldPVar fldID fldV -> snd (foldVars M.! fldID) fldV
         evVar = evalVar evNewVar
@@ -279,8 +279,8 @@ guessOutput ::
     (Arithmetic a, Binary a, Representable o, Foldable o) =>
     (i NewVar -> CircuitContext a o) ->
     (i :*: o) NewVar -> CircuitContext a U1
-guessOutput f (i :*: o) = fromCircuit2F (f i) (fool o) $ \o1 o2 -> do
-    for_ (mzipRep o1 o2) $ \(j, k) -> constraint (\x -> x j - x k)
+guessOutput f (i :*: o) = fromCircuit2F (f i) (fool o) \o1 o2 -> do
+    for_ (mzipRep o1 o2) \(j, k) -> constraint (\x -> x j - x k)
     pure U1
 
 ----------------------------- MonadCircuit instance ----------------------------

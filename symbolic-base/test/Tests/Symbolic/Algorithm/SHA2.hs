@@ -1,11 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Symbolic.Algorithm.SHA2 (specSHA2Natural, specSHA2) where
 
 import           Control.Monad                          (forM_)
-import           Data.Binary                            (Binary)
 import           Data.Bits                              (shiftR)
 import           Data.Function                          (($))
 import           Data.Functor                           ((<$>))
@@ -33,7 +31,7 @@ import           ZkFold.Data.Vector                     (Vector)
 import           ZkFold.Prelude                         (chooseNatural)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                  (Arithmetic)
-import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit               (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
@@ -144,8 +142,8 @@ toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
 
 eval ::
-  forall a n . (Arithmetic a, Binary a) =>
-  ByteString n (ArithmeticCircuit a U1) -> Vector n a
+    forall a n . Arithmetic a =>
+    ByteString n (ArithmeticCircuit a U1) -> Vector n a
 eval (ByteString bits) = exec bits
 
 specSHA2bs

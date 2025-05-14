@@ -1,27 +1,32 @@
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
+        -- * Type and getters
         ArithmeticCircuit (..),
-        -- high-level functions
+        -- * Constructors from context
         solder,
-        optimize,
-        desugarRanges,
+        guessOutput,
+        -- * Arrow-like constructors
         idCircuit,
         naturalCircuit,
-        -- evaluation functions
+        -- * Circuit transformers
+        optimize,
+        desugarRanges,
+        -- * Evaluation functions
         witnessGenerator,
         eval,
         eval1,
         exec,
         exec1,
-        -- information about the system
+        -- * Information about the system
         acSizeN,
         acSizeM,
         acSizeL,
         acSizeT,
         acPrint,
-        -- Testing functions
+        -- * Testing functions
         checkCircuit,
         checkClosedCircuit,
     ) where
@@ -38,24 +43,30 @@ import           Data.Functor.Rep                                        (Rep, R
 import           Data.Kind                                               (Type)
 import qualified Data.Map                                                as M
 import           Data.Maybe                                              (fromJust)
+import           Data.Ord                                                (Ord)
 import           Data.Traversable                                        (Traversable)
 import           GHC.Generics                                            (Generic, Par1 (..), U1 (..))
 import           Numeric.Natural                                         (Natural)
 import           Optics                                                  (over)
 import           System.IO                                               (IO, putStr)
-import           Test.QuickCheck                                         (Arbitrary, Property, arbitrary, conjoin,
-                                                                          property, withMaxSuccess, (===))
+import qualified Test.QuickCheck                                         as Q
+import           Test.QuickCheck                                         (Arbitrary, Property)
 import           Text.Pretty.Simple                                      (pPrint)
 import           Text.Show                                               (Show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Polynomial.Multivariate                  (evalMonomial, evalPolynomial)
+import           ZkFold.Control.HApplicative                             (HApplicative)
 import           ZkFold.Data.ByteString                                  (fromByteString, toByteString)
+import           ZkFold.Data.HFunctor                                    (HFunctor)
+import           ZkFold.Data.HFunctor.Classes                            (HNFData, HShow)
+import           ZkFold.Data.Package                                     (Package (..))
+import           ZkFold.Data.Product                                     (fromPair)
 import           ZkFold.Prelude                                          (length)
-import           ZkFold.Symbolic.Class                                   (Arithmetic)
+import           ZkFold.Symbolic.Class                                   (Arithmetic, Symbolic (..))
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary    as Arbitrary
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context      (CircuitContext (..), allWitnesses,
-                                                                          emptyContext, getAllVars)
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context      as Context
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context      (CircuitContext (..))
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring   as Desugaring
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization as Optimization
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (NewVar (..), evalVar, toVar)
@@ -64,7 +75,8 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var          (NewVar
 newtype ArithmeticCircuit a (i :: Type -> Type) o =
     ArithmeticCircuit { acContext :: CircuitContext a o }
     deriving Generic
-    deriving newtype (FromJSON, ToJSON, NFData, Show)
+    deriving newtype ( HFunctor, HApplicative, HNFData, HShow
+                     , FromJSON, ToJSON, NFData, Show)
 
 instance ( Arbitrary a, Arithmetic a, Binary a
          , Foldable i, Representable i, Binary (Rep i)
@@ -73,12 +85,50 @@ instance ( Arbitrary a, Arithmetic a, Binary a
     arbitrary = ArithmeticCircuit <$> Arbitrary.arbitraryContext allInputs 10
         where allInputs = toList $ tabulate @i (EqVar . toByteString)
 
----------------------------- High-level functions ------------------------------
+instance Ord a => Package (ArithmeticCircuit a i) where
+    unpack = fmap ArithmeticCircuit . unpack . acContext
+    unpackWith f = fmap ArithmeticCircuit . unpackWith f . acContext
+    pack = ArithmeticCircuit . pack . fmap acContext
+    packWith f = ArithmeticCircuit . packWith f . fmap acContext
+
+instance (Arithmetic a, Binary a) => Symbolic (ArithmeticCircuit a i) where
+    type BaseField (ArithmeticCircuit a i) = BaseField (CircuitContext a)
+    type WitnessField (ArithmeticCircuit a i) = WitnessField (CircuitContext a)
+    witnessF = witnessF . acContext
+    fromCircuitF (acContext -> ctx) m = ArithmeticCircuit (fromCircuitF ctx m)
+    sanityF (acContext -> ctx) f =
+        ArithmeticCircuit . sanityF ctx f
+        . (acContext .) . (. ArithmeticCircuit)
+
+-------------------------- Constructors from context ---------------------------
 
 solder ::
     (Representable i, Binary (Rep i)) =>
     (i NewVar -> CircuitContext a o) -> ArithmeticCircuit a i o
 solder = ArithmeticCircuit . ($ tabulate (EqVar . toByteString))
+
+guessOutput ::
+    (Arithmetic a, Binary a, Representable j) =>
+    (Binary (Rep j), Representable o, Foldable o) =>
+    (forall x. j x -> (i x, o x)) ->
+    (i NewVar -> CircuitContext a o) -> ArithmeticCircuit a j U1
+guessOutput f i = solder (Context.guessOutput i . fromPair . f)
+
+--------------------------- Arrow-like constructors ----------------------------
+
+-- | Given a natural transformation from input @i@ to output @o@,
+-- returns a corresponding arithmetic circuit.
+naturalCircuit ::
+    (Arithmetic a, Representable i, Binary (Rep i)) =>
+    (forall x. i x -> o x) -> ArithmeticCircuit a i o
+naturalCircuit f = solder (Context.crown Context.emptyContext . f . fmap toVar)
+
+-- | Identity circuit which returns its input @i@ and doesn't use the payload.
+idCircuit ::
+    (Arithmetic a, Representable i, Binary (Rep i)) => ArithmeticCircuit a i i
+idCircuit = naturalCircuit id
+
+---------------------------- Circuit transformers ------------------------------
 
 desugarRanges ::
     (Arithmetic a, Binary a) =>
@@ -90,34 +140,21 @@ optimize ::
     ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = over #acContext $ Optimization.optimize (Optimization.isInputVar @i)
 
--- | Given a natural transformation from input @i@ to output @o@,
--- returns a corresponding arithmetic circuit.
-naturalCircuit ::
-    (Arithmetic a, Representable i, Binary (Rep i)) =>
-    (forall x. i x -> o x) -> ArithmeticCircuit a i o
-naturalCircuit f = ArithmeticCircuit emptyContext { acOutput = f acInput }
-    where acInput = tabulate (toVar . EqVar . toByteString)
-
--- | Identity circuit which returns its input @i@ and doesn't use the payload.
-idCircuit ::
-    (Arithmetic a, Representable i, Binary (Rep i)) => ArithmeticCircuit a i i
-idCircuit = naturalCircuit id
-
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator ::
     (Arithmetic a, Representable i, Binary (Rep i)) =>
     ArithmeticCircuit a i o -> i a -> NewVar -> a
 witnessGenerator ArithmeticCircuit {..} =
-    allWitnesses acContext . (. fromJust . fromByteString) . index
+    Context.allWitnesses acContext . (. fromJust . fromByteString) . index
 
--- | Evaluates the arithmetic circuit using the supplied input map.
+-- | Evaluates the arithmetic circuit using the supplied input.
 eval ::
     (Arithmetic a, Representable i, Binary (Rep i), Functor o) =>
     ArithmeticCircuit a i o -> i a -> o a
 eval ac i = evalVar (witnessGenerator ac i) <$> acOutput (acContext ac)
 
--- | Evaluates the arithmetic circuit with one output using the supplied input map.
+-- | Evaluates the arithmetic circuit with one output using the supplied input.
 eval1 ::
     (Arithmetic a, Representable i, Binary (Rep i)) =>
     ArithmeticCircuit a i Par1 -> i a -> a
@@ -164,7 +201,7 @@ acPrint ac@(ArithmeticCircuit ctx) = do
     putStr "Matrices: "
     pPrint $ M.elems (acSystem ctx)
     putStr "Witness: "
-    pPrint $ M.fromList [ (var, w var) | var <- getAllVars ctx ]
+    pPrint $ M.fromList [ (var, w var) | var <- Context.getAllVars ctx ]
     putStr "Output: "
     pPrint $ acOutput ctx
     putStr "Value: "
@@ -182,10 +219,10 @@ checkClosedCircuit
     => ArithmeticCircuit a U1 o
     -> Property
 checkClosedCircuit c@(ArithmeticCircuit ctx) =
-    withMaxSuccess 1 $ conjoin [ testPoly p | p <- M.elems (acSystem ctx) ]
+    Q.withMaxSuccess 1 $ Q.conjoin [ testPoly p | p <- M.elems (acSystem ctx) ]
     where
         w = witnessGenerator c U1
-        testPoly p = evalPolynomial evalMonomial w p === zero
+        testPoly p = evalPolynomial evalMonomial w p Q.=== zero
 
 -- TODO: `checkCircuit` should check all constraint types
 checkCircuit
@@ -198,9 +235,9 @@ checkCircuit
     -> (x -> i a)
     -> Property
 checkCircuit c@(ArithmeticCircuit ctx) f =
-    conjoin [ property (testPoly p) | p <- M.elems (acSystem ctx) ]
+    Q.conjoin [ Q.property (testPoly p) | p <- M.elems (acSystem ctx) ]
     where
         testPoly p = do
-            ins <- f <$> arbitrary
+            ins <- f <$> Q.arbitrary
             let w = witnessGenerator c ins
-            return $ evalPolynomial evalMonomial w p === zero
+            return $ evalPolynomial evalMonomial w p Q.=== zero
