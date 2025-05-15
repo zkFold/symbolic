@@ -15,10 +15,8 @@
 
 module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..), BSLength, StrLength, IntLength) where
 
-import           Data.Functor.Rep                   (Representable)
 import           Data.Maybe                         (Maybe (..))
 import           Data.Proxy                         (Proxy (..))
-import           Data.Traversable                   (Traversable)
 import           Data.Typeable                      (Typeable)
 import           Prelude                            (type (~))
 
@@ -43,9 +41,6 @@ class
     , Context v ~ c, Support v ~ Proxy c
     -- TODO: Remove after Conditional becomes part of SymbolicData
     , Conditional (Bool c) v
-    , Representable (Layout v)
-    , Traversable (Layout v)
-    , Representable (Payload v)
     ) => IsData (t :: BuiltinType) v c | t c -> v, v -> t, v -> c where
   asPair :: v -> Maybe (ExValue c, ExValue c)
   asList :: v -> Maybe (ExList c)

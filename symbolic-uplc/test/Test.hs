@@ -109,6 +109,7 @@ main = hspec $ describe "UPLC tests" $ do
                                                $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString12
                                                                                               $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)))
     (const false)
+  -- Hash result obtained from https://emn178.github.io/online-tools/sha256.html.
   prop "sha2_256 on small (length < 256) string is correct" $ areSame contractV3
     (TLam $ TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
                                                $$ (TBuiltin (BFMono $ BMFByteString EqualsByteString)
