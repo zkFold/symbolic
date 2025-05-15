@@ -1,4 +1,4 @@
-module Examples.ECDSA
+module ZkFold.Symbolic.Examples.ECDSA
   (exampleECDSA) where
 
 import           ZkFold.Algebra.EllipticCurve.Pasta       (FpModulus, FqModulus)

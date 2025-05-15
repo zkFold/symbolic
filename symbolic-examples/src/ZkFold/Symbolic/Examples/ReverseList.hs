@@ -1,4 +1,4 @@
-module Examples.ReverseList (exampleReverseList) where
+module ZkFold.Symbolic.Examples.ReverseList (exampleReverseList) where
 
 import           ZkFold.Data.Vector (Vector, reverse)
 

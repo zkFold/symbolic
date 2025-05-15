@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -7,13 +8,15 @@ import           Data.Constraint                                     (withDict)
 import           Data.Constraint.Nat                                 (plusNat, timesNat)
 import           Data.Functor.Classes                                (Show1)
 import           Data.Functor.Rep                                    (Rep)
+import qualified Data.Vector                                         as V
 import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
                                                                       (/), (^))
 import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                                (Scale)
+import           ZkFold.Algebra.Class                                (Bilinear (..), Scale)
 import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
 import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateFieldPolyVec (..))
 import           ZkFold.Data.Vector                                  (Vector)
 import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
 import           ZkFold.Symbolic.Compiler                            ()
@@ -24,11 +27,11 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic
     Additionally, we don't want this library to depend on Cardano libraries.
 -}
 
-data Plonkup i (n :: Natural) l g1 g2 transcript pv = Plonkup {
+data Plonkup i o (n :: Natural) g1 g2 transcript pv = Plonkup {
         omega :: ScalarFieldOf g1,
         k1    :: ScalarFieldOf g1,
         k2    :: ScalarFieldOf g1,
-        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i l,
+        ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
         gs'   :: Vector (n + 5) g1
     }
@@ -43,7 +46,7 @@ with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
 type PlonkupPolyExtended n g pv = pv (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 l, Ord (Rep i), Show g1, Show g2) => Show (Plonkup i n l g1 g2 t pv) where
+instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 o, Ord (Rep i), Show g1, Show g2) => Show (Plonkup i o n g1 g2 t pv) where
     show Plonkup {..} =
         "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
 
@@ -57,11 +60,20 @@ instance
   , CyclicGroup g1
   , CyclicGroup g2
   , Scale (ScalarFieldOf g1) g2
-  , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) i l)
-  ) => Arbitrary (Plonkup i n l g1 g2 t pv) where
+  , Arbitrary (ArithmeticCircuit (ScalarFieldOf g1) i o)
+  ) => Arbitrary (Plonkup i o n g1 g2 t pv) where
     arbitrary = do
         ac <- arbitrary
         x <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
         let (gs, h1) = getSecrectParams x
         return $ Plonkup omega k1 k2 ac h1 gs
+
+lagrangeBasisGroupElements :: forall n g1 pv .
+    ( KnownNat n
+    , KnownNat (PlonkupPolyExtendedLength n)
+    , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    ) => ScalarFieldOf g1 -> V.Vector g1 -> [g1]
+lagrangeBasisGroupElements omega gs =
+    map (\i -> gs `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 .. ]

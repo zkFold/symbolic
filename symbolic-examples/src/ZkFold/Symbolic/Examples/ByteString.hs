@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Examples.ByteString (
+module ZkFold.Symbolic.Examples.ByteString (
     exampleByteStringAnd,
     exampleByteStringOr,
     exampleByteStringResize,
