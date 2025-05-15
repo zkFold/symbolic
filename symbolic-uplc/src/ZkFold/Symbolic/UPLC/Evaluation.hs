@@ -184,6 +184,8 @@ applyMono b (FLam f) (v:args) = do
 
 --------------------------- BUILTINS INTERPRETATION ----------------------------
 
+-- This part is meant to be changed when completing the Converter implementation.
+
 -- | Apply polymorphic function to its arguments, fully saturated.
 --
 -- General algorithm:
