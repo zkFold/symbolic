@@ -10,13 +10,12 @@
 
 module Main where
 
-import           Data.ByteString                               (ByteString)
-import           Prelude                                       hiding (Fractional (..), Num (..), length)
+import           Data.ByteString                       (ByteString)
+import           Prelude                               hiding (Fractional (..), Num (..), length)
 
-import           ZkFold.Algebra.Class                          (zero)
+import           ZkFold.Algebra.Class                  (zero)
 import           ZkFold.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Symbolic.Cardano.Contracts.SmartWallet
-
+import           ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do

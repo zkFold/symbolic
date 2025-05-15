@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-module Examples.BLS12_381 (
+module ZkFold.Symbolic.Examples.BLS12_381 (
     exampleBLS12_381Scale
   ) where
 

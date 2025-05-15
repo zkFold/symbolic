@@ -1,4 +1,4 @@
-module Examples.MiMCHash (exampleMiMC) where
+module ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC) where
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHash2)

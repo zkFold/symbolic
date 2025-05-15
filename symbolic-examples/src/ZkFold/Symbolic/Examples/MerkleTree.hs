@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators  #-}
 
-module Examples.MerkleTree (exampleMerkleTree) where
+module ZkFold.Symbolic.Examples.MerkleTree (exampleMerkleTree) where
 
 import           GHC.TypeNats
 

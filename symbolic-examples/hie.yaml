@@ -8,3 +8,6 @@ cradle:
 
     - path: "bench/CircuitSize.hs"
       component: "symbolic-examples:bench:bench-circuit-size"
+
+    - path: "smart-wallet-creator/Main.hs"
+      component: "symbolic-examples:exe:smart-wallet-creator"

@@ -8,7 +8,7 @@ import           ZkFold.Algebra.EllipticCurve.Class           (CyclicGroup (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
-data PlonkupVerifierSetup i n l g1 g2 pv = PlonkupVerifierSetup
+data PlonkupVerifierSetup i o n g1 g2 pv = PlonkupVerifierSetup
     { omega       :: ScalarFieldOf g1
     , k1          :: ScalarFieldOf g1
     , k2          :: ScalarFieldOf g1
@@ -16,7 +16,7 @@ data PlonkupVerifierSetup i n l g1 g2 pv = PlonkupVerifierSetup
     , sigma1s     :: pv n
     , sigma2s     :: pv n
     , sigma3s     :: pv n
-    , relation    :: PlonkupRelation i n l (ScalarFieldOf g1) pv
+    , relation    :: PlonkupRelation i o n (ScalarFieldOf g1) pv
     , commitments :: PlonkupCircuitCommitments g1
     }
 
@@ -26,8 +26,8 @@ instance
         , Show g2
         , Show (ScalarFieldOf g1)
         , Show (pv n)
-        , Show (PlonkupRelation i n l (ScalarFieldOf g1) pv)
-        ) => Show (PlonkupVerifierSetup i n l g1 g2 pv) where
+        , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
+        ) => Show (PlonkupVerifierSetup i o n g1 g2 pv) where
     show PlonkupVerifierSetup {..} =
         "Verifier setup: "
         ++ show omega ++ " "
