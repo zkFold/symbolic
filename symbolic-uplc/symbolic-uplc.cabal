@@ -61,6 +61,7 @@ test-suite symbolic-uplc-test
       adjunctions  ,
       base         ,
       base16-bytestring,
+      bytestring   ,
       hspec        ,
       symbolic-base,
       text,
