@@ -1,5 +1,5 @@
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs     #-}
 
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where

@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 

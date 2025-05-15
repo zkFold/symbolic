@@ -1,5 +1,5 @@
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.UPLC.Data where
 

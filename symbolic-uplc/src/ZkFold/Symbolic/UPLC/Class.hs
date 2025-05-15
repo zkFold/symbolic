@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE ExplicitNamespaces     #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE ExplicitNamespaces #-}
 
 module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..), BSLength, StrLength, IntLength) where
 
