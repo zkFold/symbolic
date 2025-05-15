@@ -1,8 +1,5 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE MonoLocalBinds    #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
