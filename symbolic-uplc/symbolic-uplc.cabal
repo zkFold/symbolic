@@ -22,7 +22,7 @@ Flag Pedantic
     Default: False
 
 common options
-    default-language:   Haskell2010
+    default-language:   GHC2021
     default-extensions:
       NoImplicitPrelude
     ghc-options:
