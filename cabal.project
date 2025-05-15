@@ -15,7 +15,7 @@ packages:
 if arch(wasm32)
   shared: True
 
--- optimization: 2
+optimization: 2
 
 -- We never, ever, want this.
 write-ghc-environment-files: never
