@@ -4,14 +4,12 @@
 
 module ZkFold.Protocol.Plonkup.Utils where
 
-import           Data.Bifunctor                     (first)
 import           Data.Bool                          (bool)
 import           Data.List                          (sortOn)
 import qualified Data.Map                           as M
 import qualified Data.Set                           as S
 import           Prelude                            hiding (Num (..), drop, length, replicate, sum, take, (!!), (/),
                                                      (^))
-import           System.Random                      (RandomGen, mkStdGen, uniformR)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
