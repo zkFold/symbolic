@@ -18,7 +18,6 @@ module ZkFold.Algebra.Field (
 import           Control.Applicative                  ((<|>))
 import           Control.DeepSeq                      (NFData (..))
 import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
-import           Data.Bifunctor                       (first)
 import           Data.Bool                            (bool)
 import qualified Data.Vector                          as V
 import           GHC.Generics                         (Generic)
@@ -26,7 +25,7 @@ import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
 import           Prelude                              hiding (Fractional (..), Num (..), div, length, (^))
 import qualified Prelude                              as Haskell
-import           System.Random                        (Random (..), RandomGen, mkStdGen, uniformR)
+import           System.Random                        (Random (..))
 import           Test.QuickCheck                      hiding (scale)
 
 import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
@@ -76,37 +75,37 @@ instance KnownNat p => Enum (Zp p) where
     enumFromThenTo x x' y = takeWhile (/= y) (enumFromThen x x') ++ [y]
 
 instance KnownNat p => AdditiveSemigroup (Zp p) where
-    Zp a + Zp b = {-# SCC zp_add #-} toZp (a + b)
+    Zp a + Zp b = toZp (a + b)
 
 instance KnownNat p => Scale Natural (Zp p) where
-    scale c (Zp a) = {-# SCC zp_nat_scale #-} toZp (scale c a)
+    scale c (Zp a) = toZp (scale c a)
 
 instance KnownNat p => AdditiveMonoid (Zp p) where
     zero = Zp 0
 
 instance KnownNat p => Scale Integer (Zp p) where
-    scale c (Zp a) = {-# SCC zp_int_scale #-} toZp (scale c a)
+    scale c (Zp a) = toZp (scale c a)
 
 instance KnownNat p => AdditiveGroup (Zp p) where
-    negate (Zp a) ={-# SCC zp_negate #-} toZp (negate a)
-    Zp a - Zp b   ={-# SCC zp_sub #-} toZp (a - b)
+    negate (Zp a) =toZp (negate a)
+    Zp a - Zp b   =toZp (a - b)
 
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
-    Zp a * Zp b = {-# SCC zp_mul #-} toZp (a * b)
+    Zp a * Zp b = toZp (a * b)
 
 instance KnownNat p => Exponent (Zp p) Natural where
-    (^) = {-# SCC zp_pow #-} natPow
+    (^) = natPow
 
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
 
 instance KnownNat p => FromConstant Natural (Zp p) where
-    fromConstant = {-# SCC zp_from_constant #-} toZp . fromConstant
+    fromConstant = toZp . fromConstant
 
 instance KnownNat p => Semiring (Zp p)
 
 instance KnownNat p => SemiEuclidean (Zp p) where
-    divMod a b = {-# SCC zp_divmod #-} let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
+    divMod a b = let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
                   in (toZp . fromIntegral $ q, toZp . fromIntegral $ r)
 
 instance KnownNat p => FromConstant Integer (Zp p) where
@@ -116,20 +115,20 @@ instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
-    a ^ n = {-# SCC zp_int_pow #-} intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
+    a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
 
 instance Prime p => Field (Zp p) where
-    finv (Zp a) = {-# SCC zp_finv #-} fromConstant $ inv a (value @p)
+    finv (Zp a) = fromConstant $ inv a (value @p)
 
     rootOfUnity l
       | l == 0                       = Nothing
       | (value @p -! 1) `Haskell.mod` n /= 0 = Nothing
-      | otherwise = Just $ rootOfUnity' 2 
+      | otherwise = Just $ rootOfUnity' 2
         where
           n = 2 ^ l
           rootOfUnity' :: Natural -> Zp p
           rootOfUnity' g =
-              let x = fromConstant g 
+              let x = fromConstant g
                   x' = x ^ ((value @p -! 1) `Haskell.div` n)
               in bool (rootOfUnity' (g + 1)) x' (x' ^ (n `Haskell.div` 2) /= one)
 

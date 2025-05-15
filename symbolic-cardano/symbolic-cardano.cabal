@@ -132,7 +132,5 @@ executable smart-wallet-creator
   build-depends:
     base              >= 4.9 && < 5,
     bytestring                     ,
-    base64-bytestring,
-    blake2,
     symbolic-base                  ,
     symbolic-cardano               ,
