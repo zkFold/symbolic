@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs     #-}
-{-# LANGUAGE PolyKinds #-}
 
 module ZkFold.UPLC.Term where
 
