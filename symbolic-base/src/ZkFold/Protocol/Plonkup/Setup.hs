@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.Plonkup.Setup where
@@ -65,9 +64,8 @@ plonkupSetup :: forall i o n g1 g2 gt ts pv .
     ( Representable i
     , Representable o
     , Foldable o
-    , Ord (Rep i)
+    , Binary (Rep i)
     , Arithmetic (ScalarFieldOf g1)
-    , Binary (ScalarFieldOf g2)
     , Pairing g1 g2 gt
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)

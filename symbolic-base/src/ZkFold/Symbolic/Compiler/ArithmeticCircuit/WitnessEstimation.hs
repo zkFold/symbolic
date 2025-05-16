@@ -1,102 +1,79 @@
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
-import           Control.Applicative                            ()
-import           Data.Functor.Rep                               (Rep)
-import           GHC.Generics                                   (Generic)
-import           GHC.Integer                                    (Integer)
-import           GHC.Natural                                    (Natural)
-import           Prelude                                        (Eq, Maybe (..), ($), (.), (==))
+import           Data.Bool                                      (otherwise)
+import           Data.Eq                                        (Eq, (==))
+import           Data.Function                                  ((.))
+import           Data.Functor                                   (Functor, fmap)
+import           Data.Maybe                                     (Maybe (..))
+import           Prelude                                        (Integral)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.ByteString                         ()
-import           ZkFold.Symbolic.Class                          (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-import           ZkFold.Symbolic.MonadCircuit                   (ResidueField (..))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
+import           ZkFold.Symbolic.MonadCircuit                   (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
+data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
+instance FromConstant c a => FromConstant c (UVar a) where
+    fromConstant = ConstUVar . fromConstant
 
-data UVar a i
-  = ConstUVar a
-  | LinUVar a (SysVar i) a
-  | More
-  deriving Generic
+instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)
 
-instance FromConstant a (UVar a i) where
-    fromConstant = ConstUVar
-instance FromConstant Natural a => FromConstant Natural (UVar a i) where fromConstant = ConstUVar . fromConstant
-instance FromConstant Integer a => FromConstant Integer (UVar a i) where fromConstant = ConstUVar . fromConstant
+instance (Scale k a, AdditiveMonoid k, Eq k, AdditiveMonoid a) => Scale k (UVar a) where
+    scale k v
+        | k == zero = ConstUVar zero
+        | otherwise = fmap (scale k) v
 
-instance (Semiring a, Eq a) => Scale a (UVar a i) where
-  scale k (ConstUVar c) = ConstUVar $ k * c
-  scale k (LinUVar a x b) = if k == zero
-    then ConstUVar zero
-    else LinUVar (k * a) x (k * b)
-  scale k More = if k == zero
-    then ConstUVar zero
-    else More
+instance {-# OVERLAPPING #-} (Semiring a, Eq a) => Scale (UVar a) (UVar a) where
+    scale = (*)
 
-instance (Semiring a, Eq a) => Scale Natural (UVar a i) where scale k = scale (fromConstant k :: a)
-instance (Semiring a, Eq a, FromConstant Integer a) => Scale Integer (UVar a i) where scale k = scale (fromConstant k :: a)
+instance (Exponent a e, MultiplicativeMonoid a, Integral e) => Exponent (UVar a) e where
+    _ ^ 0           = ConstUVar one
+    v ^ 1           = v
+    ConstUVar c ^ n = ConstUVar (c ^ n)
+    _ ^ _           = More
 
-instance MultiplicativeMonoid a => Exponent (UVar a i) Natural where
-  (ConstUVar c) ^ n = ConstUVar $ c ^ n
-  v ^ 1             = v
-  _ ^ 0             = ConstUVar one
-  _ ^ _             = More
+instance (AdditiveMonoid a, Eq a) => AdditiveSemigroup (UVar a) where
+    ConstUVar c + x = c .+ x
+    x + ConstUVar c = c .+ x
+    LinUVar k1 x1 b1 + LinUVar k2 x2 b2
+        | x1 == x2 = if k1 + k2 == zero
+                     then ConstUVar (b1 + b2)
+                     else LinUVar (k1 + k2) x1 (b1 + b2)
+    _ + _ = More
 
-instance (Exponent a Integer, MultiplicativeMonoid a) => Exponent (UVar a i) Integer where
-  (ConstUVar c) ^ n   = ConstUVar $ c ^ n
-  (LinUVar k x b) ^ 1 = LinUVar k x b
-  _ ^ 0               = ConstUVar one
-  _ ^ _               = More
-
-instance (AdditiveMonoid a, Eq a, Eq (Rep i)) => AdditiveSemigroup (UVar a i) where
-  ConstUVar c + x = c .+ x
-  x + ConstUVar c = c .+ x
-  LinUVar k1 x1 b1 + (LinUVar k2 x2 b2) = if x1 == x2 then
-    if k1 + k2 == zero
-      then ConstUVar $ b1 + b2
-      else LinUVar (k1 + k2) x1 (b1 + b2)
-    else More
-  _ + _ = More
-
-(.+) :: AdditiveSemigroup a => a -> UVar a i -> UVar a i
-c1 .+ ConstUVar c2 = ConstUVar $ c1 + c2
+(.+) :: AdditiveSemigroup a => a -> UVar a -> UVar a
+c1 .+ ConstUVar c2 = ConstUVar (c1 + c2)
 c .+ LinUVar k x b = LinUVar k x (b + c)
 _ .+ More          = More
 
-instance (Semiring a, Eq a, Eq (Rep i)) => AdditiveMonoid (UVar a i) where
-  zero = ConstUVar zero
+instance (AdditiveMonoid a, Eq a) => AdditiveMonoid (UVar a) where
+    zero = ConstUVar zero
 
-instance (Ring a, Eq a, Eq (Rep i)) => AdditiveGroup (UVar a i) where
-  negate (ConstUVar c)   = ConstUVar (negate c)
-  negate (LinUVar k x b) = LinUVar (negate k) x (negate b)
-  negate More            = More
+instance (AdditiveGroup a, Eq a) => AdditiveGroup (UVar a) where
+    negate = fmap negate
 
-instance (Semiring a, Eq a) => MultiplicativeSemigroup (UVar a i) where
-  ConstUVar c * x = scale c x
-  x * ConstUVar c = scale c x
-  _ * _           = More
+instance (Semiring a, Eq a) => MultiplicativeSemigroup (UVar a) where
+    ConstUVar c * x = scale c x
+    x * ConstUVar c = scale c x
+    _ * _           = More
 
-instance (Semiring a, Eq a) => MultiplicativeMonoid (UVar a i) where
-  one = ConstUVar one
+instance (Semiring a, Eq a) => MultiplicativeMonoid (UVar a) where
+    one = ConstUVar one
 
-instance (Semiring a, Eq a, Eq (Rep i)) => Semiring (UVar a i)
+instance (Semiring a, Eq a) => Semiring (UVar a)
 
-instance (Ring a, Eq a, Eq (Rep i)) => Ring (UVar a i)
+instance (Ring a, Eq a) => Ring (UVar a)
 
-instance (Field a, Eq a, Eq (Rep i)) => Field (UVar a i) where
-  finv (ConstUVar c) = ConstUVar $ finv c
-  finv _             = More
+instance (Field a, Eq a) => Field (UVar a) where
+    finv (ConstUVar c) = ConstUVar (finv c)
+    finv _             = More
 
-instance Finite a => Finite (UVar a i) where type Order (UVar a i) = Order a
+instance Finite a => Finite (UVar a) where
+    type Order (UVar a) = Order a
 
-instance (Arithmetic a, Eq (Rep i)) => ResidueField (UVar a i) where
-  type IntegralOf (UVar a i) = Maybe Integer
-  fromIntegral (Just x) = ConstUVar (fromConstant x)
-  fromIntegral Nothing  = More
-  toIntegral (ConstUVar c) = Just (toIntegral c)
-  toIntegral _             = Nothing
+instance (ResidueField a, Eq a) => ResidueField (UVar a) where
+    type IntegralOf (UVar a) = Maybe (IntegralOf a)
+    fromIntegral (Just x) = ConstUVar (fromIntegral x)
+    fromIntegral Nothing  = More
+    toIntegral (ConstUVar c) = Just (toIntegral c)
+    toIntegral _             = Nothing

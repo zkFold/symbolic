@@ -3,39 +3,40 @@
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
-import           Data.ByteString                        (ByteString)
-import           Data.Function                          (const, flip, ($))
-import           Data.Functor                           (fmap)
-import           Data.Functor.Rep                       (tabulate)
-import           Data.List                              ((++))
-import           GHC.Generics                           (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import           Data.ByteString                            (ByteString)
+import           Data.Function                              (const, flip, ($))
+import           Data.Functor                               (fmap)
+import           Data.Functor.Rep                           (tabulate)
+import           Data.List                                  ((++))
+import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 
-import           ZkFold.Algebra.Class                   (fromConstant, one, toConstant, zero, (+), (-!))
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import           ZkFold.Algebra.EllipticCurve.Class     (ScalarFieldOf)
-import           ZkFold.Algebra.Number                  (KnownNat, value)
-import           ZkFold.Algebra.Polynomial.Univariate   (PolyVec)
-import           ZkFold.Data.ByteString                 (Binary)
-import           ZkFold.Data.HFunctor                   (hmap)
-import           ZkFold.Data.Vector                     (Vector, unsafeToVector)
-import           ZkFold.Prelude                         (length, replicate, (!!))
-import           ZkFold.Protocol.NonInteractiveProof    (NonInteractiveProof (setupProve, setupVerify), prove)
-import           ZkFold.Protocol.Plonkup                (Plonkup (..), PlonkupPolyExtendedLength)
-import           ZkFold.Protocol.Plonkup.Input          (PlonkupInput)
-import           ZkFold.Protocol.Plonkup.Internal       (lagrangeBasisGroupElements)
-import           ZkFold.Protocol.Plonkup.Proof          (PlonkupProof)
-import           ZkFold.Protocol.Plonkup.Prover         (PlonkupProverSecret (..), PlonkupProverSetup (..))
-import           ZkFold.Protocol.Plonkup.Update         (updateProverSetup)
-import           ZkFold.Protocol.Plonkup.Utils          (getParams, getSecrectParams)
-import           ZkFold.Protocol.Plonkup.Verifier       (PlonkupVerifierSetup)
-import           ZkFold.Protocol.Plonkup.Witness        (PlonkupWitnessInput (..))
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC    (hash)
-import           ZkFold.Symbolic.Class                  (Arithmetic, Symbolic)
-import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, compile, hlmap)
-import           ZkFold.Symbolic.Data.Bool              (Bool (..), BoolType (..), all, any)
-import           ZkFold.Symbolic.Data.Eq                (Eq (..))
-import           ZkFold.Symbolic.Data.FieldElement      (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter            (Interpreter)
+import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.Class         (ScalarFieldOf)
+import           ZkFold.Algebra.Number                      (KnownNat, value)
+import           ZkFold.Algebra.Polynomial.Univariate       (PolyVec)
+import           ZkFold.Data.ByteString                     (Binary)
+import           ZkFold.Data.HFunctor                       (hmap)
+import           ZkFold.Data.Vector                         (Vector, unsafeToVector)
+import           ZkFold.Prelude                             (length, replicate, (!!))
+import           ZkFold.Protocol.NonInteractiveProof        (NonInteractiveProof (setupProve, setupVerify), prove)
+import           ZkFold.Protocol.Plonkup                    (Plonkup (..), PlonkupPolyExtendedLength)
+import           ZkFold.Protocol.Plonkup.Input              (PlonkupInput)
+import           ZkFold.Protocol.Plonkup.Internal           (lagrangeBasisGroupElements)
+import           ZkFold.Protocol.Plonkup.Proof              (PlonkupProof)
+import           ZkFold.Protocol.Plonkup.Prover             (PlonkupProverSecret (..), PlonkupProverSetup (..))
+import           ZkFold.Protocol.Plonkup.Update             (updateProverSetup)
+import           ZkFold.Protocol.Plonkup.Utils              (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Verifier           (PlonkupVerifierSetup)
+import           ZkFold.Protocol.Plonkup.Witness            (PlonkupWitnessInput (..))
+import           ZkFold.Symbolic.Algorithm.Hash.MiMC        (hash)
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic)
+import           ZkFold.Symbolic.Compiler                   (compileWith)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, solder)
+import           ZkFold.Symbolic.Data.Bool                  (Bool (..), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter                (Interpreter)
 
 utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
@@ -57,10 +58,11 @@ type UtxoAccumulatorOutput n = Vector n :*: Par1 :*: Vector n
 utxoAccumulatorCircuit :: forall n a . (KnownNat n, Arithmetic a, Binary a)
     => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
-    hmap (\(Comp1 i1 :*: i2 :*: Comp1 i3) -> fmap unPar1 i1 :*: i2 :*: fmap unPar1 i3) $
-    hlmap (\(i1 :*: i2 :*: i3) -> (Comp1 (tabulate $ const U1) :*: (Comp1 (tabulate $ const U1) :*: ((U1 :*: U1) :*: U1)))
-        :*: ((Comp1 $ fmap Par1 i1) :*: ((Comp1 $ fmap Par1 i2) :*: (i3 :*: U1))))
-    $ compile @a $ utxoAccumulator @n
+    hmap (\(Comp1 i1 :*: i2 :*: Comp1 i3) -> fmap unPar1 i1 :*: i2 :*: fmap unPar1 i3)
+    $ compileWith solder (\(i1 :*: i2 :*: i3) ->
+        ( Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: (U1 :*: U1) :*: U1
+        , Comp1 (fmap Par1 i1) :*: Comp1 (fmap Par1 i2) :*: i3 :*: U1))
+    $ utxoAccumulator @n
 
 utxoAccumulatorInput :: forall n a .
        Vector n a

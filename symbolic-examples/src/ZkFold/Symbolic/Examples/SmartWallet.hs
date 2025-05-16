@@ -66,7 +66,8 @@ import           ZkFold.Protocol.Plonkup.Witness              (PlonkupWitnessInp
 import qualified ZkFold.Symbolic.Algorithm.RSA                as RSA
 import           ZkFold.Symbolic.Class                        (Symbolic (..))
 import qualified ZkFold.Symbolic.Compiler                     as C
-import           ZkFold.Symbolic.Compiler                     (ArithmeticCircuit (..))
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit   as AC
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit   (ArithmeticCircuit (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
@@ -334,7 +335,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 type ExpModCircuitGatesMock = 2^2
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = C.idCircuit
+identityCircuit = AC.idCircuit
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV

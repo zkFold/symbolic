@@ -2,38 +2,40 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
-import           Control.DeepSeq                        (NFData, NFData1)
-import           Data.Function                          (const, ($), (.))
-import           Data.Functor.Rep                       (Rep, Representable)
-import           Data.String                            (String)
-import           Data.Type.Equality                     (type (~))
-import           GHC.Generics                           (type (:*:))
+import           Control.DeepSeq                                    (NFData1)
+import           Data.Function                                      (const, ($), (.))
+import           Data.Functor.Rep                                   (Rep, Representable)
+import           Data.String                                        (String)
+import           Data.Type.Equality                                 (type (~))
+import           GHC.Generics                                       (type (:*:))
 
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Algebra.EllipticCurve.Pasta     (FpModulus)
-import           ZkFold.Algebra.Field                   (Zp)
-import           ZkFold.Data.ByteString                 (Binary)
-import           ZkFold.Symbolic.Class                  (Arithmetic)
-import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, compile)
-import           ZkFold.Symbolic.Data.Bool              (true)
-import           ZkFold.Symbolic.Data.ByteString        (ByteString)
-import           ZkFold.Symbolic.Data.Class             (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators       (RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Input             (SymbolicInput)
-import           ZkFold.Symbolic.Examples.Blake2b       (exampleBlake2b_224, exampleBlake2b_256)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381             (BLS12_381_Scalar)
+import           ZkFold.Algebra.EllipticCurve.Pasta                 (FpModulus)
+import           ZkFold.Algebra.Field                               (Zp)
+import           ZkFold.Data.ByteString                             (Binary)
+import           ZkFold.Symbolic.Class                              (Arithmetic)
+import           ZkFold.Symbolic.Compiler                           (compile)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import           ZkFold.Symbolic.Data.Bool                          (true)
+import           ZkFold.Symbolic.Data.ByteString                    (ByteString)
+import           ZkFold.Symbolic.Data.Class                         (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Combinators                   (RegisterSize (Auto))
+import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
+import           ZkFold.Symbolic.Examples.Blake2b                   (exampleBlake2b_224, exampleBlake2b_256)
 import           ZkFold.Symbolic.Examples.ByteString
-import           ZkFold.Symbolic.Examples.Conditional   (exampleConditional)
+import           ZkFold.Symbolic.Examples.Conditional               (exampleConditional)
 import           ZkFold.Symbolic.Examples.Constant
-import           ZkFold.Symbolic.Examples.ECDSA         (exampleECDSA)
-import           ZkFold.Symbolic.Examples.Eq            (exampleEq, exampleEqVector)
+import           ZkFold.Symbolic.Examples.ECDSA                     (exampleECDSA)
+import           ZkFold.Symbolic.Examples.Eq                        (exampleEq, exampleEqVector)
 import           ZkFold.Symbolic.Examples.FFA
-import           ZkFold.Symbolic.Examples.Fibonacci     (exampleFibonacci)
-import           ZkFold.Symbolic.Examples.FieldElement  (exampleInvert)
-import           ZkFold.Symbolic.Examples.LEQ           (exampleLEQ)
-import           ZkFold.Symbolic.Examples.MerkleTree    (exampleMerkleTree)
-import           ZkFold.Symbolic.Examples.MiMCHash      (exampleMiMC)
-import           ZkFold.Symbolic.Examples.Pasta         (examplePallas_Add, examplePallas_Scale)
-import           ZkFold.Symbolic.Examples.ReverseList   (exampleReverseList)
+import           ZkFold.Symbolic.Examples.Fibonacci                 (exampleFibonacci)
+import           ZkFold.Symbolic.Examples.FieldElement              (exampleInvert)
+import           ZkFold.Symbolic.Examples.LEQ                       (exampleLEQ)
+import           ZkFold.Symbolic.Examples.MerkleTree                (exampleMerkleTree)
+import           ZkFold.Symbolic.Examples.MiMCHash                  (exampleMiMC)
+import           ZkFold.Symbolic.Examples.Pasta                     (examplePallas_Add, examplePallas_Scale)
+import           ZkFold.Symbolic.Examples.ReverseList               (exampleReverseList)
 import           ZkFold.Symbolic.Examples.UInt
 
 type A = Zp BLS12_381_Scalar
@@ -43,13 +45,13 @@ type C a = ArithmeticCircuit a
 data ExampleOutput where
   ExampleOutput ::
     forall a i o.
-    (Representable i, NFData (Rep i), NFData1 o, Arithmetic a, Binary a) =>
+    (Representable i, Binary (Rep i), NFData1 o, Arithmetic a) =>
     (() -> C a i o) -> ExampleOutput
 
 exampleOutput ::
   forall a i o c f.
   ( SymbolicData f
-  , c ~ C a i
+  , c ~ CircuitContext a
   , Context f ~ c
   , Layout f ~ o
   , SymbolicInput (Support f)
@@ -109,7 +111,7 @@ examples =
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("Fibonacci.100", exampleOutput @A $ exampleFibonacci 100)
-  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (C _ _)))
+  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (CircuitContext _)))
   , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)

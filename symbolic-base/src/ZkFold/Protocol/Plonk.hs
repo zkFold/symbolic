@@ -5,34 +5,33 @@ module ZkFold.Protocol.Plonk (
     Plonk (..)
 ) where
 
-import           Data.Binary                                         (Binary)
-import           Data.Functor.Classes                                (Show1)
-import           Data.Functor.Rep                                    (Rep, Representable)
-import           Data.Kind                                           (Type)
-import qualified Data.Vector                                         as V
-import           Data.Word                                           (Word8)
-import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
-                                                                      sum, take, (!!), (/), (^))
-import qualified Prelude                                             as P hiding (length)
-import           Test.QuickCheck                                     (Arbitrary (..))
+import           Data.Binary                                        (Binary)
+import           Data.Functor.Classes                               (Show1)
+import           Data.Kind                                          (Type)
+import qualified Data.Vector                                        as V
+import           Data.Word                                          (Word8)
+import           Prelude                                            hiding (Num (..), div, drop, length, replicate, sum,
+                                                                     take, (!!), (/), (^))
+import qualified Prelude                                            as P hiding (length)
+import           Test.QuickCheck                                    (Arbitrary (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Univariate                hiding (qr)
-import           ZkFold.Data.Vector                                  (Vector)
+import           ZkFold.Algebra.Polynomial.Univariate               hiding (qr)
+import           ZkFold.Data.Vector                                 (Vector)
 import           ZkFold.Protocol.NonInteractiveProof
-import           ZkFold.Protocol.Plonk.Prover                        (plonkProve)
-import           ZkFold.Protocol.Plonk.Verifier                      (plonkVerify)
+import           ZkFold.Protocol.Plonk.Prover                       (plonkProve)
+import           ZkFold.Protocol.Plonk.Verifier                     (plonkVerify)
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Compiler                            (desugarRanges)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-
+import           ZkFold.Symbolic.Class                              (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext), desugarRanges)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
 
 {-| Based on the paper https://eprint.iacr.org/2019/953.pdf -}
 
@@ -46,23 +45,21 @@ data Plonk i o (n :: Natural) g1 g2 transcript pv = Plonk {
     }
 
 fromPlonkup ::
-    ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
-    , Binary (Rep i), Ord (Rep i), Representable i
-    ) => Plonkup i o n g1 g2 ts pv -> Plonk i o n g1 g2 ts pv
+    (Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)) =>
+    Plonkup i o n g1 g2 ts pv -> Plonk i o n g1 g2 ts pv
 fromPlonkup Plonkup {..} = Plonk { ac = desugarRanges ac, ..}
 
 toPlonkup :: Plonk i o n g1 g2 ts pv -> Plonkup i o n g1 g2 ts pv
 toPlonkup Plonk {..} = Plonkup {..}
 
-instance ( Show1 o, Show (Rep i), Show (ScalarFieldOf g1)
-         , Ord (Rep i), Show g1, Show g2) => Show (Plonk i o n g1 g2 t pv) where
+instance (Show1 o, Show (ScalarFieldOf g1), Show g1, Show g2) =>
+            Show (Plonk i o n g1 g2 t pv) where
     show Plonk {..} =
         "Plonk: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " "
-                  ++ show (acOutput ac) ++ " " ++ show ac ++ " "
+                  ++ show (acOutput (acContext ac)) ++ " " ++ show ac ++ " "
                   ++ show h1 ++ " " ++ show gs'
 
 instance ( Arithmetic (ScalarFieldOf g1), Binary (ScalarFieldOf g1)
-         , Binary (Rep i), Ord (Rep i), Representable i
          , Arbitrary (Plonkup i o n g1 g2 t pv))
         => Arbitrary (Plonk i o n g1 g2 t pv) where
     arbitrary = fromPlonkup <$> arbitrary

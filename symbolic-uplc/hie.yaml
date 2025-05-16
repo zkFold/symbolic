@@ -1,6 +1,7 @@
 cradle:
   cabal:
-    - path: "./src"
+    - path: "src"
       component: "lib:symbolic-uplc"
-    - path: "./test"
-      component: "test:symbolic-uplc-test"
+
+    - path: "test"
+      component: "symbolic-uplc:test:symbolic-uplc-test"

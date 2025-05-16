@@ -1,55 +1,57 @@
 {-# LANGUAGE TypeApplications #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Protocol.Plonkup (specPlonkup) where
 
-import           Control.Monad                                       (forM_)
-import           Data.Bool                                           (Bool, bool)
-import           Data.ByteString                                     (ByteString)
-import           Data.Eq                                             (Eq (..))
-import           Data.Foldable                                       (Foldable, toList)
-import           Data.Function                                       (($))
-import           Data.Functor.Rep                                    (Rep, Representable)
-import           Data.Int                                            (Int)
-import           Data.List                                           (head, sort)
-import           Data.Ord                                            (Ord)
-import qualified Data.Vector                                         as V
-import           GHC.IsList                                          (IsList (fromList))
+import           Control.Monad                                  (forM_)
+import           Data.Binary                                    (Binary)
+import           Data.Bool                                      (Bool, bool)
+import           Data.ByteString                                (ByteString)
+import           Data.Eq                                        (Eq (..))
+import           Data.Foldable                                  (Foldable, toList)
+import           Data.Function                                  (($))
+import           Data.Functor.Rep                               (Rep, Representable)
+import           Data.Int                                       (Int)
+import           Data.List                                      (head, sort)
+import           Data.Ord                                       (Ord)
+import qualified Data.Vector                                    as V
+import           GHC.IsList                                     (IsList (fromList))
 import           Test.Hspec
-import           Test.QuickCheck                                     hiding (witness)
-import           Tests.Protocol.Plonkup.Update                       (specPlonkupUpdate)
+import           Test.QuickCheck                                hiding (witness)
+import           Tests.Protocol.Plonkup.Update                  (specPlonkupUpdate)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381              (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
-import           ZkFold.Algebra.Field                                (fromZp)
-import           ZkFold.Algebra.Number                               (KnownNat, Natural)
-import           ZkFold.Algebra.Polynomial.Multivariate              as PM
+import           ZkFold.Algebra.EllipticCurve.BLS12_381         (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.Class             (CyclicGroup (..))
+import           ZkFold.Algebra.Field                           (fromZp)
+import           ZkFold.Algebra.Number                          (KnownNat, Natural)
+import           ZkFold.Algebra.Polynomial.Multivariate         as PM
 import           ZkFold.Algebra.Polynomial.Univariate
-import           ZkFold.Data.Vector                                  (Vector)
-import           ZkFold.Protocol.NonInteractiveProof                 (setupProve)
-import           ZkFold.Protocol.Plonkup                             hiding (omega)
+import           ZkFold.Data.Vector                             (Vector)
+import           ZkFold.Protocol.NonInteractiveProof            (setupProve)
+import           ZkFold.Protocol.Plonkup                        hiding (omega)
 import           ZkFold.Protocol.Plonkup.PlonkConstraint
-import           ZkFold.Protocol.Plonkup.Prover                      (plonkupProve)
+import           ZkFold.Protocol.Plonkup.Prover                 (plonkupProve)
 import           ZkFold.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Protocol.Plonkup.Relation                    (PlonkupRelation (..))
+import           ZkFold.Protocol.Plonkup.Relation               (PlonkupRelation (..))
 import           ZkFold.Protocol.Plonkup.Testing
-import           ZkFold.Protocol.Plonkup.Utils                       (sortByList)
-import           ZkFold.Protocol.Plonkup.Witness                     (PlonkupWitnessInput)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
+import           ZkFold.Protocol.Plonkup.Utils                  (sortByList)
+import           ZkFold.Protocol.Plonkup.Witness                (PlonkupWitnessInput)
+import           ZkFold.Symbolic.Class                          (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 -- | Polynomial types and specific polynomials that were causing exceptions
-problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a (Vector 1)) Natural]
+problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a) Natural]
 problematicPolynomials =
     [ var (ConstVar one)
     , var (ConstVar zero)
     , var (ConstVar $ one + one)
-    , let v1 = toVar (NewVar (EqVar "y\ETX^\246\226\195\154S\130M\tL\146y\248\201\162\220 \237n6p\bC\151\186\241\US\136\225\139"))
-          v2 = toVar (NewVar (EqVar "~\180\185\222\SOH!\t\254\155\v\SI\187\&9\227\163|^\168Z\184Q\129\rN\218\SYN\GSp\189\139~^"))
+    , let v1 = toVar (EqVar "y\ETX^\246\226\195\154S\130M\tL\146y\248\201\162\220 \237n6p\bC\151\186\241\US\136\225\139")
+          v2 = toVar (EqVar "~\180\185\222\SOH!\t\254\155\v\SI\187\&9\227\163|^\168Z\184Q\129\rN\218\SYN\GSp\189\139~^")
        in polynomial [(one, M $ fromList [(v1, 1), (v2, 1)])]
-    , polynomial [(one, M $ fromList [(toVar (NewVar (EqVar "v1")), 1), (toVar (NewVar (EqVar "v2")), 1)])]
-    , polynomial [(one, M $ fromList [(toVar (NewVar (EqVar "v1")), 1), (ConstVar one, 1)])]
+    , polynomial [(one, M $ fromList [(toVar (EqVar "v1"), 1), (toVar (EqVar "v2"), 1)])]
+    , polynomial [(one, M $ fromList [(toVar (EqVar "v1"), 1), (ConstVar one, 1)])]
     ]
 
 propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vector 1) a -> Bool
@@ -75,7 +77,7 @@ propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -89,7 +91,7 @@ propPlonkPolyEquality plonk witness secret pow =
 
 propPlonkGrandProductIsCorrect ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -101,7 +103,7 @@ propPlonkGrandProductIsCorrect plonk witness secret =
 
 propPlonkGrandProductEquality ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -127,7 +129,7 @@ propPlonkGrandProductEquality plonk witness secret pow =
 
 propLookupPolyEquality ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -142,7 +144,7 @@ propLookupPolyEquality plonk witness secret pow =
 
 propLookupGrandProductIsCorrect ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -154,7 +156,7 @@ propLookupGrandProductIsCorrect plonk witness secret =
 
 propLookupGrandProductEquality ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
@@ -179,7 +181,7 @@ propLookupGrandProductEquality plonk witness secret pow =
 
 propLinearizationPolyEvaluation ::
     forall i o n .
-    (KnownNat n, Representable i, Representable o, Foldable o, Ord (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
+    (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n)) =>
     Plonkup i o n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)) ->
     PlonkupWitnessInput i BLS12_381_G1_Point ->
     PlonkupProverSecret BLS12_381_G1_Point ->
