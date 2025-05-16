@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP                 #-}
 
 module ZkFold.Protocol.Plonkup.Prover
     ( module ZkFold.Protocol.Plonkup.Prover.Polynomials
