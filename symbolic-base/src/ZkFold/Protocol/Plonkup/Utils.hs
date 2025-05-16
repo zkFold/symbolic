@@ -19,7 +19,7 @@ import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
-getParams n = findK' 0 
+getParams n = findK' 0
     where
         omega = case rootOfUnity @a (log2ceiling n) of
                   Just o -> o
@@ -32,7 +32,7 @@ getParams n = findK' 0
 
         findK' :: Natural -> (a, a, a)
         findK' g =
-            let k1 = fromConstant g 
+            let k1 = fromConstant g
                 k2 = fromConstant (g + 42)
                 hGroupK1 = hGroup' k1
                 hGroupK2 = hGroup' k2
