@@ -65,7 +65,7 @@ instance Binary a => FromTranscript ByteString a where
 
 #elif defined(wasm32_HOST_ARCH)
 
-foreign import javascript unsafe "blake2b"
+foreign import javascript unsafe "blake2b($1, $2, $3, $4, $5)"
     blake2b :: JSVal -> JSString -> Int32 -> Int32 -> Int32 -> IO JSString
 
 foreign import javascript unsafe "new Uint8Array(__exports.memory.buffer, $1, $2)"
