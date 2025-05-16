@@ -44,7 +44,7 @@ import           Foreign.C.Types
 import           Foreign.Marshal.Array
 import           GHC.Generics                                 (Par1 (..), U1 (..), type (:*:) (..))
 import           GHC.Natural                                  (naturalToInteger)
-import           Prelude                                      hiding (Fractional (..), Num (..), length)
+import           Prelude                                      hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude                                      as P
 
 import           ZkFold.Algebra.Class
@@ -64,6 +64,7 @@ import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscr
 import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
+import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
@@ -93,44 +94,52 @@ convertG2 :: BLS12_381_G2_Point -> ByteString
 convertG2 = toByteString . compress
 
 data ZKSetupBytes = ZKSetupBytes {
-    n          :: Integer
-  , pow        :: Integer
-  , omega_int  :: Integer
-  , k1_int     :: Integer
-  , k2_int     :: Integer
-  , h1_bytes   :: ByteString
-  , cmQm_bytes :: ByteString
-  , cmQl_bytes :: ByteString
-  , cmQr_bytes :: ByteString
-  , cmQo_bytes :: ByteString
-  , cmQc_bytes :: ByteString
-  , cmQk_bytes :: ByteString
-  , cmS1_bytes :: ByteString
-  , cmS2_bytes :: ByteString
-  , cmS3_bytes :: ByteString
-  , cmT1_bytes :: ByteString
+    n             :: Integer
+  , nPrv          :: Integer
+  , pow           :: Integer
+  , omega_int     :: Integer
+  , omegaNPrv_int :: Integer
+  , k1_int        :: Integer
+  , k2_int        :: Integer
+  , h1_bytes      :: ByteString
+  , cmQm_bytes    :: ByteString
+  , cmQl_bytes    :: ByteString
+  , cmQr_bytes    :: ByteString
+  , cmQo_bytes    :: ByteString
+  , cmQc_bytes    :: ByteString
+  , cmQk_bytes    :: ByteString
+  , cmS1_bytes    :: ByteString
+  , cmS2_bytes    :: ByteString
+  , cmS3_bytes    :: ByteString
+  , cmT1_bytes    :: ByteString
+  , cmT2_bytes    :: ByteString
+  , cmT3_bytes    :: ByteString
 } deriving stock (Show, Generic)
 
 mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
   in ZKSetupBytes
-    { n          = fromIntegral (Number.value @n)
-    , pow        = log2ceiling (Number.value @n)
-    , omega_int  = convertZp omega
-    , k1_int     = convertZp k1
-    , k2_int     = convertZp k2
-    , h1_bytes   = convertG2 h1
-    , cmQm_bytes = convertG1 cmQm
-    , cmQl_bytes = convertG1 cmQl
-    , cmQr_bytes = convertG1 cmQr
-    , cmQo_bytes = convertG1 cmQo
-    , cmQc_bytes = convertG1 cmQc
-    , cmQk_bytes = convertG1 cmQk
-    , cmS1_bytes = convertG1 cmS1
-    , cmS2_bytes = convertG1 cmS2
-    , cmS3_bytes = convertG1 cmS3
-    , cmT1_bytes = convertG1 cmT1
+    { n             = fromIntegral (Number.value @n)
+    , nPrv          = fromIntegral $ prvNum relation
+    , pow           = log2ceiling (Number.value @n)
+    , omega_int     = convertZp omega
+    , omegaNPrv_int = convertZp (omega ^ (prvNum relation + 1))
+    , k1_int        = convertZp k1
+    , k2_int        = convertZp k2
+    , h1_bytes      = convertG2 h1
+    , cmQm_bytes    = convertG1 cmQm
+    , cmQl_bytes    = convertG1 cmQl
+    , cmQr_bytes    = convertG1 cmQr
+    , cmQo_bytes    = convertG1 cmQo
+    , cmQc_bytes    = convertG1 cmQc
+    , cmQk_bytes    = convertG1 cmQk
+    , cmS1_bytes    = convertG1 cmS1
+    , cmS2_bytes    = convertG1 cmS2
+    , cmS3_bytes    = convertG1 cmS3
+    , cmT1_bytes    = convertG1 cmT1
+    , cmT2_bytes    = convertG1 cmT2
+    , cmT3_bytes    = convertG1 cmT3
     }
 
 -- | Field element.
@@ -186,6 +195,7 @@ data ZKProofBytes = ZKProofBytes
   , z2_xi'_int    :: !Integer
   , h1_xi'_int    :: !Integer
   , h2_xi_int     :: !Integer
+  , l_xi          :: !ZKF
   , l1_xi         :: !ZKF
   }
   deriving stock (Show, Generic)
@@ -221,6 +231,7 @@ mkProof PlonkupProof {..} =
         , z2_xi'_int    = convertZp z2_xi'
         , h1_xi'_int    = convertZp h1_xi'
         , h2_xi_int     = convertZp h2_xi
+        , l_xi          = ZKF $ convertZp l1_xi
         , l1_xi         = ZKF $ convertZp xi
         }
 
