@@ -175,6 +175,7 @@ library
       ZkFold.Symbolic.Algorithm.ECDSA.ECDSA
       ZkFold.Symbolic.Algorithm.Hash.Blake2b
       ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants
+      ZkFold.Symbolic.Algorithm.Hash.Keccak
       ZkFold.Symbolic.Algorithm.Hash.MiMC
       ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithm.Hash.SHA2
@@ -356,7 +357,7 @@ test-suite symbolic-base-test
       containers                                 ,
       deepseq                                    ,
       random                                     ,
-      directory                        <= 1.3.8.4,
+      directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
       QuickCheck                                 ,
