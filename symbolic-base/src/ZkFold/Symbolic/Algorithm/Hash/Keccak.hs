@@ -68,8 +68,6 @@ type ResultSize rate = Div (Width - rate) 16
 -- | Capacity of the sponge construction for a given rate.
 type Capacity rate = Width - rate
 
--- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
-type BytesFromBits bits = Div bits 8
 
 
 -- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
@@ -94,10 +92,9 @@ instance AlgorithmSetup "SHA3-256" c where
 
 -- | Constraints required for a type-safe Keccak
 type Keccak algorithm context k = (AlgorithmSetup algorithm context, KnownNat k, 
-  -- Is this required?
   Mod k 8 ~ 0, 
   KnownNat (PaddedLengthBytesFromBits k (Rate algorithm)),
-  KnownNat ((PaddedLengthBytesFromBits k (Rate algorithm)) * 8),
+  KnownNat (PaddedLengthBits k (Rate algorithm)),
   Symbolic context)
 
 keccak
@@ -108,12 +105,17 @@ keccak =
     let paddedMessage = undefined
     in undefined
     
+-- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
+type BytesFromBits bits = Div bits 8
+
 -- | Length of the padded message in bits.
-type PaddedLengthBits msgBits rateBits = (PaddedLengthBytes (Div msgBits 8) (Div rateBits 8)) * 8
+type PaddedLengthBits msgBits rateBits = (PaddedLengthBytesFromBits msgBits rateBits) * 8
+
 -- | Length of the padded message in bytes.
 type PaddedLengthBytes msgBytes rateBytes = (msgBytes + (rateBytes - (Mod msgBytes rateBytes)))
 
-type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (Div msgBits 8) (Div rateBits 8))
+-- | Length of the padded message in bytes from bits.
+type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (BytesFromBits msgBits) (BytesFromBits rateBits))
 
 
 -- | Additional bytes for padding.
@@ -130,24 +132,6 @@ paddedLenBytes msgBytes rateBytes =
 paddedLenBits :: Natural -> Natural -> Natural
 paddedLenBits msgBits rateBits = (paddedLenBytes (div msgBits 8) (div rateBits 8)) * 8
 
-withPaddedLengthBits' :: forall msgBits rateBits. (KnownNat msgBits, KnownNat rateBits) :- KnownNat (PaddedLengthBits msgBits rateBits)
-withPaddedLengthBits' = Sub $ withKnownNat @(PaddedLengthBits msgBits rateBits) (unsafeSNat (paddedLenBits (value @msgBits) (value @rateBits))) Dict
-
-withPaddedLengthBits :: forall msgBits rateBits {r}. ( KnownNat msgBits, KnownNat rateBits) => (KnownNat (PaddedLengthBits msgBits rateBits) => r) -> r
-withPaddedLengthBits = withDict (withPaddedLengthBits' @msgBits @rateBits)
-
-withPaddedLengthBytes' :: forall msgBytes rateBytes. (KnownNat msgBytes, KnownNat rateBytes) :- KnownNat (PaddedLengthBytes msgBytes rateBytes)
-withPaddedLengthBytes' = Sub $ withKnownNat @(PaddedLengthBytes msgBytes rateBytes) (unsafeSNat (paddedLenBytes (value @msgBytes) (value @rateBytes))) Dict
-
-withPaddedLengthBytes :: forall msgBytes rateBytes {r}. ( KnownNat msgBytes, KnownNat rateBytes) => (KnownNat (PaddedLengthBytes msgBytes rateBytes) => r) -> r
-withPaddedLengthBytes = withDict (withPaddedLengthBytes' @msgBytes @rateBytes)
-
-withDiv8' :: forall n. (KnownNat n) :- (KnownNat (Div n 8))
-withDiv8' = Sub unsafeAxiom
-
-withDiv8 :: forall n {r}. (KnownNat n) => (KnownNat (Div n 8) => r) -> r
-withDiv8 = withDict (withDiv8' @n)
-
 padding
     :: forall (algorithm :: Symbol) context k
     .  Keccak algorithm context k
@@ -161,12 +145,5 @@ padding msg =
             let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
                 bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
             in B.init bsAfterPadByte `B.append` (B.singleton (B.last bsAfterPadByte .|. 0x80))
-                    -- Set the first byte to @padByte@.
-                    -- & B.head .~ padByte
-                    -- -- Set the last byte to 1.
-                    -- & B.last .~ 1
-                    -- -- Concatenate the padding with the original message.
-                    -- & (B.append (B.fromStrict paddedMessage))
-
-    in (resize msg `shiftBitsL` padLengthBytes) || (fromConstant padByteString)
+    in (resize msg `shiftBitsL` (padLengthBytes * 8)) || (fromConstant padByteString)
     
