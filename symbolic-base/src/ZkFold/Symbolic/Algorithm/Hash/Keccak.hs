@@ -8,6 +8,7 @@
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak
     ( 
+        padding,
     --   AlgorithmSetup (..)
     -- , Keccak
     -- , keccak
@@ -75,6 +76,8 @@ type Capacity rate = Width - rate
 class
     ( KnownNat (Rate algorithm)
     , Mod (Rate algorithm) 8 ~ 0
+    -- This constraint is needed so that dividing by 8 does not lead to zero.
+    , (1 <=? Div (Rate algorithm) 8) ~ 'P.True
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type Rate algorithm :: Natural
     -- ^ The rate of the sponge construction, in bits.

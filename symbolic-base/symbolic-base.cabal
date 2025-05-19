@@ -332,6 +332,7 @@ test-suite symbolic-base-test
       Tests.Protocol.Plonkup.Update
       Tests.Symbolic.Algorithm.Blake2b
       Tests.Symbolic.Algorithm.JWT
+      Tests.Symbolic.Algorithm.Keccak
       Tests.Symbolic.Algorithm.RSA
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit

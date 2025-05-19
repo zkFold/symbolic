@@ -29,6 +29,7 @@ import           Tests.Symbolic.Data.Int            (specInt)
 import           Tests.Symbolic.Data.List           (specList)
 import           Tests.Symbolic.Data.MerkleTree     (specMerkleTree)
 import           Tests.Symbolic.Data.UInt           (specUInt)
+import Tests.Symbolic.Algorithm.Keccak (specKeccak)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
@@ -69,6 +70,7 @@ spec gen = do
         specRSA gen
         specSHA2Natural
         specSHA2
+        specKeccak
 
 main :: IO ()
 main = hspec . spec =<< initStdGen
