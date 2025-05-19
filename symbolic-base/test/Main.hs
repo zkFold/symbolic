@@ -18,6 +18,7 @@ import           Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Protocol.Plonkup             (specPlonkup)
 import           Tests.Symbolic.Algorithm.Blake2b   (specBlake2b)
 import           Tests.Symbolic.Algorithm.JWT       (specJWT)
+import           Tests.Symbolic.Algorithm.Keccak    (specKeccak)
 import           Tests.Symbolic.Algorithm.RSA       (specRSA)
 import           Tests.Symbolic.Algorithm.SHA2      (specSHA2, specSHA2Natural)
 import           Tests.Symbolic.ArithmeticCircuit   (specArithmeticCircuit)
@@ -29,7 +30,6 @@ import           Tests.Symbolic.Data.Int            (specInt)
 import           Tests.Symbolic.Data.List           (specList)
 import           Tests.Symbolic.Data.MerkleTree     (specMerkleTree)
 import           Tests.Symbolic.Data.UInt           (specUInt)
-import Tests.Symbolic.Algorithm.Keccak (specKeccak)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do

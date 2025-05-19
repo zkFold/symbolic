@@ -7,7 +7,7 @@ module Tests.Symbolic.Algorithm.Keccak (specKeccak) where
 import           Control.Monad                          (forM_)
 import           Data.Binary                            (Binary)
 import           Data.Bits                              (shiftR)
-import qualified Data.ByteString                   as Bytes
+import qualified Data.ByteString                        as Bytes
 import           Data.Function                          (($))
 import           Data.Functor                           ((<$>))
 import           Data.List                              (isPrefixOf, isSuffixOf, take, (++))
@@ -21,7 +21,7 @@ import           System.Directory                       (listDirectory)
 import           System.Environment                     (lookupEnv)
 import           System.FilePath.Posix
 import           System.IO                              (IO)
-import           Test.Hspec                             (Spec, describe, runIO, shouldBe, it)
+import           Test.Hspec                             (Spec, describe, it, runIO, shouldBe)
 import           Text.Regex.TDFA
 
 import           ZkFold.Algebra.Class
@@ -30,6 +30,7 @@ import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                     (Vector)
 import           ZkFold.Prelude                         (chooseNatural)
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (padding, toBlocks)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                  (Arithmetic)
 import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
@@ -37,7 +38,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
 import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
-import ZkFold.Symbolic.Algorithm.Hash.Keccak (padding, toBlocks)
 
 type Element = Zp BLS12_381_Scalar
 
@@ -49,7 +49,7 @@ specKeccak = do
     describe "Keccak" $
       describe "padding" $ do
         it "padding result for empty string" $ do
-          let paddedMsg = (padding @"Keccak256" @(Interpreter Element) @0 (fromConstant ("" :: Bytes.ByteString))) 
+          let paddedMsg = (padding @"Keccak256" @(Interpreter Element) @0 (fromConstant ("" :: Bytes.ByteString)))
               paddedMsgBlks = concat $ toBlocks @"Keccak256" @(Interpreter Element) @0 paddedMsg
           toConstant paddedMsg `shouldBe` 12953744211667879574559702190010707651171625584905095574841686913755541732351702201085464556891975967691972983316275962328947759192690782519488857596207264634977115153700247127325882095493965845839345131422255684387968478939180332711558614761546211605811843616790961251349338535374752162059924960553344400851693295429983666304
           (toConstant paddedMsgBlks) `shouldBe` 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304844579701661078913024

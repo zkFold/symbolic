@@ -8,7 +8,7 @@
 
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak
-    ( 
+    (
         padding,
         toBlocks,
     --   AlgorithmSetup (..)
@@ -18,48 +18,44 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak
     -- , PaddedLength
     ) where
 
-import           Control.DeepSeq                               (force)
-import           Control.Monad                                 (forM_)
-import           Control.Monad.ST                              (ST, runST)
-import           Data.Bits                                     (shiftL, Bits ((.|.)))
+import           Control.DeepSeq                    (force)
+import           Control.Monad                      (forM_)
+import           Control.Monad.ST                   (ST, runST)
+import           Data.Bits                          (Bits ((.|.)), shiftL)
+import qualified Data.ByteString                    as B
 import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
-import           Data.Kind                                     (Type)
-import qualified Data.STRef                                    as ST
-import           Data.Type.Bool                                (If)
-import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..))
-import           Data.Type.Equality                            (type (~))
-import qualified Data.Vector                                   as V
-import qualified Data.Vector.Mutable                           as VM
-import           GHC.Generics                                  (Par1 (..))
-import           GHC.TypeLits                                  (Symbol)
-import           GHC.TypeNats                                  (type (<=?), withKnownNat)
-import           Data.Function                                 ((&))
-import           Prelude                                       (Int, id, pure, zip, ($!), ($), (.), (>>=), undefined, (<$>))
-import qualified Prelude                                       as P
+import           Data.Function                      (flip, (&))
+import           Data.Kind                          (Type)
+import qualified Data.STRef                         as ST
+import           Data.Type.Bool                     (If)
+import           Data.Type.Equality                 (type (~))
+import qualified Data.Vector                        as V
+import qualified Data.Vector.Mutable                as VM
+import           Data.Word                          (Word8)
+import           GHC.Generics                       (Par1 (..))
+import           GHC.TypeLits                       (Symbol)
+import           GHC.TypeNats                       (type (<=?), withKnownNat)
+import           Prelude                            (Int, id, pure, undefined, zip, ($!), ($), (.), (<$>), (>>=))
+import qualified Prelude                            as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor                          (hmap)
-import           ZkFold.Data.Vector                            (Vector (..), fromVector, reverse, unsafeToVector, chunks, mapWithIx, (!!))
--- import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants (keccakRoundConstants, keccakRotationOffsets)
-import           ZkFold.Symbolic.Class                         (BaseField, Symbolic, fromCircuitF)
-import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString               (ByteString (..), ShiftBits (..), concat, set, toWords,
-                                                                truncate)
-import           ZkFold.Symbolic.Data.Combinators              (Iso (..), RegisterSize (..), Resize (..), expansionW,
-                                                                ilog2)
+import           ZkFold.Data.HFunctor               (hmap)
+import           ZkFold.Data.Vector                 (Vector (..), chunks, fromVector, mapWithIx, reverse,
+                                                     unsafeToVector, (!!))
+import           ZkFold.Symbolic.Class              (BaseField, Symbolic, fromCircuitF)
+import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
+import           ZkFold.Symbolic.Data.Combinators   (Iso (..), RegisterSize (..), Resize (..), expansionW, ilog2)
 import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FieldElement             (FieldElement (..))
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Data.UInt                     (UInt)
-import qualified ZkFold.Symbolic.Data.VarByteString            as VB
-import           ZkFold.Symbolic.Data.VarByteString            (VarByteString (..))
-import           ZkFold.Symbolic.MonadCircuit                  (newAssigned)
-import Data.Word (Word8)
-import qualified Data.ByteString as B
-import Data.Function (flip)
+import           ZkFold.Symbolic.Data.UInt          (UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 
 -- TODO: Is this Width / LaneWidth?
 -- | Number of lanes in the Keccak sponge state.
@@ -110,8 +106,8 @@ instance AlgorithmSetup "SHA3-256" c where
     padByte = 0x06
 
 -- | Constraints required for a type-safe Keccak
-type Keccak algorithm context k = (AlgorithmSetup algorithm context, KnownNat k, 
-  Mod k 8 ~ 0, 
+type Keccak algorithm context k = (AlgorithmSetup algorithm context, KnownNat k,
+  Mod k 8 ~ 0,
   KnownNat (PaddedLengthBytesFromBits k (Rate algorithm)),
   KnownNat (PaddedLengthBits k (Rate algorithm)),
   ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm)),
@@ -127,7 +123,7 @@ keccak
 keccak =
     let paddedMessage = undefined
     in undefined
-    
+
 -- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
 type BytesFromBits bits = Div bits 8
 
@@ -165,24 +161,24 @@ padding msg =
         rateBytes = value @(Rate algorithm) `div` 8
         padLengthBytes = padLenBytes msgBytes rateBytes
         -- @fromIntegral@ below is safe as we have hard-coded instances for rate bytes.
-        padByteString = 
+        padByteString =
             let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
                 bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
             in B.init bsAfterPadByte `B.append` (B.singleton (B.last bsAfterPadByte .|. 0x80))
     in (resize msg `shiftBitsL` (padLengthBytes * 8)) || (fromConstant padByteString)
-    
+
 toBlocks
     :: forall (algorithm :: Symbol) context k
     .  Keccak algorithm context k
     => ByteString (PaddedLengthBits k (Rate algorithm)) context -> Vector (Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) (ByteString 64 context)
-toBlocks msg = 
+toBlocks msg =
     let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
         byteWordsBitReversed = reverseBits <$> byteWords
     in reverseBits <$> (toWords $ concat byteWordsBitReversed)
   where
     reverseBits :: forall n. ByteString n context -> ByteString n context
     reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)
-    
+
 -- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
 
 type AbsorbChunkSize algorithm = Div (Rate algorithm) LaneWidth
@@ -193,10 +189,10 @@ absorbBlock
     => Vector NumLanes (ByteString 64 context) -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 absorbBlock state blocks =
     let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
-        in P.foldl' (\accState chunk -> 
+        in P.foldl' (\accState chunk ->
               -- TODO: Perhaps this can be optimized.
               let state' = mapWithIx (
-                     \z el ->  
+                     \z el ->
                         if div z 5 + 5 * mod z 5 < threshold
                                     then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
                                     else el
