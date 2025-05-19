@@ -4,11 +4,13 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- TODO: Remove these options.
+-- TODO: Format by fourmolu.
 
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak
     ( 
         padding,
+        toBlocks,
     --   AlgorithmSetup (..)
     -- , Keccak
     -- , keccak
@@ -34,7 +36,7 @@ import           GHC.Generics                                  (Par1 (..))
 import           GHC.TypeLits                                  (Symbol)
 import           GHC.TypeNats                                  (type (<=?), withKnownNat)
 import           Data.Function                                 ((&))
-import           Prelude                                       (Int, id, pure, zip, ($!), ($), (.), (>>=), undefined)
+import           Prelude                                       (Int, id, pure, zip, ($!), ($), (.), (>>=), undefined, (<$>))
 import qualified Prelude                                       as P
 
 import           ZkFold.Algebra.Class
@@ -57,6 +59,7 @@ import           ZkFold.Symbolic.Data.VarByteString            (VarByteString (.
 import           ZkFold.Symbolic.MonadCircuit                  (newAssigned)
 import Data.Word (Word8)
 import qualified Data.ByteString as B
+import Data.Function (flip)
 
 -- | Standard Keccak and SHA3 hashes have width of sponge state to be 1600 bits.
 type Width :: Natural
@@ -76,8 +79,10 @@ type Capacity rate = Width - rate
 class
     ( KnownNat (Rate algorithm)
     , Mod (Rate algorithm) 8 ~ 0
+    -- Requiring rate to be a multiple of 64. As we would eventually obtain 64 bit words.
+    , Mod (Div (Rate algorithm) 8) 8 ~ 0
     -- This constraint is needed so that dividing by 8 does not lead to zero.
-    , (1 <=? Div (Rate algorithm) 8) ~ 'P.True
+    , (1 <=? Rate (algorithm)) ~ 'P.True
     ) => AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type) where
     type Rate algorithm :: Natural
     -- ^ The rate of the sponge construction, in bits.
@@ -98,6 +103,7 @@ type Keccak algorithm context k = (AlgorithmSetup algorithm context, KnownNat k,
   Mod k 8 ~ 0, 
   KnownNat (PaddedLengthBytesFromBits k (Rate algorithm)),
   KnownNat (PaddedLengthBits k (Rate algorithm)),
+  ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm)),
   Symbolic context)
 
 keccak
@@ -149,4 +155,17 @@ padding msg =
                 bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
             in B.init bsAfterPadByte `B.append` (B.singleton (B.last bsAfterPadByte .|. 0x80))
     in (resize msg `shiftBitsL` (padLengthBytes * 8)) || (fromConstant padByteString)
+    
+
+toBlocks
+    :: forall (algorithm :: Symbol) context k
+    .  Keccak algorithm context k
+    => ByteString (PaddedLengthBits k (Rate algorithm)) context -> Vector (Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) (ByteString 64 context)
+toBlocks msg = 
+    let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
+        byteWordsBitReversed = reverseBits <$> byteWords
+    in reverseBits <$> (toWords $ concat byteWordsBitReversed)
+  where
+    reverseBits :: forall n. ByteString n context -> ByteString n context
+    reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)
     
