@@ -42,7 +42,7 @@ import qualified Prelude                                       as P
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                          (hmap)
-import           ZkFold.Data.Vector                            (Vector (..), fromVector, reverse, unsafeToVector)
+import           ZkFold.Data.Vector                            (Vector (..), fromVector, reverse, unsafeToVector, chunks, mapWithIx, (!!))
 -- import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants (keccakRoundConstants, keccakRotationOffsets)
 import           ZkFold.Symbolic.Class                         (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..))
@@ -60,6 +60,17 @@ import           ZkFold.Symbolic.MonadCircuit                  (newAssigned)
 import Data.Word (Word8)
 import qualified Data.ByteString as B
 import Data.Function (flip)
+
+-- TODO: Is this Width / LaneWidth?
+-- | Number of lanes in the Keccak sponge state.
+type NumLanes :: Natural
+type NumLanes = 25
+
+-- NOTE: Code is NOT parameterized over `LaneWidth` at all places, so changing this value could break the code.
+-- | Width of each lane in the Keccak sponge state.
+type LaneWidth :: Natural
+type LaneWidth = 64
+
 
 -- | Standard Keccak and SHA3 hashes have width of sponge state to be 1600 bits.
 type Width :: Natural
@@ -104,6 +115,9 @@ type Keccak algorithm context k = (AlgorithmSetup algorithm context, KnownNat k,
   KnownNat (PaddedLengthBytesFromBits k (Rate algorithm)),
   KnownNat (PaddedLengthBits k (Rate algorithm)),
   ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm)),
+  KnownNat (Div (Rate algorithm) LaneWidth),
+  -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
+  ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm),
   Symbolic context)
 
 keccak
@@ -126,6 +140,7 @@ type PaddedLengthBytes msgBytes rateBytes = (msgBytes + (rateBytes - (Mod msgByt
 -- | Length of the padded message in bytes from bits.
 type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (BytesFromBits msgBits) (BytesFromBits rateBits))
 
+type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBits) 8
 
 -- | Additional bytes for padding.
 padLenBytes :: Natural -> Natural -> Natural
@@ -156,7 +171,6 @@ padding msg =
             in B.init bsAfterPadByte `B.append` (B.singleton (B.last bsAfterPadByte .|. 0x80))
     in (resize msg `shiftBitsL` (padLengthBytes * 8)) || (fromConstant padByteString)
     
-
 toBlocks
     :: forall (algorithm :: Symbol) context k
     .  Keccak algorithm context k
@@ -169,3 +183,31 @@ toBlocks msg =
     reverseBits :: forall n. ByteString n context -> ByteString n context
     reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)
     
+-- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
+
+type AbsorbChunkSize algorithm = Div (Rate algorithm) LaneWidth
+
+absorbBlock
+    :: forall (algorithm :: Symbol) context k
+    .  Keccak algorithm context k
+    => Vector NumLanes (ByteString 64 context) -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+absorbBlock state blocks =
+    let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
+        in P.foldl' (\accState chunk -> 
+              -- TODO: Perhaps this can be optimized.
+              let state' = mapWithIx (
+                     \z el ->  
+                        if div z 5 + 5 * mod z 5 < threshold
+                                    then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
+                                    else el
+                    ) accState
+              in
+              keccakF @algorithm @context state') state blockChunks
+  where
+    rate = value @(Rate algorithm)
+    laneWidth = value @LaneWidth
+    threshold = div rate laneWidth
+
+
+keccakF :: forall algorithm context. AlgorithmSetup algorithm context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+keccakF state = undefined
