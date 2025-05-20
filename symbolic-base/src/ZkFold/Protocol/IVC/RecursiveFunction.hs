@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -8,38 +9,40 @@
 
 module ZkFold.Protocol.IVC.RecursiveFunction where
 
-import           Control.DeepSeq                       (NFData, NFData1)
-import           Data.Binary                           (Binary)
-import           Data.Distributive                     (Distributive (..))
-import           Data.Functor.Rep                      (Representable (..), collectRep, distributeRep)
-import           Data.These                            (These (..))
-import           Data.Zip                              (Semialign (..), Zip (..))
-import           GHC.Generics                          (Generic, Generic1, U1 (..), (:*:) (..))
-import           Prelude                               (Foldable, Functor, Show, Traversable, fmap, type (~), ($), (.),
-                                                        (<$>))
-import qualified Prelude                               as P
+import           Control.DeepSeq                                    (NFData, NFData1)
+import           Data.Binary                                        (Binary)
+import           Data.Distributive                                  (Distributive (..))
+import           Data.Functor.Rep                                   (Representable (..), collectRep, distributeRep)
+import           Data.These                                         (These (..))
+import           Data.Zip                                           (Semialign (..), Zip (..))
+import           GHC.Generics                                       (Generic, Generic1, U1 (..), (:*:) (..))
+import           Prelude                                            (Foldable, Functor, Show, Traversable, fmap,
+                                                                     type (~), ($), (.), (<$>))
+import qualified Prelude                                            as P
 
-import           ZkFold.Algebra.Class                  (Scale, zero)
-import           ZkFold.Algebra.Number                 (KnownNat, type (+), type (-))
-import           ZkFold.Algebra.Polynomial.Univariate  (PolyVec)
-import           ZkFold.Data.ByteString                (Binary1)
-import           ZkFold.Data.Orphans                   ()
-import           ZkFold.Data.Package                   (packed, unpacked)
-import           ZkFold.Data.Vector                    (Vector)
-import           ZkFold.Protocol.IVC.Accumulator       hiding (pi, x)
-import           ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
-import           ZkFold.Protocol.IVC.Commit            (HomomorphicCommit)
+import           ZkFold.Algebra.Class                               (Scale, zero)
+import           ZkFold.Algebra.Number                              (KnownNat, type (+), type (-))
+import           ZkFold.Algebra.Polynomial.Univariate               (PolyVec)
+import           ZkFold.Data.ByteString                             (Binary1)
+import           ZkFold.Data.Orphans                                ()
+import           ZkFold.Data.Package                                (packed, unpacked)
+import           ZkFold.Data.Vector                                 (Vector)
+import           ZkFold.Protocol.IVC.Accumulator                    hiding (pi, x)
+import           ZkFold.Protocol.IVC.AccumulatorScheme              (AccumulatorScheme (..), accumulatorScheme)
+import           ZkFold.Protocol.IVC.Commit                         (HomomorphicCommit)
 import           ZkFold.Protocol.IVC.Oracle
-import           ZkFold.Protocol.IVC.Predicate         (Predicate (..), PredicateAssumptions, PredicateCircuit,
-                                                        predicate)
-import           ZkFold.Protocol.IVC.StepFunction      (StepFunction, StepFunctionAssumptions)
-import           ZkFold.Symbolic.Compiler              (ArithmeticCircuit, compileWith, guessOutput, hlmap)
-import           ZkFold.Symbolic.Data.Bool             (Bool (..))
-import           ZkFold.Symbolic.Data.Class            (LayoutFunctor, SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional      (bool)
-import           ZkFold.Symbolic.Data.FieldElement     (FieldElement (FieldElement), fromFieldElement)
-import           ZkFold.Symbolic.Data.Input            (SymbolicInput)
-import           ZkFold.Symbolic.Interpreter           (Interpreter (..))
+import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..), PredicateAssumptions,
+                                                                     PredicateCircuit, predicate)
+import           ZkFold.Protocol.IVC.StepFunction                   (StepFunction, StepFunctionAssumptions)
+import           ZkFold.Symbolic.Compiler                           (compileWith)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (guessOutput)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import           ZkFold.Symbolic.Data.Bool                          (Bool (..))
+import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor, SymbolicData (..))
+import           ZkFold.Symbolic.Data.Conditional                   (bool)
+import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (FieldElement), fromFieldElement)
+import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
+import           ZkFold.Symbolic.Interpreter                        (Interpreter (..))
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -147,7 +150,7 @@ recursivePredicate :: forall algo d k a i p c ctx0 ctx1 .
     ( RecursivePredicateAssumptions algo d k a i p c
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
-    , ctx1 ~ ArithmeticCircuit a (RecursiveI i :*: RecursiveP d k i p c)
+    , ctx1 ~ CircuitContext a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
     ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate func =
@@ -166,6 +169,6 @@ recursivePredicate func =
 
         predicateCircuit :: PredicateCircuit a (RecursiveI i) (RecursiveP d k i p c)
         predicateCircuit =
-            hlmap (\(i :*: p :*: j) -> (i :*: p) :*: j) $
-            compileWith @a guessOutput (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
+            compileWith (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
+                        (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

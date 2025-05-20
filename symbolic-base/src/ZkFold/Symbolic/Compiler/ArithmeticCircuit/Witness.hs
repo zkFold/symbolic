@@ -1,5 +1,3 @@
-{-# LANGUAGE DerivingStrategies #-}
-
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness where
 
 import           Control.Applicative          (Applicative (..))
@@ -36,7 +34,7 @@ instance FromConstant Integer (WitnessF a v) where fromConstant x = WitnessF (fr
 instance {-# INCOHERENT #-} FromConstant a (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
 instance Scale Natural (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
 instance Scale Integer (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
-instance Scale a (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k . f)
+instance {-# INCOHERENT #-} Scale a (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
 instance Exponent (WitnessF a v) Natural where WitnessF f ^ p = WitnessF (f ^ p)
 instance Exponent (WitnessF a v) Integer where WitnessF f ^ p = WitnessF (f ^ p)
 instance AdditiveSemigroup (WitnessF a v) where WitnessF f + WitnessF g = WitnessF (f + g)
