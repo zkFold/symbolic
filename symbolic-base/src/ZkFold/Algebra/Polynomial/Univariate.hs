@@ -104,7 +104,7 @@ instance
 
     deg (P cs) = fromIntegral (V.length cs) - 1
 
-    toPoly = removeZeros . P
+    toPoly = P . removeZeros
 
     monomial d c = P $ V.fromList (replicate d zero P.<> [c])
 
@@ -144,7 +144,7 @@ instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant
 
 instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
-    (P !l) + (P !r) = removeZeros $ P $ V.zipWith (+) lPadded rPadded
+    (P !l) + (P !r) = P $ removeZeros $ V.zipWith (+) lPadded rPadded
       where
         len = max (V.length l) (V.length r)
 
@@ -166,7 +166,7 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    (P !l) * (P !r) = removeZeros $ P $ mulAdaptive l r
+    (P !l) * (P !r) = P $ removeZeros $ mulAdaptive l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -586,10 +586,10 @@ instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) wher
 rewrapPolyVec :: (V.Vector c -> V.Vector c) -> PolyVec c size -> PolyVec c size
 rewrapPolyVec f (PV x) = PV (f x)
 
-removeZeros :: (Ring c, Eq c) => Poly c -> Poly c
-removeZeros (P cs)
-  | V.null cs = P cs
-  | otherwise = P $ V.take (1 P.+ traverseZeros startIx) cs
+removeZeros :: (Ring c, Eq c) => V.Vector c -> V.Vector c
+removeZeros !cs
+  | V.null cs = cs
+  | otherwise = V.take (1 P.+ traverseZeros startIx) cs
     where
         startIx :: Int
         startIx = V.length cs P.- 1
@@ -616,7 +616,7 @@ mulPoly (P v1) (P v2) = P $ mulVector v1 v2
 -- | Adaptation of Karatsuba's algorithm. O(n^log_2(3))
 --
 mulPolyKaratsuba :: (Eq a, Field a) => Poly a -> Poly a -> Poly a
-mulPolyKaratsuba (P v1) (P v2) = removeZeros $ P result
+mulPolyKaratsuba (P v1) (P v2) = P $ removeZeros result
   where
     l = max (V.length v1) (V.length v2)
     p = ceiling @Double @Integer $ logBase 2 (fromIntegral l)
@@ -630,7 +630,7 @@ mulPolyKaratsuba (P v1) (P v2) = removeZeros $ P result
 -- DFT multiplication of vectors. O(nlogn)
 --
 mulPolyDft :: forall a . (Eq a, Field a) => Poly a -> Poly a -> Poly a
-mulPolyDft (P v1) (P v2) = removeZeros $ P result
+mulPolyDft (P v1) (P v2) = P $ removeZeros result
   where
     l = max (V.length v1) (V.length v2)
     p = (ceiling @Double $ logBase 2 (fromIntegral l)) P.+ 1
