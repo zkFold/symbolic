@@ -235,7 +235,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
-type ExpModCircuitGates = 2^19
+type ExpModCircuitGates = 2^18
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
@@ -349,7 +349,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^2
+type ExpModCircuitGatesMock = 2^17
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit

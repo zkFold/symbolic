@@ -7,7 +7,8 @@
 module ZkFold.Algebra.Class where
 
 import           Control.Applicative        (Applicative (..))
-import           Data.Bool                  (Bool (..), otherwise, (&&))
+import           Data.Bool                  (Bool (..), bool, otherwise, (&&))
+import           Data.Eq                    (Eq (..))
 import           Data.Foldable              (Foldable (foldl', foldl1, foldr))
 import           Data.Function              (const, id, ($), (.))
 import           Data.Functor               (Functor (..))
@@ -15,7 +16,7 @@ import           Data.Functor.Constant      (Constant (..))
 import           Data.Kind                  (Type)
 import           Data.List                  (iterate, map, repeat, zipWith, (++))
 import           Data.Maybe                 (Maybe (..))
-import           Data.Ord                   (Ord (..))
+import           Data.Ord                   (Ord (..), Ordering (..))
 import           Data.Ratio                 (Rational)
 import           Data.Type.Equality         (type (~), (:~:) (..))
 import           GHC.Natural                (naturalFromInteger)
@@ -25,7 +26,7 @@ import qualified Prelude                    as Haskell
 import           ZkFold.Algebra.Number
 import           ZkFold.Control.Conditional (Conditional)
 import           ZkFold.Data.Eq             (BooleanOf, Eq)
-import           ZkFold.Prelude             (length, replicate)
+import           ZkFold.Prelude             (length, replicate, zipWith')
 
 infixl 7 *, /
 infixl 6 +, -, -!
@@ -104,7 +105,7 @@ class Scale b a where
     -- The default implementation is the multiplication by a constant.
     scale :: b -> a -> a
     default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
-    scale = (*) . fromConstant
+    scale !b !a = a * fromConstant b
 
 instance MultiplicativeSemigroup a => Scale a a
 
@@ -166,17 +167,17 @@ class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a 
 natPow :: MultiplicativeMonoid a => a -> Natural -> a
 -- | A default implementation for natural exponentiation. Uses only @('*')@ and
 -- @'one'@ so doesn't loop via an @'Exponent' Natural a@ instance.
-natPow a n = product $ zipWith f (binaryExpansion n) (iterate (\x -> x * x) a)
+natPow !a !n = product $ zipWith' f (binaryExpansion n) (iterate (\x -> x * x) a)
   where
-    f 0 _ = one
-    f 1 x = x
-    f _ _ = Haskell.error "^: This should never happen."
+    f 0 _  = one
+    f 1 !x = x
+    f _ _  = Haskell.error "^: This should never happen."
 
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
 
 multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
-multiExp a = foldl' (\x y -> x * (a ^ y)) one
+multiExp a = foldl' (\(!x) (!y) -> x * (a ^ y)) one
 
 {- | A class of groups in a multiplicative notation.
 
@@ -208,8 +209,8 @@ intPow :: MultiplicativeGroup a => a -> Integer -> a
 -- | A default implementation for integer exponentiation. Uses only natural
 -- exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
 -- instance.
-intPow a n | n < 0     = invert a ^ naturalFromInteger (-n)
-           | otherwise = a ^ naturalFromInteger n
+intPow !a !n | n < 0     = invert a ^ naturalFromInteger (-n)
+             | otherwise = a ^ naturalFromInteger n
 
 --------------------------------------------------------------------------------
 
@@ -236,11 +237,11 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
 -- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
-natScale n a = sum $ zipWith f (binaryExpansion n) (iterate (\x -> x + x) a)
+natScale !n !a = sum $ zipWith' f (binaryExpansion n) (iterate (\x -> x + x) a)
   where
-    f 0 _ = zero
-    f 1 x = x
-    f _ _ = Haskell.error "scale: This should never happen."
+    f 0 _  = zero
+    f 1 !x = x
+    f _ _  = Haskell.error "scale: This should never happen."
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl' (+) zero
@@ -270,8 +271,8 @@ class (AdditiveMonoid a, Scale Integer a) => AdditiveGroup a where
 intScale :: AdditiveGroup a => Integer -> a -> a
 -- | A default implementation for integer scaling. Uses only natural scaling and
 -- @'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
-intScale n a | n < 0     = naturalFromInteger (-n) `scale` negate a
-             | otherwise = naturalFromInteger n `scale` a
+intScale !n !a | n < 0     = naturalFromInteger (-n) `scale` negate a
+               | otherwise = naturalFromInteger n `scale` a
 
 --------------------------------------------------------------------------------
 
@@ -358,7 +359,7 @@ implementation is provided as an @'intPowF'@ function. You can provide a faster
 alternative yourself, but do not forget to check that your implementation
 computes the same results on all inputs.
 -}
-class (Ring a, Exponent a Integer, Eq a) => Field a where
+class (Ring a, Exponent a Integer, Haskell.Eq a) => Field a where
     {-# MINIMAL (finv | (//)) #-}
 
     -- | Division in a field. The following should hold:
@@ -395,8 +396,8 @@ intPowF :: Field a => a -> Integer -> a
 -- | A default implementation for integer exponentiation. Uses only natural
 -- exponentiation and @'finv'@ so doesn't loop via an @'Exponent' Integer a@
 -- instance.
-intPowF a n | n < 0     = finv a ^ naturalFromInteger (-n)
-            | otherwise = a ^ naturalFromInteger n
+intPowF !a !n | n < 0     = finv a ^ naturalFromInteger (-n)
+              | otherwise = a ^ naturalFromInteger n
 
 {- | Class of finite structures. @Order a@ should be the actual number of
 elements in the type, identified up to the associated equality relation.
@@ -438,10 +439,10 @@ class Semiring a => BinaryExpansion a where
 
     fromBinary :: Bits a -> a
     default fromBinary :: Bits a ~ [a] => Bits a -> a
-    fromBinary = foldr (\x y -> x + y + y) zero
+    fromBinary = foldr (\(!x) (!y) -> x + y + y) zero
 
 padBits :: forall a . AdditiveMonoid a => Natural -> [a] -> [a]
-padBits n xs = xs ++ replicate (n -! length xs) zero
+padBits !n !xs = xs ++ replicate (n -! length xs) zero
 
 castBits :: (Semiring a, Haskell.Eq a, Semiring b) => [a] -> [b]
 castBits []     = []
@@ -492,8 +493,8 @@ instance SemiEuclidean Natural where
 
 instance BinaryExpansion Natural where
     type Bits Natural = [Natural]
-    binaryExpansion 0 = []
-    binaryExpansion x = (x `mod` 2) : binaryExpansion (x `div` 2)
+    binaryExpansion 0  = []
+    binaryExpansion !x = (x `mod` 2) : binaryExpansion (x `div` 2)
 
 (-!) :: Natural -> Natural -> Natural
 (-!) = (Haskell.-)
@@ -531,8 +532,8 @@ instance SemiEuclidean Integer where
 instance Ring Integer
 
 instance Euclidean Integer where
-  eea x 0 = (x, 1, 0)
-  eea x y = go (x, y) (1, 0)
+  eea !x 0  = (x, 1, 0)
+  eea !x !y = go (x, y) (1, 0)
     where go (g, 0) (b, _) = (g, b, (g - x * b) `div` y)
           go (q, r) (s, t) = let (d, m) = divMod q r in
             go (r, m) (t, s - d * t)
@@ -644,7 +645,7 @@ instance {-# OVERLAPPING #-} FromConstant [a] [a]
 instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale [a] [a]
 
 instance MultiplicativeSemigroup a => MultiplicativeSemigroup [a] where
-    (*) = zipWith (*)
+    (*) = zipWith' (*)
 
 instance Exponent a b => Exponent [a] b where
     x ^ p = map (^ p) x
@@ -656,7 +657,7 @@ instance MultiplicativeGroup a => MultiplicativeGroup [a] where
     invert = map invert
 
 instance AdditiveSemigroup a => AdditiveSemigroup [a] where
-    (+) = zipWith (+)
+    (+) = zipWith' (+)
 
 instance Scale b a => Scale b [a] where
     scale = map . scale

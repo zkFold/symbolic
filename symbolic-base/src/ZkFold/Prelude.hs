@@ -114,3 +114,9 @@ unsnoc :: [a] -> Maybe ([a], a)
 unsnoc [] = Nothing
 unsnoc l =  Just (init l, last l)
 #endif
+
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' _ [] _ = []
+zipWith' _ _ [] = []
+zipWith' f (!x : !xs) (!y : !ys) = let !c = f x y
+                                    in c : zipWith' f xs ys
