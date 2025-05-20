@@ -223,11 +223,11 @@ instance
     pt0@(Weierstrass (Point x0 y0 isInf0)) + pt1@(Weierstrass (Point x1 y1 isInf1)) =
       if isInf0 then pt1 else if isInf1 then pt0 -- additive identity
       else if x0 == x1 && y0 + y1 == zero then pointInf -- additive inverse
-      else let slope = if x0 == x1 && y0 == y1
-                       then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
-                       else (y1 - y0) // (x1 - x0) -- secant
-               x2 = slope * slope - x0 - x1
-               y2 = slope * (x0 - x2) - y0
+      else let !slope = if x0 == x1 && y0 == y1
+                        then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
+                        else (y1 - y0) // (x1 - x0) -- secant
+               !x2 = slope * slope - x0 - x1
+               !y2 = slope * (x0 - x2) - y0
             in pointXY x2 y2
 instance
   ( WeierstrassCurve curve field
@@ -276,8 +276,8 @@ instance
     type CurveOf (TwistedEdwards curve (AffinePoint field)) = curve
     type BaseFieldOf (TwistedEdwards curve (AffinePoint field)) = field
     isOnCurve (TwistedEdwards (AffinePoint x y)) =
-      let a = twistedEdwardsA @curve
-          d = twistedEdwardsD @curve
+      let !a = twistedEdwardsA @curve
+          !d = twistedEdwardsD @curve
       in a*x*x + y*y == one + d*x*x*y*y
 deriving newtype instance Prelude.Eq point
   => Prelude.Eq (TwistedEdwards curve point)
@@ -305,10 +305,10 @@ instance
   , Field field
   ) => AdditiveSemigroup (TwistedEdwards curve (AffinePoint field)) where
     TwistedEdwards (AffinePoint x0 y0) + TwistedEdwards (AffinePoint x1 y1) =
-      let a = twistedEdwardsA @curve
-          d = twistedEdwardsD @curve
-          x2 = (x0 * y1 + y0 * x1) // (one + d * x0 * x1 * y0 * y1)
-          y2 = (y0 * y1 - a * x0 * x1) // (one - d * x0 * x1 * y0 * y1)
+      let !a = twistedEdwardsA @curve
+          !d = twistedEdwardsD @curve
+          !x2 = (x0 * y1 + y0 * x1) // (one + d * x0 * x1 * y0 * y1)
+          !y2 = (y0 * y1 - a * x0 * x1) // (one - d * x0 * x1 * y0 * y1)
       in pointXY x2 y2
 instance
   ( TwistedEdwardsCurve curve field

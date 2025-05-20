@@ -144,7 +144,7 @@ instance FromConstant c c' => FromConstant c (Poly c') where
     fromConstant = P . V.singleton . fromConstant
 
 instance (Ring c, Eq c) => AdditiveSemigroup (Poly c) where
-    P l + P r = removeZeros $ P $ V.zipWith (+) lPadded rPadded
+    (P !l) + (P !r) = removeZeros $ P $ V.zipWith (+) lPadded rPadded
       where
         len = max (V.length l) (V.length r)
 
@@ -166,7 +166,7 @@ instance (Field c, Eq c) => MultiplicativeSemigroup (Poly c) where
     -- | If it is possible to calculate a primitive root of unity in the field, proceed with FFT multiplication.
     -- Otherwise default to Karatsuba multiplication for polynomials of degree higher than 64 or use naive multiplication otherwise.
     -- 64 is a threshold determined by benchmarking.
-    P l * P r = removeZeros $ P $ mulAdaptive l r
+    (P !l) * (P !r) = removeZeros $ P $ mulAdaptive l r
 
 padVector :: forall a . Ring a => V.Vector a -> Int -> V.Vector a
 padVector v l
@@ -175,7 +175,7 @@ padVector v l
 
 
 mulAdaptive :: forall c . (Field c, Eq c) => V.Vector c -> V.Vector c -> V.Vector c
-mulAdaptive l r
+mulAdaptive !l !r
       | V.null l = V.empty
       | V.null r = V.empty
       | Just (m, cm, c0) <- isShiftedMono r = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx l (fromIntegral m) cm c0
@@ -216,26 +216,26 @@ mulAdaptive l r
             maybeW2n = rootOfUnity $ fromIntegral (p P.+ 1)
 
 mulDft :: forall c . Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
-mulDft p w2n lPadded rPadded = c
+mulDft !p !w2n !lPadded !rPadded = c
   where
     pad :: Int
-    pad = 2 P.^ p
+    !pad = 2 P.^ p
 
     w2nInv :: c
-    w2nInv = one // w2n
+    !w2nInv = one // w2n
 
     nInv :: c
-    nInv = one // fromConstant (fromIntegral @_ @Natural pad)
+    !nInv = one // fromConstant (fromIntegral @_ @Natural pad)
 
     v1Image, v2Image :: V.Vector c
-    v1Image = genericDft p w2n lPadded
-    v2Image = genericDft p w2n rPadded
+    !v1Image = genericDft p w2n lPadded
+    !v2Image = genericDft p w2n rPadded
 
     cImage :: V.Vector c
-    cImage = V.zipWith (*) v1Image v2Image
+    !cImage = V.zipWith (*) v1Image v2Image
 
     c :: V.Vector c
-    c = (* nInv) <$> genericDft p w2nInv cImage
+    !c = (* nInv) <$> genericDft p w2nInv cImage
 
 mulKaratsuba :: forall a. (Field a, Eq a) => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2

@@ -48,19 +48,19 @@ import           ZkFold.Symbolic.MonadCircuit                       (ResidueFiel
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
-    { qM       :: pv n
-    , qL       :: pv n
-    , qR       :: pv n
-    , qO       :: pv n
-    , qC       :: pv n
-    , qK       :: pv n
-    , t1       :: pv n
-    , t2       :: pv n
-    , t3       :: pv n
-    , sigma    :: Permutation (3 * n)
+    { qM       :: !(pv n) 
+    , qL       :: !(pv n)
+    , qR       :: !(pv n)
+    , qO       :: !(pv n)
+    , qC       :: !(pv n)
+    , qK       :: !(pv n)
+    , t1       :: !(pv n)
+    , t2       :: !(pv n)
+    , t3       :: !(pv n)
+    , sigma    :: !(Permutation (3 * n))
     , witness  :: i a -> (pv n, pv n, pv n)
     , pubInput :: i a -> [a]
-    , prvNum   :: Natural
+    , prvNum   :: !Natural
     -- ^ The number of private inputs.
     }
 
@@ -140,8 +140,8 @@ instance ResidueField a => ResidueField (Vector a) where
     toIntegral = fmap toIntegral
 
 zipLongest :: (a -> b -> c) -> Vector a -> Vector b -> Vector c
-zipLongest f xs ys =
-    let (xn, yn) = (V.length xs, V.length ys)
+zipLongest !f !xs !ys =
+    let (!xn, !yn) = (V.length xs, V.length ys)
      in case xn `compare` yn of
         LT -> V.zipWith f (xs <> V.replicate (yn P.- xn) (V.last xs)) ys
         EQ -> V.zipWith f xs ys
@@ -152,31 +152,31 @@ toPlonkupRelation ::
   ( KnownNat n, Arithmetic a, Binary (Rep i), UnivariateRingPolyVec a pv
   , Representable i, Representable o, Foldable o
   ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
-toPlonkupRelation ac =
-    let n = value @n
+toPlonkupRelation !ac =
+    let !n = value @n
 
-        xPub                = acOutput (acContext ac)
-        pubInputConstraints = L.map var (toList xPub)
-        plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem (acContext ac)))
+        !xPub                = acOutput (acContext ac)
+        !pubInputConstraints = L.map var (toList xPub)
+        !plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem (acContext ac)))
 
         toTriple :: [t] -> (t, t, t)
-        toTriple [x]       = (x, x, x)
-        toTriple [x, y]    = (x, x, y)
-        toTriple [x, y, z] = (x, y, z)
+        toTriple [!x]       = (x, x, x)
+        toTriple [!x, !y]    = (x, x, y)
+        toTriple [!x, !y, !z] = (x, y, z)
         toTriple ws        = P.error ("Expected list of length 1-3, got " ++ show (length ws))
 
         unfold :: LookupTable a f -> (Natural, (Vector a -> Vector a) -> f (Vector a))
-        unfold (Ranges rs) =
-            let segs = S.toList rs
+        unfold (Ranges !rs) =
+            let !segs = S.toList rs
              in ( sum [ toConstant (hi - lo + one) | (lo, hi) <- segs ]
                 , Par1 . ($ V.concat [ V.enumFromTo lo hi | (lo, hi) <- segs ]))
-        unfold (Product t u) =
+        unfold (Product !t !u) =
             let (!m, ts) = unfold t
                 (!k, us) = unfold u
              in ( m * n
                 , \f -> ts (f . V.concatMap (V.replicate (P.fromIntegral k)))
                     :*: us (f . V.concat . L.replicate (P.fromIntegral m)))
-        unfold (Plot g t) =
+        unfold (Plot !g !t) =
             let (!k, ts) = unfold t
                 g'       = lookupFunction (acLookupFunction (acContext ac)) g
              in (k, \f -> let !ts' = ts id in f <$> (ts' :*: g' ts'))
@@ -184,7 +184,7 @@ toPlonkupRelation ac =
         lkup ::
             Foldable f => LookupTable a f -> [[Var a]] ->
             ([LookupConstraint i a], Sum Natural, (Vector a, Vector a, Vector a))
-        lkup lt vs =
+        lkup !lt !vs =
             let (!k, !ts) = unfold lt
              in ( L.map (uncurry3 LookupConstraint . toTriple) vs
                 , Sum k
@@ -205,37 +205,45 @@ toPlonkupRelation ac =
                          -- NOTE we use constant variables
                          -- to encode № of a lookup table
 
-        t1 = toPolyVec xs
-        t2 = toPolyVec ys
-        t3 = toPolyVec zs
+        !t1 = toPolyVec xs
+        !t2 = toPolyVec ys
+        !t3 = toPolyVec zs
 
-        cNum = acSizeN ac + length (tabulate @o id) + length xLookup
+        !cNum = acSizeN ac + length (tabulate @o id) + length xLookup
 
-        plonkupSystem = fromList $ L.concat
+        !plonkupSystem = fromList $ L.concat
             [ L.map (ConsPlonk . toPlonkConstraint) (pubInputConstraints ++ plonkConstraints)
             , ConsLookup <$> xLookup
             , replicate (n -! cNum) ConsExtra
             ]
 
-        qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
-        qL = toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
-        qR = toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
-        qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
-        qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
-        qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
+        !qM = toPolyVec $ fmap (qm . getPlonkConstraint) plonkupSystem
+        !qL = toPolyVec $ fmap (ql . getPlonkConstraint) plonkupSystem
+        !qR = toPolyVec $ fmap (qr . getPlonkConstraint) plonkupSystem
+        !qO = toPolyVec $ fmap (qo . getPlonkConstraint) plonkupSystem
+        !qC = toPolyVec $ fmap (qc . getPlonkConstraint) plonkupSystem
+        !qK = toPolyVec $ fmap isLookupConstraint plonkupSystem
 
-        a  = fmap getA plonkupSystem
-        b  = fmap getB plonkupSystem
-        c  = fmap getC plonkupSystem
+        !a  = fmap getA plonkupSystem
+        !b  = fmap getB plonkupSystem
+        !c  = fmap getC plonkupSystem
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
-        sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
+        !sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
+<<<<<<< HEAD
         eval = evalVar . witnessGenerator ac
         w1 i = toPolyVec $ fmap (eval i) a
         w2 i = toPolyVec $ fmap (eval i) b
         w3 i = toPolyVec $ fmap (eval i) c
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = map (eval i) $ toList xPub
+=======
+        w1 !i = toPolyVec $ fmap (indexW ac i) a
+        w2 !i = toPolyVec $ fmap (indexW ac i) b
+        w3 !i = toPolyVec $ fmap (indexW ac i) c
+        witness !i  = (w1 i, w2 i, w3 i)
+        pubInput !i = map (indexW ac i) $ toList xPub
+>>>>>>> aaacf859 (WIP)
 
         prvNum = 0
 
