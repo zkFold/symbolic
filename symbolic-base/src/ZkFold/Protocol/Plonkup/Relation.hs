@@ -242,20 +242,12 @@ toPlonkupRelation !ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         !sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
-<<<<<<< HEAD
         eval = evalVar . witnessGenerator ac
         w1 i = toPolyVec $ fmap (eval i) a
         w2 i = toPolyVec $ fmap (eval i) b
         w3 i = toPolyVec $ fmap (eval i) c
         witness i  = (w1 i, w2 i, w3 i)
         pubInput i = map (eval i) $ toList xPub
-=======
-        w1 !i = toPolyVec $ fmap (indexW ac i) a
-        w2 !i = toPolyVec $ fmap (indexW ac i) b
-        w3 !i = toPolyVec $ fmap (indexW ac i) c
-        witness !i  = (w1 i, w2 i, w3 i)
-        pubInput !i = map (indexW ac i) $ toList xPub
->>>>>>> aaacf859 (WIP)
 
         prvNum = 0
 
