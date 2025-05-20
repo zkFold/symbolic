@@ -34,8 +34,8 @@ common options
       -Wpartial-fields
       -Wredundant-constraints
       -Wunused-packages
-      -O2
       -threaded
+      -O2
     if flag(pedantic)
       ghc-options:
         -Werror
