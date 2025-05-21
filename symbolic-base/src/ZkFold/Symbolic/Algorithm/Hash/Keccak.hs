@@ -10,6 +10,7 @@
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   padding,
   toBlocks,
+  Keccak,
   --   AlgorithmSetup (..)
   -- , Keccak
   -- , keccak
@@ -36,7 +37,6 @@ import qualified Data.Vector.Mutable                as VM
 import           Data.Word                          (Word8)
 import           GHC.Generics                       (Par1 (..))
 import           GHC.TypeLits                       (SomeNat (..), Symbol)
-import           GHC.TypeLits.Compare               ((%<=?), (:<=?) (..))
 import           GHC.TypeNats                       (someNatVal, type (<=?), withKnownNat)
 import           Prelude                            (Int, id, pure, undefined, zip, ($!), ($), (.), (<$>), (>>=))
 import qualified Prelude                            as P
@@ -200,7 +200,7 @@ absorbBlock ::
   Vector NumLanes (ByteString 64 context) -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 absorbBlock state blocks =
   let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
-   in P.foldl'
+   in P.foldl  -- TODO: Use foldl'?
         ( \accState chunk ->
             -- TODO: Perhaps this can be optimized.
             let state' =
