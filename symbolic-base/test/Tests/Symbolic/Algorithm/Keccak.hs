@@ -30,7 +30,7 @@ import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                     (Vector)
 import           ZkFold.Prelude                         (chooseNatural)
-import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (padding, toBlocks, Keccak)
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (Keccak, padding, toBlocks)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                  (Arithmetic)
 import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
