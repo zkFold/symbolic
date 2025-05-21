@@ -7,10 +7,11 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
     , piConstants
     ) where
 
-import           GHC.TypeNats (Natural)
-import GHC.IsList (fromList)
-import           ZkFold.Data.Vector                 (Vector (..))
-import Data.Int (Int)
+import           Data.Int           (Int)
+import           GHC.IsList         (fromList)
+import           GHC.TypeNats       (Natural)
+
+import           ZkFold.Data.Vector (Vector (..))
 
 -- TODO: Review haddock.
 -- TODO: Fourmolu.
