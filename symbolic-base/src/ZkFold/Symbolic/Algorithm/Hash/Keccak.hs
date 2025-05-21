@@ -45,10 +45,21 @@ import qualified Prelude                                         as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
-                                                                  fromVector, generate, indexed, mapWithIx, reverse,
-                                                                  slice, unsafeToVector, (!!))
+import           ZkFold.Data.HFunctor               (hmap)
+import           ZkFold.Data.Vector                 (Vector (..), chunks, concatMap, fromVector, generate, indexed,
+                                                     mapWithIx, reverse, slice, unsafeToVector, (!!), backpermute, head)
+import           ZkFold.Symbolic.Class              (BaseField, Symbolic, fromCircuitF)
+import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
+import           ZkFold.Symbolic.Data.Combinators   (Iso (..), RegisterSize (..), Resize (..), expansionW, ilog2)
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement (..))
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt          (UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))
@@ -229,7 +240,7 @@ keccakF state =
 
     P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
   where
-    f (r, s) = (P.succ r, chi @context . pi @context . rho @context . theta @context $ s)
+    f (r, s) = (P.succ r, iota @context r . chi @context . pi @context . rho @context . theta @context $ s)
 
 theta :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 theta state =
@@ -268,3 +279,9 @@ pi state = backpermute state piConstants
 chi :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 chi b = mapWithIx subChi b
     where subChi z el = el `xor` (not (b !! mod (z + 5) 25) && (b !! mod (z + 10) 25))
+
+iota :: forall context. Symbolic context => Natural -> Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+iota roundNumber state = modify (\v -> VM.write v 0 $ xor (roundConstants !! roundNumber) (head state)) state
+
+modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
+modify f (Vector v) = Vector $ V.modify f v

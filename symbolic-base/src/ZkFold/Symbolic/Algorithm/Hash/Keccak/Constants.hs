@@ -7,11 +7,15 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
     , piConstants
     ) where
 
-import           Data.Int           (Int)
-import           GHC.IsList         (fromList)
-import           GHC.TypeNats       (Natural)
-
-import           ZkFold.Data.Vector (Vector (..))
+import           GHC.TypeNats (Natural)
+import GHC.IsList (fromList)
+import           ZkFold.Data.Vector                 (Vector (..))
+import Data.Int (Int)
+import ZkFold.Symbolic.Data.ByteString (ByteString)
+import Data.Function (($))
+import ZkFold.Algebra.Class (FromConstant(..))
+import Data.Functor (Functor(..))
+import ZkFold.Symbolic.Class (Symbolic)
 
 -- TODO: Review haddock.
 -- TODO: Fourmolu.
@@ -24,11 +28,13 @@ type NumRounds = 24
 type NumLanes :: Natural
 type NumLanes = 25
 
+-- TODO: Is `fromConstant` working as i'd expect it to be or shall I do base16 decoding myself?
+
 -- | Keccak round constants for the 24 rounds.
 --
 -- These are the first 64 bits of the binary expansion of the fractional parts of the cube roots of the first 24 prime numbers.
-roundConstants :: Vector NumRounds Natural
-roundConstants = fromList [ 0x0000000000000001, 0x0000000000008082, 0x800000000000808A
+roundConstants :: Symbolic context => Vector NumRounds (ByteString 64 context)
+roundConstants = fromList $ fmap fromConstant [ (0x0000000000000001 :: Natural), 0x0000000000008082, 0x800000000000808A
                             , 0x8000000080008000, 0x000000000000808B, 0x0000000080000001
                             , 0x8000000080008081, 0x8000000000008009, 0x000000000000008A
                             , 0x0000000000000088, 0x0000000080008009, 0x000000008000000A
