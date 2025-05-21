@@ -43,8 +43,9 @@ import qualified Prelude                                         as P
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, generate, head, indexed, mapWithIx,
-                                                                  reverse, slice, unfold, (!!))
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, generate,
+                                                                  head, indexed, mapWithIx, reverse, slice, unfold,
+                                                                  (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (Symbolic)
 import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
