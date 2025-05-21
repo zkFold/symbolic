@@ -29,6 +29,7 @@ import           Data.Constraint.Unsafe
 import           Data.Data                          (Proxy (..), type (:~:) (Refl))
 import           Data.Function                      (flip, (&))
 import           Data.Kind                          (Type)
+import           Data.Semialign                     (Zip (..))
 import qualified Data.STRef                         as ST
 import           Data.Type.Bool                     (If)
 import           Data.Type.Equality                 (type (~))
@@ -81,7 +82,7 @@ type ResultSize rate = Div (Width - rate) 16
 type Capacity rate = Width - rate
 
 numRounds :: Natural
-numRounds = 24
+numRounds = value @NumRounds
 
 {- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
 This class links these varying parts with the appropriate algorithm.
@@ -255,4 +256,4 @@ theta state =
   d = generate @5 (\i -> c !! (P.fromIntegral ((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
-rho state = undefined
+rho state = zipWith (flip rotateBitsL) rotationConstants state
