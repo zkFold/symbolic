@@ -15,7 +15,7 @@ import           Data.List.Split                        (splitOn)
 import           Data.Proxy                             (Proxy (..))
 import           GHC.Generics                           (U1)
 import           GHC.TypeLits                           (KnownSymbol, Symbol, symbolVal)
-import           Prelude                                (String, otherwise, pure, read, (<>), (==), Functor (..))
+import           Prelude                                (Functor (..), String, otherwise, pure, read, (<>), (==))
 import qualified Prelude                                as Haskell
 import           System.Directory                       (listDirectory)
 import           System.Environment                     (lookupEnv)
