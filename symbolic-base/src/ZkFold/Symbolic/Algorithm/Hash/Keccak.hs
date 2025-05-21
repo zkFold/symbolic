@@ -10,6 +10,10 @@
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   padding,
   toBlocks,
+  keccak,
+  -- TODO: Mention exports that are mainly for testing.
+  absorbBlock,
+  emptyState,
   Keccak,
   --   AlgorithmSetup (..)
   -- , Keccak
@@ -132,10 +136,11 @@ type Keccak algorithm context k =
 keccak ::
   forall (algorithm :: Symbol) context k.
   Keccak algorithm context k =>
-  ByteString k context -> ByteString (ResultSize (Rate algorithm)) context
-keccak =
-  let paddedMessage = undefined
-   in undefined
+  ByteString k context -> Vector NumLanes (ByteString 64 context) -- ByteString (ResultSize (Rate algorithm)) context
+keccak bs =
+  padding @algorithm @context @k bs
+     & toBlocks @algorithm @context @k
+     & absorbBlock @algorithm @context @k emptyState
 
 -- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
 type BytesFromBits bits = Div bits 8
@@ -183,7 +188,7 @@ padding msg =
 toBlocks ::
   forall (algorithm :: Symbol) context k.
   Keccak algorithm context k =>
-  ByteString (PaddedLengthBits k (Rate algorithm)) context -> Vector (Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) (ByteString 64 context)
+  ByteString (PaddedLengthBits k (Rate algorithm)) context -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context)
 toBlocks msg =
   let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
       byteWordsBitReversed = reverseBits <$> byteWords
@@ -257,7 +262,7 @@ theta state =
                     slice @(i * 5) @5 @NumLanes state
             )
       )
-  d = generate @5 (\i -> c !! (P.fromIntegral ((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
+  d = generate @5 (\i -> c !! (P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5)) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 rho state = zipWith (flip rotateBitsL) rotationConstants state
@@ -271,6 +276,9 @@ chi b = mapWithIx subChi b
 
 iota :: forall context. Symbolic context => Natural -> Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 iota roundNumber state = modify (\v -> VM.write v 0 $ xor (roundConstants !! roundNumber) (head state)) state
+
+emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
+emptyState = generate @NumLanes (\_ -> fromConstant (0 :: Natural))
 
 modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
 modify f (Vector v) = Vector $ V.modify f v

@@ -30,7 +30,7 @@ import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                     (Vector)
 import           ZkFold.Prelude                         (chooseNatural)
-import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (Keccak, padding, toBlocks)
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (Keccak, padding, toBlocks, keccak)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                  (Arithmetic)
 import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
@@ -53,6 +53,7 @@ specKeccak = do
               paddedMsgBlks = concat $ toBlocks @"Keccak256" @(Interpreter Element) @0 paddedMsg
           toConstant paddedMsg `shouldBe` 12953744211667879574559702190010707651171625584905095574841686913755541732351702201085464556891975967691972983316275962328947759192690782519488857596207264634977115153700247127325882095493965845839345131422255684387968478939180332711558614761546211605811843616790961251349338535374752162059924960553344400851693295429983666304
           (toConstant paddedMsgBlks) `shouldBe` 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304844579701661078913024
+          Haskell.print $ keccak @"Keccak256" @(Interpreter Element) @0 (fromConstant ("" :: Bytes.ByteString))
         it "padding result for single character" $ do
           let paddedMsg = padding @"Keccak256" @(Interpreter Element) @8 (fromConstant ("a" :: Bytes.ByteString))
               paddedMsgBlks = concat $ toBlocks @"Keccak256" @(Interpreter Element) @8 paddedMsg
