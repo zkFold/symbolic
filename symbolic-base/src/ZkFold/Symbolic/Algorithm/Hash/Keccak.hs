@@ -45,21 +45,10 @@ import qualified Prelude                                         as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor               (hmap)
-import           ZkFold.Data.Vector                 (Vector (..), chunks, concatMap, fromVector, generate, indexed,
-                                                     mapWithIx, reverse, slice, unsafeToVector, (!!), backpermute, head)
-import           ZkFold.Symbolic.Class              (BaseField, Symbolic, fromCircuitF)
-import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
-import           ZkFold.Symbolic.Data.Combinators   (Iso (..), RegisterSize (..), Resize (..), expansionW, ilog2)
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FieldElement  (FieldElement (..))
-import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Data.UInt          (UInt)
-import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
-import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Data.HFunctor                            (hmap)
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
+                                                                  fromVector, generate, head, indexed, mapWithIx,
+                                                                  reverse, slice, unsafeToVector, (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))

@@ -7,15 +7,16 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
     , piConstants
     ) where
 
-import           GHC.TypeNats (Natural)
-import GHC.IsList (fromList)
-import           ZkFold.Data.Vector                 (Vector (..))
-import Data.Int (Int)
-import ZkFold.Symbolic.Data.ByteString (ByteString)
-import Data.Function (($))
-import ZkFold.Algebra.Class (FromConstant(..))
-import Data.Functor (Functor(..))
-import ZkFold.Symbolic.Class (Symbolic)
+import           Data.Function                   (($))
+import           Data.Functor                    (Functor (..))
+import           Data.Int                        (Int)
+import           GHC.IsList                      (fromList)
+import           GHC.TypeNats                    (Natural)
+
+import           ZkFold.Algebra.Class            (FromConstant (..))
+import           ZkFold.Data.Vector              (Vector (..))
+import           ZkFold.Symbolic.Class           (Symbolic)
+import           ZkFold.Symbolic.Data.ByteString (ByteString)
 
 -- TODO: Review haddock.
 -- TODO: Fourmolu.
