@@ -22,52 +22,34 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   -- , PaddedLength
 ) where
 
-import           Control.DeepSeq                                 (force)
-import           Control.Monad                                   (forM_)
-import           Control.Monad.ST                                (ST, runST)
+import           Control.Monad.ST                                (ST)
 import           Data.Bits                                       (Bits ((.|.)))
 import qualified Data.ByteString                                 as B
 import           Data.Constraint
 import           Data.Constraint.Nat
-import           Data.Constraint.Unsafe
-import           Data.Data                                       (Proxy (..), type (:~:) (Refl))
+import           Data.Data                                       (Proxy (..))
 import           Data.Function                                   (flip, (&))
 import           Data.Kind                                       (Type)
 import           Data.Semialign                                  (Zip (..))
-import qualified Data.STRef                                      as ST
-import           Data.Type.Bool                                  (If)
 import           Data.Type.Equality                              (type (~))
 import qualified Data.Vector                                     as V
 import qualified Data.Vector.Mutable                             as VM
 import           Data.Word                                       (Word8)
-import           GHC.Generics                                    (Par1 (..))
 import           GHC.TypeLits                                    (SomeNat (..), Symbol)
-import           GHC.TypeNats                                    (someNatVal, type (<=?), withKnownNat)
-import           Prelude                                         (Int, id, pure, undefined, zip, ($!), ($), (.), (<$>),
-                                                                  (>>=))
+import           GHC.TypeNats                                    (someNatVal, type (<=?))
+import           Prelude                                         (($), (.), (<$>))
 import qualified Prelude                                         as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
-                                                                  fromVector, generate, head, indexed, mapWithIx,
-                                                                  reverse, slice, unfold, unsafeToVector, (!!))
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, generate, head, indexed, mapWithIx,
+                                                                  reverse, slice, unfold, (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
-import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
-import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Class                           (Symbolic)
+import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.ByteString                 (ByteString (..), ShiftBits (..), concat, set, toWords,
-                                                                  truncate)
-import           ZkFold.Symbolic.Data.Combinators                (Iso (..), RegisterSize (..), Resize (..), expansionW,
-                                                                  ilog2)
-import           ZkFold.Symbolic.Data.Conditional
-import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord
-import           ZkFold.Symbolic.Data.UInt                       (UInt)
-import qualified ZkFold.Symbolic.Data.VarByteString              as VB
-import           ZkFold.Symbolic.Data.VarByteString              (VarByteString (..))
-import           ZkFold.Symbolic.MonadCircuit                    (newAssigned)
 
 -- TODO: Is this Width / LaneWidth?
 
@@ -172,15 +154,6 @@ padLenBytes :: Natural -> Natural -> Natural
 padLenBytes msgBytes rateBytes =
   P.fromIntegral @P.Integer @Natural (P.fromIntegral rateBytes - (P.fromIntegral (msgBytes `mod` rateBytes)))
 
--- | Length of the padded message in bytes.
-paddedLenBytes :: Natural -> Natural -> Natural
-paddedLenBytes msgBytes rateBytes =
-  msgBytes + padLenBytes msgBytes rateBytes
-
--- | Length of the padded message in bits.
-paddedLenBits :: Natural -> Natural -> Natural
-paddedLenBits msgBits rateBits = (paddedLenBytes (div msgBits 8) (div rateBits 8)) * 8
-
 padding ::
   forall (algorithm :: Symbol) context k.
   Keccak algorithm context k =>
@@ -226,7 +199,7 @@ absorbBlock state blocks =
                           else el
                     )
                     accState
-             in keccakF @algorithm @context state'
+             in keccakF @context state'
         )
         state
         blockChunks
@@ -237,7 +210,7 @@ absorbBlock state blocks =
 
 -- TODO: Are accumulators required to be made strict?
 -- TODO: Should some functions be asked to be made inlined?
-keccakF :: forall algorithm context. (AlgorithmSetup algorithm context, Symbolic context) => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+keccakF :: forall context. (Symbolic context) => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 keccakF state =
   P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
  where
@@ -274,7 +247,7 @@ theta state =
 rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 rho state = zipWith (flip rotateBitsL) rotationConstants state
 
-pi :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+pi :: forall context. Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 pi state = backpermute state piConstants
 
 chi :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
@@ -305,7 +278,7 @@ squeeze state =
   threshold = div rate laneWidth
   extract (x, s)
     | x < threshold = (s !! (div x 5 + mod x 5 * 5), (P.succ x, s))
-    | P.otherwise = extract (0, keccakF @algorithm @context s)
+    | P.otherwise = extract (0, keccakF @context s)
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
 
