@@ -45,10 +45,21 @@ import qualified Prelude                                         as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), chunks, concatMap, fromVector, generate,
-                                                                  indexed, mapWithIx, reverse, slice, unsafeSlice,
-                                                                  unsafeToVector, (!!))
+import           ZkFold.Data.HFunctor               (hmap)
+import           ZkFold.Data.Vector                 (Vector (..), chunks, concatMap, fromVector, generate, indexed,
+                                                     mapWithIx, reverse, slice, unsafeToVector, (!!), backpermute)
+import           ZkFold.Symbolic.Class              (BaseField, Symbolic, fromCircuitF)
+import           ZkFold.Symbolic.Data.Bool          (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.ByteString    (ByteString (..), ShiftBits (..), concat, set, toWords, truncate)
+import           ZkFold.Symbolic.Data.Combinators   (Iso (..), RegisterSize (..), Resize (..), expansionW, ilog2)
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement (..))
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt          (UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
+import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))
@@ -224,12 +235,12 @@ absorbBlock state blocks =
 
 -- TODO: Are accumulators required to be made strict?
 -- TODO: Should some functions be asked to be made inlined?
-keccakF :: forall algorithm context. AlgorithmSetup algorithm context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
-keccakF state = undefined
+keccakF :: forall algorithm context. (AlgorithmSetup algorithm context, Symbolic context) => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+keccakF state =
 
---     P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
---   where
---     f (r, s) = (P.succ r, iota r . chi . pi . rho . theta @algorithm @context $ s)
+    P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
+  where
+    f (r, s) = (P.succ r, chi @context . pi @context . rho @context . theta @context $ s)
 
 theta :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 theta state =
@@ -240,7 +251,7 @@ theta state =
           ( case someNatVal (i) of
               SomeNat (_ :: Proxy i) ->
                 withDict (timesNat @i @5) $
-                  unsafeSlice @(i * 5) @5 state
+                  slice @(i * 5) @5 state
           )
     )
     $ indexed d
@@ -254,10 +265,17 @@ theta state =
             ( case someNatVal (i) of
                 SomeNat (_ :: Proxy i) ->
                   withDict (timesNat @i @5) $
-                    unsafeSlice @(i * 5) @5 @NumLanes state
+                    slice @(i * 5) @5 @NumLanes state
             )
       )
   d = generate @5 (\i -> c !! (P.fromIntegral ((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 rho state = zipWith (flip rotateBitsL) rotationConstants state
+
+pi :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+pi state = backpermute state piConstants
+
+chi :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+chi b = mapWithIx subChi b
+    where subChi z el = el `xor` (not (b !! mod (z + 5) 25) && (b !! mod (z + 10) 25))

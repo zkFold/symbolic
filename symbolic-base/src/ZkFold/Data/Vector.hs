@@ -176,23 +176,22 @@ chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
 
 -- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
+--
+-- Note that we'll get run-time error if @i + n > size@.
 slice :: forall i n size a.
   KnownNat i
   => KnownNat n
-  => (i + n <= size)
   => Vector size a
   -> Vector n a
-slice = unsafeSlice @i @n @size @a
+slice (Vector v) = Vector $ V.slice (fromIntegral $ value @i) (fromIntegral $ value @n) v
 
--- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
+-- TODO: Shall I at least make it Vector m Natural?
+-- | Yield the vector obtained by replacing each element @i@ of the
+-- index vector by @xs'!'i@.
 --
--- This is unsafe because it does not check that @i + n <= size@ and can throw run-time error otherwise.
-unsafeSlice :: forall i n size a.
-  KnownNat i
-  => KnownNat n
-  => Vector size a
-  -> Vector n a
-unsafeSlice (Vector v) = Vector $ V.slice (fromIntegral $ value @i) (fromIntegral $ value @n) v
+-- Note that we'll get run-time error if any index in the index vector is out of bounds.
+backpermute :: forall n m a. Vector n a -> Vector m Int -> Vector m a
+backpermute (Vector v) (Vector is) = Vector $ V.backpermute v is
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV
