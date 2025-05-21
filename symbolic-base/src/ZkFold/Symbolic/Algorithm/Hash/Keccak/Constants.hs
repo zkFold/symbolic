@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
     , roundConstants
     , rotationConstants
     , piConstants
+    , emptyState
     ) where
 
 import           Data.Function                   (($))
@@ -14,7 +15,7 @@ import           GHC.IsList                      (fromList)
 import           GHC.TypeNats                    (Natural)
 
 import           ZkFold.Algebra.Class            (FromConstant (..))
-import           ZkFold.Data.Vector              (Vector (..))
+import           ZkFold.Data.Vector              (Vector (..), generate)
 import           ZkFold.Symbolic.Class           (Symbolic)
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
 
@@ -64,3 +65,6 @@ piConstants = fromList [ 0, 15, 5, 20, 10
                          , 12, 2, 17, 7, 22
                          , 18, 8, 23, 13, 3
                          , 24, 14, 4, 19, 9 ]
+
+emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
+emptyState = generate @NumLanes (\_ -> fromConstant (0 :: Natural))

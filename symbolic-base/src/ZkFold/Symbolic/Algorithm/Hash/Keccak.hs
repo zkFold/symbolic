@@ -52,7 +52,7 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                            (hmap)
 import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
                                                                   fromVector, generate, head, indexed, mapWithIx,
-                                                                  reverse, slice, unsafeToVector, (!!))
+                                                                  reverse, slice, unsafeToVector, (!!), unfold)
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
 import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))
@@ -73,7 +73,7 @@ import           ZkFold.Symbolic.MonadCircuit                    (newAssigned)
 
 -- NOTE: Code is NOT parameterized over `LaneWidth` at all places, so changing this value could break the code.
 
--- | Width of each lane in the Keccak sponge state.
+-- | Width of each lane (in bits) in the Keccak sponge state.
 type LaneWidth :: Natural
 type LaneWidth = 64
 
@@ -81,8 +81,11 @@ type LaneWidth = 64
 type Width :: Natural
 type Width = 1600
 
--- | Length of the hash result for a given rate.
-type ResultSize rate = Div (Width - rate) 16
+-- | Length of the hash result (in bytes) for a given rate.
+type ResultSizeInBytes rateBits = Div (Width - rateBits) 16
+
+-- | Length of the hash result (in bits) for a given rate.
+type ResultSizeInBits rateBits = ResultSizeInBytes rateBits * 8
 
 -- TODO: Not have it at type level if it's not required.
 
@@ -130,17 +133,23 @@ type Keccak algorithm context k =
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
     ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
+    ,KnownNat (Div (Width - Rate algorithm) 16 * 8), (Div
+                       ((Div (Width - Rate algorithm) 16 + 8) - 1) 8
+                     * 64)
+                    ~ (Div (Width - Rate algorithm) 16 * 8), KnownNat (Div ((Div (Width - Rate algorithm) 16 + 8) - 1) 8)
   , Symbolic context
   )
 
+-- TODO: Needed to say algorithm :: Symbol?
 keccak ::
   forall (algorithm :: Symbol) context k.
   Keccak algorithm context k =>
-  ByteString k context -> Vector NumLanes (ByteString 64 context) -- ByteString (ResultSize (Rate algorithm)) context
+  ByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
 keccak bs =
   padding @algorithm @context @k bs
      & toBlocks @algorithm @context @k
      & absorbBlock @algorithm @context @k emptyState
+     & squeeze @algorithm @context
 
 -- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
 type BytesFromBits bits = Div bits 8
@@ -193,9 +202,6 @@ toBlocks msg =
   let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
       byteWordsBitReversed = reverseBits <$> byteWords
    in reverseBits <$> (toWords $ concat byteWordsBitReversed)
- where
-  reverseBits :: forall n. ByteString n context -> ByteString n context
-  reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)
 
 -- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
 
@@ -277,8 +283,30 @@ chi b = mapWithIx subChi b
 iota :: forall context. Symbolic context => Natural -> Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 iota roundNumber state = modify (\v -> VM.write v 0 $ xor (roundConstants !! roundNumber) (head state)) state
 
-emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
-emptyState = generate @NumLanes (\_ -> fromConstant (0 :: Natural))
+type CeilDiv n d = Div (n + d - 1) d
+
+type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorithm)) (Div (LaneWidth) 8)
+
+squeeze :: forall algorithm context. (AlgorithmSetup algorithm context, KnownNat (Div (Width - Rate algorithm) 16 * 8), (Div
+                       ((Div (Width - Rate algorithm) 16 + 8) - 1) 8
+                     * 64)
+                    ~ (Div (Width - Rate algorithm) 16 * 8), KnownNat (Div ((Div (Width - Rate algorithm) 16 + 8) - 1) 8)
+-- TODO: Simplify above constraints. Likely remove them and have it under Keccak or something.
+   ) => Symbolic context => Vector NumLanes (ByteString 64 context) -> (ByteString (ResultSizeInBits (Rate algorithm)) context)
+squeeze state = truncate @(ResultSizeInBits (Rate algorithm))
+                                    . concat
+                                    . P.fmap (reverseEndianness @64)
+                                    $ stateToBytes state
+    where stateToBytes s = unfold @(SqueezeLanesToExtract algorithm) extract (0, s)
+          threshold = div rate laneWidth
+          extract (x, s)
+            | x < threshold = (s !! (div x 5 + mod x 5 * 5), (P.succ x, s))
+            | P.otherwise     = extract (0, keccakF @algorithm @context s)
+          rate = value @(Rate algorithm)
+          laneWidth = value @LaneWidth
 
 modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
 modify f (Vector v) = Vector $ V.modify f v
+
+reverseBits :: forall n context. (Symbolic context) => ByteString n context -> ByteString n context
+reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)

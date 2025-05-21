@@ -73,7 +73,7 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector . V.fromList
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
-unfold f = Vector . V.take (knownNat @size) . V.unfoldr (Just . f)
+unfold f = Vector . V.unfoldrExactN (knownNat @size) f
 
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = V.toList as
