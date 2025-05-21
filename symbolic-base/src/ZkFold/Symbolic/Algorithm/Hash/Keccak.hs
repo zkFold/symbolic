@@ -82,12 +82,10 @@ type Width :: Natural
 type Width = 1600
 
 -- | Length of the hash result (in bytes) for a given rate.
-type ResultSizeInBytes rateBits = Div (Width - rateBits) 16
+type ResultSizeInBytes rateBits = Div (Capacity rateBits) 16
 
 -- | Length of the hash result (in bits) for a given rate.
 type ResultSizeInBits rateBits = ResultSizeInBytes rateBits * 8
-
--- TODO: Not have it at type level if it's not required.
 
 -- | Capacity of the sponge construction for a given rate.
 type Capacity rate = Width - rate
@@ -133,14 +131,14 @@ type Keccak algorithm context k =
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
     ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
-  , KnownNat (Div (Width - Rate algorithm) 16 * 8)
+  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , ( Div
-        ((Div (Width - Rate algorithm) 16 + 8) - 1)
+        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
         8
         * 64
     )
-      ~ (Div (Width - Rate algorithm) 16 * 8)
-  , KnownNat (Div ((Div (Width - Rate algorithm) 16 + 8) - 1) 8)
+      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
+  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   , Symbolic context
   )
 
@@ -294,14 +292,14 @@ type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorith
 squeeze ::
   forall algorithm context.
   ( AlgorithmSetup algorithm context
-  , KnownNat (Div (Width - Rate algorithm) 16 * 8)
+  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , ( Div
-        ((Div (Width - Rate algorithm) 16 + 8) - 1)
+        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
         8
         * 64
     )
-      ~ (Div (Width - Rate algorithm) 16 * 8)
-  , KnownNat (Div ((Div (Width - Rate algorithm) 16 + 8) - 1) 8)
+      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
+  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   -- TODO: Simplify above constraints. Likely remove them and have it under Keccak or something.
   ) =>
   Symbolic context =>
