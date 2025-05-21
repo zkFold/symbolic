@@ -103,6 +103,15 @@ class
     Mod (Div (Rate algorithm) 8) 8 ~ 0
   , -- This constraint is needed so that dividing by 8 does not lead to zero.
     (1 <=? Rate (algorithm)) ~ 'P.True
+  , KnownNat (Div (Rate algorithm) LaneWidth)
+  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
+  , ( Div
+        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
+        8
+        * 64
+    )
+      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
+  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   ) =>
   AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
   where
@@ -128,17 +137,8 @@ type Keccak algorithm context k =
   , KnownNat (PaddedLengthBytesFromBits k (Rate algorithm))
   , KnownNat (PaddedLengthBits k (Rate algorithm))
   , ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm))
-  , KnownNat (Div (Rate algorithm) LaneWidth)
   , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
     ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
-  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
-  , ( Div
-        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
-        8
-        * 64
-    )
-      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
-  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   , Symbolic context
   )
 
@@ -292,15 +292,6 @@ type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorith
 squeeze ::
   forall algorithm context.
   ( AlgorithmSetup algorithm context
-  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
-  , ( Div
-        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
-        8
-        * 64
-    )
-      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
-  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
-  -- TODO: Simplify above constraints. Likely remove them and have it under Keccak or something.
   ) =>
   Symbolic context =>
   Vector NumLanes (ByteString 64 context) -> (ByteString (ResultSizeInBits (Rate algorithm)) context)
