@@ -88,12 +88,7 @@ class
     (1 <=? Rate (algorithm)) ~ 'P.True
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
-  , ( Div
-        ((Div (Capacity (Rate algorithm)) 16 + 8) - 1)
-        8
-        * 64
-    )
-      ~ (Div (Capacity (Rate algorithm)) 16 * 8)
+  , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
   , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   ) =>
   AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
@@ -108,8 +103,20 @@ instance AlgorithmSetup "Keccak256" c where
   type Rate "Keccak256" = 1088
   padByte = 0x01
 
+instance AlgorithmSetup "SHA3-512" c where
+  type Rate "SHA3-512" = 576
+  padByte = 0x06
+
+instance AlgorithmSetup "SHA3-384" c where
+  type Rate "SHA3-384" = 832
+  padByte = 0x06
+
 instance AlgorithmSetup "SHA3-256" c where
   type Rate "SHA3-256" = 1088
+  padByte = 0x06
+
+instance AlgorithmSetup "SHA3-224" c where
+  type Rate "SHA3-224" = 1152
   padByte = 0x06
 
 -- | Constraints required for a type-safe Keccak
@@ -270,7 +277,7 @@ squeeze ::
   Symbolic context =>
   Vector NumLanes (ByteString 64 context) -> (ByteString (ResultSizeInBits (Rate algorithm)) context)
 squeeze state =
-  truncate @(ResultSizeInBits (Rate algorithm))
+  truncate
     . concat
     . P.fmap (reverseEndianness @64)
     $ stateToBytes state
