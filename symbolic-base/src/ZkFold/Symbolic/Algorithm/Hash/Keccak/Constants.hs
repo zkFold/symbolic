@@ -1,5 +1,5 @@
 module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
-    ( 
+    (
       NumRounds
     , NumLanes
     , roundConstants
@@ -7,9 +7,10 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
     , piConstants
     ) where
 
-import           GHC.TypeNats (Natural)
-import GHC.IsList (fromList)
-import           ZkFold.Data.Vector                 (Vector (..))
+import           GHC.IsList         (fromList)
+import           GHC.TypeNats       (Natural)
+
+import           ZkFold.Data.Vector (Vector (..))
 
 -- TODO: Review haddock.
 -- TODO: Fourmolu.
