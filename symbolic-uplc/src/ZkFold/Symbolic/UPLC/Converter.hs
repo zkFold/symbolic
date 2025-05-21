@@ -1,18 +1,17 @@
-{-# LANGUAGE ExistentialQuantification #-}
-
 module ZkFold.Symbolic.UPLC.Converter where
 
-import           Data.Function                          (($))
-import           GHC.Generics                           (Par1)
+import           Data.Function                              (($))
+import           GHC.Generics                               (Par1)
 
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                   (Zp)
-import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, compile)
-import           ZkFold.Symbolic.Data.Bool              (Bool)
-import           ZkFold.Symbolic.Data.Maybe             (isJust)
-import           ZkFold.Symbolic.UPLC.Data              (Data)
-import           ZkFold.Symbolic.UPLC.Evaluation        (ExValue (ExValue), MaybeValue (..), Sym, eval)
-import           ZkFold.UPLC.Term                       (Term)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                       (Zp)
+import           ZkFold.Symbolic.Compiler                   (compile)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
+import           ZkFold.Symbolic.Data.Bool                  (Bool)
+import           ZkFold.Symbolic.Data.Maybe                 (isJust)
+import           ZkFold.Symbolic.UPLC.Data                  (Data)
+import           ZkFold.Symbolic.UPLC.Evaluation            (ExValue (ExValue), MaybeValue (..), Sym, eval)
+import           ZkFold.UPLC.Term                           (Term)
 
 -- | Different script types used on Cardano network.
 data ScriptType

@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE NoStarIsType         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -7,44 +6,45 @@
 
 module ZkFold.Protocol.Plonkup.Relation where
 
-import           Data.Binary                                         (Binary)
-import           Data.Constraint                                     (withDict)
-import           Data.Constraint.Nat                                 (timesNat)
-import           Data.Foldable                                       (Foldable, foldMap, toList)
-import           Data.Function                                       (flip, id, ($), (.))
-import           Data.Functor                                        (fmap, (<$>))
-import           Data.Functor.Rep                                    (Rep, Representable, tabulate)
-import           Data.List                                           (map, (++))
-import qualified Data.List                                           as L
-import           Data.Map                                            (elems)
-import qualified Data.Map.Monoidal                                   as M
-import           Data.Maybe                                          (Maybe (..), fromJust)
-import           Data.Monoid                                         (Sum (..), (<>))
-import           Data.Ord                                            (Ord, Ordering (..), compare, max, (<=))
-import qualified Data.Set                                            as S
-import           Data.Vector                                         (Vector)
-import qualified Data.Vector                                         as V
-import           GHC.Generics                                        (Par1 (..), (:*:) (..))
-import           GHC.IsList                                          (fromList)
-import qualified Prelude                                             as P
-import           Test.QuickCheck                                     (Arbitrary (..))
-import           Text.Show                                           (Show (..))
+import           Data.Binary                                        (Binary)
+import           Data.Constraint                                    (withDict)
+import           Data.Constraint.Nat                                (timesNat)
+import           Data.Foldable                                      (Foldable, foldMap, toList)
+import           Data.Function                                      (flip, id, ($), (.))
+import           Data.Functor                                       (fmap, (<$>))
+import           Data.Functor.Rep                                   (Rep, Representable, tabulate)
+import           Data.List                                          (map, (++))
+import qualified Data.List                                          as L
+import           Data.Map                                           (elems)
+import qualified Data.Map.Monoidal                                  as M
+import           Data.Maybe                                         (Maybe (..), fromJust)
+import           Data.Monoid                                        (Sum (..), (<>))
+import           Data.Ord                                           (Ordering (..), compare, max, (<=))
+import qualified Data.Set                                           as S
+import           Data.Vector                                        (Vector)
+import qualified Data.Vector                                        as V
+import           GHC.Generics                                       (Par1 (..), (:*:) (..))
+import           GHC.IsList                                         (fromList)
+import qualified Prelude                                            as P
+import           Test.QuickCheck                                    (Arbitrary (..))
+import           Text.Show                                          (Show (..))
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Permutation                          (Permutation, fromCycles, mkIndexPartition)
-import           ZkFold.Algebra.Polynomial.Multivariate              (evalMonomial, evalPolynomial, var)
-import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateRingPolyVec (..), toPolyVec)
-import           ZkFold.Prelude                                      (length, replicate, uncurry3)
-import           ZkFold.Protocol.Plonkup.Internal                    (PlonkupPermutationSize)
-import           ZkFold.Protocol.Plonkup.LookupConstraint            (LookupConstraint (LookupConstraint))
-import           ZkFold.Protocol.Plonkup.PlonkConstraint             (PlonkConstraint (..), toPlonkConstraint)
+import           ZkFold.Algebra.Permutation                         (Permutation, fromCycles, mkIndexPartition)
+import           ZkFold.Algebra.Polynomial.Multivariate             (evalMonomial, evalPolynomial, var)
+import           ZkFold.Algebra.Polynomial.Univariate               (UnivariateRingPolyVec (..), toPolyVec)
+import           ZkFold.Prelude                                     (length, replicate, uncurry3)
+import           ZkFold.Protocol.Plonkup.Internal                   (PlonkupPermutationSize)
+import           ZkFold.Protocol.Plonkup.LookupConstraint           (LookupConstraint (LookupConstraint))
+import           ZkFold.Protocol.Plonkup.PlonkConstraint            (PlonkConstraint (..), toPlonkConstraint)
 import           ZkFold.Protocol.Plonkup.PlonkupConstraint
-import           ZkFold.Symbolic.Compiler
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup   (LookupTable (..), LookupType (LookupType))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
-import           ZkFold.Symbolic.MonadCircuit                        (ResidueField (..))
+import           ZkFold.Symbolic.Class                              (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (..), acSizeN, witnessGenerator)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext (..), lookupFunction)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup  (LookupTable (..), LookupType (LookupType))
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var     (Var, evalVar, toVar)
+import           ZkFold.Symbolic.MonadCircuit                       (ResidueField (..))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
@@ -85,9 +85,8 @@ instance
         , Representable i
         , Representable o
         , Foldable o
-        , Ord (Rep i)
         , Arithmetic a
-        , Binary a
+        , Binary (Rep i)
         , Arbitrary (ArithmeticCircuit a i o)
         ) => Arbitrary (PlonkupRelation i o n a pv) where
     arbitrary = fromJust . toPlonkupRelation @i @o @n @a @pv <$> arbitrary
@@ -150,15 +149,15 @@ zipLongest f xs ys =
 
 toPlonkupRelation ::
   forall i o n a pv .
-  ( KnownNat n, Arithmetic a, Binary a, Ord (Rep i), UnivariateRingPolyVec a pv
+  ( KnownNat n, Arithmetic a, Binary (Rep i), UnivariateRingPolyVec a pv
   , Representable i, Representable o, Foldable o
   ) => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation ac =
     let n = value @n
 
-        xPub                = acOutput ac
+        xPub                = acOutput (acContext ac)
         pubInputConstraints = L.map var (toList xPub)
-        plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem ac))
+        plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem (acContext ac)))
 
         toTriple :: [t] -> (t, t, t)
         toTriple [x]       = (x, x, x)
@@ -179,11 +178,11 @@ toPlonkupRelation ac =
                     :*: us (f . V.concat . L.replicate (P.fromIntegral m)))
         unfold (Plot g t) =
             let (!k, ts) = unfold t
-                g'       = lookupFunction (acLookupFunction ac) g
+                g'       = lookupFunction (acLookupFunction (acContext ac)) g
              in (k, \f -> let !ts' = ts id in f <$> (ts' :*: g' ts'))
 
         lkup ::
-            Foldable f => LookupTable a f -> [[Var a i]] ->
+            Foldable f => LookupTable a f -> [[Var a]] ->
             ([LookupConstraint i a], Sum Natural, (Vector a, Vector a, Vector a))
         lkup lt vs =
             let (!k, !ts) = unfold lt
@@ -192,7 +191,7 @@ toPlonkupRelation ac =
                 , toTriple $ toList (ts id))
 
         -- Lookup queries.
-        (!xLookup, Sum !nLookup, (!xs, !ys, !zs)) = case M.assocs (acLookup ac) of
+        (!xLookup, Sum !nLookup, (!xs, !ys, !zs)) = case M.assocs (acLookup $ acContext ac) of
             [] -> ([], 0, (V.empty, V.empty, V.empty))
             [(LookupType lt, vs)] -> lkup lt [ L.map toVar v | v <- S.toList vs ]
             asscs -> flip foldMap (L.zip [(0 :: Natural)..] asscs) $
@@ -231,11 +230,12 @@ toPlonkupRelation ac =
         -- TODO: Permutation code is not particularly safe. We rely on the list being of length 3*n.
         sigma = withDict (timesNat @3 @n) (fromCycles @(3*n) $ mkIndexPartition $ V.concat [a, b, c])
 
-        w1 i = toPolyVec $ fmap (indexW ac i) a
-        w2 i = toPolyVec $ fmap (indexW ac i) b
-        w3 i = toPolyVec $ fmap (indexW ac i) c
+        eval = evalVar . witnessGenerator ac
+        w1 i = toPolyVec $ fmap (eval i) a
+        w2 i = toPolyVec $ fmap (eval i) b
+        w3 i = toPolyVec $ fmap (eval i) c
         witness i  = (w1 i, w2 i, w3 i)
-        pubInput i = map (indexW ac i) $ toList xPub
+        pubInput i = map (eval i) $ toList xPub
 
         prvNum = 0
 
