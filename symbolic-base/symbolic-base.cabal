@@ -176,6 +176,7 @@ library
       ZkFold.Symbolic.Algorithm.Hash.Blake2b
       ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants
       ZkFold.Symbolic.Algorithm.Hash.Keccak
+      ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
       ZkFold.Symbolic.Algorithm.Hash.MiMC
       ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithm.Hash.SHA2

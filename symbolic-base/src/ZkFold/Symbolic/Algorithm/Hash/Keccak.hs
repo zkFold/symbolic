@@ -58,12 +58,9 @@ import           ZkFold.Symbolic.Data.UInt          (UInt)
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import           ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import           ZkFold.Symbolic.MonadCircuit       (newAssigned)
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 
 -- TODO: Is this Width / LaneWidth?
-
--- | Number of lanes in the Keccak sponge state.
-type NumLanes :: Natural
-type NumLanes = 25
 
 -- NOTE: Code is NOT parameterized over `LaneWidth` at all places, so changing this value could break the code.
 
@@ -229,7 +226,7 @@ keccakF state = undefined
 --   where
 --     f (r, s) = (P.succ r, iota r . chi . pi . rho . theta @algorithm @context $ s)
 
-theta :: forall algorithm context. AlgorithmSetup algorithm context => Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+theta :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 theta state =
   concatMap @5 @5
     ( \(i, e) ->
@@ -244,6 +241,7 @@ theta state =
     $ indexed d
  where
   c =
+    -- TODO: Modify generate so that inner function knows that i >= 0 & < given size.
     generate @5
       ( \i ->
           P.foldl1
@@ -255,3 +253,6 @@ theta state =
             )
       )
   d = generate @5 (\i -> c !! (P.fromIntegral ((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
+
+rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+rho state = undefined
