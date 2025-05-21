@@ -1,6 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- TODO: Remove these options.
@@ -22,85 +22,52 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   -- , PaddedLength
 ) where
 
-import Control.DeepSeq (force)
-import Control.Monad (forM_)
-import Control.Monad.ST (ST, runST)
-import Data.Bits (Bits ((.|.)))
-import qualified Data.ByteString as B
-import Data.Constraint
-import Data.Constraint.Nat
-import Data.Constraint.Unsafe
-import Data.Data (Proxy (..), type (:~:) (Refl))
-import Data.Function (flip, (&))
-import Data.Kind (Type)
-import qualified Data.STRef as ST
-import Data.Semialign (Zip (..))
-import Data.Type.Bool (If)
-import Data.Type.Equality (type (~))
-import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as VM
-import Data.Word (Word8)
-import GHC.Generics (Par1 (..))
-import GHC.TypeLits (SomeNat (..), Symbol)
-import GHC.TypeNats (someNatVal, withKnownNat, type (<=?))
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Vector (
-  Vector (..),
-  backpermute,
-  chunks,
-  concatMap,
-  fromVector,
-  generate,
-  head,
-  indexed,
-  mapWithIx,
-  reverse,
-  slice,
-  unfold,
-  unsafeToVector,
-  (!!),
- )
-import ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
-import ZkFold.Symbolic.Class (BaseField, Symbolic, fromCircuitF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
-import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.ByteString (
-  ByteString (..),
-  ShiftBits (..),
-  concat,
-  set,
-  toWords,
-  truncate,
- )
-import ZkFold.Symbolic.Data.Combinators (
-  Iso (..),
-  RegisterSize (..),
-  Resize (..),
-  expansionW,
-  ilog2,
- )
-import ZkFold.Symbolic.Data.Conditional
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Ord
-import ZkFold.Symbolic.Data.UInt (UInt)
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
-import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Prelude (
-  Int,
-  id,
-  pure,
-  undefined,
-  zip,
-  ($),
-  ($!),
-  (.),
-  (<$>),
-  (>>=),
- )
-import qualified Prelude as P
+import           Control.DeepSeq                                 (force)
+import           Control.Monad                                   (forM_)
+import           Control.Monad.ST                                (ST, runST)
+import           Data.Bits                                       (Bits ((.|.)))
+import qualified Data.ByteString                                 as B
+import           Data.Constraint
+import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
+import           Data.Data                                       (Proxy (..), type (:~:) (Refl))
+import           Data.Function                                   (flip, (&))
+import           Data.Kind                                       (Type)
+import           Data.Semialign                                  (Zip (..))
+import qualified Data.STRef                                      as ST
+import           Data.Type.Bool                                  (If)
+import           Data.Type.Equality                              (type (~))
+import qualified Data.Vector                                     as V
+import qualified Data.Vector.Mutable                             as VM
+import           Data.Word                                       (Word8)
+import           GHC.Generics                                    (Par1 (..))
+import           GHC.TypeLits                                    (SomeNat (..), Symbol)
+import           GHC.TypeNats                                    (someNatVal, type (<=?), withKnownNat)
+import           Prelude                                         (Int, id, pure, undefined, zip, ($!), ($), (.), (<$>),
+                                                                  (>>=))
+import qualified Prelude                                         as P
+
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Number
+import           ZkFold.Data.HFunctor                            (hmap)
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
+                                                                  fromVector, generate, head, indexed, mapWithIx,
+                                                                  reverse, slice, unfold, unsafeToVector, (!!))
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
+import           ZkFold.Symbolic.Class                           (BaseField, Symbolic, fromCircuitF)
+import           ZkFold.Symbolic.Data.Bool                       (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.ByteString                 (ByteString (..), ShiftBits (..), concat, set, toWords,
+                                                                  truncate)
+import           ZkFold.Symbolic.Data.Combinators                (Iso (..), RegisterSize (..), Resize (..), expansionW,
+                                                                  ilog2)
+import           ZkFold.Symbolic.Data.Conditional
+import           ZkFold.Symbolic.Data.FieldElement               (FieldElement (..))
+import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt                       (UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString              as VB
+import           ZkFold.Symbolic.Data.VarByteString              (VarByteString (..))
+import           ZkFold.Symbolic.MonadCircuit                    (newAssigned)
 
 -- TODO: Is this Width / LaneWidth?
 
