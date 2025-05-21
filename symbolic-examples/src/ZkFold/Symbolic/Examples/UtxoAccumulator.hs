@@ -86,7 +86,7 @@ utxoAccumulatorProverSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (Pl
     -> PlonkupProverSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 utxoAccumulatorProverSetup hs as =
     flip updateProverSetup (as ++ replicate (value @n -! length hs) zero) $
-    flip updateProverSetup one $
+    flip updateProverSetup [one] $
     flip updateProverSetup (hs ++ replicate (value @n -! length hs) zero) $
     setupProve utxoAccumulatorProtocol
 
