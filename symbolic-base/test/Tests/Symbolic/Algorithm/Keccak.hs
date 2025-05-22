@@ -35,6 +35,8 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Interpreter            (Interpreter)
 
+-- TODO: Shall I modify my typeclass to work with bytes instead?
+-- | Adds following obvious constraints.
 withConstraints ::
   forall n {r}.
   KnownNat n =>
@@ -59,6 +61,12 @@ withConstraints' =
     $ withDict
       (unsafeAxiom @(Mod (n * 8) 8 ~ 0))
       Dict
+
+-- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
+type Element = Zp BLS12_381_Scalar
+
+-- | Symbolic context.
+type Context = Interpreter Element
 
 {- | These test files are provided by the Computer Security Resource Center.
 Passing these tests is a requirement for having an implementation of a hashing function officially validated.
@@ -113,11 +121,10 @@ readTestCase s = (numBytes, msg, hash)
     _                                            -> Haskell.error "unreachable"
 
 testAlgorithm ::
-  forall (algorithm :: Symbol) element.
+  forall (algorithm :: Symbol).
   KnownSymbol algorithm =>
-  AlgorithmSetup algorithm (Interpreter element) =>
-  -- TODO: Why do I need to say symbolic constraint here? Did SHA2 also required it?
-  Symbolic (Interpreter element) =>
+  AlgorithmSetup algorithm Context =>
+  Symbolic Context =>
   FilePath ->
   Spec
 testAlgorithm file = do
@@ -129,32 +136,29 @@ testAlgorithm file = do
         SomeNat (_ :: Proxy bytes) ->
           it bitMsgN $
             ( withConstraints @bytes $
-                let inBS = fromConstant @Natural @(ByteString (bytes * 8) (Interpreter element)) input
-                 in toConstant $ keccak @algorithm @(Interpreter element) @(bytes * 8) inBS
+                let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
+                 in toConstant $ keccak @algorithm @Context @(bytes * 8) inBS
             )
               `shouldBe` hash
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
 
--- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
---
-specKeccak'
-    :: forall (algorithm :: Symbol) element
-    .  KnownSymbol algorithm
-    => AlgorithmSetup algorithm (Interpreter element)
-    => Symbolic (Interpreter element)
-    => Spec
+specKeccak' ::
+  forall (algorithm :: Symbol).
+  KnownSymbol algorithm =>
+  AlgorithmSetup algorithm Context =>
+  Symbolic Context =>
+  Spec
 specKeccak' = do
-    testFiles <- runIO $ getTestFiles @algorithm
-    forM_ testFiles $ testAlgorithm @algorithm @element
+  testFiles <- runIO $ getTestFiles @algorithm
+  forM_ testFiles $ testAlgorithm @algorithm
 
+-- TODO: These currently have tests for SHA3, we also need for Keccak.
 specKeccak :: Spec
 specKeccak = do
   describe "Keccak" $ do
-    specKeccak' @"SHA3-512" @Element
-    specKeccak' @"SHA3-384" @Element
-    specKeccak' @"SHA3-256" @Element
-    specKeccak' @"SHA3-224" @Element
-
-type Element = Zp BLS12_381_Scalar
+    specKeccak' @"SHA3-512"
+    specKeccak' @"SHA3-384"
+    specKeccak' @"SHA3-256"
+    specKeccak' @"SHA3-224"

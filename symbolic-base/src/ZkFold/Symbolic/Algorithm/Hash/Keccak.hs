@@ -5,6 +5,7 @@
 
 -- TODO: Remove these options.
 -- TODO: Format by fourmolu.
+-- TODO: Benchmark against our current SHA2 implementation.
 
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
