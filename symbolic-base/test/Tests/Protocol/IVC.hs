@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Tests.Protocol.IVC (specIVC) where
 
@@ -14,6 +16,7 @@ import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS
 import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number                  (Natural, type (-))
 import           ZkFold.Algebra.Polynomial.Univariate   (PolyVec, evalPolyVec)
+import           ZkFold.Data.HFunctor.Classes           (HEq (..))
 import           ZkFold.Data.Vector                     (Vector (..), item, singleton)
 import           ZkFold.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
 import           ZkFold.Protocol.IVC.AccumulatorScheme  as Acc

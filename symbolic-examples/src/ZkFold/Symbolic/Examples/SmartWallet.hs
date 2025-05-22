@@ -65,7 +65,7 @@ import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
-import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecretParams)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
 import           ZkFold.Protocol.Plonkup.Witness              (PlonkupWitnessInput (..))
@@ -298,8 +298,8 @@ expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> Set
 expModSetup x ac = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) = getSecrectParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 ac h1 gs
+        (gs, g1, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 ac h1 gs g1
         setupV  = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
 data ExpModProofInput =
@@ -337,8 +337,8 @@ expModProof x ps ac ExpModProofInput{..} = proof
         paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) = getSecrectParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
+        (gs, g1, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 ac h1 gs g1 :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
         setupP  = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
         witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_Point paddedWitnessInputs, ps)
         (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
@@ -349,7 +349,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^17
+type ExpModCircuitGatesMock = 2^15
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
@@ -358,8 +358,8 @@ expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (Plon
 expModSetupMock x = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        (gs, g1, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs g1
         setupV  = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
 expModProofMock
@@ -384,8 +384,8 @@ expModProofMock x ps ExpModProofInput{..} = proof
         witnessInputs = Par1 input
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+        (gs, g1, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs g1
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness

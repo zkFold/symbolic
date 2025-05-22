@@ -237,11 +237,11 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
 -- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
-natScale !n !a = sum $ zipWith' f (binaryExpansion n) (iterate (\x -> x + x) a)
+natScale n a = sum $ zipWith' f (binaryExpansion n) (iterate (\(!x) -> x + x) a)
   where
-    f 0 _  = zero
-    f 1 !x = x
-    f _ _  = Haskell.error "scale: This should never happen."
+    f 0 _ = zero
+    f 1 x = x
+    f _ _ = Haskell.error "scale: This should never happen."
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl' (+) zero

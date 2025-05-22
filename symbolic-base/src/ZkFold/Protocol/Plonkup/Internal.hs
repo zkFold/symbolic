@@ -12,12 +12,12 @@ import           Prelude                                            hiding (Num 
                                                                      (/), (^))
 import           Test.QuickCheck                                    (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                               (Bilinear (..), Scale)
+import           ZkFold.Algebra.Class                               (Bilinear (..), Scale (..))
 import           ZkFold.Algebra.EllipticCurve.Class                 (CyclicGroup (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate               (UnivariateFieldPolyVec (..))
 import           ZkFold.Data.Vector                                 (Vector)
-import           ZkFold.Protocol.Plonkup.Utils                      (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Utils                      (getParams, getSecretParams)
 import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
@@ -33,7 +33,8 @@ data Plonkup i o (n :: Natural) g1 g2 transcript pv = Plonkup {
         k2    :: ScalarFieldOf g1,
         ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
-        gs'   :: Vector (n + 5) g1
+        gs'   :: Vector (n + 5) (ScalarFieldOf g1),
+        g1    :: g1
     }
 
 type PlonkupPermutationSize n = 3 * n
@@ -66,8 +67,8 @@ instance
         ac <- arbitrary
         x <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
-        let (gs, h1) = getSecrectParams x
-        return $ Plonkup omega k1 k2 ac h1 gs
+        let (gs, g1, h1) = getSecretParams x
+        return $ Plonkup omega k1 k2 ac h1 gs g1
 
 lagrangeBasisGroupElements :: forall n g1 pv .
     ( KnownNat n

@@ -25,7 +25,7 @@ import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Prelude                         (length, take)
 
 propToPolyVec :: forall c s .
-    (Ring c, KnownNat s) =>
+    (Ring c, Eq c, KnownNat s) =>
     [c] -> Bool
 propToPolyVec cs =
     let p = toPolyVec @_ @(PolyVec c) @s $ V.fromList cs

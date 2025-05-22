@@ -41,7 +41,8 @@ data Plonk i o (n :: Natural) g1 g2 transcript pv = Plonk {
         k2    :: ScalarFieldOf g1,
         ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
-        gs'   :: Vector (n + 5) g1
+        gs'   :: Vector (n + 5) (ScalarFieldOf g1),
+        g1    :: g1
     }
 
 fromPlonkup ::
@@ -79,7 +80,7 @@ instance forall i o n g1 g2 gt (ts :: Type) pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , Bilinear (V.Vector (ScalarFieldOf g1)) (pv (PlonkupPolyExtendedLength n)) (ScalarFieldOf g1)
         , KnownNat n
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
