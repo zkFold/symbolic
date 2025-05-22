@@ -270,7 +270,6 @@ library
         vector                               < 0.14,
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
-        ghc-typelits-knownnat                      ,
     else
       build-depends:
         base                          >= 4.9 && < 5,
@@ -307,7 +306,6 @@ library
         vector                               < 0.14,
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
-        ghc-typelits-knownnat                      ,
     hs-source-dirs: src
 
 test-suite symbolic-base-test
