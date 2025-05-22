@@ -89,7 +89,7 @@ class
   , -- Requiring rate to be a multiple of 64. As we would eventually obtain 64 bit words.
     Mod (Div (Rate algorithm) 8) 8 ~ 0
   , -- This constraint is needed so that dividing by 8 does not lead to zero.
-    (1 <=? Rate (algorithm)) ~ 'P.True
+    (1 <=? Rate algorithm) ~ 'P.True
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
@@ -202,7 +202,7 @@ withMessageLengthConstraints' =
 -- | Additional bytes for padding.
 padLenBytes :: Natural -> Natural -> Natural
 padLenBytes msgBytes rateBytes =
-  P.fromIntegral @P.Integer @Natural (P.fromIntegral rateBytes - (P.fromIntegral (msgBytes `mod` rateBytes)))
+  P.fromIntegral @P.Integer @Natural (P.fromIntegral rateBytes - P.fromIntegral (msgBytes `mod` rateBytes))
 
 padding ::
   forall (algorithm :: Symbol) context k.
@@ -275,7 +275,7 @@ theta state =
     ( \(i, e) ->
         P.fmap
           (xor e)
-          ( case someNatVal (i) of
+          ( case someNatVal i of
               SomeNat (_ :: Proxy i) ->
                 withDict (timesNat @i @5) $
                   slice @(i * 5) @5 state
@@ -289,16 +289,16 @@ theta state =
       ( \i ->
           P.foldl1
             xor
-            ( case someNatVal (i) of
+            ( case someNatVal i of
                 SomeNat (_ :: Proxy i) ->
                   withDict (timesNat @i @5) $
                     slice @(i * 5) @5 @NumLanes state
             )
       )
-  d = generate @5 (\i -> c !! (P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5)) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
+  d = generate @5 (\i -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 rho :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
-rho state = zipWith (flip rotateBitsL) rotationConstants state
+rho = zipWith (flip rotateBitsL) rotationConstants
 
 pi :: forall context. Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 pi state = backpermute state piConstants
@@ -313,13 +313,13 @@ iota roundNumber state = modify (\v -> VM.write v 0 $ xor (roundConstants !! rou
 
 type CeilDiv n d = Div (n + d - 1) d
 
-type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorithm)) (Div (LaneWidth) 8)
+type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorithm)) (Div LaneWidth 8)
 
 squeeze ::
   forall algorithm context.
   AlgorithmSetup algorithm context =>
   Symbolic context =>
-  Vector NumLanes (ByteString 64 context) -> (ByteString (ResultSizeInBits (Rate algorithm)) context)
+  Vector NumLanes (ByteString 64 context) -> ByteString (ResultSizeInBits (Rate algorithm)) context
 squeeze state =
   truncate
     . concat
@@ -338,4 +338,4 @@ modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
 modify f (Vector v) = Vector $ V.modify f v
 
 reverseBits :: forall n context. Symbolic context => ByteString n context -> ByteString n context
-reverseBits (ByteString cbs) = ByteString $ (hmap reverse cbs)
+reverseBits (ByteString cbs) = ByteString $ hmap reverse cbs
