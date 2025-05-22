@@ -29,7 +29,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
-import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (AlgorithmSetup, Rate, ResultSizeInBits, keccak)
+import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (AlgorithmSetup, keccak)
 import           ZkFold.Symbolic.Class                  (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
@@ -118,8 +118,6 @@ testAlgorithm ::
   AlgorithmSetup algorithm (Interpreter element) =>
   -- TODO: Why do I need to say symbolic constraint here? Did SHA2 also required it?
   Symbolic (Interpreter element) =>
-  -- TODO: Is this constraint needed?
-  ToConstant (ByteString (ResultSizeInBits (Rate algorithm)) (Interpreter element)) =>
   FilePath ->
   Spec
 testAlgorithm file = do
@@ -146,7 +144,6 @@ specKeccak'
     .  KnownSymbol algorithm
     => AlgorithmSetup algorithm (Interpreter element)
     => Symbolic (Interpreter element)
-    => ToConstant (ByteString (ResultSizeInBits (Rate algorithm)) (Interpreter element))
     => Spec
 specKeccak' = do
     testFiles <- runIO $ getTestFiles @algorithm
