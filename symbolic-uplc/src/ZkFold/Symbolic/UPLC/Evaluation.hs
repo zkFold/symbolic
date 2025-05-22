@@ -1,42 +1,54 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs     #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
-import           Control.Monad                       (return)
-import           Data.Either                         (Either (..))
-import           Data.Function                       (($), (.))
-import           Data.Functor                        ((<$>))
-import           Data.List                           (map, null, (++))
-import           Data.Maybe                          (Maybe (..), fromJust)
-import           Data.Ord                            ((<))
-import           Data.Proxy                          (Proxy (..))
-import           Data.Text                           (unpack)
-import           Data.Traversable                    (traverse)
-import           Data.Typeable                       (cast)
-import           Prelude                             (error, foldr, fromIntegral)
+import           Control.Monad                      (return)
+import           Data.Either                        (Either (..))
+import           Data.Function                      (($), (.))
+import           Data.Functor                       ((<$>))
+import           Data.Functor.Rep                   (Representable)
+import           Data.List                          (map, null, (++))
+import           Data.Maybe                         (Maybe (..), fromJust)
+import           Data.Ord                           ((<))
+import           Data.Proxy                         (Proxy (..))
+import           Data.Text                          (unpack)
+import           Data.Traversable                   (Traversable, traverse)
+import           Data.Typeable                      (Typeable, cast)
+import           Prelude                            (error, foldr, fromIntegral, type (~))
 
-import           ZkFold.Algebra.Class                (AdditiveMonoid (zero), FromConstant (..),
-                                                      MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
-import           ZkFold.Algebra.Number               (Natural, value)
-import           ZkFold.Prelude                      (unsnoc, (!!))
-import           ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
-import           ZkFold.Symbolic.Class               (BaseField)
-import           ZkFold.Symbolic.Data.Bool           (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.ByteString     (ByteString, dropN, truncate)
+import           ZkFold.Algebra.Class               (AdditiveMonoid (zero), FromConstant (..),
+                                                     MultiplicativeMonoid (..), NumberOfBits, (*), (+), (-))
+import           ZkFold.Algebra.Number              (Natural, value)
+import           ZkFold.Prelude                     (unsnoc, (!!))
+import           ZkFold.Symbolic.Class              (BaseField)
+import           ZkFold.Symbolic.Data.Bool          (Bool, BoolType (..))
+import           ZkFold.Symbolic.Data.ByteString    (ByteString, dropN, truncate)
+import           ZkFold.Symbolic.Data.Class         (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional    (bool)
-import qualified ZkFold.Symbolic.Data.Eq             as Symbolic
-import           ZkFold.Symbolic.Data.FieldElement   (FieldElement)
+import           ZkFold.Symbolic.Data.Conditional   (Conditional, bool)
+import qualified ZkFold.Symbolic.Data.Eq            as Symbolic
+import           ZkFold.Symbolic.Data.FieldElement  (FieldElement)
 import           ZkFold.Symbolic.Data.Int
-import qualified ZkFold.Symbolic.Data.List           as L
-import qualified ZkFold.Symbolic.Data.Maybe          as Symbolic
-import qualified ZkFold.Symbolic.Data.Ord            as Symbolic
-import           ZkFold.Symbolic.Data.UInt           (OrdWord, UInt)
+import qualified ZkFold.Symbolic.Data.List          as L
+import qualified ZkFold.Symbolic.Data.Maybe         as Symbolic
+import qualified ZkFold.Symbolic.Data.Ord           as Symbolic
+import           ZkFold.Symbolic.Data.UInt          (OrdWord, UInt)
 import           ZkFold.Symbolic.Data.VarByteString
-import           ZkFold.Symbolic.UPLC.Class
-import           ZkFold.Symbolic.UPLC.Fun
+import           ZkFold.Symbolic.Fold               (SymbolicFold)
+import qualified ZkFold.Symbolic.UPLC.Data          as Symbolic
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.BuiltinType
 import           ZkFold.UPLC.Term
@@ -46,6 +58,32 @@ import           ZkFold.UPLC.Term
 
 -- This part is not meant to be changed when extending the Converter
 -- (except for bugfixing, of course).
+
+-- | Class of Symbolic datatypes used inside Converter.
+-- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
+-- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
+class
+    ( Typeable v
+    , SymbolicOutput v, SymbolicFold c
+    , Context v ~ c, Support v ~ Proxy c
+    -- TODO: Remove after Conditional becomes part of SymbolicData
+    , Conditional (Bool c) v
+    , Representable (Layout v)
+    , Traversable (Layout v)
+    , Representable (Payload v)
+    ) => IsData (t :: BuiltinType) v c | t c -> v, v -> t, v -> c where
+  asPair :: v -> Maybe (ExValue c, ExValue c)
+  asList :: v -> Maybe (ExList c)
+
+-- | Existential wrapper around list of 'IsData' Symbolic types.
+data ExList c = forall t v. IsData t v c => ExList (L.List c v)
+
+-- | Existential wrapper around 'IsData' Symbolic types.
+data ExValue c = forall t v. IsData t v c => ExValue v
+
+-- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
+-- it is also 'Typeable'.
+type Sym c = (SymbolicFold c, Typeable c)
 
 -- | According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf),
 -- evaluation of a UPLC term is a partial function.
@@ -186,6 +224,47 @@ applyMono b (FLam f) (v:args) = do
 
 -- This part is meant to be changed when completing the Converter implementation.
 
+type IntLength = 64
+instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+type BSLength = 4000
+instance Sym c => IsData BTByteString (VarByteString BSLength c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+type StrLength = 40000
+instance Sym c => IsData BTString (VarByteString StrLength c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+instance Sym c => IsData BTBool (Bool c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+instance Sym c => IsData BTUnit (Proxy c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+instance Sym c => IsData BTData (Symbolic.Data c) c where
+  asPair _ = Nothing
+  asList _ = Nothing
+
+instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
+  asPair _ = Nothing
+  asList l = Just (ExList l)
+
+instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
+  asPair (p, q) = Just (ExValue p, ExValue q)
+  asList _ = Nothing
+
+-- Uncomment these lines as more types are available in Converter:
+-- instance Sym c => IsData BTBLSG1 ??? c where asPair _ = Nothing
+-- instance Sym c => IsData BTBLSG2 ??? c where asPair _ = Nothing
+-- instance Sym c => IsData BTBLSMLResult ??? c where asPair _ = Nothing
+
+
 -- | Apply polymorphic function to its arguments, fully saturated.
 --
 -- General algorithm:
@@ -295,6 +374,21 @@ consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJus
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c
 constr _ _ = error "FIXME: UPLC Data support"
 
+-- | Symbolic function of a definite UPLC signature.
+data Fun (s :: [BuiltinType]) (t :: BuiltinType) c where
+  -- | Fully applied (saturated) function.
+  FSat :: IsData t v c => Symbolic.Maybe c v -> Fun '[] t c
+  -- | A function which returns another (possibly saturated) function.
+  FLam :: IsData s v c => (v -> Fun ss t c) -> Fun (s ': ss) t c
+
+instance IsData t v c => FromConstant (Symbolic.Maybe c v) (Fun '[] t c) where
+  fromConstant = FSat
+
+instance
+    (IsData s v c, FromConstant f (Fun ss t c))
+    => FromConstant (v -> f) (Fun (s ': ss) t c) where
+  fromConstant f = FLam (fromConstant . f)
+
 -- | Given a monomorphic UPLC builtin, evaluate it
 -- as a corresponding Symbolic function.
 --
@@ -329,7 +423,6 @@ evalMono (BMFString EqualsString)                 = equalsStringFun
 evalMono (BMFString EncodeUtf8)                   = encodeUtf8Fun
 evalMono (BMFString DecodeUtf8)                   = decodeUtf8Fun
 
-evalMono (BMFAlgorithm SHA2_256)                  = sha2_256Fun
 evalMono (BMFAlgorithm _)                         = error "FIXME: UPLC Algorithms support"
 evalMono (BMFData _)                              = error "FIXME: UPLC Data support"
 evalMono (BMFCurve _)                             = error "FIXME: UPLC Curve support"
@@ -444,6 +537,3 @@ decodeUtf8Fun :: forall c. (Sym c) => Fun '[BTByteString] BTString c
 decodeUtf8Fun = fromConstant (\(VarByteString l b) -> Symbolic.just @c $ VarByteString l (resize b))
 
 --------------------------------------------------------------------------------
-
-sha2_256Fun :: forall c. (Sym c) => Fun '[BTByteString] BTByteString c
-sha2_256Fun = fromConstant (\v -> Symbolic.just @c $ VarByteString (fromConstant (256 :: Natural)) (resize $ sha2Var @"SHA256" v))

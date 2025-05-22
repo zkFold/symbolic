@@ -7,7 +7,6 @@
 module ZkFold.Protocol.IVC.AccumulatorScheme where
 
 import           Control.Lens                         ((^.))
-import           Data.Binary                          (Binary)
 import           Data.Constraint                      (withDict)
 import           Data.Constraint.Nat                  (plusMinusInverse1)
 import           Data.Functor.Rep                     (Representable (..))
@@ -62,8 +61,6 @@ accumulatorScheme :: forall algo d k a i p c f .
     , Scale a f
     , Scale a (PU.PolyVec f (d+1))
     , Scale f (c f)
-    , Binary (Rep i)
-    , Binary (Rep p)
     )
     => Predicate a i p
     -> AccumulatorScheme d k i c f

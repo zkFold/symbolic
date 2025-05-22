@@ -4,25 +4,25 @@
 
 module Tests.Symbolic.Data.FFA (specFFA) where
 
-import           Data.Function                              (($))
-import           Data.List                                  ((++))
-import           GHC.Generics                               (U1)
-import           Prelude                                    (Integer)
-import           Test.Hspec                                 (Spec, describe)
-import           Test.QuickCheck                            (Property, (===))
-import           Tests.Symbolic.ArithmeticCircuit           (it)
-import           Text.Show                                  (show)
+import           Data.Function                          (($))
+import           Data.List                              ((++))
+import           GHC.Generics                           (U1)
+import           Prelude                                (Integer)
+import           Test.Hspec                             (Spec, describe)
+import           Test.QuickCheck                        (Property, (===))
+import           Tests.Symbolic.ArithmeticCircuit       (it)
+import           Text.Show                              (show)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                       (Zp)
-import           ZkFold.Algebra.Number                      (Prime, value)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
-import           ZkFold.Symbolic.Data.Combinators           (KnownRegisterSize (..), RegisterSize (..))
-import           ZkFold.Symbolic.Data.FFA                   (FFA (FFA), KnownFFA)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement))
-import           ZkFold.Symbolic.Data.UInt                  (UInt (..))
-import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                   (Zp)
+import           ZkFold.Algebra.Number                  (Prime, value)
+import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Data.Combinators       (KnownRegisterSize (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.FFA               (FFA (FFA), KnownFFA)
+import           ZkFold.Symbolic.Data.FieldElement      (FieldElement (FieldElement))
+import           ZkFold.Symbolic.Data.UInt              (UInt (..))
+import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
 
 type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
 type Prime256_2 = 28948022309329048855892746252171976963363056481941647379679742748393362948097

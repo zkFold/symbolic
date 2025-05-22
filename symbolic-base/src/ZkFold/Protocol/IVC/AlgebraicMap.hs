@@ -3,27 +3,25 @@
 
 module ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap) where
 
-import           Data.ByteString                                    (ByteString)
-import           Data.Either                                        (Either (..))
-import           Data.Functor.Rep                                   (Representable (..))
-import           Data.List                                          (foldl')
-import           Data.Map.Strict                                    (Map, keys)
-import qualified Data.Map.Strict                                    as M
-import           Data.Maybe                                         (Maybe (..))
-import           Prelude                                            (fmap, zip, ($), (.), (<$>))
-import qualified Prelude                                            as P
+import           Data.ByteString                                     (ByteString)
+import           Data.Either                                         (Either (..))
+import           Data.Functor.Rep                                    (Representable (..))
+import           Data.List                                           (foldl')
+import           Data.Map.Strict                                     (Map, keys)
+import qualified Data.Map.Strict                                     as M
+import           GHC.Generics                                        ((:*:))
+import           Prelude                                             (fmap, zip, ($), (.), (<$>))
+import qualified Prelude                                             as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import qualified ZkFold.Algebra.Polynomial.Multivariate             as PM
+import qualified ZkFold.Algebra.Polynomial.Multivariate              as PM
 import           ZkFold.Algebra.Polynomial.Multivariate
-import           ZkFold.Data.ByteString                             (Binary, fromByteString)
-import qualified ZkFold.Data.Vector                                 as V
-import           ZkFold.Data.Vector                                 (Vector)
-import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acSystem, acWitness)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var     (NewVar (..))
+import qualified ZkFold.Data.Vector                                  as V
+import           ZkFold.Data.Vector                                  (Vector)
+import           ZkFold.Protocol.IVC.Predicate                       (Predicate (..))
+import           ZkFold.Symbolic.Compiler
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 import           ZkFold.Symbolic.Data.Eq
 
 -- | Algebraic map of @a@.
@@ -34,8 +32,6 @@ import           ZkFold.Symbolic.Data.Eq
 algebraicMap :: forall d k a i p f .
     ( KnownNat (d+1)
     , Representable i
-    , Binary (Rep i)
-    , Binary (Rep p)
     , Ring f
     , Scale a f
     )
@@ -47,25 +43,21 @@ algebraicMap :: forall d k a i p f .
     -> [f]
 algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
     where
-        sys :: [PM.Poly a NewVar Natural]
-        sys = M.elems (acSystem $ acContext predicateCircuit)
+        sys :: [PM.Poly a (SysVar (i :*: p :*: i)) Natural]
+        sys = M.elems (acSystem predicateCircuit)
 
         witness :: Map ByteString f
-        witness = M.fromList $ zip (keys $ acWitness $ acContext predicateCircuit) (V.head pm)
+        witness = M.fromList $ zip (keys $ acWitness predicateCircuit) (V.head pm)
 
-        asInput :: ByteString -> f
-        asInput v = case fromByteString v :: Maybe (Either (Rep i) (Either (Rep p) (Rep i))) of
-            Just (Left inV)        -> index pi inV
-            Just (Right (Left _))  -> P.error "constraints should not depend on payload"
-            Just (Right (Right _)) -> zero
-            Nothing                -> P.error "unknown variable"
+        varMap :: SysVar (i :*: p :*: i) -> f
+        varMap (InVar (Left inV))        = index pi inV
+        varMap (InVar (Right (Left _)))  = P.error "constraints should not depend on payload"
+        varMap (InVar (Right (Right _))) = zero
+        varMap (NewVar (EqVar newV))     = M.findWithDefault zero newV witness
+        varMap (NewVar (FoldLVar _ _))   = P.error "unexpected FOLD constraint"
+        varMap (NewVar (FoldPVar _ _))   = P.error "unexpected FOLD constraint"
 
-        varMap :: NewVar -> f
-        varMap (EqVar newV)   = M.findWithDefault (asInput newV) newV witness
-        varMap (FoldLVar _ _) = P.error "unexpected FOLD constraint"
-        varMap (FoldPVar _ _) = P.error "unexpected FOLD constraint"
-
-        f_sps :: Vector (d+1) [PM.Poly a NewVar Natural]
+        f_sps :: Vector (d+1) [PM.Poly a (SysVar (i :*: p :*: i)) Natural]
         f_sps = degreeDecomposition @d $ sys
 
         f_sps_uni :: Vector (d+1) [f]

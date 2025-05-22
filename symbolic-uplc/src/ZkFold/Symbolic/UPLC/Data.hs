@@ -1,5 +1,9 @@
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module ZkFold.Symbolic.UPLC.Data where
 

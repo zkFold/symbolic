@@ -185,10 +185,10 @@ library
       ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Instance
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Map
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
       ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
@@ -242,9 +242,8 @@ library
         aeson-casing                          < 0.3,
         base64-bytestring                          ,
         binary                               < 0.11,
-        bifunctors                                 ,
         bytestring                           < 0.13,
-        containers                                 ,
+        containers                            < 0.7,
         constraints                                ,
         cryptohash-sha256                    < 0.12,
         deepseq                          <= 1.6.0.0,
@@ -277,11 +276,10 @@ library
         aeson-casing                          < 0.3,
         base64-bytestring                          ,
         binary                               < 0.11,
-        bifunctors                                 ,
         -- TODO: remove `blake2` after refactoring of ZK protocols
         blake2                                < 0.4,
         bytestring                           < 0.13,
-        containers                                 ,
+        containers                            < 0.7,
         constraints                                ,
         cryptohash-sha256                    < 0.12,
         deepseq                          <= 1.6.0.0,

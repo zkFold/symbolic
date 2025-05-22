@@ -12,7 +12,7 @@ import           Control.Lens.Combinators         (makeLenses)
 import           Data.Binary                      (Binary)
 import           Data.Distributive                (Distributive (..))
 import           Data.Functor.Rep                 (Representable (..), collectRep, distributeRep)
-import           GHC.Generics                     (Generic, Generic1)
+import           GHC.Generics
 import           Prelude                          hiding (length, pi)
 
 import           ZkFold.Algebra.Class             (Ring, Scale, zero)
@@ -81,8 +81,6 @@ emptyAccumulator :: forall d k a i p c f .
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
-    , Binary (Rep i)
-    , Binary (Rep p)
     ) => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
     let accW  = tabulate (const zero)
@@ -102,7 +100,5 @@ emptyAccumulatorInstance :: forall d k a i p c f .
     , HomomorphicCommit [f] (c f)
     , Ring f
     , Scale a f
-    , Binary (Rep i)
-    , Binary (Rep p)
     ) => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

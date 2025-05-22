@@ -4,23 +4,23 @@
 
 module ZkFold.Protocol.Plonkup.Internal where
 
-import           Data.Constraint                                    (withDict)
-import           Data.Constraint.Nat                                (plusNat, timesNat)
-import           Data.Functor.Classes                               (Show1)
-import qualified Data.Vector                                        as V
-import           Prelude                                            hiding (Num (..), drop, length, sum, take, (!!),
-                                                                     (/), (^))
-import           Test.QuickCheck                                    (Arbitrary (..))
+import           Data.Constraint                                     (withDict)
+import           Data.Constraint.Nat                                 (plusNat, timesNat)
+import           Data.Functor.Classes                                (Show1)
+import           Data.Functor.Rep                                    (Rep)
+import qualified Data.Vector                                         as V
+import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
+                                                                      (/), (^))
+import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                               (Bilinear (..), Scale)
-import           ZkFold.Algebra.EllipticCurve.Class                 (CyclicGroup (..))
+import           ZkFold.Algebra.Class                                (Bilinear (..), Scale)
+import           ZkFold.Algebra.EllipticCurve.Class                  (CyclicGroup (..))
 import           ZkFold.Algebra.Number
-import           ZkFold.Algebra.Polynomial.Univariate               (UnivariateFieldPolyVec (..))
-import           ZkFold.Data.Vector                                 (Vector)
-import           ZkFold.Protocol.Plonkup.Utils                      (getParams, getSecrectParams)
-import           ZkFold.Symbolic.Class                              (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext))
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
+import           ZkFold.Algebra.Polynomial.Univariate                (UnivariateFieldPolyVec (..))
+import           ZkFold.Data.Vector                                  (Vector)
+import           ZkFold.Protocol.Plonkup.Utils                       (getParams, getSecrectParams)
+import           ZkFold.Symbolic.Compiler                            ()
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (Arithmetic, ArithmeticCircuit (..))
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
@@ -46,9 +46,9 @@ with4n6 f = withDict (timesNat @4 @n) (withDict (plusNat @(4 * n) @6) f)
 
 type PlonkupPolyExtended n g pv = pv (PlonkupPolyExtendedLength n)
 
-instance (Show (ScalarFieldOf g1), Show1 o, Show g1, Show g2) => Show (Plonkup i o n g1 g2 t pv) where
+instance (Show (ScalarFieldOf g1), Show (Rep i), Show1 o, Ord (Rep i), Show g1, Show g2) => Show (Plonkup i o n g1 g2 t pv) where
     show Plonkup {..} =
-        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput $ acContext ac)  ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
+        "Plonkup: " ++ show omega ++ " " ++ show k1 ++ " " ++ show k2 ++ " " ++ show (acOutput ac)  ++ " " ++ show ac ++ " " ++ show h1 ++ " " ++ show gs'
 
 instance
   ( KnownNat n

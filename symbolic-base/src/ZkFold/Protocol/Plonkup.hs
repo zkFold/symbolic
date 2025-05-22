@@ -7,16 +7,16 @@ module ZkFold.Protocol.Plonkup (
   Plonkup (..)
 ) where
 
-import           Data.Binary                          (Binary)
-import           Data.Functor.Rep                     (Rep, Representable)
-import qualified Data.Vector                          as V
-import           Data.Word                            (Word8)
-import           Prelude                              hiding (Num (..), div, drop, length, replicate, sum, take, (!!),
-                                                       (/), (^))
-import qualified Prelude                              as P hiding (length)
+import           Data.Binary                                         (Binary)
+import           Data.Functor.Rep                                    (Rep, Representable)
+import qualified Data.Vector                                         as V
+import           Data.Word                                           (Word8)
+import           Prelude                                             hiding (Num (..), div, drop, length, replicate,
+                                                                      sum, take, (!!), (/), (^))
+import qualified Prelude                                             as P hiding (length)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.Class   (Compressible (..), CyclicGroup (..), Pairing (..))
+import           ZkFold.Algebra.EllipticCurve.Class                  (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Protocol.NonInteractiveProof
@@ -27,7 +27,7 @@ import           ZkFold.Protocol.Plonkup.Prover
 import           ZkFold.Protocol.Plonkup.Setup
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
-import           ZkFold.Symbolic.Class                (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
@@ -36,11 +36,12 @@ instance forall i o n g1 g2 gt ts pv .
         , Representable i
         , Representable o
         , Foldable o
+        , Ord (Rep i)
         , Pairing g1 g2 gt
         , Compressible g1
         , Eq gt
         , Arithmetic (ScalarFieldOf g1)
-        , Binary (Rep i)
+        , Binary (ScalarFieldOf g2)
         , ToTranscript ts Word8
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)

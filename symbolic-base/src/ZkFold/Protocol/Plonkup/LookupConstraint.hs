@@ -1,32 +1,35 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Protocol.Plonkup.LookupConstraint where
 
-import           Control.Applicative                            ((<*>))
-import           Data.Binary                                    (Binary)
-import           Data.ByteString                                (ByteString)
-import           Data.Eq                                        (Eq)
-import           Data.Function                                  ((.))
-import           Data.Functor                                   ((<$>))
-import           Test.QuickCheck                                (Arbitrary (..))
-import           Text.Show                                      (Show)
+import           Data.Binary                                         (Binary)
+import           Data.ByteString                                     (ByteString)
+import           Data.Functor.Rep                                    (Rep)
+import           Prelude                                             hiding (Num (..), drop, length, sum, take, (!!),
+                                                                      (/), (^))
+import           Test.QuickCheck                                     (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                           (Semiring)
-import           ZkFold.Data.ByteString                         (toByteString)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..), Var, toVar)
+import           ZkFold.Algebra.Class                                (Semiring)
+import           ZkFold.Data.ByteString                              (toByteString)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Internal (NewVar (..), SysVar (..), Var)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var      (toVar)
 
 data LookupConstraint i a = LookupConstraint
-    { lkVar1 :: Var a
-    , lkVar2 :: Var a
-    , lkVar3 :: Var a
+    { lkVar1 :: Var a i
+    , lkVar2 :: Var a i
+    , lkVar3 :: Var a i
     }
-    deriving (Show, Eq)
+
+deriving instance (Show (Rep i), Show a) => Show (LookupConstraint i a)
+deriving instance (Eq (Rep i), Eq a) => Eq (LookupConstraint i a)
 
 instance (Arbitrary a, Binary a, Semiring a) => Arbitrary (LookupConstraint i a) where
     arbitrary =
-      let var = toVar . EqVar . toByteString @a <$> arbitrary
+      let var = toVar . NewVar . EqVar . toByteString @a <$> arbitrary
        in LookupConstraint <$> var <*> var <*> var
 
 toLookupConstraint ::
     Semiring a => ByteString -> ByteString -> ByteString -> LookupConstraint i a
 toLookupConstraint i j k =
-    let var = toVar . EqVar
+    let var = toVar . NewVar . EqVar
      in LookupConstraint (var i) (var j) (var k)

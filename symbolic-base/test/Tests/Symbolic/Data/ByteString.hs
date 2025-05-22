@@ -3,36 +3,37 @@
 
 module Tests.Symbolic.Data.ByteString (specByteString) where
 
-import           Control.Monad                              (return)
-import           Data.Aeson                                 (decode, encode)
-import           Data.Constraint                            (withDict)
-import           Data.Constraint.Nat                        (plusNat)
-import           Data.Function                              (id, ($))
-import           Data.Functor                               ((<$>))
-import           Data.List                                  ((++))
-import           GHC.Generics                               (U1)
-import           Prelude                                    (show, type (~), (<>))
-import qualified Prelude                                    as Haskell
-import           Test.Hspec                                 (Spec, describe)
-import           Test.QuickCheck                            (Gen, Property, chooseInteger, withMaxSuccess, (===))
-import           Tests.Symbolic.ArithmeticCircuit           (it)
-import           Tests.Symbolic.Data.Common                 (specConstantRoundtrip, specSymbolicFunction0,
-                                                             specSymbolicFunction1, specSymbolicFunction2)
+import           Control.Monad                          (return)
+import           Data.Aeson                             (decode, encode)
+import           Data.Binary                            (Binary)
+import           Data.Constraint                        (withDict)
+import           Data.Constraint.Nat                    (plusNat)
+import           Data.Function                          (id, ($))
+import           Data.Functor                           ((<$>))
+import           Data.List                              ((++))
+import           GHC.Generics                           (U1)
+import           Prelude                                (show, type (~), (<>))
+import qualified Prelude                                as Haskell
+import           Test.Hspec                             (Spec, describe)
+import           Test.QuickCheck                        (Gen, Property, chooseInteger, withMaxSuccess, (===))
+import           Tests.Symbolic.ArithmeticCircuit       (it)
+import           Tests.Symbolic.Data.Common             (specConstantRoundtrip, specSymbolicFunction0,
+                                                         specSymbolicFunction1, specSymbolicFunction2)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
-import           ZkFold.Algebra.Field                       (Zp)
+import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
-import qualified ZkFold.Data.Vector                         as V
-import           ZkFold.Data.Vector                         (Vector)
-import           ZkFold.Prelude                             (chooseNatural)
-import           ZkFold.Symbolic.Class                      (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import qualified ZkFold.Data.Vector                     as V
+import           ZkFold.Data.Vector                     (Vector)
+import           ZkFold.Prelude                         (chooseNatural)
+import           ZkFold.Symbolic.Class                  (Arithmetic)
+import           ZkFold.Symbolic.Compiler               (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Combinators           (Iso (..), RegisterSize (..))
+import           ZkFold.Symbolic.Data.Combinators       (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
-import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
+import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
 
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x)
@@ -40,7 +41,7 @@ toss x = chooseNatural (0, x)
 type AC a = ArithmeticCircuit a U1
 
 eval ::
-  forall a n . Arithmetic a =>
+  forall a n . (Arithmetic a, Binary a) =>
   ByteString n (AC a) -> ByteString n (Interpreter a)
 eval (ByteString bits) = ByteString $ Interpreter (exec bits)
 

@@ -1,20 +1,18 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Protocol.IVC.Predicate where
 
-import           Data.Binary                                (Binary)
-import           GHC.Generics                               (U1 (..), (:*:) (..))
-import           Prelude                                    hiding (Num (..), drop, head, replicate, take, zipWith)
+import           Data.Binary                       (Binary)
+import           GHC.Generics                      (U1 (..), (:*:) (..))
+import           Prelude                           hiding (Num (..), drop, head, replicate, take, zipWith)
 
-import           ZkFold.Data.Package                        (packed, unpacked)
-import           ZkFold.Protocol.IVC.StepFunction           (StepFunction, StepFunctionAssumptions)
+import           ZkFold.Data.Package               (packed, unpacked)
+import           ZkFold.Protocol.IVC.StepFunction  (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                   (compileWith)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, guessOutput)
-import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
+import           ZkFold.Symbolic.Compiler          (ArithmeticCircuit, compileWith, guessOutput, hlmap)
+import           ZkFold.Symbolic.Data.Class        (LayoutFunctor)
+import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 
 type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p :*: i) U1
 
@@ -47,6 +45,6 @@ predicate func =
 
         predicateCircuit :: PredicateCircuit a i p
         predicateCircuit =
-            compileWith (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
-                        (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
+            hlmap (\(i :*: p :*: j) -> (i :*: p) :*: j) $
+            compileWith @a guessOutput (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
     in Predicate {..}

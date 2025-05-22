@@ -22,7 +22,7 @@ Flag Pedantic
     Default: False
 
 common options
-    default-language:   GHC2021
+    default-language:   Haskell2010
     default-extensions:
       NoImplicitPrelude
     ghc-options:
@@ -36,11 +36,9 @@ common options
 library
     import:             options
     exposed-modules:
-      ZkFold.Symbolic.UPLC.Class
       ZkFold.Symbolic.UPLC.Converter
       ZkFold.Symbolic.UPLC.Data
       ZkFold.Symbolic.UPLC.Evaluation
-      ZkFold.Symbolic.UPLC.Fun
       ZkFold.UPLC.BuiltinFunction
       ZkFold.UPLC.BuiltinType
       ZkFold.UPLC.Term
@@ -60,8 +58,6 @@ test-suite symbolic-uplc-test
     build-depends:
       adjunctions  ,
       base         ,
-      base16-bytestring,
-      bytestring   ,
       hspec        ,
       symbolic-base,
       text,
