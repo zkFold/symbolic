@@ -128,8 +128,6 @@ type Keccak algorithm context k =
   ( AlgorithmSetup algorithm context
   , KnownNat k
   , Mod k 8 ~ 0
-  , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
-    ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
   , Symbolic context
   )
 
@@ -164,24 +162,41 @@ paddedLengthBytesFromBits = msgBytes + (rateBytes -! mod msgBytes rateBytes)
 
 type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBits) 8
 
-withMessageLengthConstraints :: forall msgBits rateBits {r}. (
-    KnownNat msgBits, KnownNat rateBits) => (
-      (KnownNat (PaddedLengthBytesFromBits msgBits rateBits),
-      KnownNat (PaddedLengthBits msgBits rateBits),
-      (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
-      ) => r) -> r
+withMessageLengthConstraints ::
+  forall msgBits rateBits {r}.
+  ( KnownNat msgBits
+  , KnownNat rateBits
+  ) =>
+  ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
+    , KnownNat (PaddedLengthBits msgBits rateBits)
+    , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
+    , (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
+    ) =>
+    r
+  ) ->
+  r
 withMessageLengthConstraints = withDict (withMessageLengthConstraints' @msgBits @rateBits)
 
-withMessageLengthConstraints' :: forall msgBits rateBits. (KnownNat msgBits, KnownNat rateBits) :- (KnownNat (PaddedLengthBytesFromBits msgBits rateBits), KnownNat (PaddedLengthBits msgBits rateBits),
-  -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
-  (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits)
+withMessageLengthConstraints' ::
+  forall msgBits rateBits.
+  (KnownNat msgBits, KnownNat rateBits)
+    :- ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
+       , KnownNat (PaddedLengthBits msgBits rateBits)
+       , -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
+         (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
+       , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
+         (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
+       )
 withMessageLengthConstraints' =
   Sub
     $ withKnownNat @(PaddedLengthBytesFromBits msgBits rateBits)
       (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits))
     $ withKnownNat @(PaddedLengthBits msgBits rateBits)
       (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits * 8))
-    $ withDict (unsafeAxiom @((Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits))
+    $ withDict
+      (unsafeAxiom @((Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits))
+    $ withDict
+      (unsafeAxiom @((Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits))
       Dict
 
 -- | Additional bytes for padding.
@@ -195,15 +210,15 @@ padding ::
   ByteString k context -> ByteString (PaddedLengthBits k (Rate algorithm)) context
 padding msg =
   withMessageLengthConstraints @k @(Rate algorithm) $
-  let msgBytes = value @k `div` 8
-      rateBytes = value @(Rate algorithm) `div` 8
-      padLengthBytes = padLenBytes msgBytes rateBytes
-      -- @fromIntegral@ below is safe as we have hard-coded instances for rate bytes.
-      padByteString =
-        let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
-            bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
-         in B.init bsAfterPadByte `B.append` B.singleton (B.last bsAfterPadByte .|. 0x80)
-   in (resize msg `shiftBitsL` (padLengthBytes * 8)) || fromConstant padByteString
+    let msgBytes = value @k `div` 8
+        rateBytes = value @(Rate algorithm) `div` 8
+        padLengthBytes = padLenBytes msgBytes rateBytes
+        -- @fromIntegral@ below is safe as we have hard-coded instances for rate bytes.
+        padByteString =
+          let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
+              bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
+           in B.init bsAfterPadByte `B.append` B.singleton (B.last bsAfterPadByte .|. 0x80)
+     in (resize msg `shiftBitsL` (padLengthBytes * 8)) || fromConstant padByteString
 
 toBlocks ::
   forall (algorithm :: Symbol) context k.
@@ -211,9 +226,9 @@ toBlocks ::
   ByteString (PaddedLengthBits k (Rate algorithm)) context -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context)
 toBlocks msg =
   withMessageLengthConstraints @k @(Rate algorithm) $
-  let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
-      byteWordsBitReversed = reverseBits <$> byteWords
-   in reverseBits <$> toWords (concat byteWordsBitReversed)
+    let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
+        byteWordsBitReversed = reverseBits <$> byteWords
+     in reverseBits <$> toWords (concat byteWordsBitReversed)
 
 -- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
 
@@ -224,22 +239,23 @@ absorbBlock ::
   Keccak algorithm context k =>
   Vector NumLanes (ByteString 64 context) -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 absorbBlock state blocks =
-  let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
-   in P.foldl -- TODO: Use foldl'?
-        ( \accState chunk ->
-            -- TODO: Perhaps this can be optimized.
-            let state' =
-                  mapWithIx
-                    ( \z el ->
-                        if div z 5 + 5 * mod z 5 < threshold
-                          then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
-                          else el
-                    )
-                    accState
-             in keccakF @context state'
-        )
-        state
-        blockChunks
+  withMessageLengthConstraints @k @(Rate algorithm) $
+    let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
+     in P.foldl -- TODO: Use foldl'?
+          ( \accState chunk ->
+              -- TODO: Perhaps this can be optimized.
+              let state' =
+                    mapWithIx
+                      ( \z el ->
+                          if div z 5 + 5 * mod z 5 < threshold
+                            then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
+                            else el
+                      )
+                      accState
+               in keccakF @context state'
+          )
+          state
+          blockChunks
  where
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
