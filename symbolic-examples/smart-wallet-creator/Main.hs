@@ -16,10 +16,11 @@ import           Prelude                               hiding (Fractional (..), 
 import           ZkFold.Algebra.Class                  
 import           ZkFold.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Symbolic.Examples.SmartWallet
+import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit as AC
 
 main :: IO ()
 main = do
-    let setupBytes = mkSetup $ expModSetupMock @ByteString one 
-        proofBytes = mkProof $ expModProofMock @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 1 1 1 1)
+    let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit 
+        proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 1 1 1 1)
     print setupBytes
     print proofBytes
