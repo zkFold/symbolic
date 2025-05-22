@@ -8,13 +8,16 @@
 
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
+  ResultSizeInBytes,
+  ResultSizeInBits,
+  AlgorithmSetup (..),
+  Keccak,
   padding,
   toBlocks,
   keccak,
   -- TODO: Mention exports that are mainly for testing.
   absorbBlock,
   emptyState,
-  Keccak,
   --   AlgorithmSetup (..)
   -- , Keccak
   -- , keccak
@@ -27,6 +30,7 @@ import           Data.Bits                                       (Bits ((.|.)))
 import qualified Data.ByteString                                 as B
 import           Data.Constraint
 import           Data.Constraint.Nat
+import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
 import           Data.Function                                   (flip, (&))
 import           Data.Kind                                       (Type)
@@ -36,7 +40,7 @@ import qualified Data.Vector                                     as V
 import qualified Data.Vector.Mutable                             as VM
 import           Data.Word                                       (Word8)
 import           GHC.TypeLits                                    (SomeNat (..), Symbol)
-import           GHC.TypeNats                                    (someNatVal, type (<=?))
+import           GHC.TypeNats                                    (someNatVal, type (<=?), withKnownNat)
 import           Prelude                                         (($), (.), (<$>))
 import qualified Prelude                                         as P
 
@@ -124,8 +128,6 @@ type Keccak algorithm context k =
   ( AlgorithmSetup algorithm context
   , KnownNat k
   , Mod k 8 ~ 0
-  , KnownNat (PaddedLengthBytesFromBits k (Rate algorithm))
-  , KnownNat (PaddedLengthBits k (Rate algorithm))
   , ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm))
   , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
     ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
@@ -150,12 +152,30 @@ type BytesFromBits bits = Div bits 8
 type PaddedLengthBits msgBits rateBits = (PaddedLengthBytesFromBits msgBits rateBits) * 8
 
 -- | Length of the padded message in bytes.
-type PaddedLengthBytes msgBytes rateBytes = (msgBytes + (rateBytes - (Mod msgBytes rateBytes)))
+type PaddedLengthBytes msgBytes rateBytes = (msgBytes + (rateBytes - Mod msgBytes rateBytes))
 
 -- | Length of the padded message in bytes from bits.
 type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (BytesFromBits msgBits) (BytesFromBits rateBits))
 
+paddedLengthBytesFromBits :: forall msgBits rateBits. (KnownNat msgBits, KnownNat rateBits) => Natural
+paddedLengthBytesFromBits = msgBytes + (rateBytes -! mod msgBytes rateBytes)
+ where
+  msgBytes = value @msgBits `div` 8
+  rateBytes = value @rateBits `div` 8
+
 type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBits) 8
+
+withMessageLengthConstraints :: forall msgBits rateBits {r}. (KnownNat msgBits, KnownNat rateBits) => ((KnownNat (PaddedLengthBytesFromBits msgBits rateBits), KnownNat (PaddedLengthBits msgBits rateBits)) => r) -> r
+withMessageLengthConstraints = withDict (withMessageLengthConstraints' @msgBits @rateBits)
+
+withMessageLengthConstraints' :: forall msgBits rateBits. (KnownNat msgBits, KnownNat rateBits) :- (KnownNat (PaddedLengthBytesFromBits msgBits rateBits), KnownNat (PaddedLengthBits msgBits rateBits))
+withMessageLengthConstraints' =
+  Sub
+    $ withKnownNat @(PaddedLengthBytesFromBits msgBits rateBits)
+      (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits))
+    $ withKnownNat @(PaddedLengthBits msgBits rateBits)
+      (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits * 8))
+      Dict
 
 -- | Additional bytes for padding.
 padLenBytes :: Natural -> Natural -> Natural
@@ -167,6 +187,7 @@ padding ::
   Keccak algorithm context k =>
   ByteString k context -> ByteString (PaddedLengthBits k (Rate algorithm)) context
 padding msg =
+  withMessageLengthConstraints @k @(Rate algorithm) $
   let msgBytes = value @k `div` 8
       rateBytes = value @(Rate algorithm) `div` 8
       padLengthBytes = padLenBytes msgBytes rateBytes
@@ -174,8 +195,8 @@ padding msg =
       padByteString =
         let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
             bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
-         in B.init bsAfterPadByte `B.append` (B.singleton (B.last bsAfterPadByte .|. 0x80))
-   in (resize msg `shiftBitsL` (padLengthBytes * 8)) || (fromConstant padByteString)
+         in B.init bsAfterPadByte `B.append` B.singleton (B.last bsAfterPadByte .|. 0x80)
+   in (resize msg `shiftBitsL` (padLengthBytes * 8)) || fromConstant padByteString
 
 toBlocks ::
   forall (algorithm :: Symbol) context k.
@@ -184,7 +205,7 @@ toBlocks ::
 toBlocks msg =
   let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
       byteWordsBitReversed = reverseBits <$> byteWords
-   in reverseBits <$> (toWords $ concat byteWordsBitReversed)
+   in reverseBits <$> toWords (concat byteWordsBitReversed)
 
 -- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
 
@@ -218,7 +239,7 @@ absorbBlock state blocks =
 
 -- TODO: Are accumulators required to be made strict?
 -- TODO: Should some functions be asked to be made inlined?
-keccakF :: forall context. (Symbolic context) => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+keccakF :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
 keccakF state =
   P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
  where
@@ -272,8 +293,7 @@ type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorith
 
 squeeze ::
   forall algorithm context.
-  ( AlgorithmSetup algorithm context
-  ) =>
+  AlgorithmSetup algorithm context =>
   Symbolic context =>
   Vector NumLanes (ByteString 64 context) -> (ByteString (ResultSizeInBits (Rate algorithm)) context)
 squeeze state =
