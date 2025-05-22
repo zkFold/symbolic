@@ -13,13 +13,13 @@ module Main where
 import           Data.ByteString                       (ByteString)
 import           Prelude                               hiding (Fractional (..), Num (..), length)
 
-import           ZkFold.Algebra.Class                  (zero)
+import           ZkFold.Algebra.Class                  
 import           ZkFold.Protocol.Plonkup.Prover.Secret
 import           ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do
-    let setupBytes = mkSetup $ expModSetupMock @ByteString zero
-        proofBytes = mkProof $ expModProofMock @ByteString zero (PlonkupProverSecret $ pure zero) (ExpModProofInput 1 1 1 1)
+    let setupBytes = mkSetup $ expModSetupMock @ByteString one 
+        proofBytes = mkProof $ expModProofMock @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 1 1 1 1)
     print setupBytes
     print proofBytes

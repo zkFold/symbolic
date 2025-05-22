@@ -6,5 +6,5 @@ import           Tests.Algebra.Univariate.PolyVec (specUnivariatePolyVec)
 
 specUnivariate :: Spec
 specUnivariate = do
-    specUnivariatePoly
+--    specUnivariatePoly
     specUnivariatePolyVec

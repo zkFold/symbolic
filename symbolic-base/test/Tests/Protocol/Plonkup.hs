@@ -70,7 +70,7 @@ propPlonkupRelationHolds PlonkupRelation {..} w zeta =
         !t_zeta = t1 + zeta *. (t2 + zeta *. t3)
         !f_zeta = toPolyVec $ V.zipWith3 (\lk ti ai -> bool ti ai (lk == one)) (fromPolyVec qK) (fromPolyVec t_zeta) (fromPolyVec f_zeta') :: PolyVec a n
      in (qL .*. w1 + qR .*. w2 + qO .*. w3 + qM .*. w1 .*. w2 + qC + pub == zero)
-     .&&. (qK .*. (w1 + zeta *. w2 + zeta * zeta *. w3 - f_zeta) == zero)
+      .&&. (qK .*. (w1 + zeta *. w2 + zeta * zeta *. w3 - f_zeta) == zero)
 
 propSortByListIsCorrect :: Ord a => [a] -> Bool
 propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs

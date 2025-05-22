@@ -14,7 +14,8 @@ data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
     { omega       :: !(ScalarFieldOf g1) 
     , k1          :: !(ScalarFieldOf g1)
     , k2          :: !(ScalarFieldOf g1)
-    , gs          :: !(V.Vector g1)
+    , gs          :: !(V.Vector (ScalarFieldOf g1))
+    , g1          :: !g1
     , sigma1s     :: !(pv n) 
     , sigma2s     :: !(pv n)
     , sigma3s     :: !(pv n)
@@ -37,6 +38,7 @@ instance
         ++ show k1 ++ " "
         ++ show k2 ++ " "
         ++ show gs ++ " "
+        ++ show g1 ++ " "
         ++ show sigma1s ++ " "
         ++ show sigma2s ++ " "
         ++ show sigma3s ++ " "

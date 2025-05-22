@@ -35,7 +35,7 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -threaded
+--      -threaded
     if flag(pedantic)
       ghc-options:
         -Werror

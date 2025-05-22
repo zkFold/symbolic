@@ -24,7 +24,7 @@ import           Data.Word                                  (Word8)
 import           Numeric.Natural                            (Natural)
 import           Prelude                                    hiding (Num ((*)), sum)
 
-import           ZkFold.Algebra.Class            (Bilinear (..), Scale (..), sum)
+import           ZkFold.Algebra.Class            (Bilinear (..), Scale (..), sum, AdditiveMonoid)
 import           ZkFold.Algebra.Number           (KnownNat)
 import           ZkFold.Algebra.EllipticCurve.Class    (CyclicGroup (..))
 import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
@@ -96,10 +96,10 @@ class NonInteractiveProof a where
 
 
 instance
-    ( CyclicGroup g
+    ( AdditiveMonoid g
     , KnownNat size
     , NFData g
-    , f ~ ScalarFieldOf g
+    , Scale f g 
     , UnivariateRingPolyVec f (PolyVec f)
     ) => Bilinear (V.Vector g) (PolyVec f size) g where
     bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
