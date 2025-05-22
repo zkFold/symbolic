@@ -78,7 +78,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), expMod)
+import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), exp65537Mod)
 import           ZkFold.Symbolic.Interpreter
 import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
 
@@ -235,7 +235,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
-type ExpModCircuitGates = 2^18
+type ExpModCircuitGates = 2^16
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
@@ -279,7 +279,7 @@ expModContract
 expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
     where
         msgHash :: UInt 2048 Auto c
-        msgHash = expMod @c @2048 @RSA.PubExponentSize @2048 sig pubE pubN
+        msgHash = exp65537Mod @c @2048 @RSA.PubExponentSize @2048 sig pubN
 
         rsize :: Natural
         rsize = registerSize @(BaseField c) @2048 @Auto
