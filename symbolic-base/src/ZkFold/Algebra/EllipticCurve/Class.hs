@@ -44,6 +44,7 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input
+import Data.Aeson (ToJSON, FromJSON)
 
 {- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 Elliptic curves always have genus @1@ and are birationally equivalent
@@ -169,6 +170,8 @@ deriving newtype instance Prelude.Eq point
   => Prelude.Eq (Weierstrass curve point)
 deriving newtype instance Prelude.Show point
   => Prelude.Show (Weierstrass curve point)
+deriving anyclass instance (ToJSON point, BooleanOf point ~ Prelude.Bool) => ToJSON (Weierstrass curve point)
+deriving anyclass instance (FromJSON point, BooleanOf point ~ Prelude.Bool) => FromJSON (Weierstrass curve point)
 instance
   ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point field)))
   , CyclicGroup (Weierstrass curve (Point field))
@@ -347,6 +350,13 @@ data Point field = Point
 deriving instance (NFData field, NFData (BooleanOf field)) => NFData (Point field)
 deriving instance (Prelude.Eq (BooleanOf field), Prelude.Eq field)
   => Prelude.Eq (Point field)
+instance (Prelude.Show field, BooleanOf field ~ Prelude.Bool)
+  => Prelude.Show (Point field) where
+  show (Point x y isInf) =
+    if isInf then "pointInf" else Prelude.mconcat
+      ["(", Prelude.show x, ", ", Prelude.show y, ")"]
+deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Point field)
+deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 instance
   ( SymbolicOutput (BooleanOf field)
   , SymbolicOutput field
@@ -356,11 +366,6 @@ instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
 instance (Semiring field, Eq field) => HasPointInf (Point field) where
   pointInf = Point zero one true
-instance (Prelude.Show field, BooleanOf field ~ Prelude.Bool)
-  => Prelude.Show (Point field) where
-  show (Point x y isInf) =
-    if isInf then "pointInf" else Prelude.mconcat
-      ["(", Prelude.show x, ", ", Prelude.show y, ")"]
 instance
   ( Conditional bool bool
   , Conditional bool field
