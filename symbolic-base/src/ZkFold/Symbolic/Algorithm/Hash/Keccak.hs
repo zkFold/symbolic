@@ -3,18 +3,24 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
+{-# OPTIONS_GHC -fconstraint-solver-iterations=10 #-}
+
 -- TODO: Remove these options.
 -- TODO: Format by fourmolu.
 
 -- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
+  ResultSizeInBytes,
+  ResultSizeInBits,
+  AlgorithmSetup (..),
+  Keccak,
   padding,
   toBlocks,
   keccak,
   -- TODO: Mention exports that are mainly for testing.
   absorbBlock,
   emptyState,
-  Keccak,
   --   AlgorithmSetup (..)
   -- , Keccak
   -- , keccak
@@ -84,8 +90,8 @@ class
   , Mod (Rate algorithm) 8 ~ 0
   , -- Requiring rate to be a multiple of 64. As we would eventually obtain 64 bit words.
     Mod (Div (Rate algorithm) 8) 8 ~ 0
-  , -- This constraint is needed so that dividing by 8 does not lead to zero.
-    (1 <=? Rate (algorithm)) ~ 'P.True
+  , -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, this essentially means that `Rate algorithm` is not zero.
+    (1 <=? Div (Rate algorithm) 8) ~ 'P.True
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
@@ -124,8 +130,6 @@ type Keccak algorithm context k =
   ( AlgorithmSetup algorithm context
   , KnownNat k
   , Mod k 8 ~ 0
-  , KnownNat (PaddedLengthBytesFromBits k (Rate algorithm))
-  , KnownNat (PaddedLengthBits k (Rate algorithm))
   , ((Div (PaddedLengthBytesFromBits k (Rate algorithm)) 8) * 64) ~ (PaddedLengthBits k (Rate algorithm))
   , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
     ((Div (NumBlocks k (Rate algorithm)) (Div (Rate algorithm) LaneWidth)) * Div (Rate algorithm) LaneWidth) ~ NumBlocks k (Rate algorithm)
