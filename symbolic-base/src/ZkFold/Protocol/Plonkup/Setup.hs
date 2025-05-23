@@ -23,11 +23,10 @@ import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCom
 import           ZkFold.Symbolic.Class                        (Arithmetic)
 
 data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
-    { omega       :: (ScalarFieldOf g1) 
-    , k1          :: (ScalarFieldOf g1)
-    , k2          :: (ScalarFieldOf g1)
-    , gs          :: (V.Vector (ScalarFieldOf g1))
-    , g1          :: !g1
+    { omega       :: !(ScalarFieldOf g1) 
+    , k1          :: !(ScalarFieldOf g1)
+    , k2          :: !(ScalarFieldOf g1)
+    , gs          :: !(V.Vector g1)
     , h0          :: !g2
     , h1          :: !g2
     , sigma1s     :: !(pv n) 
@@ -52,7 +51,6 @@ instance
         ++ show k1 ++ " "
         ++ show k2 ++ " "
         ++ show gs ++ " "
-        ++ show g1 ++ " "
         ++ show h0 ++ " "
         ++ show h1 ++ " "
         ++ show sigma1s ++ " "
@@ -72,7 +70,7 @@ plonkupSetup :: forall i o n g1 g2 gt ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-    , Bilinear (V.Vector (ScalarFieldOf g1)) (pv (PlonkupPolyExtendedLength n)) (ScalarFieldOf g1)
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =
     let !gs = toV gs'
@@ -106,18 +104,18 @@ plonkupSetup Plonkup {..} =
         !polynomials = PlonkupCircuitPolynomials {..}
 
         !com = bilinear
-        !cmQl = (gs `com` qlX) `scale` g1
-        !cmQr = (gs `com` qrX) `scale` g1
-        !cmQo = (gs `com` qoX) `scale` g1
-        !cmQm = (gs `com` qmX) `scale` g1
-        !cmQc = (gs `com` qcX) `scale` g1
-        !cmQk = (gs `com` qkX) `scale` g1
-        !cmT1 = (gs `com` t1X) `scale` g1
-        !cmT2 = (gs `com` t2X) `scale` g1
-        !cmT3 = (gs `com` t3X) `scale` g1
-        !cmS1 = (gs `com` s1X) `scale` g1
-        !cmS2 = (gs `com` s2X) `scale` g1
-        !cmS3 = (gs `com` s3X) `scale` g1
+        !cmQl = gs `com` qlX
+        !cmQr = gs `com` qrX
+        !cmQo = gs `com` qoX
+        !cmQm = gs `com` qmX
+        !cmQc = gs `com` qcX
+        !cmQk = gs `com` qkX
+        !cmT1 = gs `com` t1X
+        !cmT2 = gs `com` t2X
+        !cmT3 = gs `com` t3X
+        !cmS1 = gs `com` s1X
+        !cmS2 = gs `com` s2X
+        !cmS3 = gs `com` s3X
         !commitments = PlonkupCircuitCommitments {..}
 
     in PlonkupSetup {..}

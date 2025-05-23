@@ -10,7 +10,7 @@ import           Data.Functor.Rep                           (tabulate)
 import           Data.List                                  ((++))
 import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 
-import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!), scale)
+import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.Class         (ScalarFieldOf)
 import           ZkFold.Algebra.Number                      (KnownNat, value)
@@ -78,9 +78,9 @@ utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m) => UtxoAccumula
 utxoAccumulatorProtocol =
     let
         (omega, k1, k2) = getParams (value @m)
-        (gs, g1, h1) = getSecretParams $ fromConstant @(ScalarFieldOf BLS12_381_G1_Point) 42
+        (gs, h1) = getSecretParams $ fromConstant @(ScalarFieldOf BLS12_381_G1_Point) 42
     in
-        Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs g1
+        Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
 utxoAccumulatorProverSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => [ScalarFieldOf BLS12_381_G1_Point]
@@ -130,7 +130,7 @@ utxoAccumulatorGroupElements =
     let
         PlonkupProverSetup {..} = utxoAccumulatorProverSetupInit @n @m
     in
-        lagrangeBasisGroupElements @m @BLS12_381_G1_Point @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega (fmap (`scale` g1) gs)
+        lagrangeBasisGroupElements @m @BLS12_381_G1_Point @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega gs
 
 accumulationGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => Vector n BLS12_381_G1_Point

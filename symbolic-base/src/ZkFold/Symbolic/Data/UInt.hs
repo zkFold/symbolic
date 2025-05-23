@@ -152,6 +152,8 @@ exp65537Mod
     => UInt n r c
     -> UInt m r c
     -> UInt m r c
+exp65537Mod n modulus = modulus + modulus 
+{--
 exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq4 n' m'
     where
         m' :: UInt (2 * m) r c
@@ -164,6 +166,7 @@ exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq4 n' m'
         sq2 = Haskell.snd $ productMod sq1 sq1 m'
         sq3 = Haskell.snd $ productMod sq2 sq2 m' 
         sq4 = Haskell.snd $ productMod sq3 sq3 m' 
+--}
 
 bitsPow
     :: forall c n p r
