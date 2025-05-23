@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Protocol.IVC.Commit (Commit (..), HomomorphicCommit (..), PedersonSetup (..)) where
+module ZkFold.Protocol.IVC.Commit (Commit, oracleCommitment, HomomorphicCommit (..), PedersonSetup (..)) where
 
 import           Data.Functor.Constant              (Constant (..))
 import           Data.Zip                           (Zip (..))
@@ -18,11 +18,10 @@ import           ZkFold.Protocol.IVC.Oracle
 
 -- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
 --
-class Commit algo a f where
-    commit :: a -> f
+type Commit a f = a -> f
 
-instance (HashAlgorithm algo a, OracleSource a x) => Commit algo x a where
-    commit = oracle @algo
+oracleCommitment :: OracleSource a b => Hasher a -> Commit b a
+oracleCommitment = oracle
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
 --

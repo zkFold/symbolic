@@ -12,7 +12,7 @@ import           Prelude                                     hiding (Num (..), p
 import           Test.Hspec                                  (Spec, describe, it)
 import           Test.QuickCheck                             (property, withMaxSuccess)
 
-import           ZkFold.Algebra.Class                        (FromConstant, fromConstant)
+import           ZkFold.Algebra.Class                        (FromConstant (..), fromConstant)
 import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1_Point, BLS12_381_Scalar)
 import           ZkFold.Algebra.Field                        (Zp)
 import           ZkFold.Algebra.Number                       (Natural, type (-))
@@ -26,7 +26,7 @@ import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
 import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
 import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
 import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Protocol.IVC.Oracle                  (MiMCHash, OracleSource (..))
+import           ZkFold.Protocol.IVC.Oracle                  (OracleSource (..), mimcHash)
 import           ZkFold.Protocol.IVC.Predicate               (Predicate (..), predicate)
 import           ZkFold.Protocol.IVC.SpecialSound            (specialSoundProtocol)
 import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
@@ -62,7 +62,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @(MiMCHash F) . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir mimcHash . commitOpen . specialSoundProtocol @D
 
 initAccumulator :: PHI -> Accumulator K I C F
 initAccumulator = emptyAccumulator @D
@@ -94,7 +94,7 @@ testPublicInput phi =
     in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
-testAccumulatorScheme = accumulatorScheme @(MiMCHash F)
+testAccumulatorScheme = accumulatorScheme mimcHash
 
 testAccumulator :: PHI -> Accumulator K I C F
 testAccumulator phi =

@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -58,21 +57,15 @@ deriving via (FoldableSource [] b)
 deriving via (FoldableSource (Vector n) b)
     instance OracleSource a b => OracleSource a (Vector n b)
 
----------------------------- HashAlgorithm class -------------------------------
+------------------------------ Hasher & Oracle ---------------------------------
 
--- | @HashAlgorithm algo a@ defines a hashing function over base field @a@ with algorithm @algo@.
---
--- Constraint @OracleSource a a@ is present to ensure that all 'OracleSource' instances are computed correctly.
-class OracleSource a a => HashAlgorithm algo a where
-    hash :: [a] -> a
+type Hasher a = [a] -> a
 
-data MiMCHash a
+mimcHash :: forall a. Arithmetic a => Hasher a
+mimcHash = mimcHashN' mimcConstants (zero :: a)
 
-instance Arithmetic a => HashAlgorithm (MiMCHash a) a where
-    hash = mimcHashN' mimcConstants (zero :: a)
-
-oracle :: forall algo a b. (HashAlgorithm algo a, OracleSource a b) => b -> a
-oracle = hash @algo . source
+oracle :: OracleSource a b => Hasher a -> b -> a
+oracle hash = hash . source
 
 ------------------------ Generic OracleSource deriving -------------------------
 

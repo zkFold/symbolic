@@ -13,8 +13,9 @@ import           Control.DeepSeq                                    (NFData)
 import           Control.Lens                                       ((^.))
 import           Control.Lens.Combinators                           (makeLenses)
 import           Data.Binary                                        (Binary)
-import           Data.Function                                      (const, ($))
+import           Data.Function                                      (const, ($), (.))
 import           Data.Functor.Rep                                   (Representable (..))
+import           Data.List                                          (map)
 import           Data.Type.Equality                                 (type (~))
 import           Data.Zip                                           (Zip (..), unzip)
 import           GHC.Generics                                       (Generic)
@@ -36,9 +37,10 @@ import           ZkFold.Protocol.IVC.RecursiveFunction
 import           ZkFold.Protocol.IVC.SpecialSound                   (SpecialSoundProtocol (..), specialSoundProtocol,
                                                                      specialSoundProtocol')
 import           ZkFold.Symbolic.Class                              (Arithmetic)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (ArithmeticCircuit), exec1)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor)
-import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (..))
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -69,7 +71,7 @@ data IVCResult k i c f
 
 makeLenses ''IVCResult
 
-type IVCAssumptions algo d k a i p c f =
+type IVCAssumptions d k a i p c f =
     ( KnownNat (d + 1)
     , KnownNat (d - 1)
     , k ~ 1
@@ -81,19 +83,18 @@ type IVCAssumptions algo d k a i p c f =
     , Field f
     , Scale a f
     , Scale a (SimplePoly f (d + 1))
-    , FieldAssumptions algo c f
-    , FieldAssumptions algo c (FieldElement (CircuitContext a))
+    , FieldAssumptions c f
+    , FieldAssumptions c (FieldElement (CircuitContext a))
     )
 
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall algo d k a i p c . IVCAssumptions algo d k a i p c a
-    => StepFunction a i p
-    -> i a
-    -> p a
-    -> IVCResult k i c a
-ivcSetup f z0 witness =
+ivcSetup ::
+    forall d k a i p c . IVCAssumptions d k a i p c a =>
+    Hasher (FieldElement (CircuitContext a)) ->
+    StepFunction a i p -> i a -> p a -> IVCResult k i c a
+ivcSetup hash f z0 witness =
     let
         p :: Predicate a i p
         p = predicate f
@@ -102,16 +103,15 @@ ivcSetup f z0 witness =
         z1 = predicateEval p z0 witness
 
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate $ recursiveFunction hash f
     in
         IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
-ivcProve :: forall algo d k a i p c . IVCAssumptions algo d k a i p c a
-    => StepFunction a i p
-    -> IVCResult k i c a
-    -> p a
-    -> IVCResult k i c a
-ivcProve f res witness =
+ivcProve ::
+    forall d k a i p c . IVCAssumptions d k a i p c a =>
+    Hasher (FieldElement (CircuitContext a)) ->
+    StepFunction a i p -> IVCResult k i c a -> p a -> IVCResult k i c a
+ivcProve hash f res witness =
     let
         p :: Predicate a i p
         p = predicate f
@@ -120,10 +120,14 @@ ivcProve f res witness =
         z' = predicateEval p (res^.z) witness
 
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate $ recursiveFunction hash f
+
+        hash' :: Hasher a
+        hash' = execFE . hash . map fromConstant
+            where execFE (FieldElement ctx) = exec1 (ArithmeticCircuit ctx)
 
         input :: RecursiveI i a
-        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
+        input = RecursiveI (res^.z) (oracle hash' $ res^.acc^.x)
 
         messages :: Vector k [a]
         messages = res^.proof^.proofW
@@ -135,7 +139,7 @@ ivcProve f res witness =
         narkIP = NARKInstanceProof input (NARKProof commits messages)
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c a
-        accScheme = accumulatorScheme @algo @d pRec
+        accScheme = accumulatorScheme @d hash' pRec
 
         (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
 
@@ -143,7 +147,7 @@ ivcProve f res witness =
         payload = RecursiveP witness commits (res^.acc^.x) one pf
 
         protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol @d pRec
+        protocol = fiatShamir hash' $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages', commits') = unzip $ prover protocol input payload zero 0
 
@@ -152,17 +156,19 @@ ivcProve f res witness =
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall algo d k a i p c f . IVCAssumptions algo d k a i p c f
-    => StepFunction a i p
-    -> IVCResult k i c f
-    -> ((Vector k (c f), [f]), (Vector k (c f), c f))
-ivcVerify f res =
+ivcVerify ::
+    forall d k a i p c f . IVCAssumptions d k a i p c f =>
+    Hasher (FieldElement (CircuitContext a)) ->
+    Hasher f ->
+    StepFunction a i p -> IVCResult k i c f ->
+    ((Vector k (c f), [f]), (Vector k (c f), c f))
+ivcVerify hashFE hashF f res =
     let
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-        pRec = recursivePredicate @algo $ recursiveFunction @algo f
+        pRec = recursivePredicate $ recursiveFunction hashFE f
 
         input :: RecursiveI i f
-        input = RecursiveI (res^.z) (oracle @algo $ res^.acc^.x)
+        input = RecursiveI (res^.z) (oracle hashF $ res^.acc^.x)
 
         messages :: Vector k [f]
         messages = res^.proof^.proofW
@@ -171,10 +177,10 @@ ivcVerify f res =
         commits = res^.proof^.proofX
 
         accScheme :: AccumulatorScheme d k (RecursiveI i) c f
-        accScheme = accumulatorScheme @algo @d pRec
+        accScheme = accumulatorScheme @d hashF pRec
 
         protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
-        protocol = fiatShamir @algo $ commitOpen $ specialSoundProtocol' @d pRec
+        protocol = fiatShamir hashF $ commitOpen $ specialSoundProtocol' @d pRec
     in
         ( verifier protocol input (singleton $ zip messages commits) zero
         , Acc.decider accScheme (res^.acc)

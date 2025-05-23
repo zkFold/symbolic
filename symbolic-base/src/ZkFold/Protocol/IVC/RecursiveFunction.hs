@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -68,18 +67,18 @@ instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Represent
 
 instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c)
 
-type RecursiveFunction algo d k a i p c =
+type RecursiveFunction d k a i p c =
     StepFunction a (RecursiveI i) (RecursiveP d k i p c)
 
-type FieldAssumptions algo c f =
-    ( HashAlgorithm algo f
+type FieldAssumptions c f =
+    ( OracleSource f f
     , OracleSource f (c f)
     , HomomorphicCommit [f] (c f)
     , Scale f (c f)
     )
 
 -- | Transform a step function into a recursive function
-recursiveFunction :: forall algo d k a i p c .
+recursiveFunction :: forall d k a i p c .
     ( Arithmetic a
     , Binary a
     , LayoutFunctor i
@@ -89,9 +88,11 @@ recursiveFunction :: forall algo d k a i p c .
     , KnownNat (d+1)
     , KnownNat (k-1)
     , KnownNat k
-    , FieldAssumptions algo c (FieldElement (CircuitContext a))
-    ) => StepFunction a i p -> RecursiveFunction algo d k a i p c
-recursiveFunction func =
+    , FieldAssumptions c (FieldElement (CircuitContext a))
+    ) =>
+    Hasher (FieldElement (CircuitContext a)) ->
+    StepFunction a i p -> RecursiveFunction d k a i p c
+recursiveFunction hash func =
     let
         -- A helper function to derive the accumulator scheme
         func' ::
@@ -120,15 +121,15 @@ recursiveFunction func =
             flag = Bool $ hmap (\(RecursiveP _ _ _ f _) -> Par1 f) p
             pf = unComp1 $ fmap FieldElement $ unpacked $
                 hmap (\(RecursiveP _ _ _ _ p') -> Comp1 p') p
-            accScheme = accumulatorScheme @algo pRec
+            accScheme = accumulatorScheme hash pRec
             x' = func x u
             accX' = verifier accScheme z piX accX pf
-            h = bool zero (oracle @algo accX') flag
+            h = bool zero (oracle hash accX') flag
          in hliftA2 (\x0 (Par1 h0) -> RecursiveI x0 h0) x' (fromFieldElement h)
 
 --------------------------------------------------------------------------------
 
-recursivePredicate :: forall algo d k a i p c .
+recursivePredicate :: forall d k a i p c .
     ( KnownNat k
     , KnownNat (k - 1)
     , KnownNat (d - 1)
@@ -137,5 +138,5 @@ recursivePredicate :: forall algo d k a i p c .
     , LayoutFunctor i
     , LayoutFunctor p
     , LayoutFunctor c
-    ) => RecursiveFunction algo d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
+    ) => RecursiveFunction d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate = predicate

@@ -1,5 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant ^." #-}
@@ -48,12 +47,12 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
             -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall algo d k a i p c f .
+accumulatorScheme :: forall d k a i p c f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
     , Foldable i
-    , HashAlgorithm algo f
+    , OracleSource f f
     , OracleSource f (c f)
     , HomomorphicCommit [f] (c f)
     , Field f
@@ -62,19 +61,17 @@ accumulatorScheme :: forall algo d k a i p c f .
     , Scale f (c f)
     , Binary (Rep i)
     , Binary (Rep p)
-    )
-    => Predicate a i p
-    -> AccumulatorScheme d k i c f
-accumulatorScheme phi =
+    ) => Hasher f -> Predicate a i p -> AccumulatorScheme d k i c f
+accumulatorScheme hash phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         let
             r_0 :: f
-            r_0 = oracle @algo (FoldableSource pubi)
+            r_0 = oracle hash (FoldableSource pubi)
 
             -- Fig. 3, step 1
             r_i :: Vector (k-1) f
-            r_i = transcript @algo r_0 pi_x
+            r_i = transcript hash r_0 pi_x
 
             -- Fig. 3, step 2
 
@@ -112,7 +109,7 @@ accumulatorScheme phi =
 
             -- Fig. 3, step 4
             alpha :: f
-            alpha = oracle @algo (acc^.x, FoldableSource pubi, pi_x, pf)
+            alpha = oracle hash (acc^.x, FoldableSource pubi, pi_x, pf)
 
             -- Fig. 3, steps 5, 6
             mu'   = alpha + acc^.x^.mu
@@ -129,15 +126,15 @@ accumulatorScheme phi =
       verifier pubi pi_x acc pf =
         let
             r_0 :: f
-            r_0 = oracle @algo (FoldableSource pubi)
+            r_0 = oracle hash (FoldableSource pubi)
 
             -- Fig. 4, step 1
             r_i :: Vector (k-1) f
-            r_i = transcript @algo r_0 pi_x
+            r_i = transcript hash r_0 pi_x
 
             -- Fig. 4, step 2
             alpha :: f
-            alpha = oracle @algo (acc, FoldableSource pubi, pi_x, pf)
+            alpha = oracle hash (acc, FoldableSource pubi, pi_x, pf)
 
             -- Fig. 4, steps 3-4
             mu'  = alpha + acc^.mu
