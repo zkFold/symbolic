@@ -14,8 +14,10 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   AlgorithmSetup (..),
   Keccak,
   padding,
+  paddingVar,
   toBlocks,
   keccak,
+  keccakVar,
   -- TODO: Mention exports that are mainly for testing.
   absorbBlock,
   emptyState,
@@ -52,10 +54,15 @@ import           ZkFold.Data.Vector                              (Vector (..), b
                                                                   head, indexed, mapWithIx, reverse, slice, unfold,
                                                                   (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
-import           ZkFold.Symbolic.Class                           (Symbolic)
+import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString
+import           ZkFold.Symbolic.Data.Combinators                (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
+                                                                  RegisterSize (..))
 import           ZkFold.Symbolic.Data.Ord
+import           ZkFold.Symbolic.Data.UInt                       (OrdWord, UInt)
+import qualified ZkFold.Symbolic.Data.VarByteString              as VB
+import           ZkFold.Symbolic.Data.VarByteString              (VarByteString (..))
 
 -- TODO: Is this Width / LaneWidth?
 
@@ -130,11 +137,25 @@ type Keccak algorithm context k =
   , KnownNat k
   , Mod k 8 ~ 0
   , Symbolic context
+  , KnownNat
+      ( NumberOfRegisters
+          (BaseField context)
+          (NumberOfBits (BaseField context))
+          Auto
+      )
+  , KnownNat
+      ( Ceil
+          ( GetRegisterSize
+              (BaseField context)
+              (NumberOfBits (BaseField context))
+              Auto
+          )
+          OrdWord
+      )
   )
 
--- TODO: Needed to say algorithm :: Symbol?
 keccak ::
-  forall (algorithm :: Symbol) context k.
+  forall algorithm context k.
   Keccak algorithm context k =>
   ByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
 keccak bs =
@@ -206,7 +227,7 @@ padLenBytes msgBytes rateBytes =
   P.fromIntegral @P.Integer @Natural (P.fromIntegral rateBytes - P.fromIntegral (msgBytes `mod` rateBytes))
 
 padding ::
-  forall (algorithm :: Symbol) context k.
+  forall algorithm context k.
   Keccak algorithm context k =>
   ByteString k context -> ByteString (PaddedLengthBits k (Rate algorithm)) context
 padding msg =
@@ -220,6 +241,29 @@ padding msg =
               bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
            in B.init bsAfterPadByte `B.append` B.singleton (B.last bsAfterPadByte .|. 0x80)
      in (resize msg `shiftBitsL` (padLengthBytes * 8)) || fromConstant padByteString
+
+paddingVar ::
+  forall algorithm context k.
+  Keccak algorithm context k =>
+  VarByteString k context -> VarByteString (PaddedLengthBits k (Rate algorithm)) context
+paddingVar VarByteString {..} =
+  withMessageLengthConstraints @k @(Rate algorithm) $
+    let
+      rateN = value @(Rate algorithm)
+      bsLengthModRate = from @_ @(UInt (NumberOfBits (BaseField context)) Auto context) bsLength `mod` fromConstant rateN
+      padLengthBits = fromConstant rateN - from bsLengthModRate
+      paddedLengthBits = bsLength + padLengthBits
+      padBS =
+        let bs1 = fromConstant (0x80 :: Natural)
+            bs2 = fromConstant (P.fromIntegral (padByte @algorithm @context) :: Natural)
+         in (bs2 `VB.shiftL` (padLengthBits - fromConstant (8 :: Natural))) || bs1
+      grown :: ByteString (PaddedLengthBits k (Rate algorithm)) context
+      grown =
+        let resized = resize bsBuffer
+         in resized
+              & (`VB.shiftL` padLengthBits)
+     in
+      VarByteString paddedLengthBits (grown || padBS)
 
 toBlocks ::
   forall (algorithm :: Symbol) context k.
@@ -340,3 +384,14 @@ modify f (Vector v) = Vector $ V.modify f v
 
 reverseBits :: forall n context. Symbolic context => ByteString n context -> ByteString n context
 reverseBits (ByteString cbs) = ByteString $ hmap reverse cbs
+
+keccakVar ::
+  forall algorithm context k.
+  Keccak algorithm context k =>
+  VarByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
+keccakVar msg = P.undefined
+
+-- paddingVar @algorithm @context @k msg
+--   & toBlocks @algorithm @context @k
+--   & absorbBlock @algorithm @context @k emptyState
+--   & squeeze @algorithm @context
