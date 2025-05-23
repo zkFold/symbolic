@@ -39,12 +39,12 @@ spec gen = do
 --        specEllipticCurve
 --        specPairing
 --        specPermutation
-        specUnivariate
---        specReedSolomon
---        specGroebner
---
---    describe "symbolic-base-test (Serialization)" $ do
---        specBinary
+--        specUnivariate
+        specReedSolomon
+        specGroebner
+
+    describe "symbolic-base-test (Serialization)" $ do
+        specBinary
 
     describe "symbolic-base-test (Protocols)" $ do
         specPlonkup

@@ -47,11 +47,12 @@ getSecretParams :: forall n g1 g2 .
     , CyclicGroup g1
     , CyclicGroup g2
     , Scale (ScalarFieldOf g1) g2
-    ) => ScalarFieldOf g1 -> (Vector (n + 5) (ScalarFieldOf g1), g1, g2)
+    ) => ScalarFieldOf g1 -> (Vector (n + 5) g1, g2)
 getSecretParams x =
     let xs = unsafeToVector $ fmap (x^) [0 .. (value @n + 5)]
+        gs = fmap (`scale` pointGen) xs
         h1 = x `scale` pointGen
-    in (xs, pointGen, h1)
+    in (gs, h1)
 
 sortByList :: Ord a => [a] -> [a] -> [a]
 -- ^ Given two lists @l1@ and @l2@,

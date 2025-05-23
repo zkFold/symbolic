@@ -29,6 +29,7 @@ import           Data.Tuple                           (snd)
 import           Data.Type.Equality                   (type (~))
 import qualified Data.Vector                          as V
 import           GHC.Generics                         (Generic)
+import           GHC.Natural                          (powModNatural)
 import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
 import           Prelude                              (Integer)
@@ -105,7 +106,7 @@ instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
 
 instance KnownNat p => Exponent (Zp p) Natural where
-    (^) = natPow
+    (Zp z) ^ n = Zp $ fromIntegral $ powModNatural (fromIntegral z) n (value @p)
 
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
@@ -137,7 +138,8 @@ instance KnownNat n => Eq (Zp n) where
     (/=) = (Haskell./=)
 
 instance Prime p => Field (Zp p) where
-    finv (Zp a) = fromConstant $ inv a (value @p)
+--    finv (Zp a) = fromConstant $ inv a (value @p)
+    finv zp = zp ^ (value @p -! 2) 
 
     rootOfUnity l
       | l == 0            = Nothing

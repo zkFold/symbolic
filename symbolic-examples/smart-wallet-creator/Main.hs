@@ -20,7 +20,11 @@ import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit as AC
 
 main :: IO ()
 main = do
-    let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit 
-        proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 1 1 1 1)
+    print $ AC.acSizeN expModCircuit
+    print $ AC.acSizeM expModCircuit
+--    let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit 
+--        proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 1 1 1 1)
+    let setupBytes = mkSetup $ expModSetupMock @ByteString one 
+        proofBytes = mkProof $ expModProofMock @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 1 1 1 1)
     print setupBytes
     print proofBytes

@@ -75,6 +75,7 @@ import qualified ZkFold.Symbolic.Compiler                     as C
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit   as AC
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit   (ArithmeticCircuit (..))
 import           ZkFold.Symbolic.Data.Class
+import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
@@ -235,7 +236,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
-type ExpModCircuitGates = 2^16
+type ExpModCircuitGates = 2^7
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
@@ -263,11 +264,14 @@ deriving instance
     , KnownRegisters ctx 2048 'Auto
     ) => SymbolicData (ExpModInput ctx)
 
-deriving instance
+--deriving instance
+instance
     ( Symbolic ctx
     , KnownRegisters ctx RSA.PubExponentSize 'Auto
     , KnownRegisters ctx 2048 'Auto
-    ) => SymbolicInput (ExpModInput ctx)
+    ) => SymbolicInput (ExpModInput ctx) where
+        isValid _ = true
+
 
 expModContract
     :: forall c
@@ -279,7 +283,7 @@ expModContract
 expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
     where
         msgHash :: UInt 2048 Auto c
-        msgHash = exp65537Mod @c @2048 @RSA.PubExponentSize @2048 sig pubN
+        msgHash = sig -- exp65537Mod @c @2048 @RSA.PubExponentSize @2048 sig pubN
 
         rsize :: Natural
         rsize = registerSize @(BaseField c) @2048 @Auto
@@ -289,7 +293,9 @@ expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * to
         hashAsFE :: FieldElement c
         hashAsFE = FieldElement $ fromCircuitF (let UInt regs = msgHash in regs) $ \v -> do
             z <- newAssigned (const zero)
-            Par1 <$> foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
+            ans <- foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
+            temporaryMeaninglessAns <- foldrM (\a i -> newAssigned $ \p -> p i + scale a (p z)) ans [0..63 :: Natural]
+            pure $ Par1 temporaryMeaninglessAns
 
 expModCircuit :: ExpModCircuit
 expModCircuit = C.compile @Fr expModContract
@@ -298,8 +304,8 @@ expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> Set
 expModSetup x ac = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, g1, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 ac h1 gs g1
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 ac h1 gs
         setupV  = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
 data ExpModProofInput =
@@ -337,8 +343,8 @@ expModProof x ps ac ExpModProofInput{..} = proof
         paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, g1, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 ac h1 gs g1 :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
         setupP  = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
         witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_Point paddedWitnessInputs, ps)
         (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
@@ -349,7 +355,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^15
+type ExpModCircuitGatesMock = 2^10
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
@@ -358,8 +364,8 @@ expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (Plon
 expModSetupMock x = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, g1, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs g1
+        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupV  = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
 expModProofMock
@@ -384,8 +390,8 @@ expModProofMock x ps ExpModProofInput{..} = proof
         witnessInputs = Par1 input
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, g1, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
-        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs g1
+        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness

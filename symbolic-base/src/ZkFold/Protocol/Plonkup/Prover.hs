@@ -35,7 +35,6 @@ import           ZkFold.Protocol.Plonkup.Witness
 
 plonkupProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
-    , Scale (ScalarFieldOf g1) g1
     , Compressible g1
     , ToTranscript ts Word8
     , ToTranscript ts (ScalarFieldOf g1)
@@ -44,7 +43,7 @@ plonkupProve :: forall i o n g1 g2 ts pv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    , Bilinear (V.Vector (ScalarFieldOf g1)) (pv (PlonkupPolyExtendedLength n)) (ScalarFieldOf g1)
+    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
@@ -75,9 +74,9 @@ plonkupProve PlonkupProverSetup {..}
         !cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n g1 pv
 
         !com = bilinear
-        !cmA = (gs `com` aX) `scale` g1 
-        !cmB = (gs `com` bX) `scale` g1
-        !cmC = (gs `com` cX) `scale` g1
+        !cmA = gs `com` aX
+        !cmB = gs `com` bX
+        !cmC = gs `com` cX
 
         -- Round 2
 
@@ -102,9 +101,9 @@ plonkupProve PlonkupProverSetup {..}
         !h1X = polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1 pv
         !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
 
-        !cmF  = (gs `com` fX)  `scale` g1 
-        !cmH1 = (gs `com` h1X) `scale` g1
-        !cmH2 = (gs `com` h2X) `scale` g1
+        !cmF  = gs `com` fX
+        !cmH1 = gs `com` h1X
+        !cmH2 = gs `com` h2X
 
         -- Round 3
 
@@ -146,8 +145,8 @@ plonkupProve PlonkupProverSetup {..}
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
         !z2X = polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n g1 pv
 
-        !cmZ1 = (gs `com` z1X) `scale` g1 
-        !cmZ2 = (gs `com` z2X) `scale` g1
+        !cmZ1 = gs `com` z1X
+        !cmZ2 = gs `com` z2X
 
         -- Round 4
 
@@ -190,9 +189,9 @@ plonkupProve PlonkupProverSetup {..}
         !qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
         !qhighX = toPolyVec $ V.drop (fromIntegral (2*(n+2))) $ fromPolyVec qX
 
-        !cmQlow  = (gs `com` qlowX)  `scale` g1 
-        !cmQmid  = (gs `com` qmidX)  `scale` g1
-        !cmQhigh = (gs `com` qhighX) `scale` g1
+        !cmQlow  = gs `com` qlowX
+        !cmQmid  = gs `com` qmidX
+        !cmQhigh = gs `com` qhighX
 
         -- Round 5
 
@@ -271,5 +270,5 @@ plonkupProve PlonkupProverSetup {..}
                 + (vn 3 *. (h1X - (h1_xi' *. one)))
             ) `polyVecDiv` polyVecLinear one (negate (xi * omega))
 
-        !proof1 = (gs `com` proofX1) `scale` g1 
-        !proof2 = (gs `com` proofX2) `scale` g1
+        !proof1 = gs `com` proofX1
+        !proof2 = gs `com` proofX2

@@ -73,7 +73,7 @@ berlekamp s r
         lenS = fromIntegral r
 
         go :: Poly c -> Poly c -> Integer -> Integer -> Natural -> c -> (Integer, Poly c)
-        go cx bx n l m b
+        go !cx !bx !n !l !m !b
             | n == lenS = bool (error "locators didn't find") (l, cx) (deg cx == l)
             | P.otherwise = bool innerChoice (go cx bx n' l (m+1) b) (d == zero)
             where

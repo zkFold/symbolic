@@ -19,7 +19,7 @@ import           Data.Maybe                 (Maybe (..))
 import           Data.Ord                   (Ord (..), Ordering (..))
 import           Data.Ratio                 (Rational)
 import           Data.Type.Equality         (type (~), (:~:) (..))
-import           GHC.Natural                (naturalFromInteger)
+import           GHC.Natural                (andNatural, naturalFromInteger, shiftRNatural)
 import           Prelude                    (Integer)
 import qualified Prelude                    as Haskell
 
@@ -167,11 +167,21 @@ class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a 
 natPow :: MultiplicativeMonoid a => a -> Natural -> a
 -- | A default implementation for natural exponentiation. Uses only @('*')@ and
 -- @'one'@ so doesn't loop via an @'Exponent' Natural a@ instance.
+natPow _ 0 = one
+natPow !a !n
+  | m == 1 = a * f
+  | otherwise = f
+    where
+        m = n `andNatural` 1
+        d = n `shiftRNatural` 1
+        f = natPow (a * a) d
+{--
 natPow !a !n = product $ zipWith' f (binaryExpansion n) (iterate (\x -> x * x) a)
   where
     f 0 _  = one
     f 1 !x = x
     f _ _  = Haskell.error "^: This should never happen."
+--}
 
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
@@ -237,11 +247,23 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
 -- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
+natScale 0 _   = zero
+natScale !n !a
+  | m == 1 = a + f
+  | otherwise = f
+    where
+        m = n `andNatural` 1
+        d = n `shiftRNatural` 1
+        f = natScale d (a + a)
+
+
+{--
 natScale n a = sum $ zipWith' f (binaryExpansion n) (iterate (\(!x) -> x + x) a)
   where
     f 0 _ = zero
     f 1 x = x
     f _ _ = Haskell.error "scale: This should never happen."
+--}
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl' (+) zero
