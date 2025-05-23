@@ -45,6 +45,10 @@ instance KnownNat size => Representable (Vector size) where
   index (Vector v) ix = v V.! fromIntegral (fromZp ix)
   tabulate f = Vector (V.generate (knownNat @size) (f . fromIntegral))
 
+-- | Generate a vector of size @size@ by applying a function to each index.
+generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
+generate f = Vector $ V.generate (knownNat @size) (f . fromIntegral)
+
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
@@ -69,7 +73,7 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector . V.fromList
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
-unfold f = Vector . V.take (knownNat @size) . V.unfoldr (Just . f)
+unfold f = Vector . V.unfoldrExactN (knownNat @size) f
 
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = V.toList as
@@ -160,8 +164,34 @@ concat = Vector . V.concatMap toV . toV
 unsafeConcat :: forall m n a . [Vector n a] -> Vector (m * n) a
 unsafeConcat = concat . unsafeToVector @m
 
+-- | Map a function over a vector and concatenate the results.
+concatMap :: forall m n a b . (a -> Vector n b) -> Vector m a -> Vector (m * n) b
+concatMap f (Vector v) = Vector $ V.concatMap (toV . f) v
+
+-- | Pair each element of a vector with its index.
+indexed :: forall n a. KnownNat n => Vector n a -> Vector n (Natural, a)
+indexed v = mapWithIx (\i x -> (i, x)) v
+
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
+
+-- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
+--
+-- Note that we'll get run-time error if @i + n > size@.
+slice :: forall i n size a.
+  KnownNat i
+  => KnownNat n
+  => Vector size a
+  -> Vector n a
+slice (Vector v) = Vector $ V.slice (fromIntegral $ value @i) (fromIntegral $ value @n) v
+
+-- TODO: Shall I at least make it Vector m Natural?
+-- | Yield the vector obtained by replacing each element @i@ of the
+-- index vector by @xs'!'i@.
+--
+-- Note that we'll get run-time error if any index in the index vector is out of bounds.
+backpermute :: forall n m a. Vector n a -> Vector m Int -> Vector m a
+backpermute (Vector v) (Vector is) = Vector $ V.backpermute v is
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV

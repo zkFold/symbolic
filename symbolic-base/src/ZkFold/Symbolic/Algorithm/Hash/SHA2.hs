@@ -293,6 +293,7 @@ sha2PadVar
     -> VarByteString (PaddedLength k padTo lenBits) context
 sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @k @padTo @lenBits $ grown || lenBits
     where
+        -- Number of bits in a chunk.
         chunkBits :: Natural
         chunkBits = ilog2 $ value @padTo
 
