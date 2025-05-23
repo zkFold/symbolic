@@ -10,7 +10,8 @@ import           Control.Lens                                ((^.))
 import           Data.Binary                                 (Binary)
 import           Data.Constraint                             (withDict)
 import           Data.Constraint.Nat                         (plusMinusInverse1)
-import           Data.Functor.Rep                            (Representable (..))
+import           Data.Foldable                               (Foldable)
+import           Data.Functor.Rep                            (Representable (..), mzipWithRep)
 import           Data.Zip                                    (Zip (..))
 import           Prelude                                     (fmap, ($), (<$>))
 import qualified Prelude                                     as P
@@ -25,7 +26,7 @@ import           ZkFold.Protocol.IVC.AlgebraicMap            (algebraicMap)
 import           ZkFold.Protocol.IVC.Commit                  (HomomorphicCommit (..))
 import           ZkFold.Protocol.IVC.FiatShamir              (transcript)
 import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Protocol.IVC.Oracle                  (HashAlgorithm, RandomOracle (..))
+import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate               (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
@@ -51,11 +52,9 @@ accumulatorScheme :: forall algo d k a i p c f .
     ( KnownNat (d-1)
     , KnownNat (d+1)
     , Representable i
-    , Zip i
+    , Foldable i
     , HashAlgorithm algo f
-    , RandomOracle algo f f
-    , RandomOracle algo (i f) f
-    , RandomOracle algo (c f) f
+    , OracleSource f (c f)
     , HomomorphicCommit [f] (c f)
     , Field f
     , Scale a f
@@ -71,7 +70,7 @@ accumulatorScheme phi =
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
         let
             r_0 :: f
-            r_0 = oracle @algo pubi
+            r_0 = oracle @algo (FoldableSource pubi)
 
             -- Fig. 3, step 1
             r_i :: Vector (k-1) f
@@ -85,7 +84,7 @@ accumulatorScheme phi =
 
             -- X * pi + pi' as a list of univariate polynomials
             polyPi :: i (SimplePoly f (d + 1))
-            polyPi = zipWith polyVecLinear pubi (acc^.x^.pi)
+            polyPi = mzipWithRep polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
             polyW :: Vector k [SimplePoly f (d + 1)]
@@ -113,11 +112,11 @@ accumulatorScheme phi =
 
             -- Fig. 3, step 4
             alpha :: f
-            alpha = oracle @algo (acc^.x, pubi, pi_x, pf)
+            alpha = oracle @algo (acc^.x, FoldableSource pubi, pi_x, pf)
 
             -- Fig. 3, steps 5, 6
             mu'   = alpha + acc^.x^.mu
-            pi''  = zipWith (+) (fmap (* alpha) pubi) (acc^.x^.pi)
+            pi''  = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.x^.pi)
             ri''  = scale alpha r_i  + acc^.x^.r
             ci''  = scale alpha pi_x + acc^.x^.c
             m_i'' = zipWith (+) (scale alpha pi_w) (acc^.w)
@@ -130,7 +129,7 @@ accumulatorScheme phi =
       verifier pubi pi_x acc pf =
         let
             r_0 :: f
-            r_0 = oracle @algo pubi
+            r_0 = oracle @algo (FoldableSource pubi)
 
             -- Fig. 4, step 1
             r_i :: Vector (k-1) f
@@ -138,11 +137,11 @@ accumulatorScheme phi =
 
             -- Fig. 4, step 2
             alpha :: f
-            alpha = oracle @algo (acc, pubi, pi_x, pf)
+            alpha = oracle @algo (acc, FoldableSource pubi, pi_x, pf)
 
             -- Fig. 4, steps 3-4
             mu'  = alpha + acc^.mu
-            pi'' = zipWith (+) (fmap (* alpha) pubi) (acc^.pi)
+            pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.pi)
             ri'' = zipWith (+) (scale alpha r_i)     (acc^.r)
             ci'' = zipWith (+) (scale alpha pi_x)    (acc^.c)
 
@@ -159,7 +158,6 @@ accumulatorScheme phi =
             -- Fig. 5, step 2
             err :: [f]
             err = algebraicMap @d phi (acc^.x^.pi) (acc^.w) (acc^.x^.r) (acc^.x^.mu)
-
 
             -- Fig. 5, step 3
             eDiff = (acc^.x^.e) - hcommit err

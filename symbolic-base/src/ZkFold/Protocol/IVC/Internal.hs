@@ -12,33 +12,33 @@ module ZkFold.Protocol.IVC.Internal where
 import           Control.DeepSeq                                    (NFData)
 import           Control.Lens                                       ((^.))
 import           Control.Lens.Combinators                           (makeLenses)
+import           Data.Binary                                        (Binary)
+import           Data.Function                                      (const, ($))
 import           Data.Functor.Rep                                   (Representable (..))
 import           Data.Type.Equality                                 (type (~))
 import           Data.Zip                                           (Zip (..), unzip)
 import           GHC.Generics                                       (Generic)
-import           Prelude                                            (Show, const, ($))
-import qualified Prelude                                            as P
+import           Text.Show                                          (Show)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number                              (KnownNat, type (+))
+import           ZkFold.Algebra.Number                              (KnownNat, type (+), type (-))
 import           ZkFold.Algebra.Polynomial.Univariate.Simple        (SimplePoly)
 import           ZkFold.Data.Vector                                 (Vector, singleton)
 import           ZkFold.Protocol.IVC.Accumulator                    hiding (pi)
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme              as Acc
 import           ZkFold.Protocol.IVC.AccumulatorScheme              (AccumulatorScheme, accumulatorScheme)
-import           ZkFold.Protocol.IVC.Commit                         (HomomorphicCommit)
 import           ZkFold.Protocol.IVC.CommitOpen
 import           ZkFold.Protocol.IVC.FiatShamir
 import           ZkFold.Protocol.IVC.NARK                           (NARKInstanceProof (..), NARKProof (..))
 import           ZkFold.Protocol.IVC.Oracle
-import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..), predicate)
+import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..), StepFunction, predicate)
 import           ZkFold.Protocol.IVC.RecursiveFunction
 import           ZkFold.Protocol.IVC.SpecialSound                   (SpecialSoundProtocol (..), specialSoundProtocol,
                                                                      specialSoundProtocol')
-import           ZkFold.Protocol.IVC.StepFunction                   (StepFunction)
+import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor)
 import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement)
-import           ZkFold.Symbolic.Interpreter                        (Interpreter)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -69,31 +69,26 @@ data IVCResult k i c f
 
 makeLenses ''IVCResult
 
-type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
-    ( RecursivePredicateAssumptions algo d k a i p c
-    , KnownNat (d+1)
+type IVCAssumptions algo d k a i p c f =
+    ( KnownNat (d + 1)
+    , KnownNat (d - 1)
     , k ~ 1
-    , Zip i
+    , Arithmetic a
+    , Binary a
+    , LayoutFunctor i
+    , LayoutFunctor p
+    , LayoutFunctor c
     , Field f
-    , P.Eq f
-    , HashAlgorithm algo f
-    , RandomOracle algo f f
-    , RandomOracle algo (i f) f
-    , RandomOracle algo (c f) f
-    , HomomorphicCommit [f] (c f)
     , Scale a f
     , Scale a (SimplePoly f (d + 1))
-    , Scale f (c f)
-    , ctx0 ~ Interpreter a
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0
-    , ctx1 ~ CircuitContext a
-    , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx1) ctx1
+    , FieldAssumptions algo c f
+    , FieldAssumptions algo c (FieldElement (CircuitContext a))
     )
 
 -- | Create the first IVC result
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
-ivcSetup :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
+ivcSetup :: forall algo d k a i p c . IVCAssumptions algo d k a i p c a
     => StepFunction a i p
     -> i a
     -> p a
@@ -111,7 +106,7 @@ ivcSetup f z0 witness =
     in
         IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
-ivcProve :: forall ctx0 ctx1 algo d k a i p c . IVCAssumptions ctx0 ctx1 algo d k a i p c a
+ivcProve :: forall algo d k a i p c . IVCAssumptions algo d k a i p c a
     => StepFunction a i p
     -> IVCResult k i c a
     -> p a
@@ -157,7 +152,7 @@ ivcProve f res witness =
     in
         IVCResult z' acc' ivcProof
 
-ivcVerify :: forall ctx0 ctx1 algo d k a i p c f . IVCAssumptions ctx0 ctx1 algo d k a i p c f
+ivcVerify :: forall algo d k a i p c f . IVCAssumptions algo d k a i p c f
     => StepFunction a i p
     -> IVCResult k i c f
     -> ((Vector k (c f), [f]), (Vector k (c f), c f))

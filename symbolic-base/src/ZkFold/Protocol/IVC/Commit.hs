@@ -21,7 +21,7 @@ import           ZkFold.Protocol.IVC.Oracle
 class Commit algo a f where
     commit :: a -> f
 
-instance RandomOracle algo a x => Commit algo a x where
+instance (HashAlgorithm algo a, OracleSource a x) => Commit algo x a where
     commit = oracle @algo
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)

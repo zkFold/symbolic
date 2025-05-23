@@ -148,7 +148,6 @@ library
       ZkFold.Protocol.IVC.Predicate
       ZkFold.Protocol.IVC.RecursiveFunction
       ZkFold.Protocol.IVC.SpecialSound
-      ZkFold.Protocol.IVC.StepFunction
       ZkFold.Protocol.IVC.VerifierCircuit
       ZkFold.Protocol.KZG
       ZkFold.Protocol.Plonk

@@ -10,30 +10,24 @@ import           Prelude                          hiding (Bool (..), Eq (..), in
 import           ZkFold.Algebra.Number            (KnownNat, type (-))
 import           ZkFold.Data.Vector               (Vector, init, item, scanl, unfold)
 import           ZkFold.Protocol.IVC.CommitOpen
-import           ZkFold.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle (..))
+import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (Vector k (c f), o) f
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
-transcript :: forall algo k c f .
-    ( HashAlgorithm algo f
-    , RandomOracle algo f f
-    , RandomOracle algo (c f) f
-    ) => f -> Vector k (c f) -> Vector (k-1) f
+transcript ::
+    forall algo k c f. (HashAlgorithm algo f, OracleSource f (c f)) =>
+    f -> Vector k (c f) -> Vector (k-1) f
 transcript r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle @algo)) r0 cs
 
 fiatShamir :: forall algo k i p c m o f .
-    ( KnownNat k
-    , HashAlgorithm algo f
-    , RandomOracle algo f f
-    , RandomOracle algo (i f) f
-    , RandomOracle algo (c f) f
-    ) => CommitOpen k i p c m o f -> FiatShamir k i p c m o f
+    (KnownNat k, HashAlgorithm algo f, OracleSource f (c f), Foldable i) =>
+    CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir SpecialSoundProtocol {..} =
     let
         prover' pi0 w _ _ =
-            let r0 = oracle @algo pi0
+            let r0 = oracle @algo (FoldableSource pi0)
                 f (r, k) =
                     let (m', c') = prover pi0 w r k
                     in ((m', c'), (oracle @algo (r, c'), k + 1))
@@ -41,7 +35,7 @@ fiatShamir SpecialSoundProtocol {..} =
 
         verifier' pi pms' _ =
             let pms = item pms'
-                r0 = oracle @algo pi :: f
+                r0 = oracle @algo (FoldableSource pi)
                 rs = transcript @algo r0 $ fmap snd pms
             in verifier pi pms rs
     in
