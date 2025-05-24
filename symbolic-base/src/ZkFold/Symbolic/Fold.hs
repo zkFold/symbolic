@@ -3,16 +3,16 @@
 
 module ZkFold.Symbolic.Fold where
 
-import           Control.DeepSeq       (NFData, NFData1)
-import           Data.Binary           (Binary)
-import           Data.Functor.Rep      (Representable (..))
-import           Data.List.Infinite    (Infinite)
-import           Data.Ord              (Ord)
-import           Data.Traversable      (Traversable)
-import           Data.Type.Equality    (type (~))
-import           GHC.Generics          (Par1)
+import           Control.DeepSeq        (NFData1)
+import           Data.Binary            (Binary)
+import           Data.Functor.Rep       (Representable (..))
+import           Data.List.Infinite     (Infinite)
+import           Data.Traversable       (Traversable)
+import           Data.Type.Equality     (type (~))
+import           GHC.Generics           (Par1)
 
-import           ZkFold.Symbolic.Class (Symbolic (..))
+import           ZkFold.Data.ByteString (Binary1)
+import           ZkFold.Symbolic.Class  (Symbolic (..))
 
 class Symbolic c => SymbolicFold c where
   -- | A function to perform folding in a generic context.
@@ -20,13 +20,9 @@ class Symbolic c => SymbolicFold c where
   -- To do this, you need quite a few arguments, see documentation.
   -- Or, even better, use more high-level Symbolic 'List' API.
   sfoldl ::
-    (Binary (Rep f), NFData (Rep f), Ord (Rep f)) =>
-    (forall a. Binary a => Binary (f a)) =>
-    (Representable f, NFData1 f, Traversable f) =>
-    (Binary (Rep p), NFData (Rep p), Ord (Rep p), Representable p) =>
-    (Binary (Rep g), NFData (Rep g), Ord (Rep g), Representable g) =>
-    (forall a. Binary a => Binary (h a)) =>
-    (WitnessField c ~ wc) =>
+    (Binary (Rep f), Binary1 f, Representable f, NFData1 f, Traversable f) =>
+    (Binary (Rep p), Representable p, Binary (Rep g), Representable g) =>
+    (Binary1 h, WitnessField c ~ wc) =>
     (forall s.
       (SymbolicFold s, BaseField s ~ BaseField c) =>
       -- ^ In anonymous context over same base field,
