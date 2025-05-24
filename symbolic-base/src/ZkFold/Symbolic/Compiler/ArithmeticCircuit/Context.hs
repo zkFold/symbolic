@@ -68,10 +68,8 @@ type Constraint a = Poly a NewVar Natural
 
 data CircuitFold a =
     forall p s j.
-    ( Binary (Rep p), NFData (Rep p), Ord (Rep p)
-    , Representable p, Traversable s, Representable s, NFData1 s
-    , Binary (Rep s), NFData (Rep s), Ord (Rep s)
-    , Representable j, Binary (Rep j), NFData (Rep j), Ord (Rep j)) =>
+    ( Binary (Rep p), Representable p, Traversable s, Representable s, NFData1 s
+    , Binary (Rep s), Representable j, Binary (Rep j)) =>
         CircuitFold
         { foldStep   :: (p :*: s :*: j) NewVar ->
                 (CircuitContext a s, p (CircuitWitness a))
@@ -267,13 +265,6 @@ instance (Arithmetic a, Binary a) => SymbolicFold (CircuitContext a) where
          in ((sc <> cc <> fc) { acOutput = resultC }, at <$> resultP)
 
 -------------------------------- Compiler API ----------------------------------
-
--- | Payload of an input to arithmetic circuit.
--- To be used as an argument to 'compileWith'.
-inputPayload ::
-    (Representable i, Binary (Rep i)) =>
-    (forall x. i x -> o x) -> o (CircuitWitness a)
-inputPayload f = f $ tabulate (pure . EqVar . toByteString)
 
 guessOutput ::
     (Arithmetic a, Binary a, Representable o, Foldable o) =>
