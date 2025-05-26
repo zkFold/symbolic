@@ -4,12 +4,14 @@
 
 module ZkFold.Protocol.Plonkup.Utils where
 
+import           Data.Bifunctor                     (first)
 import           Data.Bool                          (bool)
 import           Data.List                          (sortOn)
 import qualified Data.Map                           as M
 import qualified Data.Set                           as S
 import           Prelude                            hiding (Num (..), drop, length, replicate, sum, take, (!!), (/),
                                                      (^))
+import           System.Random                      (RandomGen, mkStdGen64, uniformR)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
@@ -19,7 +21,7 @@ import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
-getParams n = findK' 0 
+getParams n = findK' $ mkStdGen64 0
     where
         omega = case rootOfUnity @a (log2ceiling n) of
                   Just o -> o
@@ -30,13 +32,13 @@ getParams n = findK' 0
         hGroupS = S.fromList hGroup
         hGroup' k = S.fromList $ map (k*) hGroup
 
-        findK' :: Natural -> (a, a, a)
+        findK' :: RandomGen g => g -> (a, a, a)
         findK' g =
-            let k1 = fromConstant g 
-                k2 = fromConstant (g + 42)
+            let (k1, g') = first fromConstant $ uniformR (1, order @a -! 1) g
+                (k2, g'') = first fromConstant $ uniformR (1, order @a -! 1) g'
                 hGroupK1 = hGroup' k1
                 hGroupK2 = hGroup' k2
-            in bool (findK' (g * 3)) (omega, k1, k2) $
+            in bool (findK' g'') (omega, k1, k2) $
                    S.disjoint hGroupS hGroupK1
                 && S.disjoint hGroupK1 hGroupK2
 

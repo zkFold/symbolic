@@ -21,7 +21,7 @@ optimization: 2
 write-ghc-environment-files: never
 
 if !arch(wasm32)
-    -- Always build tests and benchmarks.
+    -- Do not build tests and benchmarks in cross-compilation mode 
     tests: true
     benchmarks: true
 
