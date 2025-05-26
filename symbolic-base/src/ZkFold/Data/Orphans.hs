@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -10,10 +9,8 @@ module ZkFold.Data.Orphans where
 import           Control.DeepSeq  (NFData, NFData1)
 import           Data.Aeson       (FromJSON, ToJSON)
 import           Data.Binary      (Binary)
-import           Data.Eq          (Eq)
 import           Data.Functor     (Functor)
 import           Data.Functor.Rep (Representable (..), WrappedRep (..))
-import           Data.Ord         (Ord)
 import           GHC.Generics     (Par1, U1, (:*:), (:.:))
 
 instance NFData (U1 a)
@@ -34,6 +31,3 @@ instance (ToJSON a, ToJSON (f (g a)), ToJSON (g a)) => ToJSON ((:.:) f g a)
 instance (FromJSON a, FromJSON (f (g a)), FromJSON (g a)) => FromJSON ((:.:) f g a)
 
 deriving newtype instance Binary (Rep f) => Binary (WrappedRep f)
-deriving newtype instance NFData (Rep f) => NFData (WrappedRep f)
-deriving instance Eq (Rep f) => Eq (WrappedRep f)
-deriving instance Ord (Rep f) => Ord (WrappedRep f)
