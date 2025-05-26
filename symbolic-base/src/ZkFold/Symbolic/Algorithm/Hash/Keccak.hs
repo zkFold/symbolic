@@ -1,31 +1,17 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators       #-}
 
--- TODO: Remove these options.
--- TODO: Format by fourmolu.
--- TODO: Benchmark against our current SHA2 implementation.
-
--- TODO: Review language extensions.
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   ResultSizeInBytes,
   ResultSizeInBits,
   AlgorithmSetup (..),
   Keccak,
+  keccak,
+  keccakVar,
+  -- * Mainly for testing.
   padding,
   paddingVar,
   toBlocks,
-  keccak,
-  keccakVar,
-  -- TODO: Mention exports that are mainly for testing.
-  absorbBlock,
-  emptyState,
-  --   AlgorithmSetup (..)
-  -- , Keccak
-  -- , keccak
-  -- , keccakVar
-  -- , PaddedLength
 ) where
 
 import           Control.Monad.ST                                (ST)
@@ -59,6 +45,8 @@ import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators                (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
                                                                   RegisterSize (..))
+import           ZkFold.Symbolic.Data.Conditional                (ifThenElse)
+import           ZkFold.Symbolic.Data.FieldElement               (FieldElement)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                       (OrdWord, UInt)
 import qualified ZkFold.Symbolic.Data.VarByteString              as VB
@@ -67,6 +55,7 @@ import           ZkFold.Symbolic.Data.VarByteString              (VarByteString 
 -- TODO: Is this Width / LaneWidth?
 
 -- NOTE: Code is NOT parameterized over `LaneWidth` at all places, so changing this value could break the code.
+-- TODO: Maybe along with saying rate `mod` 8 ~ 0 and (div rate 8) `mod` 8 ~ 0, I can add that `mod rate lanewidth` is zero to have it completely constrained by lanewidth?
 
 -- | Width of each lane (in bits) in the Keccak sponge state.
 type LaneWidth :: Natural
@@ -154,6 +143,7 @@ type Keccak algorithm context k =
       )
   )
 
+-- | Main function to obtain the hash of a given message.
 keccak ::
   forall algorithm context k.
   Keccak algorithm context k =>
@@ -161,8 +151,19 @@ keccak ::
 keccak bs =
   padding @algorithm @context @k bs
     & toBlocks @algorithm @context @k
-    & absorbBlock @algorithm @context @k emptyState
+    & absorbBlocks @algorithm @context @k
     & squeeze @algorithm @context
+
+-- | Like 'keccak' but for 'VarByteString'.
+keccakVar ::
+  forall algorithm context k.
+  Keccak algorithm context k =>
+  VarByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
+keccakVar msg =
+  let VarByteString {..} = paddingVar @algorithm @context @k msg
+   in toBlocks @algorithm @context @k bsBuffer
+        & absorbBlocksVar @algorithm @context @k bsLength
+        & squeeze @algorithm @context
 
 -- | Number of bytes from a given number of bits assuming that the number of bits is a multiple of 8.
 type BytesFromBits bits = Div bits 8
@@ -191,6 +192,11 @@ withMessageLengthConstraints ::
   ) =>
   ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
     , KnownNat (PaddedLengthBits msgBits rateBits)
+    , KnownNat
+        ( Div
+            (NumBlocks msgBits rateBits)
+            (AbsorbChunkSize' rateBits)
+        )
     , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
     , (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
     ) =>
@@ -204,6 +210,11 @@ withMessageLengthConstraints' ::
   (KnownNat msgBits, KnownNat rateBits)
     :- ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
        , KnownNat (PaddedLengthBits msgBits rateBits)
+       , KnownNat
+          ( Div
+              (NumBlocks msgBits rateBits)
+              (AbsorbChunkSize' rateBits)
+          )
        , -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
          (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
        , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
@@ -215,6 +226,8 @@ withMessageLengthConstraints' =
       (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits))
     $ withKnownNat @(PaddedLengthBits msgBits rateBits)
       (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits * 8))
+    $ withKnownNat @(Div (NumBlocks msgBits rateBits) (AbsorbChunkSize' rateBits))
+      (unsafeSNat ((paddedLengthBytesFromBits @msgBits @rateBits `div` 8) `div` (value @rateBits `div` (value @LaneWidth))))
     $ withDict
       (unsafeAxiom @((Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits))
     $ withDict
@@ -277,13 +290,15 @@ toBlocks msg =
 
 -- TODO: Instead of `ByteString 64 context`, shall I be utilizing something like UInt 64? It could have an advantage in better communicating my bit ordering in words (which is most significant bit first).
 
-type AbsorbChunkSize algorithm = Div (Rate algorithm) LaneWidth
+type AbsorbChunkSize algorithm = AbsorbChunkSize' (Rate algorithm)
 
-absorbBlock ::
+type AbsorbChunkSize' rateBits = Div rateBits LaneWidth
+
+absorbBlocks ::
   forall (algorithm :: Symbol) context k.
   Keccak algorithm context k =>
-  Vector NumLanes (ByteString 64 context) -> Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
-absorbBlock state blocks =
+  Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) -> Vector NumLanes (ByteString 64 context)
+absorbBlocks blocks =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
      in P.foldl -- TODO: Use foldl'?
@@ -299,8 +314,48 @@ absorbBlock state blocks =
                       accState
                in keccakF @context state'
           )
-          state
+          emptyState
           blockChunks
+ where
+  rate = value @(Rate algorithm)
+  laneWidth = value @LaneWidth
+  threshold = div rate laneWidth
+
+absorbBlocksVar ::
+  forall (algorithm :: Symbol) context k.
+  Keccak algorithm context k =>
+  -- | Actual length of the message (post padding) in bits.
+  FieldElement context ->
+  Vector (NumBlocks k (Rate algorithm)) (ByteString 64 context) ->
+  Vector NumLanes (ByteString 64 context)
+absorbBlocksVar paddedMsgLen blocks =
+  withMessageLengthConstraints @k @(Rate algorithm) $
+    let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString 64 context)) = chunks blocks
+        actualChunksCount :: FieldElement context =
+          let absorbChunkSize = fromConstant $ value @(AbsorbChunkSize algorithm)
+              numBlocks = from @_ @(UInt (NumberOfBits (BaseField context)) Auto context) paddedMsgLen `div` fromConstant (64 :: Natural)
+           in from $ numBlocks `div` absorbChunkSize
+        numChunksToDrop = fromConstant (value @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))) - actualChunksCount
+     in -- In this case, we need to drop first few chunks.
+        P.foldl -- TODO: Use foldl'?
+          ( \accState (ix, chunk) ->
+              -- TODO: Perhaps this can be optimized.
+              let state' =
+                    mapWithIx
+                      ( \z el ->
+                          if div z 5 + 5 * mod z 5 < threshold
+                            then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
+                            else el
+                      )
+                      accState
+                  ixFE :: FieldElement context = fromConstant ix
+               in ifThenElse
+                    (ixFE < numChunksToDrop)
+                    accState
+                    (keccakF @context state')
+          )
+          emptyState
+          (zip (generate @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) P.id) blockChunks)
  where
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
@@ -384,14 +439,3 @@ modify f (Vector v) = Vector $ V.modify f v
 
 reverseBits :: forall n context. Symbolic context => ByteString n context -> ByteString n context
 reverseBits (ByteString cbs) = ByteString $ hmap reverse cbs
-
-keccakVar ::
-  forall algorithm context k.
-  Keccak algorithm context k =>
-  VarByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
-keccakVar msg = P.undefined
-
--- paddingVar @algorithm @context @k msg
---   & toBlocks @algorithm @context @k
---   & absorbBlock @algorithm @context @k emptyState
---   & squeeze @algorithm @context
