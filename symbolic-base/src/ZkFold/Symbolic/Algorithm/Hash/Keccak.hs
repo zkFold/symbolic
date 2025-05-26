@@ -96,7 +96,7 @@ class
   , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
   , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   ) =>
-  AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
+  AlgorithmSetup (algorithm :: Symbol)
   where
   type Rate algorithm :: Natural
   -- ^ The rate of the sponge construction, in bits.
@@ -104,29 +104,29 @@ class
   padByte :: Word8
   -- ^ Delimited suffix for the padding.
 
-instance AlgorithmSetup "Keccak256" c where
+instance AlgorithmSetup "Keccak256" where
   type Rate "Keccak256" = 1088
   padByte = 0x01
 
-instance AlgorithmSetup "SHA3-512" c where
+instance AlgorithmSetup "SHA3-512" where
   type Rate "SHA3-512" = 576
   padByte = 0x06
 
-instance AlgorithmSetup "SHA3-384" c where
+instance AlgorithmSetup "SHA3-384" where
   type Rate "SHA3-384" = 832
   padByte = 0x06
 
-instance AlgorithmSetup "SHA3-256" c where
+instance AlgorithmSetup "SHA3-256" where
   type Rate "SHA3-256" = 1088
   padByte = 0x06
 
-instance AlgorithmSetup "SHA3-224" c where
+instance AlgorithmSetup "SHA3-224" where
   type Rate "SHA3-224" = 1152
   padByte = 0x06
 
 -- | Constraints required for a type-safe Keccak
 type Keccak algorithm context k =
-  ( AlgorithmSetup algorithm context
+  ( AlgorithmSetup algorithm
   , KnownNat k
   , -- So that we are dealing with "byte"strings.
     Mod k 8 ~ 0
@@ -254,7 +254,7 @@ padding msg =
         -- @fromIntegral@ below is safe as we have hard-coded instances for rate bytes.
         padByteString =
           let emptyBS = B.replicate (P.fromIntegral padLengthBytes) 0
-              bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm @context)) `B.cons` B.tail emptyBS
+              bsAfterPadByte = (B.head emptyBS .|. (padByte @algorithm)) `B.cons` B.tail emptyBS
            in B.init bsAfterPadByte `B.append` B.singleton (B.last bsAfterPadByte .|. 0x80)
      in (resize msg `shiftBitsL` (padLengthBytes * 8)) || fromConstant padByteString
 
@@ -271,7 +271,7 @@ paddingVar VarByteString {..} =
       paddedLengthBits = bsLength + padLengthBits
       padBS =
         let bs1 = fromConstant (0x80 :: Natural)
-            bs2 = fromConstant (P.fromIntegral (padByte @algorithm @context) :: Natural)
+            bs2 = fromConstant (P.fromIntegral (padByte @algorithm) :: Natural)
          in (bs2 `VB.shiftL` (padLengthBits - fromConstant (8 :: Natural))) || bs1
       grown :: ByteString (PaddedLengthBits k (Rate algorithm)) context
       grown =
@@ -431,7 +431,7 @@ type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorith
 
 squeeze ::
   forall algorithm context.
-  AlgorithmSetup algorithm context =>
+  AlgorithmSetup algorithm =>
   Symbolic context =>
   Vector NumLanes (ByteString LaneWidth context) -> ByteString (ResultSizeInBits (Rate algorithm)) context
 squeeze state =

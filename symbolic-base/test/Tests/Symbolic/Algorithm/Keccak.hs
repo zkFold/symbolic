@@ -143,7 +143,7 @@ readTestCase s =
 testAlgorithm ::
   forall (algorithm :: Symbol).
   KnownSymbol algorithm =>
-  AlgorithmSetup algorithm Context =>
+  AlgorithmSetup algorithm =>
   Symbolic Context =>
   FilePath ->
   Spec
@@ -168,7 +168,7 @@ testAlgorithm file = do
 specKeccak' ::
   forall (algorithm :: Symbol).
   KnownSymbol algorithm =>
-  AlgorithmSetup algorithm Context =>
+  AlgorithmSetup algorithm =>
   Symbolic Context =>
   Spec
 specKeccak' = do
