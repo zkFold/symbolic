@@ -26,7 +26,6 @@ import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
 import qualified Data.Foldable                                   as P (foldl')
 import           Data.Function                                   (flip, (&))
-import           Data.Kind                                       (Type)
 import           Data.Semialign                                  (Zip (..))
 import           Data.Type.Equality                              (type (~))
 import qualified Data.Vector                                     as V
