@@ -254,9 +254,12 @@ specUInt = do
     Hspec.it "UInt correctly obtained from FieldElement" $ do
       let fe :: FieldElement (Interpreter (Zp BLS12_381_Scalar)) = fromConstant (8 :: Natural)
           uintFromFE = from @_ @(UInt (NumberOfBits (BaseField (Interpreter (Zp BLS12_381_Scalar)))) Auto (Interpreter (Zp BLS12_381_Scalar))) fe
+          uintFromNatural :: UInt (NumberOfBits (BaseField (Interpreter (Zp BLS12_381_Scalar)))) Auto (Interpreter (Zp BLS12_381_Scalar)) = fromConstant (8 :: Natural)
           uintMod1088 = uintFromFE `mod` (fromConstant (1088 :: Natural))
           feRoundTrip :: FieldElement (Interpreter (Zp BLS12_381_Scalar)) = from uintFromFE
-      P.putStrLn $ "FieldElement corresponding to 8 is " ++ show fe
-      P.putStrLn $ "UInt obtained from FieldElement is " ++ show uintFromFE
-      P.putStrLn $ "UInt obtained from FieldElement modulo 1088 is " ++ show uintMod1088
-      P.putStrLn $ "FieldElement (round-trip) obtained from corresponding UInt is " ++ show feRoundTrip
+      P.putStrLn $ "FieldElement corresponding to 8 is: " ++ show fe
+      P.putStrLn $ "UInt obtained from FieldElement is: " ++ show uintFromFE
+      P.putStrLn $ "UInt obtained from Natural is: " ++ show uintFromNatural
+      P.putStrLn $ "UInt obtained from FieldElement modulo 1088 is: " ++ show uintMod1088
+      P.putStrLn $ "FieldElement (round-trip) obtained from corresponding UInt is: " ++ show feRoundTrip
+      uintFromFE `Hspec.shouldBe` uintFromNatural
