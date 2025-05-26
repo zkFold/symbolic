@@ -170,7 +170,7 @@ library
       ZkFold.Protocol.Plonkup.Verifier.Setup
       ZkFold.Protocol.Plonkup.Witness
       ZkFold.Protocol.NonInteractiveProof
-      ZkFold.Protocol.NonInteractiveProof.Internal
+      ZkFold.Protocol.NonInteractiveProof.Class
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Prelude
@@ -232,6 +232,15 @@ library
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
+    if arch(wasm32)
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.WASM
+    elif arch(javascript)
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.JS
+    else
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.Haskell
     if arch(javascript) || arch(wasm32)
       js-sources:
         js-src/blake2b.js
