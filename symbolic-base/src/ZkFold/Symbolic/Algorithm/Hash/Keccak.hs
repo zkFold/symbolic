@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
 
+-- Code is largely based on [`keccak`](https://github.com/aupiff/keccak) Haskell library.
+
 module ZkFold.Symbolic.Algorithm.Hash.Keccak (
   ResultSizeInBytes,
   ResultSizeInBits,
@@ -157,7 +159,10 @@ keccak bs =
     & absorbBlocks @algorithm @context @k
     & squeeze @algorithm @context
 
--- | Like 'keccak' but for 'VarByteString'.
+{- | Like 'keccak' but for 'VarByteString'.
+
+__NOTE__: It is assumed that length of 'ByteString' (in bits) inside 'VarByteString' is multiple of 8 (so that we have valid "byte" string).
+-}
 keccakVar ::
   forall algorithm context k.
   Keccak algorithm context k =>
@@ -350,7 +355,7 @@ absorbBlocksVar paddedMsgLen blocks =
   laneWidth = value @LaneWidth
   threshold = div rate laneWidth
 
--- TODO: Are accumulators required to be made strict?
+-- TODO: Are accumulators required to be made strict? This should be checked for all recursive/folding functions.
 keccakF ::
   forall context.
   Symbolic context =>
