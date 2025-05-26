@@ -16,6 +16,7 @@ import           Data.List                                  ((++))
 import           GHC.Generics                               (Par1 (Par1), U1)
 import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
+import qualified Test.Hspec                                 as Hspec
 import           Test.Hspec                                 (Spec, describe)
 import           Test.QuickCheck                            (Gen, Property, withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit           (exec1, it)
@@ -28,13 +29,14 @@ import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                         (Vector)
 import           ZkFold.Prelude                             (chooseNatural)
-import           ZkFold.Symbolic.Class                      (Arithmetic)
+import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic (..))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators           (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
                                                              NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.Eq
+import           ZkFold.Symbolic.Data.FieldElement          (FieldElement)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
@@ -249,3 +251,12 @@ specUInt = do
     specUInt' @BLS12_381_Scalar @0 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
     specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
+    Hspec.it "UInt correctly obtained from FieldElement" $ do
+      let fe :: FieldElement (Interpreter (Zp BLS12_381_Scalar)) = fromConstant (8 :: Natural)
+          uintFromFE = from @_ @(UInt (NumberOfBits (BaseField (Interpreter (Zp BLS12_381_Scalar)))) Auto (Interpreter (Zp BLS12_381_Scalar))) fe
+          uintMod1088 = uintFromFE `mod` (fromConstant (1088 :: Natural))
+          feRoundTrip :: FieldElement (Interpreter (Zp BLS12_381_Scalar)) = from uintFromFE
+      P.putStrLn $ "FieldElement corresponding to 8 is " ++ show fe
+      P.putStrLn $ "UInt obtained from FieldElement is " ++ show uintFromFE
+      P.putStrLn $ "UInt obtained from FieldElement modulo 1088 is " ++ show uintMod1088
+      P.putStrLn $ "FieldElement (round-trip) obtained from corresponding UInt is " ++ show feRoundTrip
