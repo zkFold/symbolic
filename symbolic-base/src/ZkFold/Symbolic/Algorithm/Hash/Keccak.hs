@@ -22,6 +22,7 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
+import qualified Data.Foldable                                   as P (foldl')
 import           Data.Function                                   (flip, (&))
 import           Data.Kind                                       (Type)
 import           Data.Semialign                                  (Zip (..))
@@ -296,7 +297,7 @@ absorbBlocks ::
 absorbBlocks blocks =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context)) = chunks blocks
-     in P.foldl -- TODO: Use foldl'?
+     in P.foldl'
           ( \accState chunk ->
               -- TODO: Perhaps this can be optimized.
               let state' =
@@ -332,7 +333,7 @@ absorbBlocksVar paddedMsgLen blocks =
            in from $ numBlocks `div` absorbChunkSize
         numChunksToDrop = fromConstant (value @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))) - actualChunksCount
      in -- In this case, we need to drop first few chunks.
-        P.foldl -- TODO: Use foldl'?
+        P.foldl'
           ( \accState (ix, chunk) ->
               -- TODO: Perhaps this can be optimized.
               let state' =
