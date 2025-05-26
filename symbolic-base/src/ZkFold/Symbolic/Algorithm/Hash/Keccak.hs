@@ -126,8 +126,8 @@ instance AlgorithmSetup "SHA3-224" c where
 type Keccak algorithm context k =
   ( AlgorithmSetup algorithm context
   , KnownNat k
-  -- So that we are dealing with "byte"strings.
-  , Mod k 8 ~ 0
+  , -- So that we are dealing with "byte"strings.
+    Mod k 8 ~ 0
   , Symbolic context
   , KnownNat
       ( NumberOfRegisters
@@ -299,16 +299,7 @@ absorbBlocks blocks =
     let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context)) = chunks blocks
      in P.foldl'
           ( \accState chunk ->
-              -- TODO: Perhaps this can be optimized.
-              let state' =
-                    mapWithIx
-                      ( \z el ->
-                          if div z 5 + 5 * mod z 5 < threshold
-                            then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
-                            else el
-                      )
-                      accState
-               in keccakF @context state'
+              keccakF @context (updateStateInAbsorption @algorithm @context chunk threshold accState)
           )
           emptyState
           blockChunks
@@ -316,6 +307,16 @@ absorbBlocks blocks =
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
   threshold = div rate laneWidth
+
+{-# INLINE updateStateInAbsorption #-}
+updateStateInAbsorption :: forall algorithm context. Symbolic context => Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context) -> Natural -> Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+updateStateInAbsorption chunk threshold =
+  mapWithIx
+    ( \z el ->
+        if div z 5 + 5 * mod z 5 < threshold
+          then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
+          else el
+    )
 
 absorbBlocksVar ::
   forall (algorithm :: Symbol) context k.
@@ -335,15 +336,7 @@ absorbBlocksVar paddedMsgLen blocks =
      in -- In this case, we need to drop first few chunks.
         P.foldl'
           ( \accState (ix, chunk) ->
-              -- TODO: Perhaps this can be optimized.
-              let state' =
-                    mapWithIx
-                      ( \z el ->
-                          if div z 5 + 5 * mod z 5 < threshold
-                            then el `xor` (chunk !! (div z 5 + 5 * mod z 5))
-                            else el
-                      )
-                      accState
+              let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix
                in ifThenElse
                     (ixFE < numChunksToDrop)
@@ -358,7 +351,6 @@ absorbBlocksVar paddedMsgLen blocks =
   threshold = div rate laneWidth
 
 -- TODO: Are accumulators required to be made strict?
--- TODO: Should some functions be asked to be made inlined?
 keccakF ::
   forall context.
   Symbolic context =>
@@ -368,7 +360,10 @@ keccakF state =
  where
   f (r, s) = (P.succ r, iota @context r . chi @context . pi @context . rho @context . theta @context $ s)
 
-theta :: forall context. Symbolic context =>
+{-# INLINE theta #-}
+theta ::
+  forall context.
+  Symbolic context =>
   Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
 theta state =
   concatMap @5 @5
@@ -396,14 +391,20 @@ theta state =
       )
   d = generate @5 (\i -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
-rho :: forall context. Symbolic context =>
+{-# INLINE rho #-}
+rho ::
+  forall context.
+  Symbolic context =>
   Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
 rho = zipWith (flip rotateBitsL) rotationConstants
 
-pi :: forall context.
+{-# INLINE pi #-}
+pi ::
+  forall context.
   Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
 pi state = backpermute state piConstants
 
+{-# INLINE chi #-}
 chi ::
   forall context.
   Symbolic context =>
@@ -412,6 +413,7 @@ chi b = mapWithIx subChi b
  where
   subChi z el = el `xor` (not (b !! mod (z + 5) 25) && (b !! mod (z + 10) 25))
 
+{-# INLINE iota #-}
 iota ::
   forall context.
   Symbolic context =>
@@ -441,8 +443,10 @@ squeeze state =
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
 
+{-# INLINE modify #-}
 modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
 modify f (Vector v) = Vector $ V.modify f v
 
+{-# INLINE reverseBits #-}
 reverseBits :: forall n context. Symbolic context => ByteString n context -> ByteString n context
 reverseBits (ByteString cbs) = ByteString $ hmap reverse cbs
