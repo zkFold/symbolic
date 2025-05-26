@@ -12,6 +12,7 @@ import           Data.Function                          (($))
 import           Data.Functor                           ((<$>))
 import           Data.List                              (isPrefixOf, isSuffixOf, take, (++))
 import           Data.List.Split                        (splitOn)
+import           Data.Maybe                             (catMaybes)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Type.Equality                     (type (~))
 import           GHC.TypeLits                           (KnownSymbol, SomeNat (..), Symbol, symbolVal)
@@ -35,7 +36,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Interpreter            (Interpreter)
 
--- TODO: Shall I modify my typeclass to work with bytes instead?
 -- | Adds following obvious constraints.
 withConstraints ::
   forall n {r}.
@@ -71,6 +71,8 @@ type Context = Interpreter Element
 {- | These test files are provided by the Computer Security Resource Center.
 Passing these tests is a requirement for having an implementation of a hashing function officially validated.
 https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
+
+Folder also includes https://keccak.team/obsolete/KeccakKAT-3.zip, which contains test vectors for Keccak.
 -}
 dataDir :: FilePath
 dataDir = "test/data/sha-3bytetestvectors/"
@@ -79,25 +81,43 @@ getTestFiles :: forall (algorithm :: Symbol). KnownSymbol algorithm => IO [FileP
 getTestFiles = Haskell.filter isAlgoFile <$> listDirectory dataDir
  where
   isAlgoFile :: String -> Haskell.Bool
-  isAlgoFile s = (algorithm `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
+  isAlgoFile s =
+    if "Keccak" `isPrefixOf` algorithm
+      then ("KAT_" <> Haskell.drop 6 algorithm <> ".txt") `isSuffixOf` s
+      else (algorithm `isPrefixOf` s) && (".rsp" `isSuffixOf` s)
 
   algorithm :: String
   algorithm = (\c -> if c == '-' then '_' else c) <$> symbolVal (Proxy @algorithm)
 
-readRSP :: FilePath -> IO [(Natural, Natural, Natural)]
+readRSP :: forall (algorithm :: Symbol). KnownSymbol algorithm => FilePath -> IO [(Natural, Natural, Natural)]
 readRSP path = do
   fullTests <- lookupEnv "FULL_SHA3"
   contents <- Haskell.readFile path
-  let parts = Haskell.filter (\s -> take 3 s == "Len") $ splitOn "\r\n\r\n" contents
+  let parts =
+        Haskell.filter (\s -> take 3 s == "Len") $
+          splitOn
+            ( let fn = takeFileName path
+               in if isPrefixOf "ShortMsgKAT" fn || (isPrefixOf "LongMsgKAT" fn)
+                    then "\n\n"
+                    else "\r\n\r\n"
+            )
+            contents
   case fullTests of
-    Haskell.Nothing -> pure $ take 20 $ readTestCase <$> parts
-    _               -> pure $ readTestCase <$> parts
+    Haskell.Nothing -> pure $ take 20 $ catMaybes $ readTestCase @algorithm <$> parts
+    _               -> pure $ catMaybes $ readTestCase @algorithm <$> parts
 
-readTestCase :: String -> (Natural, Natural, Natural)
-readTestCase s = (numBytes, msg, hash)
+readTestCase :: forall algorithm. KnownSymbol algorithm => String -> Haskell.Maybe (Natural, Natural, Natural)
+readTestCase s =
+  if "Keccak" `isPrefixOf` symbolVal (Proxy @algorithm)
+    then
+      if numBits `mod` 8 == 0
+        then
+          Haskell.Just (numBits `div` 8, msg, hash)
+        else Haskell.Nothing
+    else Haskell.Just (numBits `div` 8, msg, hash)
  where
-  numBytes :: Natural
-  numBytes = read numBytesS `div` 8
+  numBits :: Natural
+  numBits = read numBitsS
 
   msg :: Natural
   msg = read ("0x" ++ msgS)
@@ -105,18 +125,18 @@ readTestCase s = (numBytes, msg, hash)
   hash :: Natural
   hash = read ("0x" ++ hashS)
 
-  numBytesS :: String
-  numBytesS = case s =~ ("Len = ([0-9]+)" :: String) of
+  numBitsS :: String
+  numBitsS = case s =~ ("Len = ([0-9]+)" :: String) of
     (_ :: String, _ :: String, _ :: String, [x]) -> x
     _                                            -> Haskell.error "unreachable"
 
   msgS :: String
-  msgS = case s =~ ("Msg = ([a-f0-9]+)" :: String) of
+  msgS = case s =~ ("Msg = ([a-fA-F0-9]+)" :: String) of
     (_ :: String, _ :: String, _ :: String, [x]) -> x
     _                                            -> Haskell.error "unreachable"
 
   hashS :: String
-  hashS = case s =~ ("MD = ([a-f0-9]+)" :: String) of
+  hashS = case s =~ ("MD = ([a-fA-F0-9]+)" :: String) of
     (_ :: String, _ :: String, _ :: String, [x]) -> x
     _                                            -> Haskell.error "unreachable"
 
@@ -128,7 +148,7 @@ testAlgorithm ::
   FilePath ->
   Spec
 testAlgorithm file = do
-  testCases <- runIO (readRSP $ dataDir </> file)
+  testCases <- runIO (readRSP @algorithm $ dataDir </> file)
   describe description $
     forM_ testCases $ \(numBytes, input, hash) -> do
       let bitMsgN = "calculates hash on a message of " <> Haskell.show numBytes <> " bytes (input is Natural)"
@@ -137,9 +157,10 @@ testAlgorithm file = do
           it bitMsgN $
             ( withConstraints @bytes $
                 let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
-                 in toConstant $ keccak @algorithm @Context @(bytes * 8) inBS
+                    -- inBSVar :: VarByteString 1000 Context = fromByteString $ resize inBS
+                 in (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS) -- , toConstant $ keccakVar @algorithm @Context @(1000) inBSVar)
             )
-              `shouldBe` hash
+              `shouldBe` hash -- , hash)
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
@@ -154,10 +175,10 @@ specKeccak' = do
   testFiles <- runIO $ getTestFiles @algorithm
   forM_ testFiles $ testAlgorithm @algorithm
 
--- TODO: These currently have tests for SHA3, we also need for Keccak.
 specKeccak :: Spec
 specKeccak = do
   describe "Keccak" $ do
+    specKeccak' @"Keccak256"
     specKeccak' @"SHA3-512"
     specKeccak' @"SHA3-384"
     specKeccak' @"SHA3-256"
