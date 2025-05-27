@@ -144,7 +144,6 @@ testAlgorithm ::
   forall (algorithm :: Symbol).
   KnownSymbol algorithm =>
   AlgorithmSetup algorithm =>
-  Symbolic Context =>
   FilePath ->
   Spec
 testAlgorithm file = do
