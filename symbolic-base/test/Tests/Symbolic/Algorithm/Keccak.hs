@@ -31,7 +31,6 @@ import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak  (AlgorithmSetup, keccak)
-import           ZkFold.Symbolic.Class                  (Symbolic)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Interpreter            (Interpreter)
