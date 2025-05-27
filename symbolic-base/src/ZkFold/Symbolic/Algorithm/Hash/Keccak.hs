@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeOperators       #-}
 
 -- Code is largely based on [`keccak`](https://github.com/aupiff/keccak) Haskell library.
@@ -24,7 +25,9 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
+#if __GLASGOW_HASKELL__ < 912
 import qualified Data.Foldable                                   as P (foldl')
+#endif
 import           Data.Function                                   (flip, (&))
 import           Data.Semialign                                  (Zip (..))
 import           Data.Type.Equality                              (type (~))
