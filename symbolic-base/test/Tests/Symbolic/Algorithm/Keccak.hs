@@ -168,7 +168,6 @@ specKeccak' ::
   forall (algorithm :: Symbol).
   KnownSymbol algorithm =>
   AlgorithmSetup algorithm =>
-  Symbolic Context =>
   Spec
 specKeccak' = do
   testFiles <- runIO $ getTestFiles @algorithm
