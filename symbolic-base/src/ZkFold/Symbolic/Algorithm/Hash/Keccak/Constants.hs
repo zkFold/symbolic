@@ -10,7 +10,6 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 
 import           Data.Function                   (($))
 import           Data.Functor                    (Functor (..))
-import           Data.Int                        (Int)
 import           GHC.IsList                      (fromList)
 import           GHC.TypeNats                    (Natural)
 
@@ -59,7 +58,7 @@ rotationConstants = fromList [  0, 36,  3, 41, 18
 -- These constants define the lane permutation in the π step of Keccak-f[1600].
 -- Each value represents the new position for the lane at that index in the 5x5 state array.
 -- For example, the lane at position 1 moves to position 15, position 2 moves to position 5, etc.
-piConstants :: Vector NumLanes Int
+piConstants :: Vector NumLanes Natural
 piConstants = fromList [ 0, 15, 5, 20, 10
                          , 6, 21, 11, 1, 16
                          , 12, 2, 17, 7, 22

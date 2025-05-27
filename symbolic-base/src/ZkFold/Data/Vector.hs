@@ -185,13 +185,12 @@ slice :: forall i n size a.
   -> Vector n a
 slice (Vector v) = Vector $ V.slice (fromIntegral $ value @i) (fromIntegral $ value @n) v
 
--- TODO: Shall I at least make it Vector m Natural?
 -- | Yield the vector obtained by replacing each element @i@ of the
 -- index vector by @xs'!'i@.
 --
 -- Note that we'll get run-time error if any index in the index vector is out of bounds.
-backpermute :: forall n m a. Vector n a -> Vector m Int -> Vector m a
-backpermute (Vector v) (Vector is) = Vector $ V.backpermute v is
+backpermute :: forall n m a. Vector n a -> Vector m Natural -> Vector m a
+backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map fromIntegral is
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV
