@@ -109,7 +109,7 @@ readTestCase :: forall algorithm. KnownSymbol algorithm => String -> Haskell.May
 readTestCase s =
   if "Keccak" `isPrefixOf` symbolVal (Proxy @algorithm)
     then
-      if numBits `mod` 8 == 0
+      if numBits `mod` 8 == 0 -- Keccak tests are in bits, not bytes.
         then
           Haskell.Just (numBits `div` 8, msg, hash)
         else Haskell.Nothing
