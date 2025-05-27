@@ -116,8 +116,11 @@ library
       ZkFold.Algebra.Polynomial.Multivariate.Substitution
       ZkFold.Algebra.Polynomial.Univariate
       ZkFold.Algorithm.ReedSolomon
+      ZkFold.Control.Conditional
       ZkFold.Control.HApplicative
+      ZkFold.Data.Bool
       ZkFold.Data.ByteString
+      ZkFold.Data.Eq
       ZkFold.Data.HFunctor
       ZkFold.Data.HFunctor.Classes
       ZkFold.Data.List.Infinite

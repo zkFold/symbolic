@@ -15,15 +15,23 @@ module ZkFold.Algebra.Field (
     Ext3(..)
     ) where
 
-import           Control.Applicative                  ((<|>))
+import           Control.Applicative                  (liftA2, pure, (<*>), (<|>))
 import           Control.DeepSeq                      (NFData (..))
 import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
-import           Data.Bool                            (bool)
+import           Data.Bool                            (Bool)
+import qualified Data.Bool                            as Bool
+import           Data.Function                        (const, id, ($), (.))
+import           Data.Functor                         ((<$>))
+import           Data.List                            ((++))
+import           Data.Maybe                           (Maybe (..))
+import           Data.Semigroup                       ((<>))
+import           Data.Tuple                           (snd)
+import           Data.Type.Equality                   (type (~))
 import qualified Data.Vector                          as V
 import           GHC.Generics                         (Generic)
 import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
-import           Prelude                              hiding (Fractional (..), Num (..), div, length, (^))
+import           Prelude                              (Integer)
 import qualified Prelude                              as Haskell
 import           System.Random                        (Random (..))
 import           Test.QuickCheck                      hiding (scale)
@@ -31,7 +39,9 @@ import           Test.QuickCheck                      hiding (scale)
 import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.Control.Conditional           (Conditional (..))
 import           ZkFold.Data.ByteString
+import           ZkFold.Data.Eq
 import           ZkFold.Prelude                       (iterate', log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
@@ -41,11 +51,11 @@ newtype Zp (p :: Natural) = Zp Integer
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
-fromZp (Zp a) = fromIntegral a
+fromZp (Zp a) = Haskell.fromIntegral a
 
 {-# INLINE residue #-}
 residue :: forall p . KnownNat p => Integer -> Integer
-residue = (`Haskell.mod` fromIntegral (value @p))
+residue = (`Haskell.mod` Haskell.fromIntegral (value @p))
 
 {-# INLINE toZp #-}
 toZp :: forall p . KnownNat p => Integer -> Zp p
@@ -58,21 +68,22 @@ instance ToConstant (Zp p) where
 instance (KnownNat p, KnownNat (NumberOfBits (Zp p))) => Finite (Zp p) where
     type Order (Zp p) = p
 
-instance KnownNat p => Eq (Zp p) where
+instance KnownNat p => Haskell.Eq (Zp p) where
     Zp a == Zp b = residue @p (a - b) == 0
 
-instance KnownNat p => Ord (Zp p) where
-    Zp a <= Zp b = residue @p a <= residue @p b
+instance KnownNat p => Haskell.Ord (Zp p) where
+    Zp a <= Zp b = residue @p a Haskell.<= residue @p b
 
-instance KnownNat p => Enum (Zp p) where
+instance KnownNat p => Haskell.Enum (Zp p) where
     succ = (+ one)
     pred x = x - one
-    toEnum = Zp . toEnum
-    fromEnum (Zp x) = fromEnum x
-    enumFrom = enumFromThen <*> succ
+    toEnum = Zp . Haskell.toEnum
+    fromEnum (Zp x) = Haskell.fromEnum x
+    enumFrom = Haskell.enumFromThen <*> Haskell.succ
     enumFromThen x x' = let !d = x' - x in iterate' (+ d) x
-    enumFromTo = enumFromThenTo <*> succ
-    enumFromThenTo x x' y = takeWhile (/= y) (enumFromThen x x') ++ [y]
+    enumFromTo = Haskell.enumFromThenTo <*> Haskell.succ
+    enumFromThenTo x x' y =
+        Haskell.takeWhile (/= y) (Haskell.enumFromThen x x') ++ [y]
 
 instance KnownNat p => AdditiveSemigroup (Zp p) where
     Zp a + Zp b = toZp (a + b)
@@ -106,7 +117,8 @@ instance KnownNat p => Semiring (Zp p)
 
 instance KnownNat p => SemiEuclidean (Zp p) where
     divMod a b = let (q, r) = Haskell.divMod (fromZp a) (fromZp b)
-                  in (toZp . fromIntegral $ q, toZp . fromIntegral $ r)
+                  in ( toZp (Haskell.fromIntegral q)
+                     , toZp (Haskell.fromIntegral r) )
 
 instance KnownNat p => FromConstant Integer (Zp p) where
     fromConstant = toZp
@@ -117,13 +129,20 @@ instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
     a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
 
+instance Conditional Bool (Zp n) where bool = Bool.bool
+
+instance KnownNat n => Eq (Zp n) where
+    type BooleanOf (Zp n) = Bool
+    (==) = (Haskell.==)
+    (/=) = (Haskell./=)
+
 instance Prime p => Field (Zp p) where
     finv (Zp a) = fromConstant $ inv a (value @p)
 
     rootOfUnity l
       | l == 0            = Nothing
       | orderNotDivisible = Nothing
-      | otherwise         = Just $ rootOfUnity' 2
+      | Haskell.otherwise = Just $ rootOfUnity' 2
         where
           orderNotDivisible = (value @p -! 1) `Haskell.mod` n /= 0
           n = 2 ^ l
@@ -134,7 +153,8 @@ instance Prime p => Field (Zp p) where
               in bool (rootOfUnity' (g + 1)) x' (x' ^ (n `Haskell.div` 2) /= one)
 
 inv :: Integer -> Natural -> Natural
-inv a p = fromIntegral $ snd (egcd (a, 1) (fromConstant p, 0)) `Haskell.mod` fromConstant p
+inv a p = Haskell.fromIntegral $
+    snd (egcd (a, 1) (fromConstant p, 0)) `Haskell.mod` fromConstant p
   where
     egcd (x, y) (0, _) = (x, y)
     egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
@@ -142,11 +162,7 @@ inv a p = fromIntegral $ snd (egcd (a, 1) (fromConstant p, 0)) `Haskell.mod` fro
 
 instance Prime p => BinaryExpansion (Zp p) where
     type Bits (Zp p) = [Zp p]
-    binaryExpansion = map (Zp . fromConstant) . binaryExpansion . fromZp
-
-instance Prime p => DiscreteField' (Zp p)
-
-instance Prime p => TrichotomyField (Zp p)
+    binaryExpansion = Haskell.map (Zp . fromConstant) . binaryExpansion . fromZp
 
 instance KnownNat p => Haskell.Num (Zp p) where
     fromInteger = toZp
@@ -158,18 +174,18 @@ instance KnownNat p => Haskell.Num (Zp p) where
     signum      = const 1
 
 instance Prime p => Haskell.Fractional (Zp p) where
-    fromRational = error "`fromRational` is not implemented for `Zp p`"
+    fromRational = Haskell.error "`fromRational` is not implemented for `Zp p`"
     recip        = finv
     (/)          = (//)
 
-instance Show (Zp p) where
-    show (Zp a) = show a
+instance Haskell.Show (Zp p) where
+    show (Zp a) = Haskell.show a
 
 instance ToJSON (Zp p) where
     toJSON (Zp a) = toJSON a
 
 instance FromJSON (Zp p) where
-    parseJSON = fmap Zp . parseJSON
+    parseJSON = Haskell.fmap Zp . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
     put (Zp x) = go x (wordCount @p)
@@ -177,18 +193,18 @@ instance KnownNat p => Binary (Zp p) where
         go _ 0      = pure ()
         go n count =
             let (n', r) = n `Haskell.divMod` 256
-            in putWord8 (fromIntegral r) <> go n' (count -! 1)
+            in putWord8 (Haskell.fromIntegral r) <> go n' (count -! 1)
     get = toZp <$> go (wordCount @p)
       where
         go 0 = pure zero
         go n = liftA2 combine getWord8 (go $ n -! 1) <|> pure zero
-        combine r d = fromIntegral r + 256 * d
+        combine r d = Haskell.fromIntegral r + 256 * d
 
 wordCount :: forall p. KnownNat p => Natural
-wordCount = ceiling $ log2ceiling (value @p) % (8 :: Natural)
+wordCount = Haskell.ceiling $ log2ceiling (value @p) % (8 :: Natural)
 
 instance KnownNat p => Arbitrary (Zp p) where
-    arbitrary = toZp <$> chooseInteger (0, fromIntegral (value @p) - 1)
+    arbitrary = toZp <$> chooseInteger (0, Haskell.fromIntegral (value @p) - 1)
 
 instance KnownNat p => Random (Zp p) where
     randomR (Zp a, Zp b) g = (Zp r, g')
@@ -197,7 +213,7 @@ instance KnownNat p => Random (Zp p) where
 
     random g = (Zp r, g')
       where
-        (r, g') = randomR (0, fromIntegral (value @p) - 1) g
+        (r, g') = randomR (0, Haskell.fromIntegral (value @p) - 1) g
 
 -- | Exponentiation by an element of a finite field is well-defined (and lawful)
 -- if and only if the base is a finite multiplicative group of a matching order.
@@ -213,10 +229,10 @@ class (Ring poly, UnivariateFieldPolynomial f poly) => IrreduciblePoly poly f (e
     irreduciblePoly :: poly
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-    deriving (Eq, Show, Generic)
+    deriving (Haskell.Eq, Haskell.Show, Generic)
 
-instance Ord f => Ord (Ext2 f e) where
-    Ext2 a b <= Ext2 c d = [b, a] <= ([d, c] :: [f])
+instance Haskell.Ord f => Haskell.Ord (Ext2 f e) where
+    Ext2 a b <= Ext2 c d = [b, a] Haskell.<= ([d, c] :: [f])
 
 instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
     type Order (Ext2 f e) = Order f ^ 2
@@ -250,6 +266,10 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext2
 instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
     (^) = intPowF
 
+instance Conditional bool field => Conditional bool (Ext2 field i)
+
+instance Eq field => Eq (Ext2 field i)
+
 instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
     finv (Ext2 a b) =
         let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @poly @f @e)
@@ -258,7 +278,7 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
             [x] -> Ext2 x zero
             v   -> Ext2 (v V.! 0) (v V.! 1)
 
-    rootOfUnity n = (\r -> Ext2 r zero) <$> rootOfUnity n
+    rootOfUnity n = (`Ext2` zero) <$> rootOfUnity n
 
 instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext2 f e) where
     fromConstant p = case fromPoly . snd $ qr (fromConstant p) (irreduciblePoly @poly @f @e) of
@@ -278,10 +298,10 @@ instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ex
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
-    deriving (Eq, Show, Generic)
+    deriving (Haskell.Eq, Haskell.Show, Generic)
 
-instance Ord f => Ord (Ext3 f e) where
-    Ext3 a b c <= Ext3 d e f = [c, b, a] <= ([f, e, d] :: [f])
+instance Haskell.Ord f => Haskell.Ord (Ext3 f e) where
+    Ext3 a b c <= Ext3 d e f = [c, b, a] Haskell.<= ([f, e, d] :: [f])
 
 instance (KnownNat (Order (Ext3 f e)), KnownNat (NumberOfBits (Ext3 f e))) => Finite (Ext3 f e) where
     type Order (Ext3 f e) = Order f ^ 3
@@ -314,6 +334,10 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext3
 
 instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
     (^) = intPowF
+
+instance Conditional bool field => Conditional bool (Ext3 field i)
+
+instance Eq field => Eq (Ext3 field i)
 
 instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
     finv (Ext3 a b c) =
