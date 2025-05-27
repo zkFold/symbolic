@@ -35,7 +35,9 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -threaded
+    if !arch(wasm32)
+      ghc-options:
+        -threaded
     if flag(pedantic)
       ghc-options:
         -Werror
@@ -80,6 +82,10 @@ common options
 
 common options-exe
     import: options
+    if arch(wasm32)
+      buildable: False
+    else
+      buildable: True
     ghc-options:
       -rtsopts
     ghc-prof-options:
@@ -87,6 +93,11 @@ common options-exe
 
 library
     import: options
+    if arch(wasm32)
+        ghc-options: 
+            -no-hs-main 
+            -optl-mexec-model=reactor 
+            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm
     exposed-modules:
       ZkFold.Symbolic.Examples
       ZkFold.Symbolic.Examples.Blake2b
@@ -168,4 +179,4 @@ executable smart-wallet-creator
     base              >= 4.9 && < 5,
     bytestring                     ,
     symbolic-base                  ,
-    symbolic-examples              ,
+    symbolic-examples

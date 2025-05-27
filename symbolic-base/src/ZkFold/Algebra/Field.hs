@@ -18,7 +18,6 @@ module ZkFold.Algebra.Field (
 import           Control.Applicative                  ((<|>))
 import           Control.DeepSeq                      (NFData (..))
 import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
-import           Data.Bifunctor                       (first)
 import           Data.Bool                            (bool)
 import qualified Data.Vector                          as V
 import           GHC.Generics                         (Generic)
@@ -26,7 +25,7 @@ import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
 import           Prelude                              hiding (Fractional (..), Num (..), div, length, (^))
 import qualified Prelude                              as Haskell
-import           System.Random                        (Random (..), RandomGen, mkStdGen, uniformR)
+import           System.Random                        (Random (..))
 import           Test.QuickCheck                      hiding (scale)
 
 import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
@@ -122,16 +121,17 @@ instance Prime p => Field (Zp p) where
     finv (Zp a) = fromConstant $ inv a (value @p)
 
     rootOfUnity l
-      | l == 0                       = Nothing
-      | (value @p -! 1) `Haskell.mod` n /= 0 = Nothing
-      | otherwise = Just $ rootOfUnity' (mkStdGen 0)
+      | l == 0            = Nothing
+      | orderNotDivisible = Nothing
+      | otherwise         = Just $ rootOfUnity' 2
         where
+          orderNotDivisible = (value @p -! 1) `Haskell.mod` n /= 0
           n = 2 ^ l
-          rootOfUnity' :: RandomGen g => g -> Zp p
+          rootOfUnity' :: Natural -> Zp p
           rootOfUnity' g =
-              let (x, g') = first fromConstant $ uniformR (1, value @p -! 1) g
+              let x = fromConstant g
                   x' = x ^ ((value @p -! 1) `Haskell.div` n)
-              in bool (rootOfUnity' g') x' (x' ^ (n `Haskell.div` 2) /= one)
+              in bool (rootOfUnity' (g + 1)) x' (x' ^ (n `Haskell.div` 2) /= one)
 
 inv :: Integer -> Natural -> Natural
 inv a p = fromIntegral $ snd (egcd (a, 1) (fromConstant p, 0)) `Haskell.mod` fromConstant p

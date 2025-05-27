@@ -37,7 +37,9 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -threaded
+    if !arch(wasm32)
+      ghc-options:
+        -threaded
     if impl(ghc >=9.8)
       ghc-options:
         -Wno-x-partial
@@ -168,7 +170,7 @@ library
       ZkFold.Protocol.Plonkup.Verifier.Setup
       ZkFold.Protocol.Plonkup.Witness
       ZkFold.Protocol.NonInteractiveProof
-      ZkFold.Protocol.NonInteractiveProof.Internal
+      ZkFold.Protocol.NonInteractiveProof.Class
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Prelude
@@ -232,11 +234,23 @@ library
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
-    if arch(javascript)
+    if arch(wasm32)
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.WASM
+    elif arch(javascript)
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.JS
+    else
+      exposed-modules:
+        ZkFold.Protocol.NonInteractiveProof.Haskell
+    if arch(javascript) || arch(wasm32)
       js-sources:
         js-src/blake2b.js
 
-    if arch(javascript)
+    if arch(wasm32)
+      build-depends:
+        ghc-experimental
+    if arch(javascript) || arch(wasm32)
       build-depends:
         base                          >= 4.9 && < 5,
         adjunctions                           < 4.5,
@@ -259,7 +273,7 @@ library
         optics                                < 0.5,
         pretty-simple                         < 4.2,
         QuickCheck                           < 2.16,
-        random                                < 1.3,
+        random                      >= 1.3 && < 1.4,
         scientific                            < 0.4,
         semialign                             < 1.4,
         semigroups                                 ,
@@ -296,7 +310,7 @@ library
         optics                                < 0.5,
         pretty-simple                         < 4.2,
         QuickCheck                           < 2.16,
-        random                                < 1.3,
+        random                      >= 1.3 && < 1.4,
         scientific                            < 0.4,
         semialign                             < 1.4,
         semigroups                                 ,
@@ -360,7 +374,7 @@ test-suite symbolic-base-test
       constraints                                ,
       containers                                 ,
       deepseq                                    ,
-      random                                     ,
+      random                      >= 1.3 && < 1.4,
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,

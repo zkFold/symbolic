@@ -30,6 +30,7 @@ module ZkFold.Symbolic.Examples.SmartWallet
 import           Data.Aeson                                   (withText)
 import qualified Data.Aeson                                   as Aeson
 import           Data.ByteString                              (ByteString)
+import qualified Data.ByteString                              as BS
 import qualified Data.ByteString.Base16                       as BS16
 import           Data.Coerce                                  (coerce)
 import           Data.Foldable                                (foldrM)
@@ -38,20 +39,24 @@ import           Data.Text                                    (Text)
 import           Data.Text.Encoding                           (decodeUtf8, encodeUtf8)
 import           Data.Word                                    (Word8)
 import           Deriving.Aeson
+import           Foreign.C.String
+import           Foreign.C.Types
+import           Foreign.Marshal.Array
 import           GHC.Generics                                 (Par1 (..), U1 (..), type (:*:) (..))
 import           GHC.Natural                                  (naturalToInteger)
-import           Prelude                                      hiding (Fractional (..), Num (..), length)
+import           Prelude                                      hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude                                      as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                                               BLS12_381_G2_Point, BLS12_381_Scalar, Fr)
+                                                               BLS12_381_G2_Point, Fr)
 import           ZkFold.Algebra.EllipticCurve.Class           (compress)
 import           ZkFold.Algebra.Field                         (Zp, fromZp, toZp)
 import qualified ZkFold.Algebra.Number                        as Number
 import           ZkFold.Algebra.Number                        (KnownNat, Natural, type (^))
 import           ZkFold.Algebra.Polynomial.Univariate         (PolyVec)
 import           ZkFold.Data.ByteString                       (toByteString)
+import qualified ZkFold.Data.Vector                           as V
 import           ZkFold.Data.Vector                           (Vector)
 import           ZkFold.Prelude                               (log2ceiling)
 import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscript (..), NonInteractiveProof (..),
@@ -59,6 +64,7 @@ import           ZkFold.Protocol.NonInteractiveProof          as NP (FromTranscr
 import           ZkFold.Protocol.Plonkup                      (Plonkup (..))
 import           ZkFold.Protocol.Plonkup.Proof
 import           ZkFold.Protocol.Plonkup.Prover.Secret        (PlonkupProverSecret (..))
+import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..))
 import           ZkFold.Protocol.Plonkup.Utils                (getParams, getSecrectParams)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments
 import           ZkFold.Protocol.Plonkup.Verifier.Setup
@@ -88,44 +94,52 @@ convertG2 :: BLS12_381_G2_Point -> ByteString
 convertG2 = toByteString . compress
 
 data ZKSetupBytes = ZKSetupBytes {
-    n          :: Integer
-  , pow        :: Integer
-  , omega_int  :: Integer
-  , k1_int     :: Integer
-  , k2_int     :: Integer
-  , h1_bytes   :: ByteString
-  , cmQm_bytes :: ByteString
-  , cmQl_bytes :: ByteString
-  , cmQr_bytes :: ByteString
-  , cmQo_bytes :: ByteString
-  , cmQc_bytes :: ByteString
-  , cmQk_bytes :: ByteString
-  , cmS1_bytes :: ByteString
-  , cmS2_bytes :: ByteString
-  , cmS3_bytes :: ByteString
-  , cmT1_bytes :: ByteString
+    n             :: Integer
+  , nPrv          :: Integer
+  , pow           :: Integer
+  , omega_int     :: Integer
+  , omegaNPrv_int :: Integer
+  , k1_int        :: Integer
+  , k2_int        :: Integer
+  , h1_bytes      :: ByteString
+  , cmQm_bytes    :: ByteString
+  , cmQl_bytes    :: ByteString
+  , cmQr_bytes    :: ByteString
+  , cmQo_bytes    :: ByteString
+  , cmQc_bytes    :: ByteString
+  , cmQk_bytes    :: ByteString
+  , cmS1_bytes    :: ByteString
+  , cmS2_bytes    :: ByteString
+  , cmS3_bytes    :: ByteString
+  , cmT1_bytes    :: ByteString
+  , cmT2_bytes    :: ByteString
+  , cmT3_bytes    :: ByteString
 } deriving stock (Show, Generic)
 
 mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
   in ZKSetupBytes
-    { n          = fromIntegral (Number.value @n)
-    , pow        = log2ceiling (Number.value @n)
-    , omega_int  = convertZp omega
-    , k1_int     = convertZp k1
-    , k2_int     = convertZp k2
-    , h1_bytes   = convertG2 h1
-    , cmQm_bytes = convertG1 cmQm
-    , cmQl_bytes = convertG1 cmQl
-    , cmQr_bytes = convertG1 cmQr
-    , cmQo_bytes = convertG1 cmQo
-    , cmQc_bytes = convertG1 cmQc
-    , cmQk_bytes = convertG1 cmQk
-    , cmS1_bytes = convertG1 cmS1
-    , cmS2_bytes = convertG1 cmS2
-    , cmS3_bytes = convertG1 cmS3
-    , cmT1_bytes = convertG1 cmT1
+    { n             = fromIntegral (Number.value @n)
+    , nPrv          = fromIntegral $ prvNum relation
+    , pow           = log2ceiling (Number.value @n)
+    , omega_int     = convertZp omega
+    , omegaNPrv_int = convertZp (omega ^ (prvNum relation + 1))
+    , k1_int        = convertZp k1
+    , k2_int        = convertZp k2
+    , h1_bytes      = convertG2 h1
+    , cmQm_bytes    = convertG1 cmQm
+    , cmQl_bytes    = convertG1 cmQl
+    , cmQr_bytes    = convertG1 cmQr
+    , cmQo_bytes    = convertG1 cmQo
+    , cmQc_bytes    = convertG1 cmQc
+    , cmQk_bytes    = convertG1 cmQk
+    , cmS1_bytes    = convertG1 cmS1
+    , cmS2_bytes    = convertG1 cmS2
+    , cmS3_bytes    = convertG1 cmS3
+    , cmT1_bytes    = convertG1 cmT1
+    , cmT2_bytes    = convertG1 cmT2
+    , cmT3_bytes    = convertG1 cmT3
     }
 
 -- | Field element.
@@ -181,6 +195,7 @@ data ZKProofBytes = ZKProofBytes
   , z2_xi'_int    :: !Integer
   , h1_xi'_int    :: !Integer
   , h2_xi_int     :: !Integer
+  , l_xi          :: !ZKF
   , l1_xi         :: !ZKF
   }
   deriving stock (Show, Generic)
@@ -191,19 +206,19 @@ mkProof PlonkupProof {..} =
     case l_xi of
       [] -> error "mkProof: empty inputs"
       (xi:_) -> ZKProofBytes
-        { cmA_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmA
-        , cmB_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmB
-        , cmC_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmC
-        , cmF_bytes     = ByteStringFromHex . BS16.encode $ convertG1 cmF
-        , cmH1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH1
-        , cmH2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmH2
-        , cmZ1_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ1
-        , cmZ2_bytes    = ByteStringFromHex . BS16.encode $ convertG1 cmZ2
-        , cmQlow_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQlow
-        , cmQmid_bytes  = ByteStringFromHex . BS16.encode $ convertG1 cmQmid
-        , cmQhigh_bytes = ByteStringFromHex . BS16.encode $ convertG1 cmQhigh
-        , proof1_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof1
-        , proof2_bytes  = ByteStringFromHex . BS16.encode $ convertG1 proof2
+        { cmA_bytes     = ByteStringFromHex $ convertG1 cmA
+        , cmB_bytes     = ByteStringFromHex $ convertG1 cmB
+        , cmC_bytes     = ByteStringFromHex $ convertG1 cmC
+        , cmF_bytes     = ByteStringFromHex $ convertG1 cmF
+        , cmH1_bytes    = ByteStringFromHex $ convertG1 cmH1
+        , cmH2_bytes    = ByteStringFromHex $ convertG1 cmH2
+        , cmZ1_bytes    = ByteStringFromHex $ convertG1 cmZ1
+        , cmZ2_bytes    = ByteStringFromHex $ convertG1 cmZ2
+        , cmQlow_bytes  = ByteStringFromHex $ convertG1 cmQlow
+        , cmQmid_bytes  = ByteStringFromHex $ convertG1 cmQmid
+        , cmQhigh_bytes = ByteStringFromHex $ convertG1 cmQhigh
+        , proof1_bytes  = ByteStringFromHex $ convertG1 proof1
+        , proof2_bytes  = ByteStringFromHex $ convertG1 proof2
         , a_xi_int      = convertZp a_xi
         , b_xi_int      = convertZp b_xi
         , c_xi_int      = convertZp c_xi
@@ -216,6 +231,7 @@ mkProof PlonkupProof {..} =
         , z2_xi'_int    = convertZp z2_xi'
         , h1_xi'_int    = convertZp h1_xi'
         , h2_xi_int     = convertZp h2_xi
+        , l_xi          = ZKF $ convertZp l1_xi
         , l1_xi         = ZKF $ convertZp xi
         }
 
@@ -293,6 +309,7 @@ data ExpModProofInput =
         , piSignature :: Natural
         , piTokenName :: Natural
         }
+    deriving P.Show
 
 expModProof
     :: forall t
@@ -354,11 +371,17 @@ expModProofMock
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModProofMock x ps ExpModProofInput{..} = proof
     where
-        input :: Natural
-        input = ((piSignature P.^ piPubE) `P.mod` piPubN) `P.mod` (Number.value @BLS12_381_Scalar) P.* piTokenName
+        expm :: Natural
+        expm = (piSignature P.^ piPubE) `P.mod` piPubN
+
+        hash :: Natural
+        hash = expm `P.mod` (2 P.^ (256 :: Natural))
+
+        input :: Fr
+        input = toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
 
         witnessInputs :: Par1 Fr
-        witnessInputs = Par1 $ toZp (fromIntegral input)
+        witnessInputs = Par1 input
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
         (gs, h1) = getSecrectParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
@@ -366,3 +389,33 @@ expModProofMock x ps ExpModProofInput{..} = proof
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
         witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+
+foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
+
+mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+mkProofBytesWasm xPtr psPtr proofInputPtr = do
+    (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
+    let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
+    let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
+    newArray (json <> [CChar 0])
+
+mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
+mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
+    (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
+    let mockProofBytes = mkProof $ expModProofMock @ByteString x ps proofInput
+    let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
+    newArray (json <> [CChar 0])
+
+readPointers :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_Point, ExpModProofInput)
+readPointers xPtr psPtr proofInputPtr = do
+    xStr <- peekCString xPtr
+    let x = toZp $ read xStr
+
+    psStr <- peekCString psPtr
+    let ps = PlonkupProverSecret $ V.unsafeToVector $ (toZp . read) <$> words psStr
+
+    [e, m, s, t] <- words <$> peekCString proofInputPtr
+    let empi = ExpModProofInput (read e) (read m) (read s) (read t)
+
+    pure (x, ps, empi)
