@@ -164,6 +164,8 @@ keccak bs =
 {- | Like 'keccak' but for 'VarByteString'.
 
 __NOTE__: It is assumed that length of 'ByteString' (in bits) inside 'VarByteString' is multiple of 8 (so that we have valid "byte" string).
+
+__WARNING__: This function is not yet tested. See https://github.com/zkFold/symbolic/issues/598 & https://github.com/zkFold/symbolic/issues/597.
 -}
 keccakVar ::
   forall algorithm context k.
