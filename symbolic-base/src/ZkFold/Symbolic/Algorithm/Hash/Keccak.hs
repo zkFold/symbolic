@@ -25,7 +25,7 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
-#if __GLASGOW_HASKELL__ < 912
+#if __GLASGOW_HASKELL__ < 910
 import qualified Data.Foldable                                   as P (foldl')
 #endif
 import           Data.Function                                   (flip, (&))
