@@ -359,7 +359,7 @@ absorbBlocksVar paddedMsgLen blocks =
   laneWidth = value @LaneWidth
   threshold = div rate laneWidth
 
--- TODO: Are accumulators required to be made strict? This should be checked for all recursive/folding functions.
+-- TODO: Are accumulators required to be made strict? This should be checked for all recursive/folding functions. Issue to track this: https://github.com/zkFold/symbolic/issues/599.
 keccakF ::
   forall context.
   Symbolic context =>
