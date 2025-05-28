@@ -29,6 +29,7 @@ import           Data.Data                                       (Proxy (..))
 import qualified Data.Foldable                                   as P (foldl')
 #endif
 import           Data.Function                                   (flip, (&))
+import           Data.Functor.Rep                                (Representable (..))
 import           Data.Semialign                                  (Zip (..))
 import           Data.Type.Equality                              (type (~))
 import qualified Data.Vector                                     as V
@@ -40,11 +41,11 @@ import           Prelude                                         (($), (.), (<$>
 import qualified Prelude                                         as P
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.Field                            (fromZp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, generate,
-                                                                  head, indexed, mapWithIx, reverse, slice, unfold,
-                                                                  (!!))
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, head,
+                                                                  indexed, mapWithIx, reverse, slice, unfold, (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
@@ -344,7 +345,7 @@ absorbBlocksVar paddedMsgLen blocks =
         numChunksToDrop = fromConstant (value @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))) - actualChunksCount
      in -- In this case, we need to drop first few chunks.
         P.foldl'
-          ( \accState (ix, chunk) ->
+          ( \accState (fromZp -> ix, chunk) ->
               let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix
                in ifThenElse
@@ -353,7 +354,7 @@ absorbBlocksVar paddedMsgLen blocks =
                     (keccakF @context state')
           )
           emptyState
-          (zip (generate @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) P.id) blockChunks)
+          (zip (tabulate P.id) blockChunks)
  where
   rate = value @(Rate algorithm)
   laneWidth = value @LaneWidth
@@ -387,18 +388,18 @@ theta state =
     )
     $ indexed d
  where
-  c =
-    generate @5
+  c :: Vector 5 (ByteString 64 context) =
+    tabulate
       ( \i ->
           P.foldl1
             xor
-            ( case someNatVal i of
+            ( case someNatVal (fromZp i) of
                 SomeNat (_ :: Proxy i) ->
                   withDict (timesNat @i @5) $
                     slice @(i * 5) @5 @NumLanes state
             )
       )
-  d = generate @5 (\i -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
+  d :: Vector 5 (ByteString 64 context) = tabulate (\(fromZp -> i) -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 {-# INLINE rho #-}
 rho ::

@@ -9,11 +9,12 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants (
 
 import           Data.Function                   (($))
 import           Data.Functor                    (Functor (..))
+import           Data.Functor.Rep                (Representable (..))
 import           GHC.IsList                      (fromList)
 import           GHC.TypeNats                    (Natural)
 
 import           ZkFold.Algebra.Class            (FromConstant (..))
-import           ZkFold.Data.Vector              (Vector (..), generate)
+import           ZkFold.Data.Vector              (Vector (..))
 import           ZkFold.Symbolic.Class           (Symbolic)
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
 
@@ -130,4 +131,4 @@ piConstants =
     ]
 
 emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
-emptyState = generate @NumLanes (\_ -> fromConstant (0 :: Natural))
+emptyState = tabulate (\_ -> fromConstant (0 :: Natural))

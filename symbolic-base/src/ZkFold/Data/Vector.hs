@@ -45,10 +45,6 @@ instance KnownNat size => Representable (Vector size) where
   index (Vector v) ix = v V.! fromIntegral (fromZp ix)
   tabulate f = Vector (V.generate (knownNat @size) (f . fromIntegral))
 
--- | Generate a vector of size @size@ by applying a function to each index.
-generate :: forall size a . KnownNat size => (Natural -> a) -> Vector size a
-generate f = Vector $ V.generate (knownNat @size) (f . fromIntegral)
-
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
