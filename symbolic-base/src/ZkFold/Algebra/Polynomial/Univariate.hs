@@ -208,7 +208,7 @@ mulAdaptive !l !r
             rPadded = padVector r pad
 
             maybeW2n :: Maybe c
-            maybeW2n = rootOfUnity $ fromIntegral (p P.+ 1)
+            maybeW2n = rootOfUnity $ fromIntegral p
 
 mulDft :: forall c . Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
 mulDft !p !w2n !lPadded !rPadded = c

@@ -41,12 +41,6 @@ import           ZkFold.Protocol.Plonkup.Witness                (PlonkupWitnessI
 import           ZkFold.Symbolic.Class                          (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
-import Debug.Trace
-import Prelude (String, Show (..), (<>))
-
-traceS :: Show a => String -> a -> a
-traceS s a = trace (s <> ": " <> show a) a
-
 -- | Polynomial types and specific polynomials that were causing exceptions
 problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a) Natural]
 problematicPolynomials =
@@ -91,9 +85,9 @@ propPlonkPolyEquality ::
     Bool
 propPlonkPolyEquality plonk witness secret pow =
     let setup = setupProve plonk
-        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
-        p = traceS "Polynomial" $ with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
-     in traceS "LHS" (p `evalPolyVec` (omega ^ fromZp pow)) == traceS "zero" zero
+        (_, _, pr@PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
+        p = with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
+     in (p `evalPolyVec` (omega ^ fromZp pow)) == zero
 
 propPlonkGrandProductIsCorrect ::
     forall i o n .

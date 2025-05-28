@@ -14,7 +14,7 @@ import           Prelude                                    (fst)
 import           Test.Hspec
 import           Test.QuickCheck                            hiding (Witness, witness)
 
-import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint)
 import           ZkFold.Algebra.EllipticCurve.Class         (CyclicGroup (..))
 import           ZkFold.Algebra.Number                      (KnownNat)
 import           ZkFold.Algebra.Polynomial.Univariate
@@ -27,7 +27,7 @@ import           ZkFold.Protocol.Plonkup.Update             (updateProverSetup, 
 import           ZkFold.Protocol.Plonkup.Witness            (witnessInput)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval)
 
-type P i n = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+type P i n = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
 
 propUpdateSetupIsCorrect ::
     forall i n . (KnownNat n, Representable i, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
@@ -40,7 +40,7 @@ propUpdateSetupIsCorrect plonkup witness =
         setupP' = updateProverSetup setupP par
         (input, proof) = prove @(P i n) setupP' witness
 
-        h = head $ lagrangeBasisGroupElements @n @_ @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) (omega setupP) (gs setupP)
+        h = head $ lagrangeBasisGroupElements @n @_ @(PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint)) (omega setupP) (gs setupP)
         setupV = setupVerify plonkup
         setupV' = updateVerifierSetup setupV par [h]
     in verify @(P i n) setupV' input proof

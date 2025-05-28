@@ -97,7 +97,7 @@ propDecodeWithError ReedSolomonExample {..} =
         decoded = decode encoded pe r (k+r)
     in toPoly (V.fromList msg) == decoded
 
-specReedSolomon':: forall a . (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => Spec
+specReedSolomon' :: forall a . (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => Spec
 specReedSolomon' = do
     describe "Reed-Solomon" $ do
         describe ("Type: " ++ show (typeOf @a zero)) $ do

@@ -1,5 +1,10 @@
+{-# LANGUAGE DeriveAnyClass #-} 
+{-# LANGUAGE UndecidableInstances #-} 
+
 module ZkFold.Protocol.Plonkup.Testing where
 
+import           Control.DeepSeq                    (NFData)
+import           GHC.Generics                       (Generic)
 import           Prelude                            hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
 
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
@@ -53,4 +58,17 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , w1            :: pv n
     , w2            :: pv n
     , w3            :: pv n
-    }
+    } deriving Generic
+
+deriving instance 
+  ( Show g1
+  , Show (pv n)
+  , Show (PlonkupPolyExtended n g1 pv)
+  , Show (ScalarFieldOf g1)
+  ) => Show (PlonkupProverTestInfo n g1 pv)
+deriving instance 
+  ( NFData g1
+  , NFData (pv n)
+  , NFData (PlonkupPolyExtended n g1 pv)
+  , NFData (ScalarFieldOf g1)
+  ) => NFData (PlonkupProverTestInfo n g1 pv)
