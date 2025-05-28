@@ -164,10 +164,6 @@ unsafeConcat = concat . unsafeToVector @m
 concatMap :: forall m n a b . (a -> Vector n b) -> Vector m a -> Vector (m * n) b
 concatMap f (Vector v) = Vector $ V.concatMap (toV . f) v
 
--- | Pair each element of a vector with its index.
-indexed :: forall n a. KnownNat n => Vector n a -> Vector n (Natural, a)
-indexed = mapWithIx (,)
-
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
 

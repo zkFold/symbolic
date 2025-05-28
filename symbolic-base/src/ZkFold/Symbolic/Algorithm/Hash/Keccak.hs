@@ -44,8 +44,9 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field                            (fromZp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor                            (hmap)
-import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap, head,
-                                                                  indexed, mapWithIx, reverse, slice, unfold, (!!))
+import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
+                                                                  enumerate, head, mapWithIx, reverse, slice, unfold,
+                                                                  (!!))
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
@@ -386,7 +387,7 @@ theta state =
                   slice @(i * 5) @5 state
           )
     )
-    $ indexed d
+    $ enumerate d
  where
   c :: Vector 5 (ByteString 64 context) =
     tabulate
