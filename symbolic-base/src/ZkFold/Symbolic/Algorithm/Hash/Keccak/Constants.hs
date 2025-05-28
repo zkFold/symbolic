@@ -14,6 +14,7 @@ import           GHC.IsList                      (fromList)
 import           GHC.TypeNats                    (Natural)
 
 import           ZkFold.Algebra.Class            (FromConstant (..))
+import           ZkFold.Algebra.Field            (Zp)
 import           ZkFold.Data.Vector              (Vector (..))
 import           ZkFold.Symbolic.Class           (Symbolic)
 import           ZkFold.Symbolic.Data.ByteString (ByteString)
@@ -100,7 +101,7 @@ These constants define the lane permutation in the π step of Keccak-f[1600].
 Each value represents the new position for the lane at that index in the 5x5 state array.
 For example, the lane at position 1 moves to position 15, position 2 moves to position 5, etc.
 -}
-piConstants :: Vector NumLanes Natural
+piConstants :: Vector NumLanes (Zp NumLanes)
 piConstants =
   fromList
     [ 0
