@@ -141,7 +141,7 @@ expMod n pow modulus = resize result
 -- | n ^ 65537 `mod` modulus
 --
 exp65537Mod
-    :: forall c n p m r
+    :: forall c n m r
     .  Symbolic c
     => KnownRegisterSize r
     => KnownNat n
@@ -152,21 +152,15 @@ exp65537Mod
     => UInt n r c
     -> UInt m r c
     -> UInt m r c
-exp65537Mod n modulus = modulus + modulus 
-{--
-exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq4 n' m'
+exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
     where
         m' :: UInt (2 * m) r c
         m' = resize modulus
 
         n' :: UInt (2 * m) r c
-        n' = resize n `mod` m'
+        n' = resize n -- `mod` m'
 
-        sq1 = Haskell.snd $ productMod n' n' m' 
-        sq2 = Haskell.snd $ productMod sq1 sq1 m'
-        sq3 = Haskell.snd $ productMod sq2 sq2 m' 
-        sq4 = Haskell.snd $ productMod sq3 sq3 m' 
---}
+        sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ productMod x x m') n' [1..16 :: Natural]
 
 bitsPow
     :: forall c n p r

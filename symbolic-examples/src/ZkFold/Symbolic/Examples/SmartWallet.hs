@@ -236,7 +236,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
-type ExpModCircuitGates = 2^7
+type ExpModCircuitGates = 2^10
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
@@ -283,7 +283,7 @@ expModContract
 expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
     where
         msgHash :: UInt 2048 Auto c
-        msgHash = sig -- exp65537Mod @c @2048 @RSA.PubExponentSize @2048 sig pubN
+        msgHash = exp65537Mod @c @2048 @2048 sig pubN
 
         rsize :: Natural
         rsize = registerSize @(BaseField c) @2048 @Auto
@@ -294,8 +294,9 @@ expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * to
         hashAsFE = FieldElement $ fromCircuitF (let UInt regs = msgHash in regs) $ \v -> do
             z <- newAssigned (const zero)
             ans <- foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
-            temporaryMeaninglessAns <- foldrM (\a i -> newAssigned $ \p -> p i + scale a (p z)) ans [0..63 :: Natural]
-            pure $ Par1 temporaryMeaninglessAns
+--            temporaryMeaninglessAns <- foldrM (\a i -> newAssigned $ \p -> p i + scale a (p z)) ans [0..200000 :: Natural]
+--            pure $ Par1 temporaryMeaninglessAns
+            pure $ Par1 ans 
 
 expModCircuit :: ExpModCircuit
 expModCircuit = C.compile @Fr expModContract
@@ -355,7 +356,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^10
+type ExpModCircuitGatesMock = 2^18
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
