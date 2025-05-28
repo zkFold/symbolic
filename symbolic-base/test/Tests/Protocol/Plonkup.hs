@@ -92,7 +92,7 @@ propPlonkPolyEquality ::
 propPlonkPolyEquality plonk witness secret pow =
     let setup = setupProve plonk
         (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
-        p = trace ("omega: " <> show omega <> "\n" <> "pow: " <> show pow) $ with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
+        p = traceS "Polynomial" $ with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
      in traceS "LHS" (p `evalPolyVec` (omega ^ fromZp pow)) == traceS "zero" zero
 
 propPlonkGrandProductIsCorrect ::

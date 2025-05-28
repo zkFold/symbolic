@@ -154,6 +154,12 @@ instance Compressible BLS12_381_G2_Point where
             y = if bigY then max y' y'' else min y' y''
         in  pointXY x y
 
+instance Compressible BLS12_381_G2_JacobianPoint where
+    type Compressed BLS12_381_G2_JacobianPoint = BLS12_381_G2_CompressedPoint
+    pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
+    compress p = compress (project @_ @BLS12_381_G2_Point p) 
+    decompress p = project @BLS12_381_G2_Point $ decompress p
+
 ------------------------------------ Encoding ------------------------------------
 
 -- infinite list of divMod 256's, little endian order

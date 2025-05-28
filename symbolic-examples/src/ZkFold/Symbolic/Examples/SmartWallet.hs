@@ -48,8 +48,8 @@ import           Prelude                                      hiding (Fractional
 import qualified Prelude                                      as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_G1_CompressedPoint, BLS12_381_G1_Point,
-                                                               BLS12_381_G2_Point, Fr)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      -- (BLS12_381_G1_CompressedPoint, BLS12_381_G1_JacobianPoint,
+                                                             --  BLS12_381_G2_JacobianPoint, Fr)
 import           ZkFold.Algebra.EllipticCurve.Class           (compress)
 import           ZkFold.Algebra.Field                         (Zp, fromZp, toZp)
 import qualified ZkFold.Algebra.Number                        as Number
@@ -88,10 +88,10 @@ import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
 convertZp :: Zp p -> Integer
 convertZp = naturalToInteger . fromZp
 
-convertG1 :: BLS12_381_G1_Point -> ByteString
+convertG1 :: BLS12_381_G1_JacobianPoint -> ByteString
 convertG1 = toByteString . compress
 
-convertG2 :: BLS12_381_G2_Point -> ByteString
+convertG2 :: BLS12_381_G2_JacobianPoint -> ByteString
 convertG2 = toByteString . compress
 
 data ZKSetupBytes = ZKSetupBytes {
@@ -242,7 +242,7 @@ type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
 type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
 type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
 
-type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
 
 type TranscriptConstraints ts =
     ( ToTranscript ts Word8
@@ -304,7 +304,7 @@ expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> Set
 expModSetup x ac = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 ac h1 gs
         setupV  = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
@@ -321,7 +321,7 @@ expModProof
     :: forall t
     .  TranscriptConstraints t
     => Fr
-    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
     -> ExpModCircuit
     -> ExpModProofInput
     -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
@@ -343,10 +343,10 @@ expModProof x ps ac ExpModProofInput{..} = proof
         paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
         setupP  = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
-        witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_Point paddedWitnessInputs, ps)
+        witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
         (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
 
 
@@ -364,7 +364,7 @@ expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (Plon
 expModSetupMock x = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupV  = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
@@ -372,7 +372,7 @@ expModProofMock
     :: forall t
     .  TranscriptConstraints t
     => Fr
-    -> PlonkupProverSecret BLS12_381_G1_Point
+    -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
     -> ExpModProofInput
     -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModProofMock x ps ExpModProofInput{..} = proof
@@ -390,10 +390,10 @@ expModProofMock x ps ExpModProofInput{..} = proof
         witnessInputs = Par1 input
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_Point @BLS12_381_G2_Point x
+        (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
         setupP  = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
-        witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point witnessInputs, ps)
+        witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
         (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
@@ -413,7 +413,7 @@ mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
     let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
     newArray (json <> [CChar 0])
 
-readPointers :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_Point, ExpModProofInput)
+readPointers :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_JacobianPoint, ExpModProofInput)
 readPointers xPtr psPtr proofInputPtr = do
     xStr <- peekCString xPtr
     let x = toZp $ read xStr
