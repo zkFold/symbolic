@@ -41,15 +41,25 @@ specEllipticCurve = do
   specEllipticCurveGenerator @Pluto_Point
   specEllipticCurveGenerator @Eris_Point
 
-  specJacobianCoordinates @Secp256k1_Point @Secp256k1_JacobianPoint
-  specJacobianCoordinates @BLS12_381_G1_Point @BLS12_381_G1_JacobianPoint
-  specJacobianCoordinates @BLS12_381_G2_Point @BLS12_381_G2_JacobianPoint
-  specJacobianCoordinates @BN254_G1_Point @BN254_G1_JacobianPoint
-  specJacobianCoordinates @BN254_G2_Point @BN254_G2_JacobianPoint
-  specJacobianCoordinates @Pallas_Point @Pallas_JacobianPoint
-  specJacobianCoordinates @Vesta_Point @Vesta_JacobianPoint
-  specJacobianCoordinates @Pluto_Point @Pluto_JacobianPoint
-  specJacobianCoordinates @Eris_Point @Eris_JacobianPoint
+  specEllipticCurveGenerator @Secp256k1_JacobianPoint
+  specEllipticCurveGenerator @BLS12_381_G1_JacobianPoint
+  specEllipticCurveGenerator @BLS12_381_G2_JacobianPoint
+  specEllipticCurveGenerator @BN254_G1_JacobianPoint
+  specEllipticCurveGenerator @BN254_G2_JacobianPoint
+  specEllipticCurveGenerator @Pallas_JacobianPoint
+  specEllipticCurveGenerator @Vesta_JacobianPoint
+  specEllipticCurveGenerator @Pluto_JacobianPoint
+  specEllipticCurveGenerator @Eris_JacobianPoint
+
+  specProjections @Secp256k1_Point @Secp256k1_JacobianPoint
+  specProjections @BLS12_381_G1_Point @BLS12_381_G1_JacobianPoint
+  specProjections @BLS12_381_G2_Point @BLS12_381_G2_JacobianPoint
+  specProjections @BN254_G1_Point @BN254_G1_JacobianPoint
+  specProjections @BN254_G2_Point @BN254_G2_JacobianPoint
+  specProjections @Pallas_Point @Pallas_JacobianPoint
+  specProjections @Vesta_Point @Vesta_JacobianPoint
+  specProjections @Pluto_Point @Pluto_JacobianPoint
+  specProjections @Eris_Point @Eris_JacobianPoint
 
 specEllipticCurveGenerator
   :: forall point .
@@ -76,7 +86,7 @@ specEllipticCurveGenerator = do
         property $ \ (coef :: ScalarFieldOf point) ->
           isOnCurve (coef `scale` g)
 
-specJacobianCoordinates
+specProjections
   :: forall point1 point2 .
     ( CyclicGroup point1
     , Eq point1
@@ -91,7 +101,7 @@ specJacobianCoordinates
     , Show point2
     , BooleanOf (BaseFieldOf point2) ~ Bool
     ) => Spec
-specJacobianCoordinates = do
+specProjections = do
   let curve = symbolVal (Proxy @(CurveOf point1))
   describe (curve <> " curve specification in Jacobian coordinates") $ do
     describe "cyclic group generator" $ do

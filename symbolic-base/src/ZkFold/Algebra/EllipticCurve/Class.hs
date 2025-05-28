@@ -488,7 +488,16 @@ data JacobianPoint field = JacobianPoint
   , _z :: field
   } deriving (Generic)
 deriving instance NFData field => NFData (JacobianPoint field)
-deriving instance Prelude.Eq field => Prelude.Eq (JacobianPoint field)
+instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) where
+    -- If z0 /= 0 and z1 /= 0,
+    -- x0 / z0^2 == x1 / z1^2 && y0 / z0^3 == y1 / z1^3
+    JacobianPoint x0 y0 z0 == JacobianPoint x1 y1 z1 = x0 * z12 Prelude.== x1 * z02 && y0 * z13 Prelude.== y1 * z03
+        where
+            z12 = square z1
+            z13 = z1 * z12
+            z02 = square z0
+            z03 = z0 * z02
+    pt0 /= pt1 = not (pt0 Prelude.== pt1)
 instance
   ( SymbolicOutput field
   , Context field ~ Context (BooleanOf field)
@@ -517,10 +526,10 @@ instance
     -- x0 / z0^2 == x1 / z1^2 && y0 / z0^3 == y1 / z1^3
     JacobianPoint x0 y0 z0 == JacobianPoint x1 y1 z1 = x0 * z12 == x1 * z02 && y0 * z13 == y1 * z03
         where
-            z12 = z1^(2 :: Natural)
-            z13 = z1^(3 :: Natural)
-            z02 = z0^(2 :: Natural)
-            z03 = z0^(3 :: Natural)
+            z12 = square z1
+            z13 = z1 * z12
+            z02 = square z0
+            z03 = z0 * z02
     pt0 /= pt1 = not (pt0 == pt1)
 
 class Project a b where
