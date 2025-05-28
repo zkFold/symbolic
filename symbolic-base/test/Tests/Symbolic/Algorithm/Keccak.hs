@@ -156,6 +156,7 @@ testAlgorithm file = do
             ( withConstraints @bytes $
                 let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
                     -- inBSVar :: VarByteString 1000 Context = fromByteString $ resize inBS
+                    -- TODO: Add tests for VarByteString, https://github.com/zkFold/symbolic/issues/598.
                  in (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS) -- , toConstant $ keccakVar @algorithm @Context @(1000) inBSVar)
             )
               `shouldBe` hash -- , hash)
