@@ -16,7 +16,7 @@ import           Data.Maybe                             (catMaybes)
 import           Data.Proxy                             (Proxy (..))
 import           Data.Type.Equality                     (type (~))
 import           GHC.TypeLits                           (KnownSymbol, SomeNat (..), Symbol, symbolVal)
-import           GHC.TypeNats                           (someNatVal, withKnownNat)
+import           GHC.TypeNats                           (someNatVal)
 import           Prelude                                (String, pure, read, (<>), (==))
 import qualified Prelude                                as Haskell
 import           System.Directory                       (listDirectory)
@@ -45,18 +45,17 @@ withConstraints ::
     r
   ) ->
   r
-withConstraints = withDict (withConstraints' @n)
+withConstraints =
+  withDict (timesNat @n @8) $
+    withDict (withConstraints' @n)
 
 withConstraints' ::
   forall n.
   KnownNat n
     :- ( Mod (n * 8) 8 ~ 0
-       , KnownNat (n * 8)
        )
 withConstraints' =
   Sub
-    $ withKnownNat @(n * 8)
-      (unsafeSNat (value @n * 8))
     $ withDict
       (unsafeAxiom @(Mod (n * 8) 8 ~ 0))
       Dict
