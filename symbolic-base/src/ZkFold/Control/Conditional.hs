@@ -28,9 +28,6 @@ class BoolType b => Conditional b a where
 ifThenElse :: Conditional b a => b -> a -> a -> a
 ifThenElse b x y = bool y x b
 
-(?) :: Conditional b a => b -> a -> a -> a
-(?) = ifThenElse
-
 instance Conditional Bool Bool where bool = H.bool
 instance Conditional Bool String where bool = H.bool
 instance Conditional Bool Natural where bool = H.bool
