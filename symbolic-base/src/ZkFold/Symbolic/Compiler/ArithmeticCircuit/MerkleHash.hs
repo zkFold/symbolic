@@ -79,6 +79,7 @@ instance Eq (MerkleHash n) where
 
 instance Field (MerkleHash (Just n)) where
   finv (M x) = merkleHash (Mul, x)
+  isDiscrete = Nothing
 
 instance Finite (Zp n) => ResidueField (MerkleHash (Just n)) where
   type IntegralOf (MerkleHash (Just n)) = MerkleHash Nothing

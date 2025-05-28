@@ -5,6 +5,7 @@ import           Control.DeepSeq              (NFData (..), rwhnf)
 import           Control.Monad                (Monad (..), ap)
 import           Data.Function                (const, (.))
 import           Data.Functor                 (Functor)
+import           Data.Maybe                   (Maybe (Nothing))
 import           Numeric.Natural              (Natural)
 import           Prelude                      (Integer)
 
@@ -58,6 +59,7 @@ instance Eq (WitnessF a v) where
 instance Field (WitnessF a v) where
   finv (WitnessF f) = WitnessF (finv . f)
   WitnessF f // WitnessF g = WitnessF (\x -> f x // g x)
+  isDiscrete = Nothing
 instance Finite a => Finite (WitnessF a v) where type Order (WitnessF a v) = Order a
 instance Finite a => ResidueField (WitnessF a v) where
   type IntegralOf (WitnessF a v) = EuclideanF a v

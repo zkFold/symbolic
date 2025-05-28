@@ -17,7 +17,7 @@ import           Data.List                  (iterate, map, repeat, zipWith, (++)
 import           Data.Maybe                 (Maybe (..))
 import           Data.Ord                   (Ord (..))
 import           Data.Ratio                 (Rational)
-import           Data.Type.Equality         (type (~))
+import           Data.Type.Equality         (type (~), (:~:) (..))
 import           GHC.Natural                (naturalFromInteger)
 import           Prelude                    (Integer)
 import qualified Prelude                    as Haskell
@@ -386,6 +386,10 @@ class (Ring a, Exponent a Integer, Eq a) => Field a where
     rootOfUnity :: Natural -> Maybe a
     rootOfUnity 0 = Just one
     rootOfUnity _ = Nothing
+
+    isDiscrete :: Maybe (BooleanOf a :~: Bool)
+    default isDiscrete :: BooleanOf a ~ Bool => Maybe (BooleanOf a :~: Bool)
+    isDiscrete = Just Refl
 
 intPowF :: Field a => a -> Integer -> a
 -- | A default implementation for integer exponentiation. Uses only natural
@@ -810,6 +814,8 @@ instance (Field a, Conditional (BooleanOf a) (Maybe a)) => Field (Maybe a) where
 
     rootOfUnity :: Natural -> Maybe (Maybe a)
     rootOfUnity = Just . rootOfUnity @a
+
+    isDiscrete = isDiscrete @a
 
 instance ToConstant a => ToConstant (Maybe a) where
     type Const (Maybe a) = Maybe (Const a)

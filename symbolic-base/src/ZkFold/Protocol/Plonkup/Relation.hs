@@ -132,6 +132,7 @@ instance Eq a => Eq (Vector a) where
 
 instance Field a => Field (Vector a) where
     finv = fmap finv
+    isDiscrete = isDiscrete @a
 
 instance SemiEuclidean a => SemiEuclidean (Vector a) where
     div = zipLongest div
