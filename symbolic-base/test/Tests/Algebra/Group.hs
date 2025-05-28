@@ -12,12 +12,13 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.EllipticCurve.BN254
 import           ZkFold.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
-import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point)
-import           ZkFold.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point)
-import           ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point)
+import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point, Pallas_JacobianPoint, Vesta_JacobianPoint)
+import           ZkFold.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point, Eris_JacobianPoint, Pluto_JacobianPoint)
+import           ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point, Secp256k1_JacobianPoint)
 
 specGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
 specGroup' = do
@@ -33,20 +34,57 @@ specGroup' = do
                 it "should satisfy additive inverse" $ do
                     property $ \(a :: a) -> a + negate a == zero
 
+-- | Strictly speaking, points in Jacobian coordinates do not form a Semigroup because addition isn't associative.
+-- However, we should be able to perform costly operations in Jacobian coordinates and project the points back onto projective plane.
+-- In this case, we can expect that the usual group laws hold.
+--
+specGroupProj' 
+    :: forall a b 
+    .  AdditiveGroup a
+    => Eq a
+    => Typeable a 
+    => AdditiveGroup b
+    => Show b
+    => Arbitrary b
+    => Typeable b
+    => Project b a
+    => Spec
+specGroupProj' = do
+    describe "Group specification" $ do
+        describe ("Types: " ++ show (typeOf @a zero) ++ " <-> " ++ show (typeOf @b zero)) $ do
+            describe "Additive group axioms" $ do
+                it "should satisfy additive associativity" $ do
+                    property $ \(a :: b) b c -> project @b @a ((a + b) + c) == project @b @a (a + (b + c))
+                it "should satisfy additive commutativity" $ do
+                    property $ \(a :: b) b -> project @b @a (a + b) == project @b @a (b + a)
+                it "should satisfy additive identity" $ do
+                    property $ \(a :: b) -> project @b @a (a + zero) == project @b @a a
+                it "should satisfy additive inverse" $ do
+                    property $ \(a :: b) -> project @b @a (a + negate a) == project @b @a zero
+
 specGroup :: Spec
 specGroup = do
     specGroup' @BN254_G1_Point
     specGroup' @BN254_G2_Point
+    specGroupProj' @BN254_G1_Point @BN254_G1_JacobianPoint
+    specGroupProj' @BN254_G2_Point @BN254_G2_JacobianPoint
 
     specGroup' @BLS12_381_G1_Point
     specGroup' @BLS12_381_G2_Point
+    specGroupProj' @BLS12_381_G1_Point @BLS12_381_G1_JacobianPoint
+    specGroupProj' @BLS12_381_G2_Point @BLS12_381_G2_JacobianPoint
 
     specGroup' @Pallas_Point
     specGroup' @Vesta_Point
+    specGroupProj' @Pallas_Point @Pallas_JacobianPoint
+    specGroupProj' @Vesta_Point  @Vesta_JacobianPoint
 
     specGroup' @Secp256k1_Point
+    specGroupProj' @Secp256k1_Point @Secp256k1_JacobianPoint
 
     specGroup' @Ed25519_Point
 
     specGroup' @Pluto_Point
     specGroup' @Eris_Point
+    specGroupProj' @Pluto_Point @Pluto_JacobianPoint
+    specGroupProj' @Eris_Point  @Eris_JacobianPoint

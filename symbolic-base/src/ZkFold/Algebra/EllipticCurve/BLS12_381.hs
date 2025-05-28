@@ -63,6 +63,8 @@ instance Field field => WeierstrassCurve "BLS12-381-G1" field where
 
 type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 
+type BLS12_381_G1_JacobianPoint = Weierstrass "BLS12-381-G1" (JacobianPoint Fq)
+
 type BLS12_381_G1_CompressedPoint =
   Weierstrass "BLS12-381-G1" (CompressedPoint Fq)
 
@@ -91,12 +93,21 @@ instance CyclicGroup BLS12_381_G1_Point where
 instance Scale Fr BLS12_381_G1_Point where
   scale n x = scale (toConstant n) x
 
+instance CyclicGroup BLS12_381_G1_JacobianPoint where
+  type ScalarFieldOf BLS12_381_G1_JacobianPoint = Fr
+  pointGen = project @BLS12_381_G1_Point pointGen
+
+instance Scale Fr BLS12_381_G1_JacobianPoint where
+  scale n x = scale (toConstant n) x
+
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
 instance WeierstrassCurve "BLS12-381-G2" Fq2 where
   weierstrassB = Ext2 4 4
 
 type BLS12_381_G2_Point = Weierstrass "BLS12-381-G2" (Point Fq2)
+
+type BLS12_381_G2_JacobianPoint = Weierstrass "BLS12-381-G2" (JacobianPoint Fq2)
 
 type BLS12_381_G2_CompressedPoint =
   Weierstrass "BLS12-381-G2" (CompressedPoint Fq2)
@@ -112,6 +123,13 @@ instance CyclicGroup BLS12_381_G2_Point where
       0x606c4a02ea734cc32acd2b02bc28b99cb3e287e85a763af267492ab572e99ab3f370d275cec1da1aaa9075ff05f79be)
 
 instance Scale Fr BLS12_381_G2_Point where
+  scale n x = scale (toConstant n) x
+
+instance CyclicGroup BLS12_381_G2_JacobianPoint where
+  type ScalarFieldOf BLS12_381_G2_JacobianPoint = Fr
+  pointGen = project @BLS12_381_G2_Point pointGen
+
+instance Scale Fr BLS12_381_G2_JacobianPoint where
   scale n x = scale (toConstant n) x
 
 instance Compressible BLS12_381_G2_Point where

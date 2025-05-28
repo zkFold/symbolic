@@ -117,6 +117,12 @@ class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
     -- [Associativity] @x * (y * z) == (x * y) * z@
     (*) :: a -> a -> a
 
+    -- | @square@ is offered purely for computational efficiency 
+    -- in cases where there exist faster ways to squarean element 
+    -- than to multiply it by itself (e.g. Zp)
+    square :: a -> a
+    square a = a * a
+
 product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
 product1 = foldl1 (*)
 
@@ -174,14 +180,7 @@ natPow !a !n
     where
         m = n `andNatural` 1
         d = n `shiftRNatural` 1
-        f = natPow (a * a) d
-{--
-natPow !a !n = product $ zipWith' f (binaryExpansion n) (iterate (\x -> x * x) a)
-  where
-    f 0 _  = one
-    f 1 !x = x
-    f _ _  = Haskell.error "^: This should never happen."
---}
+        f = natPow (square a) d
 
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
@@ -232,6 +231,12 @@ class FromConstant a a => AdditiveSemigroup a where
     -- [Commutativity] @x + y == y + x@
     (+) :: a -> a -> a
 
+    -- | @double@ is offered purely for computational efficiency 
+    -- in cases where there exist faster ways to double an element 
+    -- than to add it to itself (e.g. elliptic curves)
+    double :: a -> a
+    double a = a + a
+
 {- | A class of types with a binary associative, commutative operation and with
 an identity element.
 
@@ -254,7 +259,7 @@ natScale !n !a
     where
         m = n `andNatural` 1
         d = n `shiftRNatural` 1
-        f = natScale d (a + a)
+        f = natScale d (double a)
 
 
 {--

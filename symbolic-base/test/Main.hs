@@ -34,12 +34,12 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 spec :: RandomGen g => g -> Spec
 spec gen = do
     describe "symbolic-base-test (Algebra)" $ do
---        specGroup
---        specField
---        specEllipticCurve
---        specPairing
---        specPermutation
---        specUnivariate
+        specGroup
+        specField
+        specEllipticCurve
+        specPairing
+        specPermutation
+        specUnivariate
         specReedSolomon
         specGroebner
 

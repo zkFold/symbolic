@@ -104,6 +104,7 @@ instance KnownNat p => AdditiveGroup (Zp p) where
 
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
+    square (Zp a) = Zp $ fromIntegral $ powModNatural (fromIntegral a) 2 (value @p)
 
 instance KnownNat p => Exponent (Zp p) Natural where
     (Zp z) ^ n = Zp $ fromIntegral $ powModNatural (fromIntegral z) n (value @p)
@@ -128,7 +129,7 @@ instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
-    a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
+    a ^ n = a ^ (fromIntegral $ n `Haskell.mod` (fromConstant (value @p) - 1) :: Natural)
 
 instance Conditional Bool (Zp n) where bool = Bool.bool
 
