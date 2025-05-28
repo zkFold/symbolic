@@ -95,7 +95,7 @@ readRSP path = do
         Haskell.filter (\s -> take 3 s == "Len") $
           splitOn
             ( let fn = takeFileName path
-               in if isPrefixOf "ShortMsgKAT" fn || (isPrefixOf "LongMsgKAT" fn)
+               in if isPrefixOf "ShortMsgKAT" fn || isPrefixOf "LongMsgKAT" fn
                     then "\n\n"
                     else "\r\n\r\n"
             )
