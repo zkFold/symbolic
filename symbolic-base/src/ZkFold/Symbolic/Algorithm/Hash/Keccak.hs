@@ -198,11 +198,13 @@ type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (BytesFromB
 type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBits) 8
 
 withMessageLengthConstraints ::
-  forall msgBits rateBits {r}.
+  forall msgBits rateBits {r} {msgBytes} {rateBytes}.
   ( KnownNat msgBits
   , KnownNat rateBits
   , 1 <= Div rateBits 8
   , 1 <= Div rateBits LaneWidth
+  , msgBytes ~ Div msgBits 8
+  , rateBytes ~ Div rateBits 8
   ) =>
   ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
     , KnownNat (PaddedLengthBits msgBits rateBits)
@@ -220,10 +222,10 @@ withMessageLengthConstraints ::
 withMessageLengthConstraints =
   withDict (divNat @msgBits @8) $
     withDict (divNat @rateBits @8) $
-      withDict (modNat @(Div msgBits 8) @(Div rateBits 8)) $
-        withDict (modBound @(Div msgBits 8) @(Div rateBits 8)) $
-          withDict (minusNat @(Div rateBits 8) @(Mod (Div msgBits 8) (Div rateBits 8))) $
-            withDict (plusNat @(Div msgBits 8) @(Div rateBits 8 - Mod (Div msgBits 8) (Div rateBits 8))) $
+      withDict (modNat @msgBytes @rateBytes) $
+        withDict (modBound @msgBytes @rateBytes) $
+          withDict (minusNat @rateBytes @(Mod msgBytes rateBytes)) $
+            withDict (plusNat @msgBytes @(rateBytes - Mod msgBytes rateBytes)) $
               withDict (timesNat @(PaddedLengthBytesFromBits msgBits rateBits) @8) $
                 withDict (divNat @(PaddedLengthBytesFromBits msgBits rateBits) @8) $
                   withDict (divNat @rateBits @LaneWidth) $
