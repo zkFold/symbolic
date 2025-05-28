@@ -36,7 +36,7 @@ import qualified Data.Vector                                     as V
 import qualified Data.Vector.Mutable                             as VM
 import           Data.Word                                       (Word8)
 import           GHC.TypeLits                                    (SomeNat (..), Symbol)
-import           GHC.TypeNats                                    (someNatVal, type (<=?), withKnownNat)
+import           GHC.TypeNats                                    (someNatVal, type (<=?))
 import           Prelude                                         (($), (.), (<$>))
 import qualified Prelude                                         as P
 
@@ -93,8 +93,12 @@ class
     Mod (Rate algorithm) 8 ~ 0
   , -- Requiring rate to be a multiple of 'LaneWidth'. As we would eventually obtain 'LaneWidth' bit words.
     Mod (Rate algorithm) LaneWidth ~ 0
-  , -- This constraint is needed so that dividing by 8 does not lead to zero.
-    (1 <=? Rate algorithm) ~ 'P.True
+  , -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, it is equivalent to saying that rate is positive.
+    (1 <=? Div (Rate algorithm) 8) ~ 'P.True
+  , -- Redundant constraint but GHC is unable to derive it as such.
+    (1 <=? Div (Rate algorithm) LaneWidth) ~ 'P.True
+    -- Some of the code actually assumes that lane width is 64. This constraint is just a safety valve to let code break if developer tries changing value of @LaneWidth@.
+  , LaneWidth ~ 64
   , KnownNat (Div (Rate algorithm) LaneWidth)
   , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
@@ -191,18 +195,14 @@ type PaddedLengthBytes msgBytes rateBytes = (msgBytes + (rateBytes - Mod msgByte
 -- | Length of the padded message in bytes from bits.
 type PaddedLengthBytesFromBits msgBits rateBits = (PaddedLengthBytes (BytesFromBits msgBits) (BytesFromBits rateBits))
 
-paddedLengthBytesFromBits :: forall msgBits rateBits. (KnownNat msgBits, KnownNat rateBits) => Natural
-paddedLengthBytesFromBits = msgBytes + (rateBytes -! mod msgBytes rateBytes)
- where
-  msgBytes = value @msgBits `div` 8
-  rateBytes = value @rateBits `div` 8
-
 type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBits) 8
 
 withMessageLengthConstraints ::
   forall msgBits rateBits {r}.
   ( KnownNat msgBits
   , KnownNat rateBits
+  , 1 <= Div rateBits 8
+  , 1 <= Div rateBits LaneWidth
   ) =>
   ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
     , KnownNat (PaddedLengthBits msgBits rateBits)
@@ -217,31 +217,29 @@ withMessageLengthConstraints ::
     r
   ) ->
   r
-withMessageLengthConstraints = withDict (withMessageLengthConstraints' @msgBits @rateBits)
+withMessageLengthConstraints =
+  withDict (divNat @msgBits @8) $
+    withDict (divNat @rateBits @8) $
+      withDict (modNat @(Div msgBits 8) @(Div rateBits 8)) $
+        withDict (modBound @(Div msgBits 8) @(Div rateBits 8)) $
+          withDict (minusNat @(Div rateBits 8) @(Mod (Div msgBits 8) (Div rateBits 8))) $
+            withDict (plusNat @(Div msgBits 8) @(Div rateBits 8 - Mod (Div msgBits 8) (Div rateBits 8))) $
+              withDict (timesNat @(PaddedLengthBytesFromBits msgBits rateBits) @8) $
+                withDict (divNat @(PaddedLengthBytesFromBits msgBits rateBits) @8) $
+                  withDict (divNat @rateBits @LaneWidth) $
+                    withDict (divNat @(NumBlocks msgBits rateBits) @(AbsorbChunkSize' rateBits)) $
+                      withDict (withMessageLengthConstraints' @msgBits @rateBits)
 
 withMessageLengthConstraints' ::
   forall msgBits rateBits.
   (KnownNat msgBits, KnownNat rateBits)
-    :- ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
-       , KnownNat (PaddedLengthBits msgBits rateBits)
-       , KnownNat
-          ( Div
-              (NumBlocks msgBits rateBits)
-              (AbsorbChunkSize' rateBits)
-          )
-       , -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
+    :- ( -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
          (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
        , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
          (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
        )
 withMessageLengthConstraints' =
   Sub
-    $ withKnownNat @(PaddedLengthBytesFromBits msgBits rateBits)
-      (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits))
-    $ withKnownNat @(PaddedLengthBits msgBits rateBits)
-      (unsafeSNat (paddedLengthBytesFromBits @msgBits @rateBits * 8))
-    $ withKnownNat @(Div (NumBlocks msgBits rateBits) (AbsorbChunkSize' rateBits))
-      (unsafeSNat ((paddedLengthBytesFromBits @msgBits @rateBits `div` 8) `div` (value @rateBits `div` (value @LaneWidth))))
     $ withDict
       (unsafeAxiom @((Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits))
     $ withDict
@@ -389,7 +387,7 @@ theta state =
     )
     $ enumerate d
  where
-  c :: Vector 5 (ByteString 64 context) =
+  c :: Vector 5 (ByteString LaneWidth context) =
     tabulate
       ( \i ->
           P.foldl1
@@ -400,7 +398,7 @@ theta state =
                     slice @(i * 5) @5 @NumLanes state
             )
       )
-  d :: Vector 5 (ByteString 64 context) = tabulate (\(fromZp -> i) -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
+  d :: Vector 5 (ByteString LaneWidth context) = tabulate (\(fromZp -> i) -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1)
 
 {-# INLINE rho #-}
 rho ::
