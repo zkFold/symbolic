@@ -5,50 +5,71 @@
 
 module ZkFold.Data.Vector where
 
+import           Control.Applicative        (Applicative, pure)
 import           Control.DeepSeq            (NFData, NFData1)
+import           Control.Monad              (Monad)
 import           Control.Monad.State.Strict (runState, state)
 import           Data.Aeson                 (FromJSON (..), ToJSON (..))
+import           Data.Bool                  (otherwise)
 import           Data.Constraint.Nat        (Max)
 import           Data.Distributive          (Distributive (..))
-import           Data.Foldable              (fold)
+import           Data.Foldable              (Foldable, fold)
+import           Data.Function              (const, ($), (.))
+import           Data.Functor               (Functor, fmap, (<$>))
 import           Data.Functor.Classes       (Eq1, Show1)
-import           Data.Functor.Rep           (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
+import           Data.Functor.Rep           (Representable (..), collectRep, distributeRep, mzipRep, mzipWithRep,
+                                             pureRep)
+import           Data.Int                   (Int)
+import           Data.Maybe                 (Maybe (..))
+import           Data.Semigroup             ((<>))
 import           Data.These                 (These (..))
+import           Data.Traversable           (Traversable, sequenceA, traverse)
+import           Data.Tuple                 (fst, snd, uncurry)
 import qualified Data.Vector                as V
 import           Data.Vector.Binary         ()
 import qualified Data.Vector.Split          as V
 import           Data.Zip                   (Semialign (..), Unzip (..), Zip (..))
 import           GHC.Generics               (Generic)
 import           GHC.IsList                 (IsList (..))
-import           Prelude                    hiding (concat, drop, head, length, mod, negate, replicate, sum, tail, take,
-                                             unzip, zip, zipWith, (*), (+), (-))
+import           Prelude                    (Integer)
 import qualified Prelude                    as P
 import           System.Random              (Random (..))
 import           Test.QuickCheck            (Arbitrary (..), Arbitrary1 (..), arbitrary1)
+import           Text.Show                  (Show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
+import           ZkFold.Control.Conditional (Conditional (..))
+import           ZkFold.Data.Bool
 import           ZkFold.Data.ByteString     (Binary (..))
+import           ZkFold.Data.Eq
 import           ZkFold.Prelude             (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-    deriving (Show, Show1, Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, Ord)
+    deriving (Show, Show1, P.Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, P.Ord)
     deriving newtype (FromJSON, ToJSON)
 
+instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
+    bool fv tv b = mzipWithRep (\f t -> bool f t b) fv tv
+
+instance (KnownNat n, Eq x) => Eq (Vector n x) where
+    type BooleanOf (Vector n x) = BooleanOf x
+    u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
+    u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
+
 -- helper
-knownNat :: forall size n . (KnownNat size, Integral n) => n
-knownNat = fromIntegral (value @size)
+knownNat :: forall size n . (KnownNat size, P.Integral n) => n
+knownNat = P.fromIntegral (value @size)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
-  index (Vector v) ix = v V.! fromIntegral (fromZp ix)
-  tabulate f = Vector (V.generate (knownNat @size) (f . fromIntegral))
+  index (Vector v) ix = v V.! P.fromIntegral (fromZp ix)
+  tabulate f = Vector (V.generate (knownNat @size) (f . P.fromIntegral))
 
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
   collect = collectRep
-
 
 vtoVector :: forall size a . KnownNat size => V.Vector a -> Maybe (Vector size a)
 vtoVector as
@@ -75,7 +96,7 @@ fromVector :: Vector size a -> [a]
 fromVector (Vector as) = V.toList as
 
 (!!) :: Vector size a -> Natural -> a
-(Vector as) !! i = as V.! fromIntegral i
+(Vector as) !! i = as V.! P.fromIntegral i
 
 uncons :: Vector size a -> (a, Vector (size - 1) a)
 uncons (Vector lst) = (V.head lst, Vector $ V.tail lst)
@@ -127,19 +148,19 @@ rotate :: forall size a. KnownNat size => Vector size a -> Integer -> Vector siz
 rotate (Vector lst) n = Vector (r <> l)
     where
         len :: Integer
-        len = fromIntegral $ value @size
+        len = P.fromIntegral $ value @size
 
         lshift :: Int
-        lshift = fromIntegral $ n `mod` len
+        lshift = P.fromIntegral $ n `mod` len
 
         (l, r) = V.splitAt lshift lst
 
 shift :: forall size a. KnownNat size => Vector size a -> Integer -> a -> Vector size a
 shift (Vector lst) n pad
-  | n < 0 = Vector $ V.take (knownNat @size) (padList <> lst)
-  | otherwise = Vector $ V.drop (fromIntegral n) (lst <> padList)
+  | n P.< 0 = Vector $ V.take (knownNat @size) (padList <> lst)
+  | otherwise = Vector $ V.drop (P.fromIntegral n) (lst <> padList)
     where
-        padList = V.replicate (fromIntegral $ abs n) pad
+        padList = V.replicate (P.fromIntegral $ P.abs n) pad
 
 vectorDotProduct :: forall size a . Semiring a => Vector size a -> Vector size a -> a
 vectorDotProduct (Vector as) (Vector bs) = sum $ zipWith (*) as bs
@@ -161,7 +182,7 @@ unsafeConcat :: forall m n a . [Vector n a] -> Vector (m * n) a
 unsafeConcat = concat . unsafeToVector @m
 
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
-chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
+chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (P.fromIntegral $ value @n) vectors)
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV

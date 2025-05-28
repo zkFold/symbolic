@@ -13,12 +13,16 @@ import           Prelude                      (Integer, error)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field         (Zp)
+import           ZkFold.Control.Conditional   (Conditional (..))
+import           ZkFold.Data.Bool             (BoolType (..))
 import           ZkFold.Data.ByteString       (toByteString)
+import           ZkFold.Data.Eq               (Eq (..))
 import           ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }
 
-data Prec = Add | Mul | Div | Mod | Gcd | BezoutL | BezoutR | Exp | Const
+data Prec = If | Or | Eq | Neq | Add | Mul | Div | Mod
+          | Gcd | BezoutL | BezoutR | Exp | Const
   deriving (Generic, Binary)
 
 merkleHash :: Binary a => a -> MerkleHash n
@@ -65,13 +69,30 @@ instance Ring (MerkleHash n)
 instance Exponent (MerkleHash n) Integer where
   M h ^ p = merkleHash (Exp, h, hash (toByteString p))
 
+instance Conditional (MerkleHash (Just 2)) (MerkleHash n) where
+  bool (M f) (M t) (M b) = merkleHash (If, f, t, b)
+
+instance Eq (MerkleHash n) where
+  type BooleanOf (MerkleHash n) = MerkleHash (Just 2)
+  M x == M y = merkleHash (Eq, x, y)
+  M x /= M y = merkleHash (Neq, x, y)
+
 instance Field (MerkleHash (Just n)) where
   finv (M x) = merkleHash (Mul, x)
+  isDiscrete = Nothing
 
 instance Finite (Zp n) => ResidueField (MerkleHash (Just n)) where
   type IntegralOf (MerkleHash (Just n)) = MerkleHash Nothing
   fromIntegral = fromConstant
   toIntegral = merkleHash
+
+instance BoolType (MerkleHash (Just 2)) where
+  true = fromConstant (1 :: Natural)
+  false = fromConstant (0 :: Natural)
+  not = negate
+  (&&) = (*)
+  M x || M y = merkleHash (Or, x, y)
+  xor = (+)
 
 instance SemiEuclidean (MerkleHash Nothing) where
   div (M x) (M y) = merkleHash (Div, x, y)

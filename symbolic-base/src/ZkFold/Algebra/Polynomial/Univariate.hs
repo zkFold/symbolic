@@ -28,6 +28,7 @@ module ZkFold.Algebra.Polynomial.Univariate
 
 import           Control.DeepSeq       (NFData (..))
 import           Control.Monad         (forM_)
+import           Data.Type.Equality    ((:~:) (..))
 import qualified Data.Vector           as V
 import qualified Data.Vector.Mutable   as VM
 import           GHC.Generics          (Generic)
@@ -39,6 +40,7 @@ import           Test.QuickCheck       (Arbitrary (..), chooseInt)
 import           ZkFold.Algebra.Class  hiding (Euclidean (..))
 import           ZkFold.Algebra.DFT    (genericDft)
 import           ZkFold.Algebra.Number
+import qualified ZkFold.Data.Eq        as ZkFold
 import           ZkFold.Prelude        (log2ceiling, replicate, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
@@ -174,7 +176,7 @@ padVector v l
   | otherwise = v V.++ V.replicate (l P.- V.length v) zero
 
 
-mulAdaptive :: forall c . (Field c, Eq c) => V.Vector c -> V.Vector c -> V.Vector c
+mulAdaptive :: forall c . Field c => V.Vector c -> V.Vector c -> V.Vector c
 mulAdaptive l r
       | V.null l = V.empty
       | V.null r = V.empty
@@ -237,7 +239,7 @@ mulDft p w2n lPadded rPadded = c
     c :: V.Vector c
     c = (* nInv) <$> genericDft p w2nInv cImage
 
-mulKaratsuba :: forall a. (Field a, Eq a) => V.Vector a -> V.Vector a -> V.Vector a
+mulKaratsuba :: forall a. Field a => V.Vector a -> V.Vector a -> V.Vector a
 mulKaratsuba v1 v2
   | len == 1 = V.zipWith (*) v1 v2
   | otherwise = result
@@ -492,19 +494,19 @@ instance
 -- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
 -- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
 --
-isShiftedMono :: forall c . (Field c, Eq c) => V.Vector c -> Maybe (Natural, c, c)
-isShiftedMono cs
-  | V.length filtered /= 2 = Nothing
-  | otherwise =
-      case V.toList filtered of
+isShiftedMono :: forall c . Field c => V.Vector c -> Maybe (Natural, c, c)
+isShiftedMono cs = isDiscrete @c >>= \case
+    Refl
+     | V.length filtered /= 2 -> Nothing
+     | otherwise -> case V.toList filtered of
         [(c0, 0), (cm, m)] -> pure (m, cm, c0)
         _                  -> Nothing
     where
         ixed :: V.Vector (c, Natural)
         ixed = V.zip cs $ V.iterateN (V.length cs) succ 0
 
-        filtered :: V.Vector (c, Natural)
-        filtered = V.filter ((/= zero) . fst) ixed
+        filtered :: ZkFold.BooleanOf c ~ Bool => V.Vector (c, Natural)
+        filtered = V.filter ((ZkFold./= zero) . fst) ixed
 
 
 -- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
@@ -562,21 +564,21 @@ instance (Ring c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
 instance (Ring c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
 
-instance (Field c, Eq c, KnownNat size) => Exponent (PolyVec c size) Natural where
+instance (Field c, KnownNat size) => Exponent (PolyVec c size) Natural where
     (^) = natPow
 
-instance {-# OVERLAPPING #-} (Field c, Eq c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
+instance {-# OVERLAPPING #-} (Field c, KnownNat size) => Scale (PolyVec c size) (PolyVec c size)
 
 -- TODO (Issue #18): check for overflow
-instance (Field c, Eq c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
+instance (Field c, KnownNat size) => MultiplicativeSemigroup (PolyVec c size) where
     (PV l) * (PV r) = toPolyVec $ mulAdaptive l r
 
-instance (Field c, Eq c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
+instance (Field c, KnownNat size) => MultiplicativeMonoid (PolyVec c size) where
     one = PV $ V.singleton one V.++ V.replicate (fromIntegral (value @size -! 1)) zero
 
-instance (Field c, Eq c, KnownNat size) => Semiring (PolyVec c size)
+instance (Field c, KnownNat size) => Semiring (PolyVec c size)
 
-instance (Field c, Eq c, KnownNat size) => Ring (PolyVec c size)
+instance (Field c, KnownNat size) => Ring (PolyVec c size)
 
 instance (Ring c, Arbitrary c, KnownNat size) => Arbitrary (PolyVec c size) where
     arbitrary = toPolyVec @_ @(PolyVec c) <$> V.replicateM (fromIntegral $ value @size) (arbitrary @c)

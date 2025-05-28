@@ -310,6 +310,8 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
               return (ni :*: ui)
         , U1 :*: U1)
 
+  isDiscrete = Prelude.Nothing
+
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
 

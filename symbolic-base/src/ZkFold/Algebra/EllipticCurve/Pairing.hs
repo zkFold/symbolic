@@ -42,7 +42,6 @@ finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
 
 millerAlgorithmBLS12 ::forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
@@ -59,7 +58,6 @@ millerAlgorithmBLS12 _ _ _ = one
 
 millerAlgorithmBN :: forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
@@ -79,7 +77,6 @@ millerAlgorithmBN _ _ _ _ = one
 
 finalStepBN :: forall c d fldC fldD i j g.
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
@@ -101,7 +98,6 @@ finalStepBN xi p q (t, f) = f * f' * f''
 
 millerLoop ::
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
@@ -127,7 +123,6 @@ frobTwisted ::
   forall c fld.
   ( WeierstrassCurve c fld
   , Conditional (BooleanOf fld) (BooleanOf fld)
-  , Eq fld
   ) => Natural -> fld -> Weierstrass c (Point fld) -> Weierstrass c (Point fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =
   if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
@@ -137,7 +132,6 @@ frobTwisted q xi (Weierstrass (Point x y isInf)) =
 
 additionStep ::
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
   BooleanOf fldC ~ BooleanOf fldD =>
@@ -153,7 +147,6 @@ additionStep p q (t, f) = (* f) <$> lineFunction p q t
 
 doublingStep ::
   WeierstrassCurve d fldD =>
-  Eq fldD =>
   Field fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
@@ -172,7 +165,6 @@ lineFunction :: forall c d baseFieldC baseFieldD i j g.
   Scale baseFieldC baseFieldD =>
   Conditional (BooleanOf baseFieldD) (BooleanOf baseFieldD) =>
   -- Conditional bool baseFieldD =>
-  Eq baseFieldD =>
   BooleanOf baseFieldC ~ BooleanOf baseFieldD =>
   Untwisted baseFieldD i j ~ g =>
   Weierstrass c (Point baseFieldC) ->
