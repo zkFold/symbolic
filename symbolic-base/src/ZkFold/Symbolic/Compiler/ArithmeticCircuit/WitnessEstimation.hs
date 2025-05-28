@@ -1,6 +1,10 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
 
-import           Data.Bool                                      (otherwise)
+import           Control.Applicative                            (liftA2)
+import           Data.Bool                                      (Bool (..), otherwise)
+import qualified Data.Bool                                      as Haskell
 import           Data.Eq                                        (Eq, (==))
 import           Data.Function                                  ((.))
 import           Data.Functor                                   (Functor, fmap)
@@ -8,6 +12,9 @@ import           Data.Maybe                                     (Maybe (..))
 import           Prelude                                        (Integral)
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Control.Conditional                     (Conditional (..))
+import           ZkFold.Data.Bool
+import qualified ZkFold.Data.Eq                                 as ZkFold
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
 import           ZkFold.Symbolic.MonadCircuit                   (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
@@ -63,6 +70,28 @@ instance (Semiring a, Eq a) => MultiplicativeMonoid (UVar a) where
 instance (Semiring a, Eq a) => Semiring (UVar a)
 
 instance (Ring a, Eq a) => Ring (UVar a)
+
+instance BoolType (Maybe Bool) where
+    true = Just True
+    false = Just False
+    not = fmap not
+    Just False && _ = false
+    _ && Just False = false
+    x && y          = liftA2 (&&) x y
+    Just True || _ = true
+    _ || Just True = true
+    x || y         = liftA2 (||) x y
+    xor = liftA2 xor
+
+instance Conditional (Maybe Bool) (UVar a) where
+    bool x y (Just b) = Haskell.bool x y b
+    bool _ _ Nothing  = More
+
+instance Eq a => ZkFold.Eq (UVar a) where
+    type BooleanOf (UVar a) = Maybe Bool
+    ConstUVar c == ConstUVar d = Just (c == d)
+    _ == _                     = Nothing
+    u /= v = not (u ZkFold.== v)
 
 instance (Field a, Eq a) => Field (UVar a) where
     finv (ConstUVar c) = ConstUVar (finv c)

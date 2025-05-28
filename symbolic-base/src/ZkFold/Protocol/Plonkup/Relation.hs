@@ -34,6 +34,9 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Permutation                         (Permutation, fromCycles, mkIndexPartition)
 import           ZkFold.Algebra.Polynomial.Multivariate             (evalMonomial, evalPolynomial, var)
 import           ZkFold.Algebra.Polynomial.Univariate               (UnivariateRingPolyVec (..), toPolyVec)
+import           ZkFold.Control.Conditional
+import           ZkFold.Data.Bool
+import           ZkFold.Data.Eq
 import           ZkFold.Prelude                                     (length, replicate, uncurry3)
 import           ZkFold.Protocol.Plonkup.Internal                   (PlonkupPermutationSize)
 import           ZkFold.Protocol.Plonkup.LookupConstraint           (LookupConstraint (LookupConstraint))
@@ -118,6 +121,14 @@ instance MultiplicativeMonoid a => MultiplicativeMonoid (Vector a) where
 instance Semiring a => Semiring (Vector a) where
 
 instance Ring a => Ring (Vector a) where
+
+instance Conditional b a => Conditional b (Vector a) where
+    bool u v b = zipLongest (\x y -> bool x y b) u v
+
+instance Eq a => Eq (Vector a) where
+    type BooleanOf (Vector a) = BooleanOf a
+    u == v = and $ zipLongest (==) u v
+    u /= v = or $ zipLongest (/=) u v
 
 instance Field a => Field (Vector a) where
     finv = fmap finv
