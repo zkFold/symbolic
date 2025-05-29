@@ -196,12 +196,12 @@ slice :: forall i n size a.
   => KnownNat n
   => Vector size a
   -> Vector n a
-slice (Vector v) = Vector $ V.slice (fromIntegral $ value @i) (fromIntegral $ value @n) v
+slice (Vector v) = Vector $ V.slice (P.fromIntegral $ value @i) (P.fromIntegral $ value @n) v
 
 -- | Yield the vector obtained by replacing each element @i@ of the
 -- index vector by @xs'!'i@.
 backpermute :: forall n m a. Vector n a -> Vector m (Zp n) -> Vector m a
-backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (fromIntegral . fromZp) is
+backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (P.fromIntegral . fromZp) is
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV
