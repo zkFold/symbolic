@@ -3,12 +3,16 @@ module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness where
 import           Control.Applicative          (Applicative (..))
 import           Control.DeepSeq              (NFData (..), rwhnf)
 import           Control.Monad                (Monad (..), ap)
-import           Data.Function                ((.))
+import           Data.Function                (const, (.))
 import           Data.Functor                 (Functor)
+import           Data.Maybe                   (Maybe (Nothing))
 import           Numeric.Natural              (Natural)
 import           Prelude                      (Integer)
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Control.Conditional   (Conditional (..))
+import           ZkFold.Data.Bool             (BoolType (..))
+import           ZkFold.Data.Eq               (Eq (..))
 import           ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
@@ -46,14 +50,31 @@ instance MultiplicativeSemigroup (WitnessF a v) where WitnessF f * WitnessF g = 
 instance MultiplicativeMonoid (WitnessF a v) where one = WitnessF one
 instance Semiring (WitnessF a v)
 instance Ring (WitnessF a v)
+instance Conditional (BooleanF a v) (WitnessF a v) where
+  bool (WitnessF f) (WitnessF g) (BooleanF b) = WitnessF (\x -> bool (f x) (g x) (b x))
+instance Eq (WitnessF a v) where
+  type BooleanOf (WitnessF a v) = BooleanF a v
+  WitnessF f == WitnessF g = BooleanF (\x -> f x == g x)
+  WitnessF f /= WitnessF g = BooleanF (\x -> f x /= g x)
 instance Field (WitnessF a v) where
   finv (WitnessF f) = WitnessF (finv . f)
   WitnessF f // WitnessF g = WitnessF (\x -> f x // g x)
+  isDiscrete = Nothing
 instance Finite a => Finite (WitnessF a v) where type Order (WitnessF a v) = Order a
 instance Finite a => ResidueField (WitnessF a v) where
   type IntegralOf (WitnessF a v) = EuclideanF a v
   fromIntegral (EuclideanF f) = WitnessF (fromIntegral . f)
   toIntegral (WitnessF f) = EuclideanF (toIntegral . f)
+
+newtype BooleanF a v = BooleanF { booleanF :: forall w. IsWitness a w => (v -> w) -> BooleanOf w }
+
+instance BoolType (BooleanF a v) where
+  true = BooleanF (const true)
+  false = BooleanF (const false)
+  not (BooleanF f) = BooleanF (not . f)
+  BooleanF f && BooleanF g = BooleanF (\x -> f x && g x)
+  BooleanF f || BooleanF g = BooleanF (\x -> f x || g x)
+  BooleanF f `xor` BooleanF g = BooleanF (\x -> f x `xor` g x)
 
 newtype EuclideanF a v = EuclideanF { euclideanF :: forall w. IsWitness a w => (v -> w) -> IntegralOf w }
 
