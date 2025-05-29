@@ -25,7 +25,7 @@ import           ZkFold.Protocol.Plonkup.Input          (PlonkupInput)
 import           ZkFold.Protocol.Plonkup.Internal       (lagrangeBasisGroupElements)
 import           ZkFold.Protocol.Plonkup.Proof          (PlonkupProof)
 import           ZkFold.Protocol.Plonkup.Prover         (PlonkupProverSecret (..), PlonkupProverSetup (..))
-import           ZkFold.Protocol.Plonkup.Update         (updateProverSetup)
+import           ZkFold.Protocol.Plonkup.Update         (updateProverSetup, updateVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Utils          (getParams, getSecrectParams)
 import           ZkFold.Protocol.Plonkup.Verifier       (PlonkupVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness        (PlonkupWitnessInput (..))
@@ -120,7 +120,7 @@ utxoAccumulatorProve hs as a r =
 
 utxoAccumulatorVerifierSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => PlonkupVerifierSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
-utxoAccumulatorVerifierSetup = setupVerify utxoAccumulatorProtocol
+utxoAccumulatorVerifierSetup = updateVerifierSetup (setupVerify utxoAccumulatorProtocol) [one] [validationGroupElement @n @m]
 
 utxoAccumulatorGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => [BLS12_381_G1_Point]
