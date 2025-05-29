@@ -90,7 +90,7 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector . V.fromList
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
-unfold f = Vector . V.take (knownNat @size) . V.unfoldr (Just . f)
+unfold f = Vector . V.unfoldrExactN (knownNat @size) f
 
 fromVector :: Vector size a -> [a]
 fromVector (Vector as) = V.toList as
@@ -181,8 +181,27 @@ concat = Vector . V.concatMap toV . toV
 unsafeConcat :: forall m n a . [Vector n a] -> Vector (m * n) a
 unsafeConcat = concat . unsafeToVector @m
 
+-- | Map a function over a vector and concatenate the results.
+concatMap :: forall m n a b . (a -> Vector n b) -> Vector m a -> Vector (m * n) b
+concatMap f (Vector v) = Vector $ V.concatMap (toV . f) v
+
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (P.fromIntegral $ value @n) vectors)
+
+-- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
+--
+-- Note that we'll get run-time error if @i + n > size@.
+slice :: forall i n size a.
+  KnownNat i
+  => KnownNat n
+  => Vector size a
+  -> Vector n a
+slice (Vector v) = Vector $ V.slice (P.fromIntegral $ value @i) (P.fromIntegral $ value @n) v
+
+-- | Yield the vector obtained by replacing each element @i@ of the
+-- index vector by @xs'!'i@.
+backpermute :: forall n m a. Vector n a -> Vector m (Zp n) -> Vector m a
+backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (P.fromIntegral . fromZp) is
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV
