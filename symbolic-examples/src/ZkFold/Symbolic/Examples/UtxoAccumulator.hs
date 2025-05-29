@@ -41,7 +41,7 @@ utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
     -> Vector n (FieldElement c)
     -> (FieldElement c, FieldElement c)
-    -> (Vector n (FieldElement c), Bool c, Vector n (FieldElement c))
+    -> (Bool c, Vector n (FieldElement c), Vector n (FieldElement c))
 utxoAccumulator hs as (a, r) =
     let
         h = hash (a, r)
@@ -49,15 +49,15 @@ utxoAccumulator hs as (a, r) =
         cond1 = any (== h) hs
         cond2 = all (/= a) as
     in
-        (hs, cond1 && cond2, as)
+        (cond1 && cond2, hs, as)
 
 type UtxoAccumulatorInput n = Vector n :*: Vector n :*: Par1 :*: Par1
-type UtxoAccumulatorOutput n = Vector n :*: Par1 :*: Vector n
+type UtxoAccumulatorOutput n = Par1 :*: Vector n :*: Vector n
 
 utxoAccumulatorCircuit :: forall n a . (KnownNat n, Arithmetic a, Binary a)
     => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
-    hmap (\(Comp1 i1 :*: i2 :*: Comp1 i3) -> fmap unPar1 i1 :*: i2 :*: fmap unPar1 i3) $
+    hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3) $
     hlmap (\(i1 :*: i2 :*: i3) -> (Comp1 (tabulate $ const U1) :*: (Comp1 (tabulate $ const U1) :*: ((U1 :*: U1) :*: U1)))
         :*: ((Comp1 $ fmap Par1 i1) :*: ((Comp1 $ fmap Par1 i2) :*: (i3 :*: U1))))
     $ compile @a $ utxoAccumulator @n
@@ -86,8 +86,8 @@ utxoAccumulatorProverSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (Pl
     -> PlonkupProverSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 utxoAccumulatorProverSetup hs as =
     flip updateProverSetup (as ++ replicate (value @n -! length hs) zero) $
-    flip updateProverSetup [one] $
     flip updateProverSetup (hs ++ replicate (value @n -! length hs) zero) $
+    flip updateProverSetup [one] $
     setupProve utxoAccumulatorProtocol
 
 utxoAccumulatorProverSetupInit :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
@@ -130,15 +130,15 @@ utxoAccumulatorGroupElements =
     in
         lagrangeBasisGroupElements @m @BLS12_381_G1_Point @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega gs
 
+validationGroupElement :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+    => BLS12_381_G1_Point
+validationGroupElement = utxoAccumulatorGroupElements @n @m !! 0
+
 accumulationGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => Vector n BLS12_381_G1_Point
 accumulationGroupElements = tabulate (\(toConstant -> i) ->
-    utxoAccumulatorGroupElements @n @m !! i)
-
-switchGroupElement :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => BLS12_381_G1_Point
-switchGroupElement = utxoAccumulatorGroupElements @n @m !! (value @n)
+    utxoAccumulatorGroupElements @n @m !! (i + 1))
 
 distributionGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => Vector n BLS12_381_G1_Point
-distributionGroupElements = tabulate (\(toConstant -> i) -> utxoAccumulatorGroupElements @n @m !! (value @n + 1 + i))
+distributionGroupElements = tabulate (\(toConstant -> i) -> utxoAccumulatorGroupElements @n @m !! (value @n + i + 1))
