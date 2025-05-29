@@ -235,7 +235,7 @@ withMessageLengthConstraints =
 withMessageLengthConstraints' ::
   forall msgBits rateBits.
   (KnownNat msgBits, KnownNat rateBits)
-    :- ( -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64.
+    :- ( -- Note that this constraint is true as @rateBits@ is a multiple of 64 and thus padded message is also a multiple of 64. Why is @rateBits@ a multiple of 64? Well from constraints of @AlgorithmSetup@, we have that @rateBits@ is a multiple of @LaneWidth@ (which is 64).
          (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
        , -- This constraint is actually true as `NumBlocks` is a number which is a multiple of `Rate` by 64 and since `LaneWidth` is 64, it get's cancelled out and what we have is something which is a multiple of `Rate` by `Rate` which is certainly integral.
          (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
