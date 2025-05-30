@@ -11,11 +11,11 @@ import           ZkFold.Protocol.Plonkup.Prover.Polynomials
 import           ZkFold.Protocol.Plonkup.Relation           (PlonkupRelation (..))
 
 data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
-    { omega       :: !(ScalarFieldOf g1) 
+    { omega       :: !(ScalarFieldOf g1)
     , k1          :: !(ScalarFieldOf g1)
     , k2          :: !(ScalarFieldOf g1)
     , gs          :: !(V.Vector g1)
-    , sigma1s     :: !(pv n) 
+    , sigma1s     :: !(pv n)
     , sigma2s     :: !(pv n)
     , sigma3s     :: !(pv n)
     , relation    :: !(PlonkupRelation i o n (ScalarFieldOf g1) pv)

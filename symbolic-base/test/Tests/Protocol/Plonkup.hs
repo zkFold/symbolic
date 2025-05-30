@@ -22,7 +22,7 @@ import           Test.QuickCheck                                hiding (witness)
 import           Tests.Protocol.Plonkup.Update                  (specPlonkupUpdate)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381         
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.EllipticCurve.Class             (CyclicGroup (..))
 import           ZkFold.Algebra.Field                           (fromZp)
 import           ZkFold.Algebra.Number                          (KnownNat, Natural)

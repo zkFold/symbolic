@@ -173,10 +173,10 @@ plonkupProve PlonkupProverSetup {..}
         !qXs8 = ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
 
         !qXNumerator = (
-                qXs1 
-              + qXs2 
+                qXs1
+              + qXs2
               - qXs3
-              + qXs4 
+              + qXs4
               + qXs5
               + qXs6
               - qXs7

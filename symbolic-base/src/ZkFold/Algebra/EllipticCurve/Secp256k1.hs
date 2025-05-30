@@ -46,7 +46,7 @@ instance Scale Fn Secp256k1_Point where
 
 instance CyclicGroup Secp256k1_JacobianPoint where
   type ScalarFieldOf Secp256k1_JacobianPoint = Fn
-  pointGen = project @Secp256k1_Point pointGen 
+  pointGen = project @Secp256k1_Point pointGen
 
 instance Scale Fn Secp256k1_JacobianPoint where
   scale n x = scale (toConstant n) x

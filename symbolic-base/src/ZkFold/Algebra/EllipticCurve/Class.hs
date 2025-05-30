@@ -26,7 +26,7 @@ module ZkFold.Algebra.EllipticCurve.Class
   , JacobianPoint (..)
   , CompressedPoint (..)
   , AffinePoint (..)
-    -- * point projections 
+    -- * point projections
   , Project (..)
   ) where
 
@@ -35,7 +35,7 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import           Prelude                          (Integer, fromInteger, return, type (~), ($), (>>=), (<$>))
+import           Prelude                          (Integer, fromInteger, return, type (~), ($), (<$>), (>>=))
 import qualified Prelude
 import           Test.QuickCheck                  hiding (scale)
 
@@ -535,15 +535,15 @@ instance
 class Project a b where
     project :: a -> b
 
-instance 
+instance
   ( Eq field
   , Field field
   , Conditional (BooleanOf field) (BooleanOf field)
   ) => Project (Point field) (JacobianPoint field) where
-    project (Point x y isInf) = 
+    project (Point x y isInf) =
         if isInf then pointInf else pointXY x y
 
-instance 
+instance
   ( Eq field
   , Field field
   , Conditional (BooleanOf field) (BooleanOf field)

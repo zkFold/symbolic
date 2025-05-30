@@ -158,7 +158,7 @@ exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
         m' = resize modulus
 
         n' :: UInt (2 * m) r c
-        n' = resize n 
+        n' = resize n
 
         sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ productMod x x m') n' [1..16 :: Natural]
 

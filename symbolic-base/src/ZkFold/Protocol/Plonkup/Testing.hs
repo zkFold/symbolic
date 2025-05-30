@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveAnyClass #-} 
-{-# LANGUAGE UndecidableInstances #-} 
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.Plonkup.Testing where
 
@@ -60,13 +60,13 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
     , w3            :: pv n
     } deriving Generic
 
-deriving instance 
+deriving instance
   ( Show g1
   , Show (pv n)
   , Show (PlonkupPolyExtended n g1 pv)
   , Show (ScalarFieldOf g1)
   ) => Show (PlonkupProverTestInfo n g1 pv)
-deriving instance 
+deriving instance
   ( NFData g1
   , NFData (pv n)
   , NFData (PlonkupPolyExtended n g1 pv)

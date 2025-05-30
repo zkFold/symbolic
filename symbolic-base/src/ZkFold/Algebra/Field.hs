@@ -140,7 +140,7 @@ instance KnownNat n => Eq (Zp n) where
 
 instance Prime p => Field (Zp p) where
 --    finv (Zp a) = fromConstant $ inv a (value @p)
-    finv zp = zp ^ (value @p -! 2) 
+    finv zp = zp ^ (value @p -! 2)
 
     rootOfUnity l
       | l == 0            = Nothing

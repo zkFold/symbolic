@@ -91,7 +91,7 @@ instance Scale Fr BN254_G1_Point where
 
 instance CyclicGroup BN254_G1_JacobianPoint where
   type ScalarFieldOf BN254_G1_JacobianPoint = Fr
-  pointGen = project @BN254_G1_Point pointGen 
+  pointGen = project @BN254_G1_Point pointGen
 
 instance Scale Fr BN254_G1_JacobianPoint where
   scale n x = scale (toConstant n) x
@@ -124,7 +124,7 @@ instance Scale Fr BN254_G2_Point where
 
 instance CyclicGroup BN254_G2_JacobianPoint where
   type ScalarFieldOf BN254_G2_JacobianPoint = Fr
-  pointGen = project @BN254_G2_Point pointGen 
+  pointGen = project @BN254_G2_Point pointGen
 
 instance Scale Fr BN254_G2_JacobianPoint where
   scale n x = scale (toConstant n) x

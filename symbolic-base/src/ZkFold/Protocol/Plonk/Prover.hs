@@ -97,7 +97,7 @@ plonkProve PlonkupProverSetup {..}
         h1X = with4n6 @n $ polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1 pv
         h2X = with4n6 @n $ polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
 
-        cmF  = gs `com` fX 
+        cmF  = gs `com` fX
         cmH1 = gs `com` h1X
         cmH2 = gs `com` h2X
 

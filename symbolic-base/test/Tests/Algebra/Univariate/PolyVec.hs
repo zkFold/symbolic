@@ -20,7 +20,7 @@ import           Test.Hspec
 import           Test.QuickCheck                        hiding (scale)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr, Fq)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.Vector                     (Vector, fromVector)
@@ -169,7 +169,7 @@ specUnivariatePolyVecClass = do
                     sum (fromPolyVec $ a + polyVecQuadratic c2 c1 c0) == sum (fromPolyVec a) + c2 + c1 + c0
             it ("multiplies polynomials of degree " <> show (value @s)) $ do
                 property $ \(roots :: Vector (s - 3) c) c0 c1 c2 ->
-                    let p' :: PolyVec c s = product $ fmap (\r -> polyVecLinear one (negate r)) roots 
+                    let p' :: PolyVec c s = product $ fmap (\r -> polyVecLinear one (negate r)) roots
                         p = p' * polyVecQuadratic c2 c1 c0
                      in conjoin $ fmap (\r -> evalPolyVec p r == zero) (fromVector roots)
 

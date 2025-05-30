@@ -87,7 +87,7 @@ instance Compressible BLS12_381_G1_Point where
 instance Compressible BLS12_381_G1_JacobianPoint where
     type Compressed BLS12_381_G1_JacobianPoint = BLS12_381_G1_CompressedPoint
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
-    compress p = compress (project @_ @BLS12_381_G1_Point p) 
+    compress p = compress (project @_ @BLS12_381_G1_Point p)
     decompress p = project @BLS12_381_G1_Point $ decompress p
 
 instance CyclicGroup BLS12_381_G1_Point where
@@ -157,7 +157,7 @@ instance Compressible BLS12_381_G2_Point where
 instance Compressible BLS12_381_G2_JacobianPoint where
     type Compressed BLS12_381_G2_JacobianPoint = BLS12_381_G2_CompressedPoint
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
-    compress p = compress (project @_ @BLS12_381_G2_Point p) 
+    compress p = compress (project @_ @BLS12_381_G2_Point p)
     decompress p = project @BLS12_381_G2_Point $ decompress p
 
 ------------------------------------ Encoding ------------------------------------
@@ -210,7 +210,7 @@ instance Binary BLS12_381_G1_Point where
                 return (pointXY x y)
 
 instance Binary BLS12_381_G1_JacobianPoint where
-    put p = put (project @_ @BLS12_381_G1_Point p) 
+    put p = put (project @_ @BLS12_381_G1_Point p)
     get = project @BLS12_381_G1_Point <$> get
 
 instance Binary BLS12_381_G1_CompressedPoint where
@@ -275,7 +275,7 @@ instance Binary BLS12_381_G2_Point where
 
 
 instance Binary BLS12_381_G2_JacobianPoint where
-    put p = put (project @_ @BLS12_381_G2_Point p) 
+    put p = put (project @_ @BLS12_381_G2_Point p)
     get = project @BLS12_381_G2_Point <$> get
 
 instance Binary BLS12_381_G2_CompressedPoint where

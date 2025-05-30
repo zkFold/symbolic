@@ -10,19 +10,19 @@
 
 module Main where
 
-import           Data.ByteString                       (ByteString)
-import           Prelude                               hiding (Fractional (..), Num (..), length)
+import           Data.ByteString                            (ByteString)
+import           Prelude                                    hiding (Fractional (..), Num (..), length)
 
-import           ZkFold.Algebra.Class                  
+import           ZkFold.Algebra.Class
 import           ZkFold.Protocol.Plonkup.Prover.Secret
-import           ZkFold.Symbolic.Examples.SmartWallet
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit as AC
+import           ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do
     print $ AC.acSizeN expModCircuit
     print $ AC.acSizeM expModCircuit
-    let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit 
+    let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit
         proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 17 3 7 11)
     print setupBytes
     print proofBytes

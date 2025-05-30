@@ -51,7 +51,7 @@ import           ZkFold.Symbolic.MonadCircuit                       (ResidueFiel
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
-    { qM       :: !(pv n) 
+    { qM       :: !(pv n)
     , qL       :: !(pv n)
     , qR       :: !(pv n)
     , qO       :: !(pv n)
@@ -172,10 +172,10 @@ toPlonkupRelation !ac =
         !plonkConstraints    = L.map (evalPolynomial evalMonomial (var . toVar)) (elems (acSystem (acContext ac)))
 
         toTriple :: [t] -> (t, t, t)
-        toTriple [!x]       = (x, x, x)
-        toTriple [!x, !y]    = (x, x, y)
+        toTriple [!x]         = (x, x, x)
+        toTriple [!x, !y]     = (x, x, y)
         toTriple [!x, !y, !z] = (x, y, z)
-        toTriple ws        = P.error ("Expected list of length 1-3, got " ++ show (length ws))
+        toTriple ws           = P.error ("Expected list of length 1-3, got " ++ show (length ws))
 
         unfold :: LookupTable a f -> (Natural, (Vector a -> Vector a) -> f (Vector a))
         unfold (Ranges !rs) =

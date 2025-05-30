@@ -44,7 +44,7 @@ instance Scale (Zp PlutoEris_q) Pluto_Point where
 type Pluto_JacobianPoint = Weierstrass "Pluto-Eris" (JacobianPoint (Zp PlutoEris_p))
 instance CyclicGroup Pluto_JacobianPoint where
   type ScalarFieldOf Pluto_JacobianPoint = Zp PlutoEris_q
-  pointGen = project @Pluto_Point pointGen 
+  pointGen = project @Pluto_Point pointGen
 instance Scale (Zp PlutoEris_q) Pluto_JacobianPoint where
   scale n = scale (toConstant n)
 
@@ -58,7 +58,7 @@ instance Scale (Zp PlutoEris_p) Eris_Point where
 type Eris_JacobianPoint = Weierstrass "Pluto-Eris" (JacobianPoint (Zp PlutoEris_q))
 instance CyclicGroup Eris_JacobianPoint where
   type ScalarFieldOf Eris_JacobianPoint = Zp PlutoEris_p
-  pointGen = project @Eris_Point pointGen 
+  pointGen = project @Eris_Point pointGen
 instance Scale (Zp PlutoEris_p) Eris_JacobianPoint where
   scale n = scale (toConstant n)
 

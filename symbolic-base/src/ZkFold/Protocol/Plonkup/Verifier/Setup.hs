@@ -9,11 +9,11 @@ import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 
 data PlonkupVerifierSetup i o n g1 g2 pv = PlonkupVerifierSetup
-    { omega       :: !(ScalarFieldOf g1) 
+    { omega       :: !(ScalarFieldOf g1)
     , k1          :: !(ScalarFieldOf g1)
     , k2          :: !(ScalarFieldOf g1)
     , h1          :: !g2
-    , sigma1s     :: !(pv n) 
+    , sigma1s     :: !(pv n)
     , sigma2s     :: !(pv n)
     , sigma3s     :: !(pv n)
     , relation    :: !(PlonkupRelation i o n (ScalarFieldOf g1) pv)

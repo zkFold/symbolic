@@ -63,7 +63,7 @@ instance Scale Fq Pallas_Point where
 
 instance CyclicGroup Pallas_JacobianPoint where
   type ScalarFieldOf Pallas_JacobianPoint = Fq
-  pointGen = project @Pallas_Point pointGen 
+  pointGen = project @Pallas_Point pointGen
 
 instance Scale Fq Pallas_JacobianPoint where
     scale n x = scale (toConstant n) x
@@ -84,7 +84,7 @@ instance Scale Fp Vesta_Point where
 
 instance CyclicGroup Vesta_JacobianPoint where
   type ScalarFieldOf Vesta_JacobianPoint = Fp
-  pointGen = project @Vesta_Point pointGen 
+  pointGen = project @Vesta_Point pointGen
 
 instance Scale Fp Vesta_JacobianPoint where
     scale n x = scale (toConstant n) x

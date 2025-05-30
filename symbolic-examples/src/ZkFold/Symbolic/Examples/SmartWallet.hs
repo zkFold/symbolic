@@ -48,8 +48,7 @@ import           Prelude                                      hiding (Fractional
 import qualified Prelude                                      as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      -- (BLS12_381_G1_CompressedPoint, BLS12_381_G1_JacobianPoint,
-                                                             --  BLS12_381_G2_JacobianPoint, Fr)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.EllipticCurve.Class           (compress)
 import           ZkFold.Algebra.Field                         (Zp, fromZp, toZp)
 import qualified ZkFold.Algebra.Number                        as Number
@@ -267,8 +266,8 @@ deriving instance
     ( Symbolic ctx
     , KnownRegisters ctx RSA.PubExponentSize 'Auto
     , KnownRegisters ctx 2048 'Auto
-    ) => SymbolicInput (ExpModInput ctx) 
- 
+    ) => SymbolicInput (ExpModInput ctx)
+
 
 
 expModContract
@@ -292,7 +291,7 @@ expModContract (ExpModInput RSA.PublicKey{..} sig tokenNameAsFE) = hashAsFE * to
         hashAsFE = FieldElement $ fromCircuitF (let UInt regs = msgHash in regs) $ \v -> do
             z <- newAssigned (const zero)
             ans <- foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
-            pure $ Par1 ans 
+            pure $ Par1 ans
 
 expModCircuit :: ExpModCircuit
 expModCircuit = C.compile @Fr expModContract
