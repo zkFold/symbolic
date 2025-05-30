@@ -252,6 +252,7 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
 -- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
+
 natScale 0 _   = zero
 natScale !n !a
   | m == 1 = a + f
@@ -260,7 +261,6 @@ natScale !n !a
         m = n `andNatural` 1
         d = n `shiftRNatural` 1
         f = natScale d (double a)
-
 
 {--
 natScale n a = sum $ zipWith' f (binaryExpansion n) (iterate (\(!x) -> x + x) a)

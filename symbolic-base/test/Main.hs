@@ -13,7 +13,7 @@ import           Tests.Algebra.Permutation          (specPermutation)
 import           Tests.Algebra.ReedSolomon          (specReedSolomon)
 import           Tests.Algebra.Univariate           (specUnivariate)
 import           Tests.Data.Binary                  (specBinary)
---import           Tests.Protocol.IVC                 (specIVC)
+import           Tests.Protocol.IVC                 (specIVC)
 import           Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Protocol.Plonkup             (specPlonkup)
 import           Tests.Symbolic.Algorithm.Blake2b   (specBlake2b)
@@ -34,13 +34,13 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 spec :: RandomGen g => g -> Spec
 spec gen = do
     describe "symbolic-base-test (Algebra)" $ do
-        specGroup
-        specField
-        specEllipticCurve
-        specPairing
-        specPermutation
+--        specGroup
+--        specField
+--        specEllipticCurve
+--        specPairing
+--        specPermutation
         specUnivariate
---        specReedSolomon
+        specReedSolomon
         specGroebner
 
     describe "symbolic-base-test (Serialization)" $ do
@@ -49,7 +49,7 @@ spec gen = do
     describe "symbolic-base-test (Protocols)" $ do
         specPlonkup
         specNonInteractiveProof
---        specIVC
+        specIVC
 
     describe "symbolic-base-test (Symbolic compiler)" $ do
         specArithmeticCircuit

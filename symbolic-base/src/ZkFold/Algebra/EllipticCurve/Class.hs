@@ -268,36 +268,36 @@ instance
     --
     pt1@(Weierstrass (JacobianPoint x1 y1 z1)) + pt2@(Weierstrass (JacobianPoint x2 y2 z2)) =
       if z1 == zero then pt2 else if z2 == zero then pt1 -- additive identity
-      else let z1z1 = square z1
-               z2z2 = square z2
-               u1 = x1*z2z2
-               u2 = x2*z1z1
-               s1 = y1*z2*z2z2
-               s2 = y2*z1*z1z1
-               h  = u2-u1
-               i  = square (double h)
-               j  = h*i
-               r  = double (s2 - s1)
-               v  = u1 * i
-               x3 = square r - j - double v
-               y3 = r*(v - x3) - double s1 * j
-               z3 = (square (z1+z2) - z1z1 - z2z2) * h
+      else let !z1z1 = square z1
+               !z2z2 = square z2
+               !u1 = x1*z2z2
+               !u2 = x2*z1z1
+               !s1 = y1*z2*z2z2
+               !s2 = y2*z1*z1z1
+               !h  = u2-u1
+               !i  = square (double h)
+               !j  = h*i
+               !r  = double (s2 - s1)
+               !v  = u1 * i
+               !x3 = square r - j - double v
+               !y3 = r*(v - x3) - double s1 * j
+               !z3 = (square (z1+z2) - z1z1 - z2z2) * h
             in Weierstrass (JacobianPoint x3 y3 z3)
 
     -- https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2007-bl
     --
     double pt@(Weierstrass (JacobianPoint x1 y1 z1)) =
       if z1 == zero then pt
-      else let xx = square x1
-               yy = square y1
-               yyyy = square yy
-               zz = square z1
-               s = double (square (x1+yy)-xx-yyyy)
-               m = scale (3 :: Natural) xx
-               t = square m - double s
-               x3 = t
-               y3 = m*(s-t)- scale (8 :: Natural) yyyy
-               z3 = square (y1+z1) - yy - zz
+      else let !xx = square x1
+               !yy = square y1
+               !yyyy = square yy
+               !zz = square z1
+               !s = double (square (x1+yy)-xx-yyyy)
+               !m = scale (3 :: Natural) xx
+               !t = square m - double s
+               !x3 = t
+               !y3 = m*(s-t)- scale (8 :: Natural) yyyy
+               !z3 = square (y1+z1) - yy - zz
             in Weierstrass (JacobianPoint x3 y3 z3)
 
 instance

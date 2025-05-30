@@ -183,10 +183,10 @@ mulAdaptive !l !r
       | Just (m, cm, c0) <- isShiftedMono r = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx l (fromIntegral m) cm c0
       | Just (m, cm, c0) <- isShiftedMono l = V.generate (V.length l P.+ V.length r) $ mulShiftedMonoIx r (fromIntegral m) cm c0
       | otherwise =
-          case (maybeW2n, len <= 64) of
+          case (maybeW2n, resultLen <= 64) of
             (_, True)        -> mulVector l r
-            (Just w2n, _)    -> mulDft p w2n lPadded rPadded
-            (Nothing, False) -> mulKaratsuba lPadded rPadded
+            (Just w2n, _)    -> mulDft dftP w2n lDft rDft
+            (Nothing, False) -> mulKaratsuba lKaratsuba rKaratsuba
         where
             mulShiftedMonoIx :: V.Vector c -> Int -> c -> c -> Int -> c
             mulShiftedMonoIx ref m cm c0 ix =
@@ -194,21 +194,43 @@ mulAdaptive !l !r
                     shifted = if ix >= m && ix P.- m < V.length ref then cm * (ref V.! (ix P.- m)) else zero
                 in scaled + shifted
 
-            len :: Int
-            len = (V.length l) P.+ (V.length r) P.- 1
+            -------------------------------------------------------------------------------------------------
+                -- DFT
+            -------------------------------------------------------------------------------------------------
+                
+            resultLen :: Int
+            resultLen = (V.length l) P.+ (V.length r) P.- 1
 
-            p :: Integer
-            p = ceiling @Double $ logBase 2 (fromIntegral len)
+            dftP :: Integer
+            dftP = ceiling @Double $ logBase 2 (fromIntegral resultLen)
 
-            pad :: Int
-            pad = 2 P.^ p
+            padDft :: Int
+            padDft = 2 P.^ dftP
 
-            lPadded, rPadded :: V.Vector c
-            lPadded = padVector l pad
-            rPadded = padVector r pad
+            lDft, rDft :: V.Vector c
+            lDft = padVector l padDft 
+            rDft = padVector r padDft
 
             maybeW2n :: Maybe c
-            maybeW2n = rootOfUnity $ fromIntegral p
+            maybeW2n = rootOfUnity $ fromIntegral dftP
+
+            -------------------------------------------------------------------------------------------------
+                -- Karatsuba 
+            -------------------------------------------------------------------------------------------------
+
+            maxLen :: Int
+            maxLen = max (V.length l) (V.length r)
+
+            karatsubaP :: Integer
+            karatsubaP = ceiling @Double $ logBase 2 (fromIntegral maxLen)
+
+            padKaratsuba :: Int
+            padKaratsuba = 2 P.^ karatsubaP
+
+            lKaratsuba, rKaratsuba :: V.Vector c
+            lKaratsuba = padVector l padKaratsuba 
+            rKaratsuba = padVector r padKaratsuba
+
 
 mulDft :: forall c . Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
 mulDft !p !w2n !lPadded !rPadded = c

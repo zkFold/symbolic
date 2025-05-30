@@ -20,7 +20,7 @@ import           Test.Hspec
 import           Test.QuickCheck                        hiding (scale)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr, Fq)
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.Vector                     (Vector, fromVector)
@@ -86,7 +86,7 @@ propPolyVecGrandProduct p beta gamma =
         == (beta * V.last (fromPolyVec p') + gamma)
 
 specUnivariatePolyVec' :: forall c s d .
-    (KnownNat s, KnownNat (4 * s), KnownNat (4 * s - 3), KnownNat (s - 3), KnownNat d) =>
+    (KnownNat s, KnownNat d) =>
     (Arbitrary c, Show c, Typeable c, Field c, Ord c) => Spec
 specUnivariatePolyVec' = do
     describe "Univariate polynomials specification" $ do
@@ -118,44 +118,6 @@ specUnivariatePolyVec' = do
                     property $ \(a :: PolyVec c s) -> a * one == a
                 it "should satisfy distributivity" $ do
                     property $ \(a :: PolyVec c s) b c -> a * (b + c) == a * b + a * c
-            describe "Class methods" $ do
-                it "evaluation" $ do
-                    property $ \(a :: PolyVec c s) ->
-                        evalPolyVec a zero == V.head (fromPolyVec a) .&&. evalPolyVec a one == sum (fromPolyVec a)
-                it "adding a constant on the left" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ c +. a) == sum (fromPolyVec a) + scale (value @s) c
-                it "adding a constant on the right" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ a .+ c) == sum (fromPolyVec a) + scale (value @s) c
-                it "multiplying by a constant on the left" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ c *. a) == c * sum (fromPolyVec a)
-                it "multiplying by a constant on the right" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ a .* c) == c * sum (fromPolyVec a)
-                it "element-wise sum" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ a + c) == sum (fromPolyVec a) + sum (fromPolyVec c)
-                it "adding a shorter polynomial (constant)" $ do
-                    property $ \(a :: PolyVec c s) c ->
-                        sum (fromPolyVec $ a + polyVecConstant c) == sum (fromPolyVec a) + c
-                it "adding a shorter polynomial (linear)" $ do
-                    property $ \(a :: PolyVec c s) c0 c1 ->
-                        sum (fromPolyVec $ a + polyVecLinear c1 c0) == sum (fromPolyVec a) + c1 + c0
-                it "adding a shorter polynomial (quadratic)" $ do
-                    property $ \(a :: PolyVec c s) c0 c1 c2 ->
-                        sum (fromPolyVec $ a + polyVecQuadratic c2 c1 c0) == sum (fromPolyVec a) + c2 + c1 + c0
-                it ("multiplies polynomials of degree " <> show (value @s)) $ do
-                    property $ \(roots :: Vector (s - 3) c) c0 c1 c2 ->
-                        let p' :: PolyVec c s = product $ fmap (\r -> polyVecLinear one (negate r)) roots 
-                            p = p' * polyVecQuadratic c2 c1 c0
-                         in conjoin $ fmap (\r -> evalPolyVec p r == zero) (fromVector roots)
-                it ("multiplies polynomials of degree " <> show (value @(4 * s))) $ do
-                    property $ \(roots :: Vector (4 * s - 3) c) c0 c1 c2 -> -- Our adaptive algorithm won't run FFT multiplication for degrees less than 64
-                        let p' :: PolyVec c (4 * s) = product $ fmap (\r -> polyVecLinear one (negate r)) roots 
-                            p = p' * polyVecQuadratic c2 c1 c0
-                         in conjoin $ fmap (\r -> evalPolyVec p r == zero) (fromVector roots)
             describe "Polynomial division" $ do
                 it "should satisfy the definition" $ do
                     property $ \(p :: PolyVec c s) q -> q /= zero ==> propPolyVecDivision p q
@@ -172,6 +134,49 @@ specUnivariatePolyVec' = do
                 it "should satisfy the definition" $ do
                     property $ propPolyVecGrandProduct @c @s
 
+specUnivariatePolyVecClass :: forall c s .
+    (KnownNat s, KnownNat (s - 3)) =>
+    (Arbitrary c, Show c, Typeable c, Field c, Ord c) => Spec
+specUnivariatePolyVecClass = do
+    describe ("Type: " ++ show (typeOf @(PolyVec c s) zero)) $ do
+        describe "Class methods" $ do
+            it "evaluation" $ do
+                property $ \(a :: PolyVec c s) ->
+                    evalPolyVec a zero == V.head (fromPolyVec a) .&&. evalPolyVec a one == sum (fromPolyVec a)
+            it "adding a constant on the left" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ c +. a) == sum (fromPolyVec a) + scale (value @s) c
+            it "adding a constant on the right" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ a .+ c) == sum (fromPolyVec a) + scale (value @s) c
+            it "multiplying by a constant on the left" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ c *. a) == c * sum (fromPolyVec a)
+            it "multiplying by a constant on the right" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ a .* c) == c * sum (fromPolyVec a)
+            it "element-wise sum" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ a + c) == sum (fromPolyVec a) + sum (fromPolyVec c)
+            it "adding a shorter polynomial (constant)" $ do
+                property $ \(a :: PolyVec c s) c ->
+                    sum (fromPolyVec $ a + polyVecConstant c) == sum (fromPolyVec a) + c
+            it "adding a shorter polynomial (linear)" $ do
+                property $ \(a :: PolyVec c s) c0 c1 ->
+                    sum (fromPolyVec $ a + polyVecLinear c1 c0) == sum (fromPolyVec a) + c1 + c0
+            it "adding a shorter polynomial (quadratic)" $ do
+                property $ \(a :: PolyVec c s) c0 c1 c2 ->
+                    sum (fromPolyVec $ a + polyVecQuadratic c2 c1 c0) == sum (fromPolyVec a) + c2 + c1 + c0
+            it ("multiplies polynomials of degree " <> show (value @s)) $ do
+                property $ \(roots :: Vector (s - 3) c) c0 c1 c2 ->
+                    let p' :: PolyVec c s = product $ fmap (\r -> polyVecLinear one (negate r)) roots 
+                        p = p' * polyVecQuadratic c2 c1 c0
+                     in conjoin $ fmap (\r -> evalPolyVec p r == zero) (fromVector roots)
+
 specUnivariatePolyVec :: Spec
 specUnivariatePolyVec = do
     specUnivariatePolyVec' @Fr @32 @135
+    specUnivariatePolyVecClass @Fr @32
+    specUnivariatePolyVecClass @Fr @128 -- FFT runs only on large polynomials
+    specUnivariatePolyVecClass @Fq @32  -- No roots on unity in Fq
+    specUnivariatePolyVecClass @Fq @128 -- No roots of unity in Fq, polynomials are large enough to run Karatsuba

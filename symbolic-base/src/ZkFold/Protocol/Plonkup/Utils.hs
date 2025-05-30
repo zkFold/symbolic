@@ -5,6 +5,8 @@
 module ZkFold.Protocol.Plonkup.Utils where
 
 import           Data.Bool                          (bool)
+import           Data.Constraint                    (withDict)
+import           Data.Constraint.Nat                (plusNat)
 import           Data.List                          (sortOn)
 import qualified Data.Map                           as M
 import qualified Data.Set                           as S
@@ -14,7 +16,7 @@ import           Prelude                            hiding (Num (..), drop, leng
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector                 (Vector, unsafeToVector)
+import           ZkFold.Data.Vector                 (Vector, unfold, unsafeToVector)
 import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
 
@@ -49,8 +51,8 @@ getSecretParams :: forall n g1 g2 .
     , Scale (ScalarFieldOf g1) g2
     ) => ScalarFieldOf g1 -> (Vector (n + 5) g1, g2)
 getSecretParams x =
-    let xs = unsafeToVector $ fmap (x^) [0 .. (value @n + 5)]
-        gs = fmap (`scale` pointGen) xs
+    let g0 = x `scale` pointGen
+        gs = withDict (plusNat @n @5) $ unfold (\p -> (p, double p)) g0
         h1 = x `scale` pointGen
     in (gs, h1)
 

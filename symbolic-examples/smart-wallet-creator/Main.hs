@@ -24,6 +24,7 @@ main = do
     print $ AC.acSizeM expModCircuit
     let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit 
         proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 17 3 7 11)
+--        proofBytes = mkProof $ expModProof @ByteString zero (PlonkupProverSecret $ pure zero) expModCircuit (ExpModProofInput 17 3 7 11)
 --    let setupBytes = mkSetup $ expModSetupMock @ByteString one 
 --        proofBytes = mkProof $ expModProofMock @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 1 1 1 1)
 --    print setupBytes

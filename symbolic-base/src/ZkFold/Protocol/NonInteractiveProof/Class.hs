@@ -71,4 +71,4 @@ instance
     , f ~ ScalarFieldOf g
     , UnivariateRingPolyVec f (PolyVec f)
     ) => Bilinear (V.Vector g) (PolyVec f size) g where
-    bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
+    bilinear gs f = {-# SCC bilinear #-} sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
