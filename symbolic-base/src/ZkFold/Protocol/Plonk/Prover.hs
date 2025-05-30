@@ -172,8 +172,8 @@ plonkProve PlonkupProverSetup {..}
         qmidX  = with4n6 @n $ toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
         qhighX = with4n6 @n $ toPolyVec $ V.drop (fromIntegral (2*(n+2))) $ fromPolyVec qX
 
-        cmQlow = gs `com` qlowX
-        cmQmid = gs `com` qmidX
+        cmQlow  = gs `com` qlowX
+        cmQmid  = gs `com` qmidX
         cmQhigh = gs `com` qhighX
 
         -- Round 5

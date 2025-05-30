@@ -13,6 +13,7 @@ import           Data.List            (foldl')
 import           Data.List            (unsnoc)
 #endif
 import           Data.Map             (Map, lookup)
+import qualified Data.Vector          as V
 import           GHC.Num              (Natural, integerToNatural)
 import           GHC.Stack            (HasCallStack)
 import           Prelude              hiding (drop, iterate, lookup, readFile, replicate, take, writeFile, (!!))
@@ -114,3 +115,17 @@ unsnoc :: [a] -> Maybe ([a], a)
 unsnoc [] = Nothing
 unsnoc l =  Just (init l, last l)
 #endif
+
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' _ [] _ = []
+zipWith' _ _ [] = []
+zipWith' f (!x : xs) (!y : ys) = let !c = f x y
+                                  in c : zipWith' f xs ys
+
+zipVectorsWithDefault :: a -> (a -> a -> b) -> V.Vector a -> V.Vector a -> V.Vector b
+zipVectorsWithDefault d f u v = V.zipWith f u' v'
+    where
+        lu = V.length u
+        lv = V.length v
+        u' = if lu < lv then u V.++ V.replicate (lv - lu) d else u
+        v' = if lv < lu then v V.++ V.replicate (lu - lv) d else v

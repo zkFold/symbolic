@@ -29,6 +29,7 @@ import           Data.Tuple                           (snd)
 import           Data.Type.Equality                   (type (~))
 import qualified Data.Vector                          as V
 import           GHC.Generics                         (Generic)
+import           GHC.Natural                          (powModNatural)
 import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
 import           Prelude                              (Integer)
@@ -103,9 +104,10 @@ instance KnownNat p => AdditiveGroup (Zp p) where
 
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
+    square (Zp a) = Zp $ Haskell.fromIntegral $ powModNatural (Haskell.fromIntegral a) 2 (value @p)
 
 instance KnownNat p => Exponent (Zp p) Natural where
-    (^) = natPow
+    (Zp z) ^ n = Zp $ Haskell.fromIntegral $ powModNatural (Haskell.fromIntegral z) n (value @p)
 
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
@@ -127,7 +129,7 @@ instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
-    a ^ n = intPowF a (n `Haskell.mod` (fromConstant (value @p) - 1))
+    a ^ n = a ^ (Haskell.fromIntegral $ n `Haskell.mod` (fromConstant (value @p) - 1) :: Natural)
 
 instance Conditional Bool (Zp n) where bool = Bool.bool
 
@@ -137,7 +139,8 @@ instance KnownNat n => Eq (Zp n) where
     (/=) = (Haskell./=)
 
 instance Prime p => Field (Zp p) where
-    finv (Zp a) = fromConstant $ inv a (value @p)
+--    finv (Zp a) = fromConstant $ inv a (value @p)
+    finv zp = zp ^ (value @p -! 2)
 
     rootOfUnity l
       | l == 0            = Nothing

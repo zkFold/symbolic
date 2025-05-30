@@ -22,10 +22,10 @@ genericDft
     -> a
     -> V.Vector a
     -> V.Vector a
-genericDft 0 _ v  = v
-genericDft n wn v = V.create $ do
-    result <- V.thaw (bitReversalPermutation v)
-    wRef   <- ST.newSTRef one
+genericDft 0 _ !v    = v
+genericDft !n !wn !v = V.create $ do
+    !result <- V.thaw (bitReversalPermutation v)
+    !wRef   <- ST.newSTRef one
 
     forRange_ 1 (P.fromIntegral n) 1 $ \s -> do
         let !m  = 2 P.^ s
@@ -45,7 +45,7 @@ genericDft n wn v = V.create $ do
                 ST.modifySTRef wRef (*wm)
     pure result
   where
-    len = P.fromIntegral $ (2 P.^ n :: Natural)
+    !len = P.fromIntegral $ (2 P.^ n :: Natural)
 
 forRange_ :: Monad m => Int -> Int -> Int -> (Int -> m a) -> m ()
 forRange_ !from !to !step f

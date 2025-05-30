@@ -26,7 +26,7 @@ import           ZkFold.Protocol.Plonkup.Internal           (lagrangeBasisGroupE
 import           ZkFold.Protocol.Plonkup.Proof              (PlonkupProof)
 import           ZkFold.Protocol.Plonkup.Prover             (PlonkupProverSecret (..), PlonkupProverSetup (..))
 import           ZkFold.Protocol.Plonkup.Update             (updateProverSetup)
-import           ZkFold.Protocol.Plonkup.Utils              (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Utils              (getParams, getSecretParams)
 import           ZkFold.Protocol.Plonkup.Verifier           (PlonkupVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness            (PlonkupWitnessInput (..))
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC        (hash)
@@ -78,7 +78,7 @@ utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m) => UtxoAccumula
 utxoAccumulatorProtocol =
     let
         (omega, k1, k2) = getParams (value @m)
-        (gs, h1) = getSecrectParams $ fromConstant @(ScalarFieldOf BLS12_381_G1_Point) 42
+        (gs, h1) = getSecretParams $ fromConstant @(ScalarFieldOf BLS12_381_G1_Point) 42
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
