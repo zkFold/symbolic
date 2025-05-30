@@ -301,7 +301,7 @@ expModSetup :: forall t .  TranscriptConstraints t => Fr -> ExpModCircuit -> Set
 expModSetup x ac = setupV
     where
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) = {-# SCC getSecretParams #-} getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 ac h1 gs
         setupV  = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
@@ -340,7 +340,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
         paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
 
         (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-        (gs, h1) =  {-# SCC getSecretParams #-} getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
+        (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
         plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
         setupP  = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
         witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
