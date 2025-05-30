@@ -104,10 +104,10 @@ instance KnownNat p => AdditiveGroup (Zp p) where
 
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)
-    square (Zp a) = Zp $ fromIntegral $ powModNatural (fromIntegral a) 2 (value @p)
+    square (Zp a) = Zp $ Haskell.fromIntegral $ powModNatural (Haskell.fromIntegral a) 2 (value @p)
 
 instance KnownNat p => Exponent (Zp p) Natural where
-    (Zp z) ^ n = Zp $ fromIntegral $ powModNatural (fromIntegral z) n (value @p)
+    (Zp z) ^ n = Zp $ Haskell.fromIntegral $ powModNatural (Haskell.fromIntegral z) n (value @p)
 
 instance KnownNat p => MultiplicativeMonoid (Zp p) where
     one = Zp 1
@@ -129,7 +129,7 @@ instance KnownNat p => Ring (Zp p)
 
 instance Prime p => Exponent (Zp p) Integer where
     -- | By Fermat's little theorem
-    a ^ n = a ^ (fromIntegral $ n `Haskell.mod` (fromConstant (value @p) - 1) :: Natural)
+    a ^ n = a ^ (Haskell.fromIntegral $ n `Haskell.mod` (fromConstant (value @p) - 1) :: Natural)
 
 instance Conditional Bool (Zp n) where bool = Bool.bool
 

@@ -6,18 +6,15 @@ module Tests.Protocol.IVC (specIVC) where
 
 import           Data.Functor.Constant                  (Constant)
 import           GHC.Generics                           (U1 (..))
-import           GHC.IsList                             (IsList (..))
-import           Prelude                                hiding (Num (..), pi, replicate, sum, (+))
+import           Prelude                                hiding (Num (..), pi, replicate, sum, (+), (^))
 import           Test.Hspec                             (Spec, describe, it)
 import           Test.QuickCheck                        (property, withMaxSuccess)
 
-import           ZkFold.Algebra.Class                   (FromConstant (..))
+import           ZkFold.Algebra.Class                   (FromConstant (..), sum, (*), (^))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
 import           ZkFold.Algebra.Field                   (Zp)
 import           ZkFold.Algebra.Number                  (Natural, type (-))
-import           ZkFold.Algebra.Polynomial.Univariate   (PolyVec, evalPolyVec)
-import           ZkFold.Data.HFunctor.Classes           (HEq (..))
-import           ZkFold.Data.Vector                     (Vector (..), item, singleton)
+import           ZkFold.Data.Vector                     (Vector (..), item, mapWithIx, singleton)
 import           ZkFold.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
 import           ZkFold.Protocol.IVC.AccumulatorScheme  as Acc
 import           ZkFold.Protocol.IVC.CommitOpen         (commitOpen)
@@ -39,13 +36,13 @@ type PHI = Predicate F I P
 type SPS = FiatShamir 1 I P C [F] [F] F
 type D = 2
 type PARDEG = 5
-type PAR = PolyVec F PARDEG
+type PAR = Vector PARDEG F
 
 testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
     => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
 testFunction p x _ =
-    let p' = fromList $ map fromConstant $ toList p :: PolyVec (FieldElement ctx) PARDEG
-    in singleton $ evalPolyVec p' $ item x
+    let p' = fmap fromConstant p :: Vector PARDEG (FieldElement ctx)
+    in singleton $ sum $ mapWithIx (\i e -> item x^i * e) p'
 
 -- testPredicateCircuit :: PAR -> AC
 -- testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p

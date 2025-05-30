@@ -7,16 +7,15 @@
 module ZkFold.Algebra.Class where
 
 import           Control.Applicative        (Applicative (..))
-import           Data.Bool                  (Bool (..), bool, otherwise, (&&))
-import           Data.Eq                    (Eq (..))
+import           Data.Bool                  (Bool (..), otherwise, (&&))
 import           Data.Foldable              (Foldable (foldl', foldl1, foldr))
 import           Data.Function              (const, id, ($), (.))
 import           Data.Functor               (Functor (..))
 import           Data.Functor.Constant      (Constant (..))
 import           Data.Kind                  (Type)
-import           Data.List                  (iterate, map, repeat, zipWith, (++))
+import           Data.List                  (map, repeat, (++))
 import           Data.Maybe                 (Maybe (..))
-import           Data.Ord                   (Ord (..), Ordering (..))
+import           Data.Ord                   (Ord (..))
 import           Data.Ratio                 (Rational)
 import           Data.Type.Equality         (type (~), (:~:) (..))
 import           GHC.Natural                (andNatural, naturalFromInteger, shiftRNatural)
@@ -25,7 +24,7 @@ import qualified Prelude                    as Haskell
 
 import           ZkFold.Algebra.Number
 import           ZkFold.Control.Conditional (Conditional)
-import           ZkFold.Data.Eq             (BooleanOf, Eq)
+import           ZkFold.Data.Eq             (BooleanOf, Eq (..))
 import           ZkFold.Prelude             (length, replicate, zipWith')
 
 infixl 7 *, /
@@ -117,8 +116,8 @@ class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
     -- [Associativity] @x * (y * z) == (x * y) * z@
     (*) :: a -> a -> a
 
-    -- | @square@ is offered purely for computational efficiency 
-    -- in cases where there exist faster ways to squarean element 
+    -- | @square@ is offered purely for computational efficiency
+    -- in cases where there exist faster ways to squarean element
     -- than to multiply it by itself (e.g. Zp)
     square :: a -> a
     square a = a * a
@@ -231,8 +230,8 @@ class FromConstant a a => AdditiveSemigroup a where
     -- [Commutativity] @x + y == y + x@
     (+) :: a -> a -> a
 
-    -- | @double@ is offered purely for computational efficiency 
-    -- in cases where there exist faster ways to double an element 
+    -- | @double@ is offered purely for computational efficiency
+    -- in cases where there exist faster ways to double an element
     -- than to add it to itself (e.g. elliptic curves)
     double :: a -> a
     double a = a + a
@@ -252,8 +251,7 @@ class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
 natScale :: AdditiveMonoid a => Natural -> a -> a
 -- | A default implementation for natural scaling. Uses only @('+')@ and
 -- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
-
-natScale 0 _   = zero
+natScale 0 _ = zero
 natScale !n !a
   | m == 1 = a + f
   | otherwise = f
@@ -261,14 +259,6 @@ natScale !n !a
         m = n `andNatural` 1
         d = n `shiftRNatural` 1
         f = natScale d (double a)
-
-{--
-natScale n a = sum $ zipWith' f (binaryExpansion n) (iterate (\(!x) -> x + x) a)
-  where
-    f 0 _ = zero
-    f 1 x = x
-    f _ _ = Haskell.error "scale: This should never happen."
---}
 
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl' (+) zero
@@ -386,7 +376,7 @@ implementation is provided as an @'intPowF'@ function. You can provide a faster
 alternative yourself, but do not forget to check that your implementation
 computes the same results on all inputs.
 -}
-class (Ring a, Exponent a Integer, Haskell.Eq a) => Field a where
+class (Ring a, Exponent a Integer, Eq a) => Field a where
     {-# MINIMAL (finv | (//)) #-}
 
     -- | Division in a field. The following should hold:

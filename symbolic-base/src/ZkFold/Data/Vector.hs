@@ -156,19 +156,11 @@ rotate (Vector !lst) n = Vector (r <> l)
         (!l, !r) = V.splitAt lshift lst
 
 shift :: forall size a. KnownNat size => Vector size a -> Integer -> a -> Vector size a
-<<<<<<< HEAD
 shift (Vector lst) n pad
   | n P.< 0 = Vector $ V.take (knownNat @size) (padList <> lst)
   | otherwise = Vector $ V.drop (P.fromIntegral n) (lst <> padList)
     where
         padList = V.replicate (P.fromIntegral $ P.abs n) pad
-=======
-shift (Vector !lst) n pad
-  | n < 0 = Vector $ V.take (knownNat @size) (padList <> lst)
-  | otherwise = Vector $ V.drop (fromIntegral n) (lst <> padList)
-    where
-        !padList = V.replicate (fromIntegral $ abs n) pad
->>>>>>> 0e2971fa (WIP)
 
 vectorDotProduct :: forall size a . Semiring a => Vector size a -> Vector size a -> a
 vectorDotProduct (Vector !as) (Vector !bs) = sum $ zipWith (*) as bs
@@ -194,7 +186,6 @@ concatMap :: forall m n a b . (a -> Vector n b) -> Vector m a -> Vector (m * n) 
 concatMap f (Vector v) = Vector $ V.concatMap (toV . f) v
 
 chunks :: forall m n a . KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
-<<<<<<< HEAD
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (P.fromIntegral $ value @n) vectors)
 
 -- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
@@ -211,9 +202,6 @@ slice (Vector v) = Vector $ V.slice (P.fromIntegral $ value @i) (P.fromIntegral 
 -- index vector by @xs'!'i@.
 backpermute :: forall n m a. Vector n a -> Vector m (Zp n) -> Vector m a
 backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (P.fromIntegral . fromZp) is
-=======
-chunks (Vector !vectors) = unsafeToVector (Vector <$> V.chunksOf (fromIntegral $ value @n) vectors)
->>>>>>> 0e2971fa (WIP)
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV

@@ -12,13 +12,14 @@ import           Test.Hspec
 import           Test.QuickCheck
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.EllipticCurve.BN254
 import           ZkFold.Algebra.EllipticCurve.Ed25519   (Ed25519_Point)
-import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_Point, Vesta_Point, Pallas_JacobianPoint, Vesta_JacobianPoint)
-import           ZkFold.Algebra.EllipticCurve.PlutoEris (Eris_Point, Pluto_Point, Eris_JacobianPoint, Pluto_JacobianPoint)
-import           ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Point, Secp256k1_JacobianPoint)
+import           ZkFold.Algebra.EllipticCurve.Pasta     (Pallas_JacobianPoint, Pallas_Point, Vesta_JacobianPoint,
+                                                         Vesta_Point)
+import           ZkFold.Algebra.EllipticCurve.PlutoEris (Eris_JacobianPoint, Eris_Point, Pluto_JacobianPoint,
+                                                         Pluto_Point)
+import           ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_JacobianPoint, Secp256k1_Point)
 
 specGroup' :: forall a . (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
 specGroup' = do

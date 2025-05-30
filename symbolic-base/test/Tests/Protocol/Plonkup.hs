@@ -85,7 +85,7 @@ propPlonkPolyEquality ::
     Bool
 propPlonkPolyEquality plonk witness secret pow =
     let setup = setupProve plonk
-        (_, _, pr@PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
+        (_, _, PlonkupProverTestInfo {..}) = with4n6 @n $ plonkupProve @_ @_ @_ @_ @_ @ByteString setup (witness, secret)
         p = with4n6 @n $ qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
      in (p `evalPolyVec` (omega ^ fromZp pow)) == zero
 
