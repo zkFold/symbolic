@@ -18,6 +18,7 @@ module ZkFold.Symbolic.Data.UInt (
     toNative,
     asWords,
     expMod,
+    exp65537Mod,
     eea,
     natural,
     register,
@@ -136,6 +137,30 @@ expMod n pow modulus = resize result
 
         result :: UInt (2 * m) r c
         result = bitsPow (value @p) bits one n' m'
+
+-- | n ^ 65537 `mod` modulus
+--
+exp65537Mod
+    :: forall c n m r
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat n
+    => KnownNat m
+    => KnownNat (2 * m)
+    => KnownRegisters c (2 * m) r
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
+    => UInt n r c
+    -> UInt m r c
+    -> UInt m r c
+exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
+    where
+        m' :: UInt (2 * m) r c
+        m' = resize modulus
+
+        n' :: UInt (2 * m) r c
+        n' = resize n
+
+        sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ productMod x x m') n' [1..16 :: Natural]
 
 bitsPow
     :: forall c n p r

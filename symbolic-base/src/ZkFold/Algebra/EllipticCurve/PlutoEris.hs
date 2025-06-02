@@ -9,6 +9,9 @@ module ZkFold.Algebra.EllipticCurve.PlutoEris
  , Pluto_Point
  , Eris_Point
  , Triton_Point
+ , Pluto_JacobianPoint
+ , Eris_JacobianPoint
+ , Triton_JacobianPoint
  ) where
 
 import           ZkFold.Algebra.Class
@@ -38,11 +41,25 @@ instance CyclicGroup Pluto_Point where
 instance Scale (Zp PlutoEris_q) Pluto_Point where
   scale n = scale (toConstant n)
 
+type Pluto_JacobianPoint = Weierstrass "Pluto-Eris" (JacobianPoint (Zp PlutoEris_p))
+instance CyclicGroup Pluto_JacobianPoint where
+  type ScalarFieldOf Pluto_JacobianPoint = Zp PlutoEris_q
+  pointGen = project @Pluto_Point pointGen
+instance Scale (Zp PlutoEris_q) Pluto_JacobianPoint where
+  scale n = scale (toConstant n)
+
 type Eris_Point = Weierstrass "Pluto-Eris" (Point (Zp PlutoEris_q))
 instance CyclicGroup Eris_Point where
   type ScalarFieldOf Eris_Point = Zp PlutoEris_p
   pointGen = pointXY (-2) 7
 instance Scale (Zp PlutoEris_p) Eris_Point where
+  scale n = scale (toConstant n)
+
+type Eris_JacobianPoint = Weierstrass "Pluto-Eris" (JacobianPoint (Zp PlutoEris_q))
+instance CyclicGroup Eris_JacobianPoint where
+  type ScalarFieldOf Eris_JacobianPoint = Zp PlutoEris_p
+  pointGen = project @Eris_Point pointGen
+instance Scale (Zp PlutoEris_p) Eris_JacobianPoint where
   scale n = scale (toConstant n)
 
 -------------------------- Triton curve ----------------------------
@@ -57,3 +74,6 @@ instance WeierstrassCurve "Triton" (Ext2 (Zp PlutoEris_p) "i*sqrt5") where
 
 type Triton_Point =
   Weierstrass "Triton" (Point (Ext2 (Zp PlutoEris_p) "i*sqrt5"))
+
+type Triton_JacobianPoint =
+  Weierstrass "Triton" (JacobianPoint (Ext2 (Zp PlutoEris_p) "i*sqrt5"))

@@ -6,6 +6,9 @@ module ZkFold.Algebra.EllipticCurve.Pasta
   ( Pasta_Point
   , Pallas_Point
   , Vesta_Point
+  , Pasta_JacobianPoint
+  , Pallas_JacobianPoint
+  , Vesta_JacobianPoint
   , FpModulus
   , FqModulus
   , Fp
@@ -42,9 +45,12 @@ instance Field field => WeierstrassCurve "Pasta" field where
 
 type Pasta_Point field = Weierstrass "Pasta" (Point field)
 
+type Pasta_JacobianPoint field = Weierstrass "Pasta" (JacobianPoint field)
+
 ------------------------------------ Pallas ------------------------------------
 
 type Pallas_Point = Pasta_Point Fp
+type Pallas_JacobianPoint = Pasta_JacobianPoint Fp
 
 instance CyclicGroup Pallas_Point where
   type ScalarFieldOf Pallas_Point = Fq
@@ -55,9 +61,17 @@ instance CyclicGroup Pallas_Point where
 instance Scale Fq Pallas_Point where
     scale n x = scale (toConstant n) x
 
+instance CyclicGroup Pallas_JacobianPoint where
+  type ScalarFieldOf Pallas_JacobianPoint = Fq
+  pointGen = project @Pallas_Point pointGen
+
+instance Scale Fq Pallas_JacobianPoint where
+    scale n x = scale (toConstant n) x
+
 ------------------------------------ Vesta ------------------------------------
 
 type Vesta_Point = Pasta_Point Fq
+type Vesta_JacobianPoint = Pasta_JacobianPoint Fq
 
 instance CyclicGroup Vesta_Point where
   type ScalarFieldOf Vesta_Point = Fp
@@ -66,6 +80,13 @@ instance CyclicGroup Vesta_Point where
     0x02
 
 instance Scale Fp Vesta_Point where
+    scale n x = scale (toConstant n) x
+
+instance CyclicGroup Vesta_JacobianPoint where
+  type ScalarFieldOf Vesta_JacobianPoint = Fp
+  pointGen = project @Vesta_Point pointGen
+
+instance Scale Fp Vesta_JacobianPoint where
     scale n x = scale (toConstant n) x
 
 ------------------------------------ Encoding ------------------------------------

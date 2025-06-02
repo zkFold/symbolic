@@ -41,6 +41,26 @@ specEllipticCurve = do
   specEllipticCurveGenerator @Pluto_Point
   specEllipticCurveGenerator @Eris_Point
 
+  specEllipticCurveGenerator @Secp256k1_JacobianPoint
+  specEllipticCurveGenerator @BLS12_381_G1_JacobianPoint
+  specEllipticCurveGenerator @BLS12_381_G2_JacobianPoint
+  specEllipticCurveGenerator @BN254_G1_JacobianPoint
+  specEllipticCurveGenerator @BN254_G2_JacobianPoint
+  specEllipticCurveGenerator @Pallas_JacobianPoint
+  specEllipticCurveGenerator @Vesta_JacobianPoint
+  specEllipticCurveGenerator @Pluto_JacobianPoint
+  specEllipticCurveGenerator @Eris_JacobianPoint
+
+  specProjections @Secp256k1_Point @Secp256k1_JacobianPoint
+  specProjections @BLS12_381_G1_Point @BLS12_381_G1_JacobianPoint
+  specProjections @BLS12_381_G2_Point @BLS12_381_G2_JacobianPoint
+  specProjections @BN254_G1_Point @BN254_G1_JacobianPoint
+  specProjections @BN254_G2_Point @BN254_G2_JacobianPoint
+  specProjections @Pallas_Point @Pallas_JacobianPoint
+  specProjections @Vesta_Point @Vesta_JacobianPoint
+  specProjections @Pluto_Point @Pluto_JacobianPoint
+  specProjections @Eris_Point @Eris_JacobianPoint
+
 specEllipticCurveGenerator
   :: forall point .
     ( EllipticCurve point
@@ -65,6 +85,36 @@ specEllipticCurveGenerator = do
       it "should be closed under scalar multiplication" $
         property $ \ (coef :: ScalarFieldOf point) ->
           isOnCurve (coef `scale` g)
+
+specProjections
+  :: forall point1 point2 .
+    ( CyclicGroup point1
+    , Eq point1
+    , Arbitrary (ScalarFieldOf point1)
+    , Show (ScalarFieldOf point1)
+    , KnownSymbol (CurveOf point1)
+    , Project point1 point2
+    , Project point2 point1
+    , ScalarFieldOf point1 ~ ScalarFieldOf point2
+    , EllipticCurve point2
+    , CyclicGroup point2
+    , Show point2
+    , BooleanOf (BaseFieldOf point2) ~ Bool
+    ) => Spec
+specProjections = do
+  let curve = symbolVal (Proxy @(CurveOf point1))
+  describe (curve <> " curve specification in Jacobian coordinates") $ do
+    describe "cyclic group generator" $ do
+      let g = pointGen @point1
+      let j = project @_ @point2 g
+      it "should be on the curve" $
+        j `shouldSatisfy` isOnCurve
+      it "should be closed under scalar multiplication" $
+        property $ \ (coef :: ScalarFieldOf point1) ->
+          isOnCurve (coef `scale` j)
+      it "should yield the same point1 after change of coordinates" $
+        property $ \ (coef :: ScalarFieldOf point1) ->
+          (coef `scale` g) == project @_ @point1 (coef `scale` j)
 
 data TestVector = TestVector
   { _k :: Natural -- scalar

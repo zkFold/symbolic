@@ -14,6 +14,8 @@ module ZkFold.Algebra.EllipticCurve.BN254
   , Fp12
   , BN254_G1_Point
   , BN254_G2_Point
+  , BN254_G1_JacobianPoint
+  , BN254_G2_JacobianPoint
   , BN254_GT
   ) where
 
@@ -71,7 +73,11 @@ type Fp12 = Ext2 Fp6 "BN254-IP3"
 
 type BN254_G1_Point = BN254_G1_PointOf Fp
 
+type BN254_G1_JacobianPoint = BN254_G1_JacobianPointOf Fp
+
 type BN254_G1_PointOf field = Weierstrass "BN254_G1" (Point field)
+
+type BN254_G1_JacobianPointOf field = Weierstrass "BN254_G1" (JacobianPoint field)
 
 instance Field field => WeierstrassCurve "BN254_G1" field where
   weierstrassB = fromConstant (3 :: Natural)
@@ -83,11 +89,22 @@ instance CyclicGroup BN254_G1_Point where
 instance Scale Fr BN254_G1_Point where
   scale n x = scale (toConstant n) x
 
+instance CyclicGroup BN254_G1_JacobianPoint where
+  type ScalarFieldOf BN254_G1_JacobianPoint = Fr
+  pointGen = project @BN254_G1_Point pointGen
+
+instance Scale Fr BN254_G1_JacobianPoint where
+  scale n x = scale (toConstant n) x
+
 ------------------------------- bn254 G2 ---------------------------------------
 
 type BN254_G2_Point = BN254_G2_PointOf Fp2
 
+type BN254_G2_JacobianPoint = BN254_G2_JacobianPointOf Fp2
+
 type BN254_G2_PointOf field = Weierstrass "BN254_G2" (Point field)
+
+type BN254_G2_JacobianPointOf field = Weierstrass "BN254_G2" (JacobianPoint field)
 
 instance WeierstrassCurve "BN254_G2" Fp2 where
   weierstrassB =
@@ -103,6 +120,13 @@ instance CyclicGroup BN254_G2_Point where
           0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b)
 
 instance Scale Fr BN254_G2_Point where
+  scale n x = scale (toConstant n) x
+
+instance CyclicGroup BN254_G2_JacobianPoint where
+  type ScalarFieldOf BN254_G2_JacobianPoint = Fr
+  pointGen = project @BN254_G2_Point pointGen
+
+instance Scale Fr BN254_G2_JacobianPoint where
   scale n x = scale (toConstant n) x
 
 ------------------------------- Pairing ----------------------------------------

@@ -63,6 +63,8 @@ instance Field field => WeierstrassCurve "BLS12-381-G1" field where
 
 type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 
+type BLS12_381_G1_JacobianPoint = Weierstrass "BLS12-381-G1" (JacobianPoint Fq)
+
 type BLS12_381_G1_CompressedPoint =
   Weierstrass "BLS12-381-G1" (CompressedPoint Fq)
 
@@ -82,6 +84,12 @@ instance Compressible BLS12_381_G1_Point where
             y = if bigY then max y' y'' else min y' y''
         in  pointXY x y
 
+instance Compressible BLS12_381_G1_JacobianPoint where
+    type Compressed BLS12_381_G1_JacobianPoint = BLS12_381_G1_CompressedPoint
+    pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
+    compress p = compress (project @_ @BLS12_381_G1_Point p)
+    decompress p = project @BLS12_381_G1_Point $ decompress p
+
 instance CyclicGroup BLS12_381_G1_Point where
   type ScalarFieldOf BLS12_381_G1_Point = Fr
   pointGen = pointXY
@@ -91,12 +99,21 @@ instance CyclicGroup BLS12_381_G1_Point where
 instance Scale Fr BLS12_381_G1_Point where
   scale n x = scale (toConstant n) x
 
+instance CyclicGroup BLS12_381_G1_JacobianPoint where
+  type ScalarFieldOf BLS12_381_G1_JacobianPoint = Fr
+  pointGen = project @BLS12_381_G1_Point pointGen
+
+instance Scale Fr BLS12_381_G1_JacobianPoint where
+  scale n x = scale (toConstant n) x
+
 ------------------------------------ BLS12-381 G2 ------------------------------------
 
 instance WeierstrassCurve "BLS12-381-G2" Fq2 where
   weierstrassB = Ext2 4 4
 
 type BLS12_381_G2_Point = Weierstrass "BLS12-381-G2" (Point Fq2)
+
+type BLS12_381_G2_JacobianPoint = Weierstrass "BLS12-381-G2" (JacobianPoint Fq2)
 
 type BLS12_381_G2_CompressedPoint =
   Weierstrass "BLS12-381-G2" (CompressedPoint Fq2)
@@ -114,6 +131,13 @@ instance CyclicGroup BLS12_381_G2_Point where
 instance Scale Fr BLS12_381_G2_Point where
   scale n x = scale (toConstant n) x
 
+instance CyclicGroup BLS12_381_G2_JacobianPoint where
+  type ScalarFieldOf BLS12_381_G2_JacobianPoint = Fr
+  pointGen = project @BLS12_381_G2_Point pointGen
+
+instance Scale Fr BLS12_381_G2_JacobianPoint where
+  scale n x = scale (toConstant n) x
+
 instance Compressible BLS12_381_G2_Point where
     type Compressed BLS12_381_G2_Point = BLS12_381_G2_CompressedPoint
     pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
@@ -129,6 +153,12 @@ instance Compressible BLS12_381_G2_Point where
             y'' = negate y'
             y = if bigY then max y' y'' else min y' y''
         in  pointXY x y
+
+instance Compressible BLS12_381_G2_JacobianPoint where
+    type Compressed BLS12_381_G2_JacobianPoint = BLS12_381_G2_CompressedPoint
+    pointCompressed x yBit = Weierstrass (CompressedPoint x yBit False)
+    compress p = compress (project @_ @BLS12_381_G2_Point p)
+    decompress p = project @BLS12_381_G2_Point $ decompress p
 
 ------------------------------------ Encoding ------------------------------------
 
@@ -178,6 +208,10 @@ instance Binary BLS12_381_G1_Point where
                 bytesY <- replicateM 48 getWord8
                 let y = ofBytes bytesY
                 return (pointXY x y)
+
+instance Binary BLS12_381_G1_JacobianPoint where
+    put p = put (project @_ @BLS12_381_G1_Point p)
+    get = project @BLS12_381_G1_Point <$> get
 
 instance Binary BLS12_381_G1_CompressedPoint where
     put (Weierstrass (CompressedPoint x bigY isInf)) =
@@ -238,6 +272,11 @@ instance Binary BLS12_381_G2_Point where
                 let y0 = ofBytes bytesY0
                     y1 = ofBytes bytesY1
                 return (pointXY (Ext2 x0 x1) (Ext2 y0 y1))
+
+
+instance Binary BLS12_381_G2_JacobianPoint where
+    put p = put (project @_ @BLS12_381_G2_Point p)
+    get = project @BLS12_381_G2_Point <$> get
 
 instance Binary BLS12_381_G2_CompressedPoint where
     put (Weierstrass (CompressedPoint (Ext2 x0 x1) bigY isInf)) =
@@ -309,3 +348,8 @@ instance Pairing BLS12_381_G1_Point BLS12_381_G2_Point BLS12_381_GT where
           , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
           , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
           ]
+
+-- TODO: Keep this implementation for now and benchmark the performance
+-- Is it worth implementing pairing in Jacobian coordinates?
+instance Pairing BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint BLS12_381_GT where
+    pairing a b = pairing (project @_ @BLS12_381_G1_Point a) (project @_ @BLS12_381_G2_Point b)

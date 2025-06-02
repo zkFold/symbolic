@@ -12,12 +12,12 @@ import           Prelude                                            hiding (Num 
                                                                      (/), (^))
 import           Test.QuickCheck                                    (Arbitrary (..))
 
-import           ZkFold.Algebra.Class                               (Bilinear (..), Scale)
+import           ZkFold.Algebra.Class                               (Bilinear (..), Scale (..))
 import           ZkFold.Algebra.EllipticCurve.Class                 (CyclicGroup (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate               (UnivariateFieldPolyVec (..))
 import           ZkFold.Data.Vector                                 (Vector)
-import           ZkFold.Protocol.Plonkup.Utils                      (getParams, getSecrectParams)
+import           ZkFold.Protocol.Plonkup.Utils                      (getParams, getSecretParams)
 import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
@@ -66,7 +66,7 @@ instance
         ac <- arbitrary
         x <- arbitrary
         let (omega, k1, k2) = getParams (value @n)
-        let (gs, h1) = getSecrectParams x
+        let (gs, h1) = getSecretParams x
         return $ Plonkup omega k1 k2 ac h1 gs
 
 lagrangeBasisGroupElements :: forall n g1 pv .

@@ -23,8 +23,11 @@ module ZkFold.Algebra.EllipticCurve.Class
   , Weierstrass (..)
   , TwistedEdwards (..)
   , Point (..)
+  , JacobianPoint (..)
   , CompressedPoint (..)
   , AffinePoint (..)
+    -- * point projections
+  , Project (..)
   ) where
 
 import           Control.DeepSeq                  (NFData)
@@ -32,7 +35,7 @@ import           Data.Kind                        (Type)
 import           Data.String                      (fromString)
 import           GHC.Generics
 import           GHC.TypeLits                     (Symbol)
-import           Prelude                          (Integer, return, type (~), ($), (>>=))
+import           Prelude                          (Integer, fromInteger, return, type (~), ($), (<$>), (>>=))
 import qualified Prelude
 import           Test.QuickCheck                  hiding (scale)
 
@@ -177,6 +180,13 @@ instance
       c <- arbitrary @(ScalarFieldOf (Weierstrass curve (Point field)))
       return $ scale c pointGen
 instance
+  ( Arbitrary (Weierstrass curve (Point field))
+  , Eq field
+  , Field field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  ) => Arbitrary (Weierstrass curve (JacobianPoint field)) where
+    arbitrary = project <$> arbitrary @(Weierstrass curve (Point field))
+instance
   ( Arbitrary (ScalarFieldOf (Weierstrass curve (Point field)))
   , CyclicGroup (Weierstrass curve (Point field))
   , Compressible (Weierstrass curve (Point field))
@@ -198,13 +208,32 @@ instance
     isOnCurve (Weierstrass (Point x y isInf)) =
       if isInf then x == zero else
       let b = weierstrassB @curve in y*y == x*x*x + b
+instance
+  ( WeierstrassCurve curve field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
+  , EllipticCurve (Weierstrass curve (Point field))
+  ) => EllipticCurve (Weierstrass curve (JacobianPoint field)) where
+    type CurveOf (Weierstrass curve (JacobianPoint field)) = curve
+    type BaseFieldOf (Weierstrass curve (JacobianPoint field)) = field
+    isOnCurve p = isOnCurve (project p :: Weierstrass curve (Point field))
 deriving newtype instance
   ( SymbolicEq field
   ) => SymbolicData (Weierstrass curve (Point field))
+deriving newtype instance
+  ( SymbolicEq field
+  ) => SymbolicData (Weierstrass curve (JacobianPoint field))
 instance
   ( WeierstrassCurve curve field
   , SymbolicEq field
   ) => SymbolicInput (Weierstrass curve (Point field)) where
+    isValid = isOnCurve
+instance
+  ( WeierstrassCurve curve field
+  , SymbolicEq field
+  ) => SymbolicInput (Weierstrass curve (JacobianPoint field)) where
     isValid = isOnCurve
 deriving newtype instance Conditional bool point
   => Conditional bool (Weierstrass curve point)
@@ -230,12 +259,62 @@ instance
                y2 = slope * (x0 - x2) - y0
             in pointXY x2 y2
 instance
+  ( Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
+  ) => AdditiveSemigroup (Weierstrass curve (JacobianPoint field)) where
+    -- https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl
+    --
+    pt1@(Weierstrass (JacobianPoint x1 y1 z1)) + pt2@(Weierstrass (JacobianPoint x2 y2 z2)) =
+      if z1 == zero then pt2 else if z2 == zero then pt1 -- additive identity
+      else let !z1z1 = square z1
+               !z2z2 = square z2
+               !u1 = x1*z2z2
+               !u2 = x2*z1z1
+               !s1 = y1*z2*z2z2
+               !s2 = y2*z1*z1z1
+               !h  = u2-u1
+               !i  = square (double h)
+               !j  = h*i
+               !r  = double (s2 - s1)
+               !v  = u1 * i
+               !x3 = square r - j - double v
+               !y3 = r*(v - x3) - double s1 * j
+               !z3 = (square (z1+z2) - z1z1 - z2z2) * h
+            in Weierstrass (JacobianPoint x3 y3 z3)
+
+    -- https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2007-bl
+    --
+    double pt@(Weierstrass (JacobianPoint x1 y1 z1)) =
+      if z1 == zero then pt
+      else let !xx = square x1
+               !yy = square y1
+               !yyyy = square yy
+               !zz = square z1
+               !s = double (square (x1+yy)-xx-yyyy)
+               !m = scale (3 :: Natural) xx
+               !t = square m - double s
+               !x3 = t
+               !y3 = m*(s-t)- scale (8 :: Natural) yyyy
+               !z3 = square (y1+z1) - yy - zz
+            in Weierstrass (JacobianPoint x3 y3 z3)
+
+instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) field
   , Eq field
   , Field field
   ) => AdditiveMonoid (Weierstrass curve (Point field)) where
+    zero = pointInf
+instance
+  ( WeierstrassCurve curve field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
+  ) => AdditiveMonoid (Weierstrass curve (JacobianPoint field)) where
     zero = pointInf
 instance
   ( WeierstrassCurve curve field
@@ -252,6 +331,14 @@ instance
   , Conditional (BooleanOf field) field
   , Eq field
   , Field field
+  ) => AdditiveGroup (Weierstrass curve (JacobianPoint field)) where
+    negate (Weierstrass (JacobianPoint x y z)) = Weierstrass (JacobianPoint x (negate y) z)
+instance
+  ( WeierstrassCurve curve field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
   ) => Scale Natural (Weierstrass curve (Point field)) where
   scale = natScale
 instance
@@ -260,7 +347,23 @@ instance
   , Conditional (BooleanOf field) field
   , Eq field
   , Field field
+  ) => Scale Natural (Weierstrass curve (JacobianPoint field)) where
+  scale = natScale
+instance
+  ( WeierstrassCurve curve field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
   ) => Scale Integer (Weierstrass curve (Point field)) where
+  scale = intScale
+instance
+  ( WeierstrassCurve curve field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) field
+  , Eq field
+  , Field field
+  ) => Scale Integer (Weierstrass curve (JacobianPoint field)) where
   scale = intScale
 
 {- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
@@ -377,6 +480,81 @@ instance
       then x0 == x1 && y0 == y1
       else isInf0 && isInf1 && x1*y0 == x0*y1 -- same slope y0//x0 = y1//x1
     pt0 /= pt1 = not (pt0 == pt1)
+
+
+data JacobianPoint field = JacobianPoint
+  { _x :: field
+  , _y :: field
+  , _z :: field
+  } deriving (Generic)
+deriving instance NFData field => NFData (JacobianPoint field)
+instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) where
+    -- If z0 /= 0 and z1 /= 0,
+    -- x0 / z0^2 == x1 / z1^2 && y0 / z0^3 == y1 / z1^3
+    JacobianPoint x0 y0 z0 == JacobianPoint x1 y1 z1 = x0 * z12 Prelude.== x1 * z02 && y0 * z13 Prelude.== y1 * z03
+        where
+            z12 = square z1
+            z13 = z1 * z12
+            z02 = square z0
+            z03 = z0 * z02
+    pt0 /= pt1 = not (pt0 Prelude.== pt1)
+instance
+  ( SymbolicOutput field
+  , Context field ~ Context (BooleanOf field)
+  ) => SymbolicData (JacobianPoint field)
+instance (Eq field, Field field) => Planar field (JacobianPoint field) where
+  pointXY x y = JacobianPoint x y one
+instance (Semiring field, Eq field) => HasPointInf (JacobianPoint field) where
+  pointInf = JacobianPoint one one zero
+instance (Prelude.Show field, BooleanOf field ~ Prelude.Bool, Field field, Eq field)
+  => Prelude.Show (JacobianPoint field) where
+  show (JacobianPoint x y z) =
+    if z == zero then "pointInf" else Prelude.mconcat
+      ["(", Prelude.show x, ", ", Prelude.show y, ", ", Prelude.show z, ")"]
+instance
+  ( Conditional bool bool
+  , Conditional bool field
+  , bool ~ BooleanOf field
+  ) => Conditional bool (JacobianPoint field)
+instance
+  ( BooleanOf (BooleanOf field) ~ BooleanOf field
+  , Eq (BooleanOf field)
+  , Eq field
+  , Field field
+  ) => Eq (JacobianPoint field) where
+    -- If z0 /= 0 and z1 /= 0,
+    -- x0 / z0^2 == x1 / z1^2 && y0 / z0^3 == y1 / z1^3
+    JacobianPoint x0 y0 z0 == JacobianPoint x1 y1 z1 = x0 * z12 == x1 * z02 && y0 * z13 == y1 * z03
+        where
+            z12 = square z1
+            z13 = z1 * z12
+            z02 = square z0
+            z03 = z0 * z02
+    pt0 /= pt1 = not (pt0 == pt1)
+
+class Project a b where
+    project :: a -> b
+
+instance
+  ( Eq field
+  , Field field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  ) => Project (Point field) (JacobianPoint field) where
+    project (Point x y isInf) =
+        if isInf then pointInf else pointXY x y
+
+instance
+  ( Eq field
+  , Field field
+  , Conditional (BooleanOf field) (BooleanOf field)
+  ) => Project (JacobianPoint field) (Point field) where
+    project (JacobianPoint x y z) =
+        if z == zero then pointInf
+        else let zz = square z
+              in (pointXY (x // zz) (y // (z * zz)))
+
+instance Project p1 p2 => Project (Weierstrass curve p1) (Weierstrass curve p2) where
+    project (Weierstrass p1) = Weierstrass $ project p1
 
 data CompressedPoint field = CompressedPoint
   { _x    :: field

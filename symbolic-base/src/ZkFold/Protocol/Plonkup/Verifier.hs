@@ -43,41 +43,41 @@ plonkupVerify
     where
         PlonkupCircuitCommitments {..} = commitments
 
-        n = value @n
+        !n = value @n
 
         -- Step 4: Compute challenges
 
-        ts1   = mempty
+        !ts1   = mempty
             `transcript` compress cmA
             `transcript` compress cmB
             `transcript` compress cmC :: ts
-        zeta = challenge ts1
+        !zeta = challenge ts1
 
-        ts2 = ts1
+        !ts2 = ts1
             `transcript` compress cmF
             `transcript` compress cmH1
             `transcript` compress cmH2
-        beta    = challenge (ts2 `transcript` (1 :: Word8))
-        gamma   = challenge (ts2 `transcript` (2 :: Word8))
-        delta   = challenge (ts2 `transcript` (3 :: Word8))
-        epsilon = challenge (ts2 `transcript` (4 :: Word8))
+        !beta    = challenge (ts2 `transcript` (1 :: Word8))
+        !gamma   = challenge (ts2 `transcript` (2 :: Word8))
+        !delta   = challenge (ts2 `transcript` (3 :: Word8))
+        !epsilon = challenge (ts2 `transcript` (4 :: Word8))
 
-        ts3 = ts2
+        !ts3 = ts2
             `transcript` compress cmZ1
             `transcript` compress cmZ2
-        alpha  = challenge ts3
-        alpha2 = alpha * alpha
-        alpha3 = alpha2 * alpha
-        alpha4 = alpha3 * alpha
-        alpha5 = alpha4 * alpha
+        !alpha  = challenge ts3
+        !alpha2 = alpha * alpha
+        !alpha3 = alpha2 * alpha
+        !alpha4 = alpha3 * alpha
+        !alpha5 = alpha4 * alpha
 
-        ts4 = ts3
+        !ts4 = ts3
             `transcript` compress cmQlow
             `transcript` compress cmQmid
             `transcript` compress cmQhigh
-        xi = challenge ts4
+        !xi = challenge ts4
 
-        ts5 = ts4
+        !ts5 = ts4
             `transcript` a_xi
             `transcript` b_xi
             `transcript` c_xi
@@ -90,37 +90,37 @@ plonkupVerify
             `transcript` z2_xi'
             `transcript` h1_xi'
             `transcript` h2_xi
-        v = challenge ts5
-        vn i = v ^ (i :: Natural)
+        !v = challenge ts5
+        vn !i = v ^ (i :: Natural)
 
-        ts6 = ts5
+        !ts6 = ts5
             `transcript` compress proof1
             `transcript` compress proof2
-        eta = challenge ts6
+        !eta = challenge ts6
 
         -- Step 5: Compute zero polynomial evaluation
-        zhX_xi = polyVecZero @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) `evalPolyVec` xi :: ScalarFieldOf g1
+        !zhX_xi = polyVecZero @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) `evalPolyVec` xi :: ScalarFieldOf g1
 
         -- Step 6: Compute Lagrange polynomial evaluation
-        lagrange1_xi = polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
+        !lagrange1_xi = polyVecLagrange @(ScalarFieldOf g1) @pv @(PlonkupPolyExtendedLength n) (value @n) 1 omega `evalPolyVec` xi
 
         -- Step 7: Compute public polynomial evaluation
-        pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @n @(PlonkupPolyExtendedLength n) omega
+        !pi_xi = polyVecInLagrangeBasis @(ScalarFieldOf g1) @pv @n @(PlonkupPolyExtendedLength n) omega
             (toPolyVec $ fromList $ replicate (prvNum relation) zero ++ map negate wPub)
             `evalPolyVec` xi
 
         -- Step 8: Compute the public table commitment
-        cmT_zeta = cmT1 + zeta `scale` (cmT2 + zeta `scale` cmT3)
+        !cmT_zeta = cmT1 + zeta `scale` (cmT2 + zeta `scale` cmT3)
 
         -- Step 9: Compute r0
-        r0 = pi_xi
+        !r0 = pi_xi
             - alpha * (a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * (c_xi + gamma) * z1_xi'
             - alpha2 * lagrange1_xi
             - alpha4 * z2_xi' * (epsilon * (one + delta) + delta * h2_xi) * (epsilon * (one + delta) + h2_xi + delta * h1_xi')
             - alpha5 * lagrange1_xi
 
         -- Step 10: Compute D
-        d =
+        !d =
                 (a_xi * b_xi) `scale` cmQm + a_xi `scale` cmQl + b_xi `scale` cmQr + c_xi `scale` cmQo + cmQc
               + ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma) * alpha + lagrange1_xi * alpha2) `scale` cmZ1
               - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * alpha * beta * z1_xi') `scale` cmS3
@@ -130,7 +130,7 @@ plonkupVerify
               - zhX_xi `scale` (cmQlow + (xi^(n+2)) `scale` cmQmid + (xi^(2*n+4)) `scale` cmQhigh)
 
         -- Step 11: Compute F
-        f = d
+        !f = d
             + v `scale` cmA
             + vn 2 `scale` cmB
             + vn 3 `scale` cmC
@@ -145,11 +145,11 @@ plonkupVerify
             + (eta * vn 3) `scale` cmH1
 
         -- Step 12: Compute E
-        e = (
+        !e = (
                 negate r0 + v * a_xi + vn 2 * b_xi + vn 3 * c_xi + vn 4 * s1_xi + vn 5 * s2_xi + vn 6 * f_xi
                 + vn 7 * t_xi + vn 8 * h2_xi + eta * z1_xi' + eta * v * t_xi' + eta * vn 2 * z2_xi' + eta * vn 3 * h1_xi'
             ) `scale` pointGen
 
         -- Step 13: Compute the pairing
-        p1 = pairing (proof1 + eta `scale` proof2) h1
-        p2 = pairing (xi `scale` proof1 + (eta * xi * omega) `scale` proof2 + f - e) (pointGen @g2)
+        !p1 = pairing (proof1 + eta `scale` proof2) h1
+        !p2 = pairing (xi `scale` proof1 + (eta * xi * omega) `scale` proof2 + f - e) (pointGen @g2)
