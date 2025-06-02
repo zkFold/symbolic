@@ -38,7 +38,7 @@ updateRelation r@PlonkupRelation {..} inputs =
         qC' = toPolyVec $ fromList $ concat
             [ take prvNum (toList $ fromPolyVec qC)
             , (negate <$> toList inputs)
-            , drop l (toList $ fromPolyVec qC)
+            , drop (prvNum + l) (toList $ fromPolyVec qC)
             ]
         pubInput' pi = drop l (pubInput pi)
     in
