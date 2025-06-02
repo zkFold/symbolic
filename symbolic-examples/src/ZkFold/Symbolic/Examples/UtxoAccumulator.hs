@@ -3,12 +3,12 @@
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
-import           Data.ByteString                        (ByteString)
-import           Data.Function                          (const, flip, ($))
-import           Data.Functor                           (fmap)
-import           Data.Functor.Rep                       (tabulate)
-import           Data.List                              ((++))
-import           GHC.Generics                           (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import           Data.ByteString                            (ByteString)
+import           Data.Function                              (const, flip, ($))
+import           Data.Functor                               (fmap)
+import           Data.Functor.Rep                           (tabulate)
+import           Data.List                                  ((++))
+import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 
 import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
