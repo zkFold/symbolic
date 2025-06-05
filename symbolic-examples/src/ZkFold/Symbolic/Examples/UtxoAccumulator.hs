@@ -41,18 +41,18 @@ import           ZkFold.Symbolic.Interpreter                (Interpreter)
 utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
     -> Vector n (FieldElement c)
-    -> (FieldElement c, FieldElement c)
+    -> (FieldElement c, FieldElement c, FieldElement c)
     -> (Bool c, Vector n (FieldElement c), Vector n (FieldElement c))
-utxoAccumulator hs as (a, r) =
+utxoAccumulator hs ls (a, l, r) =
     let
-        h = hash (a, r)
+        h = hash (a, hash (l, r))
 
         cond1 = any (== h) hs
-        cond2 = all (/= a) as
+        cond2 = all (/= l) ls
     in
-        (cond1 && cond2, hs, as)
+        (cond1 && cond2, hs, ls)
 
-type UtxoAccumulatorInput n = Vector n :*: Vector n :*: Par1 :*: Par1
+type UtxoAccumulatorInput n = Vector n :*: Vector n :*: Par1 :*: Par1 :*: Par1
 type UtxoAccumulatorOutput n = Par1 :*: Vector n :*: Vector n
 
 utxoAccumulatorCircuit :: forall n a . (KnownNat n, Arithmetic a, Binary a)
@@ -60,17 +60,17 @@ utxoAccumulatorCircuit :: forall n a . (KnownNat n, Arithmetic a, Binary a)
 utxoAccumulatorCircuit =
     hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3)
     $ compileWith solder (\(i1 :*: i2 :*: i3) ->
-        ( Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: (U1 :*: U1) :*: U1
+        ( Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: (U1 :*: U1 :*: U1) :*: U1
         , Comp1 (fmap Par1 i1) :*: Comp1 (fmap Par1 i2) :*: i3 :*: U1))
     $ utxoAccumulator @n
 
 utxoAccumulatorInput :: forall n a .
        Vector n a
     -> Vector n a
-    -> (a, a)
+    -> (a, a, a)
     -> UtxoAccumulatorInput n a
-utxoAccumulatorInput hs as (a, r) =
-    hs :*: as :*: (Par1 a :*: Par1 r)
+utxoAccumulatorInput hs as (a, l, r) =
+    hs :*: as :*: (Par1 a :*: Par1 l  :*: Par1 r)
 
 type UtxoAccumulatorProtocol n m = Plonkup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
@@ -100,22 +100,23 @@ utxoAccumulatorHash ::
        ScalarFieldOf BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
-utxoAccumulatorHash a r =
+utxoAccumulatorHash l r =
     let
         f = fromConstant @(ScalarFieldOf BLS12_381_G1_Point) @(FieldElement (Interpreter (ScalarFieldOf BLS12_381_G1_Point)))
     in
-        toConstant $ hash (f a, f r)
+        toConstant $ hash (f l, f r)
 
 utxoAccumulatorProve :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => [ScalarFieldOf BLS12_381_G1_Point]
     -> [ScalarFieldOf BLS12_381_G1_Point]
     -> ScalarFieldOf BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
+    -> ScalarFieldOf BLS12_381_G1_Point
     -> (PlonkupInput BLS12_381_G1_Point, PlonkupProof BLS12_381_G1_Point)
-utxoAccumulatorProve hs as a r =
+utxoAccumulatorProve hs as a l r =
     let
         setup = utxoAccumulatorProverSetup hs as
-        witness = PlonkupWitnessInput (unsafeToVector hs :*: unsafeToVector as :*: Par1 a :*: Par1 r)
+        witness = PlonkupWitnessInput (unsafeToVector hs :*: unsafeToVector as :*: Par1 a :*: Par1 l :*: Par1 r)
         secret = PlonkupProverSecret $ tabulate (\k -> utxoAccumulatorHash r $ fromConstant $ toConstant k)
     in
         prove @(UtxoAccumulatorProtocol n m) setup (witness, secret)
