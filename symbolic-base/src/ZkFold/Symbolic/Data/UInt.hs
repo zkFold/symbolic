@@ -160,7 +160,7 @@ exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
         n' :: UInt (2 * m) r c
         n' = resize n
 
-        sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ productMod x x m') n' [1..16 :: Natural]
+        sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ squareMod x m') n' [1..16 :: Natural]
 
 bitsPow
     :: forall c n p r
@@ -182,6 +182,48 @@ bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
         sq = Haskell.snd $ productMod n n m
         newRes = force $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
 
+-- | Calculate @a^2 `divMod` m@ using less constraints than would've been required by these operations used consequently
+--
+squareMod
+    :: forall c n r
+    .  Symbolic c
+    => KnownRegisterSize r
+    => KnownNat n
+    => KnownRegisters c n r
+    => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
+    => UInt n r c
+    -> UInt n r c
+    -> (UInt n r c, UInt n r c)
+squareMod (UInt aRegs) (UInt mRegs) =
+    case (value @n) of
+      0 -> (zero, zero)
+      _ -> (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
+      where
+        source = symbolic2F aRegs mRegs
+          (\ar mr ->
+            let r = registerSize @(BaseField c) @n @r
+                a' = vectorToNatural ar r
+                m' = vectorToNatural mr r
+            in naturalToVector @c @n @r ((a' * a') `div` m')
+                :*: naturalToVector @c @n @r ((a' * a') `mod` m'))
+          \ar mr -> (liftA2 (:*:) `on` traverse unconstrained)
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r ar) `div` natural @c @n @r mr))
+            (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r ar) `mod` natural @c @n @r mr))
+
+        -- | Unconstrained @div@ part.
+        dv = hmap fstP source
+
+        -- | Unconstrained @mod@ part.
+        md = hmap sndP source
+
+        Bool eqCase = unsafeSquareNoPad (UInt aRegs :: UInt n r c) == UInt dv `unsafeMulNoPad` UInt mRegs + UInt md
+
+        Bool ltCase = (UInt md :: UInt n r c) < UInt mRegs
+
+        circuit = fromCircuit3F eqCase ltCase (dv `hpair` md) \(Par1 e) (Par1 l) dm -> do
+          constraint (($ e) - one)
+          constraint (($ l) - one)
+          return dm
 
 -- | Calculate @a * b `divMod` m@ using less constraints than would've been required by these operations used consequently
 --
@@ -612,6 +654,22 @@ unsafeMulNoPad (UInt x) (UInt y) = UInt $
         xPadded, yPadded :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n rs)))
         xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padNextPow2
         yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padNextPow2
+
+unsafeSquareNoPad
+    :: forall n c rs
+    .  Symbolic c
+    => KnownNat n
+    => KnownRegisterSize rs
+    => UInt n rs c -> UInt n rs c
+unsafeSquareNoPad (UInt x)= UInt $
+    case (value @n) of
+      0 -> x
+      _ -> withNumberOfRegisters @n @rs @(BaseField c) $
+               withNextNBits @(NumberOfRegisters (BaseField c) n rs) $
+                   trimRegisters @c @n @rs $ mulFFT @c xPadded xPadded
+    where
+        xPadded :: c (Vector (NextPow2 (NumberOfRegisters (BaseField c) n rs)))
+        xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padNextPow2
 
 
 trimRegisters

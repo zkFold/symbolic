@@ -14,6 +14,7 @@ import           Data.Function                              (id, ($))
 import           Data.Functor                               ((<$>))
 import           Data.List                                  ((++))
 import           GHC.Generics                               (Par1 (Par1), U1)
+import           GHC.Natural                                (powModNatural)
 import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
 import           Test.Hspec                                 (Spec, describe)
@@ -91,6 +92,7 @@ specUInt'
     :: forall p n r r2n rs
     .  PrimeField (Zp p)
     => KnownNat n
+    => KnownNat (2 * n)
     => KnownRegisterSize rs
     => r ~ NumberOfRegisters (Zp p) n rs
     => r2n ~ NumberOfRegisters (Zp p) (2 * n) rs
@@ -153,6 +155,15 @@ specUInt' = do
                 refQ = execZpUint (fromConstant trueQ ::UInt n rs (Interpreter (Zp p)))
                 refR = execZpUint (fromConstant trueR ::UInt n rs (Interpreter (Zp p)))
             return $ (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR) .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
+
+        it "performs exp65537 correctly" $ do
+            num <- toss m
+            d <- toss1 m
+            let acR = exp65537Mod (fromConstant num :: UInt n rs (AC (Zp p))) (fromConstant d)
+                zpR = exp65537Mod (fromConstant num :: UInt n rs (Interpreter (Zp p))) (fromConstant d)
+                trueR = powModNatural num 65537 d
+                refR = execZpUint (fromConstant trueR :: UInt n rs (Interpreter (Zp p)))
+            return $ execAcUint @(Zp p) @n @rs acR === execZpUint @(Zp p) @n @rs zpR .&. refR === execZpUint @(Zp p) @n @rs zpR
 
         when (n <= 128) $ it "calculates gcd correctly" $ withMaxSuccess 10 $ do
             x <- toss m
