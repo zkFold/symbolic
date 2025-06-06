@@ -1,6 +1,6 @@
 module Main (main) where
 
-import           Data.Aeson                             (ToJSON, encode)
+import           Data.Aeson (ToJSON, encode)
 import           Data.List                              (intercalate)
 import qualified Data.ByteString.Lazy.Char8             as BL
 import           Numeric.Natural                        (Natural)
@@ -9,12 +9,12 @@ import           System.Environment                     (getArgs)
 import           Text.Read                              (readMaybe)
 
 import           ZkFold.Algebra.Class                   (Scale(..), FromConstant(..))
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.BN254     (BN254_G1_Point)
 import           ZkFold.Algebra.EllipticCurve.Class     (CyclicGroup(..))
 
 -- | Supported groups
-data Group = BN254_G1 | BLS12_381_G1
+data Group = BN254_G1 | BLS12_381_G1 | BLS12_381_G2
     deriving (Show, Eq, Enum, Bounded)
 
 -- | Output format
@@ -25,6 +25,7 @@ data OutputFormat = Plain | JSON
 groupName :: Group -> String
 groupName BN254_G1     = "bn254-g1"
 groupName BLS12_381_G1 = "bls12381-g1"
+groupName BLS12_381_G2 = "bls12381-g2"
 
 -- | Parse group from string
 parseGroup :: String -> Maybe Group
@@ -61,6 +62,7 @@ main = do
           Just g -> case g of
             BN254_G1     -> runGroupElementsGeneric g (pointGen :: BN254_G1_Point) xStr nStr (parseFormat rest)
             BLS12_381_G1 -> runGroupElementsGeneric g (pointGen :: BLS12_381_G1_Point) xStr nStr (parseFormat rest)
+            BLS12_381_G2 -> runGroupElementsGeneric g (pointGen :: BLS12_381_G2_Point) xStr nStr (parseFormat rest)
           Nothing ->
             putStrLn $ "Unknown group: " <> groupStr <>
               "\nSupported groups: " <> show (map groupName [minBound .. maxBound :: Group])
@@ -82,5 +84,8 @@ runGroupElementsGeneric group g xStr nStr fmt =
         Plain -> do
           putStrLn $ "Generated group points (" <> groupName group <> "):"
           mapM_ print points
-        JSON -> BL.putStrLn (encode points)
+        JSON -> do
+          let fname = groupName group <> "_n" <> show n <> ".json"
+          BL.writeFile fname (encode points)
+          putStrLn $ "Wrote JSON to " <> fname
     _ -> putStrLn "Error: Invalid input. Please provide a valid natural number for <x> and an integer for <length>."
