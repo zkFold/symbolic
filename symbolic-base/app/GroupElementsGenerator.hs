@@ -1,17 +1,17 @@
 module Main (main) where
 
-import           Data.Aeson (ToJSON, encode)
-import           Data.List                              (intercalate)
+import           Data.Aeson                             (ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8             as BL
+import           Data.List                              (intercalate)
 import           Numeric.Natural                        (Natural)
 import           Prelude
 import           System.Environment                     (getArgs)
 import           Text.Read                              (readMaybe)
 
-import           ZkFold.Algebra.Class                   (Scale(..), FromConstant(..))
+import           ZkFold.Algebra.Class                   (FromConstant (..), Scale (..))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.BN254     (BN254_G1_Point)
-import           ZkFold.Algebra.EllipticCurve.Class     (CyclicGroup(..))
+import           ZkFold.Algebra.EllipticCurve.Class     (CyclicGroup (..))
 
 -- | Supported groups
 data Group = BN254_G1 | BLS12_381_G1 | BLS12_381_G2
