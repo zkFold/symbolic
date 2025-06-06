@@ -18,7 +18,7 @@ import           Prelude                             (const, pure, return, zip, 
 import qualified Prelude                             as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number               (value)
+import           ZkFold.Algebra.Number               (integral, value)
 import           ZkFold.Data.Package
 import qualified ZkFold.Data.Vector                  as V
 import           ZkFold.Data.Vector                  hiding ((.:))
@@ -169,7 +169,7 @@ findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @
 
 indToPath :: forall c d. (Symbolic c, KnownNat d) => c Par1 -> Vector (d - 1) (c Par1)
 indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
-    ee <- expansion (knownNat @d) i
+    ee <- expansion (integral @d) i
     return $ Comp1 (V.unsafeToVector @(d-1) $ P.map Par1 ee)
 
 -- | Returns the element corresponding to a path

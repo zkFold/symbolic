@@ -283,8 +283,6 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
 
     rootOfUnity n = (`Ext2` zero) <$> rootOfUnity n
 
-    isDiscrete = isDiscrete @f
-
 instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext2 f e) where
     fromConstant p = case fromPoly . snd $ qr (fromConstant p) (irreduciblePoly @poly @f @e) of
       []  -> zero
@@ -354,8 +352,6 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
             v      -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
     rootOfUnity n = (\r -> Ext3 r zero zero) <$> rootOfUnity n
-
-    isDiscrete = isDiscrete @f
 
 instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext3 f e) where
     fromConstant p = case fromPoly . snd $ qr (fromConstant p) (irreduciblePoly @poly @f @e) of
