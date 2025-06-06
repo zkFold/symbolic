@@ -18,6 +18,10 @@ import           ZkFold.Algebra.Number                (KnownNat)
 import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
 import           ZkFold.Data.ByteString
 
+import ZkFold.FFI.Rust.Conversion 
+import qualified ZkFold.FFI.Rust.Poly as RustPoly
+import qualified ZkFold.FFI.Rust.RustBLS as RustBLS
+
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
 
@@ -70,5 +74,9 @@ instance
     , NFData g
     , f ~ ScalarFieldOf g
     , UnivariateRingPolyVec f (PolyVec f)
+    , RustHaskell rustp (PolyVec f size)
+    , RustHaskell rustg g
+    , Bilinear (V.Vector rustg) rustp rustg
     ) => Bilinear (V.Vector g) (PolyVec f size) g where
-    bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
+      bilinear gs f = r2h @rustg $ bilinear (fmap (h2r @rustg) gs) (h2r @rustp f) 
+--    bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs

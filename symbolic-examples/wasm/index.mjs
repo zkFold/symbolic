@@ -25,6 +25,8 @@ async function initialiseWASI() {
         blake2b: blake2b
     });
     
+    wasi.instance.exports.hs_init(0,0); 
+
     return wasi.instance; 
 }
 
@@ -53,7 +55,7 @@ function mkProofBytesMock(instance, x, ps, empi) {
     psBuf.forEach((v,i,a) => a[i] = psBytes[i]);
     empiBuf.forEach((v,i,a) => a[i] = empiBytes[i]);
 
-    const address = instance.exports.mkProofBytesMockWasm(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
+    const address = instance.exports.mkProofBytesWasm(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
 
     buffer = instance.exports.memory.buffer; // Refresh the reference. The old buffer becomes "detached" when it grows.
 
@@ -65,7 +67,7 @@ function mkProofBytesMock(instance, x, ps, empi) {
     return json;
 }
 
-const x = 123n;
+const x = 0n;
 const ps = new Array(19).fill(0n);
 const empi = {
     e: 10n,
