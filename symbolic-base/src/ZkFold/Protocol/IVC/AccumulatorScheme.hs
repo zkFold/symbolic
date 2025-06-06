@@ -6,27 +6,27 @@
 
 module ZkFold.Protocol.IVC.AccumulatorScheme where
 
-import           Control.Lens                         ((^.))
-import           Data.Binary                          (Binary)
-import           Data.Constraint                      (withDict)
-import           Data.Constraint.Nat                  (plusMinusInverse1)
-import           Data.Functor.Rep                     (Representable (..))
-import           Data.Zip                             (Zip (..))
-import           GHC.IsList                           (IsList (..))
-import           Prelude                              (fmap, ($), (.), (<$>))
-import qualified Prelude                              as P
+import           Control.Lens                                ((^.))
+import           Data.Binary                                 (Binary)
+import           Data.Constraint                             (withDict)
+import           Data.Constraint.Nat                         (plusMinusInverse1)
+import           Data.Functor.Rep                            (Representable (..))
+import           Data.Zip                                    (Zip (..))
+import           Prelude                                     (fmap, ($), (<$>))
+import qualified Prelude                                     as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
-import qualified ZkFold.Algebra.Polynomial.Univariate as PU
-import           ZkFold.Data.Vector                   (Vector, init, mapWithIx, tail, unsafeToVector)
+import           ZkFold.Algebra.Polynomial.Univariate        (polyVecLinear)
+import           ZkFold.Algebra.Polynomial.Univariate.Simple (SimplePoly, toVector)
+import           ZkFold.Data.Vector                          (Vector, init, mapWithIx, tail)
 import           ZkFold.Protocol.IVC.Accumulator
-import           ZkFold.Protocol.IVC.AlgebraicMap     (algebraicMap)
-import           ZkFold.Protocol.IVC.Commit           (HomomorphicCommit (..))
-import           ZkFold.Protocol.IVC.FiatShamir       (transcript)
-import           ZkFold.Protocol.IVC.NARK             (NARKInstanceProof (..), NARKProof (..))
-import           ZkFold.Protocol.IVC.Oracle           (HashAlgorithm, RandomOracle (..))
-import           ZkFold.Protocol.IVC.Predicate        (Predicate)
+import           ZkFold.Protocol.IVC.AlgebraicMap            (algebraicMap)
+import           ZkFold.Protocol.IVC.Commit                  (HomomorphicCommit (..))
+import           ZkFold.Protocol.IVC.FiatShamir              (transcript)
+import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..))
+import           ZkFold.Protocol.IVC.Oracle                  (HashAlgorithm, RandomOracle (..))
+import           ZkFold.Protocol.IVC.Predicate               (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme
@@ -58,9 +58,8 @@ accumulatorScheme :: forall algo d k a i p c f .
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)
     , Field f
-    , P.Eq f
     , Scale a f
-    , Scale a (PU.PolyVec f (d+1))
+    , Scale a (SimplePoly f (d + 1))
     , Scale f (c f)
     , Binary (Rep i)
     , Binary (Rep p)
@@ -81,25 +80,25 @@ accumulatorScheme phi =
             -- Fig. 3, step 2
 
             -- X + mu as a univariate polynomial
-            polyMu :: PU.PolyVec f (d+1)
-            polyMu = PU.polyVecLinear one (acc^.x^.mu)
+            polyMu :: SimplePoly f (d + 1)
+            polyMu = polyVecLinear one (acc^.x^.mu)
 
             -- X * pi + pi' as a list of univariate polynomials
-            polyPi :: i (PU.PolyVec f (d+1))
-            polyPi = zipWith PU.polyVecLinear pubi (acc^.x^.pi)
+            polyPi :: i (SimplePoly f (d + 1))
+            polyPi = zipWith polyVecLinear pubi (acc^.x^.pi)
 
             -- X * mi + mi'
-            polyW :: Vector k [PU.PolyVec f (d+1)]
-            polyW = zipWith (zipWith PU.polyVecLinear) pi_w (acc^.w)
+            polyW :: Vector k [SimplePoly f (d + 1)]
+            polyW = zipWith (zipWith polyVecLinear) pi_w (acc^.w)
 
             -- X * ri + ri'
-            polyR :: Vector (k-1) (PU.PolyVec f (d+1))
-            polyR = zipWith (P.flip PU.polyVecLinear) (acc^.x^.r) r_i
+            polyR :: Vector (k - 1) (SimplePoly f (d + 1))
+            polyR = zipWith (P.flip polyVecLinear) (acc^.x^.r) r_i
 
             -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
             --
-            e_uni :: [Vector (d+1) f]
-            e_uni = unsafeToVector . toList <$> algebraicMap @d phi polyPi polyW polyR polyMu
+            e_uni :: [Vector (d + 1) f]
+            e_uni = toVector <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
             -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
             e_all :: Vector (d+1) [f]

@@ -18,11 +18,10 @@ import           Data.Zip                                           (Semialign (
 import           GHC.Generics                                       (Generic, Generic1, U1 (..), (:*:) (..))
 import           Prelude                                            (Foldable, Functor, Show, Traversable, fmap,
                                                                      type (~), ($), (.), (<$>))
-import qualified Prelude                                            as P
 
 import           ZkFold.Algebra.Class                               (Scale, zero)
 import           ZkFold.Algebra.Number                              (KnownNat, type (+), type (-))
-import           ZkFold.Algebra.Polynomial.Univariate               (PolyVec)
+import           ZkFold.Algebra.Polynomial.Univariate.Simple        (SimplePoly)
 import           ZkFold.Data.ByteString                             (Binary1)
 import           ZkFold.Data.Orphans                                ()
 import           ZkFold.Data.Package                                (packed, unpacked)
@@ -86,9 +85,8 @@ type RecursiveFunctionAssumptions algo d a i c f ctx =
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)
     , Scale a f
-    , Scale a (PolyVec f (d+1))
+    , Scale a (SimplePoly f (d + 1))
     , Scale f (c f)
-    , P.Eq f
     )
 
 type RecursiveFunction algo d k a i p c = forall f ctx . RecursiveFunctionAssumptions algo d a i c f ctx

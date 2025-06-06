@@ -3,7 +3,6 @@
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# LANGUAGE QuantifiedConstraints        #-}
 {-# LANGUAGE TypeApplications             #-}
-{-# LANGUAGE TypeOperators                #-}
 {-# LANGUAGE UndecidableInstances         #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -28,7 +27,6 @@ module ZkFold.Algebra.Polynomial.Univariate
 
 import           Control.DeepSeq       (NFData (..))
 import           Control.Monad         (forM_)
-import           Data.Type.Equality    ((:~:) (..))
 import qualified Data.Vector           as V
 import qualified Data.Vector.Mutable   as VM
 import           GHC.Generics          (Generic)
@@ -40,7 +38,6 @@ import           Test.QuickCheck       (Arbitrary (..), chooseInt)
 import           ZkFold.Algebra.Class  hiding (Euclidean (..))
 import           ZkFold.Algebra.DFT    (genericDft)
 import           ZkFold.Algebra.Number
-import qualified ZkFold.Data.Eq        as ZkFold
 import           ZkFold.Prelude        (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
 
 infixl 7 .*, *., .*., ./.
@@ -199,7 +196,7 @@ mulAdaptive !l !r
             -------------------------------------------------------------------------------------------------
 
             resultLen :: Int
-            resultLen = (V.length l) P.+ (V.length r) P.- 1
+            resultLen = V.length l P.+ V.length r P.- 1
 
             dftP :: Integer
             dftP = ceiling @Double $ logBase 2 (fromIntegral resultLen)
@@ -341,19 +338,19 @@ class
     , forall size . (KnownNat size) => AdditiveGroup (pv size)
     ) => UnivariateRingPolyVec c pv | pv -> c where
 
--- -- | Multiply the corresponding coefficients of two polynomials.
+    -- | Multiply the corresponding coefficients of two polynomials.
     (.*.) :: forall size . (KnownNat size) => pv size -> pv size -> pv size
 
--- -- | Multiply every coefficient of the polynomial by a constant.
+    -- | Multiply every coefficient of the polynomial by a constant.
     (.*) :: forall size . (KnownNat size) => pv size -> c -> pv size
 
--- -- | Multiply every coefficient of the polynomial by a constant.
+    -- | Multiply every coefficient of the polynomial by a constant.
     (*.) :: forall size . (KnownNat size) => c -> pv size -> pv size
 
--- -- | Add a constant to every coefficient of the polynomial.
+    -- | Add a constant to every coefficient of the polynomial.
     (.+) :: forall size . (KnownNat size) => pv size -> c -> pv size
 
--- -- | Add a constant to every coefficient of the polynomial.
+    -- | Add a constant to every coefficient of the polynomial.
     (+.) :: forall size . (KnownNat size) => c -> pv size -> pv size
 
     toPolyVec :: forall size . (KnownNat size) => V.Vector c -> pv size
@@ -364,17 +361,17 @@ class
 
     vec2poly :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => pv size -> poly
 
-    -- -- p(x) = a0
+    -- | p(x) = a0
     polyVecConstant :: forall size . (KnownNat size) => c -> pv size
 
-    -- p(x) = a1 * x + a0
+    -- | (polyVecLinear a1 a0)(x) = a1 * x + a0
     polyVecLinear
         :: forall size . (KnownNat size)
         => c -- ^ a1
         -> c -- ^ a0
         -> pv size
 
-    -- p(x) = a2 * x^2 + a1 * x + a0
+    -- | (polyVecQuadratic a2 a1 a0)(x) = a2 * x^2 + a1 * x + a0
     polyVecQuadratic
         :: forall size . (KnownNat size)
         => c -- ^ a2
@@ -391,16 +388,16 @@ class
     , UnivariateRingPolyVec c pv
     ) => UnivariateFieldPolyVec c pv | pv -> c where
 
--- -- | Divide the corresponding coefficients of two polynomials.
+    -- | Divide the corresponding coefficients of two polynomials.
     (./.) :: forall size . (KnownNat size) => pv size -> pv size -> pv size
 
--- -- p(x) = x^n - 1
+    -- | p(x) = x^n - 1
     polyVecZero :: forall size . (KnownNat size) => Natural -> pv size
 
--- -- L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
+    -- | L_i(x) : p(omega^i) = 1, p(omega^j) = 0, j /= i, 1 <= i <= n, 1 <= j <= n
     polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> pv size
 
--- -- p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
+    -- | p(x) = c_1 * L_1(x) + c_2 * L_2(x) + ... + c_n * L_n(x)
     polyVecInLagrangeBasis :: forall n size . (KnownNat size, KnownNat n) => c -> pv n -> pv size
 
     polyVecGrandProduct :: forall size . (KnownNat size) => pv size -> pv size -> pv size -> c -> c -> pv size
@@ -438,7 +435,7 @@ instance
     vec2poly :: forall poly size . (KnownNat size, UnivariateRingPolynomial c poly) => PolyVec c size -> poly
     vec2poly = toPoly . fromPolyVec
 
-    -- -- p(x) = a0
+    -- p(x) = a0
     polyVecConstant :: forall size . c -> PolyVec c size
     polyVecConstant a0 = PV $ V.singleton a0
 
@@ -465,7 +462,7 @@ instance
     polyVecZero n = poly2vec $ scaleP one n (one @(Poly c)) - one @(Poly c)
 
     polyVecLagrange :: forall size . (KnownNat size) => Natural -> Natural -> c -> PolyVec c size
-    polyVecLagrange n i omega = toPolyVec $ (V.unfoldrExactN vecLen coefficients (norm * wi^(n -! 1), n))
+    polyVecLagrange n i omega = toPolyVec $ V.unfoldrExactN vecLen coefficients (norm * wi^(n -! 1), n)
         where
             wi = omega ^ i
 
@@ -508,26 +505,25 @@ instance
 
     castPolyVec :: forall size size' . (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
     castPolyVec (PV cs)
-        | value @size <= value @size'                             = toPolyVec $ cs
-        | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec $ cs
+        | value @size <= value @size'                             = toPolyVec cs
+        | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
         | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
 
 -- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
 -- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
 --
-isShiftedMono :: forall c . Field c => V.Vector c -> Maybe (Natural, c, c)
-isShiftedMono cs = isDiscrete @c >>= \case
-    Refl
-     | V.length filtered /= 2 -> Nothing
-     | otherwise -> case V.toList filtered of
+isShiftedMono :: forall c . (Field c, Eq c) => V.Vector c -> Maybe (Natural, c, c)
+isShiftedMono cs
+    | V.length filtered /= 2 = Nothing
+    | otherwise = case V.toList filtered of
         [(c0, 0), (cm, m)] -> pure (m, cm, c0)
         _                  -> Nothing
     where
         ixed :: V.Vector (c, Natural)
         ixed = V.zip cs $ V.iterateN (V.length cs) succ 0
 
-        filtered :: ZkFold.BooleanOf c ~ Bool => V.Vector (c, Natural)
-        filtered = V.filter ((ZkFold./= zero) . fst) ixed
+        filtered :: V.Vector (c, Natural)
+        filtered = V.filter ((/= zero) . fst) ixed
 
 
 -- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
@@ -580,7 +576,7 @@ instance (Ring c, Eq c, KnownNat size) => AdditiveSemigroup (PolyVec c size) whe
     PV l + PV r = toPolyVec $ zipVectorsWithDefault zero (+) l r
 
 instance (Ring c, Eq c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
-    zero = PV $ V.empty
+    zero = PV V.empty
 
 instance (Ring c, Eq c, KnownNat size) => AdditiveGroup (PolyVec c size) where
     negate (PV cs) = PV $ fmap negate cs
