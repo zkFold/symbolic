@@ -444,4 +444,3 @@ executable group-elements-generator
       symbolic-base,
       aeson,
       bytestring
-    default-language:    Haskell2010
