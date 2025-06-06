@@ -1,15 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
+import           Data.Aeson                                 (decode)
 import           Data.ByteString                            (ByteString)
+import qualified Data.ByteString.Lazy                       as BL
+import           Data.FileEmbed                             (embedFile)
 import           Data.Function                              (const, flip, ($))
 import           Data.Functor                               (fmap)
 import           Data.Functor.Rep                           (tabulate)
-import           Data.List                                  ((++))
 import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
-
+import           Prelude                                    (Maybe (..), head, (++), error)
 import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.Class         (ScalarFieldOf)
@@ -18,7 +21,7 @@ import           ZkFold.Algebra.Polynomial.Univariate       (PolyVec)
 import           ZkFold.Data.ByteString                     (Binary)
 import           ZkFold.Data.HFunctor                       (hmap)
 import           ZkFold.Data.Vector                         (Vector, unsafeToVector)
-import           ZkFold.Prelude                             (length, replicate, (!!))
+import           ZkFold.Prelude                             (length, replicate, (!!), take)
 import           ZkFold.Protocol.NonInteractiveProof        (NonInteractiveProof (setupProve, setupVerify), prove)
 import           ZkFold.Protocol.Plonkup                    (Plonkup (..), PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Input              (PlonkupInput)
@@ -26,17 +29,29 @@ import           ZkFold.Protocol.Plonkup.Internal           (lagrangeBasisGroupE
 import           ZkFold.Protocol.Plonkup.Proof              (PlonkupProof)
 import           ZkFold.Protocol.Plonkup.Prover             (PlonkupProverSecret (..), PlonkupProverSetup (..))
 import           ZkFold.Protocol.Plonkup.Update             (updateProverSetup, updateVerifierSetup)
-import           ZkFold.Protocol.Plonkup.Utils              (getParams, getSecretParams)
+import           ZkFold.Protocol.Plonkup.Utils              (getParams)
 import           ZkFold.Protocol.Plonkup.Verifier           (PlonkupVerifierSetup)
 import           ZkFold.Protocol.Plonkup.Witness            (PlonkupWitnessInput (..))
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC        (hash)
 import           ZkFold.Symbolic.Class                      (Arithmetic, Symbolic)
 import           ZkFold.Symbolic.Compiler                   (compileWith)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, solder)
-import           ZkFold.Symbolic.Data.Bool                  (Bool (..), BoolType (..), all, any)
+import           ZkFold.Symbolic.Data.Bool                  (Bool (..), all, any, (&&))
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
+
+embeddedGroupElementsG1 :: [BLS12_381_G1_Point]
+embeddedGroupElementsG1 =
+  case decode (BL.fromStrict $(embedFile "../symbolic-base/data/group-elements/bls12381-g1_n65541.json")) of
+    Just xs -> xs
+    Nothing -> error "Failed to decode embedded G1 group elements"
+
+embeddedGroupElementsG2 :: [BLS12_381_G2_Point]
+embeddedGroupElementsG2 =
+  case decode (BL.fromStrict $(embedFile "../symbolic-base/data/group-elements/bls12381-g2_n1.json")) of
+    Just xs -> xs
+    Nothing -> error "Failed to decode embedded G2 group elements"
 
 utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
@@ -78,7 +93,9 @@ utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m) => UtxoAccumula
 utxoAccumulatorProtocol =
     let
         (omega, k1, k2) = getParams (value @m)
-        (gs, h1) = getSecretParams $ fromConstant @(ScalarFieldOf BLS12_381_G1_Point) 42
+        gsList = take (value @m + 5) embeddedGroupElementsG1
+        gs = unsafeToVector gsList
+        h1 = head embeddedGroupElementsG2
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
