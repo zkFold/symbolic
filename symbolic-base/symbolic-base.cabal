@@ -434,3 +434,14 @@ benchmark bench-lagrange-basis
       symbolic-base,
       tasty-bench,
       QuickCheck
+
+executable group-elements-generator
+    import: options-exe
+    main-is: GroupElementsGenerator.hs
+    hs-source-dirs: app
+    build-depends:
+      base,
+      symbolic-base,
+      aeson,
+      bytestring
+    default-language:    Haskell2010
