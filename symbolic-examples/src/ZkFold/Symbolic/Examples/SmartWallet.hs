@@ -27,6 +27,7 @@ module ZkFold.Symbolic.Examples.SmartWallet
     , mkSetup
     ) where
 
+import Control.Monad (replicateM_)
 import           Data.Aeson                                   (withText)
 import qualified Data.Aeson                                   as Aeson
 import           Data.ByteString                              (ByteString)
@@ -351,10 +352,18 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^18
+type ExpModCircuitGatesMock = 2^15
+
+identityFun :: Symbolic c => c Par1 -> c Par1
+identityFun cp = fromCircuitF cp $ \(Par1 i) -> do
+    o <- newAssigned (const one)
+    let gates = Number.value @ExpModCircuitGatesMock -! 10
+    replicateM_ (P.fromIntegral gates) $ \_ -> newAssigned (\p -> p o * p i - p o)
+    pure $ Par1 i
+
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = AC.idCircuit
+identityCircuit = C.compile @Fr identityFun 
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV
