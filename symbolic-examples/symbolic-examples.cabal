@@ -134,7 +134,6 @@ library
       deriving-aeson                             ,
       symbolic-base                              ,
       text                                       ,
-      file-embed                                 ,
     hs-source-dirs: src
 
 benchmark bench-compiler-performance

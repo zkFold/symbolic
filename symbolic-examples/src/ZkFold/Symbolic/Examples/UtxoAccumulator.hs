@@ -1,18 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
-import           Data.Aeson                                 (decode)
 import           Data.ByteString                            (ByteString)
-import qualified Data.ByteString.Lazy                       as BL
-import           Data.FileEmbed                             (embedFile)
 import           Data.Function                              (const, flip, ($))
 import           Data.Functor                               (fmap)
 import           Data.Functor.Rep                           (tabulate)
 import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
-import           Prelude                                    (Maybe (..), head, (++), error)
+import           Prelude                                    ((++))
 import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.Class         (ScalarFieldOf)
@@ -40,18 +36,6 @@ import           ZkFold.Symbolic.Data.Bool                  (Bool (..), all, any
 import           ZkFold.Symbolic.Data.Eq                    (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter)
-
-embeddedGroupElementsG1 :: [BLS12_381_G1_Point]
-embeddedGroupElementsG1 =
-  case decode (BL.fromStrict $(embedFile "../symbolic-base/data/group-elements/bls12381-g1_n65541.json")) of
-    Just xs -> xs
-    Nothing -> error "Failed to decode embedded G1 group elements"
-
-embeddedGroupElementsG2 :: [BLS12_381_G2_Point]
-embeddedGroupElementsG2 =
-  case decode (BL.fromStrict $(embedFile "../symbolic-base/data/group-elements/bls12381-g2_n1.json")) of
-    Just xs -> xs
-    Nothing -> error "Failed to decode embedded G2 group elements"
 
 utxoAccumulator :: forall n c . Symbolic c
     => Vector n (FieldElement c)
@@ -87,31 +71,39 @@ utxoAccumulatorInput :: forall n a .
 utxoAccumulatorInput hs as (a, r) =
     hs :*: as :*: (Par1 a :*: Par1 r)
 
+data UtxoAccumulatorCRS = UtxoAccumulatorCRS
+    { utxoAccumulatorCRSGs :: [BLS12_381_G1_Point]
+    , utxoAccumulatorCRSH1 :: BLS12_381_G2_Point
+    }
+
 type UtxoAccumulatorProtocol n m = Plonkup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
-utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m) => UtxoAccumulatorProtocol n m
-utxoAccumulatorProtocol =
+utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m)
+    => UtxoAccumulatorCRS
+    -> UtxoAccumulatorProtocol n m
+utxoAccumulatorProtocol crs =
     let
         (omega, k1, k2) = getParams (value @m)
-        gsList = take (value @m + 5) embeddedGroupElementsG1
-        gs = unsafeToVector gsList
-        h1 = head embeddedGroupElementsG2
+        gs = unsafeToVector $ take (value @n + 5) (utxoAccumulatorCRSGs crs)
+        h1 = utxoAccumulatorCRSH1 crs
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
 utxoAccumulatorProverSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => [ScalarFieldOf BLS12_381_G1_Point]
+    => UtxoAccumulatorCRS
+    -> [ScalarFieldOf BLS12_381_G1_Point]
     -> [ScalarFieldOf BLS12_381_G1_Point]
     -> PlonkupProverSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
-utxoAccumulatorProverSetup hs as =
+utxoAccumulatorProverSetup crs hs as =
     flip updateProverSetup (as ++ replicate (value @n -! length hs) zero) $
     flip updateProverSetup (hs ++ replicate (value @n -! length hs) zero) $
     flip updateProverSetup [one] $
-    setupProve utxoAccumulatorProtocol
+    setupProve $ utxoAccumulatorProtocol crs
 
 utxoAccumulatorProverSetupInit :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => PlonkupProverSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
-utxoAccumulatorProverSetupInit = utxoAccumulatorProverSetup [] []
+    => UtxoAccumulatorCRS
+    -> PlonkupProverSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+utxoAccumulatorProverSetupInit crs = utxoAccumulatorProverSetup crs [] []
 
 utxoAccumulatorHash ::
        ScalarFieldOf BLS12_381_G1_Point
@@ -124,40 +116,47 @@ utxoAccumulatorHash a r =
         toConstant $ hash (f a, f r)
 
 utxoAccumulatorProve :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => [ScalarFieldOf BLS12_381_G1_Point]
+    => UtxoAccumulatorCRS
+    -> [ScalarFieldOf BLS12_381_G1_Point]
     -> [ScalarFieldOf BLS12_381_G1_Point]
     -> ScalarFieldOf BLS12_381_G1_Point
     -> ScalarFieldOf BLS12_381_G1_Point
     -> (PlonkupInput BLS12_381_G1_Point, PlonkupProof BLS12_381_G1_Point)
-utxoAccumulatorProve hs as a r =
+utxoAccumulatorProve crs hs as a r =
     let
-        setup = utxoAccumulatorProverSetup hs as
+        setup = utxoAccumulatorProverSetup crs hs as
         witness = PlonkupWitnessInput (unsafeToVector hs :*: unsafeToVector as :*: Par1 a :*: Par1 r)
         secret = PlonkupProverSecret $ tabulate (\k -> utxoAccumulatorHash r $ fromConstant $ toConstant k)
     in
         prove @(UtxoAccumulatorProtocol n m) setup (witness, secret)
 
 utxoAccumulatorVerifierSetup :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => PlonkupVerifierSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
-utxoAccumulatorVerifierSetup = updateVerifierSetup (setupVerify utxoAccumulatorProtocol) [one] [validationGroupElement @n @m]
+    => UtxoAccumulatorCRS
+    -> PlonkupVerifierSetup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+utxoAccumulatorVerifierSetup crs =
+    updateVerifierSetup (setupVerify $ utxoAccumulatorProtocol crs) [one] [validationGroupElement @n @m crs]
 
 utxoAccumulatorGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => [BLS12_381_G1_Point]
-utxoAccumulatorGroupElements =
+    => UtxoAccumulatorCRS
+    -> [BLS12_381_G1_Point]
+utxoAccumulatorGroupElements crs =
     let
-        PlonkupProverSetup {..} = utxoAccumulatorProverSetupInit @n @m
+        PlonkupProverSetup {..} = utxoAccumulatorProverSetupInit @n @m crs
     in
         lagrangeBasisGroupElements @m @BLS12_381_G1_Point @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega gs
 
 validationGroupElement :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => BLS12_381_G1_Point
-validationGroupElement = utxoAccumulatorGroupElements @n @m !! 0
+    => UtxoAccumulatorCRS
+    -> BLS12_381_G1_Point
+validationGroupElement crs = utxoAccumulatorGroupElements @n @m crs !! 0
 
 accumulationGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => Vector n BLS12_381_G1_Point
-accumulationGroupElements = tabulate (\(toConstant -> i) ->
-    utxoAccumulatorGroupElements @n @m !! (i + 1))
+    => UtxoAccumulatorCRS
+    -> Vector n BLS12_381_G1_Point
+accumulationGroupElements crs = tabulate (\(toConstant -> i) ->
+    utxoAccumulatorGroupElements @n @m crs !! (i + 1))
 
 distributionGroupElements :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
-    => Vector n BLS12_381_G1_Point
-distributionGroupElements = tabulate (\(toConstant -> i) -> utxoAccumulatorGroupElements @n @m !! (value @n + i + 1))
+    => UtxoAccumulatorCRS
+    -> Vector n BLS12_381_G1_Point
+distributionGroupElements crs = tabulate (\(toConstant -> i) -> utxoAccumulatorGroupElements @n @m crs !! (value @n + i + 1))
