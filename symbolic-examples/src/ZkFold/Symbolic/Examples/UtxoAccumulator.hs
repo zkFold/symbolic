@@ -73,8 +73,10 @@ utxoAccumulatorInput hs as (a, r) =
     hs :*: as :*: (Par1 a :*: Par1 r)
 
 data UtxoAccumulatorCRS = UtxoAccumulatorCRS
-    { utxoAccumulatorCRSGs :: [BLS12_381_G1_Point]
-    , utxoAccumulatorCRSH1 :: BLS12_381_G2_Point
+    { crsGs        :: [BLS12_381_G1_Point]
+    , crsH1        :: BLS12_381_G2_Point
+    , crsAccElems  :: [BLS12_381_G1_Point]
+    , crsDistElems :: [BLS12_381_G1_Point]
     }
 
 type UtxoAccumulatorProtocol n m = Plonkup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
@@ -85,8 +87,8 @@ utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m)
 utxoAccumulatorProtocol crs =
     let
         (omega, k1, k2) = getParams (value @m)
-        gs = unsafeToVector $ take (value @m + 6) (utxoAccumulatorCRSGs crs)
-        h1 = utxoAccumulatorCRSH1 crs
+        gs = unsafeToVector $ take (value @m + 6) (crsGs crs)
+        h1 = crsH1 crs
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
