@@ -33,7 +33,7 @@ data Plonkup i o (n :: Natural) g1 g2 transcript pv = Plonkup {
         k2    :: ScalarFieldOf g1,
         ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
-        gs'   :: Vector (n + 5) g1
+        gs'   :: Vector (n + 6) g1
     }
 
 type PlonkupPermutationSize n = 3 * n
@@ -52,7 +52,7 @@ instance (Show (ScalarFieldOf g1), Show1 o, Show g1, Show g2) => Show (Plonkup i
 
 instance
   ( KnownNat n
-  , KnownNat (n + 5)
+  , KnownNat (n + 6)
   , Arbitrary g1
   , Arbitrary g2
   , Arithmetic (ScalarFieldOf g1)
