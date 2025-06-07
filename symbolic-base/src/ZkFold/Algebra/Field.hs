@@ -1,10 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Algebra.Field (
     IrreduciblePoly(..),
@@ -18,8 +18,7 @@ module ZkFold.Algebra.Field (
 
 import           Control.Applicative                  (liftA2, pure, (<*>), (<|>))
 import           Control.DeepSeq                      (NFData (..))
-import           Data.Aeson                           (FromJSON(..), ToJSON(..), ToJSONKey, FromJSONKey)
-import           GHC.Generics                         (Generic)
+import           Data.Aeson                           (FromJSON (..), FromJSONKey, ToJSON (..), ToJSONKey)
 import           Data.Bool                            (Bool)
 import qualified Data.Bool                            as Bool
 import           Data.Function                        (const, id, ($), (.))
@@ -30,6 +29,7 @@ import           Data.Semigroup                       ((<>))
 import           Data.Tuple                           (snd)
 import           Data.Type.Equality                   (type (~))
 import qualified Data.Vector                          as V
+import           GHC.Generics                         (Generic)
 import           GHC.Natural                          (powModNatural)
 import           GHC.Real                             ((%))
 import           GHC.TypeLits                         (Symbol)
