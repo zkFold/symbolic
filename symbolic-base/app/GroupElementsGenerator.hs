@@ -78,7 +78,7 @@ runGroupElementsGeneric :: forall pt.
 runGroupElementsGeneric group g xStr nStr fmt =
   case (readMaybe xStr :: Maybe Natural, readMaybe nStr :: Maybe Natural) of
     (Just x, Just n) -> do
-      let exps = [x ^  k | k <- [0..n-1]]
+      let exps = [x ^  k | k <- [1..n]]
           points = [scale (fromConstant @_ @(ScalarFieldOf pt) e) g | e <- exps]
       case fmt of
         Plain -> do

@@ -41,7 +41,7 @@ data Plonk i o (n :: Natural) g1 g2 transcript pv = Plonk {
         k2    :: ScalarFieldOf g1,
         ac    :: ArithmeticCircuit (ScalarFieldOf g1) i o,
         h1    :: g2,
-        gs'   :: Vector (n + 6) g1
+        gs'   :: Vector (n + 5) g1
     }
 
 fromPlonkup ::
