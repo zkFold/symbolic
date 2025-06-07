@@ -90,7 +90,7 @@ utxoAccumulatorProtocol :: forall n m . (KnownNat n, KnownNat m)
 utxoAccumulatorProtocol crs =
     let
         (omega, k1, k2) = getParams (value @m)
-        gs = unsafeToVector $ take (value @m + 6) (crsGs crs)
+        gs = unsafeToVector $ take (value @m + 5) (crsGs crs)
         h1 = crsH1 crs
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
