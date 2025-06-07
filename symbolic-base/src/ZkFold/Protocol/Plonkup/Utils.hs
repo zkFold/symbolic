@@ -43,14 +43,14 @@ getParams n = findK' 0
                 && S.disjoint hGroupK1 hGroupK2
 
 getSecretParams :: forall n g1 g2 .
-    ( KnownNat (n + 5)
+    ( KnownNat (n + 6)
     , Arithmetic (ScalarFieldOf g1)
     , CyclicGroup g1
     , CyclicGroup g2
     , Scale (ScalarFieldOf g1) g2
-    ) =>ScalarFieldOf g1 -> (Vector (n + 5) g1, g2)
+    ) => ScalarFieldOf g1 -> (Vector (n + 6) g1, g2)
 getSecretParams x =
-    let xs = tabulate (\e -> x^ (toConstant e + 1))
+    let xs = tabulate (\e -> x ^ toConstant e)
         gs = fmap (`scale` pointGen) xs
         h1 = x `scale` pointGen
     in (gs, h1)
