@@ -1,13 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators  #-}
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
+import           Data.Aeson                                 (FromJSON, ToJSON)
 import           Data.ByteString                            (ByteString)
 import           Data.Function                              (const, flip, ($))
 import           Data.Functor                               (fmap)
 import           Data.Functor.Rep                           (tabulate)
-import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..), Generic)
 import           Prelude                                    ((++))
 
 import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
@@ -78,6 +80,7 @@ data UtxoAccumulatorCRS = UtxoAccumulatorCRS
     , crsAccElems  :: [BLS12_381_G1_Point]
     , crsDistElems :: [BLS12_381_G1_Point]
     }
+    deriving (Generic, FromJSON, ToJSON)
 
 type UtxoAccumulatorProtocol n m = Plonkup (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n) m BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 
