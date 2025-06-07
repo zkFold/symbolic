@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
@@ -9,7 +9,7 @@ import           Data.ByteString                            (ByteString)
 import           Data.Function                              (const, flip, ($))
 import           Data.Functor                               (fmap)
 import           Data.Functor.Rep                           (tabulate)
-import           GHC.Generics                               (Par1 (..), U1 (..), (:*:) (..), (:.:) (..), Generic)
+import           GHC.Generics                               (Generic, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import           Prelude                                    ((++))
 
 import           ZkFold.Algebra.Class                       (fromConstant, one, toConstant, zero, (+), (-!))
