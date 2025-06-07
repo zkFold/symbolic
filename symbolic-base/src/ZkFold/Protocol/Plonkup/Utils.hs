@@ -5,6 +5,7 @@
 module ZkFold.Protocol.Plonkup.Utils where
 
 import           Data.Bool                          (bool)
+import           Data.Functor.Rep                   (tabulate)
 import           Data.List                          (sortOn)
 import qualified Data.Map                           as M
 import qualified Data.Set                           as S
@@ -17,7 +18,6 @@ import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                 (Vector)
 import           ZkFold.Prelude                     (iterateN', log2ceiling)
 import           ZkFold.Symbolic.Class              (Arithmetic)
-import Data.Functor.Rep (tabulate)
 
 getParams :: forall a . (Ord a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' 0
