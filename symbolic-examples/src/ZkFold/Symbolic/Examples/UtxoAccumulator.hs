@@ -76,7 +76,7 @@ utxoAccumulatorInput hs as (a, r) =
 
 data UtxoAccumulatorCRS = UtxoAccumulatorCRS
     { crsGs        :: [BLS12_381_G1_Point]
-    , crsH1        :: [BLS12_381_G2_Point]
+    , crsHs        :: [BLS12_381_G2_Point]
     , crsAccElems  :: [BLS12_381_G1_Point]
     , crsDistElems :: [BLS12_381_G1_Point]
     }
@@ -91,7 +91,7 @@ utxoAccumulatorProtocol crs =
     let
         (omega, k1, k2) = getParams (value @m)
         gs = unsafeToVector $ take (value @m + 6) (crsGs crs)
-        h1 = crsH1 crs !! 1
+        h1 = crsHs crs !! 1
     in
         Plonkup omega k1 k2 utxoAccumulatorCircuit h1 gs
 
