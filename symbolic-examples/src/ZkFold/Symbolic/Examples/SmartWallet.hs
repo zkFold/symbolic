@@ -25,9 +25,12 @@ module ZkFold.Symbolic.Examples.SmartWallet
     , ByteStringFromHex (..)
     , mkProof
     , mkSetup
+
+
+
+    , identityCircuit
     ) where
 
-import Control.Monad (replicateM_)
 import           Data.Aeson                                   (withText)
 import qualified Data.Aeson                                   as Aeson
 import           Data.ByteString                              (ByteString)
@@ -80,7 +83,7 @@ import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), exp65537Mod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                 (newAssigned, newRanged)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -352,18 +355,25 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^15
+type ExpModCircuitGatesMock = 2^18
 
-identityFun :: Symbolic c => c Par1 -> c Par1
+-- Identity but with meaningless constraints
+--
+identityFun :: forall c. Symbolic c => c Par1 -> c Par1
 identityFun cp = fromCircuitF cp $ \(Par1 i) -> do
-    o <- newAssigned (const one)
-    let gates = Number.value @ExpModCircuitGatesMock -! 10
-    replicateM_ (P.fromIntegral gates) $ \_ -> newAssigned (\p -> p o * p i - p o)
-    pure $ Par1 i
+    o <- newAssigned $ \p -> p i + fromConstant @Natural 42 
+    o' <- newAssigned $ \p -> p o * p i
+    let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 2
+    rs <- mapM (\r -> newRanged (fromConstant r) (fromConstant r)) [1..gates]
+    rs' <- mapM (\r -> newAssigned $ \p -> p r * p o') rs
+    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs'
+    out' <- newAssigned $ \p -> p a + p i
+    out <- newAssigned $ \p -> p out' - p a
+    pure $ Par1 out
 
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = C.compile @Fr identityFun 
+identityCircuit = C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) identityFun 
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV
