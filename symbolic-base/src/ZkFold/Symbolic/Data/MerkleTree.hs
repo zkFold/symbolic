@@ -21,7 +21,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number               (integral, value)
 import           ZkFold.Data.Package
 import qualified ZkFold.Data.Vector                  as V
-import           ZkFold.Data.Vector                  hiding ((.:), zip)
+import           ZkFold.Data.Vector                  hiding (zip, (.:))
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool           (Bool (..), BoolType (false))
