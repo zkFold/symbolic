@@ -121,6 +121,7 @@ library
       ZkFold.Control.HApplicative
       ZkFold.Data.Bool
       ZkFold.Data.ByteString
+      ZkFold.Data.Empty
       ZkFold.Data.Eq
       ZkFold.Data.HFunctor
       ZkFold.Data.HFunctor.Classes
