@@ -79,7 +79,7 @@ instance
                         l -> min (integral @n) (l Int.- 1)
          in SimplePoly $ V.generate pqLen \k -> sum [
             (p V.! i) * (q V.! j)
-            | i <- [0 .. min pLen k], let j = k Int.- i, j < qLen
+            | i <- [0 .. min (pLen Int.- 1) k], let j = k Int.- i, j < qLen
          ]
 
 instance (Semiring a, KnownNat n) => MultiplicativeMonoid (SimplePoly a n) where
