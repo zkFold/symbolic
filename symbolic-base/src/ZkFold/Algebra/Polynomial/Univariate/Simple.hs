@@ -5,7 +5,7 @@ module ZkFold.Algebra.Polynomial.Univariate.Simple
     , toVector
     ) where
 
-import           Data.Function                        (flip, ($), (.))
+import           Data.Function                        (($), (.))
 import           Data.Functor                         (fmap)
 import           Data.List                            (zip)
 import           Data.Ord                             (min, (<))
@@ -92,17 +92,9 @@ instance (Ring a, KnownNat n) => Ring (SimplePoly a n)
 instance Ring a => UnivariateRingPolyVec a (SimplePoly a) where
     SimplePoly p .*. SimplePoly q =
         SimplePoly $ alignWith (uncurry (*) . T.fromThese zero zero) p q
-    (.*) = flip scale
-    (*.) = scale
-    (+.) c = SimplePoly . fmap (c +) . coeffs
-    (.+) = flip (+.)
+    (+.) c = SimplePoly . ZkFold.toV . fmap (c +) . toVector
     toPolyVec :: forall n . KnownNat n => Vector a -> SimplePoly a n
     toPolyVec = SimplePoly . V.take (integral @n)
     fromPolyVec = coeffs
-    poly2vec = toPolyVec . fromPoly
-    vec2poly = toPoly . fromPolyVec
-    polyVecConstant = fromConstant
-    polyVecLinear k b = toPolyVec (V.fromList [b, k])
-    polyVecQuadratic a b c = toPolyVec (V.fromList [c, b, a])
     evalPolyVec (SimplePoly p) x =
         sum [ c * x ^ i | (i, c) <- zip [(0 :: Natural)..] (V.toList p) ]

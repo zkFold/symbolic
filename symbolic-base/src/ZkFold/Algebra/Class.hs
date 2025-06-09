@@ -9,7 +9,7 @@ module ZkFold.Algebra.Class where
 import           Control.Applicative        (Applicative (..))
 import           Data.Bool                  (Bool (..), otherwise, (&&))
 import           Data.Foldable              (Foldable (foldl', foldl1, foldr))
-import           Data.Function              (const, id, ($), (.))
+import           Data.Function              (const, flip, id, ($), (.))
 import           Data.Functor               (Functor (..))
 import           Data.Functor.Constant      (Constant (..))
 import           Data.Kind                  (Type)
@@ -27,7 +27,7 @@ import           ZkFold.Control.Conditional (Conditional)
 import           ZkFold.Data.Eq             (BooleanOf, Eq (..))
 import           ZkFold.Prelude             (length, replicate, zipWith')
 
-infixl 7 *, /
+infixl 7 .*, *., *, /
 infixl 6 +, -, -!
 
 class Bilinear p s g | p s -> g where
@@ -105,6 +105,17 @@ class Scale b a where
     scale :: b -> a -> a
     default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
     scale !b !a = a * fromConstant b
+
+-- | Infix alias of 'scale'.
+(*.) :: Scale b a => b -> a -> a
+(*.) = scale
+
+-- | Flipped version of '*.'.
+--
+-- NOTE: we do not distinguish between left and right actions
+-- since multiplicative actions we are interested in are commutative.
+(.*) :: Scale b a => a -> b -> a
+(.*) = flip scale
 
 instance MultiplicativeSemigroup a => Scale a a
 

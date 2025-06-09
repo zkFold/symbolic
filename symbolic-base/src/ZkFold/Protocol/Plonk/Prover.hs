@@ -233,7 +233,8 @@ plonkProve PlonkupProverSetup {..}
             --   + (alpha5 * lag1_xi) *. (z2X - one)
               - zhX_xi *. (qlowX + (xi^(n+2)) *. qmidX + (xi^(2*n+4)) *. qhighX)
 
-        vn i = v ^ (i :: Natural)
+        vn :: Natural -> ScalarFieldOf g1
+        vn i = v ^ i
 
         proofX1 = with4n6 @n $ (
                   rX

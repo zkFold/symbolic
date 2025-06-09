@@ -36,8 +36,9 @@ outer :: forall m n a b c. (a -> b -> c) -> Vector m a -> Vector n b -> Matrix m
 outer f a b = Matrix $ fmap (\x -> fmap (f x) b) a
 
 -- | Hadamard (entry-wise) matrix product
-(.*) :: MultiplicativeSemigroup a => Matrix m n a -> Matrix m n a -> Matrix m n a
-(.*) = zipWith (*)
+instance
+    MultiplicativeSemigroup a => MultiplicativeSemigroup (Matrix m n a) where
+    (*) = zipWith (*)
 
 sum1 :: (Semiring a) => Matrix m n a -> Vector n a
 sum1 (Matrix as) = Vector (sum <$> toV as)
@@ -46,7 +47,7 @@ sum2 :: (KnownNat m, KnownNat n, Semiring a) => Matrix m n a -> Vector m a
 sum2 (Matrix as) = sum1 $ transpose $ Matrix as
 
 matrixDotProduct :: forall m n a . Semiring a => Matrix m n a -> Matrix m n a -> a
-matrixDotProduct a b = let Matrix m = a .* b in sum $ fmap sum m
+matrixDotProduct a b = let Matrix m = a * b in sum $ fmap sum m
 
 -- -- | Matrix multiplication
 (.*.) :: (KnownNat n, KnownNat k, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
