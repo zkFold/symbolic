@@ -89,7 +89,8 @@ instance KnownNat p => Haskell.Enum (Zp p) where
         Haskell.takeWhile (/= y) (Haskell.enumFromThen x x') ++ [y]
 
 instance KnownNat p => AdditiveSemigroup (Zp p) where
-    Zp a + Zp b = toZp (a + b)
+    Zp a + Zp b = let !r = toZp (a + b)
+                   in r
 
 instance KnownNat p => Scale Natural (Zp p) where
     scale c (Zp a) = toZp (scale c a)
@@ -102,7 +103,8 @@ instance KnownNat p => Scale Integer (Zp p) where
 
 instance KnownNat p => AdditiveGroup (Zp p) where
     negate (Zp a) = toZp (negate a)
-    Zp a - Zp b   = toZp (a - b)
+    Zp a - Zp b   = let !r = toZp (a - b)
+                     in r
 
 instance KnownNat p => MultiplicativeSemigroup (Zp p) where
     Zp a * Zp b = toZp (a * b)

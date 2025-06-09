@@ -39,8 +39,10 @@ genericDft !n !wn !v = V.create $ do
                 !w <- ST.readSTRef wRef
                 !t <- (w *) <$> VM.unsafeRead result it
                 !u <-           VM.unsafeRead result iu
-                VM.unsafeWrite result iu $ u + t
-                VM.unsafeWrite result it $ u - t
+                let !plus  = u + t
+                    !minus = u - t
+                VM.unsafeWrite result iu plus
+                VM.unsafeWrite result it minus
 
                 ST.modifySTRef wRef (*wm)
     pure result
