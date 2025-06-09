@@ -3,7 +3,10 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Data.Vector where
+module ZkFold.Data.Vector
+    ( module ZkFold.Data.Vector
+    , module Data.Zip
+    ) where
 
 import           Control.Applicative        (Applicative, pure)
 import           Control.DeepSeq            (NFData, NFData1)

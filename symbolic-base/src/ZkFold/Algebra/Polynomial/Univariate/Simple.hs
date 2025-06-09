@@ -2,10 +2,12 @@
 
 module ZkFold.Algebra.Polynomial.Univariate.Simple
     ( SimplePoly (coeffs)
+    , fromVector
     , toVector
     ) where
 
-import           Data.Function                        (($), (.))
+import qualified Data.Eq                              as Haskell
+import           Data.Function                        (on, ($), (.))
 import           Data.Functor                         (fmap)
 import           Data.List                            (zip)
 import           Data.Ord                             (min, (<))
@@ -16,6 +18,7 @@ import           Data.Vector                          (Vector)
 import qualified Data.Vector                          as V
 import qualified GHC.Num                              as Int
 import           Numeric.Natural                      (Natural)
+import           Text.Show                            (Show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number                (KnownNat, integral)
@@ -27,7 +30,7 @@ import qualified ZkFold.Data.Vector                   as ZkFold
 --
 -- Not particularly efficient, but still usable in Symbolic
 -- since its operations do not require 'Prelude.Eq'.
-newtype SimplePoly a n = SimplePoly
+newtype SimplePoly a (n :: Natural) = SimplePoly
     { coeffs :: V.Vector a
       -- ^ Vector of coefficients in ascending-degree order.
       --
@@ -38,6 +41,15 @@ newtype SimplePoly a n = SimplePoly
       -- NOTE since 'SimplePoly' does not use 'Prelude.Eq', it is possible that
       -- there are some non-zeroed greater coefficients. Use with care.
     }
+    deriving (Show)
+
+instance
+    (AdditiveMonoid a, Haskell.Eq a, KnownNat n) =>
+    Haskell.Eq (SimplePoly a n) where
+    (==) = (Haskell.==) `on` toVector
+
+fromVector :: forall a n. ZkFold.Vector n a -> SimplePoly a n
+fromVector (ZkFold.Vector cs) = SimplePoly cs
 
 -- | Vector of exactly @n@ coefficients in ascending-degree order.
 toVector ::

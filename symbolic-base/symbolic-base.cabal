@@ -347,6 +347,7 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate
       Tests.Algebra.Univariate.Poly
       Tests.Algebra.Univariate.PolyVec
+      Tests.Algebra.Univariate.Simple
       Tests.Data.Binary
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof

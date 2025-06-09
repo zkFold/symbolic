@@ -6,7 +6,6 @@ module ZkFold.Data.Matrix where
 import qualified Data.List             as List
 import           Data.Maybe            (fromJust)
 import           Data.These
-import           Data.Zip              (Semialign (..), Zip (..))
 import           Prelude               hiding (Num (..), length, sum, zip, zipWith)
 import           System.Random         (Random (..))
 import           Test.QuickCheck       (Arbitrary (..))
