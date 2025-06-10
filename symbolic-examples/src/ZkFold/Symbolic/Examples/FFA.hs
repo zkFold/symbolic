@@ -1,12 +1,13 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Examples.FFA
-  ( exampleFFAadd337
-  , exampleFFAadd097
-  , exampleFFAmul337
-  , exampleFFAmul097
-  , exampleFFAinv337
-  , exampleFFAinv097) where
+  ( exampleFFAaddNative
+  , exampleFFAmulNative
+  , exampleFFAinvNative
+  , exampleFFAaddForeign
+  , exampleFFAmulForeign
+  , exampleFFAinvForeign
+  ) where
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Pasta
@@ -25,20 +26,20 @@ type FFA2 = FFA Prime256_2 RegSize
 type KnownFFA1 c = KnownFFA Prime256_1 RegSize c
 type KnownFFA2 c = KnownFFA Prime256_2 RegSize c
 
-exampleFFAadd337 :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
-exampleFFAadd337 = (+)
+exampleFFAaddNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
+exampleFFAaddNative = (+)
 
-exampleFFAadd097 :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
-exampleFFAadd097 = (+)
+exampleFFAmulNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
+exampleFFAmulNative = (*)
 
-exampleFFAmul337 :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
-exampleFFAmul337 = (*)
+exampleFFAinvNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c
+exampleFFAinvNative = finv
 
-exampleFFAmul097 :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
-exampleFFAmul097 = (*)
+exampleFFAaddForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
+exampleFFAaddForeign = (+)
 
-exampleFFAinv337 :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c
-exampleFFAinv337 = finv
+exampleFFAmulForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
+exampleFFAmulForeign = (*)
 
-exampleFFAinv097 :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c
-exampleFFAinv097 = finv
+exampleFFAinvForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c
+exampleFFAinvForeign = finv
