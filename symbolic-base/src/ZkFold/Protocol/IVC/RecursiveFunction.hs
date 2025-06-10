@@ -89,9 +89,7 @@ recursiveFunction :: forall d k a i p c .
     , KnownNat (k-1)
     , KnownNat k
     , FieldAssumptions c (FieldElement (CircuitContext a))
-    ) =>
-    Hasher (FieldElement (CircuitContext a)) ->
-    StepFunction a i p -> RecursiveFunction d k a i p c
+    ) => Hasher -> StepFunction a i p -> RecursiveFunction d k a i p c
 recursiveFunction hash func =
     let
         -- A helper function to derive the accumulator scheme

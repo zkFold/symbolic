@@ -57,12 +57,12 @@ deriving via (FoldableSource (Vector n) b)
 
 ------------------------------ Hasher & Oracle ---------------------------------
 
-type Hasher a = [a] -> a
+type Hasher = forall a. Ring a => [a] -> a
 
-mimcHash :: forall a. Ring a => Hasher a
-mimcHash = mimcHashN mimcConstants (zero :: a)
+mimcHash :: Hasher
+mimcHash = mimcHashN mimcConstants zero
 
-oracle :: OracleSource a b => Hasher a -> b -> a
+oracle :: (OracleSource a b, Ring a) => Hasher -> b -> a
 oracle hash = hash . source
 
 ------------------------ Generic OracleSource deriving -------------------------

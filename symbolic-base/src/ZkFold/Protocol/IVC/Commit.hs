@@ -20,7 +20,7 @@ import           ZkFold.Protocol.IVC.Oracle
 --
 type Commit a f = a -> f
 
-oracleCommitment :: OracleSource a b => Hasher a -> Commit b a
+oracleCommitment :: (OracleSource a b, Ring a) => Hasher -> Commit b a
 oracleCommitment = oracle
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)

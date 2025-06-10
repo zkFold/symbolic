@@ -61,7 +61,7 @@ accumulatorScheme :: forall d k a i p c f .
     , Scale f (c f)
     , Binary (Rep i)
     , Binary (Rep p)
-    ) => Hasher f -> Predicate a i p -> AccumulatorScheme d k i c f
+    ) => Hasher -> Predicate a i p -> AccumulatorScheme d k i c f
 accumulatorScheme hash phi =
   let
       prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =

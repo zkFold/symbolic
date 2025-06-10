@@ -7,6 +7,7 @@ import           Data.Constraint                  (withDict)
 import           Data.Constraint.Nat              (plusMinusInverse1)
 import           Prelude                          hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
+import           ZkFold.Algebra.Class             (Ring)
 import           ZkFold.Algebra.Number            (KnownNat, type (-))
 import           ZkFold.Data.Vector               (Vector, init, item, scanl, unfold)
 import           ZkFold.Protocol.IVC.CommitOpen
@@ -17,13 +18,13 @@ type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
 transcript ::
-    forall k c f. (OracleSource f f, OracleSource f (c f)) =>
-    Hasher f -> f -> Vector k (c f) -> Vector (k-1) f
+    forall k c f. (Ring f, OracleSource f f, OracleSource f (c f)) =>
+    Hasher -> f -> Vector k (c f) -> Vector (k-1) f
 transcript hash r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle hash)) r0 cs
 
 fiatShamir :: forall k i p c m o f .
-    (KnownNat k, OracleSource f f, OracleSource f (c f), Foldable i) =>
-    Hasher f -> CommitOpen k i p c m o f -> FiatShamir k i p c m o f
+    (KnownNat k, Ring f, OracleSource f f, OracleSource f (c f), Foldable i) =>
+    Hasher -> CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir hash SpecialSoundProtocol {..} =
     let
         prover' pi0 w _ _ =
