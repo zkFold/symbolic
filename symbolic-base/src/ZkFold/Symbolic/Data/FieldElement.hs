@@ -92,7 +92,6 @@ instance Symbolic c => Field (FieldElement c) where
   finv (FieldElement x) =
     FieldElement $ symbolicF x (\(Par1 v) -> Par1 (finv v))
       $ fmap snd . runInvert
-  isDiscrete = Haskell.Nothing
 
 instance
     ( KnownNat (Order (FieldElement c))

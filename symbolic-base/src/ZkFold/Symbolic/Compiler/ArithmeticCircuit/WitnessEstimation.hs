@@ -96,7 +96,6 @@ instance Eq a => ZkFold.Eq (UVar a) where
 instance (Field a, Eq a) => Field (UVar a) where
     finv (ConstUVar c) = ConstUVar (finv c)
     finv _             = More
-    isDiscrete         = Nothing
 
 instance Finite a => Finite (UVar a) where
     type Order (UVar a) = Order a
