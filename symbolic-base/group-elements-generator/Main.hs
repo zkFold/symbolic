@@ -1,10 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes       #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Main (main) where
 
 import           Data.Aeson                             (ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8             as BL
-import           Data.List                              (intercalate, find)
+import           Data.List                              (find, intercalate)
 import           Data.Maybe                             (fromJust)
 import           Data.Typeable                          (Proxy (..), Typeable, typeRep)
 import           Numeric.Natural                        (Natural)
