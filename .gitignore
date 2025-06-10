@@ -27,3 +27,4 @@ stack.yaml*
 .DS_Store
 node_modules
 *.svg
+symbolic-base/rust-wrapper/target*
