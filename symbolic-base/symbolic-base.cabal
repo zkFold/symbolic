@@ -444,6 +444,8 @@ executable group-elements-generator
     hs-source-dirs: group-elements-generator
     build-depends:
       base,
-      symbolic-base,
       aeson,
-      bytestring
+      bytestring,
+      optparse-applicative,
+      symbolic-base,
+      
