@@ -8,7 +8,7 @@ import           Data.Function                                 ((.))
 import           Data.List                                     ((++))
 import           GHC.Generics
 
-import           ZkFold.Algebra.Class                          (Ring, zero)
+import           ZkFold.Algebra.Class
 import           ZkFold.Data.Vector                            (Vector)
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHashN')
 import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants)
@@ -72,11 +72,10 @@ oracle hash = hash . source
 class GOracleSource a f where
     gsource :: f x -> [a]
 
--- TODO: fix this instance
 instance (Ring a, GOracleSource a f, GOracleSource a g) =>
          GOracleSource a (f :+: g) where
     gsource (L1 x) = zero : gsource x
-    gsource (R1 x) = gsource x
+    gsource (R1 x) = one  : gsource x
 
 instance GOracleSource a U1 where
     gsource _ = []
