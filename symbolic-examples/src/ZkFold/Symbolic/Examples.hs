@@ -37,6 +37,7 @@ import           ZkFold.Symbolic.Examples.MiMCHash                  (exampleMiMC
 import           ZkFold.Symbolic.Examples.Pasta                     (examplePallas_Add, examplePallas_Scale)
 import           ZkFold.Symbolic.Examples.ReverseList               (exampleReverseList)
 import           ZkFold.Symbolic.Examples.UInt
+import ZkFold.Symbolic.Examples.SmartWallet (expModContract)
 
 type A = Zp BLS12_381_Scalar
 type B = Zp FpModulus
@@ -95,7 +96,6 @@ examples =
   , ("UInt.DivMod.32.Auto", exampleOutput @A $ exampleUIntDivMod @32 @Auto)
   , ("UInt.ExpMod.32.16.64.Auto", exampleOutput @A $ exampleUIntExpMod @32 @16 @64 @Auto)
   , ("UInt.ExpMod.256.64.1024.Auto", exampleOutput @A $ exampleUIntExpMod @256 @64 @1024 @Auto)
-  , ("UInt.ExpMod.2048.18.2048.Auto", exampleOutput @A $ exampleUIntExpMod @2048 @18 @2048 @Auto)
   , ("FFA.Add.Native", exampleOutput @B exampleFFAaddNative)
   , ("FFA.Mul.Native", exampleOutput @B exampleFFAmulNative)
   , ("FFA.Inv.Native", exampleOutput @B exampleFFAinvNative)
@@ -114,6 +114,7 @@ examples =
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
+  , ("Exp65537Mod", exampleOutput @A $ expModContract)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
