@@ -3,16 +3,14 @@
 
 module ZkFold.Protocol.IVC.Oracle where
 
-import           Data.Foldable                                 (Foldable, foldMap)
-import           Data.Function                                 ((.))
-import           Data.List                                     ((++))
+import           Data.Foldable              (Foldable, foldMap)
+import           Data.Function              ((.))
+import           Data.List                  ((++))
 import           GHC.Generics
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Data.Vector                            (Vector)
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHashN')
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants)
-import           ZkFold.Symbolic.Class                         (Arithmetic)
+import           ZkFold.Algorithm.Hash.MiMC (mimcConstants, mimcHashN)
+import           ZkFold.Data.Vector         (Vector)
 
 ----------------------------- OracleSource class -------------------------------
 
@@ -61,8 +59,8 @@ deriving via (FoldableSource (Vector n) b)
 
 type Hasher a = [a] -> a
 
-mimcHash :: forall a. Arithmetic a => Hasher a
-mimcHash = mimcHashN' mimcConstants (zero :: a)
+mimcHash :: forall a. Ring a => Hasher a
+mimcHash = mimcHashN mimcConstants (zero :: a)
 
 oracle :: OracleSource a b => Hasher a -> b -> a
 oracle hash = hash . source

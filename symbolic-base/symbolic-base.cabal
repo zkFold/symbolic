@@ -117,6 +117,8 @@ library
       ZkFold.Algebra.Polynomial.Univariate
       ZkFold.Algebra.Polynomial.Univariate.Simple
       ZkFold.Algorithm.ReedSolomon
+      ZkFold.Algorithm.Hash.MiMC
+      ZkFold.Algorithm.Hash.MiMC.Constants
       ZkFold.Control.Conditional
       ZkFold.Control.HApplicative
       ZkFold.Data.Bool
@@ -184,7 +186,6 @@ library
       ZkFold.Symbolic.Algorithm.Hash.Keccak
       ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
       ZkFold.Symbolic.Algorithm.Hash.MiMC
-      ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants
       ZkFold.Symbolic.Algorithm.Hash.SHA2
       ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithm.Mithril

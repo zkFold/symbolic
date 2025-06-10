@@ -1,4 +1,4 @@
-module ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants) where
+module ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants) where
 
 import           Crypto.Hash.SHA256     (hash)
 import           Data.Maybe             (fromJust)
