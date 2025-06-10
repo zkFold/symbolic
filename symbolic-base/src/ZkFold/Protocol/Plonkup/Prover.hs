@@ -33,7 +33,15 @@ import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestIn
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
 
-plonkupProve :: forall i o n g1 g2 ts pv .
+
+
+import ZkFold.FFI.Rust.Poly () 
+import ZkFold.FFI.Rust.RustBLS () 
+import qualified ZkFold.FFI.Rust.RustBLS as RustBLS
+import qualified ZkFold.FFI.Rust.Types as RustTypes
+import ZkFold.FFI.Rust.Conversion
+
+plonkupProve :: forall i o n g1 g2 ts pv rustFr rustPv .
     ( Ord (ScalarFieldOf g1)
     , Compressible g1
     , ToTranscript ts Word8
@@ -44,6 +52,9 @@ plonkupProve :: forall i o n g1 g2 ts pv .
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    , UnivariateFieldPolyVec rustFr rustPv
+    , RustHaskell rustFr (ScalarFieldOf g1)
+    , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
     ) => PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
         (PlonkupWitnessInput wInput, PlonkupProverSecret ps)
@@ -163,14 +174,85 @@ plonkupProve PlonkupProverSetup {..}
         !deltaX   = polyVecConstant delta
         !epsilonX = polyVecConstant epsilon
 
-        !qXs1 = qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX
-        !qXs2 = (aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha
-        !qXs3 = (aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha
-        !qXs4 = (z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2
-        !qXs5 = qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3
-        !qXs6 = z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4
-        !qXs7 = (z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4
-        !qXs8 = (z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5
+--    {--
+        qmXR :: rustPv (PlonkupPolyExtendedLength n)
+        !qmXR = h2r qmX 
+        !qlXR = h2r qlX
+        !qrXR = h2r qrX
+        !qoXR = h2r qoX
+        !qcXR = h2r qcX
+        !qkXR = h2r qkX
+
+        !piXR = h2r piX
+        
+        !aXR = h2r aX
+        !bXR = h2r bX
+        !cXR = h2r cX
+
+        !z1XR = h2r z1X
+        !z2XR = h2r z2X
+
+        !s1XR = h2r s1X
+        !s2XR = h2r s2X
+        !s3XR = h2r s3X
+
+        !h1XR = h2r h1X
+        !h2XR = h2r h2X
+
+        !fXR = h2r fX
+        !tXR = h2r tX
+
+        alphaR :: rustFr
+        !alphaR = h2r alpha
+        !alpha2R = h2r alpha2
+        !alpha3R = h2r alpha3
+        !alpha4R = h2r alpha4
+        !alpha5R = h2r alpha5
+        !betaR = h2r beta
+        !gammaXR = h2r gammaX
+        !deltaXR = h2r deltaX
+        !epsilonXR = h2r epsilonX
+        !zetaR = h2r zeta
+
+        !omegas'R = h2r omegas'
+
+        polyVecLinearR :: ScalarFieldOf g1 -> ScalarFieldOf g1 -> rustPv (PlonkupPolyExtendedLength n)
+        polyVecLinearR a b = h2r $ polyVecLinear a b
+
+
+        !qXs1 = (qmXR * aXR * bXR + qlXR * aXR + qrXR * bXR + qoXR * cXR + piXR + qcXR)
+        !qXs2 = ((aXR + polyVecLinearR beta gamma) * (bXR + polyVecLinearR (beta * k1) gamma) * (cXR + polyVecLinearR (beta * k2) gamma) * z1XR .* alphaR)
+        !qXs3 = ((aXR + (betaR *. s1XR) + gammaXR) * (bXR + (betaR *. s2XR) + gammaXR) * (cXR + (betaR *. s3XR) + gammaXR) * (z1XR .*. omegas'R) .* alphaR)
+        !qXs4 = ((z1XR - one) * h2r (polyVecLagrange (value @n) 1 omega) .* alpha2R)
+        !qXs5 = (qkXR * (aXR + zetaR *. (bXR + zetaR *. cXR) - fXR) .* alpha3R)
+        !qXs6 = (z2XR * (one + deltaXR) * (epsilonXR + fXR) * ((epsilonXR * (one + deltaXR)) + tXR + deltaXR * (tXR .*. omegas'R)) .* alpha4R)
+        !qXs7 = ((z2XR .*. omegas'R) * ((epsilonXR * (one + deltaXR)) + h1XR + deltaXR * h2XR) * ((epsilonXR * (one + deltaXR)) + h2XR + deltaXR * (h1XR .*. omegas'R)) .* alpha4R)
+
+        !qXs8 = ((z2XR - one) * h2r (polyVecLagrange (value @n) 1 omega) .* alpha5R)
+
+        !qXNumerator = (
+                qXs1
+              + qXs2
+              - qXs3
+              + qXs4
+              + qXs5
+              + qXs6
+              - qXs7
+              + qXs8
+            )
+
+        !qX = r2h qXNumerator `polyVecDiv` zhX
+--}
+
+    {--
+        !qXs1 = (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
+        !qXs2 = ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
+        !qXs3 = ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
+        !qXs4 = ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
+        !qXs5 = (qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3)
+        !qXs6 = (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
+        !qXs7 = ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
+        !qXs8 = ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
 
         !qXNumerator = qXs1
               + qXs2
@@ -182,6 +264,7 @@ plonkupProve PlonkupProverSetup {..}
               + qXs8
 
         !qX = qXNumerator `polyVecDiv` zhX
+--}
 
         !qlowX  = toPolyVec $ V.take (fromIntegral (n+2)) $ fromPolyVec qX
         !qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
