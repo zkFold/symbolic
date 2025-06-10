@@ -21,7 +21,7 @@ import qualified Prelude                                            as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number                              (KnownNat, type (+))
-import           ZkFold.Algebra.Polynomial.Univariate               (PolyVec)
+import           ZkFold.Algebra.Polynomial.Univariate.Simple        (SimplePoly)
 import           ZkFold.Data.Vector                                 (Vector, singleton)
 import           ZkFold.Protocol.IVC.Accumulator                    hiding (pi)
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme              as Acc
@@ -82,7 +82,7 @@ type IVCAssumptions ctx0 ctx1 algo d k a i p c f =
     , RandomOracle algo (c f) f
     , HomomorphicCommit [f] (c f)
     , Scale a f
-    , Scale a (PolyVec f (d+1))
+    , Scale a (SimplePoly f (d + 1))
     , Scale f (c f)
     , ctx0 ~ Interpreter a
     , RecursiveFunctionAssumptions algo d a i c (FieldElement ctx0) ctx0

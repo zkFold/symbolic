@@ -3,7 +3,10 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
 
-module ZkFold.Data.Vector where
+module ZkFold.Data.Vector
+    ( module ZkFold.Data.Vector
+    , module Data.Zip
+    ) where
 
 import           Control.Applicative        (Applicative, pure)
 import           Control.DeepSeq            (NFData, NFData1)
@@ -58,14 +61,10 @@ instance (KnownNat n, Eq x) => Eq (Vector n x) where
     u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
     u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
 
--- helper
-knownNat :: forall size n . (KnownNat size, P.Integral n) => n
-knownNat = P.fromIntegral (value @size)
-
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
   index (Vector v) ix = v V.! P.fromIntegral (fromZp ix)
-  tabulate f = Vector (V.generate (knownNat @size) (f . P.fromIntegral))
+  tabulate f = Vector (V.generate (integral @size) (f . P.fromIntegral))
 
 instance KnownNat size => Distributive (Vector size) where
   distribute = distributeRep
@@ -73,7 +72,7 @@ instance KnownNat size => Distributive (Vector size) where
 
 vtoVector :: forall size a . KnownNat size => V.Vector a -> Maybe (Vector size a)
 vtoVector as
-  | V.length as == knownNat @size = Just $ Vector as
+  | V.length as == integral @size = Just $ Vector as
   | otherwise                     = Nothing
 
 instance IsList (Vector n a) where
@@ -90,7 +89,7 @@ unsafeToVector :: forall size a . [a] -> Vector size a
 unsafeToVector = Vector . V.fromList
 
 unfold :: forall size a b. KnownNat size => (b -> (a, b)) -> b -> Vector size a
-unfold f = Vector . V.unfoldrExactN (knownNat @size) f
+unfold f = Vector . V.unfoldrExactN (integral @size) f
 
 fromVector :: Vector size a -> [a]
 fromVector (Vector !as) = V.toList as
@@ -136,13 +135,13 @@ mapMWithIx f (Vector !l) = Vector <$> V.zipWithM f (V.enumFromTo 0 (value @n -! 
 
 -- TODO: Check that n <= size?
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a
-take (Vector !lst) = Vector (V.take (knownNat @n) lst)
+take (Vector !lst) = Vector (V.take (integral @n) lst)
 
 drop :: forall n m a. KnownNat n => Vector (n + m) a -> Vector m a
-drop (Vector !lst) = Vector (V.drop (knownNat @n) lst)
+drop (Vector !lst) = Vector (V.drop (integral @n) lst)
 
 splitAt :: forall n m a. KnownNat n => Vector (n + m) a -> (Vector n a, Vector m a)
-splitAt (Vector !lst) = (Vector (V.take (knownNat @n) lst), Vector (V.drop (knownNat @n) lst))
+splitAt (Vector !lst) = (Vector (V.take (integral @n) lst), Vector (V.drop (integral @n) lst))
 
 rotate :: forall size a. KnownNat size => Vector size a -> Integer -> Vector size a
 rotate (Vector !lst) n = Vector (r <> l)
@@ -157,7 +156,7 @@ rotate (Vector !lst) n = Vector (r <> l)
 
 shift :: forall size a. KnownNat size => Vector size a -> Integer -> a -> Vector size a
 shift (Vector lst) n pad
-  | n P.< 0 = Vector $ V.take (knownNat @size) (padList <> lst)
+  | n P.< 0 = Vector $ V.take (integral @size) (padList <> lst)
   | otherwise = Vector $ V.drop (P.fromIntegral n) (lst <> padList)
     where
         padList = V.replicate (P.fromIntegral $ P.abs n) pad
@@ -205,10 +204,10 @@ backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (P.fromInt
 
 instance (KnownNat n, Binary a) => Binary (Vector n a) where
     put = fold . V.map put . toV
-    get = Vector <$> V.replicateM (knownNat @n) get
+    get = Vector <$> V.replicateM (integral @n) get
 
 instance KnownNat size => Applicative (Vector size) where
-    pure a = Vector $ V.replicate (knownNat @size) a
+    pure a = Vector $ V.replicate (integral @size) a
 
     (Vector !fs) <*> (Vector !as) = Vector $ V.zipWith ($) fs as
 

@@ -15,6 +15,7 @@ module ZkFold.Algebra.Number
     , Mod
     , Div
     , value
+    , integral
     , type (<=)
     , type (*)
     , type (+)
@@ -22,18 +23,23 @@ module ZkFold.Algebra.Number
     , type (^)
     ) where
 
+import           Data.Bool      (Bool (..))
 import           Data.Kind      (Constraint)
 import           Data.Type.Bool (If, type (&&))
 import           GHC.Exts       (proxy#)
+import           GHC.Real       (Integral)
+import qualified GHC.Real       as Integral
 import           GHC.TypeLits   (ErrorMessage (..), TypeError)
 import           GHC.TypeNats
-import           Prelude        (Bool (..))
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
 
 value :: forall n . KnownNat n => Natural
 value = natVal' (proxy# @n)
+
+integral :: forall size n . (KnownNat size, Integral n) => n
+integral = Integral.fromIntegral (value @size)
 
 -- Use this overlappable instance for small enough primes and testing
 instance {-# OVERLAPPABLE #-} (KnownNat p, KnownPrime p) => Prime p
