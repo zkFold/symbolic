@@ -1,5 +1,5 @@
-{-# LANGUAGE DerivingVia         #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DerivingVia   #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Protocol.IVC.Oracle where
 
