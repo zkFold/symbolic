@@ -348,6 +348,7 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate.Poly
       Tests.Algebra.Univariate.PolyVec
       Tests.Algebra.Univariate.Simple
+      Tests.Common
       Tests.Data.Binary
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
@@ -379,7 +380,6 @@ test-suite symbolic-base-test
       blake2                                     ,
       constraints                                ,
       containers                                 ,
-      deepseq                                    ,
       random                                < 1.3,
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,

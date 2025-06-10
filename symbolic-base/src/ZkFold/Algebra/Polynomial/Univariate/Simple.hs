@@ -8,7 +8,7 @@ module ZkFold.Algebra.Polynomial.Univariate.Simple
 
 import qualified Data.Eq                              as Haskell
 import           Data.Function                        (on, ($), (.))
-import           Data.Functor                         (fmap)
+import           Data.Functor                         (fmap, (<$>))
 import           Data.List                            (zip)
 import           Data.Ord                             (min, (<))
 import           Data.Semialign                       (alignWith)
@@ -18,6 +18,7 @@ import           Data.Vector                          (Vector)
 import qualified Data.Vector                          as V
 import qualified GHC.Num                              as Int
 import           Numeric.Natural                      (Natural)
+import           Test.QuickCheck                      (Arbitrary (..))
 import           Text.Show                            (Show)
 
 import           ZkFold.Algebra.Class
@@ -110,3 +111,6 @@ instance Ring a => UnivariateRingPolyVec a (SimplePoly a) where
     fromPolyVec = coeffs
     evalPolyVec (SimplePoly p) x =
         sum [ c * x ^ i | (i, c) <- zip [(0 :: Natural)..] (V.toList p) ]
+
+instance (Arbitrary a, KnownNat n) => Arbitrary (SimplePoly a n) where
+    arbitrary = fromVector <$> arbitrary
