@@ -1,8 +1,12 @@
+{-# LANGUAGE AllowAmbiguousTypes       #-}
+
 module Main (main) where
 
 import           Data.Aeson                             (ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8             as BL
-import           Data.List                              (intercalate)
+import           Data.List                              (intercalate, find)
+import           Data.Maybe                             (fromJust)
+import           Data.Typeable                          (Proxy (..), Typeable, typeRep)
 import           Numeric.Natural                        (Natural)
 import           Options.Applicative
 import           Prelude
@@ -12,24 +16,29 @@ import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS
 import           ZkFold.Algebra.EllipticCurve.BN254     (BN254_G1_Point, BN254_G2_Point)
 import           ZkFold.Algebra.EllipticCurve.Class     (CyclicGroup (..))
 
--- | Supported groups
-data Group = BN254_G1 | BN254_G2 | BLS12_381_G1 | BLS12_381_G2
-    deriving (Show, Eq, Enum, Bounded)
+data Group = forall pt. (CyclicGroup pt, Show pt, ToJSON pt, Typeable pt) => Group
+
+supportedGroups :: [(String, Group)]
+supportedGroups =
+    [ ("bn254-g1", Group @BN254_G1_Point)
+    , ("bn254-g2", Group @BN254_G2_Point)
+    , ("bls12381-g1", Group @BLS12_381_G1_Point)
+    , ("bls12381-g2", Group @BLS12_381_G2_Point)
+    ]
+
+groupName :: Group -> String
+groupName (Group @pt) = fst $ fromJust $ find f supportedGroups
+  where
+    f (_, g) = case g of
+      Group @pt' -> typeRep (Proxy @pt) == typeRep (Proxy @pt')
 
 -- | Output format
 data OutputFormat = Plain | JSON
     deriving (Eq, Show)
 
--- | Canonical string name for each group
-groupName :: Group -> String
-groupName BN254_G1     = "bn254-g1"
-groupName BN254_G2     = "bn254-g2"
-groupName BLS12_381_G1 = "bls12381-g1"
-groupName BLS12_381_G2 = "bls12381-g2"
-
 -- | Parse group from string
 parseGroup :: String -> Maybe Group
-parseGroup s = lookup s [(groupName g, g) | g <- [minBound .. maxBound :: Group]]
+parseGroup s = lookup s supportedGroups
 
 -- | CLI options
 data Options = Options
@@ -41,7 +50,7 @@ data Options = Options
 
 optionsParser :: Parser Options
 optionsParser =
-  let groupList = map groupName [minBound .. maxBound :: Group]
+  let groupList = map fst supportedGroups
       groupListStr = intercalate " | " groupList
       groupHelp = "Group name: one of { " <> groupListStr <> " }"
   in Options
@@ -85,7 +94,4 @@ main = do
    <> header "Group Elements Generator"
     )
   case optGroup opts of
-    BN254_G1     -> runGroupElementsGeneric opts (pointGen :: BN254_G1_Point)
-    BN254_G2     -> runGroupElementsGeneric opts (pointGen :: BN254_G2_Point)
-    BLS12_381_G1 -> runGroupElementsGeneric opts (pointGen :: BLS12_381_G1_Point)
-    BLS12_381_G2 -> runGroupElementsGeneric opts (pointGen :: BLS12_381_G2_Point)
+    Group @pt -> runGroupElementsGeneric opts (pointGen :: pt)
