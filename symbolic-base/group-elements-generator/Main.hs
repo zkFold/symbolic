@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeAbstractions    #-}
+
+{-# OPTIONS_GHC -Wno-deprecated-type-abstractions #-}
 
 module Main (main) where
 
