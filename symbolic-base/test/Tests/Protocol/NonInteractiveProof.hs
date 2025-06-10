@@ -1,16 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
-
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Protocol.NonInteractiveProof (specNonInteractiveProof) where
 
 import           Data.ByteString                        (ByteString)
 import           Data.Typeable                          (Proxy (..), Typeable, typeRep)
-import           GHC.Generics                           (U1 (..))
 import           Prelude                                hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                             (Spec, describe, it)
-import           Test.QuickCheck                        (Arbitrary (..), Arbitrary1 (..), Testable (property),
+import           Test.QuickCheck                        (Arbitrary (..), Testable (property),
                                                          withMaxSuccess)
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -36,14 +32,7 @@ specNonInteractiveProof' = do
             describe "All correct proofs" $ do
                 it "should validate" $ withMaxSuccess 10 $ property $ propNonInteractiveProof @a
 
-instance Arbitrary (U1 a) where
-  arbitrary = return U1
-instance Arbitrary1 U1 where
-  liftArbitrary _ = return U1
-
 specNonInteractiveProof :: Spec
 specNonInteractiveProof = do
     specNonInteractiveProof' @(KZG BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint 32 (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint)))
-    -- TODO: fix `desugarRanges`
-    -- specNonInteractiveProof' @(Plonk (Vector 1) 32 (Vector 2) BLS12_381_G1_Point BLS12_381_G2_Point ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_Point)))
     specNonInteractiveProof' @(Plonkup (Vector 1) (Vector 2) 32 BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint ByteString (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint)))

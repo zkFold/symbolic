@@ -26,6 +26,8 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                   ((<=))
 
+-- TODO: Add `desugarRanges` specification
+
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a) =>
   (forall b . Field b => b) -> Property
