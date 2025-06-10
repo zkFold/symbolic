@@ -16,7 +16,7 @@ import           ZkFold.Data.Vector                 (Vector, unsafeToVector)
 import           ZkFold.Prelude                     (take)
 import           ZkFold.Protocol.IVC.Oracle
 
--- | Commit to the object @a@ with commitment key @ck@ and results of type @f@
+-- | Commit to the object @a@ with results of type @f@
 --
 type Commit a f = a -> f
 
