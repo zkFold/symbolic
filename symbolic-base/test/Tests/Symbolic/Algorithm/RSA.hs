@@ -1,36 +1,27 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 
 module Tests.Symbolic.Algorithm.RSA (specRSA) where
 
 import           Codec.Crypto.RSA                       (generateKeyPair)
 import qualified Codec.Crypto.RSA                       as R
 import           Data.Function                          (($))
-import           GHC.Generics                           (Par1 (..))
 import           Prelude                                (pure)
 import qualified Prelude                                as P
 import           System.Random                          (RandomGen)
 import           Test.Hspec                             (Spec, describe)
-import           Test.QuickCheck                        (Gen, withMaxSuccess, (.&.), (===))
+import           Test.QuickCheck                        (withMaxSuccess, (.&.), (===))
 import           Tests.Symbolic.ArithmeticCircuit       (it)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import           ZkFold.Algebra.Number
-import           ZkFold.Prelude                         (chooseNatural)
 import           ZkFold.Symbolic.Algorithm.RSA
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators       (ilog2)
 import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
-import           ZkFold.Symbolic.Interpreter            (Interpreter (Interpreter))
+import           ZkFold.Symbolic.Interpreter            (Interpreter)
+import Tests.Common (toss, evalBool)
 
 type I = Interpreter Fr
-
-toss :: Natural -> Gen Natural
-toss x = chooseNatural (0, x -! 1)
-
-evalBool :: forall a . Bool (Interpreter a) -> a
-evalBool (Bool (Interpreter (Par1 v))) = v
 
 specRSA' :: forall keyLength g . (RandomGen g, RSA keyLength 256 I) => g -> Spec
 specRSA' gen = do

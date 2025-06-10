@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 
 module Tests.Symbolic.Algorithm.SHA2 (specSHA2Natural, specSHA2) where
 
@@ -19,7 +18,7 @@ import           System.Environment                         (lookupEnv)
 import           System.FilePath.Posix
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (Spec, describe, runIO, shouldBe)
-import           Test.QuickCheck                            (Gen, withMaxSuccess, (===))
+import           Test.QuickCheck                            (withMaxSuccess, (===))
 import           Tests.Symbolic.ArithmeticCircuit           (it)
 import           Text.Regex.TDFA
 
@@ -28,7 +27,6 @@ import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
 import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                         (Vector)
-import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Algorithm.Hash.SHA2
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
@@ -36,6 +34,7 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.VarByteString         (fromNatural)
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
+import Tests.Common (toss)
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
@@ -138,9 +137,6 @@ specSHA2Natural = do
     specSHA2Natural' @"SHA512/224" @(Zp BLS12_381_Scalar)
     specSHA2Natural' @"SHA512/256" @(Zp BLS12_381_Scalar)
 
-toss :: Natural -> Gen Natural
-toss x = chooseNatural (0, x)
-
 eval ::
     forall a n . Arithmetic a =>
     ByteString n (ArithmeticCircuit a U1) -> Vector n a
@@ -154,7 +150,7 @@ specSHA2bs
     => Spec
 specSHA2bs = do
     let n = value @n
-        m = 2 ^ n -! 1
+        m = 2 ^ n
     it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring") $ withMaxSuccess 2 $ do
         x <- toss m
         let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
