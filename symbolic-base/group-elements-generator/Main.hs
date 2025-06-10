@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
+{-# OPTIONS_GHC -Wno-unrecognised-warning-flags #-}
 {-# OPTIONS_GHC -Wno-deprecated-type-abstractions #-}
 
 module Main (main) where

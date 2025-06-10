@@ -23,5 +23,8 @@ typeAt = typeRep (Proxy :: Proxy a)
 toss :: Natural -> Gen Natural
 toss x = chooseNatural (0, x -! 1)
 
+toss1 :: Natural -> Gen Natural
+toss1 x = chooseNatural (1, x -! 1)
+
 evalBool :: forall a . Bool (Interpreter a) -> a
 evalBool (Bool (Interpreter (Par1 v))) = v

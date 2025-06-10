@@ -1,7 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Tests.Symbolic.Data.FFA (specFFA) where
 
 import           Data.Function                              (($))
@@ -10,7 +8,6 @@ import           GHC.Generics                               (U1)
 import           Prelude                                    (Integer)
 import           Test.Hspec                                 (Spec, describe)
 import           Test.QuickCheck                            (Property, (===))
-import           Tests.Symbolic.ArithmeticCircuit           (it)
 import           Text.Show                                  (show)
 
 import           ZkFold.Algebra.Class
@@ -23,12 +20,11 @@ import           ZkFold.Symbolic.Data.FFA                   (FFA (FFA), KnownFFA
 import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement))
 import           ZkFold.Symbolic.Data.UInt                  (UInt (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
+import Tests.Common (it)
+import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 
-type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
-type Prime256_2 = 28948022309329048855892746252171976963363056481941647379679742748393362948097
-
-instance Prime Prime256_1
-instance Prime Prime256_2
+type Prime256_1 = FpModulus
+type Prime256_2 = FqModulus
 
 specFFA :: Spec
 specFFA = do

@@ -8,7 +8,6 @@ import qualified Prelude                                as P
 import           System.Random                          (mkStdGen)
 import           Test.Hspec                             (Spec, describe)
 import           Test.QuickCheck                        (arbitrary, withMaxSuccess, (.&.), (===))
-import           Tests.Symbolic.ArithmeticCircuit       (it)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
@@ -20,7 +19,7 @@ import           ZkFold.Symbolic.Data.JWT.RS256
 import           ZkFold.Symbolic.Data.JWT.Twitch
 import           ZkFold.Symbolic.Data.VarByteString     (VarByteString, fromNatural)
 import           ZkFold.Symbolic.Interpreter            (Interpreter)
-import Tests.Common (toss, evalBool)
+import Tests.Common (toss, evalBool, it)
 
 type I = Interpreter Fr
 
