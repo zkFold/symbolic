@@ -4,8 +4,8 @@ import           Data.Aeson                             (ToJSON, encode)
 import qualified Data.ByteString.Lazy.Char8             as BL
 import           Data.List                              (intercalate)
 import           Numeric.Natural                        (Natural)
-import           Prelude
 import           Options.Applicative
+import           Prelude
 
 import           ZkFold.Algebra.Class                   (FromConstant (..), Scale (..))
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
