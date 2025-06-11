@@ -103,13 +103,13 @@ specUInt' = do
         specSymbolicFunction2 @(Zp p) @(UInt n rs) "multiplication" (*)
         it "strictly adds correctly" $ do
             x <- toss m
-            isHom @n @p @rs strictAdd strictAdd (+) x <$> toss (m + 1 -! x)
+            isHom @n @p @rs strictAdd strictAdd (+) x <$> toss (m -! x)
         it "strictly subtracts correctly" $ do
             x <- toss m
             isHom @n @p @rs strictSub strictSub (-!) x <$> toss x
         it "strictly multiplies correctly" $ do
-            x <- toss1 m
-            isHom @n @p @rs strictMul strictMul (*) x <$> toss (m `P.div` x)
+            x <- toss m
+            isHom @n @p @rs strictMul strictMul (*) x <$> toss (if x == 0 then m else m `P.div` x)
 
         -- Type-specific tests go here
         it "iso uint correctly" $ do
@@ -123,7 +123,7 @@ specUInt' = do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        when (m > 0) $ it "performs divMod correctly" $ do
+        when (m > 1) $ it "performs divMod correctly" $ do
             num <- toss m
             d <- toss1 m
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
