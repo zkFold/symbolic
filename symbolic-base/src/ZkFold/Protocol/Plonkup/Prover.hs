@@ -42,6 +42,7 @@ import qualified ZkFold.FFI.Rust.Types as RustTypes
 import ZkFold.FFI.Rust.Conversion
 
 plonkupProve :: forall i o n g1 g2 ts pv rustFr rustPv .
+--plonkupProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
     , Compressible g1
     , ToTranscript ts Word8

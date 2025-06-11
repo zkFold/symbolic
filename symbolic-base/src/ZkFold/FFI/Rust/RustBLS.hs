@@ -434,7 +434,18 @@ instance (KnownNat size) => FromConstant Integer (RustPolyVec Fr size) where
   fromConstant n = h2r $ fromConstant n
 
 instance (KnownNat size) => AdditiveSemigroup (RustPolyVec Fr size) where
-  l + r = h2r $ (+) (r2h l) (r2h r)
+  l + r = unsafePerformIO runSum
+    where
+      runSum :: IO (RustPolyVec Fr size)
+      runSum = do
+        let valueSize = (fromInteger $ naturalToInteger $ value @size)
+        out <- callocForeignPtrBytes @CChar (scalarSize P.* (fromInteger $ naturalToInteger $ value @size))
+
+        runRustFunctionBinary rsAdd
+          (passPolyVec l)
+          (passPolyVec r)
+          (out, valueSize P.* scalarSize)
+        return $ RustPV (RData out)
 
 instance (KnownNat size) => AdditiveMonoid (RustPolyVec Fr size) where
   zero = h2r $ (zero :: PolyVec EC.Fr size)

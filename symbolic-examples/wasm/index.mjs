@@ -55,7 +55,7 @@ function mkProofBytesMock(instance, x, ps, empi) {
     psBuf.forEach((v,i,a) => a[i] = psBytes[i]);
     empiBuf.forEach((v,i,a) => a[i] = empiBytes[i]);
 
-    const address = instance.exports.mkProofBytesWasm(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
+    const address = instance.exports.mkProofBytesMockWasm(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
 
     buffer = instance.exports.memory.buffer; // Refresh the reference. The old buffer becomes "detached" when it grows.
 

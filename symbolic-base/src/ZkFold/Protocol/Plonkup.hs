@@ -34,6 +34,7 @@ import ZkFold.FFI.Rust.Conversion
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
 instance forall i o n g1 g2 gt ts pv rustFr rustPv .
+--instance forall i o n g1 g2 gt ts pv .
         ( KnownNat n
         , Representable i
         , Representable o
@@ -79,6 +80,7 @@ instance forall i o n g1 g2 gt ts pv rustFr rustPv .
       (Input (Plonkup i o n g1 g2 ts pv), Proof (Plonkup i o n g1 g2 ts pv))
     prove setup witness =
         let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv @rustFr @rustPv setup witness)
+--        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
     verify ::
