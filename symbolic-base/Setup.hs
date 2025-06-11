@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 import           Control.Exception                  (throwIO)
 import           Control.Monad
 import           Data.Functor                       (($>))
@@ -18,13 +16,6 @@ import           System.Directory
 import           System.Exit
 import           System.FilePath                    ((</>))
 import           System.Process                     (system)
-
-isWasm :: Bool
-#if defined(wasm32_HOST_ARCH)
-isWasm = True
-#else
-isWasm = False
-#endif
 
 main :: IO ()
 main = defaultMainWithHooks hooks
@@ -49,8 +40,7 @@ execCargoBuild = do
     let cargoExec = case cargoPath of
             Just (p, _) -> p
             Nothing     -> "cargo"
-        suffix = if isWasm then " --target=wasm32-unknown-unknown" else ""
-    buildResult <- system $ cargoExec ++ " +nightly build --release --manifest-path rust-wrapper/Cargo.toml -Z unstable-options" ++ suffix
+    buildResult <- system $ cargoExec ++ " +nightly build --release --manifest-path rust-wrapper/Cargo.toml -Z unstable-options"
 
     case buildResult of
       ExitSuccess          -> return ()

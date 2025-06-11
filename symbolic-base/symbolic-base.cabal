@@ -11,10 +11,7 @@ maintainer:         vlasin@zkfold.io
 license:            MIT
 license-file:       LICENSE
 --build-type:         Simple 
-if arch(wasm32)
-  build-type:         Simple 
-else
-  build-type:         Custom
+build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
 extra-source-files:
@@ -53,6 +50,8 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
+      -fprof-auto
+      -fprof-cafs
     if !arch(wasm32)
       ghc-options:
         -threaded

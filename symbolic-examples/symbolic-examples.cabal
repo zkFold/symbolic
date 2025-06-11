@@ -35,6 +35,8 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
+      -fprof-auto
+      -fprof-cafs
     if !arch(wasm32)
       ghc-options:
         -threaded
@@ -88,6 +90,8 @@ common options-exe
       buildable: True
     ghc-options:
       -rtsopts
+      -fprof-auto
+      -fprof-cafs
     ghc-prof-options:
       -with-rtsopts=-pj
 
@@ -97,7 +101,7 @@ library
         ghc-options: 
             -no-hs-main 
             -optl-mexec-model=reactor 
-            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm,-Llibs,-lrust_wrapper
+            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm,-Llibs,-lrust_wrapper_wasm
     if !arch(wasm32)
       extra-lib-dirs: 
         /home/vladimir/Desktop/zkFold/zkfold-base/symbolic-examples/libs
@@ -125,6 +129,7 @@ library
       ZkFold.Symbolic.Examples.ReverseList
       ZkFold.Symbolic.Examples.RSA
       ZkFold.Symbolic.Examples.SmartWallet
+--      ZkFold.Symbolic.Examples.SmartWalletRust
       ZkFold.Symbolic.Examples.UInt
       ZkFold.Symbolic.Examples.UtxoAccumulator
       ZkFold.Symbolic.Examples.ZkLogin
@@ -184,3 +189,16 @@ executable smart-wallet-creator
     bytestring                     ,
     symbolic-base                  ,
     symbolic-examples
+
+--executable smart-wallet-creator-rust
+--  import:           options 
+--  import:           options-exe
+--  default-language: Haskell2010
+--  ghc-options:      -rtsopts
+--  main-is:          Main.hs
+--  hs-source-dirs:   smart-wallet-creator-rust
+--  build-depends:
+--    base              >= 4.9 && < 5,
+--    bytestring                     ,
+--    symbolic-base                  ,
+--    symbolic-examples

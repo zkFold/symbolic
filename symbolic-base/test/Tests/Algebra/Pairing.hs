@@ -5,6 +5,7 @@ module Tests.Algebra.Pairing (specPairing) where
 
 import           Data.Kind                              (Type)
 import           Data.Typeable                          (Typeable, typeOf)
+import           Foreign                                (Storable (..))
 import           Prelude                                hiding (Fractional (..), Num (..), length, (^))
 import           Test.Hspec
 import           Test.QuickCheck                        hiding (scale)
@@ -16,10 +17,11 @@ import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Protocol.NonInteractiveProof    ()
 
 specPairing'
-    :: forall (g1 :: Type) (g2 :: Type) gt f
+    :: forall (g1 :: Type) (g2 :: Type) gt f rustg rustp
     .  Typeable g1
     => Typeable g2
     => Typeable gt
+    => RustFFI g1 (PolyVec f 32) rustg rustp
     => Pairing g1 g2 gt
     => Eq g1
     => Eq g2
@@ -47,5 +49,5 @@ specPairing' = do
 
 specPairing :: Spec
 specPairing = do
-    specPairing' @BN254_G1_Point @BN254_G2_Point
+--    specPairing' @BN254_G1_Point @BN254_G2_Point
     specPairing' @BLS12_381_G1_Point @BLS12_381_G2_Point

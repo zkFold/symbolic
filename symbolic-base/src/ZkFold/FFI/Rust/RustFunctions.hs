@@ -35,6 +35,9 @@ foreign import ccall unsafe
     "rust_wrapper_scalar_add" rsScalarAdd :: RustFunctionBinary
 
 foreign import ccall unsafe
+    "rust_wrapper_poly_add" rsAdd :: RustFunctionBinary
+
+foreign import ccall unsafe
     "rust_wrapper_mul_fft" rsMulFFT :: RustFunctionBinary
 
 foreign import ccall unsafe
