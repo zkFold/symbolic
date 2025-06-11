@@ -437,3 +437,15 @@ benchmark bench-lagrange-basis
       symbolic-base,
       tasty-bench,
       QuickCheck
+
+executable group-elements-generator
+    import: options-exe
+    main-is: Main.hs
+    hs-source-dirs: group-elements-generator
+    build-depends:
+      base,
+      aeson,
+      bytestring,
+      optparse-applicative,
+      symbolic-base,
+      
