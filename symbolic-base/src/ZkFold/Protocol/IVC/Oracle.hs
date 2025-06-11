@@ -1,75 +1,89 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingVia   #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Protocol.IVC.Oracle where
 
-import qualified Data.Vector                                   as V
+import           Data.Foldable              (Foldable, foldMap)
+import           Data.Function              ((.))
+import           Data.List                  ((++))
 import           GHC.Generics
-import           Prelude                                       (map, (.))
-import qualified Prelude                                       as P
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC           (mimcHashN')
-import           ZkFold.Symbolic.Algorithm.Hash.MiMC.Constants (mimcConstants)
-import           ZkFold.Symbolic.Class                         (Arithmetic)
+import           ZkFold.Algorithm.Hash.MiMC (mimcConstants, mimcHashN)
+import           ZkFold.Data.Vector         (Vector)
+
+----------------------------- OracleSource class -------------------------------
 
 -- TODO: add more specific instances for efficiency
 
-class HashAlgorithm algo a where
-    hash :: [a] -> a
+-- | @OracleSource a b@ links together base field @a@ and source of randomness @b@ to use in 'oracle'.
+--
+-- 'Generic' deriving via @b@ is available.
+class OracleSource a b where
+    source :: b -> [a]
+    -- ^ Extracts random seed from the source.
+    default source :: (Generic b, GOracleSource a (Rep b)) => b -> [a]
+    source = gsource . from
 
-data MiMCHash a
-instance forall a. (Ring a, Arithmetic a) => HashAlgorithm (MiMCHash a) a where
-    hash :: forall x. (Arithmetic x, FromConstant a x) => [x] -> x
-    hash = mimcHashN' @a mimcConstants zero
+instance OracleSource a a where
+    source = (:[])
 
-class RandomOracle algo x a where
-    oracle :: x -> a
-    default oracle :: (Generic x, RandomOracle' algo (Rep x) a) => x -> a
-    oracle = oracle' @algo . from
+instance (OracleSource a b, OracleSource a c) =>
+    OracleSource a (b, c)
 
-instance (FromConstant P.Integer a, HashAlgorithm algo a) => RandomOracle algo P.Integer a where
-    oracle = oracle @algo @a . fromConstant
+instance (OracleSource a b, OracleSource a c, OracleSource a d) =>
+    OracleSource a (b, c, d)
 
-instance HashAlgorithm algo a => RandomOracle algo a a where
-    oracle x = hash @algo [x]
+instance ( OracleSource a b, OracleSource a c
+         , OracleSource a d, OracleSource a e) => OracleSource a (b, c, d, e)
 
-instance HashAlgorithm algo a => RandomOracle algo (a, a) a where
-    oracle (x, y) = hash @algo [x, y]
+instance ( OracleSource a b, OracleSource a c, OracleSource a d
+         , OracleSource a e, OracleSource a f) => OracleSource a (b, c, d, e, f)
 
-instance HashAlgorithm algo a => RandomOracle algo [a] a where
-    oracle = hash @algo
+-- | A newtype to derive 'OracleSource' for any 'Foldable'
+-- as long as its element type is also 'OracleSource'.
+newtype FoldableSource f a = FoldableSource { foldableSource :: f a }
+    deriving (Foldable)
 
-instance (HashAlgorithm algo b, RandomOracle algo a b) => RandomOracle algo [a] b where
-    oracle = hash @algo . map (oracle @algo)
+instance (Foldable f, OracleSource a b) =>
+         OracleSource a (FoldableSource f b) where
+    source = foldMap source
 
-instance (HashAlgorithm algo b, RandomOracle algo a b) => RandomOracle algo (V.Vector a) b where
-    oracle = (oracle @algo) . V.toList
+deriving via (FoldableSource [] b)
+    instance OracleSource a b => OracleSource a [b]
 
-instance {-# OVERLAPPABLE #-} (Generic x, RandomOracle' algo (Rep x) a) => RandomOracle algo x a
+deriving via (FoldableSource (Vector n) b)
+    instance OracleSource a b => OracleSource a (Vector n b)
 
-class RandomOracle' algo f a where
-    oracle' :: f x -> a
+------------------------------ Hasher & Oracle ---------------------------------
 
--- TODO: fix this instance
-instance (RandomOracle' algo f b, RandomOracle' algo g b, HashAlgorithm algo b, Ring b) => RandomOracle' algo (f :+: g) b where
-    oracle' (L1 x) = hash @algo [zero, oracle' @algo x]
-    oracle' (R1 x) = oracle' @algo x
+type Hasher = forall a. Ring a => [a] -> a
 
-instance (RandomOracle' algo f a, RandomOracle' algo g a, HashAlgorithm algo a) => RandomOracle' algo (f :*: g) a where
-    oracle' (x :*: y) =
-        let z1 = oracle' @algo x :: a
-            z2 = oracle' @algo y :: a
-        in hash @algo [z1, z2]
+mimcHash :: Hasher
+mimcHash = mimcHashN mimcConstants zero
 
-instance RandomOracle algo c a => RandomOracle' algo (Rec0 c) a where
-    oracle' (K1 x) = oracle @algo x
+oracle :: (OracleSource a b, Ring a) => Hasher -> b -> a
+oracle hash = hash . source
 
--- | Handling constructors with no fields.
-instance {-# OVERLAPPING #-}
-    Ring a => RandomOracle' algo (M1 C ('MetaCons conName fixity selectors) U1) a where
-    oracle' _ = zero
+------------------------ Generic OracleSource deriving -------------------------
 
-instance RandomOracle' algo f a => RandomOracle' algo (M1 c m f) a where
-    oracle' (M1 x) = oracle' @algo x
+class GOracleSource a f where
+    gsource :: f x -> [a]
+
+instance (Ring a, GOracleSource a f, GOracleSource a g) =>
+         GOracleSource a (f :+: g) where
+    gsource (L1 x) = zero : gsource x
+    gsource (R1 x) = one  : gsource x
+
+instance GOracleSource a U1 where
+    gsource _ = []
+
+instance (GOracleSource a f, GOracleSource a g) =>
+         GOracleSource a (f :*: g) where
+    gsource (x :*: y) = gsource x ++ gsource y
+
+instance OracleSource a b => GOracleSource a (Rec0 b) where
+    gsource (K1 x) = source x
+
+instance GOracleSource a f => GOracleSource a (M1 c m f) where
+    gsource (M1 x) = gsource x

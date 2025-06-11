@@ -29,16 +29,16 @@ randomOracle :: forall context .
     ) => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
     let -- The secret key is correct
-        conditionSecretKey = fromConstant c == hash @context w
+        conditionSecretKey = fromConstant c == hash w
 
         -- Extracting information about the transaction
-        seed           = hash @context $ txiOutputRef $ txInputs tx !! 0
+        seed           = hash $ txiOutputRef $ txInputs tx !! 0
         Value vs       = txoTokens $ txOutputs tx !! 0
         ((p, name), n) = vs !! 1
         policyId       = fst $ fst $ getValue (txMint tx) !! 0
 
         -- Computing the random number
-        r = hash @context (w, seed)
+        r = hash (w, seed)
 
         -- The token's policy is correct
         conditionPolicyId  = p == policyId

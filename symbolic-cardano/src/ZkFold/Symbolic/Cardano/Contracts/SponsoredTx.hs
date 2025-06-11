@@ -35,7 +35,7 @@ sponsoredTx tx1 tx2 = noExchange && consumesLiability && consumesOutput
         noExchange = P.snd lLiability /= zero && P.snd lBabel == zero -- There is a liability but no reward. Another party is expected to cover it
 
         tx1Hash :: ByteString 256 context
-        tx1Hash = resize $ ByteString $ binaryExpansion $ hash @context tx1
+        tx1Hash = resize $ ByteString $ binaryExpansion $ hash tx1
 
         consumesLiability :: Bool context
         consumesLiability = isJust $ find (\Input{..} -> outputRefId txiOutputRef == tx1Hash && outputRefIndex txiOutputRef == zero) $ txInputs tx2

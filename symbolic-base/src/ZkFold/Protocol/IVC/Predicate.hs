@@ -3,50 +3,31 @@
 
 module ZkFold.Protocol.IVC.Predicate where
 
-import           Data.Binary                                (Binary)
-import           GHC.Generics                               (U1 (..), (:*:) (..))
-import           Prelude                                    hiding (Num (..), drop, head, replicate, take, zipWith)
+import           Data.Binary                                        (Binary)
+import           Data.Function                                      (const, ($), (.))
+import           GHC.Generics                                       (U1 (..), (:*:) (..))
 
-import           ZkFold.Data.Package                        (packed, unpacked)
-import           ZkFold.Protocol.IVC.StepFunction           (StepFunction, StepFunctionAssumptions)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler                   (compileWith)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, guessOutput)
-import           ZkFold.Symbolic.Data.Class                 (LayoutFunctor)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (..))
-import           ZkFold.Symbolic.Interpreter                (Interpreter (..))
-
-type PredicateCircuit a i p = ArithmeticCircuit a (i :*: p :*: i) U1
+import           ZkFold.Symbolic.Compiler                           (compileWith)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit, exec, guessOutput, solder)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor)
 
 data Predicate a i p = Predicate
     { predicateEval    :: i a -> p a -> i a
-    , predicateCircuit :: PredicateCircuit a i p
+    , predicateCircuit :: ArithmeticCircuit a (i :*: p :*: i) U1
     }
 
-type PredicateAssumptions a i p =
-    ( Arithmetic a
-    , Binary a
-    , LayoutFunctor i
-    , LayoutFunctor p
-    )
+type StepFunction a i p =
+    CircuitContext a i -> CircuitContext a p -> CircuitContext a i
 
-predicate :: forall a i p . PredicateAssumptions a i p
-    => StepFunction a i p -> Predicate a i p
-predicate func =
-    let
-        func' :: forall f ctx . StepFunctionAssumptions a f ctx => ctx i -> ctx p -> ctx i
-        func' x' u' =
-            let
-                x = FieldElement <$> unpacked x'
-                u = FieldElement <$> unpacked u'
-            in
-                packed . fmap fromFieldElement $ func x u
-
-        predicateEval :: i a -> p a -> i a
-        predicateEval x u = runInterpreter $ func' (Interpreter x) (Interpreter u)
-
-        predicateCircuit :: PredicateCircuit a i p
-        predicateCircuit =
-            compileWith (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
-                        (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func'
-    in Predicate {..}
+predicate ::
+    forall a i p . (Arithmetic a, Binary a, LayoutFunctor i, LayoutFunctor p) =>
+    StepFunction a i p -> Predicate a i p
+predicate func = Predicate
+    { predicateEval = \x u ->
+        exec . compileWith solder (const (U1, U1)) $ func (embed x) (embed u)
+    , predicateCircuit =
+        compileWith (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
+                    (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1)) func
+    }

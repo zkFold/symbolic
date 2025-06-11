@@ -2,29 +2,35 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Tests.Protocol.IVC (specIVC) where
 
-import           Data.Functor.Constant                  (Constant)
-import           GHC.Generics                           (U1 (..))
-import           Prelude                                hiding (Num (..), pi, replicate, sum, (+), (^))
-import           Test.Hspec                             (Spec, describe, it)
-import           Test.QuickCheck                        (property, withMaxSuccess)
+import           Data.Functor.Constant                       (Constant)
+import           GHC.Generics                                (U1 (..))
+import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+), (^))
+import           Test.Hspec                                  (Spec, describe, it)
+import           Test.QuickCheck                             (property, withMaxSuccess)
 
-import           ZkFold.Algebra.Class                   (FromConstant (..), sum, (*), (^))
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                   (Zp)
-import           ZkFold.Algebra.Number                  (Natural, type (-))
-import           ZkFold.Data.Vector                     (Vector (..), item, mapWithIx, singleton)
-import           ZkFold.Protocol.IVC.Accumulator        (Accumulator (..), AccumulatorInstance (..), emptyAccumulator)
-import           ZkFold.Protocol.IVC.AccumulatorScheme  as Acc
-import           ZkFold.Protocol.IVC.CommitOpen         (commitOpen)
-import           ZkFold.Protocol.IVC.FiatShamir         (FiatShamir, fiatShamir)
-import           ZkFold.Protocol.IVC.NARK               (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Protocol.IVC.Oracle             (MiMCHash)
-import           ZkFold.Protocol.IVC.Predicate          (Predicate (..), predicate)
-import           ZkFold.Protocol.IVC.SpecialSound       (specialSoundProtocol)
-import           ZkFold.Symbolic.Class                  (BaseField, Symbolic)
-import           ZkFold.Symbolic.Data.FieldElement      (FieldElement (..))
+import           ZkFold.Algebra.Class                        (FromConstant (..), fromConstant)
+import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1_Point, BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                        (Zp)
+import           ZkFold.Algebra.Number                       (Natural, type (-))
+import           ZkFold.Algebra.Polynomial.Univariate        (evalPolyVec)
+import           ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
+import           ZkFold.Data.Package                         (packed, unpacked)
+import           ZkFold.Data.Vector                          (Vector (..), item, singleton)
+import           ZkFold.Protocol.IVC.Accumulator             (Accumulator (..), AccumulatorInstance (..),
+                                                              emptyAccumulator)
+import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
+import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
+import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
+import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
+import           ZkFold.Protocol.IVC.Oracle                  (OracleSource (..), mimcHash)
+import           ZkFold.Protocol.IVC.Predicate               (Predicate (..), predicate)
+import           ZkFold.Protocol.IVC.SpecialSound            (specialSoundProtocol)
+import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
+import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
 
 type F = Zp BLS12_381_Scalar
 type C = Constant BLS12_381_G1_Point
@@ -38,11 +44,16 @@ type D = 2
 type PARDEG = 5
 type PAR = Vector PARDEG F
 
+instance OracleSource F (C F) where
+    source _ = []
+
 testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
-    => PAR -> Vector 1 (FieldElement ctx) -> U1 (FieldElement ctx) -> Vector 1 (FieldElement ctx)
-testFunction p x _ =
-    let p' = fmap fromConstant p :: Vector PARDEG (FieldElement ctx)
-    in singleton $ sum $ mapWithIx (\i e -> item x^i * e) p'
+    => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
+testFunction p i _ =
+    let p' = fromVector $ fmap fromConstant p
+        x = FieldElement <$> unpacked i
+        y = singleton $ evalPolyVec p' $ item x
+     in packed $ fromFieldElement <$> y
 
 -- testPredicateCircuit :: PAR -> AC
 -- testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
@@ -51,7 +62,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir @(MiMCHash F) . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir mimcHash . commitOpen . specialSoundProtocol @D
 
 initAccumulator :: PHI -> Accumulator K I C F
 initAccumulator = emptyAccumulator @D
@@ -83,7 +94,7 @@ testPublicInput phi =
     in pi
 
 testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
-testAccumulatorScheme = accumulatorScheme @(MiMCHash F)
+testAccumulatorScheme = accumulatorScheme mimcHash
 
 testAccumulator :: PHI -> Accumulator K I C F
 testAccumulator phi =

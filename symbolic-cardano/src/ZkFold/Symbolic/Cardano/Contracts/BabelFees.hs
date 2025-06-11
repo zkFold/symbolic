@@ -31,7 +31,7 @@ babelFees
 babelFees tx1 tx2 = consumesLiability && consumesOutput
     where
         tx1Hash :: ByteString 256 context
-        tx1Hash = resize $ ByteString $ binaryExpansion $ hash @context tx1
+        tx1Hash = resize $ ByteString $ binaryExpansion $ hash tx1
 
         consumesLiability :: Bool context
         consumesLiability = isJust $ find (\Input{..} -> outputRefId txiOutputRef == tx1Hash && outputRefIndex txiOutputRef == zero) $ txInputs tx2

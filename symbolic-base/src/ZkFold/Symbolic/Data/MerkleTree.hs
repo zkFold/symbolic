@@ -127,7 +127,7 @@ hashAux b h g =
    in v3
   where
     merkleHasher :: [Vec (Layout x) c] -> Vec (Layout x) c
-    merkleHasher = mimcHashN mimcConstants (zero :: BaseField c)
+    merkleHasher = mimcHashN mimcConstants zero
 
 instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
