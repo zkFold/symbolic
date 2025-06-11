@@ -19,6 +19,7 @@ import           GHC.Generics                                       (U1 (..), ty
 import           Prelude                                            (String, return, type (~), (++))
 import           Test.Hspec                                         (Spec, describe)
 import           Test.QuickCheck                                    (Arbitrary (..), Gen, (===))
+import           Tests.Common                                       (it)
 import           Text.Show                                          (Show)
 
 import           ZkFold.Algebra.Class                               (FromConstant (..), ToConstant (..))
@@ -30,7 +31,6 @@ import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitCont
 import           ZkFold.Symbolic.Data.Class                         (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
 import           ZkFold.Symbolic.Interpreter                        (Interpreter (..))
-import Tests.Common (it)
 
 {-
   For all symbolic types we need to do the following:

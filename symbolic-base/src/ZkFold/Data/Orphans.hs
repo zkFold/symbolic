@@ -6,15 +6,15 @@
 
 module ZkFold.Data.Orphans where
 
-import           Control.DeepSeq  (NFData, NFData1)
-import           Data.Aeson       (FromJSON, ToJSON)
-import           Data.Binary      (Binary)
-import           Data.Functor     (Functor, (<$>))
-import           Data.Functor.Rep (Representable (..), WrappedRep (..))
-import           GHC.Generics     (Par1 (..), U1 (..), (:*:) (..), (:.:))
-import Test.QuickCheck (Arbitrary (..))
-import Control.Monad (return)
-import Control.Applicative ((<*>))
+import           Control.Applicative ((<*>))
+import           Control.DeepSeq     (NFData, NFData1)
+import           Control.Monad       (return)
+import           Data.Aeson          (FromJSON, ToJSON)
+import           Data.Binary         (Binary)
+import           Data.Functor        (Functor, (<$>))
+import           Data.Functor.Rep    (Representable (..), WrappedRep (..))
+import           GHC.Generics        (Par1 (..), U1 (..), (:*:) (..), (:.:))
+import           Test.QuickCheck     (Arbitrary (..))
 
 instance NFData (U1 a)
 instance NFData1 U1

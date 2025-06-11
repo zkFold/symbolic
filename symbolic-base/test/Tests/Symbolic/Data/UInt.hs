@@ -15,6 +15,7 @@ import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
 import           Test.Hspec                                 (Spec, describe)
 import           Test.QuickCheck                            (Property, withMaxSuccess, (.&.), (===))
+import           Tests.Common                               (it, toss, toss1)
 import           Tests.Symbolic.Data.Common                 (specConstantRoundtrip, specSymbolicFunction0,
                                                              specSymbolicFunction1, specSymbolicFunction2)
 
@@ -24,7 +25,7 @@ import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                         (Vector)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators           (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
@@ -33,8 +34,6 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
-import Tests.Common (it, toss, toss1)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec1)
 
 type AC a = ArithmeticCircuit a U1
 

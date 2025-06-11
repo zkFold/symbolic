@@ -6,8 +6,7 @@ import           Data.ByteString                        (ByteString)
 import           Data.Typeable                          (Proxy (..), Typeable, typeRep)
 import           Prelude                                hiding (Fractional (..), Num (..), length)
 import           Test.Hspec                             (Spec, describe, it)
-import           Test.QuickCheck                        (Arbitrary (..), Testable (property),
-                                                         withMaxSuccess)
+import           Test.QuickCheck                        (Arbitrary (..), Testable (property), withMaxSuccess)
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.EllipticCurve.Class     (ScalarFieldOf)

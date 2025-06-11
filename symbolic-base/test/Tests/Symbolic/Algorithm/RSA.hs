@@ -10,6 +10,7 @@ import qualified Prelude                                as P
 import           System.Random                          (RandomGen)
 import           Test.Hspec                             (Spec, describe)
 import           Test.QuickCheck                        (withMaxSuccess, (.&.), (===))
+import           Tests.Common                           (evalBool, it, toss)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
@@ -18,7 +19,6 @@ import           ZkFold.Symbolic.Algorithm.RSA
 import           ZkFold.Symbolic.Data.Combinators       (ilog2)
 import           ZkFold.Symbolic.Data.VarByteString     (fromNatural)
 import           ZkFold.Symbolic.Interpreter            (Interpreter)
-import Tests.Common (toss, evalBool, it)
 
 type I = Interpreter Fr
 

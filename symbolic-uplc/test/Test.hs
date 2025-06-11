@@ -18,6 +18,7 @@ import           Text.Show                                          (Show)
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381             (BLS12_381_Base)
 import           ZkFold.Algebra.Field                               (Zp)
+import           ZkFold.Data.Orphans                                ()
 import           ZkFold.Symbolic.Compiler                           (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (eval)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
@@ -27,7 +28,6 @@ import           ZkFold.Symbolic.Data.Input                         (SymbolicInp
 import           ZkFold.Symbolic.UPLC.Converter                     (contractV3)
 import           ZkFold.UPLC.BuiltinFunction
 import           ZkFold.UPLC.Term
-import ZkFold.Data.Orphans ()
 
 areSame ::
   ( SymbolicData f, Context f ~ c, Support f ~ s, Layout f ~ l

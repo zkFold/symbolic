@@ -36,8 +36,8 @@ import           ZkFold.Symbolic.Examples.MerkleTree                (exampleMerk
 import           ZkFold.Symbolic.Examples.MiMCHash                  (exampleMiMC)
 import           ZkFold.Symbolic.Examples.Pasta                     (examplePallas_Add, examplePallas_Scale)
 import           ZkFold.Symbolic.Examples.ReverseList               (exampleReverseList)
+import           ZkFold.Symbolic.Examples.SmartWallet               (expModContract)
 import           ZkFold.Symbolic.Examples.UInt
-import ZkFold.Symbolic.Examples.SmartWallet (expModContract)
 
 type A = Zp BLS12_381_Scalar
 type B = Zp FpModulus

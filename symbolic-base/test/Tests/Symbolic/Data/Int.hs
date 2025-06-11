@@ -11,6 +11,7 @@ import           Prelude                                    (Integer, show, type
 import qualified Prelude                                    as P
 import           Test.Hspec                                 (Spec, describe)
 import           Test.QuickCheck                            (Gen, chooseInteger, elements, (.&.), (.||.), (===))
+import           Tests.Common                               (it)
 import           Tests.Symbolic.Data.Common                 (specConstantRoundtrip, specSymbolicFunction0,
                                                              specSymbolicFunction1, specSymbolicFunction2)
 
@@ -20,7 +21,7 @@ import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                         (Vector)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Combinators           (Iso (..), KnownRegisterSize, NumberOfRegisters,
                                                              RegisterSize (..))
@@ -29,8 +30,6 @@ import           ZkFold.Symbolic.Data.Int
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                  (UInt (..))
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
-import Tests.Common (it)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (exec1)
 
 tossInteger :: Natural -> Gen Integer
 tossInteger (P.fromIntegral -> x) = chooseInteger (-x, x)

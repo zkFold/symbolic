@@ -19,6 +19,7 @@ import           System.FilePath.Posix
 import           System.IO                                  (IO)
 import           Test.Hspec                                 (Spec, describe, runIO, shouldBe)
 import           Test.QuickCheck                            (withMaxSuccess, (===))
+import           Tests.Common                               (it, toss)
 import           Text.Regex.TDFA
 
 import           ZkFold.Algebra.Class
@@ -33,7 +34,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.VarByteString         (fromNatural)
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
-import Tests.Common (toss, it)
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
