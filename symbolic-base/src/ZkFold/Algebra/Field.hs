@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DeriveAnyClass       #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -17,7 +18,7 @@ module ZkFold.Algebra.Field (
 
 import           Control.Applicative                  (liftA2, pure, (<*>), (<|>))
 import           Control.DeepSeq                      (NFData (..))
-import           Data.Aeson                           (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
+import           Data.Aeson                           (FromJSON (..), FromJSONKey, ToJSON (..), ToJSONKey)
 import           Data.Bool                            (Bool)
 import qualified Data.Bool                            as Bool
 import           Data.Function                        (const, id, ($), (.))
@@ -48,7 +49,8 @@ import           ZkFold.Prelude                       (iterate', log2ceiling)
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
-    deriving (Generic, NFData, ToJSONKey, FromJSONKey)
+    deriving Generic
+    deriving newtype (NFData, ToJSONKey, FromJSONKey)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
@@ -232,7 +234,7 @@ class (Ring poly, UnivariateFieldPolynomial f poly) => IrreduciblePoly poly f (e
     irreduciblePoly :: poly
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-    deriving (Haskell.Eq, Haskell.Show, Generic)
+    deriving (Haskell.Eq, Haskell.Show, Generic, ToJSON, FromJSON)
 
 instance Haskell.Ord f => Haskell.Ord (Ext2 f e) where
     Ext2 a b <= Ext2 c d = [b, a] Haskell.<= ([d, c] :: [f])
@@ -301,7 +303,7 @@ instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ex
     arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
-    deriving (Haskell.Eq, Haskell.Show, Generic)
+    deriving (Haskell.Eq, Haskell.Show, Generic, ToJSON, FromJSON)
 
 instance Haskell.Ord f => Haskell.Ord (Ext3 f e) where
     Ext3 a b c <= Ext3 d e f = [c, b, a] Haskell.<= ([f, e, d] :: [f])
