@@ -125,8 +125,8 @@ class ( Monad m, FromConstant a var
 -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
 -- For now, this is handled partially with the help of 'desugarRanges' function.
 rangeConstraint :: (AdditiveMonoid a, MonadCircuit var a w m) => var -> a -> m ()
-rangeConstraint v upperBound =
-  lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
+rangeConstraint v upperBound = 
+    lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value

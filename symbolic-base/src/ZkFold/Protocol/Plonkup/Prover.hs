@@ -105,7 +105,7 @@ plonkupProve PlonkupProverSetup {..}
         !fX = polyVecLinear (secret 7) (secret 8) * zhX + polyVecInLagrangeBasis omega f_zeta :: PlonkupPolyExtended n g1 pv
         !tX = t1X + zeta *. (t2X + zeta *. t3X) :: PlonkupPolyExtended n g1 pv
 
-        !s  = sortByList (V.toList (fromPolyVec f_zeta) ++ V.toList (fromPolyVec t_zeta)) (V.toList $ fromPolyVec t_zeta)
+        !s  = sortByList (V.toList $ fromPolyVec f_zeta V.++ fromPolyVec t_zeta) (V.toList $ fromPolyVec t_zeta)
         -- In the paper, vectors are indexed from 1, but in Haskell from 0, so h1 contains even indices and h2 odd
         !h1 = toPolyVec $ V.ifilter (\i _ -> even i) $ fromList s :: pv n
         !h2 = toPolyVec $ V.ifilter (\i _ -> odd i)  $ fromList s :: pv n

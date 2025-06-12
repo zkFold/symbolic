@@ -20,12 +20,12 @@ import           ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do
---    print $ AC.acSizeN expModCircuit
---    print $ AC.acSizeM expModCircuit
+    print $ AC.acSizeN expModCircuit
+    print $ AC.acSizeL expModCircuit
     let setupBytes = mkSetup $ expModSetup @ByteString one expModCircuit
         proofBytes = mkProof $ expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 17 3 7 11)
 --    print $ AC.acSizeN identityCircuit 
---    print $ AC.acSizeM identityCircuit 
+--    print $ AC.acSizeL identityCircuit 
 --    let setupBytes = mkSetup $ expModSetupMock @ByteString one
 --        proofBytes = mkProof $ expModProofMock @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
 --    print setupBytes
