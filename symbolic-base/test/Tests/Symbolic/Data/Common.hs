@@ -19,7 +19,7 @@ import           GHC.Generics                                       (U1 (..), ty
 import           Prelude                                            (String, return, type (~), (++))
 import           Test.Hspec                                         (Spec, describe)
 import           Test.QuickCheck                                    (Arbitrary (..), Gen, (===))
-import           Tests.Symbolic.ArithmeticCircuit                   (it)
+import           Tests.Common                                       (it)
 import           Text.Show                                          (Show)
 
 import           ZkFold.Algebra.Class                               (FromConstant (..), ToConstant (..))

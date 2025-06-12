@@ -350,6 +350,9 @@ runInvert is = do
     ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv (at i))
     return (js, ks)
 
+runInvertOrFail :: (MonadCircuit i a w m, Traversable f) => f i -> m (f i)
+runInvertOrFail is = for is $ \i -> newConstrained (\x j -> x i * x j - one) (finv (at i))
+
 isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is
 

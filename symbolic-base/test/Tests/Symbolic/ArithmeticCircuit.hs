@@ -1,19 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
-module Tests.Symbolic.ArithmeticCircuit (exec1, it, specArithmeticCircuit) where
+module Tests.Symbolic.ArithmeticCircuit (specArithmeticCircuit) where
 
 import           Data.Binary                                (Binary)
 import           Data.Bool                                  (bool)
 import           Data.Functor                               ((<$>))
 import           GHC.Generics                               (U1 (..))
-import           Prelude                                    (Show, String, id, return, ($))
+import           Prelude                                    (Show, id, ($))
 import qualified Prelude                                    as Haskell
-import qualified Test.Hspec
 import           Test.Hspec                                 (Spec, describe)
 import           Test.QuickCheck
+import           Tests.Common                               (it)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -25,6 +22,8 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Ord                   ((<=))
+
+-- TODO: Add `desugarRanges` specification
 
 correctHom0 ::
   forall a. (Arithmetic a, Binary a, Show a) =>
@@ -41,12 +40,6 @@ correctHom2 ::
   (forall b . Field b => b -> b -> b) -> a -> a -> Property
 correctHom2 f x y = let r = fromFieldElement $ f (fromConstant x) (fromConstant y)
                     in checkClosedCircuit r .&&. exec1 r === f x y
-
-instance Arbitrary (U1 a) where
-  arbitrary = return U1
-
-it :: Testable prop => String -> prop -> Spec
-it desc prop = Test.Hspec.it desc (property prop)
 
 specArithmeticCircuit' :: forall a . (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
 specArithmeticCircuit' = do

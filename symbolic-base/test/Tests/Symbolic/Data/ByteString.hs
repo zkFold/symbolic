@@ -14,8 +14,8 @@ import           GHC.Generics                               (U1)
 import           Prelude                                    (show, type (~), (<>))
 import qualified Prelude                                    as Haskell
 import           Test.Hspec                                 (Spec, describe)
-import           Test.QuickCheck                            (Gen, Property, chooseInteger, withMaxSuccess, (===))
-import           Tests.Symbolic.ArithmeticCircuit           (it)
+import           Test.QuickCheck                            (Property, chooseInteger, withMaxSuccess, (===))
+import           Tests.Common                               (it, toss)
 import           Tests.Symbolic.Data.Common                 (specConstantRoundtrip, specSymbolicFunction0,
                                                              specSymbolicFunction1, specSymbolicFunction2)
 
@@ -25,7 +25,6 @@ import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import qualified ZkFold.Data.Vector                         as V
 import           ZkFold.Data.Vector                         (Vector)
-import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
 import           ZkFold.Symbolic.Data.Bool
@@ -33,9 +32,6 @@ import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators           (Iso (..), RegisterSize (..))
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
-
-toss :: Natural -> Gen Natural
-toss x = chooseNatural (0, x)
 
 type AC a = ArithmeticCircuit a U1
 
@@ -83,7 +79,7 @@ testWords = it ("divides a bytestring of length " <> show (value @n) <> " into w
     return (Haskell.fmap eval (toWords @(Div n wordSize) @wordSize arithBS :: Vector (Div n wordSize) (ByteString wordSize (AC (Zp p)))) === toWords @(Div n wordSize) @wordSize zpBS)
     where
         n = Haskell.toInteger $ value @n
-        m = 2 Haskell.^ n -! 1
+        m = 2 Haskell.^ n
 
 testTruncate
     :: forall n m p
@@ -98,7 +94,7 @@ testTruncate = it ("truncates a bytestring of length " <> show (value @n) <> " t
     return (eval (resize arithBS :: ByteString m (AC (Zp p))) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
-        m = 2 Haskell.^ n -! 1
+        m = 2 Haskell.^ n
 
 testGrow
     :: forall n m p
@@ -115,7 +111,7 @@ testGrow = it ("extends a bytestring of length " <> show (value @n) <> " to leng
     return (eval (resize arithBS :: ByteString m (AC (Zp p))) === resize zpBS)
     where
         n = Haskell.toInteger $ value @n
-        m = 2 Haskell.^ n -! 1
+        m = 2 Haskell.^ n
 
 testJSON :: forall n p. KnownNat n => PrimeField (Zp p) => Spec
 testJSON = it "preserves the JSON invariant property" $ do
@@ -123,7 +119,7 @@ testJSON = it "preserves the JSON invariant property" $ do
     let zpBS = fromConstant x :: ByteString n (Interpreter (Zp p))
     return $ Haskell.Just zpBS === decode (encode zpBS)
     where
-        n = 2 Haskell.^ value @n -! 1
+        n = 2 Haskell.^ value @n
 
 -- | For some reason, Haskell can't infer obvious type relations such as n <= n + 1...
 --
@@ -137,7 +133,7 @@ specByteString'
     => Spec
 specByteString' = do
     let n = Haskell.fromIntegral $ value @n
-        m = 2 Haskell.^ n -! 1
+        m = 2 Haskell.^ n
     describe ("ByteString" ++ show n ++ " specification") $ do
         specConstantRoundtrip @(Zp p) @(ByteString n) ("ByteString" ++ show n) "Natural" (toss m)
         specSymbolicFunction1 @(Zp p) @(ByteString n) "identity" id

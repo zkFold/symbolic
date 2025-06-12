@@ -1,20 +1,17 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments      #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Tests.Algebra.Univariate.Simple where
 
 import           Data.Eq                                     (Eq, (/=))
 import           Data.Function                               (($))
-import           Data.Functor                                (fmap, (<$>))
+import           Data.Functor                                (fmap)
 import           Data.Semigroup                              ((<>))
-import           Data.String                                 (String)
 import           Data.Typeable
-import qualified Test.Hspec                                  as Hspec
-import           Test.Hspec                                  (Spec)
+import           Test.Hspec                                  (Spec, describe)
 import qualified Test.QuickCheck                             as QC
 import           Test.QuickCheck                             ((=/=), (===), (==>))
+import           Tests.Common                                (it, typeAt)
 import           Text.Show                                   (Show, show)
 
 import           ZkFold.Algebra.Class
@@ -24,20 +21,11 @@ import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Algebra.Polynomial.Univariate.Simple
 import           ZkFold.Data.Vector                          (Vector, toV, zipWith)
 
-typeAt :: forall a. Typeable a => TypeRep
-typeAt = typeRep (Proxy :: Proxy a)
-
-it :: QC.Testable prop => String -> prop -> Hspec.SpecWith (Hspec.Arg QC.Property)
-it desc prop = Hspec.it desc (QC.property prop)
-
-instance (QC.Arbitrary a, KnownNat n) => QC.Arbitrary (SimplePoly a n) where
-    arbitrary = fromVector <$> QC.arbitrary
-
 specSimplePoly' ::
     forall a n .
     (QC.Arbitrary a, Eq a, Field a, Show a, Typeable a, KnownNat n) => Spec
-specSimplePoly' = Hspec.describe (show (typeAt @(SimplePoly a n)) <> " spec") do
-    Hspec.describe "vec2poly" do
+specSimplePoly' = describe (show (typeAt @(SimplePoly a n)) <> " spec") do
+    describe "vec2poly" do
         it "respects addition" \(p :: SimplePoly a n) q ->
             vec2poly (p + q) === vec2poly p + (vec2poly q :: Poly a)
         it "respects zero" $
@@ -48,7 +36,7 @@ specSimplePoly' = Hspec.describe (show (typeAt @(SimplePoly a n)) <> " spec") do
             vec2poly (c *. p) === c *. (vec2poly p :: Poly a)
         it "completes evalPoly to evalPolyVec" \(p :: SimplePoly a n) x ->
             evalPolyVec p x === evalPoly (vec2poly p :: Poly a) x
-    Hspec.describe "poly2vec" do
+    describe "poly2vec" do
         it "respects addition" \(p :: Poly a) q ->
             poly2vec (p + q) === poly2vec p + (poly2vec q :: SimplePoly a n)
         it "respects zero" $

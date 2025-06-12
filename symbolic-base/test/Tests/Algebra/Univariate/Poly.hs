@@ -1,7 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
-
 module Tests.Algebra.Univariate.Poly (specUnivariatePoly) where
 
 import           Data.Data                              (typeOf)
@@ -37,4 +33,3 @@ specUnivariatePoly = do
             describe "No roots of unity" $ do
                 it "should correctly multiply polynomials" $ do
                     property $ propMultiplication @Fq12
-
