@@ -17,14 +17,16 @@ import qualified Data.Functor.Rep            as R
 import           Data.Kind                   (Type)
 import           Data.Traversable            (Traversable)
 import           Data.Type.Equality          (type (~))
-import           GHC.Generics                (U1 (..), (:*:) (..), (:.:) (..), V1)
+import           GHC.Generics                (V1, (:*:) (..), (:.:) (..))
 import qualified GHC.Generics                as G
 
 import           ZkFold.Algebra.Number       (KnownNat)
-import           ZkFold.Control.HApplicative (hliftA2, hunit)
+import           ZkFold.Control.HApplicative (hpair)
 import           ZkFold.Data.ByteString      (Binary1)
+import           ZkFold.Data.HFunctor        (hmap)
 import           ZkFold.Data.Orphans         ()
-import           ZkFold.Data.Package         (pack)
+import           ZkFold.Data.Package         (pack, unpack)
+import           ZkFold.Data.Product         (fstP, sndP)
 import           ZkFold.Data.Vector          (Vector)
 import           ZkFold.Symbolic.Class       (Symbolic (..))
 
@@ -39,14 +41,23 @@ class
     type Layout x = GLayout (G.Rep1 x)
 
     -- | Returns the circuit that makes up `x`.
-    contextD :: Symbolic c => x c -> c (Layout x)
-    default contextD
+    toContext :: Symbolic c => x c -> c (Layout x)
+    default toContext
       :: ( G.Generic1 x
          , GSymbolicData (G.Rep1 x)
          , Layout x ~ GLayout (G.Rep1 x)
          )
       => Symbolic c => x c -> c (Layout x)
-    contextD x = gcontextD (G.from1 x)
+    toContext x = gToContext (G.from1 x)
+
+    fromContext :: Symbolic c => c (Layout x) -> x c
+    default fromContext
+      :: ( G.Generic1 x
+         , GSymbolicData (G.Rep1 x)
+         , Layout x ~ GLayout (G.Rep1 x)
+         )
+      => Symbolic c => c (Layout x) -> x c
+    fromContext c = G.to1 (gFromContext c)
 
 instance
     ( SymbolicData x
@@ -61,30 +72,31 @@ class
 
     type GLayout x :: Type -> Type
 
-    gcontextD :: Symbolic c => x c -> c (GLayout x)
-
-instance GSymbolicData (G.K1 i x) where
-    type GLayout (G.K1 i x) = U1
-    gcontextD (G.K1 _) = hunit
+    gToContext :: Symbolic c => x c -> c (GLayout x)
+    gFromContext :: Symbolic c => c (GLayout x) -> x c
 
 instance GSymbolicData f => GSymbolicData (G.M1 i c f) where
     type GLayout (G.M1 i c f) = GLayout f
-    gcontextD (G.M1 a) = gcontextD a
+    gToContext (G.M1 a) = gToContext a
+    gFromContext c = G.M1 (gFromContext c)
 
 instance
     ( GSymbolicData u
     , GSymbolicData v
     ) => GSymbolicData (u :*: v) where
     type GLayout (u :*: v) = GLayout u :*: GLayout v
-    gcontextD (a :*: b) = hliftA2 (:*:) (gcontextD a) (gcontextD b)
+    gToContext (a :*: b) = hpair (gToContext a) (gToContext b)
+    gFromContext c = gFromContext (hmap fstP c) :*: gFromContext (hmap sndP c)
 
 instance (GSymbolicData x, LayoutFunctor f) => GSymbolicData (f :.: x) where
     type GLayout (f :.: x) = f :.: (GLayout x)
-    gcontextD (G.Comp1 a) = pack (fmap gcontextD a)
+    gToContext (G.Comp1 a) = pack (fmap gToContext a)
+    gFromContext c = Comp1 (fmap gFromContext (unpack c))
 
 instance SymbolicData x => GSymbolicData (G.Rec1 x) where
     type GLayout (G.Rec1 x) = Layout x
-    gcontextD (G.Rec1 x) = contextD x
+    gToContext (G.Rec1 x) = toContext x
+    gFromContext c = G.Rec1 (fromContext c)
 
 class SymbolicFunction f where
     type Context f :: (Type -> Type) -> Type
@@ -92,16 +104,16 @@ class SymbolicFunction f where
     type Image f   :: Type -> Type
 
     -- | Converts a function to a circuit.
-    contextF :: f -> Support f -> Context f (Image f)
+    arithmetize :: f -> Support f -> Context f (Image f)
 
 instance (SymbolicData x, Symbolic c) => SymbolicFunction (x c) where
     type Context (x c) = c
     type Support (x c) = V1 c
     type Image (x c) = Layout x
-    contextF x _ = contextD x
+    arithmetize x _ = toContext x
 
 instance (Symbolic c, SymbolicFunction y, Context y ~ c) => SymbolicFunction (x c -> y) where
     type Context (x c -> y) = c
     type Support (x c -> y) = (x c, Support y)
     type Image (x c -> y) = Image y
-    contextF f (x, y) = contextF (f x) y
+    arithmetize f (x, y) = arithmetize (f x) y
