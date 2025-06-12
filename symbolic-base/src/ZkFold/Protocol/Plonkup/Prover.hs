@@ -175,7 +175,6 @@ plonkupProve PlonkupProverSetup {..}
         !deltaX   = polyVecConstant delta
         !epsilonX = polyVecConstant epsilon
 
---    {--
         qmXR :: rustPv (PlonkupPolyExtendedLength n)
         !qmXR = h2r qmX 
         !qlXR = h2r qlX
@@ -243,29 +242,6 @@ plonkupProve PlonkupProverSetup {..}
             )
 
         !qX = r2h qXNumerator `polyVecDiv` zhX
---}
-
-    {--
-        !qXs1 = (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
-        !qXs2 = ((aX + polyVecLinear beta gamma) * (bX + polyVecLinear (beta * k1) gamma) * (cX + polyVecLinear (beta * k2) gamma) * z1X .* alpha)
-        !qXs3 = ((aX + (beta *. s1X) + gammaX) * (bX + (beta *. s2X) + gammaX) * (cX + (beta *. s3X) + gammaX) * (z1X .*. omegas') .* alpha)
-        !qXs4 = ((z1X - one) * polyVecLagrange (value @n) 1 omega .* alpha2)
-        !qXs5 = (qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3)
-        !qXs6 = (z2X * (one + deltaX) * (epsilonX + fX) * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4)
-        !qXs7 = ((z2X .*. omegas') * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X) * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4)
-        !qXs8 = ((z2X - one) * polyVecLagrange (value @n) 1 omega .* alpha5)
-
-        !qXNumerator = qXs1
-              + qXs2
-              - qXs3
-              + qXs4
-              + qXs5
-              + qXs6
-              - qXs7
-              + qXs8
-
-        !qX = qXNumerator `polyVecDiv` zhX
---}
 
         !qlowX  = toPolyVec $ V.take (fromIntegral (n+2)) $ fromPolyVec qX
         !qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
