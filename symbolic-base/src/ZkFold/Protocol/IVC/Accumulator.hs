@@ -21,7 +21,7 @@ import           ZkFold.Data.ByteString           (Binary1)
 import           ZkFold.Data.Vector               (Vector)
 import           ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Protocol.IVC.Commit       (HomomorphicCommit (..))
-import           ZkFold.Protocol.IVC.Oracle       (HashAlgorithm, RandomOracle)
+import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate    (Predicate)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 
@@ -46,8 +46,10 @@ instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Distr
 
 instance (Representable i, Representable c, KnownNat k, KnownNat (k-1)) => Representable (AccumulatorInstance k i c)
 
-instance (HashAlgorithm algo f, RandomOracle algo f f, RandomOracle algo (i f) f, RandomOracle algo (c f) f)
-    => RandomOracle algo (AccumulatorInstance k i c f) f
+instance (OracleSource a f, OracleSource a (c f), Foldable i) =>
+         OracleSource a (AccumulatorInstance k i c f) where
+    source AccumulatorInstance {..} =
+        source (FoldableSource _pi, _c, _r, _e, _mu)
 
 instance
     ( KnownNat (k-1)
@@ -85,12 +87,12 @@ emptyAccumulator :: forall d k a i p c f .
     , Binary (Rep p)
     ) => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
-    let accW  = tabulate (const zero)
-        aiC   = fmap hcommit accW
-        aiR   = tabulate (const zero)
-        aiMu  = zero
-        aiPI  = tabulate (const zero)
-        aiE   = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
+    let accW = tabulate (const zero)
+        aiC  = fmap hcommit accW
+        aiR  = tabulate (const zero)
+        aiMu = zero
+        aiPI = tabulate (const zero)
+        aiE  = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
         accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
