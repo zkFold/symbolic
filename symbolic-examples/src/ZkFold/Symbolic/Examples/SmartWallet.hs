@@ -83,7 +83,7 @@ import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), exp65537Mod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                 (newAssigned, newRanged)
+import           ZkFold.Symbolic.MonadCircuit                 (newAssigned, newRanged, rangeConstraint)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -238,6 +238,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
+--type ExpModCircuitGates = 2^17
 type ExpModCircuitGates = 2^18
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
@@ -355,7 +356,7 @@ expModProof x ps ac ExpModProofInput{..} = proof
 -------------------------------------------------------------------------------------------------------------------
 
 
-type ExpModCircuitGatesMock = 2^18
+type ExpModCircuitGatesMock = 2^17
 
 -- Identity but with meaningless constraints
 --
@@ -363,10 +364,11 @@ identityFun :: forall c. Symbolic c => c Par1 -> c Par1
 identityFun cp = fromCircuitF cp $ \(Par1 i) -> do
     o <- newAssigned $ \p -> p i + fromConstant @Natural 42 
     o' <- newAssigned $ \p -> p o * p i
-    let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 2
-    rs <- mapM (\r -> newRanged (fromConstant r) (fromConstant r)) [1..gates]
-    rs' <- mapM (\r -> newAssigned $ \p -> p r * p o') rs
-    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs'
+    let gates    = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+    let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+    rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale 42 (p o') + (p o * p o')) [1..gates]
+    mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
+    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
     out' <- newAssigned $ \p -> p a + p i
     out <- newAssigned $ \p -> p out' - p a
     pure $ Par1 out
@@ -399,7 +401,7 @@ expModProofMock x ps ExpModProofInput{..} = proof
         hash = expm `P.mod` (2 P.^ (256 :: Natural))
 
         input :: Fr
-        input = toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
+        input = toZp (-42) -- toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
 
         witnessInputs :: Par1 Fr
         witnessInputs = Par1 input

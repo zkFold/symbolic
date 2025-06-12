@@ -65,11 +65,11 @@ instance Storable EC.Fr where
   poke = pokeZpLE
 
 instance RustHaskell Fr EC.Fr where
-  r2h (RScalar (RData fptr)) = unsafePerformIO $
+  r2h (RScalar (RData fptr)) = {-# SCC r2h_fr #-} unsafePerformIO $
     withForeignPtr fptr $ \ptr -> do
     peek (castPtr $ ptr)
 
-  h2r p = unsafePerformIO $ do
+  h2r p = {-# SCC h2r_fr #-} unsafePerformIO $ do
     fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.Fr))
     withForeignPtr fptr $ \ptr -> do
       poke (castPtr ptr) p
@@ -131,11 +131,11 @@ instance Storable BLS12_381_G1_JacobianPoint where
   poke ptr pt = poke (castPtr ptr) (project @_ @BLS12_381_G1_Point pt)
 
 instance RustHaskell Rust_BLS12_381_G1_Point BLS12_381_G1_Point where
-  r2h (RPoint (RData fptr)) =  unsafePerformIO $
+  r2h (RPoint (RData fptr)) = {-# SCC r2h_bls_g1 #-} unsafePerformIO $
     withForeignPtr fptr $ \ptr -> do
     peek (castPtr $ ptr)
 
-  h2r p = unsafePerformIO $ do
+  h2r p = {-# SCC h2r_bls_g1 #-} unsafePerformIO $ do
     fptr <- callocForeignPtrBytes (sizeOf (undefined :: BLS12_381_G1_Point))
     withForeignPtr fptr $ \ptr -> do
       poke (castPtr ptr) p
