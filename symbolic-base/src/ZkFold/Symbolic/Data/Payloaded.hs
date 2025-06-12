@@ -20,11 +20,14 @@ import           ZkFold.Symbolic.Data.Input       (SymbolicInput (..))
 newtype Payloaded f c = Payloaded { runPayloaded :: f (WitnessField c) }
 
 instance (Symbolic c, PayloadFunctor f) => SymbolicData (Payloaded f c) where
+  type Witness (Payloaded f c) = f (WitnessField c)
   type Context (Payloaded f c) = c
   type Support (Payloaded f c) = Proxy c
   type Layout (Payloaded f c) = U1
   type Payload (Payloaded f c) = f
 
+  fromWitness = Payloaded
+  toWitness (Payloaded f) = f
   arithmetize _ _ = hunit
   payload = const . runPayloaded
   restore = Payloaded . snd . ($ Proxy)

@@ -74,7 +74,7 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
 newtype Witnesses a x = Witnesses { runWitnesses :: x }
   deriving (Functor, Applicative, Monad) via Identity
 
-instance Arithmetic a => Witness a a where
+instance Arithmetic a => WitnessBuilder a a where
   at = id
 
 instance Arithmetic a => MonadCircuit a a a (Witnesses a) where

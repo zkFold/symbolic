@@ -3,7 +3,7 @@ module ZkFold.Symbolic.Data.Switch where
 import           Data.Function                    (const, ($), (.))
 import           Data.Proxy                       (Proxy (..))
 
-import           ZkFold.Symbolic.Class            (Symbolic (..))
+import           ZkFold.Symbolic.Class            (Symbolic (..), embedW)
 import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
@@ -21,10 +21,14 @@ data Switch c x = Switch
   }
 
 instance (Symbolic c, SymbolicData x) => SymbolicData (Switch c x) where
+  type Witness (Switch c x) = (Layout x (WitnessField c), Payload x (WitnessField c))
   type Context (Switch c x) = c
   type Support (Switch c x) = Proxy c
   type Layout (Switch c x) = Layout x
   type Payload (Switch c x) = Payload x
+
+  fromWitness (sLayoutW, sPayload) = Switch { sLayout = embedW sLayoutW, sPayload }
+  toWitness (Switch { sLayout, sPayload }) = (witnessF sLayout, sPayload)
   arithmetize = const . sLayout
   payload = const . sPayload
   restore f = let (sLayout, sPayload) = f Proxy in Switch {..}

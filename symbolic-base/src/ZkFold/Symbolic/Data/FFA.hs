@@ -41,7 +41,7 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
 import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
-import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
+import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), WitnessBuilder (..))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -117,7 +117,7 @@ instance {-# OVERLAPPING #-}
 
 valueFFA ::
   forall p r c i a.
-  (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c) =>
+  (Symbolic c, KnownFFA p r c, WitnessBuilder i (WitnessField c), a ~ BaseField c) =>
   (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i ->
   IntegralOf (WitnessField c)
 valueFFA (Par1 ni :*: ui) =
