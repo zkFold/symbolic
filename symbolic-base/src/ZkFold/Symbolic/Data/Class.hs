@@ -10,6 +10,7 @@ module ZkFold.Symbolic.Data.Class (
         SymbolicOutput,
         LayoutData (..),
         GSymbolicData (..),
+        WitnessContext (..),
     ) where
 
 import           Control.Applicative         ((<*>))
@@ -41,6 +42,10 @@ import           ZkFold.Symbolic.Class       (Symbolic (..), embedW)
 type PayloadFunctor f = (Representable f, Binary (R.Rep f))
 
 type LayoutFunctor f = (Binary1 f, NFData1 f, PayloadFunctor f, Traversable f)
+
+newtype WitnessContext c f = WitnessContext
+    { fromWitnessContext :: f (WitnessField c)
+    }
 
 -- | A class for Symbolic data types.
 class
