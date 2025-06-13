@@ -15,5 +15,5 @@ cradle:
     - path: "bench/BenchLagrangeBasis.hs"
       component: "symbolic-base:bench:bench-lagrange-basis"
 
-    - path: "app/GroupElementsGenerator.hs"
+    - path: "group-elements-generator/Main.hs"
       component: "symbolic-base:exe:group-elements-generator"
