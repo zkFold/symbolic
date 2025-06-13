@@ -3,9 +3,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeOperators       #-}
 
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant ^." #-}
+{- HLINT ignore "Redundant ^." -}
 
 module ZkFold.Protocol.IVC.Internal where
 
@@ -43,7 +41,7 @@ import           ZkFold.Symbolic.Data.FieldElement                  (FieldElemen
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
     = IVCProof
-    { _proofX :: Vector k (c f)
+    { _proofX :: Vector k c
     -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
     , _proofW :: Vector k [f]
     -- ^ The witness of the recursion circuit satisfiability proof.
@@ -53,7 +51,7 @@ makeLenses ''IVCProof
 
 noIVCProof :: forall k c f .
     ( KnownNat k
-    , AdditiveMonoid (c f)
+    , AdditiveMonoid c
     , AdditiveMonoid f
     ) => IVCProof k c f
 noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
@@ -64,7 +62,7 @@ data IVCResult k i c f
     = IVCResult
     { _z     :: i f
     , _acc   :: Accumulator k (RecursiveI i) (c f) f
-    , _proof :: IVCProof k c f
+    , _proof :: IVCProof k (c f) f
     } deriving (GHC.Generics.Generic, Show, NFData)
 
 makeLenses ''IVCResult
@@ -143,7 +141,7 @@ ivcProve hash f res witness =
 
         (messages', commits') = unzip $ prover protocol input payload zero 0
 
-        ivcProof :: IVCProof k c a
+        ivcProof :: IVCProof k (c a) a
         ivcProof = IVCProof commits' messages'
     in
         IVCResult z' acc' ivcProof
