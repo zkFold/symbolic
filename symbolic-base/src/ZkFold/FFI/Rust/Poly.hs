@@ -12,7 +12,7 @@ import           GHC.IO                               (unsafePerformIO)
 import           Prelude                              hiding (drop, length, product, replicate, sum, take, (/), (^))
 
 import           ZkFold.Algebra.Number                (KnownNat, Natural, value)
-import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
+import           ZkFold.Algebra.Polynomial.Univariate (PolyVec (..), UnivariateRingPolyVec (..))
 import           ZkFold.FFI.Rust.Conversion
 import           ZkFold.FFI.Rust.Types
 
@@ -21,6 +21,14 @@ newtype RustPolyVec a (size :: Natural) = RustPV { rawPoly :: RustData }
 
 instance NFData (RustPolyVec a size) where
     rnf _ = ()
+
+peekArrayV :: Storable a => Int -> Ptr a -> IO (V.Vector a) 
+{-# INLINEABLE peekArrayV #-}
+peekArrayV size ptr = V.generateM size (peekElemOff ptr) 
+
+pokeArrayV :: Storable a => Ptr a -> V.Vector a -> IO ()
+{-# INLINEABLE pokeArrayV #-}
+pokeArrayV ptr = V.imapM_ (pokeElemOff ptr)
 
 instance
     ( Storable h
@@ -32,12 +40,12 @@ instance
     h2r pv = unsafePerformIO $ do
         fptr <- callocForeignPtrBytes ((sizeOf (undefined :: h)) * (fromIntegral $ value @size))
         withForeignPtr fptr $ \ptr -> do
-            pokeArray (castPtr ptr) (V.toList (fromPolyVec pv))
+            pokeArrayV (castPtr ptr) (fromPolyVec pv)
             return $ RustPV (RData fptr)
 
     r2h (RustPV rdata) = unsafePerformIO $
         withForeignPtr (rawData rdata) $ \ptr -> do
             let valueSize = (fromIntegral $ value @size)
 
-            l <- peekArray valueSize (castPtr $ ptr :: Ptr h)
-            return $ toPolyVec @h @(PolyVec h) $ V.fromList l
+            l <- peekArrayV valueSize (castPtr $ ptr :: Ptr h)
+            return $ toPolyVec @h @(PolyVec h) l

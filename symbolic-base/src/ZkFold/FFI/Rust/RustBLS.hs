@@ -312,6 +312,20 @@ instance Show Rust_BLS12_381_G2_Point where
 instance forall size . (KnownNat size) => Show (RustPolyVec Fr size) where
   show = show . r2h
 
+instance (KnownNat size) => Scale Fr (RustPolyVec Fr size) where
+  scale a pv = unsafePerformIO runScalarMul
+    where
+      runScalarMul :: IO (RustPolyVec Fr size)
+      runScalarMul = do
+        let valueSize = (fromInteger $ naturalToInteger $ value @size)
+        out <- callocForeignPtrBytes @CChar (scalarSize P.* valueSize)
+
+        runRustFunctionBinary rsScalarMul
+          (passScalar a)
+          (passPolyVec pv)
+          (out, valueSize P.* scalarSize)
+        return $ RustPV (RData out)
+
 instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
 
   (.*.) :: forall size . (KnownNat size) => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
@@ -327,24 +341,6 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
           (passPolyVec r)
           (out, valueSize P.* scalarSize)
         return $ RustPV (RData out)
-
-  (.*) = flip (*.)
-
-  (*.) :: forall size . (KnownNat size) => Fr -> RustPolyVec Fr size -> RustPolyVec Fr size
-  (*.) a pv = unsafePerformIO runScalarMul
-    where
-      runScalarMul :: IO (RustPolyVec Fr size)
-      runScalarMul = do
-        let valueSize = (fromInteger $ naturalToInteger $ value @size)
-        out <- callocForeignPtrBytes @CChar (scalarSize P.* valueSize)
-
-        runRustFunctionBinary rsScalarMul
-          (passScalar a)
-          (passPolyVec pv)
-          (out, valueSize P.* scalarSize)
-        return $ RustPV (RData out)
-
-  (.+) = flip (+.)
 
   (+.) :: forall size . (KnownNat size) => Fr -> RustPolyVec Fr size -> RustPolyVec Fr size
   (+.) a pv = unsafePerformIO runScalarAdd
@@ -365,24 +361,6 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
 
   fromPolyVec :: forall size . (KnownNat size) => RustPolyVec Fr size -> V.Vector Fr
   fromPolyVec a = h2r <$> (fromPolyVec $ r2h a)
-
-  poly2vec :: forall poly size . (KnownNat size, UnivariateRingPolynomial Fr poly) => poly -> RustPolyVec Fr size
-  poly2vec = toPolyVec . fromPoly
-
-  vec2poly :: forall poly size . (KnownNat size, UnivariateRingPolynomial Fr poly) => RustPolyVec Fr size -> poly
-  vec2poly = toPoly . fromPolyVec
-
-  -- p(x) = a0
-  polyVecConstant :: forall size . (KnownNat size) => Fr -> RustPolyVec Fr size
-  polyVecConstant a0 = h2r $ polyVecConstant (r2h a0)
-
-  -- p(x) = a1 * x + a0
-  polyVecLinear :: forall size . (KnownNat size) => Fr -> Fr -> RustPolyVec Fr size
-  polyVecLinear a1 a0 = h2r $ polyVecLinear (r2h a1) (r2h a0)
-
-  -- p(x) = a2 * x^2 + a1 * x + a0
-  polyVecQuadratic :: forall size . (KnownNat size) => Fr -> Fr -> Fr -> RustPolyVec Fr size
-  polyVecQuadratic a2 a1 a0 = h2r $ polyVecQuadratic (r2h a2) (r2h a1) (r2h a0)
 
   evalPolyVec :: forall size . (KnownNat size) => RustPolyVec Fr size -> Fr -> Fr
   evalPolyVec pv x = h2r $ evalPolyVec (r2h pv) (r2h x)
@@ -497,7 +475,7 @@ instance
           out <- callocForeignPtrBytes @CChar pointSize
 
           pointPtr <- callocBytes @BLS12_381_G1_Point (valueSize P.* pointSize)
-          pokeArray pointPtr (V.toList (r2h <$> points))
+          pokeArrayV pointPtr (r2h <$> points)
 
           withForeignPtr (rawData $ rawPoly scalars) $ \scalarPtr -> do
             withForeignPtr out $ \outPtr -> do

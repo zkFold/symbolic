@@ -22,6 +22,8 @@ import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext))
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
 
+import ZkFold.FFI.Rust.Conversion
+
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.
     Additionally, we don't want this library to depend on Cardano libraries.
@@ -69,11 +71,12 @@ instance
         let (gs, h1) = getSecretParams x
         return $ Plonkup omega k1 k2 ac h1 gs
 
-lagrangeBasisGroupElements :: forall n g1 pv .
+lagrangeBasisGroupElements :: forall n g1 rustG1 pv .
     ( KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+    , RustHaskell rustG1 g1
+    , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => ScalarFieldOf g1 -> V.Vector g1 -> [g1]
 lagrangeBasisGroupElements omega gs =
-    map (\i -> gs `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 .. ]
+    map (\i -> (h2r <$> gs) `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 .. ]

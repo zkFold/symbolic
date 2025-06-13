@@ -41,7 +41,7 @@ import qualified ZkFold.FFI.Rust.RustBLS as RustBLS
 import qualified ZkFold.FFI.Rust.Types as RustTypes
 import ZkFold.FFI.Rust.Conversion
 
-plonkupProve :: forall i o n g1 g2 ts pv rustFr rustPv .
+plonkupProve :: forall i o n g1 g2 ts pv rustG1 rustPv .
 --plonkupProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
     , Compressible g1
@@ -52,9 +52,10 @@ plonkupProve :: forall i o n g1 g2 ts pv rustFr rustPv .
     , KnownNat n
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-    , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
-    , UnivariateFieldPolyVec rustFr rustPv
-    , RustHaskell rustFr (ScalarFieldOf g1)
+    , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+    , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
+    , RustHaskell rustG1 g1
+    , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
     , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
     ) => PlonkupProverSetup i o n g1 g2 pv -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1) -> (PlonkupInput g1, PlonkupProof g1, PlonkupProverTestInfo n g1 pv)
 plonkupProve PlonkupProverSetup {..}
@@ -67,6 +68,8 @@ plonkupProve PlonkupProverSetup {..}
 
         !n = value @n
         !zhX = polyVecZero (value @n)
+
+        !gsR = h2r <$> gs
 
         (!w1, !w2, !w3) = witness relation wInput
         !wPub = pubInput relation wInput
@@ -86,9 +89,9 @@ plonkupProve PlonkupProverSetup {..}
         !cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n g1 pv
 
         !com = bilinear
-        !cmA = gs `com` aX
-        !cmB = gs `com` bX
-        !cmC = gs `com` cX
+        !cmA = gsR `com` aX
+        !cmB = gsR `com` bX
+        !cmC = gsR `com` cX
 
         -- Round 2
 
@@ -113,9 +116,9 @@ plonkupProve PlonkupProverSetup {..}
         !h1X = polyVecQuadratic (secret 9) (secret 10) (secret 11) * zhX + polyVecInLagrangeBasis omega h1 :: PlonkupPolyExtended n g1 pv
         !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
 
-        !cmF  = gs `com` fX
-        !cmH1 = gs `com` h1X
-        !cmH2 = gs `com` h2X
+        !cmF  = gsR `com` fX
+        !cmH1 = gsR `com` h1X
+        !cmH2 = gsR `com` h2X
 
         -- Round 3
 
@@ -157,8 +160,8 @@ plonkupProve PlonkupProverSetup {..}
             ./. ((epsilon * (one + delta)) +. h2 + delta *. rotL h1)
         !z2X = polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2 :: PlonkupPolyExtended n g1 pv
 
-        !cmZ1 = gs `com` z1X
-        !cmZ2 = gs `com` z2X
+        !cmZ1 = gsR `com` z1X
+        !cmZ2 = gsR `com` z2X
 
         -- Round 4
 
@@ -202,7 +205,7 @@ plonkupProve PlonkupProverSetup {..}
         !fXR = h2r fX
         !tXR = h2r tX
 
-        alphaR :: rustFr
+        alphaR :: ScalarFieldOf rustG1
         !alphaR = h2r alpha
         !alpha2R = h2r alpha2
         !alpha3R = h2r alpha3
@@ -247,9 +250,9 @@ plonkupProve PlonkupProverSetup {..}
         !qmidX  = toPolyVec $ V.take (fromIntegral (n+2)) $ V.drop (fromIntegral (n+2)) $ fromPolyVec qX
         !qhighX = toPolyVec $ V.drop (fromIntegral (2*(n+2))) $ fromPolyVec qX
 
-        !cmQlow  = gs `com` qlowX
-        !cmQmid  = gs `com` qmidX
-        !cmQhigh = gs `com` qhighX
+        !cmQlow  = gsR `com` qlowX
+        !cmQmid  = gsR `com` qmidX
+        !cmQhigh = gsR `com` qhighX
 
         -- Round 5
 
@@ -329,5 +332,5 @@ plonkupProve PlonkupProverSetup {..}
                 + (vn 3 *. (h1X - (h1_xi' *. one)))
             ) `polyVecDiv` polyVecLinear one (negate (xi * omega))
 
-        !proof1 = gs `com` proofX1
-        !proof2 = gs `com` proofX2
+        !proof1 = gsR `com` proofX1
+        !proof2 = gsR `com` proofX2

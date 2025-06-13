@@ -33,7 +33,7 @@ import ZkFold.FFI.Rust.Conversion
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall i o n g1 g2 gt ts pv rustFr rustPv .
+instance forall i o n g1 g2 gt ts pv rustG1 rustPv .
 --instance forall i o n g1 g2 gt ts pv .
         ( KnownNat n
         , Representable i
@@ -48,11 +48,12 @@ instance forall i o n g1 g2 gt ts pv rustFr rustPv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-        , UnivariateFieldPolyVec rustFr rustPv
-        , RustHaskell rustFr (ScalarFieldOf g1)
+        , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
+        , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
+        , RustHaskell rustG1 g1
         , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
         ) => NonInteractiveProof (Plonkup i o n g1 g2 ts pv) where
     type Transcript (Plonkup i o n g1 g2 ts pv)  = ts
@@ -79,7 +80,7 @@ instance forall i o n g1 g2 gt ts pv rustFr rustPv .
       Witness (Plonkup i o n g1 g2 ts pv) ->
       (Input (Plonkup i o n g1 g2 ts pv), Proof (Plonkup i o n g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv @rustFr @rustPv setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv @rustG1 @rustPv setup witness)
 --        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
