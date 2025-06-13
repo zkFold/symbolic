@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant ^." #-}
+{- HLINT ignore "Redundant ^." -}
 
 module ZkFold.Protocol.IVC.AccumulatorScheme where
 
@@ -30,35 +29,33 @@ import           ZkFold.Protocol.IVC.Predicate               (Predicate)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme
-  {
-    prover   ::
-               Accumulator k i c f                          -- accumulator
-            -> NARKInstanceProof k i c f                    -- instance-proof pair (pi, π)
-            -> (Accumulator k i c f, Vector (d-1) (c f))    -- updated accumulator and accumulation proof
 
-  , verifier :: i f                                         -- Public input
-            -> Vector k (c f)                               -- NARK proof π.x
-            -> AccumulatorInstance k i c f                  -- accumulator instance acc.x
-            -> Vector (d-1) (c f)                           -- accumulation proof E_j
-            -> AccumulatorInstance k i c f                  -- updated accumulator instance acc'.x
+  { prover :: Accumulator k i c f                      -- accumulator
+           -> NARKInstanceProof k i c f                -- instance-proof pair (pi, π)
+           -> (Accumulator k i c f, Vector (d - 1) c)  -- updated accumulator and accumulation proof
 
-  , decider  ::
-               Accumulator k i c f                          -- final accumulator
-            -> (Vector k (c f), c f)                        -- returns zeros if the final accumulator is valid
+  , verifier :: i f                          -- Public input
+             -> Vector k c                   -- NARK proof π.x
+             -> AccumulatorInstance k i c f  -- accumulator instance acc.x
+             -> Vector (d - 1) c             -- accumulation proof E_j
+             -> AccumulatorInstance k i c f  -- updated accumulator instance acc'.x
+
+  , decider :: Accumulator k i c f  -- final accumulator
+            -> (Vector k c, c)      -- returns zeros if the final accumulator is valid
   }
 
 accumulatorScheme :: forall d k a i p c f .
-    ( KnownNat (d-1)
-    , KnownNat (d+1)
+    ( KnownNat (d - 1)
+    , KnownNat (d + 1)
     , Representable i
     , Foldable i
     , OracleSource f f
-    , OracleSource f (c f)
-    , HomomorphicCommit [f] (c f)
+    , OracleSource f c
+    , HomomorphicCommit [f] c
     , Field f
     , Scale a f
     , Scale a (SimplePoly f (d + 1))
-    , Scale f (c f)
+    , Scale f c
     , Binary (Rep i)
     , Binary (Rep p)
     ) => Hasher -> Predicate a i p -> AccumulatorScheme d k i c f
@@ -91,16 +88,18 @@ accumulatorScheme hash phi =
             polyR :: Vector (k - 1) (SimplePoly f (d + 1))
             polyR = zipWith (P.flip polyVecLinear) (acc^.x^.r) r_i
 
-            -- The @l x d+1@ matrix of coefficients as a vector of @l@ univariate degree-@d@ polynomials
-            --
+            -- The @l x d+1@ matrix of coefficients
+            -- as a vector of @l@ univariate degree-@d@ polynomials
             e_uni :: [Vector (d + 1) f]
             e_uni = toVector <$> algebraicMap @d phi polyPi polyW polyR polyMu
 
-            -- e_all are coefficients of degree-j homogenous polynomials where j is from the range [0, d]
+            -- e_all are coefficients of degree-j homogenous polynomials
+            -- where j is from the range [0, d]
             e_all :: Vector (d+1) [f]
             e_all = tabulate (\i -> fmap (`index` i) e_uni)
 
-            -- e_j are coefficients of degree-j homogenous polynomials where j is from the range [1, d - 1]
+            -- e_j are coefficients of degree-j homogenous polynomials
+            -- where j is from the range [1, d - 1]
             e_j :: Vector (d-1) [f]
             e_j = withDict (plusMinusInverse1 @1 @d) $ tail $ init e_all
 
@@ -115,7 +114,7 @@ accumulatorScheme hash phi =
             mu'   = alpha + acc^.x^.mu
             pi''  = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.x^.pi)
             ri''  = scale alpha r_i  + acc^.x^.r
-            ci''  = scale alpha pi_x + acc^.x^.c
+            ci''  = fmap (scale alpha) pi_x + acc^.x^.c
             m_i'' = zipWith (+) (scale alpha pi_w) (acc^.w)
 
             -- Fig. 3, step 7
@@ -139,8 +138,8 @@ accumulatorScheme hash phi =
             -- Fig. 4, steps 3-4
             mu'  = alpha + acc^.mu
             pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (acc^.pi)
-            ri'' = zipWith (+) (scale alpha r_i)     (acc^.r)
-            ci'' = zipWith (+) (scale alpha pi_x)    (acc^.c)
+            ri'' = zipWith (+) (scale alpha r_i) (acc^.r)
+            ci'' = zipWith (+) (fmap (scale alpha) pi_x) (acc^.c)
 
             -- Fig 4, step 5
             e' = acc^.e + sum (mapWithIx (\i a -> scale (alpha ^ (i+1)) a) pf)

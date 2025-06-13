@@ -1,26 +1,23 @@
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant ^." #-}
-
 module ZkFold.Protocol.IVC.RecursiveFunction where
 
-import           Control.DeepSeq                                    (NFData, NFData1)
-import           Data.Binary                                        (Binary)
+import           Control.DeepSeq                                    (NFData, NFData1 (..))
+import           Data.Bifunctor                                     (bimap)
+import           Data.Binary                                        (Binary (..))
 import           Data.Distributive                                  (Distributive (..))
 import           Data.Functor.Rep                                   (Representable (..), collectRep, distributeRep)
 import           GHC.Generics                                       (Generic, Generic1, Par1 (..), type (:.:) (..))
 import           Prelude                                            (Foldable, Functor, Show, Traversable, fmap,
-                                                                     type (~), ($), (<$>))
+                                                                     type (~), ($), (<$>), error)
 
 import           ZkFold.Algebra.Class                               (Scale, zero)
 import           ZkFold.Algebra.Number                              (KnownNat, type (+), type (-))
 import           ZkFold.Control.HApplicative                        (HApplicative (hliftA2))
-import           ZkFold.Data.ByteString                             (Binary1)
 import           ZkFold.Data.HFunctor                               (hmap)
 import           ZkFold.Data.Orphans                                ()
 import           ZkFold.Data.Package                                (unpacked)
@@ -37,6 +34,9 @@ import           ZkFold.Symbolic.Data.Class                         (LayoutFunct
 import           ZkFold.Symbolic.Data.Conditional                   (bool)
 import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (FieldElement), fromFieldElement)
 import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
+import Data.Foldable (Foldable(..))
+import Data.Traversable (Traversable(..))
+import ZkFold.Data.ByteString (Binary1)
 
 -- | Public input to the recursive function
 data RecursiveI i f = RecursiveI (i f) f
@@ -55,17 +55,45 @@ instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support
 
 instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => SymbolicInput (RecursiveI i f)
 
+newtype AccInstance k i c f = AccInstance { accInstance :: AccumulatorInstance k (RecursiveI i) (c f) f }
+    deriving newtype NFData
+
+instance NFData1 (AccInstance k i c) where
+    liftRnf = error "TODO"
+
+instance Binary (AccInstance k i c f) where
+    put = error "TODO"
+    get = error "TODO"
+
+instance (Functor i, Functor c) => Functor (AccInstance k i c) where
+    fmap f AccInstance {..} = AccInstance $ bimap (fmap f) f accInstance
+
+instance Foldable (AccInstance k i c) where
+    foldMap = error "TODO"
+
+instance (Functor i, Functor c) => Traversable (AccInstance k i c) where
+    traverse = error "TODO"
+
+instance (Functor i, Functor c) => Distributive (AccInstance k i c) where
+    distribute = distributeRep
+    collect = collectRep
+
+instance (Functor i, Functor c) => Representable (AccInstance k i c) where
+    type Rep (AccInstance k i c) = ()
+    tabulate = error "TODO"
+    index = error "TODO"
+
 -- | Payload to the recursive function
-data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccumulatorInstance k (RecursiveI i) c f) f (Vector (d-1) (c f))
+data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccInstance k i c f) f (Vector (d-1) (c f))
     deriving (Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
 
-instance (KnownNat (d - 1), KnownNat k, KnownNat (k - 1), Binary1 i, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
+instance (KnownNat (d - 1), KnownNat k, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
 
 instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Distributive (RecursiveP d k i p c) where
     distribute = distributeRep
     collect = collectRep
 
-instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c)
+instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c) where
 
 type RecursiveFunction d k a i p c =
     StepFunction a (RecursiveI i) (RecursiveP d k i p c)
@@ -114,7 +142,7 @@ recursiveFunction hash func =
             u = hmap (\(RecursiveP u0 _ _ _ _) -> u0) p
             piX = unComp1 $ fmap FieldElement $ unpacked $
                 hmap (\(RecursiveP _ pi _ _ _) -> Comp1 pi) p
-            accX = fmap FieldElement $ unpacked $
+            accX = accInstance $ fmap FieldElement $ unpacked $
                 hmap (\(RecursiveP _ _ a _ _) -> a) p
             flag = Bool $ hmap (\(RecursiveP _ _ _ f _) -> Par1 f) p
             pf = unComp1 $ fmap FieldElement $ unpacked $

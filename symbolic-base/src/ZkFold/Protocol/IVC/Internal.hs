@@ -63,7 +63,7 @@ noIVCProof = IVCProof (tabulate $ const zero) (tabulate $ const zero)
 data IVCResult k i c f
     = IVCResult
     { _z     :: i f
-    , _acc   :: Accumulator k (RecursiveI i) c f
+    , _acc   :: Accumulator k (RecursiveI i) (c f) f
     , _proof :: IVCProof k c f
     } deriving (GHC.Generics.Generic, Show, NFData)
 
@@ -127,18 +127,18 @@ ivcProve hash f res witness =
         commits :: Vector k (c a)
         commits = res^.proof^.proofX
 
-        narkIP :: NARKInstanceProof k (RecursiveI i) c a
+        narkIP :: NARKInstanceProof k (RecursiveI i) (c a) a
         narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c a
+        accScheme :: AccumulatorScheme d k (RecursiveI i) (c a) a
         accScheme = accumulatorScheme @d hash pRec
 
         (acc', pf) = Acc.prover accScheme (res^.acc) narkIP
 
         payload :: RecursiveP d k i p c a
-        payload = RecursiveP witness commits (res^.acc^.x) one pf
+        payload = RecursiveP witness commits (AccInstance $ res^.acc^.x) one pf
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [a] [a] a
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (c a) [a] [a] a
         protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol @d pRec
 
         (messages', commits') = unzip $ prover protocol input payload zero 0
@@ -166,10 +166,10 @@ ivcVerify hash f res =
         commits :: Vector k (c f)
         commits = res^.proof^.proofX
 
-        accScheme :: AccumulatorScheme d k (RecursiveI i) c f
+        accScheme :: AccumulatorScheme d k (RecursiveI i) (c f) f
         accScheme = accumulatorScheme @d hash pRec
 
-        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c [f] [f] f
+        protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (c f) [f] [f] f
         protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol' @d pRec
     in
         ( verifier protocol input (singleton $ zip messages commits) zero
