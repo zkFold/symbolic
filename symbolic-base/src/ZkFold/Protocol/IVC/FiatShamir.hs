@@ -14,16 +14,19 @@ import           ZkFold.Protocol.IVC.CommitOpen
 import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type FiatShamir k i p c m o f = SpecialSoundProtocol 1 i p (Vector k (m, c f)) (Vector k (c f), o) f
+type FiatShamir k i p c m o f =
+    SpecialSoundProtocol 1 i p (Vector k (m, c)) (Vector k c, o) f
 
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
 transcript ::
-    forall k c f. (Ring f, OracleSource f f, OracleSource f (c f)) =>
-    Hasher -> f -> Vector k (c f) -> Vector (k-1) f
-transcript hash r0 cs = withDict (plusMinusInverse1 @1 @k) $ init $ init $ scanl (curry (oracle hash)) r0 cs
+    forall k c f. (Ring f, OracleSource f f, OracleSource f c) =>
+    Hasher -> f -> Vector k c -> Vector (k-1) f
+transcript hash r0 cs =
+    withDict (plusMinusInverse1 @1 @k) $
+    init $ init $ scanl (curry (oracle hash)) r0 cs
 
 fiatShamir :: forall k i p c m o f .
-    (KnownNat k, Ring f, OracleSource f f, OracleSource f (c f), Foldable i) =>
+    (KnownNat k, Ring f, OracleSource f f, OracleSource f c, Foldable i) =>
     Hasher -> CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir hash SpecialSoundProtocol {..} =
     let

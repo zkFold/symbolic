@@ -25,9 +25,6 @@ class OracleSource a b where
     default source :: (Generic b, GOracleSource a (Rep b)) => b -> [a]
     source = gsource . from
 
-instance OracleSource a a where
-    source = (:[])
-
 instance (OracleSource a b, OracleSource a c) =>
     OracleSource a (b, c)
 

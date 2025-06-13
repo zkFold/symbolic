@@ -13,12 +13,10 @@ import           ZkFold.Protocol.IVC.FiatShamir   (FiatShamir)
 import           ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 -- Page 18, section 3.4, The accumulation predicate
---
-data NARKProof k c f
-    = NARKProof
-        { narkCommits :: Vector k (c f) -- Commits [C_i] ∈  C^k
-        , narkWitness :: Vector k [f]   -- prover messages in the special-sound protocol [m_i]
-        }
+data NARKProof k c f = NARKProof
+    { narkCommits :: Vector k c    -- Commits [C_i] ∈ C^k
+    , narkWitness :: Vector k [f]  -- prover messages in the special-sound protocol [m_i]
+    }
     deriving (Show, Generic, NFData)
 
 narkProof :: Ring f
