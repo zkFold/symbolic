@@ -97,6 +97,8 @@ common options-exe
 
 library
     import: options
+    extra-libraries: rust_wrapper
+    extra-lib-dirs: /home/vladimir/Desktop/zkFold/zkfold-base/symbolic-examples/libs
     if arch(wasm32)
         ghc-options: 
             -no-hs-main 
