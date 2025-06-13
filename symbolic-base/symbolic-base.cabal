@@ -444,5 +444,4 @@ executable group-elements-generator
       aeson,
       bytestring,
       optparse-applicative,
-      symbolic-base,
-      
+      symbolic-base
