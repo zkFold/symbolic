@@ -13,11 +13,13 @@ module ZkFold.Symbolic.Data.Class (
     ) where
 
 import           Control.Applicative         ((<*>))
-import           Control.DeepSeq             (NFData1)
+import           Control.DeepSeq             (NFData (..), NFData1, liftRnf)
 import           Data.Bifunctor              (bimap)
 import           Data.Binary                 (Binary)
+import           Data.Eq                     (Eq)
+import           Data.Foldable               (Foldable)
 import           Data.Function               (flip, ($), (.))
-import           Data.Functor                ((<$>))
+import           Data.Functor                (Functor, (<$>))
 import           Data.Functor.Rep            (Representable)
 import qualified Data.Functor.Rep            as R
 import           Data.Kind                   (Type)
@@ -27,6 +29,7 @@ import           Data.Type.Equality          (type (~))
 import           Data.Typeable               (Proxy (..))
 import           GHC.Generics                (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics                as G
+import           Text.Show                   (Show)
 
 import           ZkFold.Algebra.Number       (KnownNat)
 import           ZkFold.Control.HApplicative (hliftA2, hpure)
@@ -207,6 +210,10 @@ instance
     ) => SymbolicData (t, u, v, w, x, y, z) where
 
 newtype LayoutData f x = LayoutData { layoutData :: f x }
+    deriving newtype (Show, Eq, Functor, Foldable, NFData1)
+
+instance (NFData1 f, NFData x) => NFData (LayoutData f x) where
+    rnf = liftRnf rnf
 
 instance
     (LayoutFunctor f, SymbolicData x) =>

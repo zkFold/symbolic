@@ -5,9 +5,10 @@
 
 module ZkFold.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                  (NFData (..))
+import           Control.DeepSeq                  (NFData (..), NFData1)
 import           Control.Lens                     ((^.))
 import           Control.Lens.Combinators         (makeLenses)
+import           Data.Bifunctor                   (Bifunctor (..))
 import           Data.Binary                      (Binary)
 import           Data.Functor.Rep                 (Representable (..))
 import           GHC.Generics                     (Generic)
@@ -20,23 +21,21 @@ import           ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import           ZkFold.Protocol.IVC.Commit       (HomomorphicCommit (..))
 import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate    (Predicate)
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import Data.Bifunctor (Bifunctor (..))
+import           ZkFold.Symbolic.Data.Class       (LayoutData (..), LayoutFunctor, SymbolicData (..))
 
 -- Page 19, Accumulator instance
-data AccumulatorInstance k i c f
-    = AccumulatorInstance
-        { _pi :: i f             -- pi ∈ M^{l_in} in the paper
-        , _c  :: Vector k c      -- [C_i] ∈ C^k in the paper
-        , _r  :: Vector (k-1) f  -- [r_i] ∈ F^{k-1} in the paper
-        , _e  :: c               -- E ∈ C in the paper
-        , _mu :: f               -- μ ∈ F in the paper
-        }
+data AccumulatorInstance k i c f = AccumulatorInstance
+    { _pi :: LayoutData i f    -- pi ∈ M^{l_in} in the paper
+    , _c  :: Vector k c        -- [C_i] ∈ C^k in the paper
+    , _r  :: Vector (k - 1) f  -- [r_i] ∈ F^{k-1} in the paper
+    , _e  :: c                 -- E ∈ C in the paper
+    , _mu :: f                 -- μ ∈ F in the paper
+    }
     deriving (Show, Eq, Generic, Functor)
 
 makeLenses ''AccumulatorInstance
 
-instance (NFData c, NFData f, NFData (i f)) => NFData (AccumulatorInstance k i c f)
+instance (NFData1 i, NFData c, NFData f) => NFData (AccumulatorInstance k i c f)
 
 instance Functor i => Bifunctor (AccumulatorInstance k i) where
     bimap f g AccumulatorInstance {..} = AccumulatorInstance
@@ -53,15 +52,13 @@ instance (OracleSource a f, OracleSource a c, Foldable i) =>
         source (FoldableSource _pi, _c, _r, _e, _mu)
 
 instance
-    ( KnownNat (k-1)
+    ( KnownNat (k - 1)
     , KnownNat k
+    , LayoutFunctor i
     , SymbolicData f
-    , SymbolicData (i f)
     , SymbolicData c
     , Context f ~ Context c
-    , Context f ~ Context (i f)
     , Support f ~ Support c
-    , Support f ~ Support (i f)
     ) => SymbolicData (AccumulatorInstance k i c f)
 
 -- Page 19, Accumulator
@@ -74,13 +71,13 @@ data Accumulator k i c f
         }
     deriving (Show, Generic)
 
-instance (NFData c, NFData f, NFData (i f)) => NFData (Accumulator k i c f)
+instance (NFData1 i, NFData c, NFData f) => NFData (Accumulator k i c f)
 
 makeLenses ''Accumulator
 
 emptyAccumulator :: forall d k a i p c f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+    ( KnownNat (d + 1)
+    , KnownNat (k - 1)
     , KnownNat k
     , Representable i
     , HomomorphicCommit [f] c
@@ -96,12 +93,12 @@ emptyAccumulator phi =
         aiMu = zero
         aiPI = tabulate (const zero)
         aiE  = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
-        accX = AccumulatorInstance { _pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
+        accX = AccumulatorInstance { _pi = LayoutData aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu }
     in Accumulator accX accW
 
 emptyAccumulatorInstance :: forall d k a i p c f .
-    ( KnownNat (d+1)
-    , KnownNat (k-1)
+    ( KnownNat (d + 1)
+    , KnownNat (k - 1)
     , KnownNat k
     , Representable i
     , HomomorphicCommit [f] c
