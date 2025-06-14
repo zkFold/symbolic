@@ -102,16 +102,16 @@ recursiveFunction hash func =
         -- A helper function to derive the accumulator scheme
         func' :: RecursiveFunction d k a i p c
         func' (restore0 -> (x, h :: FieldElement (Context c)))
-              (restore0 -> RecursivePayload u _ _ _ _
-                :: RecursivePayload d k i p c) =
+              (restore0 -> (RecursivePayload u _ _ _ _
+                :: RecursivePayload d k i p c)) =
             arithmetize0 (func x u, h)
 
         -- A helper predicate to derive the accumulator scheme
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = predicate func'
 
-     in \i (restore0 -> RecursivePayload u piX accX flag pf
-            :: RecursivePayload d k i p c) ->
+     in \i (restore0 -> (RecursivePayload u piX accX flag pf
+            :: RecursivePayload d k i p c)) ->
         let z = FieldElement <$> unpacked i
             (x, _ :: FieldElement (Context c)) = restore0 i
             accX' = verifier (accumulatorScheme hash pRec) z piX accX pf
