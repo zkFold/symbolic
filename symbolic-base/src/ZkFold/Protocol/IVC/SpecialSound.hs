@@ -5,6 +5,7 @@ module ZkFold.Protocol.IVC.SpecialSound where
 
 import           Data.Binary                                        (Binary)
 import           Data.Function                                      (($), (.))
+import           Data.Functor                                       ((<$>))
 import           Data.Functor.Rep                                   (Representable (..))
 import           Data.List                                          (map)
 import           GHC.Generics                                       ((:*:) (..))
@@ -18,7 +19,6 @@ import           ZkFold.Protocol.IVC.Predicate                      (Predicate (
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext), witnessGenerator)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
-import Data.Functor ((<$>))
 
 {-- | Section 3.1
 

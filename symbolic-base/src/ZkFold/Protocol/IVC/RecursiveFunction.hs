@@ -1,8 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies   #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Protocol.IVC.Commit
     ( Commit

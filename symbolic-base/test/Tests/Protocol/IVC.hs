@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE DerivingVia         #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
