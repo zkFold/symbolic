@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
@@ -23,6 +24,7 @@ import           ZkFold.Data.Vector                          (Vector (..), item,
 import           ZkFold.Protocol.IVC.Accumulator             (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator)
 import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
+import           ZkFold.Protocol.IVC.Commit                  (HomomorphicCommit, PedersonCommit (..))
 import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
 import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
 import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
@@ -39,13 +41,18 @@ type P = U1
 type K = 1
 -- type AC = ArithmeticCircuit F (I :*: P :*: I) U1
 type PHI = Predicate F I P
-type SPS = FiatShamir 1 I P C [F] [F] F
+type SPS = FiatShamir 1 I P (C F) [F] [F] F
 type D = 2
 type PARDEG = 5
 type PAR = Vector PARDEG F
 
+instance OracleSource F F where
+    source = (:[])
+
 instance OracleSource F (C F) where
     source _ = []
+
+deriving via PedersonCommit (C F) instance HomomorphicCommit [F] (C F)
 
 testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
     => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
@@ -62,12 +69,12 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir mimcHash . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir mimcHash . commitOpen id id . specialSoundProtocol @D id id
 
-initAccumulator :: PHI -> Accumulator K I C F
+initAccumulator :: PHI -> Accumulator K I (C F) F
 initAccumulator = emptyAccumulator @D
 
-initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+initAccumulatorInstance :: PHI -> AccumulatorInstance K I (C F) F
 initAccumulatorInstance phi =
     let Accumulator ai _ = initAccumulator phi
     in ai
@@ -75,7 +82,7 @@ initAccumulatorInstance phi =
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
+testInstanceProofPair :: PHI -> NARKInstanceProof K I (C F) F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
 -- testMessages :: PHI -> Vector K [F]
@@ -93,15 +100,15 @@ testPublicInput phi =
     let NARKInstanceProof pi _ = testInstanceProofPair phi
     in pi
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
+testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I (C F) F
 testAccumulatorScheme = accumulatorScheme mimcHash
 
-testAccumulator :: PHI -> Accumulator K I C F
+testAccumulator :: PHI -> Accumulator K I (C F) F
 testAccumulator phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
-testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+testAccumulatorInstance :: PHI -> AccumulatorInstance K I (C F) F
 testAccumulatorInstance phi =
     let Accumulator ai _ = testAccumulator phi
     in ai
@@ -116,7 +123,7 @@ testAccumulationProof phi =
 --     let s = testAccumulatorScheme phi
 --     in decider s $ testAccumulator phi
 
-testVerifierResult :: PHI -> AccumulatorInstance K I C F
+testVerifierResult :: PHI -> AccumulatorInstance K I (C F) F
 testVerifierResult phi =
     let s = testAccumulatorScheme phi
     in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
