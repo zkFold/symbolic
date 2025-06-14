@@ -1,24 +1,23 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
-{-# LANGUAGE DeriveAnyClass       #-}
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies   #-}
+
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Protocol.IVC.RecursiveFunction where
 
-import           Control.DeepSeq                                    (NFData, NFData1 (..))
-import           Data.Bifunctor                                     (bimap)
 import           Data.Binary                                        (Binary (..))
-import           Data.Distributive                                  (Distributive (..))
-import           Data.Functor.Rep                                   (Representable (..), collectRep, distributeRep)
-import           GHC.Generics                                       (Generic, Generic1, Par1 (..), type (:.:) (..))
-import           Prelude                                            (Foldable, Functor, Show, Traversable, fmap,
-                                                                     type (~), ($), (<$>), error)
+import           Data.Foldable                                      (toList)
+import           Data.Function                                      (const, (.))
+import           Data.Proxy                                         (Proxy (..))
+import           GHC.Generics                                       (Generic, Par1, (:*:))
+import           Prelude                                            (type (~), ($), (<$>))
 
-import           ZkFold.Algebra.Class                               (Scale, zero)
+import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number                              (KnownNat, type (+), type (-))
-import           ZkFold.Control.HApplicative                        (HApplicative (hliftA2))
-import           ZkFold.Data.HFunctor                               (hmap)
+import           ZkFold.Data.Empty                                  (Empty, empty)
 import           ZkFold.Data.Orphans                                ()
 import           ZkFold.Data.Package                                (unpacked)
 import           ZkFold.Data.Vector                                 (Vector)
@@ -30,132 +29,98 @@ import           ZkFold.Protocol.IVC.Predicate                      (Predicate (
 import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import           ZkFold.Symbolic.Data.Bool                          (Bool (..))
-import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor, SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor, SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Conditional                   (bool)
-import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (FieldElement), fromFieldElement)
-import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
-import Data.Foldable (Foldable(..))
-import Data.Traversable (Traversable(..))
-import ZkFold.Data.ByteString (Binary1)
+import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (..), fieldElements)
 
 -- | Public input to the recursive function
-data RecursiveI i f = RecursiveI (i f) f
-    deriving (Generic, Generic1, Show, Binary, NFData, NFData1, Functor, Foldable, Traversable)
+type RecursiveI i = i :*: Par1
 
-instance Representable i => Distributive (RecursiveI i) where
-    distribute = distributeRep
-    collect = collectRep
+newtype DataSource c = DataSource { dataSource :: c }
+    deriving newtype
+        ( AdditiveSemigroup, AdditiveMonoid, AdditiveGroup
+        , SymbolicData, Scale a, HomomorphicCommit h)
 
-instance Representable i => Representable (RecursiveI i)
+arithmetize0 :: SymbolicOutput x => x -> Context x (Layout x)
+arithmetize0 x = arithmetize x Proxy
 
-instance (OracleSource a f, Foldable i) => OracleSource a (RecursiveI i f) where
-    source (RecursiveI x h) = source (FoldableSource x, h)
-
-instance (SymbolicData f, SymbolicData (i f), Context f ~ Context (i f), Support f ~ Support (i f)) => SymbolicData (RecursiveI i f)
-
-instance (SymbolicInput f, SymbolicInput (i f), Context f ~ Context (i f)) => SymbolicInput (RecursiveI i f)
-
-newtype AccInstance k i c f = AccInstance { accInstance :: AccumulatorInstance k (RecursiveI i) (c f) f }
-    deriving newtype NFData
-
-instance NFData1 (AccInstance k i c) where
-    liftRnf = error "TODO"
-
-instance Binary (AccInstance k i c f) where
-    put = error "TODO"
-    get = error "TODO"
-
-instance (Functor i, Functor c) => Functor (AccInstance k i c) where
-    fmap f AccInstance {..} = AccInstance $ bimap (fmap f) f accInstance
-
-instance Foldable (AccInstance k i c) where
-    foldMap = error "TODO"
-
-instance (Functor i, Functor c) => Traversable (AccInstance k i c) where
-    traverse = error "TODO"
-
-instance (Functor i, Functor c) => Distributive (AccInstance k i c) where
-    distribute = distributeRep
-    collect = collectRep
-
-instance (Functor i, Functor c) => Representable (AccInstance k i c) where
-    type Rep (AccInstance k i c) = ()
-    tabulate = error "TODO"
-    index = error "TODO"
+instance
+    (SymbolicOutput c, Context c ~ ctx) =>
+    OracleSource (FieldElement ctx) (DataSource c) where
+    source = toList . fieldElements . arithmetize0
 
 -- | Payload to the recursive function
-data RecursiveP d k i p c f = RecursiveP (p f) (Vector k (c f)) (AccInstance k i c f) f (Vector (d-1) (c f))
-    deriving (Generic, Generic1, NFData, NFData1, Functor, Foldable, Traversable)
+data RecursivePayload d k i p c = RecursivePayload
+    { recPayload :: Context c p
+    , recProof   :: Vector k (DataSource c)
+    , recAccInst :: AccumulatorInstance k
+        (RecursiveI i) (DataSource c) (FieldElement (Context c))
+    , recFlag    :: Bool (Context c)
+    , recCommits :: Vector (d - 1) (DataSource c)
+    }
+    deriving Generic
 
-instance (KnownNat (d - 1), KnownNat k, Binary1 p, Binary1 c, Binary f) => Binary (RecursiveP d k i p c f)
+instance
+    ( SymbolicOutput c, LayoutFunctor p, LayoutFunctor i
+    , KnownNat k, KnownNat (k - 1), KnownNat (d - 1)
+    ) => SymbolicData (RecursivePayload d k i p c)
 
-instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Distributive (RecursiveP d k i p c) where
-    distribute = distributeRep
-    collect = collectRep
-
-instance (KnownNat (d-1), KnownNat (k-1), KnownNat k, Representable i, Representable p, Representable c) => Representable (RecursiveP d k i p c) where
+type RecursiveP d k i p c = Layout (RecursivePayload d k i p c)
 
 type RecursiveFunction d k a i p c =
     StepFunction a (RecursiveI i) (RecursiveP d k i p c)
 
-type FieldAssumptions c f =
-    ( OracleSource f f
-    , OracleSource f (c f)
-    , HomomorphicCommit [f] (c f)
-    , Scale f (c f)
-    )
-
--- | Transform a step function into a recursive function
-recursiveFunction :: forall d k a i p c .
+type FieldAssumptions a c =
     ( Arithmetic a
     , Binary a
-    , LayoutFunctor i
+    , SymbolicOutput c
+    , Context c ~ CircuitContext a
+    , Empty (Payload c)
+    , Scale (FieldElement (Context c)) c
+    , HomomorphicCommit [FieldElement (Context c)] c
+    )
+
+instance OracleSource (FieldElement ctx) (FieldElement ctx) where
+    source = (:[])
+
+-- | Transform a step function into a recursive function
+recursiveFunction :: forall c d k a i p .
+    ( LayoutFunctor i
     , LayoutFunctor p
-    , LayoutFunctor c
-    , KnownNat (d-1)
-    , KnownNat (d+1)
-    , KnownNat (k-1)
+    , KnownNat (d - 1)
+    , KnownNat (d + 1)
+    , KnownNat (k - 1)
     , KnownNat k
-    , FieldAssumptions c (FieldElement (CircuitContext a))
+    , FieldAssumptions a c
     ) => Hasher -> StepFunction a i p -> RecursiveFunction d k a i p c
 recursiveFunction hash func =
     let
+        restore0 ::
+            (SymbolicData x, Empty (Payload x)) => Context x (Layout x) -> x
+        restore0 l = restore $ const (l, empty)
+
         -- A helper function to derive the accumulator scheme
-        func' ::
-            CircuitContext a (RecursiveI i) ->
-            CircuitContext a (RecursiveP d k i p c) ->
-            CircuitContext a (RecursiveI i)
-        func' i p =
-            let x = hmap (\(RecursiveI x' _) -> x') i
-                h = hmap (\(RecursiveI _ h') -> Par1 h') i
-                u = hmap (\(RecursiveP u' _ _ _ _) -> u') p
-                y = func x u
-             in hliftA2 (\y' (Par1 h') -> RecursiveI y' h') y h
+        func' :: RecursiveFunction d k a i p c
+        func' (restore0 -> (x, h :: FieldElement (Context c)))
+              (restore0 -> RecursivePayload u _ _ _ _
+                :: RecursivePayload d k i p c) =
+            arithmetize0 (func x u, h)
 
         -- A helper predicate to derive the accumulator scheme
         pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
         pRec = predicate func'
 
-     in \i p ->
+     in \i (restore0 -> RecursivePayload u piX accX flag pf
+            :: RecursivePayload d k i p c) ->
         let z = FieldElement <$> unpacked i
-            x = hmap (\(RecursiveI x0 _) -> x0) i
-            u = hmap (\(RecursiveP u0 _ _ _ _) -> u0) p
-            piX = unComp1 $ fmap FieldElement $ unpacked $
-                hmap (\(RecursiveP _ pi _ _ _) -> Comp1 pi) p
-            accX = accInstance $ fmap FieldElement $ unpacked $
-                hmap (\(RecursiveP _ _ a _ _) -> a) p
-            flag = Bool $ hmap (\(RecursiveP _ _ _ f _) -> Par1 f) p
-            pf = unComp1 $ fmap FieldElement $ unpacked $
-                hmap (\(RecursiveP _ _ _ _ p') -> Comp1 p') p
-            accScheme = accumulatorScheme hash pRec
-            x' = func x u
-            accX' = verifier accScheme z piX accX pf
+            (x, _ :: FieldElement (Context c)) = restore0 i
+            accX' = verifier (accumulatorScheme hash pRec) z piX accX pf
             h = bool zero (oracle hash accX') flag
-         in hliftA2 (\x0 (Par1 h0) -> RecursiveI x0 h0) x' (fromFieldElement h)
+         in arithmetize0 (func x u, h :: FieldElement (CircuitContext a))
 
 --------------------------------------------------------------------------------
 
-recursivePredicate :: forall d k a i p c .
+recursivePredicate :: forall c d k a i p .
     ( KnownNat k
     , KnownNat (k - 1)
     , KnownNat (d - 1)
@@ -163,6 +128,8 @@ recursivePredicate :: forall d k a i p c .
     , Binary a
     , LayoutFunctor i
     , LayoutFunctor p
-    , LayoutFunctor c
-    ) => RecursiveFunction d k a i p c -> Predicate a (RecursiveI i) (RecursiveP d k i p c)
+    , SymbolicOutput c
+    ) =>
+    RecursiveFunction d k a i p c ->
+    Predicate a (RecursiveI i) (RecursiveP d k i p c)
 recursivePredicate = predicate
