@@ -5,7 +5,6 @@
 
 module ZkFold.Protocol.IVC.Accumulator where
 
-import           Control.DeepSeq                  (NFData (..), NFData1)
 import           Control.Lens                     ((^.))
 import           Control.Lens.Combinators         (makeLenses)
 import           Data.Bifunctor                   (Bifunctor (..))
@@ -31,18 +30,16 @@ data AccumulatorInstance k i c f = AccumulatorInstance
     , _e  :: c                 -- E ∈ C in the paper
     , _mu :: f                 -- μ ∈ F in the paper
     }
-    deriving (Show, Eq, Generic, Functor)
+    deriving (Generic, Functor, Eq)
 
 makeLenses ''AccumulatorInstance
-
-instance (NFData1 i, NFData c, NFData f) => NFData (AccumulatorInstance k i c f)
 
 instance Functor i => Bifunctor (AccumulatorInstance k i) where
     bimap f g AccumulatorInstance {..} = AccumulatorInstance
         { _pi = fmap g _pi
-        , _c  = fmap f _c
-        , _r  = fmap g _r
-        , _e  = f _e
+        , _c = fmap f _c
+        , _r = fmap g _r
+        , _e = f _e
         , _mu = g _mu
         }
 
@@ -55,8 +52,8 @@ instance
     ( KnownNat (k - 1)
     , KnownNat k
     , LayoutFunctor i
-    , SymbolicData f
     , SymbolicData c
+    , SymbolicData f
     , Context f ~ Context c
     , Support f ~ Support c
     ) => SymbolicData (AccumulatorInstance k i c f)
@@ -64,14 +61,11 @@ instance
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
 -- @acc.w@ (accumulator witness) from the paper corresponds to _w
-data Accumulator k i c f
-    = Accumulator
-        { _x :: AccumulatorInstance k i c f
-        , _w :: Vector k [f]
-        }
-    deriving (Show, Generic)
-
-instance (NFData1 i, NFData c, NFData f) => NFData (Accumulator k i c f)
+data Accumulator k i c f = Accumulator
+    { _x :: AccumulatorInstance k i c f
+    , _w :: Vector k [f]
+    }
+    deriving (Generic, Functor)
 
 makeLenses ''Accumulator
 

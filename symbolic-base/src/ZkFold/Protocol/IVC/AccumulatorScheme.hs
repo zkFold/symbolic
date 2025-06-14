@@ -45,7 +45,7 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
             -> (Vector k c, c)      -- returns zeros if the final accumulator is valid
   }
 
-accumulatorScheme :: forall d k a i p c f .
+accumulatorScheme :: forall d c k a i p f .
     ( KnownNat (d - 1)
     , KnownNat (d + 1)
     , Representable i

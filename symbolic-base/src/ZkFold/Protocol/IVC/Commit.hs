@@ -1,8 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
 
-module ZkFold.Protocol.IVC.Commit (Commit, oracleCommitment, HomomorphicCommit (..), PedersonSetup (..)) where
+module ZkFold.Protocol.IVC.Commit
+    ( Commit
+    , oracleCommitment
+    , HomomorphicCommit (..)
+    , PedersonSetup (..)
+    , PedersonCommit (..)
+    ) where
 
 import           Data.Functor.Constant              (Constant (..))
 import           Data.Zip                           (Zip (..))
@@ -55,11 +62,18 @@ instance
 instance (PedersonSetup s g, Functor s) => PedersonSetup s (Constant g a) where
     groupElements = Constant <$> groupElements @s
 
+newtype PedersonCommit g = PedersonCommit { pedersonCommit :: g }
+    deriving newtype (Scale f, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup)
+
+instance
+    (Functor s, PedersonSetup s g) => PedersonSetup s (PedersonCommit g) where
+    groupElements = PedersonCommit <$> groupElements
+
 instance
   ( PedersonSetup s g
   , Zip s
   , Foldable s
   , Scale f g
   , AdditiveGroup g
-  ) => HomomorphicCommit (s f) g where
+  ) => HomomorphicCommit (s f) (PedersonCommit g) where
     hcommit v = sum $ zipWith scale v groupElements

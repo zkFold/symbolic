@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DerivingVia         #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -22,6 +23,7 @@ import           ZkFold.Data.Vector                          (Vector (..), item,
 import           ZkFold.Protocol.IVC.Accumulator             (Accumulator (..), AccumulatorInstance (..),
                                                               emptyAccumulator)
 import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
+import           ZkFold.Protocol.IVC.Commit                  (HomomorphicCommit, PedersonCommit (..))
 import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
 import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
 import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
@@ -49,6 +51,8 @@ instance OracleSource F F where
 instance OracleSource F (C F) where
     source _ = []
 
+deriving via PedersonCommit (C F) instance HomomorphicCommit [F] (C F)
+
 testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
     => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
 testFunction p i _ =
@@ -64,7 +68,7 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir mimcHash . commitOpen . specialSoundProtocol @D
+testSPS = fiatShamir mimcHash . commitOpen id id . specialSoundProtocol @D id id
 
 initAccumulator :: PHI -> Accumulator K I (C F) F
 initAccumulator = emptyAccumulator @D
