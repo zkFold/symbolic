@@ -1,13 +1,8 @@
 module ZkFold.Symbolic.Data.Switch where
 
-import           Data.Function                    (const, ($), (.))
-import           Data.Proxy                       (Proxy (..))
 
-import           ZkFold.Symbolic.Class            (Symbolic (..), embedW)
-import           ZkFold.Symbolic.Data.Bool        (Bool)
 import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (..))
+import GHC.Generics (Generic1)
 
 -- | A 'Switch' of a 'SymbolicData' @x@ to context @c@
 -- is a separate Symbolic datatype which has the same layout and payload as @x@,
@@ -15,25 +10,7 @@ import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (..))
 --
 -- In other words, it is a useful default 'Replica' of @x@ in context @c@
 -- when nothing else works.
-data Switch c x = Switch
-  { sLayout  :: c (Layout x)
-  , sPayload :: Payload x (WitnessField c)
-  }
+data Switch x c = Switch { getSwitch :: x c }
+  deriving Generic1
 
-instance (Symbolic c, SymbolicData x) => SymbolicData (Switch c x) where
-  type Witness (Switch c x) = (Layout x (WitnessField c), Payload x (WitnessField c))
-  type Context (Switch c x) = c
-  type Support (Switch c x) = Proxy c
-  type Layout (Switch c x) = Layout x
-  type Payload (Switch c x) = Payload x
-
-  fromWitness (sLayoutW, sPayload) = Switch { sLayout = embedW sLayoutW, sPayload }
-  toWitness (Switch { sLayout, sPayload }) = (witnessF sLayout, sPayload)
-  arithmetize = const . sLayout
-  payload = const . sPayload
-  restore f = let (sLayout, sPayload) = f Proxy in Switch {..}
-
-instance (Symbolic c, SymbolicData x) => Conditional (Bool c) (Switch c x) where
-  bool (Switch fl fp) (Switch tl tp) b =
-    Switch (bool fl tl b) $ runPayloaded $
-      bool (Payloaded fp :: Payloaded (Payload x) c) (Payloaded tp) b
+instance SymbolicData x => SymbolicData (Switch x)

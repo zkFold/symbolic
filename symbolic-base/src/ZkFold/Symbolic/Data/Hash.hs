@@ -4,22 +4,16 @@
 module ZkFold.Symbolic.Data.Hash where
 
 import           Control.Monad                    (return)
-import           Data.Function                    (const, ($))
-import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (traverse)
-import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     (Generic, Par1 (..), (:*:) (..))
+import           Data.Function                    (($))
+import           GHC.Generics                     (Par1 (..), Generic1, Generic)
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Control.HApplicative      (hunit)
-import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional (Conditional)
-import           ZkFold.Symbolic.Data.Eq          (Eq (..), SymbolicEq, (==))
+import           ZkFold.Symbolic.Class            (Symbolic (witnessF), fromCircuit2F, embedW)
+import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), Wit (..))
+import           ZkFold.Symbolic.Data.Eq          (Eq (..), (==))
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
-import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
+import           ZkFold.Symbolic.MonadCircuit     (constraint)
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;
@@ -32,35 +26,29 @@ class Hashable h a where
   hasher :: a -> h
 
 -- | An invertible hash 'h' of a symbolic datatype 'a'.
-data Hash h a = Hash
-  { hHash  :: h
-  , hValue :: Payloaded (Layout a :*: Payload a) (Context h)
+data Hash h a c = Hash
+  { hHash  :: h c
+  , hValue :: Payloaded (Layout a) c
   }
-  deriving (Generic)
+  deriving (Generic, Generic1)
 
-instance (SymbolicOutput h, SymbolicOutput a) => SymbolicData (Hash h a)
+instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
-instance (c ~ (Context h), Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
-instance (c ~ (Context h), Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
 
 -- | Restorably hash the data.
-hash :: (Hashable h a, SymbolicOutput a, Context h ~ Context a) => a -> Hash h a
-hash a = Hash (hasher a) $
-  Payloaded (witnessF (arithmetize a Proxy) :*: payload a Proxy)
+hash :: (Symbolic c, Hashable (h c) (a c), SymbolicData a) => a c -> Hash h a c
+hash a = Hash (hasher a) $ Payloaded $ Wit $ witnessF (toContext a)
 
 -- | Restore the data which were hashed.
 preimage ::
   forall h a c .
-  ( Hashable h a, SymbolicOutput a, Context h ~ c, Context a ~ c
-  , SymbolicEq h) => Hash h a -> a
+  ( Symbolic c, Hashable (h c) (a c), SymbolicData a, SymbolicData h) => Hash h a c -> a c
 preimage Hash {..} =
-  let Payloaded (l :*: p) = hValue
-      raw :: a = restore $ const
-        ( fromCircuitF hunit $ const (traverse unconstrained l)
-        , p)
-      Bool b = hasher raw == hHash
-   in restore $ \s ->
-      ( fromCircuit2F (arithmetize raw s) b $ \r (Par1 i) -> do
+  let Payloaded (Wit w) = hValue
+      raw = fromContext $ embedW w :: a c
+      b = hasher raw == hHash
+   in fromContext $
+      ( fromCircuit2F (toContext raw) (toContext b) $ \r (Par1 i) -> do
           constraint (($ i) - one)
           return r
-      , payload raw s)
+      )

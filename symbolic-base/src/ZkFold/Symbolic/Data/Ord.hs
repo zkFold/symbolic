@@ -1,4 +1,3 @@
-{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -130,31 +129,29 @@ instance KnownNat n => Ord (Zp n) where
   min = Prelude.min
   max = Prelude.max
 
-newtype Ordering c = Ordering (c Par1)
-  deriving (Generic)
+newtype Ordering c = Ordering (Sym Par1 c)
+  deriving (Generic1)
 deriving instance HNFData c => NFData (Ordering c)
 deriving instance HShow c => Show (Ordering c)
-deriving newtype instance Symbolic c => Conditional (Bool c) (Ordering c)
-deriving newtype instance Symbolic c => Eq (Ordering c)
-instance Symbolic c => SymbolicData (Ordering c)
+instance SymbolicData Ordering
 instance Symbolic c => Semigroup (Ordering c) where
-  Ordering o1 <> Ordering o2 = Ordering $ fromCircuit2F o1 o2 $
+  o1 <> o2 = fromContext $ fromCircuit2F (toContext o1) (toContext o2) $
     \(Par1 v1) (Par1 v2) -> Par1 <$>
       newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 * x1 * (x1 - x2) + x2)
 instance Symbolic c => Monoid (Ordering c) where
   mempty = eq
 instance Symbolic c => IsOrdering (Ordering c) where
-  lt = Ordering $ embed (Par1 (negate one))
-  eq = Ordering $ embed (Par1 zero)
-  gt = Ordering $ embed (Par1 one)
+  lt = fromContext $ embed (Par1 (negate one))
+  eq = fromContext $ embed (Par1 zero)
+  gt = fromContext $ embed (Par1 one)
 
-instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
-  type OrderingOf (c f) = Ordering c
+instance {-# OVERLAPPABLE #-} (SymbolicData x, Symbolic c, LayoutFunctor (Layout x)) => Ord (x c) where
+  type OrderingOf (x c) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare = bitwiseCompare `on` getBitsBE
+  compare = bitwiseCompare `on` (getBitsBE . toContext)
 
 bitwiseCompare :: forall c . Symbolic c => c [] -> c [] -> Ordering c
-bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
+bitwiseCompare x y = fold ((zipWith (compare `on` fromContext @Bool) `on` unpacked) x y)
 
 getBitsBE :: forall c f . (Symbolic c, LayoutFunctor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
@@ -167,11 +164,9 @@ getBitsBE x = symbolicF x
 instance Symbolic c => Ord (Bool c) where
   type OrderingOf (Bool c) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare (Bool b1) (Bool b2) = Ordering $ fromCircuit2F b1 b2 $
+  compare b1 b2 = fromContext $ fromCircuit2F (toContext b1) (toContext b2) $
     \(Par1 v1) (Par1 v2) -> fmap Par1 $
       newAssigned $ \x -> let x1 = x v1; x2 = x v2 in x1 - x2
-
-deriving newtype instance Symbolic c => Ord (Ordering c)
 
 class
   ( GEq u

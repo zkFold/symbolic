@@ -20,34 +20,30 @@ import           ZkFold.Data.HFunctor             (hmap)
 import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData, HShow)
 import           ZkFold.Data.Vector               (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
+import           ZkFold.Symbolic.Data.Bool        (BoolType (true))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
-import           ZkFold.Symbolic.Data.Conditional (Conditional)
-import           ZkFold.Symbolic.Data.Eq          (Eq)
+import           ZkFold.Symbolic.Data.Eq          ()
 import           ZkFold.Symbolic.Data.Input
-import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
-newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
+newtype FieldElement c = FieldElement { fromFieldElement :: Sym Par1 c }
     deriving Generic
 
 deriving stock instance HShow c => Haskell.Show (FieldElement c)
 deriving stock instance HEq c => Haskell.Eq (FieldElement c)
-deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldElement c)
+deriving stock instance (HEq c, Haskell.Ord (Sym Par1 c)) => Haskell.Ord (FieldElement c)
 deriving newtype instance HNFData c => NFData (FieldElement c)
-deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
-deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
-deriving newtype instance Symbolic c => Eq (FieldElement c)
-deriving newtype instance Symbolic c => Ord (FieldElement c)
+
+deriving instance SymbolicData FieldElement
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
-  fromConstant = FieldElement . embed . Par1 . fromConstant
+  fromConstant = fromContext . embed . Par1 . fromConstant
 
 instance ToConstant (FieldElement (Interpreter a)) where
   type Const (FieldElement (Interpreter a)) = a
-  toConstant (FieldElement (Interpreter (Par1 x))) = x
+  toConstant (FieldElement (Sym (Interpreter (Par1 x)))) = x
 
 instance Symbolic c => Exponent (FieldElement c) Natural where
   (^) = natPow
@@ -56,7 +52,7 @@ instance Symbolic c => Exponent (FieldElement c) Integer where
   (^) = intPowF
 
 instance (Symbolic c, Scale k (BaseField c)) => Scale k (FieldElement c) where
-  scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
+  scale k f = fromContext $ fromCircuitF (toContext f) $ \(Par1 i) ->
     Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
 
 instance {-# OVERLAPPING #-} FromConstant (FieldElement c) (FieldElement c)
@@ -64,24 +60,24 @@ instance {-# OVERLAPPING #-} FromConstant (FieldElement c) (FieldElement c)
 instance {-# OVERLAPPING #-} Symbolic c => Scale (FieldElement c) (FieldElement c)
 
 instance Symbolic c => MultiplicativeSemigroup (FieldElement c) where
-  FieldElement x * FieldElement y = FieldElement $ fromCircuit2F x y
+  x * y = fromContext $ fromCircuit2F (toContext x) (toContext y)
     $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i * w j)
 
 instance Symbolic c => MultiplicativeMonoid (FieldElement c) where
-  one = FieldElement $ embed (Par1 one)
+  one = fromContext $ embed $ Par1 one
 
 instance Symbolic c => AdditiveSemigroup (FieldElement c) where
-  FieldElement x + FieldElement y = FieldElement $ fromCircuit2F x y
+  x + y = fromContext $ fromCircuit2F (toContext x) (toContext y)
     $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i + w j)
 
 instance Symbolic c => AdditiveMonoid (FieldElement c) where
-  zero = FieldElement $ embed (Par1 zero)
+  zero = fromContext $ embed $ Par1 zero
 
 instance Symbolic c => AdditiveGroup (FieldElement c) where
-  negate (FieldElement x) = FieldElement $ fromCircuitF x $ \(Par1 i) ->
+  negate x = fromContext $ fromCircuitF (toContext x) $ \(Par1 i) ->
     Par1 <$> newAssigned (\w -> negate (w i))
 
-  FieldElement x - FieldElement y = FieldElement $ fromCircuit2F x y
+  x - y = fromContext $ fromCircuit2F (toContext x) (toContext y)
     $ \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i - w j)
 
 instance Symbolic c => Semiring (FieldElement c)
@@ -89,8 +85,8 @@ instance Symbolic c => Semiring (FieldElement c)
 instance Symbolic c => Ring (FieldElement c)
 
 instance Symbolic c => Field (FieldElement c) where
-  finv (FieldElement x) =
-    FieldElement $ symbolicF x (\(Par1 v) -> Par1 (finv v))
+  finv x =
+    fromContext $ symbolicF (toContext x) (\(Par1 v) -> Par1 (finv v))
       $ fmap snd . runInvert
 
 instance
@@ -100,16 +96,16 @@ instance
 
 instance Symbolic c => BinaryExpansion (FieldElement c) where
   type Bits (FieldElement c) = c (Vector (NumberOfBits (BaseField c)))
-  binaryExpansion (FieldElement c) = hmap unsafeToVector $ symbolicF c
+  binaryExpansion x = hmap unsafeToVector $ symbolicF (toContext x)
     (padBits n . fmap fromConstant . binaryExpansion . toConstant . unPar1)
     (expansion n . unPar1)
     where n = numberOfBits @(BaseField c)
   fromBinary bits =
-    FieldElement $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
+    fromContext $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
 
-instance (Symbolic c) => SymbolicInput (FieldElement c) where
+instance (Symbolic c) => SymbolicInput FieldElement where
   isValid _ = true
 
 instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where
-  arbitrary = FieldElement . embed . Par1 <$> arbitrary
+  arbitrary = fromContext . embed . Par1 <$> arbitrary

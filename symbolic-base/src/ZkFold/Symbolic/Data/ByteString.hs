@@ -41,7 +41,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..), Generic1)
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
@@ -60,10 +60,8 @@ import           ZkFold.Data.Vector                (Vector (..))
 import           ZkFold.Prelude                    (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData (..), Sym (..))
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional  (Conditional)
-import           ZkFold.Symbolic.Data.Eq           (Eq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
@@ -72,19 +70,19 @@ import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
-    deriving (Generic)
+newtype ByteString (n :: Natural) (c :: (Type -> Type) -> Type) = ByteString (Sym (Vector n) c)
+    deriving (Generic, Generic1)
 
 deriving stock instance HShow c => Haskell.Show (ByteString n c)
 deriving stock instance HEq c => Haskell.Eq (ByteString n c)
 deriving anyclass instance HNFData c => NFData (ByteString n c)
-deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
-deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
-deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)
+
+instance (KnownNat n) => SymbolicData (ByteString n)
 
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat n
     , KnownNat m
     ) => IsString (ByteString n c) where
     fromString = fromConstant . fromString @Bytes.ByteString
@@ -92,6 +90,7 @@ instance
 instance
     ( Symbolic c
     , m * 8 ~ n
+    , KnownNat n
     , KnownNat m
     ) => FromConstant Bytes.ByteString (ByteString n c) where
     fromConstant bytes = concat @_ @8 $ fromConstant @Natural @(ByteString 8 c)
@@ -142,7 +141,7 @@ class ShiftBits a where
 
 instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
     type Const (ByteString n (Interpreter a)) = Natural
-    toConstant (ByteString (Interpreter bits)) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
+    toConstant (ByteString (Sym (Interpreter bits))) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
         where base = 2
 
 
@@ -150,13 +149,13 @@ instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
 -- @fromConstant@ discards bits after @n@.
 -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
 instance (Symbolic c, KnownNat n) => FromConstant Natural (ByteString n c) where
-    fromConstant n = ByteString . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
+    fromConstant n = fromContext . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
 
 instance (Symbolic c, KnownNat n) => FromConstant Integer (ByteString n c) where
     fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
 instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
-    arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
+    arbitrary = fromContext . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
 reverseEndianness' :: forall wordSize k m x {n}.
@@ -171,17 +170,18 @@ reverseEndianness' v =
 
 reverseEndianness :: forall wordSize k c m {n}.
     ( Symbolic c
+    , KnownNat n
     , KnownNat wordSize
     , n ~ k * wordSize
     , m * 8 ~ wordSize
     ) => ByteString n c -> ByteString n c
-reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
+reverseEndianness = fromContext . hmap (reverseEndianness' @wordSize @k) . toContext
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
     false = fromConstant (0 :: Natural)
     true = not false
 
-    not (ByteString bits) = ByteString $ fromCircuitF bits $ mapM (\i -> newAssigned (\p -> one - p i))
+    not bits = fromContext $ fromCircuitF (toContext bits) $ mapM (\i -> newAssigned (\p -> one - p i))
 
     l || r = bitwiseOperation l r cons
         where
@@ -197,8 +197,8 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                             xj = x j
                         in xi * xj
 
-    xor (ByteString l) (ByteString r) =
-        ByteString $ symbolic2F l r
+    xor l r =
+        fromContext $ symbolic2F (toContext l) (toContext r)
             (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n))
             (\lv rv -> do
                 let varsLeft = lv
@@ -215,8 +215,12 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
                      in xi + xj - (xi * xj + xi * xj)
 
 orRight
-    :: forall m n c
-    .  Symbolic c
+    :: forall m n c .
+    ( Symbolic c
+    , KnownNat m
+    , KnownNat n
+    , KnownNat (Max m n)
+    )
     => ByteString m c
     -> ByteString n c
     -> ByteString (Max m n) c
@@ -234,46 +238,50 @@ orRight l r = bitwiseOperation l r cons
 -- 4. @wordSize@ divides @n@.
 --
 
-toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
-toWords (ByteString bits) = ByteString <$> unpackWith (V.chunks @m @wordSize) bits
+toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize, KnownNat (m * wordSize)) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+toWords bits = fromContext <$> unpackWith (V.chunks @m @wordSize) (toContext bits)
 
-concat :: forall k m c. (Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
-concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
+concat :: forall k m c. (KnownNat m, KnownNat (k * m), Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
+concat bs = fromContext $ packWith V.concat (toContext <$> bs)
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 
 truncate :: forall m n c. (
     Symbolic c
+  , KnownNat m
   , KnownNat n
   , n <= m
   ) => ByteString m c -> ByteString n c
-truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
+truncate = fromContext . hmap (V.take @n) . toContext
 
 dropN :: forall n m c.
     ( Symbolic c
+    , KnownNat n
+    , KnownNat m
     , KnownNat (m-n)
     , n <= m
     ) => ByteString m c -> ByteString n c
-dropN (ByteString bits) = withDict (plusMinusInverse3 @n @m) $ ByteString $ hmap (V.drop @(m-n)) bits
+dropN = withDict (plusMinusInverse3 @n @m) $ fromContext . hmap (V.drop @(m-n)) . toContext
 
 append
     :: forall m n c
     .  Symbolic c
     => KnownNat m
     => KnownNat n
+    => KnownNat (m + n)
     => ByteString m c
     -> ByteString n c
     -> ByteString (m + n) c
-append (ByteString bits1) (ByteString bits2) =
-    ByteString $ fromCircuit2F bits1 bits2 $ \v1 v2 -> pure $ v1 `V.append` v2
+append bits1 bits2 =
+    fromContext $ fromCircuit2F (toContext bits1) (toContext bits2) $ \v1 v2 -> pure $ v1 `V.append` v2
 
 --------------------------------------------------------------------------------
 instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
-    shiftBits bs@(ByteString oldBits) s
+    shiftBits bs s
       | s == 0 = bs
       | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
-      | otherwise = ByteString $ symbolicF oldBits
+      | otherwise = fromContext $ symbolicF (toContext bs)
           (\v ->  V.shift v s (fromConstant (0 :: Integer)))
           (\bitsV -> do
               let bits = V.fromVector bitsV
@@ -287,22 +295,22 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
               pure $ V.unsafeToVector newBits
           )
 
-    rotateBits (ByteString bits) s = ByteString $ hmap (`V.rotate` s) bits
+    rotateBits bits s = fromContext $ hmap (`V.rotate` s) $ toContext bits
 
 instance
   ( Symbolic c
   , KnownNat k
   , KnownNat n
   ) => Resize (ByteString k c) (ByteString n c) where
-    resize (ByteString oldBits)
-      | diff > 0 = ByteString $ symbolicF oldBits
+    resize bs
+      | diff > 0 = fromContext $ symbolicF (toContext bs)
           (\v -> V.unsafeToVector $ zeroA <> V.fromVector v)
           (\bitsV -> do
               let bits = V.fromVector bitsV
               zeros <- replicateM diff $ newAssigned (Haskell.const zero)
               return $ V.unsafeToVector $ zeros <> bits
           )
-      | otherwise = ByteString $ hmap (V.unsafeToVector . Haskell.drop (Haskell.abs diff) . V.fromVector) oldBits
+      | otherwise = fromContext $ hmap (V.unsafeToVector . Haskell.drop (Haskell.abs diff) . V.fromVector) (toContext bs)
         where
             diff :: Haskell.Int
             diff = Haskell.fromIntegral (getNatural @n) Haskell.- Haskell.fromIntegral (getNatural @k)
@@ -310,11 +318,9 @@ instance
             zeroA = Haskell.replicate diff (fromConstant (0 :: Integer ))
 
 instance
-  ( Symbolic c
-  , KnownNat n
-  ) => SymbolicInput (ByteString n c) where
-
-    isValid (ByteString bits) = Bool $ fromCircuitF bits $ \v -> do
+  ( KnownNat n
+  ) => SymbolicInput (ByteString n) where
+    isValid bits = fromContext $ fromCircuitF (toContext bits) $ \v -> do
         let vs = V.fromVector v
         ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))
         us <-for ys $ \i -> isZero $ Par1 i
@@ -323,18 +329,18 @@ instance
             (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
 
 set :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
-set (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
+set bits ix = fromContext $ fromCircuitF (toContext bits) $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
 
 unset :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
-unset (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
+unset bits ix = fromContext $ fromCircuitF (toContext bits) $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
 
-isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
-isSet (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
+isSet :: forall c n. (KnownNat n, Symbolic c) => ByteString n c -> Natural -> Bool c
+isSet bits ix = fromContext $ fromCircuitF (toContext bits) $ \v -> do
     let vs = V.fromVector v
     return $ Par1 $ (!! ix) vs
 
-isUnset :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
-isUnset (ByteString bits) ix = Bool $ fromCircuitF bits $ \v -> do
+isUnset :: forall c n. (KnownNat n, Symbolic c) => ByteString n c -> Natural -> Bool c
+isUnset bits ix = fromContext $ fromCircuitF (toContext bits) $ \v -> do
     let vs = V.fromVector v
         i = (!! ix) vs
     j <- newAssigned $ \p -> one - p i
@@ -365,14 +371,18 @@ toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 -- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 --
 bitwiseOperation
-    :: forall m n c
-    .  Symbolic c
+    :: forall m n c .
+    ( KnownNat m
+    , KnownNat n
+    , KnownNat (Max m n)
+    , Symbolic c
+    )
     => ByteString m c
     -> ByteString n c
     -> (forall i. i -> i -> ClosedPoly i (BaseField c))
     -> ByteString (Max m n) c
-bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
-    ByteString $ fromCircuit2F bits1 bits2 $ \lv rv -> do
+bitwiseOperation bits1 bits2 cons =
+    fromContext $ fromCircuit2F (toContext bits1) (toContext bits2) $ \lv rv -> do
         let aligned = V.alignRight lv rv
         forM aligned $ \case
             These i j -> newAssigned $ cons i j
@@ -380,10 +390,10 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
             That j -> pure j
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
-  from = ByteString . binaryExpansion
+  from = fromContext . binaryExpansion
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
-  from (ByteString a) = fromBinary a
+  from = fromBinary . toContext
 
 instance (Symbolic c, KnownNat n)
     => FromJSON (ByteString n c) where
