@@ -103,7 +103,6 @@ library
       ZkFold.Symbolic.Examples.Blake2b
       ZkFold.Symbolic.Examples.BLS12_381
       ZkFold.Symbolic.Examples.ByteString
-      ZkFold.Symbolic.Examples.Commitment
       ZkFold.Symbolic.Examples.Conditional
       ZkFold.Symbolic.Examples.Constant
       ZkFold.Symbolic.Examples.ECDSA

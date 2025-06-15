@@ -1,15 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
-
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Compiler.CompileWith (specCompileWith) where
 
-import           Control.Applicative                                ((<*>))
-import           Control.Monad                                      (return)
 import           Data.Binary                                        (Binary)
 import           Data.Function                                      (($))
-import           Data.Functor                                       ((<$>))
 import           Data.Functor.Rep                                   (Rep, Representable)
 import           Data.Map                                           (Map, fromList)
 import           GHC.Generics                                       (U1 (..), (:*:) (..))
@@ -30,12 +24,6 @@ import           ZkFold.Symbolic.Data.ByteString                    (ByteString)
 
 testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString 256 c
 testFunction = (&&)
-
-instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
-  arbitrary = (:*:) <$> arbitrary <*> arbitrary
-
-instance Arbitrary (U1 a) where
-  arbitrary = return U1
 
 witGen ::
     (Arithmetic a, Representable i, Binary (Rep i)) =>

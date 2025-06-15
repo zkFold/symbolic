@@ -2,7 +2,7 @@ cabal-version:      3.0
 
 name:               symbolic-base
 version:            0.1.0.0
-tested-with:        GHC == 9.12.1
+tested-with:        GHC == 9.12.2
 synopsis:           ZkFold Symbolic compiler and zero-knowledge proof protocols
 homepage:           https://zkfold.io/
 category:           Cryptography, DSL, Math, Symbolic Computation
@@ -152,9 +152,6 @@ library
       ZkFold.Protocol.IVC.SpecialSound
       ZkFold.Protocol.IVC.VerifierCircuit
       ZkFold.Protocol.KZG
-      ZkFold.Protocol.Plonk
-      ZkFold.Protocol.Plonk.Prover
-      ZkFold.Protocol.Plonk.Verifier
       ZkFold.Protocol.Plonkup
       ZkFold.Protocol.Plonkup.LookupConstraint
       ZkFold.Protocol.Plonkup.PlonkConstraint
@@ -348,6 +345,7 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate.Poly
       Tests.Algebra.Univariate.PolyVec
       Tests.Algebra.Univariate.Simple
+      Tests.Common
       Tests.Data.Binary
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
@@ -379,7 +377,6 @@ test-suite symbolic-base-test
       blake2                                     ,
       constraints                                ,
       containers                                 ,
-      deepseq                                    ,
       random                                < 1.3,
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,

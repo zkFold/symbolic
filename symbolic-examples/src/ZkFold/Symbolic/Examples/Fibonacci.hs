@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
 
-module ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacci) where
+module ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod) where
 
 import           Data.Foldable                     (foldl)
 import           Prelude                           (Integer)
@@ -15,9 +15,9 @@ import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 -- | The Fibonacci index function.
 -- If `x` is a Fibonacci number, returns its index (up until `nMax`).
 -- Otherwise, returns `0`.
-exampleFibonacci ::
+exampleFibonacciMod ::
   forall c. Symbolic c => Integer -> FieldElement c -> FieldElement c
-exampleFibonacci nMax x =
+exampleFibonacciMod nMax x =
   foldl
     (\m k -> bool @(Bool c) m (fromConstant k) (fib k one one == x))
     zero
