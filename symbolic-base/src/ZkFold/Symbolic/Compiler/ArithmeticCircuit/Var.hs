@@ -20,7 +20,7 @@ import           Prelude                                            (Eq, Ord)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
-import           ZkFold.Symbolic.MonadCircuit                       (WitnessBuilder (..))
+import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 
 data LinVar a v = LinVar a v a | ConstVar a
     deriving
@@ -66,4 +66,4 @@ type Var a = LinVar a NewVar
 toVar :: Semiring a => NewVar -> Var a
 toVar = pure
 
-instance Finite a => WitnessBuilder (Var a) (CircuitWitness a) where at = evalVar pure
+instance Finite a => Witness (Var a) (CircuitWitness a) where at = evalVar pure

@@ -35,7 +35,7 @@ instance PrimeField (Zp p) => ResidueField (Zp p) where
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ResidueField w => WitnessBuilder i w | w -> i where
+class ResidueField w => Witness i w | w -> i where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 
@@ -79,7 +79,7 @@ type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
 class ( Monad m, FromConstant a var
-      , FromConstant a w, Scale a w, WitnessBuilder var w
+      , FromConstant a w, Scale a w, Witness var w
       ) => MonadCircuit var a w m | m -> var, m -> a, m -> w where
   -- | Creates new variable from witness.
   --

@@ -373,7 +373,7 @@ instance
 -- | "natural" value from vector of registers.
 natural ::
   forall c n r i.
-  (Symbolic c, KnownNat n, KnownRegisterSize r, WitnessBuilder i (WitnessField c)) =>
+  (Symbolic c, KnownNat n, KnownRegisterSize r, Witness i (WitnessField c)) =>
   Vector (NumberOfRegisters (BaseField c) n r) i -> IntegralOf (WitnessField c)
 natural =
   foldr
