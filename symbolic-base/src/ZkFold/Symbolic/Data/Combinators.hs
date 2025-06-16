@@ -34,7 +34,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number        (value)
 import qualified ZkFold.Data.Vector           as V
 import           ZkFold.Data.Vector           (Vector)
-import           ZkFold.Prelude               (take, drop)
+import           ZkFold.Prelude               (drop, take)
 import           ZkFold.Symbolic.Class        (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 

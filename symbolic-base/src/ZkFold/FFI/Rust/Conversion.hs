@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE MagicHash            #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes  #-}
 
 module ZkFold.FFI.Rust.Conversion where
 
@@ -125,7 +125,7 @@ instance Storable BLS12_381_G1_JacobianPoint where
   alignment _ = alignment @BLS12_381_G1_Point undefined
 
   peek :: Ptr BLS12_381_G1_JacobianPoint -> IO BLS12_381_G1_JacobianPoint
-  peek ptr = project @BLS12_381_G1_Point <$> peek (castPtr ptr) 
+  peek ptr = project @BLS12_381_G1_Point <$> peek (castPtr ptr)
 
   poke :: Ptr BLS12_381_G1_JacobianPoint -> BLS12_381_G1_JacobianPoint -> IO ()
   poke ptr pt = poke (castPtr ptr) (project @_ @BLS12_381_G1_Point pt)
@@ -177,7 +177,7 @@ instance Storable BLS12_381_G2_JacobianPoint where
   alignment _ = alignment @BLS12_381_G2_Point undefined
 
   peek :: Ptr BLS12_381_G2_JacobianPoint -> IO BLS12_381_G2_JacobianPoint
-  peek ptr = project @BLS12_381_G2_Point <$> peek (castPtr ptr) 
+  peek ptr = project @BLS12_381_G2_Point <$> peek (castPtr ptr)
 
   poke :: Ptr BLS12_381_G2_JacobianPoint -> BLS12_381_G2_JacobianPoint -> IO ()
   poke ptr pt = poke (castPtr ptr) (project @_ @BLS12_381_G2_Point pt)

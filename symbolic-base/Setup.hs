@@ -63,7 +63,7 @@ rsAddDirs lbi' = do
       Nothing -> return (rustLibDir, rustLibDir)
 
     let updateLbi lbi = lbi{localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
-        updatePkgDescr pkgDescr = 
+        updatePkgDescr pkgDescr =
             pkgDescr{ library = updateLib <$> library pkgDescr
                     , executables = updateExe <$> executables pkgDescr
                     , benchmarks = updateBench <$> benchmarks pkgDescr

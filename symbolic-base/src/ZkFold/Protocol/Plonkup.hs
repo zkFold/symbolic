@@ -19,6 +19,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class   (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.FFI.Rust.Conversion
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
@@ -28,8 +29,6 @@ import           ZkFold.Protocol.Plonkup.Setup
 import           ZkFold.Protocol.Plonkup.Verifier
 import           ZkFold.Protocol.Plonkup.Witness
 import           ZkFold.Symbolic.Class                (Arithmetic)
-
-import ZkFold.FFI.Rust.Conversion
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
