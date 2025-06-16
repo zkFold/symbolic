@@ -145,6 +145,8 @@ type family MaxAdded (regCount :: Natural) :: Natural where
 type family MaxRegisterSize (a :: Type) (regCount :: Natural) :: Natural where
     MaxRegisterSize a regCount = Div (BitLimit a - MaxAdded regCount) 2
 
+type IsValidRegister r n c = r <= MaxRegisterSize (BaseField c) n
+
 type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
     ListRange from from = '[from]
     ListRange from to = from ': ListRange (from + 1) to

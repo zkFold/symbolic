@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE NoDeriveAnyClass     #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.UInt (
     StrictConv(..),
@@ -88,16 +89,16 @@ toNative (UInt rs) = FieldElement $ symbolicF rs
   (Par1 . fromConstant . (`vectorToNatural` value @r))
   (fmap Par1 . hornerW @r . toList)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => FromConstant Natural (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => FromConstant Natural (UInt r n c) where
     fromConstant c = UInt . embed @c $ naturalToVector @r @n @c c
 
 -- TODO: This one throws an underflow error if the value is negative. Should we do something about it?
-instance (KnownNat r, KnownNat n, Symbolic c) => FromConstant Integer (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => FromConstant Integer (UInt r n c) where
     fromConstant = fromConstant . naturalFromInteger
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Scale Natural (UInt r n c)
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => Scale Natural (UInt r n c)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Scale Integer (UInt r n c)
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => Scale Integer (UInt r n c)
 
 instance MultiplicativeMonoid (UInt r n c) => Exponent (UInt r n c) Natural where
     (^) = natPow
@@ -111,11 +112,16 @@ expMod
     , KnownNat p
     , KnownNat m
     , KnownNat (2 * m)
+    , KnownNat (r * p)
     , Symbolic c
+    , IsValidRegister r n c
+    , IsValidRegister r p c
+    , IsValidRegister r m c
+    , IsValidRegister r (2 * m) c
     ) => UInt r n c -> UInt r p c -> UInt r m c -> UInt r m c
 expMod n pow modulus = resize result
     where
-        bits :: ByteString p c
+        bits :: ByteString (r * p) c
         bits = from pow
 
         m' :: UInt r (2 * m) c
@@ -136,6 +142,9 @@ exp65537Mod
     , KnownNat m
     , KnownNat (2 * m)
     , Symbolic c
+    , IsValidRegister r n c
+    , IsValidRegister r m c
+    , IsValidRegister r (2 * m) c
     ) => UInt r n c -> UInt r m c -> UInt r m c
 exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
     where
@@ -153,6 +162,7 @@ bitsPow
     , KnownNat n
     , KnownNat p
     , Symbolic c
+    , IsValidRegister r n c
     ) => Natural -> ByteString p c -> UInt r n c -> UInt r n c -> UInt r n c -> UInt r n c
 bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
@@ -168,6 +178,7 @@ productMod
     ( KnownNat r
     , KnownNat n
     , Symbolic c
+    , IsValidRegister r n c
     ) => UInt r n c -> UInt r n c -> UInt r n c -> (UInt r n c, UInt r n c)
 productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     case (value @n) of
@@ -237,6 +248,7 @@ eea
     ( KnownNat r
     , KnownNat n
     , Symbolic c
+    , IsValidRegister r n c
     ) => UInt r n c -> UInt r n c -> (UInt r n c, UInt r n c, UInt r n c)
 eea a b = eea' 1 a b one zero zero one
     where
@@ -253,18 +265,18 @@ eea a b = eea' 1 a b one zero zero one
                 rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
 
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 instance (KnownNat r, Symbolic (Interpreter a)) => ToConstant (UInt r n (Interpreter a)) where
     type Const (UInt r n (Interpreter a)) = Natural
     toConstant (UInt (Interpreter xs)) = vectorToNatural xs (value @r)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => MultiplicativeMonoid (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => MultiplicativeMonoid (UInt r n c) where
     one = fromConstant (1 :: Natural)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Semiring (UInt r n c)
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => Semiring (UInt r n c)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Arbitrary (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => Arbitrary (UInt r n c) where
     arbitrary
       | value @n == 0 = return zero
       | otherwise     = do
@@ -273,7 +285,7 @@ instance (KnownNat r, KnownNat n, Symbolic c) => Arbitrary (UInt r n c) where
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Iso (ByteString n c) (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) => Iso (ByteString m c) (UInt r n c) where
     from (ByteString b)
       | value @n == 0 = zero
       | otherwise     = UInt $ symbolicF b
@@ -283,7 +295,7 @@ instance (KnownNat r, KnownNat n, Symbolic c) => Iso (ByteString n c) (UInt r n 
             V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @r @n) (value @r) bsBits
         )
 
-instance (KnownNat r, KnownNat n, Symbolic c) => Iso (UInt r n c) (ByteString n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) => Iso (UInt r n c) (ByteString m c) where
     from (UInt u)
       | value @n == 0 = ByteString $ embed $ V.unsafeToVector []
       | otherwise     = ByteString $ symbolicF u
@@ -296,22 +308,22 @@ instance (KnownNat r, KnownNat n, Symbolic c) => Iso (UInt r n c) (ByteString n 
 instance
     ( KnownNat r
     , KnownNat n
-    , Order (BaseField c) ~ n * (2 ^ r)
-    , Log2 (Order (BaseField c) - 1) + 1 ~ n
+    , Log2 (Order (BaseField c) - 1) + 1 ~ r * n
+    , IsValidRegister r n c
     , Symbolic c
     ) => Iso (FieldElement c) (UInt r n c) where
-  from a = from (from a :: ByteString n c)
+  from a = from (from a :: ByteString (r * n) c)
 
 instance
     ( KnownNat r
     , KnownNat n
-    , Order (BaseField c) ~ n * (2 ^ r)
-    , Log2 (Order (BaseField c) - 1) + 1 ~ n
+    , Log2 (Order (BaseField c) - 1) + 1 ~ r * n
+    , IsValidRegister r n c
     , Symbolic c
     ) => Iso (UInt r n c) (FieldElement c) where
-  from a = from (from a :: ByteString n c)
+  from a = from (from a :: ByteString (r * n) c)
 
--- -- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 instance
     ( KnownNat r
@@ -319,6 +331,8 @@ instance
     , KnownNat r'
     , KnownNat k
     , Symbolic c
+    , IsValidRegister r n c
+    , IsValidRegister r' k c
     ) => Resize (UInt r n c) (UInt r' k c) where
     resize (UInt bits)
       | value @n == 0 = zero
@@ -381,6 +395,7 @@ instance
     ( KnownNat r
     , KnownNat n
     , Symbolic c
+    , IsValidRegister r n c
     ) => SemiEuclidean (UInt r n c) where
     divMod num@(UInt nm) den@(UInt dn) =
       (UInt $ hmap fstP circuit, UInt $ hmap sndP circuit)
@@ -465,7 +480,7 @@ instance
 
     min x y = bool @(Bool c) x y $ x > y
 
-instance (KnownNat r, KnownNat n, Symbolic c) => AdditiveSemigroup (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => AdditiveSemigroup (UInt r n c) where
     UInt xc + UInt yc
       | value @n == 0 = zero
       | otherwise     = UInt $ symbolic2F xc yc
@@ -485,13 +500,14 @@ instance (KnownNat r, KnownNat n, Symbolic c) => AdditiveSemigroup (UInt r n c) 
             return $ V.unsafeToVector (zs ++ [ks])
         )
 
-instance (KnownNat r, KnownNat n, Symbolic c) => AdditiveMonoid (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => AdditiveMonoid (UInt r n c) where
     zero = fromConstant (0 :: Natural)
 
 instance
     ( KnownNat r
     , KnownNat n
     , Symbolic c
+    , IsValidRegister r n c
     ) => AdditiveGroup (UInt r n c) where
     UInt x - UInt y = UInt $ symbolic2F x y
         (\u v -> naturalToVector @r @n @c $ vectorToNatural u (value @r) + 2 ^ (value @n) -! vectorToNatural v (value @r))
@@ -637,21 +653,22 @@ instance
     ( KnownNat r
     , KnownNat n
     , Symbolic c
+    , IsValidRegister r n c
     ) => Ring (UInt r n c)
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 class StrictConv b a where
     strictConv :: b -> a
 
-instance (KnownNat r, KnownNat n, Symbolic c) => StrictConv Natural (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictConv Natural (UInt r n c) where
     strictConv n
       | value @n == 0 = zero
       | otherwise     = case cast @r @n n of
         (lo, hi, []) -> UInt $ embed $ V.unsafeToVector $ fromConstant <$> (lo <> [hi])
         _            -> error "strictConv: overflow"
 
-instance (KnownNat r, KnownNat n, Symbolic c) => StrictConv (Zp p) (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictConv (Zp p) (UInt r n c) where
     strictConv = strictConv . toConstant
 
 instance (KnownNat r, KnownNat n, Symbolic c) => StrictConv (c Par1) (UInt r n c) where
@@ -667,7 +684,7 @@ class StrictNum a where
     strictSub :: a -> a -> a
     strictMul :: a -> a -> a
 
-instance (KnownNat r, KnownNat n, Symbolic c) => StrictNum (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictNum (UInt r n c) where
     strictAdd (UInt x) (UInt y)
       | value @n == 0 = zero
       | otherwise     = UInt $ symbolic2F x y
@@ -780,7 +797,7 @@ instance
             []       -> Par1 <$> newAssigned (const one)
             (z : zs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) z zs
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 fullAdder :: (Arithmetic a, MonadCircuit i a w m) => Natural -> i -> i -> i -> m (i, i)
 fullAdder r xk yk c = fullAdded xk yk c >>= splitExpansion r 1
@@ -808,7 +825,7 @@ vectorToNatural v n = foldr (\l r -> fromConstant l  + b * r) 0 vs where
     vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
     b = 2 ^ n
 
-instance (KnownNat r, KnownNat n, Symbolic c) => FromJSON (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => FromJSON (UInt r n c) where
     parseJSON = Haskell.fmap strictConv . parseJSON @Natural
 
 instance (KnownNat r, KnownNat n, Symbolic (Interpreter (Zp p))) => ToJSON (UInt r n (Interpreter (Zp p))) where
