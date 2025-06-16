@@ -50,11 +50,11 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -fprof-auto
-      -fprof-cafs
     if !arch(wasm32)
       ghc-options:
         -threaded
+        -fprof-auto
+        -fprof-cafs
     if impl(ghc >=9.8)
       ghc-options:
         -Wno-x-partial

@@ -15,18 +15,15 @@ import           ZkFold.Algebra.Permutation                   (fromPermutation)
 import           ZkFold.Algebra.Polynomial.Univariate         (UnivariateFieldPolyVec (..), polyVecInLagrangeBasis,
                                                                toPolyVec)
 import           ZkFold.Data.Vector                           (Vector (..))
+import           ZkFold.FFI.Rust.Conversion
+import           ZkFold.FFI.Rust.Poly                         ()
+import           ZkFold.FFI.Rust.RustBLS                      ()
 import           ZkFold.Protocol.Plonkup.Internal             (Plonkup (..), PlonkupPermutationSize,
                                                                PlonkupPolyExtendedLength)
 import           ZkFold.Protocol.Plonkup.Prover.Polynomials   (PlonkupCircuitPolynomials (..))
 import           ZkFold.Protocol.Plonkup.Relation             (PlonkupRelation (..), toPlonkupRelation)
 import           ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import           ZkFold.Symbolic.Class                        (Arithmetic)
-
-import ZkFold.FFI.Rust.Poly () 
-import ZkFold.FFI.Rust.RustBLS () 
-import qualified ZkFold.FFI.Rust.RustBLS as RustBLS
-import qualified ZkFold.FFI.Rust.Types as RustTypes
-import ZkFold.FFI.Rust.Conversion
 
 data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
     { omega       :: !(ScalarFieldOf g1)
@@ -66,7 +63,7 @@ instance
         ++ show polynomials ++ " "
         ++ show commitments
 
-plonkupSetup :: forall i o n g1 g2 gt ts pv rustG1 rustPv.
+plonkupSetup :: forall i o n g1 g2 gt ts pv rustG1 .
     ( Representable i
     , Representable o
     , Foldable o
@@ -77,8 +74,6 @@ plonkupSetup :: forall i o n g1 g2 gt ts pv rustG1 rustPv.
     , KnownNat (PlonkupPolyExtendedLength n)
     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
     , RustHaskell rustG1 g1
-    , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
-    , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
     ) => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =

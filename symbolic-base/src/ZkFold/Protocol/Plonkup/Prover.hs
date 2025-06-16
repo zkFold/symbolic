@@ -20,6 +20,9 @@ import           ZkFold.Algebra.EllipticCurve.Class         (Compressible (..), 
 import           ZkFold.Algebra.Number                      (KnownNat, Natural, value)
 import           ZkFold.Algebra.Polynomial.Univariate       hiding (qr)
 import           ZkFold.Data.Vector                         ((!!))
+import           ZkFold.FFI.Rust.Conversion
+import           ZkFold.FFI.Rust.Poly                       ()
+import           ZkFold.FFI.Rust.RustBLS                    ()
 import           ZkFold.Prelude                             (replicate)
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input
@@ -33,16 +36,7 @@ import           ZkFold.Protocol.Plonkup.Testing            (PlonkupProverTestIn
 import           ZkFold.Protocol.Plonkup.Utils              (sortByList)
 import           ZkFold.Protocol.Plonkup.Witness
 
-
-
-import ZkFold.FFI.Rust.Poly () 
-import ZkFold.FFI.Rust.RustBLS () 
-import qualified ZkFold.FFI.Rust.RustBLS as RustBLS
-import qualified ZkFold.FFI.Rust.Types as RustTypes
-import ZkFold.FFI.Rust.Conversion
-
 plonkupProve :: forall i o n g1 g2 ts pv rustG1 rustPv .
---plonkupProve :: forall i o n g1 g2 ts pv .
     ( Ord (ScalarFieldOf g1)
     , Compressible g1
     , ToTranscript ts Word8
@@ -179,7 +173,7 @@ plonkupProve PlonkupProverSetup {..}
         !epsilonX = polyVecConstant epsilon
 
         qmXR :: rustPv (PlonkupPolyExtendedLength n)
-        !qmXR = h2r qmX 
+        !qmXR = h2r qmX
         !qlXR = h2r qlX
         !qrXR = h2r qrX
         !qoXR = h2r qoX
@@ -187,7 +181,7 @@ plonkupProve PlonkupProverSetup {..}
         !qkXR = h2r qkX
 
         !piXR = h2r piX
-        
+
         !aXR = h2r aX
         !bXR = h2r bX
         !cXR = h2r cX

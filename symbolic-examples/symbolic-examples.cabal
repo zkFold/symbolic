@@ -35,11 +35,11 @@ common options
       -Wredundant-constraints
       -Wunused-packages
       -O2
-      -fprof-auto
-      -fprof-cafs
     if !arch(wasm32)
       ghc-options:
         -threaded
+        -fprof-auto
+        -fprof-cafs
     if flag(pedantic)
       ghc-options:
         -Werror

@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module ZkFold.FFI.Rust.Poly where
 
@@ -12,7 +13,7 @@ import           GHC.IO                               (unsafePerformIO)
 import           Prelude                              hiding (drop, length, product, replicate, sum, take, (/), (^))
 
 import           ZkFold.Algebra.Number                (KnownNat, Natural, value)
-import           ZkFold.Algebra.Polynomial.Univariate (PolyVec (..), UnivariateRingPolyVec (..))
+import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
 import           ZkFold.FFI.Rust.Conversion
 import           ZkFold.FFI.Rust.Types
 
@@ -22,9 +23,9 @@ newtype RustPolyVec a (size :: Natural) = RustPV { rawPoly :: RustData }
 instance NFData (RustPolyVec a size) where
     rnf _ = ()
 
-peekArrayV :: Storable a => Int -> Ptr a -> IO (V.Vector a) 
+peekArrayV :: Storable a => Int -> Ptr a -> IO (V.Vector a)
 {-# INLINEABLE peekArrayV #-}
-peekArrayV size ptr = V.generateM size (peekElemOff ptr) 
+peekArrayV size ptr = V.generateM size (peekElemOff ptr)
 
 pokeArrayV :: Storable a => Ptr a -> V.Vector a -> IO ()
 {-# INLINEABLE pokeArrayV #-}

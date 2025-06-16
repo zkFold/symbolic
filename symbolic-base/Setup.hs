@@ -63,12 +63,22 @@ rsAddDirs lbi' = do
       Nothing -> return (rustLibDir, rustLibDir)
 
     let updateLbi lbi = lbi{localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
-        updatePkgDescr pkgDescr = pkgDescr{library = updateLib <$> library pkgDescr}
-        updateLib lib = lib{libBuildInfo = updateLibBi (libBuildInfo lib)}
-        updateLibBi libBuild =
-          libBuild
-            { includeDirs = unsafeMakeSymbolicPath includeRustDir : includeDirs libBuild
-            , extraLibDirs = unsafeMakeSymbolicPath extraLibDir : extraLibDirs libBuild
+        updatePkgDescr pkgDescr = 
+            pkgDescr{ library = updateLib <$> library pkgDescr
+                    , executables = updateExe <$> executables pkgDescr
+                    , benchmarks = updateBench <$> benchmarks pkgDescr
+                    , testSuites = updateTests <$> testSuites pkgDescr}
+
+        updateLib lib = lib{libBuildInfo = updateBi (libBuildInfo lib)}
+        updateExe exe = exe{buildInfo = updateBi (buildInfo exe)}
+        updateBench bench = bench{benchmarkBuildInfo = updateBi (benchmarkBuildInfo bench)}
+        updateTests test = test{testBuildInfo = updateBi (testBuildInfo test)}
+
+        updateBi bi =
+          bi
+            { includeDirs = unsafeMakeSymbolicPath includeRustDir : includeDirs bi
+            , extraLibDirs = unsafeMakeSymbolicPath extraLibDir : extraLibDirs bi
+            , extraLibs = ["rust_wrapper"]
             }
 
     pure $ updateLbi lbi'

@@ -149,7 +149,7 @@ utxoAccumulatorGroupElements crs =
     let
         PlonkupProverSetup {..} = utxoAccumulatorProverSetupInit @n @m crs
     in
-        lagrangeBasisGroupElements @m @BLS12_381_G1_Point @_ @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega gs
+        lagrangeBasisGroupElements @m @BLS12_381_G1_Point @(PolyVec (ScalarFieldOf BLS12_381_G1_Point)) omega gs
 
 validationGroupElement :: forall n m . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
     => UtxoAccumulatorCRS
