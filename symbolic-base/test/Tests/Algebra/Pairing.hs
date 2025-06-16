@@ -5,7 +5,6 @@ module Tests.Algebra.Pairing (specPairing) where
 
 import           Data.Kind                              (Type)
 import           Data.Typeable                          (Typeable, typeOf)
-import           Foreign                                (Storable (..))
 import           Prelude                                hiding (Fractional (..), Num (..), length, (^))
 import           Test.Hspec
 import           Test.QuickCheck                        hiding (scale)
@@ -17,11 +16,10 @@ import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Protocol.NonInteractiveProof    ()
 
 specPairing'
-    :: forall (g1 :: Type) (g2 :: Type) gt f rustg
+    :: forall (g1 :: Type) (g2 :: Type) gt f
     .  Typeable g1
     => Typeable g2
     => Typeable gt
-    => Bilinear (V.Vector rustg) (PolyVec f 32) g1
     => Pairing g1 g2 gt
     => Eq g1
     => Eq g2
@@ -35,7 +33,7 @@ specPairing'
     => Show g2
     => Show g1
     => Spec
-specPairing' transform = do
+specPairing' = do
     describe "Elliptic curve pairing specification" $ do
         describe ("Type: " ++ show (typeOf (pairing @g1 @g2))) $ do
             describe "Pairing axioms" $ do
