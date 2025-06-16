@@ -1,8 +1,9 @@
 module ZkFold.Symbolic.Data.Switch where
 
 
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import GHC.Generics (Generic1)
+import           GHC.Generics               (Generic1)
+
+import           ZkFold.Symbolic.Data.Class (SymbolicData (..))
 
 -- | A 'Switch' of a 'SymbolicData' @x@ to context @c@
 -- is a separate Symbolic datatype which has the same layout and payload as @x@,

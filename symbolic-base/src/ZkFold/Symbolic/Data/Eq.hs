@@ -1,5 +1,5 @@
-{-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators      #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -9,7 +9,9 @@ module ZkFold.Symbolic.Data.Eq (
     GEq (..)
 ) where
 
+import           Control.Monad                    (return)
 import           Data.Bool                        (bool)
+import           Data.Function                    (($))
 import           Data.Functor.Rep                 (mzipRep, mzipWithRep)
 import           Data.Traversable                 (for)
 import qualified Prelude                          as Haskell
@@ -23,8 +25,6 @@ import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (runInvert)
 import           ZkFold.Symbolic.Data.Conditional ()
 import           ZkFold.Symbolic.MonadCircuit
-import Control.Monad (return)
-import Data.Function (($))
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 

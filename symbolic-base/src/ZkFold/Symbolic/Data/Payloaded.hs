@@ -2,10 +2,10 @@
 
 module ZkFold.Symbolic.Data.Payloaded where
 
-import           GHC.Generics                     (Generic1)
+import           GHC.Generics               (Generic1)
 
 import           ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import           ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 newtype Payloaded f c = Payloaded { runPayloaded :: Wit f c }
   deriving Generic1

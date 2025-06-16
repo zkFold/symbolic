@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Compiler where
 import           Control.Monad                                      (return)
 import           Data.Aeson                                         (ToJSON, ToJSON1, ToJSONKey)
 import           Data.Binary                                        (Binary)
-import           Data.Function                                      (($), id)
+import           Data.Function                                      (id, ($))
 import           Data.Functor.Rep                                   (Rep)
 import           Data.List                                          ((++))
 import           Data.Type.Equality
@@ -16,7 +16,7 @@ import           Text.Show                                          (show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Prelude                                     (writeFileJSON)
-import           ZkFold.Symbolic.Class                              (fromCircuit2F, Arithmetic)
+import           ZkFold.Symbolic.Class                              (Arithmetic, fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext, fool)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var     (NewVar)

@@ -13,31 +13,31 @@ module ZkFold.Symbolic.Data.Class (
         GSymbolicData (..),
     ) where
 
-import           Control.DeepSeq             (NFData1, NFData)
-import           Data.Binary                 (Binary)
-import           Data.Functor                (fmap)
-import           Data.Functor.Rep            (Representable)
-import qualified Data.Functor.Rep            as R
-import           Data.Kind                   (Type)
-import           Data.Traversable            (Traversable)
-import           Data.Type.Equality          (type (~))
-import           GHC.Generics                (V1, (:*:) (..), (:.:) (..))
-import qualified GHC.Generics                as G
+import           Control.DeepSeq              (NFData, NFData1)
+import           Data.Binary                  (Binary)
+import           Data.Eq                      (Eq)
+import           Data.Function                (id, (.))
+import           Data.Functor                 (fmap)
+import           Data.Functor.Classes         (Eq1, Show1)
+import           Data.Functor.Rep             (Representable)
+import qualified Data.Functor.Rep             as R
+import           Data.Kind                    (Type)
+import           Data.Traversable             (Traversable)
+import           Data.Type.Equality           (type (~))
+import           GHC.Generics                 (V1, (:*:) (..), (:.:) (..))
+import qualified GHC.Generics                 as G
+import           GHC.Show                     (Show)
 
-import           ZkFold.Algebra.Number       (KnownNat)
-import           ZkFold.Control.HApplicative (hpair)
-import           ZkFold.Data.ByteString      (Binary1)
-import           ZkFold.Data.HFunctor        (hmap)
-import           ZkFold.Data.Orphans         ()
-import           ZkFold.Data.Package         (pack, unpack)
-import           ZkFold.Data.Product         (fstP, sndP)
-import           ZkFold.Data.Vector          (Vector)
-import           ZkFold.Symbolic.Class       (Symbolic (..), embedW)
-import Data.Function (id, (.))
-import ZkFold.Data.HFunctor.Classes (HNFData, HEq, HShow)
-import Data.Functor.Classes (Eq1, Show1)
-import Data.Eq (Eq)
-import GHC.Show (Show)
+import           ZkFold.Algebra.Number        (KnownNat)
+import           ZkFold.Control.HApplicative  (hpair)
+import           ZkFold.Data.ByteString       (Binary1)
+import           ZkFold.Data.HFunctor         (hmap)
+import           ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
+import           ZkFold.Data.Orphans          ()
+import           ZkFold.Data.Package          (pack, unpack)
+import           ZkFold.Data.Product          (fstP, sndP)
+import           ZkFold.Data.Vector           (Vector)
+import           ZkFold.Symbolic.Class        (Symbolic (..), embedW)
 
 -- | A newtype wrapper for deriving `Generic1` for symbolic data types.
 newtype Sym f c = Sym { runSym :: c f }

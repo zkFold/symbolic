@@ -1,5 +1,5 @@
-{-# LANGUAGE BlockArguments       #-}
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE BlockArguments     #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 

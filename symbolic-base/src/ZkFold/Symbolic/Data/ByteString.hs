@@ -41,7 +41,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import           GHC.Generics                      (Generic, Par1 (..), Generic1)
+import           GHC.Generics                      (Generic, Generic1, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
@@ -60,7 +60,7 @@ import           ZkFold.Data.Vector                (Vector (..))
 import           ZkFold.Prelude                    (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Class        (SymbolicData (..), Sym (..))
+import           ZkFold.Symbolic.Data.Class        (Sym (..), SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)

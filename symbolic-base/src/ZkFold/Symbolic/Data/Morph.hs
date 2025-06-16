@@ -2,10 +2,10 @@
 
 module ZkFold.Symbolic.Data.Morph where
 
-import           Data.Type.Equality         (type (~))
+import           Data.Type.Equality    (type (~))
 
-import           ZkFold.Symbolic.Class      (Symbolic (BaseField))
-import           ZkFold.Symbolic.Fold       (SymbolicFold)
+import           ZkFold.Symbolic.Class (Symbolic (BaseField))
+import           ZkFold.Symbolic.Fold  (SymbolicFold)
 
 -- | A type @u@ is a 'Replica' of type @t@ in context @c@ iff:
 -- * it is 'SymbolicOutput';

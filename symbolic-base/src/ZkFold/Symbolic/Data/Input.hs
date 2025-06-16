@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Data.Input (
     SymbolicInput (..)
 ) where
 
+import           GHC.Generics                     ((:*:) (..), (:.:) (..))
 import qualified GHC.Generics                     as G
 import           GHC.TypeLits                     (KnownNat)
 import           Prelude                          (($), (.))
@@ -16,7 +17,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.MonadCircuit
-import GHC.Generics ((:*:) (..), (:.:) (..))
 
 -- | A class for Symbolic input.
 class SymbolicData x => SymbolicInput x where

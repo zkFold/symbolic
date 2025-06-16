@@ -4,19 +4,19 @@ module ZkFold.Symbolic.Data.Maybe (
     Maybe, maybe, just, nothing, fromMaybe, fromJust, isNothing, isJust, find
 ) where
 
+import           Data.Foldable                    (Foldable)
+import           Data.Function                    (const)
 import           Data.Functor.Rep                 (pureRep)
 import           GHC.Generics                     (Generic1)
 import           Prelude                          (foldr, ($))
+import qualified Prelude                          as Haskell
 
 import           ZkFold.Algebra.Class
+import           ZkFold.Data.HFunctor.Classes     (HEq)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Conditional
-import Data.Function (const)
-import Data.Foldable (Foldable)
-import ZkFold.Data.HFunctor.Classes (HEq)
-import qualified Prelude as Haskell
 
 -- TODO: derive functor instances for `Maybe`
 
