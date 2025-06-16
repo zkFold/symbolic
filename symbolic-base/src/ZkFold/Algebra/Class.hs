@@ -30,7 +30,6 @@ import           ZkFold.Prelude             (length, replicate, zipWith')
 infixl 7 .*, *., *, /
 infixl 6 +, -, -!
 
---class Bilinear p s g | p s -> g where
 class Bilinear p s g where
     -- | Bilinear function. Should satisfy the following:
     --
