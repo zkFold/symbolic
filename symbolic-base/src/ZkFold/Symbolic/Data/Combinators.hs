@@ -96,11 +96,11 @@ instance KnownRegisterSize Auto where
 instance KnownNat n => KnownRegisterSize (Fixed n) where
   regSize = Fixed (value @n)
 
-maxOverflow :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural
-maxOverflow = registerSize @a @n @r + Haskell.ceiling (log2 $ numberOfRegisters @a @n @r)
+maxOverflow :: forall r n . (KnownNat r, KnownNat n) => Natural
+maxOverflow = value @r + Haskell.ceiling (log2 $ value @n)
 
-highRegisterSize :: forall a n r . (Finite a, KnownNat n, KnownRegisterSize r) => Natural
-highRegisterSize = getNatural @n -! registerSize @a @n @r * (numberOfRegisters @a @n @r -! 1)
+highRegisterSize :: forall r n . (KnownNat r, KnownNat n) => Natural
+highRegisterSize = getNatural @n -! value @r * (value @n -! 1)
 
 registerSize  :: forall a n r. (Finite a, KnownNat n, KnownRegisterSize r) => Natural
 registerSize = case regSize @r of
