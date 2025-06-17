@@ -112,7 +112,7 @@ expMod
     , KnownNat p
     , KnownNat m
     , KnownNat (2 * m)
-    , KnownNat (r * p)
+    , KnownNat (p * r)
     , Symbolic c
     , IsValidRegister r n c
     , IsValidRegister r p c
@@ -121,7 +121,7 @@ expMod
     ) => UInt r n c -> UInt r p c -> UInt r m c -> UInt r m c
 expMod n pow modulus = resize result
     where
-        bits :: ByteString (r * p) c
+        bits :: ByteString (p * r) c
         bits = from pow
 
         m' :: UInt r (2 * m) c
@@ -285,7 +285,7 @@ instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => Arbitrar
         return $ UInt $ embed $ V.unsafeToVector (lo <> [hi])
         where toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
 
-instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) => Iso (ByteString m c) (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ n * r) => Iso (ByteString m c) (UInt r n c) where
     from (ByteString b)
       | value @n == 0 = zero
       | otherwise     = UInt $ symbolicF b
@@ -295,7 +295,7 @@ instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) 
             V.unsafeToVector . Haskell.reverse <$> fromBits (highRegisterSize @r @n) (value @r) bsBits
         )
 
-instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) => Iso (UInt r n c) (ByteString m c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ n * r) => Iso (UInt r n c) (ByteString m c) where
     from (UInt u)
       | value @n == 0 = ByteString $ embed $ V.unsafeToVector []
       | otherwise     = ByteString $ symbolicF u
@@ -308,20 +308,20 @@ instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c, m ~ r * n) 
 instance
     ( KnownNat r
     , KnownNat n
-    , Log2 (Order (BaseField c) - 1) + 1 ~ r * n
+    , Log2 (Order (BaseField c) - 1) + 1 ~ n * r
     , IsValidRegister r n c
     , Symbolic c
     ) => Iso (FieldElement c) (UInt r n c) where
-  from a = from (from a :: ByteString (r * n) c)
+  from a = from (from a :: ByteString (n * r) c)
 
 instance
     ( KnownNat r
     , KnownNat n
-    , Log2 (Order (BaseField c) - 1) + 1 ~ r * n
+    , Log2 (Order (BaseField c) - 1) + 1 ~ n * r
     , IsValidRegister r n c
     , Symbolic c
     ) => Iso (UInt r n c) (FieldElement c) where
-  from a = from (from a :: ByteString (r * n) c)
+  from a = from (from a :: ByteString (n * r) c)
 
 --------------------------------------------------------------------------------
 
