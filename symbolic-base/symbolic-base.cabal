@@ -257,6 +257,7 @@ library
       ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Data.Vec
       ZkFold.Symbolic.Fold
+      ZkFold.Symbolic.Interpolation
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     if arch(wasm32)
