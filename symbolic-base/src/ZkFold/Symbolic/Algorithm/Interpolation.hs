@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 
-module ZkFold.Symbolic.Interpolation where
+module ZkFold.Symbolic.Algorithm.Interpolation where
 
 import           Control.Monad                (foldM, zipWithM)
 import           Data.Function                (($), (.))

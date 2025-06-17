@@ -211,6 +211,7 @@ library
       ZkFold.Symbolic.Algorithm.Mithril
       ZkFold.Symbolic.Algorithm.RSA
       ZkFold.Symbolic.Algorithm.FFT
+      ZkFold.Symbolic.Algorithm.Interpolation
       ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Compiler.ArithmeticCircuit
@@ -256,7 +257,6 @@ library
       ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Data.Vec
       ZkFold.Symbolic.Fold
-      ZkFold.Symbolic.Interpolation
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
     if arch(wasm32)
