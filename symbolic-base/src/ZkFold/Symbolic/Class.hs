@@ -48,6 +48,7 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
 -- @c@ is a generic context in which computations are performed.
 class ( HApplicative c, Package c, HNFData c
       , Arithmetic (BaseField c), ResidueField (WitnessField c)
+      , FromConstant (BaseField c) (WitnessField c)
       ) => Symbolic c where
     -- | Base algebraic field over which computations are performed.
     type BaseField c :: Type
