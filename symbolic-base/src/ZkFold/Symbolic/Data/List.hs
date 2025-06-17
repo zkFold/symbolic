@@ -232,11 +232,11 @@ singleton
 singleton x = x .: emptyList
 
 (!!) ::
-  forall x c n.
+  forall x c r n.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
-  (KnownNat n, KnownRegisters c n Auto) =>
-  List c x -> UInt n Auto c -> x
-xs !! n = snd $ foldl (Morph \((m :: UInt n Auto s, y :: Switch s x), x) ->
+  (KnownNat r, KnownNat n, IsValidRegister r n c) =>
+  List c x -> UInt r n c -> x
+xs !! n = snd $ foldl (Morph \((m :: UInt r n s, y :: Switch s x), x) ->
   (m - one, ifThenElse (m == zero :: Bool s) x y))
   (n, restore $ const (embed $ pureRep zero, pureRep zero)) xs
 
@@ -248,21 +248,21 @@ concat xs = reverse $
   foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
 
 findIndex ::
-  forall x c n.
+  forall x c r n.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
-  (KnownNat n, KnownRegisters c n Auto
-  ) => MorphFrom c x (Bool c) -> List c x -> UInt n Auto c
-findIndex p xs = snd $ foldl (Morph \((m :: UInt n Auto s, y :: UInt n Auto s), x :: Switch s x) ->
+  (KnownNat r, KnownNat n, IsValidRegister r n c) =>
+  MorphFrom c x (Bool c) -> List c x -> UInt r n c
+findIndex p xs = snd $ foldl (Morph \((m :: UInt r n s, y :: UInt r n s), x :: Switch s x) ->
   (m + one, ifThenElse (p @ x :: Bool s) m y))
-  (zero :: UInt n Auto c, zero) xs
+  (zero :: UInt r n c, zero) xs
 
 insert ::
-  forall x c n.
+  forall x c r n.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>
-  (KnownNat n, KnownRegisters c n Auto) =>
-  List c x -> UInt n Auto c -> x -> List c x
+  (KnownNat r, KnownNat n, IsValidRegister r n c) =>
+  List c x -> UInt r n c -> x -> List c x
 insert xs n xi =
-  let (_, _, res) = foldr (Morph \(a :: Switch s x, (n' :: UInt n Auto s, xi', l')) ->
+  let (_, _, res) = foldr (Morph \(a :: Switch s x, (n' :: UInt r n s, xi', l')) ->
         (n' - one, xi', ifThenElse (n' == zero :: Bool s) (xi' .: l') (a .: l'))) (n, xi, emptyList) xs
    in res
 
