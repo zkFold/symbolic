@@ -3,17 +3,17 @@
 
 module ZkFold.Data.Eq where
 
-import           Data.Bool                  (Bool)
-import qualified Data.Eq                    as Haskell
-import           Data.Foldable              (Foldable)
-import           Data.Int                   (Int)
-import           Data.Maybe                 (Maybe (..))
-import           Data.Ratio                 (Rational)
-import           Data.String                (String)
-import           Data.Type.Equality         (type (~))
-import qualified GHC.Generics               as G
-import           Numeric.Natural            (Natural)
-import           Prelude                    (Integer)
+import           Data.Bool          (Bool)
+import qualified Data.Eq            as Haskell
+import           Data.Foldable      (Foldable)
+import           Data.Int           (Int)
+import           Data.Maybe         (Maybe (..))
+import           Data.Ratio         (Rational)
+import           Data.String        (String)
+import           Data.Type.Equality (type (~))
+import qualified GHC.Generics       as G
+import           Numeric.Natural    (Natural)
+import           Prelude            (Integer)
 
 import           ZkFold.Data.Bool
 
