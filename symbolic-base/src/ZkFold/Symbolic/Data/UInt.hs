@@ -26,6 +26,7 @@ import           Control.Applicative               (Applicative (..))
 import           Control.DeepSeq
 import           Control.Monad                     (foldM, zipWithM)
 import           Control.Monad.State               (StateT (..))
+import           Data.Aeson                        (FromJSON (..), ToJSON (..))
 import qualified Data.Bool                         as Haskell
 import           Data.Foldable                     (Foldable (toList), foldlM, foldr, foldrM, for_)
 import           Data.Function                     (on)
@@ -68,7 +69,6 @@ import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit
-import Data.Aeson (FromJSON (..), ToJSON (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (r :: Natural) (n :: Natural) (c :: (Type -> Type) -> Type) = UInt (c (Vector n))
