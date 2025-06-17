@@ -227,7 +227,6 @@ library
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
       ZkFold.Symbolic.Data.Combinators
-      ZkFold.Symbolic.Data.Conditional
       ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
       ZkFold.Symbolic.Data.EllipticCurve.BN254
       ZkFold.Symbolic.Data.EllipticCurve.Ed25519

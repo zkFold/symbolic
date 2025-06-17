@@ -1,40 +1,39 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE OverloadedLists      #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Algebra.EllipticCurve.BN254 (
-  BN254_Scalar,
-  BN254_Base,
-  Fr,
-  Fp,
-  Fp2,
-  Fp6,
-  Fp12,
-  BN254_G1_Point,
-  BN254_G2_Point,
-  BN254_G1_JacobianPoint,
-  BN254_G2_JacobianPoint,
-  BN254_GT,
-) where
+module ZkFold.Algebra.EllipticCurve.BN254
+  ( BN254_Scalar
+  , BN254_Base
+  , Fr
+  , Fp
+  , Fp2
+  , Fp6
+  , Fp12
+  , BN254_G1_Point
+  , BN254_G2_Point
+  , BN254_G1_JacobianPoint
+  , BN254_G2_JacobianPoint
+  , BN254_GT
+  ) where
 
-import Control.Monad (return, (>>))
-import Data.Binary (Binary (..))
-import Data.Bool ((&&))
-import Data.Function (($))
-import Text.Show (Show)
-import Prelude (Bool, Integer)
+import           Control.Monad                        (return, (>>))
+import           Data.Binary                          (Binary (..))
+import           Data.Bool                            ((&&))
+import           Data.Function                        (($))
+import           Prelude                              (Integer)
 import qualified Prelude
+import           Text.Show                            (Show)
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
-import ZkFold.Algebra.EllipticCurve.Pairing
-import ZkFold.Algebra.Field (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
-import ZkFold.Algebra.Number
-import ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
-import ZkFold.Symbolic.Data.Conditional
-import ZkFold.Symbolic.Data.Eq
+import           ZkFold.Algebra.Class
+import           ZkFold.Algebra.EllipticCurve.Class
+import           ZkFold.Algebra.EllipticCurve.Pairing
+import           ZkFold.Algebra.Field                 (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
+import           ZkFold.Algebra.Number
+import           ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
+import           ZkFold.Symbolic.Data.Eq
 
 -------------------------- Scalar field & field towers -------------------------
 
@@ -42,15 +41,12 @@ import ZkFold.Symbolic.Data.Eq
 -- https://pkg.go.dev/github.com/consensys/gnark-crypto/ecc/bn254
 
 type BN254_Scalar = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-
 instance Prime BN254_Scalar
 
 type BN254_Base = 21888242871839275222246405745257275088696311157297823662689037894645226208583
-
 instance Prime BN254_Base
 
 type Fr = Zp BN254_Scalar
-
 type Fp = Zp BN254_Base
 
 instance IrreduciblePoly (Poly Fp) Fp "BN254-IP1" where
@@ -111,22 +107,16 @@ type BN254_G2_JacobianPointOf field = Weierstrass "BN254_G2" (JacobianPoint fiel
 
 instance WeierstrassCurve "BN254_G2" Fp2 where
   weierstrassB =
-    Ext2
-      0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
-      0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
+    Ext2 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5
+         0x9713b03af0fed4cd2cafadeed8fdf4a74fa084e52d1852e4a2bd0685c315d2
 
 instance CyclicGroup BN254_G2_Point where
   type ScalarFieldOf BN254_G2_Point = Fr
-  pointGen =
-    pointXY
-      ( Ext2
-          0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
-          0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2
-      )
-      ( Ext2
-          0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
-          0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b
-      )
+  pointGen = pointXY
+    (Ext2 0x1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed
+          0x198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2)
+    (Ext2 0x12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa
+          0x90689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b)
 
 instance Scale Fr BN254_G2_Point where
   scale n x = scale (toConstant n) x
@@ -142,12 +132,11 @@ instance Scale Fr BN254_G2_JacobianPoint where
 
 newtype BN254_GT = BN254_GT Fp12
   deriving
-    ( Conditional Prelude.Bool
-    , Eq
-    , MultiplicativeMonoid
-    , MultiplicativeSemigroup
-    , Prelude.Eq
+    ( Prelude.Eq
     , Show
+    , MultiplicativeSemigroup
+    , MultiplicativeMonoid
+    , Eq
     )
 
 instance Exponent BN254_GT Natural where
@@ -162,19 +151,17 @@ instance Finite BN254_GT where
   type Order BN254_GT = BN254_Scalar
 
 instance Pairing BN254_G1_Point BN254_G2_Point BN254_GT where
-  pairing p q =
-    BN254_GT $
-      finalExponentiation @Fr $
-        millerAlgorithmBN xi param p q
-   where
-{- FOURMOLU_DISABLE -}
-    param = [ 1
-      , 1, 0, 1, 0, 0,-1, 0, 1, 1, 0, 0, 0,-1, 0, 0, 1
-      , 1, 0, 0,-1, 0, 0, 0, 0, 0, 1, 0, 0,-1, 0, 0, 1
-      , 1, 1, 0, 0, 0, 0,-1, 0, 1, 0, 0,-1, 0, 1, 1, 0
-      , 0, 1, 0, 0,-1, 1, 0, 0,-1, 0, 1, 0, 1, 0, 0, 0
-      ]
-{- FOURMOLU_ENABLE -}
+  pairing p q
+    = BN254_GT
+    $ finalExponentiation @Fr
+    $ millerAlgorithmBN xi param p q
+    where
+      param = [ 1
+        , 1, 0, 1, 0, 0,-1, 0, 1, 1, 0, 0, 0,-1, 0, 0, 1
+        , 1, 0, 0,-1, 0, 0, 0, 0, 0, 1, 0, 0,-1, 0, 0, 1
+        , 1, 1, 0, 0, 0, 0,-1, 0, 1, 0, 0,-1, 0, 1, 1, 0
+        , 0, 1, 0, 0,-1, 1, 0, 0,-1, 0, 1, 0, 1, 0, 0, 0
+        ]
 
 ------------------------------ Encoding ----------------------------------------
 
@@ -186,8 +173,8 @@ instance Binary BN254_G1_Point where
     yp <- get
     return $
       if xp == zero && yp == zero
-        then pointInf
-        else pointXY xp yp
+      then pointInf
+      else pointXY xp yp
 
 instance Binary BN254_G2_Point where
   put (Weierstrass (Point xp yp isInf)) =
@@ -197,5 +184,5 @@ instance Binary BN254_G2_Point where
     yp <- get
     return $
       if xp == zero && yp == zero
-        then pointInf
-        else pointXY xp yp
+      then pointInf
+      else pointXY xp yp

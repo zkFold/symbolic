@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Class where
 
 import           Control.DeepSeq              (NFData)
 import           Control.Monad
+import           Data.Bool                    (Bool)
 import           Data.Eq                      (Eq)
 import           Data.Foldable                (Foldable)
 import           Data.Function                ((.))
@@ -17,6 +18,7 @@ import           Prelude                      (Enum, Integer)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Control.HApplicative  (HApplicative (hpair, hunit))
+import           ZkFold.Data.Eq               (BooleanOf)
 import           ZkFold.Data.HFunctor.Classes (HNFData)
 import           ZkFold.Data.Package          (Package (pack))
 import           ZkFold.Data.Product          (uncurryP)
@@ -26,7 +28,7 @@ import           ZkFold.Symbolic.MonadCircuit
 -- is called an ``arithmetic'' field.
 type Arithmetic a = ( ResidueField a, IntegralOf a ~ Integer
                     , ToConstant a, Const a ~ Natural
-                    , Eq a, Ord a, Enum a, NFData a)
+                    , BooleanOf a ~ Bool, Eq a, Ord a, Enum a, NFData a)
 
 -- | A type of mappings between functors inside a circuit.
 -- @fs@ are input functors, @g@ is an output functor, @c@ is context.

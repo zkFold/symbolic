@@ -1,4 +1,4 @@
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments     #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
@@ -6,35 +6,36 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   validateTransactionWithAssetDiff,
 ) where
 
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Eq ((==))
-import qualified ZkFold.Symbolic.Data.List as Symbolic.List
-import ZkFold.Symbolic.Data.Morph
-import Prelude (fst, undefined, ($), (.))
+import           Prelude                      (fst, undefined, ($), (.))
 
-import ZkFold.Symbolic.Ledger.Types
+import           ZkFold.Control.Conditional   (ifThenElse)
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.Eq      ((==))
+import qualified ZkFold.Symbolic.Data.List    as Symbolic.List
+import           ZkFold.Symbolic.Data.Morph
+import           ZkFold.Symbolic.Ledger.Types
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
-validateTransaction
-  :: forall context
-   . Signature context
-  => Transaction context
-  -- ^ 'Transaction' to validate.
-  -> Bool context
+validateTransaction ::
+  forall context.
+  Signature context =>
+  -- | 'Transaction' to validate.
+  Transaction context ->
+  Bool context
 validateTransaction = fst . validateTransactionWithAssetDiff
 
--- | Validate a 'Transaction'.
---
--- To check:
---   * TODO: write checks.
-validateTransactionWithAssetDiff
-  :: forall context
-   . Signature context
-  => Transaction context
-  -- ^ 'Transaction' to validate.
-  -> (Bool context, AssetValues context)
-  -- ^ Validity of transaction along with value difference between outputs and inputs.
+{- | Validate a 'Transaction'.
+
+To check:
+  * TODO: write checks.
+-}
+validateTransactionWithAssetDiff ::
+  forall context.
+  Signature context =>
+  -- | 'Transaction' to validate.
+  Transaction context ->
+  -- | Validity of transaction along with value difference between outputs and inputs.
+  (Bool context, AssetValues context)
 validateTransactionWithAssetDiff tx =
   let
     -- Is transaction valid?
