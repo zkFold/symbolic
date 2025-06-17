@@ -247,6 +247,8 @@ concat ::
 concat xs = reverse $
   foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
 
+-- TODO: Does it return index 0 if we don't find the element? The circuit should be unsatisfiable in that case.
+-- TODO: Also what happens if the list is longer than the UInt size?
 findIndex ::
   forall x c r n.
   (SymbolicOutput x, Context x ~ c, SymbolicFold c) =>

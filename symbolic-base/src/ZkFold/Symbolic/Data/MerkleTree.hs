@@ -26,8 +26,8 @@ import           ZkFold.Symbolic.Algorithm.Hash.MiMC
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool           (Bool (..), BoolType (false))
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Combinators    (Iso (from), KnownRegisters, RegisterSize (Auto), expansion,
-                                                      horner, mzipWithMRep, withNumberOfRegisters)
+import           ZkFold.Symbolic.Data.Combinators    (Iso (from), RegisterSize (Auto), expansion,
+                                                      horner, mzipWithMRep, withNumberOfRegisters, IsValidRegister)
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement   (FieldElement (FieldElement, fromFieldElement))
 import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
@@ -153,19 +153,21 @@ instance (Symbolic c, KnownNat (d-1)) => SymbolicData (MerkleTreePath d c)
 instance (Symbolic c, KnownNat (d-1)) => Conditional (Bool c) (MerkleTreePath d c)
 
 -- | Finds a path to an element satisfying the constraint
-findPath :: forall x c d n.
+findPath :: forall r n x c d .
   ( SymbolicOutput x
   , Context x ~ c
   , SymbolicFold c
+  , KnownNat r
+  , KnownNat n
+  , IsValidRegister r n c
   , KnownNat d
   , 1 <= d
-  , NumberOfBits (BaseField c) ~ n
+  , NumberOfBits (BaseField c) ~ n * r
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> Maybe c (MerkleTreePath d c)
-findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @_ @c) (just path) (p @ lookup @x @c mt path :: Bool c)
+findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @_ @c) (just path) (p @ lookup @r @n @x @c mt path :: Bool c)
   where
     leaves = V.last nodes
-    path = withNumberOfRegisters @n @Auto @(BaseField c) $
-      MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . from $ findIndex p leaves
+    path = MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . from $ findIndex @_ @_ @r @n p leaves
 
 indToPath :: forall c d. (Symbolic c, KnownNat d) => c Par1 -> Vector (d - 1) (c Par1)
 indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
@@ -173,16 +175,19 @@ indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
     return $ Comp1 (V.unsafeToVector @(d-1) $ P.map Par1 ee)
 
 -- | Returns the element corresponding to a path
-lookup :: forall x c d.
+lookup :: forall r n x c d.
   ( SymbolicOutput x
   , Context x ~ c
   , SymbolicFold c
+  , KnownNat r
+  , KnownNat n
+  , IsValidRegister r n c
   , KnownNat d
   , 1 <= d
   ) => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
   where
-    xP = leaf @c @x @d (V.last nodes) $ ind path
+    xP = leaf @r @n @c @x @d (V.last nodes) $ ind path
 
     -- element indices along the path on each layer
     inits = V.unsafeToVector @(d-2) $
@@ -197,7 +202,7 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
       withDict (minusNat @d @1) $ mzipWithMRep (\wp wi -> newAssigned (one - ($ wp) + ($ wi)*(one + one))) ps is
 
     -- adjacent elements along paths
-    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
+    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @r @n @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
 
     xA = restore @x @c $ const (preimage , payload xP Proxy)
 
@@ -215,14 +220,17 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
     path = P.fmap (\(Bool b) -> b) p
 
 -- element by index
-leaf :: forall c x d.
+leaf :: forall r n c x d.
   ( SymbolicOutput x
   , Context x ~ c
   , SymbolicFold c
+  , KnownNat r
+  , KnownNat n
+  , IsValidRegister r n c
   , KnownNat d
   ) => List c x -> c Par1 -> x
 leaf l i = withNumberOfRegisters @d @Auto @(BaseField c) $
-  let num = strictConv @_ @(UInt d Auto c) i in l L.!! num
+  let num = strictConv @_ @(UInt r n c) i in l L.!! num
 
 -- index of element in path to element
 ind :: forall d c. (Symbolic c) => Vector d (c Par1) -> c Par1
@@ -232,13 +240,15 @@ ind vb = fromCircuitF (pack vb) $ \vb' -> do
   return $ fromConstant b1n
 
 -- | Inserts an element at a specified position in a tree
-insertLeaf :: forall x c d.
+insertLeaf :: forall r n x c d.
   ( SymbolicOutput x
   , Context x ~ c
   , SymbolicFold c
   , KnownNat d
+  , KnownNat r
+  , KnownNat n
+  , IsValidRegister r n c
   , 1 <= d
-  , KnownRegisters c d Auto
   ) => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
 insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preimage) (V.unsafeToVector z3)
   where
@@ -255,7 +265,7 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
       withDict (minusNat @d @1) $ mzipWithMRep (\wp wi -> newAssigned (one - ($ wp) + ($ wi)*(one + one))) ps is
 
     -- adjacent elements along paths
-    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
+    pairs = V.unsafeToVector @(d-1) $ P.zipWith (\l i -> arithmetize (leaf @r @n @c @x @d l i) Proxy) (V.fromVector $ V.tail nodes) (V.fromVector cinds)
 
     preimage :: Vector (d - 1) (c (Layout x))
     preimage =
@@ -275,21 +285,22 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
 
     z3 = P.zipWith3 (\l mtp xi -> L.insert l mtp (restore @_ @c $ const (xi, pureRep zero)))
           (V.fromVector nodes)
-          (P.map (strictConv @_ @(UInt d Auto c)) ([embed $ Par1 zero] P.++ V.fromVector inits P.++ [ind path]))
+          (P.map (strictConv @_ @(UInt r n c)) ([embed $ Par1 zero] P.++ V.fromVector inits P.++ [ind path]))
           (V.fromVector preimage P.<> [arithmetize xI Proxy])
 
 -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
-replace :: forall x c d n.
+replace :: forall r n x c d .
   ( SymbolicOutput x
   , Context x ~ c
   , SymbolicFold c
+  , KnownNat r
+  , KnownNat n
+  , IsValidRegister r n c
+  , NumberOfBits (BaseField c) ~ n * r
   , KnownNat d
   , 1 <= d
-  , KnownRegisters c d Auto
-  , NumberOfBits (BaseField c) ~ n
   ) => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
-replace p t x = withNumberOfRegisters @n @Auto @(BaseField c) $ withDict (minusNat @d @1) $
-  maybe t (\path -> insertLeaf t path x) (findPath @x @c p t)
+replace p t x = maybe t (\path -> insertLeaf @r @n t path x) (findPath @r @n @x @c p t)
 
 -- | Returns the next path in a tree
 incrementPath :: forall c d.

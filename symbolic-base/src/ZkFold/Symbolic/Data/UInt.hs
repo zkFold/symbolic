@@ -671,7 +671,7 @@ instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictCo
 instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictConv (Zp p) (UInt r n c) where
     strictConv = strictConv . toConstant
 
-instance (KnownNat r, KnownNat n, Symbolic c) => StrictConv (c Par1) (UInt r n c) where
+instance (KnownNat r, KnownNat n, Symbolic c, IsValidRegister r n c) => StrictConv (c Par1) (UInt r n c) where
     strictConv a = UInt $ symbolicF a (\p -> V.unsafeToVector [unPar1 p]) (\xv -> do
         let i = unPar1 xv
             len = Haskell.min (getNatural @n) (numberOfBits @(BaseField c))
