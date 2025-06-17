@@ -2,6 +2,7 @@ dist
 dist-*
 cabal-dev
 *.o
+*.a
 *.hi
 *.hie
 *.chi
@@ -29,3 +30,5 @@ node_modules
 *.svg
 symbolic-base/rust-wrapper/target*
 a.out
+ghc_wasm_jsffi.js
+proof.wasm

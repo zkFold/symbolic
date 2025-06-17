@@ -10,7 +10,6 @@ author:             Vladimir Sinyakov, Pavel Sokolov, Vladimir Morozov, Eitan Ch
 maintainer:         vlasin@zkfold.io
 license:            MIT
 license-file:       LICENSE
---build-type:         Simple 
 build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
