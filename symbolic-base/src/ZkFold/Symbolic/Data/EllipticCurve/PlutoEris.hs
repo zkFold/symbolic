@@ -17,7 +17,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FFA
 
 type Pluto_Point ctx =
@@ -43,7 +42,7 @@ instance
   ) => Scale (FFA PlutoEris_q 'Auto ctx) (Pluto_Point ctx) where
 
     scale ffa x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
+      (\b p -> bool zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
       (Prelude.iterate (\e -> e + e) x)
         where
@@ -70,7 +69,7 @@ instance
   ) => Scale (FFA PlutoEris_p 'Auto ctx) (Eris_Point ctx) where
 
     scale ffa x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
+      (\b p -> bool zero p (isSet bits b))
       [upper, upper -! 1 .. 0]
       (Prelude.iterate (\e -> e + e) x)
         where

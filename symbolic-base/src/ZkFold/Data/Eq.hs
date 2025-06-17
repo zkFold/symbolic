@@ -15,10 +15,9 @@ import qualified GHC.Generics               as G
 import           Numeric.Natural            (Natural)
 import           Prelude                    (Integer)
 
-import           ZkFold.Control.Conditional (Conditional, GConditional)
 import           ZkFold.Data.Bool
 
-class Conditional (BooleanOf a) a => Eq a where
+class BoolType (BooleanOf a) => Eq a where
 
     type BooleanOf a
     type BooleanOf a = GBooleanOf (G.Rep a)
@@ -66,7 +65,7 @@ instance Eq Rational where
     type BooleanOf Rational = Bool
     (==) = (Haskell.==)
     (/=) = (Haskell./=)
-instance (Eq a, Conditional (BooleanOf a) (Maybe a)) => Eq (Maybe a) where
+instance Eq a => Eq (Maybe a) where
     type BooleanOf (Maybe a) = BooleanOf a
     Just x == Just y   = x == y
     Nothing == Nothing = true
@@ -86,7 +85,7 @@ instance
     , BooleanOf x2 ~ BooleanOf x3
     ) => Eq (x0,x1,x2,x3)
 
-class GConditional (GBooleanOf u) u => GEq u where
+class BoolType (GBooleanOf u) => GEq u where
     type GBooleanOf u
     geq :: u x -> u x -> GBooleanOf u
     gneq :: u x -> u x -> GBooleanOf u

@@ -16,11 +16,11 @@ import           GHC.Generics                          (Generic)
 import           Prelude                               hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import qualified Prelude                               as Haskell hiding ((||))
 
+import           ZkFold.Control.Conditional            (ifThenElse)
 import           ZkFold.Symbolic.Class                 (Symbolic)
 import           ZkFold.Symbolic.Data.Bool             (Bool, BoolType (..))
 import           ZkFold.Symbolic.Data.Class            (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators      (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional      (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq               (Eq (..))
 import           ZkFold.Symbolic.Data.Hash             (Hashable, hash)
 import qualified ZkFold.Symbolic.Data.List             as Symbolic.List
@@ -52,8 +52,6 @@ data Transaction context = Transaction
   deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => SymbolicData (Transaction context)
-
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Conditional (Bool context) (Transaction context)
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Eq (Transaction context)
 
@@ -117,8 +115,6 @@ data OutputRef context = OutputRef
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => SymbolicData (OutputRef context)
 
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Conditional (Bool context) (OutputRef context)
-
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (OutputRef context)
 
 -- | Input to a transaction.
@@ -131,7 +127,5 @@ data Input context = Input
   deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => SymbolicData (Input context)
-
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Conditional (Bool context) (Input context)
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (Input context)

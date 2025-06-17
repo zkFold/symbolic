@@ -1,4 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Symbolic.Ledger.Types.Transaction.BatchData (
     TransactionBatchData (..),
 ) where
@@ -7,10 +8,8 @@ import           GHC.Generics                                  (Generic)
 import           Prelude                                       hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Class                         (Symbolic)
-import           ZkFold.Symbolic.Data.Bool                     (Bool)
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional              (Conditional)
 import           ZkFold.Symbolic.Data.Eq                       (Eq)
 import           ZkFold.Symbolic.Data.List                     (List)
 import           ZkFold.Symbolic.Ledger.Types.Address          (Address)
@@ -25,11 +24,10 @@ data TransactionBatchData context = TransactionBatchData
     -- ^ Merkle tree root of the addresses corresponding to online transactions (represented by their transaction hash) that are associated with a particular data availability source.
     , tbdOnlineAddresses     :: List context (Address context)
     -- ^ List of addresses included in the batch which correspond to online transactions and are associated with a particular data availability source.
-    , tbdOfflineTransactions :: List context ((Address context, List context (HashSimple context)))
+    , tbdOfflineTransactions :: List context (Address context, List context (HashSimple context))
     -- ^ All offline transactions (represented by their transaction hash) associated with a particular data availability source that are included in the batch.
     }
     deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => SymbolicData (TransactionBatchData context)
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Conditional (Bool context) (TransactionBatchData context)
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Eq (TransactionBatchData context)

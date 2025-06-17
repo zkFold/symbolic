@@ -122,15 +122,12 @@ instance Semiring a => Semiring (Vector a) where
 
 instance Ring a => Ring (Vector a) where
 
-instance Conditional b a => Conditional b (Vector a) where
-    bool u v b = zipLongest (\x y -> bool x y b) u v
-
 instance Eq a => Eq (Vector a) where
     type BooleanOf (Vector a) = BooleanOf a
     u == v = and $ zipLongest (==) u v
     u /= v = or $ zipLongest (/=) u v
 
-instance Field a => Field (Vector a) where
+instance (Field a, Conditional (BooleanOf a) (Vector a)) => Field (Vector a) where
     finv = fmap finv
 
 instance SemiEuclidean a => SemiEuclidean (Vector a) where
@@ -145,7 +142,7 @@ instance Euclidean a => Euclidean (Vector a) where
 instance Finite a => Finite (Vector a) where
     type Order (Vector a) = Order a
 
-instance ResidueField a => ResidueField (Vector a) where
+instance (ResidueField a, Conditional (BooleanOf a) (Vector a)) => ResidueField (Vector a) where
     type IntegralOf (Vector a) = Vector (IntegralOf a)
     fromIntegral = fmap fromIntegral
     toIntegral = fmap toIntegral

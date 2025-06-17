@@ -13,7 +13,6 @@ import           Prelude                            (type (~))
 import           ZkFold.Symbolic.Data.Bool          (Bool)
 import           ZkFold.Symbolic.Data.Class         (SymbolicData (..), SymbolicOutput)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional   (Conditional)
 import           ZkFold.Symbolic.Data.Int
 import qualified ZkFold.Symbolic.Data.List          as L
 import           ZkFold.Symbolic.Data.VarByteString
@@ -26,11 +25,8 @@ import           ZkFold.UPLC.BuiltinType
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
-    ( Typeable v
+    ( Typeable v, Context v ~ c
     , SymbolicOutput v, SymbolicFold c
-    , Context v ~ c, Support v ~ Proxy c
-    -- TODO: Remove after Conditional becomes part of SymbolicData
-    , Conditional (Bool c) v
     ) => IsData (t :: BuiltinType) v c | t c -> v, v -> t, v -> c where
   asPair :: v -> Maybe (ExValue c, ExValue c)
   asList :: v -> Maybe (ExList c)

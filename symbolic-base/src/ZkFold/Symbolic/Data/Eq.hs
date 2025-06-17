@@ -24,7 +24,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool (Bool), all, any)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (runInvert)
-import           ZkFold.Symbolic.Data.Conditional ()
 import           ZkFold.Symbolic.MonadCircuit
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool

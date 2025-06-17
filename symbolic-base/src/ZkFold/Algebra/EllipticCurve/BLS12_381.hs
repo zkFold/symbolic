@@ -21,7 +21,6 @@ import           ZkFold.Algebra.Field
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
 import           ZkFold.Data.ByteString
-import qualified ZkFold.Symbolic.Data.Conditional     as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq              as Symbolic
 
 -------------------------------- Introducing Fields ----------------------------------
@@ -321,7 +320,6 @@ newtype BLS12_381_GT = BLS12_381_GT Fq12
         , Show
         , MultiplicativeSemigroup
         , MultiplicativeMonoid
-        , Symbolic.Conditional Prelude.Bool
         , Symbolic.Eq
         )
 

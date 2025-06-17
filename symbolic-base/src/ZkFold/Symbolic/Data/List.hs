@@ -18,6 +18,7 @@ import           GHC.Generics                      (Generic, Generic1, Par1 (..)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number             (KnownNat)
+import           ZkFold.Control.Conditional        (ifThenElse)
 import           ZkFold.Data.HFunctor              (hmap)
 import           ZkFold.Data.List.Infinite         ()
 import           ZkFold.Data.Orphans               ()
@@ -26,7 +27,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional  (Conditional, ifThenElse)
 import           ZkFold.Symbolic.Data.Eq           (Eq (..), SymbolicEq)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
@@ -61,7 +61,6 @@ data List c x = List
 instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 -- | TODO: Maybe some 'isValid' check for Lists?..
 instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
-instance (SymbolicData x, c ~ Context x) => Conditional (Bool c) (List c x)
 instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
 
 -- | TODO: A proof-of-concept where hash == id.
@@ -265,4 +264,3 @@ insert xs n xi =
   let (_, _, res) = foldr (Morph \(a :: Switch s x, (n' :: UInt n Auto s, xi', l')) ->
         (n' - one, xi', ifThenElse (n' == zero :: Bool s) (xi' .: l') (a .: l'))) (n, xi, emptyList) xs
    in res
-

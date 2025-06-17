@@ -13,7 +13,6 @@ import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic (..))
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators    (KnownRegisters, RegisterSize (..))
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input          (SymbolicInput)
 
@@ -33,9 +32,6 @@ instance (Symbolic context, KnownRegisters context 32 Auto)
 
 instance (Symbolic context, KnownRegisters context 32 Auto)
     => SymbolicInput (OutputRef context) where
-
-instance (Symbolic context, KnownRegisters context 32 Auto)
-    => Conditional (Bool context) (OutputRef context) where
 
 instance (Symbolic context, KnownRegisters context 32 Auto)
     => Eq (OutputRef context) where

@@ -43,12 +43,11 @@ import           ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants (sha224InitialHas
                                                                 sha512_224InitialHashes, sha512_256InitialHashes,
                                                                 word32RoundConstants, word64RoundConstants)
 import           ZkFold.Symbolic.Class                         (BaseField, Symbolic, fromCircuitF)
-import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..))
+import           ZkFold.Symbolic.Data.Bool                     (Bool (..), BoolType (..), bool)
 import           ZkFold.Symbolic.Data.ByteString               (ByteString (..), ShiftBits (..), concat, set, toWords,
                                                                 truncate)
 import           ZkFold.Symbolic.Data.Combinators              (Iso (..), RegisterSize (..), Resize (..), expansionW,
                                                                 ilog2)
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.FieldElement             (FieldElement (..))
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                     (UInt)
@@ -312,7 +311,7 @@ sha2PadVar VarByteString{..} = VarByteString paddedLengthFe $ withPaddedLength @
         nextChunk = getNextChunk bsLength
 
         paddedLengthFe :: FieldElement context
-        paddedLengthFe = bool @(Bool context) nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
+        paddedLengthFe = bool nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
 
         diff :: FieldElement context
         diff = paddedLengthFe - bsLength

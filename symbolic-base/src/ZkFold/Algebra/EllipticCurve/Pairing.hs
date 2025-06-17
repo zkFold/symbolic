@@ -21,8 +21,8 @@ import qualified Prelude
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
 import           ZkFold.Algebra.Field
+import           ZkFold.Control.Conditional         (ifThenElse)
 import           ZkFold.Symbolic.Data.Bool          hiding (Bool)
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 
 -- Ate pairing implementation adapted from:
@@ -45,6 +45,8 @@ millerAlgorithmBLS12 ::forall c d fldC fldD i j g.
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD)) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
@@ -61,6 +63,8 @@ millerAlgorithmBN :: forall c d fldC fldD i j g.
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD)) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
@@ -80,6 +84,8 @@ finalStepBN :: forall c d fldC fldD i j g.
   FiniteField fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD)) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
@@ -101,6 +107,8 @@ millerLoop ::
   Field fldC =>
   Scale fldC fldD =>
   Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD)) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
@@ -122,7 +130,7 @@ millerLoop p q = impl
 frobTwisted ::
   forall c fld.
   ( WeierstrassCurve c fld
-  , Conditional (BooleanOf fld) (BooleanOf fld)
+  , Conditional (BooleanOf fld) (Weierstrass c (Point fld))
   ) => Natural -> fld -> Weierstrass c (Point fld) -> Weierstrass c (Point fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =
   if isInf then pointInf else pointXY ((x ^ q) * (xi ^ tx)) ((y ^ q) * (xi ^ ty))
@@ -135,8 +143,7 @@ additionStep ::
   Field fldC =>
   Scale fldC fldD =>
   BooleanOf fldC ~ BooleanOf fldD =>
-  -- Conditional bool fldD =>
-  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   Untwisted fldD i j ~ g =>
   Field g =>
   Weierstrass c (Point fldC) ->
@@ -149,7 +156,7 @@ doublingStep ::
   WeierstrassCurve d fldD =>
   Field fldC =>
   Scale fldC fldD =>
-  Conditional (BooleanOf fldD) (BooleanOf fldD) =>
+  Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g) =>
   BooleanOf fldC ~ BooleanOf fldD =>
   Untwisted fldD i j ~ g =>
   Field g =>
@@ -163,8 +170,7 @@ lineFunction :: forall c d baseFieldC baseFieldD i j g.
   WeierstrassCurve d baseFieldD =>
   Field baseFieldC =>
   Scale baseFieldC baseFieldD =>
-  Conditional (BooleanOf baseFieldD) (BooleanOf baseFieldD) =>
-  -- Conditional bool baseFieldD =>
+  Conditional (BooleanOf baseFieldD) (Weierstrass d (Point baseFieldD), g) =>
   BooleanOf baseFieldC ~ BooleanOf baseFieldD =>
   Untwisted baseFieldD i j ~ g =>
   Weierstrass c (Point baseFieldC) ->

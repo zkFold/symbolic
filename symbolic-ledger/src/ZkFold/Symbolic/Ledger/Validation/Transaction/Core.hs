@@ -6,12 +6,12 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   validateTransactionWithAssetDiff,
 ) where
 
-import           Prelude                          (fst, undefined, ($), (.))
+import           Prelude                      (fst, undefined, ($), (.))
 
+import           ZkFold.Control.Conditional   (ifThenElse)
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Conditional (ifThenElse)
-import           ZkFold.Symbolic.Data.Eq          ((==))
-import qualified ZkFold.Symbolic.Data.List        as Symbolic.List
+import           ZkFold.Symbolic.Data.Eq      ((==))
+import qualified ZkFold.Symbolic.Data.List    as Symbolic.List
 import           ZkFold.Symbolic.Data.Morph
 import           ZkFold.Symbolic.Ledger.Types
 
