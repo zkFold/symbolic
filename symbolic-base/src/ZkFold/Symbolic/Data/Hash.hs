@@ -3,22 +3,22 @@
 
 module ZkFold.Symbolic.Data.Hash where
 
-import           Control.Monad                    (return)
-import           Data.Function                    (const, ($))
-import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (traverse)
-import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     (Generic, Par1 (..), (:*:) (..))
+import           Control.Monad                  (return)
+import           Data.Function                  (const, ($))
+import           Data.Proxy                     (Proxy (..))
+import           Data.Traversable               (traverse)
+import           Data.Type.Equality             (type (~))
+import           GHC.Generics                   (Generic, Par1 (..), (:*:) (..))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Control.HApplicative      (hunit)
-import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Eq          (Eq (..), SymbolicEq, (==))
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
-import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
+import           ZkFold.Control.HApplicative    (hunit)
+import           ZkFold.Symbolic.Class          (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
+import           ZkFold.Symbolic.Data.Bool      (Bool (..))
+import           ZkFold.Symbolic.Data.Class     (SymbolicData (..), SymbolicOutput)
+import           ZkFold.Symbolic.Data.Eq        (Eq (..), SymbolicEq, (==))
+import           ZkFold.Symbolic.Data.Input     (SymbolicInput)
+import           ZkFold.Symbolic.Data.Payloaded (Payloaded (Payloaded))
+import           ZkFold.Symbolic.MonadCircuit   (constraint, unconstrained)
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;

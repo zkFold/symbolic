@@ -1,12 +1,12 @@
 module ZkFold.Symbolic.Data.Switch where
 
-import           Data.Function                    (const, (.))
-import           Data.Functor                     (fmap, (<$>))
-import           Data.Proxy                       (Proxy (..))
+import           Data.Function                  (const, (.))
+import           Data.Functor                   (fmap, (<$>))
+import           Data.Proxy                     (Proxy (..))
 
-import           ZkFold.Symbolic.Class            (Symbolic (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (..))
+import           ZkFold.Symbolic.Class          (Symbolic (..))
+import           ZkFold.Symbolic.Data.Class     (SymbolicData (..))
+import           ZkFold.Symbolic.Data.Payloaded (Payloaded (..))
 
 -- | A 'Switch' of a 'SymbolicData' @x@ to context @c@
 -- is a separate Symbolic datatype which has the same layout and payload as @x@,
