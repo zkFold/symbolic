@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DerivingVia          #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -11,10 +11,9 @@ module ZkFold.Protocol.IVC.Commit
     , PedersonCommit (..)
     ) where
 
-import           Data.Functor.Constant              (Constant (..))
 import           Data.Zip                           (Zip (..))
 import           Prelude                            hiding (Num (..), sum, take, zipWith)
-import           System.Random                      (Random (..), mkStdGen)
+import           System.Random                      (Uniform, mkStdGen, uniform)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class
@@ -42,25 +41,22 @@ type PedersonSetupMaxSize = 100
 
 instance
   ( CyclicGroup (Weierstrass curve (Point field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point field)))
+  , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
   ) => PedersonSetup [] (Weierstrass curve (Point field)) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
-        let x = fst $ random $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point field))
+        let x = fst $ uniform $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point field))
         in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
 
 instance
   ( KnownNat n
   , CyclicGroup (Weierstrass curve (Point field))
-  , Random (ScalarFieldOf (Weierstrass curve (Point field)))
+  , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
   , n <= PedersonSetupMaxSize
   ) => PedersonSetup (Vector n) (Weierstrass curve (Point field)) where
     groupElements =
         -- TODO: This is just for testing purposes! Not to be used in production
         unsafeToVector $ take (value @n) $ groupElements @[]
-
-instance (PedersonSetup s g, Functor s) => PedersonSetup s (Constant g a) where
-    groupElements = Constant <$> groupElements @s
 
 newtype PedersonCommit g = PedersonCommit { pedersonCommit :: g }
     deriving newtype (Scale f, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup)
@@ -77,3 +73,10 @@ instance
   , AdditiveGroup g
   ) => HomomorphicCommit (s f) (PedersonCommit g) where
     hcommit v = sum $ zipWith scale v groupElements
+
+deriving via (PedersonCommit (Weierstrass c (Point f)))
+    instance
+        ( CyclicGroup (Weierstrass c (Point f))
+        , Uniform (ScalarFieldOf (Weierstrass c (Point f)))
+        , Scale s (Weierstrass c (Point f))
+        ) => HomomorphicCommit [s] (Weierstrass c (Point f))

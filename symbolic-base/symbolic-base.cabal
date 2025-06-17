@@ -386,7 +386,6 @@ test-suite symbolic-base-test
       RSA                                   < 1.1,
       split                               < 0.2.6,
       symbolic-base                              ,
-      transformers                               ,
       vector                                     ,
       vector-algorithms                          ,
       aeson

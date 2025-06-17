@@ -22,7 +22,7 @@ import           Data.Aeson                           (FromJSON (..), FromJSONKe
 import           Data.Bool                            (Bool)
 import qualified Data.Bool                            as Bool
 import           Data.Function                        (const, id, ($), (.))
-import           Data.Functor                         ((<$>))
+import           Data.Functor                         (fmap, (<$>))
 import           Data.List                            ((++))
 import           Data.Maybe                           (Maybe (..))
 import           Data.Semigroup                       ((<>))
@@ -36,6 +36,7 @@ import           GHC.TypeLits                         (Symbol)
 import           Prelude                              (Integer)
 import qualified Prelude                              as Haskell
 import           System.Random                        (Random (..))
+import           System.Random.Stateful               (Uniform (..), UniformRange (..))
 import           Test.QuickCheck                      hiding (scale)
 
 import           ZkFold.Algebra.Class                 hiding (Euclidean (..))
@@ -211,14 +212,15 @@ wordCount = Haskell.ceiling $ log2ceiling (value @p) % (8 :: Natural)
 instance KnownNat p => Arbitrary (Zp p) where
     arbitrary = toZp <$> chooseInteger (0, Haskell.fromIntegral (value @p) - 1)
 
-instance KnownNat p => Random (Zp p) where
-    randomR (Zp a, Zp b) g = (Zp r, g')
-      where
-        (r, g') = randomR (a, b) g
+instance KnownNat p => Random (Zp p)
 
-    random g = (Zp r, g')
-      where
-        (r, g') = randomR (0, Haskell.fromIntegral (value @p) - 1) g
+instance KnownNat p => Uniform (Zp p) where
+    uniformM = fmap Zp . uniformRM (0, Haskell.fromIntegral (value @p) - 1)
+
+instance KnownNat p => UniformRange (Zp p) where
+    uniformRM (Zp a, Zp b)
+        | a Haskell.<= b = fmap Zp . uniformRM (a, b)
+        | Haskell.otherwise = fmap fromConstant . uniformRM (a, b + integral @p)
 
 -- | Exponentiation by an element of a finite field is well-defined (and lawful)
 -- if and only if the base is a finite multiplicative group of a matching order.
