@@ -3,17 +3,17 @@
 
 module ZkFold.Symbolic.Data.Hash where
 
-import           Control.Monad                  (return)
-import           Data.Function                  (($))
-import           GHC.Generics                   (Generic, Generic1, Par1 (..))
+import           Control.Monad                (return)
+import           Data.Function                (($))
+import           GHC.Generics                 (Generic, Generic1, Par1 (..))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Symbolic.Class          (Symbolic (..), embedW, fromCircuit2F)
-import           ZkFold.Symbolic.Data.Class     (SymbolicData (..), SymbolicDataConstraint)
-import           ZkFold.Symbolic.Data.Eq        (Eq (..), (==))
-import           ZkFold.Symbolic.Data.Input     (SymbolicInput)
-import           ZkFold.Symbolic.Data.Witness   (Wit (..))
-import           ZkFold.Symbolic.MonadCircuit   (constraint)
+import           ZkFold.Symbolic.Class        (Symbolic (..), embedW, fromCircuit2F)
+import           ZkFold.Symbolic.Data.Class   (SymbolicData (..), SymbolicDataConstraint)
+import           ZkFold.Symbolic.Data.Eq      (Eq (..), (==))
+import           ZkFold.Symbolic.Data.Input   (SymbolicInput)
+import           ZkFold.Symbolic.Data.Witness (Wit (..))
+import           ZkFold.Symbolic.MonadCircuit (constraint)
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;

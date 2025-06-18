@@ -17,7 +17,7 @@ import           Text.Show                                          (show)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Prelude                                     (writeFileJSON)
-import           ZkFold.Symbolic.Class                              (Arithmetic, fromCircuit2F, BaseField)
+import           ZkFold.Symbolic.Class                              (Arithmetic, BaseField, fromCircuit2F)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext, fool)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var     (NewVar)

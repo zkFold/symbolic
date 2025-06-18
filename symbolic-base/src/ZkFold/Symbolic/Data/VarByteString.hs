@@ -33,7 +33,7 @@ import           Data.Kind                         (Type)
 import           Data.List.Split                   (chunksOf)
 import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
-import           GHC.Generics                      (Generic, Par1 (..), Generic1)
+import           GHC.Generics                      (Generic, Generic1, Par1 (..))
 import           GHC.TypeLits                      (KnownSymbol (..), symbolVal, withKnownNat)
 import           Prelude                           (const, fmap, otherwise, pure, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude                           as Haskell
@@ -175,7 +175,7 @@ withLog2 =
     withDict (unsafeAxiom @(1 <= n)) $
         withDict (log2Nat @n) $
             withDict (plusNat @(Log2 n) @1)
-            
+
 shift
     :: forall n ctx a
     .  Symbolic ctx
@@ -259,7 +259,7 @@ withWordCount =
             withDict (unsafeAxiom @(1 <= n + WordSize a)) $
                 withDict (plusNat @n @(WordSize a)) $
                     withDict (minusNat @(n + WordSize a) @1) $
-                        withDict (divNat @(n + WordSize a - 1) @(WordSize a))  
+                        withDict (divNat @(n + WordSize a - 1) @(WordSize a))
 
 newtype Words n ctx = Words (ctx (Vector (WordCount n (BaseField ctx))))
     deriving Generic

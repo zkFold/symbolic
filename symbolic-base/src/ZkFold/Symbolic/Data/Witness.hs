@@ -2,7 +2,7 @@
 
 module ZkFold.Symbolic.Data.Witness where
 
-import           ZkFold.Symbolic.Class      (Symbolic(..), embedW)
+import           ZkFold.Symbolic.Class      (Symbolic (..), embedW)
 import           ZkFold.Symbolic.Data.Bool  (true)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Input (SymbolicInput (..))
