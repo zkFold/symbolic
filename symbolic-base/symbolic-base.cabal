@@ -230,12 +230,12 @@ library
       ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
-      ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Data.Vec
+      ZkFold.Symbolic.Data.Witness
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit

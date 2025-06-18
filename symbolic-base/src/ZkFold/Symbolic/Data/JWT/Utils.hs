@@ -108,6 +108,11 @@ mulMod = unsafeAxiom
 withDivMul :: forall a b {r}. (Mod a b ~ 0) => ((Div a b) * b ~ a => r) -> r
 withDivMul = withDict (divMul @a @b)
 
+withDivMulNat :: forall a b c {r}. (KnownNat a, KnownNat b, KnownNat c, 1 <= b) => (KnownNat (Div a b * c) => r) -> r
+withDivMulNat =
+    withDict (divNat @a @b) $
+        withDict (timesNat @(Div a b) @c)
+
 ---------------------------------------------------------------------------------------------------
 
 feToUInt :: forall n ctx . Symbolic ctx => FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
@@ -174,7 +179,7 @@ base64ToAscii VarByteString{..} = withAscii @n $ wipeUnassigned $ VarByteString 
     where
         words6 = withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
         ascii  = word6ToAscii <$> words6
-        result = force $ concat ascii
+        result = withDivMulNat @n @6 @8 $ force $ concat ascii
 
         newLen =
             knownBufLen @n $

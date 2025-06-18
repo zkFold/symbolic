@@ -1,5 +1,6 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -28,7 +29,7 @@ import           ZkFold.Symbolic.MonadCircuit
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 
-instance (SymbolicData x, Symbolic c) => Eq (x c) where
+instance (SymbolicData x, Symbolic c, PayloadFunctor (Layout x (BaseField c))) => Eq (x c) where
     type BooleanOf (x c) = Bool c
     x == y =
         let

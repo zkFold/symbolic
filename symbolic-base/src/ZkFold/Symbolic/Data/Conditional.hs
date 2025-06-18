@@ -1,5 +1,6 @@
-{-# LANGUAGE BlockArguments     #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -20,8 +21,9 @@ import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 -- TODO: Can we have a conditional on symbolic functions?
 
-instance (SymbolicData x, Symbolic c) => Conditional (Bool c) (x c) where
-  bool x y (Bool (Sym b)) = fromContext $
+instance (SymbolicData x, Symbolic c, PayloadFunctor (Layout x (BaseField c)))
+    => Conditional (Bool c) (x c) where
+  bool x y (Bool b) = fromContext $
     ( symbolic3F b (toContext x) (toContext y)
         (\(Par1 c) f t -> if c Prelude.== zero then f else t)
         \(Par1 c) -> mzipWithMRep $ \i j -> do

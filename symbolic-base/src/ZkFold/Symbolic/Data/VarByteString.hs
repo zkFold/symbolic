@@ -33,7 +33,7 @@ import           Data.Kind                         (Type)
 import           Data.List.Split                   (chunksOf)
 import           Data.Proxy                        (Proxy (..))
 import           Data.String                       (IsString (..))
-import           GHC.Generics                      (Generic, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..), Generic1)
 import           GHC.TypeLits                      (KnownSymbol (..), symbolVal, withKnownNat)
 import           Prelude                           (const, fmap, otherwise, pure, type (~), ($), (.), (<$>), (<>))
 import qualified Prelude                           as Haskell
@@ -46,12 +46,10 @@ import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
 import           ZkFold.Data.Vector                (Vector, chunks, fromVector, unsafeToVector)
 import           ZkFold.Prelude                    (drop, length, replicate, take)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool         (Bool (..))
 import           ZkFold.Symbolic.Data.ByteString   (ByteString (..), dropN, isSet, orRight, truncate)
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators  hiding (regSize)
-import           ZkFold.Symbolic.Data.Conditional  (Conditional, bool, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq           (Eq)
+import           ZkFold.Symbolic.Data.Conditional  (bool, ifThenElse)
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord          ((<))
@@ -68,15 +66,14 @@ data VarByteString (maxLen :: Natural) (context :: (Type -> Type) -> Type) =
         { bsLength :: FieldElement context
         , bsBuffer :: ByteString maxLen context
         }
-    deriving (Generic)
+    deriving (Generic, Generic1)
 
 deriving stock instance HShow ctx => Haskell.Show (VarByteString n ctx)
 deriving stock instance HEq ctx => Haskell.Eq (VarByteString n ctx)
 deriving anyclass instance HNFData ctx => NFData (VarByteString n ctx)
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ctx)
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
-deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
-deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
+
+deriving instance (KnownNat n) => SymbolicData (VarByteString n)
+deriving instance (KnownNat n) => SymbolicInput (VarByteString n)
 
 instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx) where
     arbitrary = do
@@ -95,15 +92,17 @@ toAsciiString VarByteString{..} = drop numZeros $ fromVector chars
 
 instance
     ( Symbolic ctx
-    , m * 8 ~ n
+    , KnownNat n
     , KnownNat m
+    , m * 8 ~ n
     ) => IsString (VarByteString n ctx) where
     fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
     ( Symbolic ctx
-    , m * 8 ~ n
+    , KnownNat n
     , KnownNat m
+    , m * 8 ~ n
     ) => FromConstant Bytes.ByteString (VarByteString n ctx) where
     fromConstant bytes = VarByteString (fromConstant @Natural . (*8) . Haskell.fromIntegral $ Bytes.length bytes) (fromConstant bytes)
 
@@ -117,7 +116,7 @@ fromNatural numBits n = VarByteString (fromConstant numBits) (fromConstant n)
 fromByteString :: forall n ctx . (Symbolic ctx, KnownNat n) => ByteString n ctx -> VarByteString n ctx
 fromByteString = VarByteString (fromConstant $ value @n)
 
-instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
+instance (Symbolic ctx, KnownNat n, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
     parseJSON v = fromString <$> parseJSON v
 
 -- | Construct a VarByteString from a type-level string calculating its length automatically
@@ -125,9 +124,10 @@ instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx)
 instance
     ( Symbolic ctx
     , KnownSymbol s
+    , KnownNat l
+    , KnownNat m
     , m ~ Length s
     , m * 8 ~ l
-    , KnownNat m
     ) => IsTypeString s (VarByteString l ctx) where
     fromType = fromString $ symbolVal (Proxy @s)
 
@@ -145,6 +145,7 @@ append
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
+    => KnownNat n
     => KnownNat (m + n)
     => VarByteString m ctx
     -> VarByteString n ctx
@@ -154,6 +155,7 @@ append (VarByteString l1 bs1) (VarByteString l2 bs2) = VarByteString (l1 + l2) $
         ex1 :: ByteString (m + n) ctx
         ex1 = resize bs1
 
+        newBs :: Max (m + n) n ~ m + n => ByteString (m + n) ctx
         newBs = (ex1 `shiftL` l2) `orRight` bs2
 
 infixl 6 @+
@@ -161,21 +163,30 @@ infixl 6 @+
     :: forall m n ctx
     .  Symbolic ctx
     => KnownNat m
+    => KnownNat n
     => KnownNat (m + n)
     => VarByteString m ctx
     -> VarByteString n ctx
     -> VarByteString (m + n) ctx
 (@+) = append
 
+withLog2 :: forall n {r} . (KnownNat n) => (KnownNat (Log2 n + 1) => r) -> r
+withLog2 =
+    withDict (unsafeAxiom @(1 <= n)) $
+        withDict (log2Nat @n) $
+            withDict (plusNat @(Log2 n) @1)
+            
 shift
-    :: forall n ctx
+    :: forall n ctx a
     .  Symbolic ctx
     => KnownNat n
+    -- => KnownNat (Log2 n + 1)
+    => a ~ BaseField ctx
     => (Words n ctx -> Natural -> Words n ctx)
     -> ByteString n ctx
     -> FieldElement ctx
     -> ByteString n ctx
-shift sh bs (FieldElement el) = from $ Haskell.foldr (\s b -> withWordCount @n @ctx $ bool b (b `sh` (2^s)) (isSet elBits s)) w [0 .. nbits]
+shift sh bs (FieldElement el) = from $ Haskell.foldr (\s b -> withWordCount @n @a $ withLog2 @n $ bool b (b `sh` (2^s)) (isSet elBits s)) w [0 .. nbits]
     where
         elBits :: ByteString (Log2 n + 1) ctx
         elBits = ByteString $ fromCircuitF el $ fmap unsafeToVector . expansion (nbits + 1) . unPar1
@@ -224,49 +235,56 @@ wipeUnassigned VarByteString{..} = VarByteString bsLength ((`shiftR` unassigned)
 -----------------------------------------------------------------------------------------------------------------------
 
 
-type WordSize ctx = Div (NumberOfBits (BaseField ctx)) 2
+type WordSize a = Div (NumberOfBits a) 2
 
 natWordSize :: Natural -> Natural
 natWordSize n = (ilog2 (n -! 1) + 1) `div` 2
 
-withWordSize' :: forall a . KnownNat (Order (BaseField a)) :- KnownNat (WordSize a)
-withWordSize' = Sub $ withKnownNat @(WordSize a) (unsafeSNat (natWordSize (value @(Order (BaseField a))))) Dict
+withWordSize' :: forall a . KnownNat (Order a) :- KnownNat (WordSize a)
+withWordSize' = Sub $ withKnownNat @(WordSize a) (unsafeSNat (natWordSize (value @(Order a)))) Dict
 
-withWordSize :: forall a {r}. (KnownNat (Order (BaseField a))) => (KnownNat (WordSize a) => r) -> r
+withWordSize :: forall a {r}. (KnownNat (Order a)) => (KnownNat (WordSize a) => r) -> r
 withWordSize = withDict (withWordSize' @a)
 
-type WordCount n ctx = Div (n + WordSize ctx - 1) (WordSize ctx)
+type WordCount n a = Div (n + WordSize a - 1) (WordSize a)
 
 withWordCount
-    :: forall n ctx {r}
+    :: forall n a {r}
     .  KnownNat n
-    => KnownNat (Order (BaseField ctx))
-    => (KnownNat (WordCount n ctx) => r) -> r
+    => KnownNat (Order a)
+    => (KnownNat (WordCount n a) => r) -> r
 withWordCount =
-    withWordSize @ctx $
-        withDict (unsafeAxiom @(1 <= WordSize ctx)) $
-            withDict (unsafeAxiom @(1 <= n + WordSize ctx)) $
-                withDict (plusNat @n @(WordSize ctx)) $
-                    withDict (minusNat @(n + WordSize ctx) @1) $
-                        withDict (divNat @(n + WordSize ctx - 1) @(WordSize ctx))
+    withWordSize @a $
+        withDict (unsafeAxiom @(1 <= WordSize a)) $
+            withDict (unsafeAxiom @(1 <= n + WordSize a)) $
+                withDict (plusNat @n @(WordSize a)) $
+                    withDict (minusNat @(n + WordSize a) @1) $
+                        withDict (divNat @(n + WordSize a - 1) @(WordSize a))  
 
-newtype Words n ctx = Words (ctx (Vector (WordCount n ctx)))
+newtype Words n ctx = Words (ctx (Vector (WordCount n (BaseField ctx))))
     deriving Generic
 
 deriving newtype instance HNFData ctx => NFData (Words n ctx)
 deriving newtype instance HShow ctx => Haskell.Show (Words n ctx)
-deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
-deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
+
+instance SymbolicData (Words n) where
+    type Layout (Words n) a = Vector (WordCount n a)
+    toContext (Words regs) = regs
+    fromContext = Words
+
+-- deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
+-- deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
 
 instance
   ( Symbolic ctx
   , KnownNat n
+  , a ~ BaseField ctx
   ) => Iso (Words n ctx) (ByteString n ctx) where
     from (Words regs) = ByteString $ fromCircuitF regs $ \r -> do
         let v = fromVector r
             (w, ws) = (Haskell.head v, Haskell.tail v)
-            regSize = withWordSize @ctx $ value @(WordSize ctx)
-            hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+            regSize = withWordSize @a $ value @(WordSize a)
+            hiRegSize = value @n -! regSize * (withWordCount @n @a $ value @(WordCount n a) -! 1)
         lows <- Haskell.concatMap Haskell.reverse <$> mapM (expansion regSize) ws
         hi <- Haskell.reverse <$> expansion hiRegSize w
         pure $ unsafeToVector (hi <> lows)
@@ -274,11 +292,12 @@ instance
 instance
   ( Symbolic ctx
   , KnownNat n
+  , a ~ BaseField ctx
   ) => Iso (ByteString n ctx) (Words n ctx) where
     from (ByteString bits) = Words $ fromCircuitF bits $ \b -> do
         let bs = fromVector b
-            regSize = withWordSize @ctx $ value @(WordSize ctx)
-            hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+            regSize = withWordSize @(BaseField ctx) $ value @(WordSize a)
+            hiRegSize = value @n -! regSize * (withWordCount @n @a $ value @(WordCount n a) -! 1)
             his = take hiRegSize bs
             lows = chunksOf (Haskell.fromIntegral regSize) $ drop hiRegSize bs
         hi <- horner $ Haskell.reverse his
@@ -289,17 +308,18 @@ instance
 -- | shift a vector of words left by a power of two
 --
 shiftWordsL
-    :: forall n ctx
+    :: forall n ctx a
     .  Symbolic ctx
     => KnownNat n
+    => a ~ BaseField ctx
     => Words n ctx -> Natural -> Words n ctx
 shiftWordsL (Words regs) p2
-  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @ctx $ embed (tabulate zero)
+  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @a $ embed (tabulate zero)
   | p2 Haskell.== 0 = Words regs
   | otherwise = Words shifted
     where
         regSize :: Natural
-        regSize = withWordSize @ctx $ value @(WordSize ctx)
+        regSize = withWordSize @a $ value @(WordSize a)
 
         hiRegSize :: Natural
         hiRegSize = value @n `mod` regSize
@@ -326,17 +346,18 @@ shiftWordsL (Words regs) p2
             pure (l : acc, h)
 
 shiftWordsR
-    :: forall n ctx
+    :: forall n ctx a
     .  Symbolic ctx
     => KnownNat n
+    => a ~ BaseField ctx
     => Words n ctx -> Natural -> Words n ctx
 shiftWordsR (Words regs) p2
-  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @ctx $ embed (tabulate zero)
+  | p2 Haskell.>= (value @n) = Words $ withWordCount @n @a $ embed (tabulate zero)
   | p2 Haskell.== 0 = Words regs
   | otherwise = Words shifted
     where
         regSize :: Natural
-        regSize = withWordSize @ctx $ value @(WordSize ctx)
+        regSize = withWordSize @a $ value @(WordSize a)
 
         hiRegSize :: Natural
         hiRegSize = value @n `mod` regSize
@@ -365,7 +386,7 @@ shiftWordsR (Words regs) p2
             s <- newAssigned $ \p ->  p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
             pure (s : acc, l)
 
-dropZeros :: forall n m c . (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
+dropZeros :: forall n m c . (Symbolic c, KnownNat n, KnownNat m, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
 dropZeros VarByteString{..} = ifThenElse (bsLength < feN) bsNMoreLen bsNLessLen
     where
         feN = fromConstant (value @n)

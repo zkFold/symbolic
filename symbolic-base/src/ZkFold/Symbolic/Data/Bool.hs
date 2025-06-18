@@ -11,7 +11,7 @@ import           Control.DeepSeq              (NFData)
 import           Data.Eq                      (Eq (..))
 import           Data.Function                (($))
 import           Data.Functor                 ((<$>))
-import           GHC.Generics                 (Generic, Generic1 (..), Par1 (..))
+import           GHC.Generics                 (Generic, Par1 (..))
 import qualified Prelude                      as Haskell
 import           Text.Show                    (Show)
 
@@ -19,19 +19,22 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Data.Bool
 import           ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Class   (Sym (..), SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class   (SymbolicData (..))
 import           ZkFold.Symbolic.Interpreter  (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool c = Bool (Sym Par1 c)
-    deriving (Generic, Generic1)
+newtype Bool c = Bool (c Par1)
+    deriving Generic
 
 deriving instance HNFData c => NFData (Bool c)
 deriving instance HEq c => Eq (Bool c)
 deriving instance HShow c => Show (Bool c)
 
-instance SymbolicData Bool
+instance SymbolicData Bool where
+    type Layout Bool a = Par1
+    toContext (Bool b) = b
+    fromContext = Bool
 
 instance {-# OVERLAPPING #-} (Eq a, MultiplicativeMonoid a) => Show (Bool (Interpreter a)) where
     show (fromBool -> x) = if x == one then "True" else "False"
@@ -56,4 +59,4 @@ instance Symbolic c => BoolType (Bool c) where
           newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
 fromBool :: Bool (Interpreter a) -> a
-fromBool (Bool (Sym (Interpreter (Par1 b)))) = b
+fromBool (Bool (Interpreter (Par1 b))) = b

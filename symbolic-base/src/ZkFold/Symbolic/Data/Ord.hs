@@ -129,11 +129,16 @@ instance KnownNat n => Ord (Zp n) where
   min = Prelude.min
   max = Prelude.max
 
-newtype Ordering c = Ordering (Sym Par1 c)
-  deriving (Generic1)
+newtype Ordering c = Ordering (c Par1)
+  deriving Generic
 deriving instance HNFData c => NFData (Ordering c)
 deriving instance HShow c => Show (Ordering c)
-instance SymbolicData Ordering
+
+instance SymbolicData Ordering where
+  type Layout Ordering a = Par1
+  toContext (Ordering o) = o
+  fromContext = Ordering
+
 instance Symbolic c => Semigroup (Ordering c) where
   o1 <> o2 = fromContext $ fromCircuit2F (toContext o1) (toContext o2) $
     \(Par1 v1) (Par1 v2) -> Par1 <$>
@@ -145,7 +150,8 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = fromContext $ embed (Par1 zero)
   gt = fromContext $ embed (Par1 one)
 
-instance {-# OVERLAPPABLE #-} (SymbolicData x, Symbolic c, LayoutFunctor (Layout x)) => Ord (x c) where
+instance {-# OVERLAPPABLE #-} (SymbolicData x, Symbolic c, LayoutFunctor (Layout x (BaseField c)))
+    => Ord (x c) where
   type OrderingOf (x c) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
   compare = bitwiseCompare `on` (getBitsBE . toContext)

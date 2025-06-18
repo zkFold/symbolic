@@ -28,22 +28,25 @@ import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
-newtype FieldElement c = FieldElement { fromFieldElement :: Sym Par1 c }
+newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
 
 deriving stock instance HShow c => Haskell.Show (FieldElement c)
 deriving stock instance HEq c => Haskell.Eq (FieldElement c)
-deriving stock instance (HEq c, Haskell.Ord (Sym Par1 c)) => Haskell.Ord (FieldElement c)
+deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldElement c)
 deriving newtype instance HNFData c => NFData (FieldElement c)
 
-deriving instance SymbolicData FieldElement
+instance SymbolicData FieldElement where
+  type Layout FieldElement a = Par1
+  toContext (FieldElement c) = c
+  fromContext = FieldElement
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = fromContext . embed . Par1 . fromConstant
 
 instance ToConstant (FieldElement (Interpreter a)) where
   type Const (FieldElement (Interpreter a)) = a
-  toConstant (FieldElement (Sym (Interpreter (Par1 x)))) = x
+  toConstant (FieldElement (Interpreter (Par1 x))) = x
 
 instance Symbolic c => Exponent (FieldElement c) Natural where
   (^) = natPow
@@ -104,7 +107,7 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
     fromContext $ symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero)
       $ fmap Par1 . horner . fromVector
 
-instance (Symbolic c) => SymbolicInput FieldElement where
+instance SymbolicInput FieldElement where
   isValid _ = true
 
 instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where

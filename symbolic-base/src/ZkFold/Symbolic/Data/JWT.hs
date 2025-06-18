@@ -19,7 +19,7 @@ import           Data.Aeson                         (FromJSON (..), genericParse
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
 import           Data.Constraint                    (withDict)
 import           Data.Kind                          (Type)
-import           GHC.Generics                       (Generic)
+import           GHC.Generics                       (Generic, Generic1)
 import           GHC.TypeLits                       (Symbol)
 import           Prelude                            (type (~), ($), (.))
 import qualified Prelude                            as P
@@ -44,7 +44,7 @@ class IsSymbolicJSON a where
 
 -- | Types than can be serialised
 --
-class IsBits a where
+class KnownNat (BitCount a) => IsBits a where
     type BitCount a :: Natural
 
     toBits :: a -> VarByteString (BitCount a) (Context a)
@@ -83,14 +83,14 @@ data TokenHeader ctx
         , hdTyp :: VarByteString 32 ctx
         -- ^ Type of token
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 deriving instance HEq ctx => P.Eq (TokenHeader ctx)
 deriving instance HShow ctx => P.Show (TokenHeader ctx)
 deriving instance HNFData ctx => NFData (TokenHeader ctx)
 
-deriving instance Symbolic ctx => SymbolicData (TokenHeader ctx)
-deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
+deriving instance SymbolicData TokenHeader
+deriving instance SymbolicInput TokenHeader
 
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
     parseJSON = genericParseJSON $ aesonPrefix snakeCase

@@ -14,17 +14,21 @@ import qualified Prelude                          as Haskell
 import           ZkFold.Algebra.Class
 import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData)
 import           ZkFold.Symbolic.Class
+import           ZkFold.Symbolic.Data.Bool        (true)
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.MonadCircuit
 
-newtype Vec f c = Vec { runVec :: Sym f c }
+newtype Vec f c = Vec { runVec :: c f }
 
-deriving instance (LayoutFunctor f) =>
-  SymbolicData (Vec f)
-deriving instance (LayoutFunctor f) =>
-  SymbolicInput (Vec f)
+instance SymbolicData (Vec f) where
+    type Layout (Vec f) a = f
+    toContext = runVec
+    fromContext = Vec
+
+instance SymbolicInput (Vec f) where
+    isValid _ = true
 
 deriving instance Generic (Vec f c)
 deriving instance (HNFData c, NFData1 f) => NFData (Vec f c)

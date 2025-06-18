@@ -64,7 +64,7 @@ import           ZkFold.Symbolic.Algorithm.FFT     (fft, ifft)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
-import           ZkFold.Symbolic.Data.Class        (SymbolicData)
+import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
@@ -82,9 +82,18 @@ deriving instance Generic (UInt n r context)
 deriving instance HNFData context => NFData (UInt n r context)
 deriving instance HEq context => Haskell.Eq (UInt n r context)
 deriving instance HShow context => Haskell.Show (UInt n r context)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
+
+class KnownRegisters c n r => UIntConstraints c n r
+instance KnownRegisters c n r => UIntConstraints c n r
+
+instance SymbolicData (UInt n r) where
+    type Layout (UInt n r) a = Vector (NumberOfRegisters a n r)
+    toContext (UInt v) = v
+    fromContext v = UInt v
+
+-- deriving newtype instance SymbolicData (UInt n r)
+-- deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
+-- deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
 
 toNative ::
   forall n r c a.
@@ -180,7 +189,7 @@ bitsPow 0 _ res _ _ = res
 bitsPow b bits res n m = bitsPow (b -! 1) bits newRes sq m
     where
         sq = Haskell.snd $ productMod n n m
-        newRes = force $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
+        newRes = force $ withNumberOfRegisters @n @r @(BaseField c) $ ifThenElse (isSet bits (b -! 1)) (Haskell.snd $ productMod res n m) res
 
 
 -- | Calculate @a * b `divMod` m@ using less constraints than would've been required by these operations used consequently
@@ -787,12 +796,10 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
                 return (p : ps <> [p'])
 
 instance
-  ( Symbolic c
-  , KnownNat n
+  ( KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
-  ) => SymbolicInput (UInt n r c) where
-
+  ) => SymbolicInput (UInt n r) where
+    isValid :: forall c . (Symbolic c) => UInt n r c -> Bool c
     isValid (UInt bits)
       | value @n == 0 = true
       | otherwise     = Bool $ fromCircuitF bits $ \v -> do

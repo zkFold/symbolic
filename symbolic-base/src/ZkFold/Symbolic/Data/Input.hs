@@ -31,12 +31,6 @@ instance SymbolicInput Bool where
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-instance LayoutFunctor f => SymbolicInput (Sym f) where
-  isValid _ = true
-
-instance PayloadFunctor f => SymbolicInput (Wit f) where
-  isValid _ = true
-
 instance (
       SymbolicInput x
     , SymbolicInput y

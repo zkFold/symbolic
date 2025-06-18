@@ -41,7 +41,7 @@ import           Data.Maybe                        (Maybe (..))
 import           Data.String                       (IsString (..))
 import           Data.These                        (These (..))
 import           Data.Traversable                  (for, mapM)
-import           GHC.Generics                      (Generic, Generic1, Par1 (..))
+import           GHC.Generics                      (Generic, Par1 (..))
 import           GHC.Natural                       (naturalFromInteger)
 import           Numeric                           (readHex, showHex)
 import           Prelude                           (Integer, const, drop, fmap, otherwise, pure, return, take, type (~),
@@ -60,7 +60,7 @@ import           ZkFold.Data.Vector                (Vector (..))
 import           ZkFold.Prelude                    (replicate, replicateA, (!!))
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
-import           ZkFold.Symbolic.Data.Class        (Sym (..), SymbolicData (..))
+import           ZkFold.Symbolic.Data.Class        (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
@@ -70,14 +70,17 @@ import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (c :: (Type -> Type) -> Type) = ByteString (Sym (Vector n) c)
-    deriving (Generic, Generic1)
+newtype ByteString (n :: Natural) (c :: (Type -> Type) -> Type) = ByteString (c (Vector n))
+    deriving Generic
 
 deriving stock instance HShow c => Haskell.Show (ByteString n c)
 deriving stock instance HEq c => Haskell.Eq (ByteString n c)
 deriving anyclass instance HNFData c => NFData (ByteString n c)
 
-instance (KnownNat n) => SymbolicData (ByteString n)
+instance (KnownNat n) => SymbolicData (ByteString n) where
+    type Layout (ByteString n) a = Vector n
+    toContext (ByteString bits) = bits
+    fromContext = ByteString
 
 instance
     ( Symbolic c
@@ -141,7 +144,7 @@ class ShiftBits a where
 
 instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
     type Const (ByteString n (Interpreter a)) = Natural
-    toConstant (ByteString (Sym (Interpreter bits))) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
+    toConstant (ByteString (Interpreter bits)) = Haskell.foldl (\y p -> toConstant p + base * y) 0 bits
         where base = 2
 
 
