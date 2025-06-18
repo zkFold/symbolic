@@ -2,7 +2,7 @@
 
 {- HLINT ignore "Use replicateM" -}
 
-module ZkFold.Prelude (module ZkFold.Prelude, foldl') where
+module ZkFold.Prelude where
 
 import           Control.Applicative  (Applicative)
 import           Control.Monad        (Monad, (>>=), return)
@@ -14,10 +14,7 @@ import           Data.Foldable        (Foldable)
 import           Data.Function        ((.), const)
 import           Data.Functor         ((<$>))
 import           Data.Functor.Rep     (Representable, tabulate)
-import           Data.List            (foldl', genericIndex, init, last, map)
-#if __GLASGOW_HASKELL__ >= 910
-import           Data.List            (unsnoc)
-#endif
+import qualified Data.List            as L
 import           Data.Map             (Map, lookup)
 import           Data.Maybe           (Maybe (..))
 import           Data.Ord             (Ord, (<))
@@ -36,6 +33,9 @@ log2ceiling = P.ceiling @Double . P.logBase 2 . P.fromIntegral
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
+
+foldl' :: Foldable t => (b -> a -> b) -> b -> t a -> b
+foldl' = L.foldl'
 
 length :: Foldable t => t a -> Natural
 length = foldl' (\c _ -> c P.+ 1) 0
@@ -83,8 +83,8 @@ replicateA n fx = sequenceA (replicate n fx)
 
 zipWithDefault :: (a -> b -> c) -> a -> b -> [a] -> [b] -> [c]
 zipWithDefault _ _ _ [] []         = []
-zipWithDefault f x _ [] bs         = map (f x) bs
-zipWithDefault f _ y as []         = map (`f` y) as
+zipWithDefault f x _ [] bs         = L.map (f x) bs
+zipWithDefault f _ y as []         = L.map (`f` y) as
 zipWithDefault f x y (a:as) (b:bs) = f a b : zipWithDefault f x y as bs
 
 elemIndex :: Eq a => a -> [a] -> Maybe Natural
@@ -96,7 +96,7 @@ elemIndex x = go 0
             | otherwise = go (i P.+ 1) ys
 
 (!!) :: [a] -> Natural -> a
-(!!) = genericIndex
+(!!) = L.genericIndex
 
 (!) :: Ord k => Map k a -> k -> a
 (!) m k = case lookup k m of
@@ -122,10 +122,12 @@ chooseNatural (lo, hi) = integerToNatural <$> chooseInteger (P.fromIntegral lo, 
 elementsRep :: (Representable f, Traversable f) => [a] -> Gen (f a)
 elementsRep = sequence . tabulate . const . elements
 
-#if __GLASGOW_HASKELL__ < 910
 unsnoc :: [a] -> Maybe ([a], a)
+#if __GLASGOW_HASKELL__ < 910
 unsnoc [] = Nothing
-unsnoc l =  Just (init l, last l)
+unsnoc l  = Just (L.init l, L.last l)
+#else
+unsnoc = L.unsnoc
 #endif
 
 zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
