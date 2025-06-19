@@ -1,20 +1,21 @@
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Data.Witness where
 
-import           ZkFold.Symbolic.Class      (Symbolic(..), embedW)
-import           ZkFold.Symbolic.Data.Bool  (true, Bool)
+import           Data.Function                    (($))
+import           Data.Functor                     (fmap)
+import           Data.Functor.Rep                 (pureRep)
+import           GHC.Generics                     ((:.:) (..))
+
+import           ZkFold.Algebra.Class             (zero)
+import           ZkFold.Data.Package              (pack, unpack)
+import           ZkFold.Prelude                   (zipWithDefault)
+import           ZkFold.Symbolic.Class            (Symbolic (..), embedW)
+import           ZkFold.Symbolic.Data.Bool        (Bool, true)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import GHC.Generics ((:.:) (..))
-import Data.Functor (fmap)
-import Data.Function (($))
-import ZkFold.Data.Package (pack, unpack)
-import ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import ZkFold.Prelude (zipWithDefault)
-import ZkFold.Algebra.Class (zero)
-import Data.Functor.Rep (pureRep)
+import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
+import           ZkFold.Symbolic.Data.Input       (SymbolicInput (..))
 
 newtype Wit x c = Wit { runWit :: Layout x (BaseField c) (WitnessField c) }
 
