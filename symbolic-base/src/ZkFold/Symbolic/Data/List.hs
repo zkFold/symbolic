@@ -10,18 +10,23 @@ import           Data.Distributive                 (Distributive (..))
 import           Data.Function                     (const, ($), (.))
 import           Data.Functor                      (Functor (..), (<$>))
 import           Data.Functor.Rep                  (Representable (..), pureRep, tabulate)
+import           Data.List                         (zipWith)
 import           Data.List.Infinite                (Infinite (..))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Traversable                  (traverse)
 import           Data.Tuple                        (fst, snd)
 import           Data.Type.Equality                (type (~))
 import           GHC.Generics                      (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
+import           Prelude                           (undefined)
+import qualified Prelude                           as Haskell
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number             (KnownNat)
+import           ZkFold.Control.HApplicative       (hliftA3)
 import           ZkFold.Data.HFunctor              (hmap)
 import           ZkFold.Data.List.Infinite         ()
 import           ZkFold.Data.Orphans               ()
+import           ZkFold.Data.Package               (pack, unpack)
 import           ZkFold.Data.Product               (fstP, sndP)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool         (Bool (..), BoolType (..))
@@ -32,20 +37,15 @@ import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput (..))
 import           ZkFold.Symbolic.Data.Morph        (MorphFrom, MorphTo (..), (@))
-import           ZkFold.Symbolic.Data.Witness      (Wit (..))
 import           ZkFold.Symbolic.Data.Switch       (Switch (..))
 import           ZkFold.Symbolic.Data.UInt         (UInt)
+import           ZkFold.Symbolic.Data.Witness      (Wit (..))
 import           ZkFold.Symbolic.Fold
 import           ZkFold.Symbolic.MonadCircuit
-import ZkFold.Data.Package (pack, unpack)
-import ZkFold.Control.HApplicative (hliftA3)
-import Prelude (undefined)
-import qualified Prelude as Haskell
-import Data.List (zipWith)
 
 data ListItem f a = ListItem
-  { tailHash    :: f a
-  , headLayout  :: f a
+  { tailHash   :: f a
+  , headLayout :: f a
   }
   deriving (Functor, Generic1, Representable)
 
@@ -64,12 +64,12 @@ data List x c = List
 
 instance SymbolicDataConstraint x => SymbolicData (List x) where
   type Layout (List x) a = Layout x a :*: Layout FieldElement a :*: ([] :.: Layout x a)
-  toContext List{..} = 
+  toContext List{..} =
     let w = pack $ fmap toContext lWitness
         h = toContext lHash
         s = toContext lSize
     in hliftA3 (\a b c -> a :*: b :*: c) h s w
-  fromContext c = 
+  fromContext c =
     let lHash :*: lSize :*: Comp1 lWitness = fromContext c
     in List { lHash, lSize, lWitness }
 -- | TODO: Maybe some 'isValid' check for Lists?..
@@ -126,7 +126,7 @@ uncons (List incHash incSize incWitness) = (x, List {..})
     x :: x c
     lWitness :: [Wit x c]
     (x, lWitness) = case incWitness of
-      [] -> (fromContext $ embed $ pureRep zero, [])
+      []                 -> (fromContext $ embed $ pureRep zero, [])
       (Wit w : tWitness) -> (fromContext $ embedW w, tWitness)
     lHash  = fromContext $ fromCircuit3F (toContext incHash) (toContext x) (toContext incSize) \vHash vRepr (Par1 s) ->
       mzipWithMRep (hashFun s) vHash vRepr
