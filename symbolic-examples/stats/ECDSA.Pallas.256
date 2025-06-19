@@ -1,5 +1,5 @@
 ECDSA.Pallas.256
-Number of polynomial constraints: 76556
-Number of variables: 83055
-Number of lookup constraints: 7432
-Number of lookup tables: 8
+Number of polynomial constraints: 77252
+Number of variables: 84034
+Number of lookup constraints: 7805
+Number of lookup tables: 4
