@@ -19,6 +19,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.EllipticCurve.Class   (Compressible (..), CyclicGroup (..), Pairing (..))
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate
+import           ZkFold.FFI.Rust.Conversion
 import           ZkFold.Protocol.NonInteractiveProof
 import           ZkFold.Protocol.Plonkup.Input
 import           ZkFold.Protocol.Plonkup.Internal
@@ -31,7 +32,8 @@ import           ZkFold.Symbolic.Class                (Arithmetic)
 
 {-| Based on the paper https://eprint.iacr.org/2022/086.pdf -}
 
-instance forall i o n g1 g2 gt ts pv .
+instance forall i o n g1 g2 gt ts pv rustG1 rustPv .
+--instance forall i o n g1 g2 gt ts pv .
         ( KnownNat n
         , Representable i
         , Representable o
@@ -45,9 +47,13 @@ instance forall i o n g1 g2 gt ts pv .
         , ToTranscript ts (ScalarFieldOf g1)
         , ToTranscript ts (Compressed g1)
         , FromTranscript ts (ScalarFieldOf g1)
-        , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+        , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
         , KnownNat (PlonkupPolyExtendedLength n)
         , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+        , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
+        , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
+        , RustHaskell rustG1 g1
+        , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
         ) => NonInteractiveProof (Plonkup i o n g1 g2 ts pv) where
     type Transcript (Plonkup i o n g1 g2 ts pv)  = ts
     type SetupProve (Plonkup i o n g1 g2 ts pv)  = PlonkupProverSetup i o n g1 g2 pv
@@ -73,7 +79,8 @@ instance forall i o n g1 g2 gt ts pv .
       Witness (Plonkup i o n g1 g2 ts pv) ->
       (Input (Plonkup i o n g1 g2 ts pv), Proof (Plonkup i o n g1 g2 ts pv))
     prove setup witness =
-        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
+        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv @rustG1 @rustPv setup witness)
+--        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
         in (input, proof)
 
     verify ::

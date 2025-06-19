@@ -10,9 +10,12 @@ author:             Vladimir Sinyakov, Pavel Sokolov, Vladimir Morozov, Eitan Ch
 maintainer:         vlasin@zkfold.io
 license:            MIT
 license-file:       LICENSE
-build-type:         Simple
+build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
+extra-source-files:
+  rust-wrapper/*.toml
+  rust-wrapper/src/*.rs
 
 description:
   This package contains the zkFold Symbolic framework base library. It includes the zkFold Symbolic compiler and a number of zero knowledge proof protocols.
@@ -22,6 +25,15 @@ Flag Pedantic
     Description: Enable pedantic build with -Werror
     Manual: True
     Default: False
+
+custom-setup
+  setup-depends:
+      base >= 4.7 && < 5
+    , Cabal >= 3.0.0.0 && < 3.15.0.0
+    , directory >= 1.3.6.0
+    , filepath >= 1.3.0.2
+    , process
+
 
 common options
     default-language: Haskell2010
@@ -40,6 +52,8 @@ common options
     if !arch(wasm32)
       ghc-options:
         -threaded
+        -fprof-auto
+        -fprof-cafs
     if impl(ghc >=9.8)
       ghc-options:
         -Wno-x-partial
@@ -87,6 +101,10 @@ common options
 
 common options-exe
     import: options
+    if arch(wasm32)
+      buildable: False
+    else
+      buildable: True
     ghc-options:
       -rtsopts
     ghc-prof-options:
@@ -137,6 +155,11 @@ library
       ZkFold.Data.Type
       ZkFold.Data.Utils
       ZkFold.Data.Vector
+      ZkFold.FFI.Rust.Conversion
+      ZkFold.FFI.Rust.Poly
+      ZkFold.FFI.Rust.RustBLS
+      ZkFold.FFI.Rust.RustFunctions
+      ZkFold.FFI.Rust.Types
       ZkFold.Protocol.IVC
       ZkFold.Protocol.IVC.Accumulator
       ZkFold.Protocol.IVC.AccumulatorScheme
@@ -325,6 +348,13 @@ library
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
     hs-source-dirs: src
+    if arch(wasm32)
+        ghc-options: 
+            -no-hs-main 
+            -optl-mexec-model=reactor 
+            -optl-Wl,--export=hs_init,-Lrust-wrapper/target/wasm32-unknown-unknown/release/,-lrust_wrapper
+
+
 
 test-suite symbolic-base-test
     import: options-exe

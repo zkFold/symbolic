@@ -15,8 +15,12 @@ import           Prelude                              hiding (Num ((*)), sum)
 import           ZkFold.Algebra.Class                 (Bilinear (..), Scale (..), sum)
 import           ZkFold.Algebra.EllipticCurve.Class   (CyclicGroup (..))
 import           ZkFold.Algebra.Number                (KnownNat)
-import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
+import           ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
 import           ZkFold.Data.ByteString
+import           ZkFold.FFI.Rust.Conversion
+import           ZkFold.FFI.Rust.Poly                 ()
+import           ZkFold.FFI.Rust.RustBLS              ()
+import           ZkFold.FFI.Rust.Types                ()
 
 class Monoid ts => ToTranscript ts a where
     toTranscript :: a -> ts
@@ -63,8 +67,20 @@ class NonInteractiveProof a where
 
     verify :: SetupVerify a -> Input a -> Proof a -> Bool
 
+type RustFFI g pv rustg rustp =
+    ( RustHaskell rustp pv
+    , RustHaskell rustg g
+    , Bilinear (V.Vector rustg) rustp rustg
+    )
 
-instance
+instance {-# OVERLAPPABLE #-}
+    ( f ~ ScalarFieldOf g
+    , RustFFI g (PolyVec f size) rustg rustp
+    , UnivariateRingPolyVec f (PolyVec f)
+    ) => Bilinear (V.Vector rustg) (PolyVec f size) g where
+      bilinear gs f = r2h @rustg $ bilinear gs (h2r @rustp f)
+
+instance {-# OVERLAPPABLE #-}
     ( CyclicGroup g
     , KnownNat size
     , NFData g

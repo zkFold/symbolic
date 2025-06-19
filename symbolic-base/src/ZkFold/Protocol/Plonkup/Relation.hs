@@ -184,7 +184,7 @@ toPlonkupRelation !ac =
         unfold (Product !t !u) =
             let (!m, ts) = unfold t
                 (!k, us) = unfold u
-             in ( m * n
+             in ( m * k
                 , \f -> ts (f . V.concatMap (V.replicate (P.fromIntegral k)))
                     :*: us (f . V.concat . L.replicate (P.fromIntegral m)))
         unfold (Plot !g !t) =
