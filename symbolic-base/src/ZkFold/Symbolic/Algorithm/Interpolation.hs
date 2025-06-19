@@ -6,8 +6,9 @@ import           Control.Monad                (foldM, zipWithM)
 import           Data.Function                (($), (.))
 import           Data.Functor                 (fmap, (<$>))
 import           Data.Functor.Rep             (Representable, index, tabulate)
-import           Data.List                    ((++))
+import           Data.List                    ((++), lookup)
 import           Data.List.NonEmpty           (NonEmpty, drop, iterate, take, toList, zipWith)
+import           Data.Maybe                   (fromJust)
 import           Data.Traversable             (Traversable, for, sequence)
 import           Data.Tuple                   (fst, snd)
 import           GHC.Generics                 (Par1 (..), type (:.:) (Comp1))
@@ -15,7 +16,7 @@ import qualified Prelude                      as P
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Data.Package          (pack)
-import           ZkFold.Symbolic.Class        (BaseField, Symbolic, fromCircuit2F)
+import           ZkFold.Symbolic.Class        (BaseField, Symbolic, symbolic2F)
 import           ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- | A list of pairs (ith element, all elements but the ith)
@@ -37,8 +38,9 @@ interpolateW fs pt =
 interpolation ::
     forall c f . (Symbolic c, Representable f, Traversable f) =>
     NonEmpty (BaseField c, c f) -> c Par1 -> c f
-interpolation bs point =
-    fromCircuit2F (pack $ Comp1 bs) point \(Comp1 (Comp1 fs)) (Par1 x) -> do
+interpolation bs point = symbolic2F (pack $ Comp1 bs) point
+    (\(Comp1 (Comp1 fs)) (Par1 x) -> fromJust . lookup x $ toList fs)
+    \(Comp1 (Comp1 fs)) (Par1 x) -> do
         -- | indicators from interpolation polynomial
         ks <- for (cuts $ fmap fst fs) \(c, ds) -> do
             let dm = fromConstant . finv $ product [ c - d | d <- ds ]
