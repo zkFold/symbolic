@@ -44,8 +44,8 @@ import           ZkFold.Symbolic.MonadCircuit
 -- TODO: reimplement `MerkleTree` without `List` and `SymbolicFold`
 
 data MerkleTree (d :: Natural) h c = MerkleTree {
-    mHash   :: h c
-  , mLeafs  :: Vector (2 ^ d) (h c)
+    mHash  :: h c
+  , mLeafs :: Vector (2 ^ d) (h c)
   }
   deriving Generic1
 
