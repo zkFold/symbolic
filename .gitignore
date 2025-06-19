@@ -32,3 +32,4 @@ symbolic-base/rust-wrapper/target*
 a.out
 ghc_wasm_jsffi.js
 proof.wasm
+Cargo.lock
