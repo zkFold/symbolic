@@ -5,14 +5,14 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAMaxBits,
-  -- toUInt
-  ) where
+module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAMaxBits, toUInt) where
 
 import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (Monad (..))
 import           Data.Bits                         (shiftL)
 import           Data.Bool                         (otherwise)
+import           Data.Constraint                   (withDict)
+import           Data.Constraint.Unsafe            (unsafeAxiom)
 import           Data.Function                     (($), (.))
 import           Data.Functor                      (($>))
 import           Data.Functor.Rep                  (Representable (..))
@@ -43,8 +43,6 @@ import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
-import Data.Constraint.Unsafe (unsafeAxiom)
-import Data.Constraint (withDict)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0

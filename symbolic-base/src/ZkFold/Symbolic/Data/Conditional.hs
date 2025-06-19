@@ -21,7 +21,7 @@ import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 -- TODO: Can we have a conditional on symbolic functions?
 
-instance (SymbolicData x, Symbolic c, PayloadFunctor (Layout x (BaseField c)))
+instance {-# INCOHERENT #-} (SymbolicData x, Symbolic c, PayloadFunctor (Layout x (BaseField c)))
     => Conditional (Bool c) (x c) where
   bool x y (Bool b) = fromContext $
     ( symbolic3F b (toContext x) (toContext y)

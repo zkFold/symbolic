@@ -11,7 +11,7 @@ import           Data.Maybe                         (fromMaybe)
 import           Data.Scientific                    (toBoundedInteger)
 import qualified Data.Text                          as T
 import           Generic.Random                     (genericArbitrary, uniform)
-import           GHC.Generics                       (Generic)
+import           GHC.Generics                       (Generic, Generic1)
 import           Prelude                            (fmap, type (~), ($), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
@@ -63,12 +63,12 @@ data GooglePayload ctx
         , plExp           :: VarByteString 80 ctx
         -- ^ Expiration time (seconds since Unix epoch), a decimal number
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 deriving instance HEq ctx => P.Eq (GooglePayload ctx)
 deriving instance HShow ctx => P.Show (GooglePayload ctx)
-deriving instance Symbolic ctx => SymbolicData (GooglePayload ctx)
-deriving instance Symbolic ctx => SymbolicInput (GooglePayload ctx)
+deriving instance SymbolicData GooglePayload
+deriving instance SymbolicInput GooglePayload
 instance Symbolic ctx => Arbitrary (GooglePayload ctx) where
     arbitrary = genericArbitrary uniform
 

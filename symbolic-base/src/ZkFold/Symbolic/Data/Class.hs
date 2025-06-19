@@ -96,7 +96,7 @@ instance
     gToContext (a :*: b) = hpair (gToContext a) (gToContext b)
     gFromContext c = gFromContext (hmap fstP c) :*: gFromContext (hmap sndP c)
 
-instance (GSymbolicData x, LayoutFunctor f) => GSymbolicData (f :.: x) where
+instance (GSymbolicData x, PayloadFunctor f) => GSymbolicData (f :.: x) where
     type GLayout (f :.: x) n = f :.: (GLayout x n)
     gToContext (G.Comp1 a) = pack (fmap gToContext a)
     gFromContext c = Comp1 (fmap gFromContext (unpack c))

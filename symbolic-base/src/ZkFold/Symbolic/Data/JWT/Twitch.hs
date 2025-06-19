@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.JWT.Twitch (TwitchPayload (..)) where
 import           Data.Aeson                         (FromJSON (..), genericParseJSON)
 import           Data.Aeson.Casing                  (aesonPrefix, snakeCase)
 import           Generic.Random                     (genericArbitrary, uniform)
-import           GHC.Generics                       (Generic)
+import           GHC.Generics                       (Generic, Generic1)
 import           Prelude                            (type (~), (.))
 import qualified Prelude                            as P
 import           Test.QuickCheck                    (Arbitrary (..))
@@ -46,7 +46,7 @@ data TwitchPayload ctx
         , twUserId       :: VarByteString 512 ctx
         -- ^ The user's Twitch user ID. This is provided only for users who allow your extension to identify them.
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 -- | @pListen@ and @pSend@ contain the topics the associated user is allowed to listen to and publish to, respectively.
 --
@@ -55,12 +55,12 @@ data PubSubPerms ctx =
         { pListen :: VarByteString 2048 ctx
         , pSend   :: VarByteString 2048 ctx
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 deriving instance HEq ctx => P.Eq (PubSubPerms ctx)
 deriving instance HShow ctx => P.Show (PubSubPerms ctx)
-deriving instance Symbolic ctx => SymbolicData (PubSubPerms ctx)
-deriving instance Symbolic ctx => SymbolicInput (PubSubPerms ctx)
+deriving instance SymbolicData PubSubPerms
+deriving instance SymbolicInput PubSubPerms
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
     arbitrary = genericArbitrary uniform
 
@@ -76,8 +76,8 @@ instance Symbolic ctx => FromJSON (PubSubPerms ctx) where
 
 deriving instance HEq ctx => P.Eq (TwitchPayload ctx)
 deriving instance HShow ctx => P.Show (TwitchPayload ctx)
-deriving instance Symbolic ctx => SymbolicData (TwitchPayload ctx)
-deriving instance Symbolic ctx => SymbolicInput (TwitchPayload ctx)
+deriving instance SymbolicData TwitchPayload
+deriving instance SymbolicInput TwitchPayload
 instance Symbolic ctx => Arbitrary (TwitchPayload ctx) where
     arbitrary = genericArbitrary uniform
 

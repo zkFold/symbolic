@@ -14,6 +14,7 @@ import           GHC.Generics           (Par1)
 import           ZkFold.Data.ByteString (Binary1)
 import           ZkFold.Symbolic.Class  (Symbolic (..))
 
+-- TODO: Modify `SymbolicFold` to store witness data in-circuit.
 class Symbolic c => SymbolicFold c where
   -- | A function to perform folding in a generic context.
   --

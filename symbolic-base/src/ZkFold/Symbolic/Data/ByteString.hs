@@ -70,7 +70,7 @@ import           ZkFold.Symbolic.MonadCircuit      (ClosedPoly, newAssigned)
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 --
-newtype ByteString (n :: Natural) (c :: (Type -> Type) -> Type) = ByteString (c (Vector n))
+newtype ByteString (n :: Natural) (c :: (Type -> Type) -> Type) = ByteString { runBytestring :: (c (Vector n)) }
     deriving Generic
 
 deriving stock instance HShow c => Haskell.Show (ByteString n c)
@@ -241,22 +241,21 @@ orRight l r = bitwiseOperation l r cons
 -- 4. @wordSize@ divides @n@.
 --
 
-toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize, KnownNat (m * wordSize)) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
-toWords bits = fromContext <$> unpackWith (V.chunks @m @wordSize) (toContext bits)
+toWords :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+toWords (ByteString bits) = fromContext <$> unpackWith (V.chunks @m @wordSize) bits
 
-concat :: forall k m c. (KnownNat m, KnownNat (k * m), Symbolic c) => Vector k (ByteString m c) -> ByteString (k * m) c
-concat bs = fromContext $ packWith V.concat (toContext <$> bs)
+concat :: forall k m c. Symbolic c => Vector k (ByteString m c) -> ByteString (k * m) c
+concat bs = ByteString $ packWith V.concat (runBytestring <$> bs)
 
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 --
 
 truncate :: forall m n c. (
     Symbolic c
-  , KnownNat m
   , KnownNat n
   , n <= m
   ) => ByteString m c -> ByteString n c
-truncate = fromContext . hmap (V.take @n) . toContext
+truncate (ByteString bits) = fromContext $ hmap (V.take @n) bits
 
 dropN :: forall n m c.
     ( Symbolic c
