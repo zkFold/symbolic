@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import           Control.Exception                  (throwIO)
 import           Control.Monad
 import           Data.Functor                       (($>))
@@ -9,13 +11,16 @@ import           Distribution.Simple.LocalBuildInfo (LocalBuildInfo (..), localP
 import           Distribution.Simple.Program.Find   (defaultProgramSearchPath, findProgramOnSearchPath)
 import           Distribution.Simple.Setup
 import           Distribution.Types.HookedBuildInfo
-import           Distribution.Utils.Path            (unsafeMakeSymbolicPath)
 import           Distribution.Verbosity             (Verbosity)
 import qualified Distribution.Verbosity             as Verbosity
 import           System.Directory
 import           System.Exit
 import           System.FilePath                    ((</>))
 import           System.Process                     (system)
+
+#if MIN_VERSION_Cabal(3,14,0)
+import qualified Distribution.Utils.Path as UtilsPath
+#endif
 
 main :: IO ()
 main = defaultMainWithHooks hooks
@@ -76,9 +81,15 @@ rsAddDirs lbi' = do
 
         updateBi bi =
           bi
-            { includeDirs = unsafeMakeSymbolicPath includeRustDir : includeDirs bi
-            , extraLibDirs = unsafeMakeSymbolicPath extraLibDir : extraLibDirs bi
+            { includeDirs = mkSymbolicPath includeRustDir : includeDirs bi
+            , extraLibDirs = mkSymbolicPath extraLibDir : extraLibDirs bi
             , extraLibs = ["rust_wrapper"]
             }
 
     pure $ updateLbi lbi'
+
+#if MIN_VERSION_Cabal(3,14,0)
+mkSymbolicPath = UtilsPath.unsafeMakeSymbolicPath
+#else
+mkSymbolicPath = id
+#endif
