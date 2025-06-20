@@ -23,7 +23,7 @@ import           Control.Monad                        (return, (>>))
 import           Data.Binary                          (Binary (..))
 import           Data.Bool                            ((&&))
 import           Data.Function                        (($))
-import           Prelude                              (Bool, Integer)
+import           Prelude                              (Integer)
 import qualified Prelude
 import           Text.Show                            (Show)
 
@@ -33,7 +33,6 @@ import           ZkFold.Algebra.EllipticCurve.Pairing
 import           ZkFold.Algebra.Field                 (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 
 -------------------------- Scalar field & field towers -------------------------
@@ -137,7 +136,6 @@ newtype BN254_GT = BN254_GT Fp12
     , Show
     , MultiplicativeSemigroup
     , MultiplicativeMonoid
-    , Conditional Prelude.Bool
     , Eq
     )
 

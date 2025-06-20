@@ -25,9 +25,6 @@ import           Data.Constraint
 import           Data.Constraint.Nat
 import           Data.Constraint.Unsafe
 import           Data.Data                                       (Proxy (..))
-#if __GLASGOW_HASKELL__ < 910
-import qualified Data.Foldable                                   as P (foldl')
-#endif
 import           Data.Function                                   (flip, (&))
 import           Data.Functor.Rep                                (Representable (..))
 import           Data.Semialign                                  (Zip (..))
@@ -43,17 +40,18 @@ import qualified Prelude                                         as P
 import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Field                            (fromZp)
 import           ZkFold.Algebra.Number
+import           ZkFold.Control.Conditional                      (ifThenElse)
 import           ZkFold.Data.HFunctor                            (hmap)
 import           ZkFold.Data.Vector                              (Vector (..), backpermute, chunks, concatMap,
                                                                   enumerate, head, mapWithIx, reverse, slice, unfold,
                                                                   (!!))
+import           ZkFold.Prelude                                  (foldl')
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
 import           ZkFold.Symbolic.Class                           (Symbolic (..))
 import           ZkFold.Symbolic.Data.Bool                       (BoolType (..))
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators                (Ceil, GetRegisterSize, Iso (..), NumberOfRegisters,
                                                                   RegisterSize (..))
-import           ZkFold.Symbolic.Data.Conditional                (ifThenElse)
 import           ZkFold.Symbolic.Data.FieldElement               (FieldElement)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt                       (OrdWord, UInt)
@@ -308,7 +306,7 @@ absorbBlocks ::
 absorbBlocks blocks =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let blockChunks :: Vector (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm)) (Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context)) = chunks blocks
-     in P.foldl'
+     in foldl'
           ( \accState chunk ->
               keccakF @context (updateStateInAbsorption @algorithm @context chunk threshold accState)
           )
@@ -345,7 +343,7 @@ absorbBlocksVar paddedMsgLen blocks =
            in from $ numBlocks `div` absorbChunkSize
         numChunksToDrop = fromConstant (value @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))) - actualChunksCount
      in -- In this case, we need to drop first few chunks.
-        P.foldl'
+        foldl'
           ( \accState (fromZp -> ix, chunk) ->
               let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix

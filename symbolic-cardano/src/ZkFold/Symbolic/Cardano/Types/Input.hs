@@ -15,10 +15,8 @@ import           ZkFold.Symbolic.Cardano.Types.Output    (DatumHash, Output, txo
 import           ZkFold.Symbolic.Cardano.Types.OutputRef (OutputRef)
 import           ZkFold.Symbolic.Cardano.Types.Value     (Value)
 import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators        (KnownRegisters, RegisterSize (..))
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input              (SymbolicInput)
 
@@ -27,13 +25,6 @@ data Input tokens datum context = Input  {
         txiOutput    :: Output tokens datum context
     }
     deriving (Generic)
-
-instance
-    ( Symbolic context
-    , KnownNat tokens
-    , KnownRegisters context 32 Auto
-    , KnownRegisters context 64 Auto
-    ) => Conditional (Bool context) (Input tokens datum context)
 
 instance
     ( Symbolic context

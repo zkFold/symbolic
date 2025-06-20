@@ -1,4 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
    TransactionBatch (..),
 ) where
@@ -7,10 +8,8 @@ import           GHC.Generics                                  (Generic)
 import           Prelude                                       hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Class                         (Symbolic)
-import           ZkFold.Symbolic.Data.Bool                     (Bool)
 import           ZkFold.Symbolic.Data.Class                    (SymbolicData (..))
 import           ZkFold.Symbolic.Data.Combinators              (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional              (Conditional)
 import           ZkFold.Symbolic.Data.Eq                       (Eq)
 import           ZkFold.Symbolic.Data.List                     (List)
 import           ZkFold.Symbolic.Ledger.Types.DataAvailability (DAIndex)
@@ -36,5 +35,4 @@ data TransactionBatch context = TransactionBatch
     deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => SymbolicData (TransactionBatch context)
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Conditional (Bool context) (TransactionBatch context)
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, KnownRegisters context 11 Auto, Symbolic context) => Eq (TransactionBatch context)

@@ -27,7 +27,6 @@ import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class
 import           ZkFold.Symbolic.Data.Combinators (expansion)
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
@@ -134,7 +133,6 @@ newtype Ordering c = Ordering (c Par1)
   deriving (Generic)
 deriving instance HNFData c => NFData (Ordering c)
 deriving instance HShow c => Show (Ordering c)
-deriving newtype instance Symbolic c => Conditional (Bool c) (Ordering c)
 deriving newtype instance Symbolic c => Eq (Ordering c)
 instance Symbolic c => SymbolicData (Ordering c)
 instance Symbolic c => Semigroup (Ordering c) where

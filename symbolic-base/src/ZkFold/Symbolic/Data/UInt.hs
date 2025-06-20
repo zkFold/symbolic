@@ -53,6 +53,7 @@ import           Test.QuickCheck                   (Arbitrary (..), chooseIntege
 import           ZkFold.Algebra.Class              hiding (Euclidean (..))
 import           ZkFold.Algebra.Field              (Zp)
 import           ZkFold.Algebra.Number
+import           ZkFold.Control.Conditional        (ifThenElse)
 import           ZkFold.Control.HApplicative       (HApplicative (..))
 import           ZkFold.Data.HFunctor              (HFunctor (..))
 import           ZkFold.Data.HFunctor.Classes      (HEq, HNFData, HShow)
@@ -66,7 +67,6 @@ import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Class        (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import           ZkFold.Symbolic.Data.Input        (SymbolicInput, isValid)
@@ -83,7 +83,6 @@ deriving instance HNFData context => NFData (UInt n r context)
 deriving instance HEq context => Haskell.Eq (UInt n r context)
 deriving instance HShow context => Haskell.Show (UInt n r context)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (UInt n r c)
 deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
 
 toNative ::

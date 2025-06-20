@@ -11,7 +11,6 @@ import           ZkFold.Data.HFunctor.Classes        (HEq)
 import           ZkFold.Symbolic.Cardano.Types.Basic
 import           ZkFold.Symbolic.Class               (Symbolic)
 import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Conditional    (Conditional)
 import           ZkFold.Symbolic.Data.Eq             (Eq)
 import           ZkFold.Symbolic.Data.Input
 
@@ -28,6 +27,5 @@ data Address context = Address {
 
 deriving instance HEq context => Haskell.Eq (Address context)
 instance Symbolic context => Eq (Address context)
-instance Symbolic context => Conditional (Bool context) (Address context)
 instance Symbolic context => SymbolicData (Address context)
 instance Symbolic context => SymbolicInput (Address context)

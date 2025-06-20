@@ -1,8 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DerivingStrategies   #-}
-{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 
 module ZkFold.Symbolic.Data.Int where
 
@@ -16,19 +14,18 @@ import           Test.QuickCheck                  (Arbitrary (..))
 
 import           ZkFold.Algebra.Class             hiding (Euclidean (..))
 import           ZkFold.Algebra.Number
+import           ZkFold.Control.Conditional       (ifThenElse)
 import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData, HShow)
 import           ZkFold.Data.Vector               (fromVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.Class       (SymbolicData)
 import           ZkFold.Symbolic.Data.Combinators
-import           ZkFold.Symbolic.Data.Conditional
 import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter      (Interpreter (..))
-
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int { uint :: UInt n r c}
 
@@ -38,7 +35,6 @@ deriving instance HEq c => Haskell.Eq (Int n r c)
 deriving instance HShow c => Haskell.Show (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
 deriving instance (KnownRegisters c n r, KnownNat n, KnownRegisterSize r, Symbolic c) => SymbolicInput (Int n r c)
-deriving instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (Int n r c)
 deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (Int n r c)

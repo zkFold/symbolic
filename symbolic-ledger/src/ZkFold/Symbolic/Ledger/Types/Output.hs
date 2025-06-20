@@ -5,9 +5,7 @@ import           GHC.Generics                         (Generic)
 import           Prelude                              hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import           ZkFold.Symbolic.Class                (Symbolic)
-import           ZkFold.Symbolic.Data.Bool            (Bool)
 import           ZkFold.Symbolic.Data.Class           (SymbolicData)
-import           ZkFold.Symbolic.Data.Conditional     (Conditional)
 import           ZkFold.Symbolic.Data.Eq              (Eq)
 import           ZkFold.Symbolic.Ledger.Types.Address (Address)
 import           ZkFold.Symbolic.Ledger.Types.Datum   (Datum)
@@ -25,5 +23,4 @@ data Output context = Output
   deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (Output context)
-instance (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (Output context)
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (Output context)

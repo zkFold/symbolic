@@ -387,7 +387,7 @@ implementation is provided as an @'intPowF'@ function. You can provide a faster
 alternative yourself, but do not forget to check that your implementation
 computes the same results on all inputs.
 -}
-class (Ring a, Exponent a Integer, Eq a) => Field a where
+class (Ring a, Exponent a Integer, Eq a, Conditional (BooleanOf a) a) => Field a where
     {-# MINIMAL (finv | (//)) #-}
 
     -- | Division in a field. The following should hold:

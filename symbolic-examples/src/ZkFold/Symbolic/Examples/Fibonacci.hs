@@ -7,8 +7,7 @@ import           Prelude                           (Integer)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Class             (Symbolic)
-import           ZkFold.Symbolic.Data.Bool         (Bool)
-import           ZkFold.Symbolic.Data.Conditional  (bool)
+import           ZkFold.Symbolic.Data.Bool         (Bool, bool)
 import           ZkFold.Symbolic.Data.Eq           (Eq (..))
 import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
