@@ -155,6 +155,7 @@ jobs:
         curl -L https://github.com/fourmolu/fourmolu/releases/download/v0.18.0.0/fourmolu-0.18.0.0-linux-x86_64 -o fourmolu
         chmod +x fourmolu
         git ls-files -z '*.hs' | xargs -P 12 -0 ./fourmolu --mode inplace
+        rm ./fourmolu
 
     - name: Auto-commit lint
       uses: stefanzweifel/git-auto-commit-action@v4
