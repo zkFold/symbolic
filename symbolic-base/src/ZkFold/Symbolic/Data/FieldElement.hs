@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.FieldElement where
 import           Control.DeepSeq                  (NFData)
 import           Data.Foldable                    (foldr)
 import           Data.Function                    (($), (.))
-import           Data.Functor                     (fmap, (<$>))
+import           Data.Functor                     (Functor, fmap, (<$>))
 import           Data.Tuple                       (snd)
 import           GHC.Generics                     (Generic, Par1 (..))
 import           Prelude                          (Integer)
@@ -18,6 +18,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.HFunctor             (hmap)
 import           ZkFold.Data.HFunctor.Classes     (HEq, HNFData, HShow)
+import           ZkFold.Data.Package              (Package, unpacked)
 import           ZkFold.Data.Vector               (Vector, fromVector, unsafeToVector)
 import           ZkFold.Symbolic.Class
 import           ZkFold.Symbolic.Data.Bool        (Bool, BoolType (true))
@@ -32,6 +33,9 @@ import           ZkFold.Symbolic.MonadCircuit     (newAssigned)
 
 newtype FieldElement c = FieldElement { fromFieldElement :: c Par1 }
     deriving Generic
+
+fieldElements :: (Package c, Functor f) => c f -> f (FieldElement c)
+fieldElements = fmap FieldElement . unpacked
 
 deriving stock instance HShow c => Haskell.Show (FieldElement c)
 deriving stock instance HEq c => Haskell.Eq (FieldElement c)

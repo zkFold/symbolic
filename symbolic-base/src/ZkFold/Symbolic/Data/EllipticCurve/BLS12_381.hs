@@ -34,12 +34,14 @@ instance
   ( Symbolic ctx
   , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
-  ) => Scale (FFA BLS12_381_Scalar 'Auto ctx) (BLS12_381_G1_Point ctx) where
+  , FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
+  ) => Scale k (BLS12_381_G1_Point ctx) where
 
-    scale ffa x = sum $ Prelude.zipWith
-      (\b p -> bool @(Bool ctx) zero p (isSet bits b))
-      [upper, upper -! 1 .. 0]
-      (Prelude.iterate (\e -> e + e) x)
+    scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar 'Auto ctx)) x =
+        sum $ Prelude.zipWith
+            (\b p -> bool @(Bool ctx) zero p (isSet bits b))
+            [upper, upper -! 1 .. 0]
+            (Prelude.iterate (\e -> e + e) x)
         where
           bits :: ByteString (FFAMaxBits BLS12_381_Scalar ctx) ctx
           bits = from (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
