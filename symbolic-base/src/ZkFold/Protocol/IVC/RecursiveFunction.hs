@@ -28,14 +28,9 @@ import           ZkFold.Protocol.IVC.Oracle
 import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..), StepFunction, predicate)
 import           ZkFold.Symbolic.Class                              (Arithmetic)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
-import           ZkFold.Symbolic.Data.Bool                          (Bool (..))
+import           ZkFold.Symbolic.Data.Bool                          (Bool, bool)
 import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor, SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional                   (bool)
 import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (..), fieldElements)
-import           ZkFold.Symbolic.Data.Bool                          (Bool (..), bool)
-import           ZkFold.Symbolic.Data.Class                         (LayoutFunctor, SymbolicData (..))
-import           ZkFold.Symbolic.Data.FieldElement                  (FieldElement (FieldElement), fromFieldElement)
-import           ZkFold.Symbolic.Data.Input                         (SymbolicInput)
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1

@@ -12,46 +12,14 @@ module ZkFold.Symbolic.Data.Class (
         GSymbolicData (..),
     ) where
 
-import           Control.Applicative         ((<*>))
-import           Control.DeepSeq             (NFData (..), NFData1, liftRnf)
-import           Data.Bifunctor              (bimap)
-import           Data.Binary                 (Binary)
-import           Data.Eq                     (Eq)
-import           Data.Foldable               (Foldable)
-import           Data.Function               (flip, ($), (.))
-import           Data.Functor                (Functor, (<$>))
-import           Data.Functor.Rep            (Representable)
-import qualified Data.Functor.Rep            as R
-import           Data.Kind                   (Type)
-import           Data.Traversable            (Traversable)
-import           Data.Tuple                  (fst)
-import           Data.Type.Equality          (type (~))
-import           Data.Typeable               (Proxy (..))
-import           GHC.Generics                (U1 (..), (:*:) (..), (:.:) (..))
-import qualified GHC.Generics                as G
-import           Text.Show                   (Show)
-import           Control.Applicative           (liftA2, (<*>))
-import           Control.DeepSeq               (NFData1)
-import           Data.Bifunctor                (bimap)
-import           Data.Binary                   (Binary)
-import           Data.Function                 (const, flip, ($), (.))
-import           Data.Functor                  (fmap, (<$>))
-import           Data.Functor.Rep              (Representable)
-import qualified Data.Functor.Rep              as R
-import           Data.Kind                     (Type)
-import           Data.List.NonEmpty            (NonEmpty)
-import           Data.Traversable              (Traversable)
-import           Data.Tuple                    (fst)
-import           Data.Type.Equality            (type (~))
-import           Data.Typeable                 (Proxy (..))
-import           GHC.Generics                  (U1 (..), (:*:) (..), (:.:) (..))
-import qualified GHC.Generics                  as G
 import           Control.Applicative                     (liftA2, (<*>))
-import           Control.DeepSeq                         (NFData1)
+import           Control.DeepSeq                         (NFData (..), NFData1, liftRnf)
 import           Data.Bifunctor                          (bimap)
 import           Data.Binary                             (Binary)
+import           Data.Eq                                 (Eq)
+import           Data.Foldable                           (Foldable)
 import           Data.Function                           (const, flip, ($), (.))
-import           Data.Functor                            (fmap, (<$>))
+import           Data.Functor                            (Functor, fmap, (<$>))
 import           Data.Functor.Rep                        (Representable)
 import qualified Data.Functor.Rep                        as R
 import           Data.Kind                               (Type)
@@ -62,6 +30,7 @@ import           Data.Type.Equality                      (type (~))
 import           Data.Typeable                           (Proxy (..))
 import           GHC.Generics                            (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics                            as G
+import           Text.Show                               (Show)
 
 import           ZkFold.Algebra.Number                   (KnownNat)
 import           ZkFold.Control.HApplicative             (hliftA2, hpure)
