@@ -8,18 +8,22 @@ import           ZkFold.Data.Vector               (Vector)
 import           ZkFold.Protocol.IVC.Commit       (HomomorphicCommit (hcommit))
 import           ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
-type CommitOpen k i p c m o f = SpecialSoundProtocol k i p (m, c f) (Vector k (c f), o) f
+type CommitOpen k i p c m o f =
+    SpecialSoundProtocol k i p (m, c) (Vector k c, o) f
 
-commitOpen :: HomomorphicCommit m (c f) => SpecialSoundProtocol k i p m o f -> CommitOpen k i p c m o f
-commitOpen SpecialSoundProtocol {..} =
-    let
-        prover' pi0 w r i =
-            let m = prover pi0 w r i
-            in (m, hcommit m)
-
-        verifier' pi pms rs =
-            let ms = fmap fst pms
-                cs = fmap snd pms
-            in (zipWith (-) (fmap hcommit ms) cs, verifier pi ms rs)
-    in
-        SpecialSoundProtocol input prover' verifier'
+commitOpen ::
+    (Functor i, Functor p, HomomorphicCommit m c) =>
+    (a -> f) -> (f -> a) ->
+    SpecialSoundProtocol k i p m o a -> CommitOpen k i p c m o f
+commitOpen af fa SpecialSoundProtocol {..} = SpecialSoundProtocol
+    { input = \i p -> af <$> input (fa <$> i) (fa <$> p)
+    , prover = \pi0 w r i ->
+        let m = prover (fmap fa pi0) (fmap fa w) (fa r) i
+         in (m, hcommit m)
+    , verifier = \pi pms rs ->
+        let ms = fmap fst pms
+            cs = fmap snd pms
+         in ( zipWith (-) (fmap hcommit ms) cs
+            , verifier (fmap fa pi) ms (fmap fa rs)
+            )
+    }

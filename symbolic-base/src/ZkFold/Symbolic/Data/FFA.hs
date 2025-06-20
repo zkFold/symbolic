@@ -11,8 +11,9 @@ import           Control.DeepSeq                   (NFData)
 import           Control.Monad                     (Monad (..))
 import           Data.Bits                         (shiftL)
 import           Data.Bool                         (otherwise)
+import qualified Data.Eq                           as Haskell
 import           Data.Function                     (const, ($), (.))
-import           Data.Functor                      (($>))
+import           Data.Functor                      (fmap, ($>))
 import           Data.Functor.Rep                  (Representable (..))
 import           Data.Proxy                        (Proxy (..))
 import           Data.Traversable                  (Traversable (..))
@@ -21,6 +22,7 @@ import           GHC.Generics                      (Generic, Par1 (..), U1 (..),
 import           Numeric.Natural                   (Natural)
 import           Prelude                           (Integer)
 import qualified Prelude
+import           System.Random.Stateful            (Uniform (..))
 import           Text.Show                         (Show)
 
 import           ZkFold.Algebra.Class
@@ -86,6 +88,7 @@ instance HNFData c => NFData (FFA p r c)
 deriving stock instance HShow c => Show (FFA p r c)
 instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
+deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
 bezoutFFA ::
   forall p a. (KnownNat p, KnownNat (FFAUIntSize p (Order a))) => Integer
@@ -110,10 +113,18 @@ instance (Symbolic c, KnownFFA p r c, FromConstant a (Zp p)) =>
     let c' = toConstant (fromConstant c :: Zp p)
      in FFA (fromConstant c') (fromConstant c')
 
+instance {-# OVERLAPPING #-}
+    (Symbolic c, Order (BaseField c) ~ p, KnownRegisterSize r) =>
+    FromConstant (FieldElement c) (FFA p r c) where
+    fromConstant nx = FFA nx zero
+
 instance {-# OVERLAPPING #-} FromConstant (FFA p r c) (FFA p r c)
 
 instance {-# OVERLAPPING #-}
   (Symbolic c, KnownFFA p r c) => Scale (FFA p r c) (FFA p r c)
+
+instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
+    uniformM = fmap fromConstant . uniformM @(Zp p)
 
 valueFFA ::
   forall p r c i a.
