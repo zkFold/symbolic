@@ -3,23 +3,17 @@
 
 module ZkFold.Symbolic.Data.Hash where
 
-import           Control.Monad                    (return)
-import           Data.Function                    (const, ($))
-import           Data.Proxy                       (Proxy (..))
-import           Data.Traversable                 (traverse)
-import           Data.Type.Equality               (type (~))
-import           GHC.Generics                     (Generic, Par1 (..), (:*:) (..))
+import           Control.Monad                (return)
+import           Data.Function                (($))
+import           GHC.Generics                 (Generic, Generic1, Par1 (..))
 
 import           ZkFold.Algebra.Class
-import           ZkFold.Control.HApplicative      (hunit)
-import           ZkFold.Symbolic.Class            (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
-import           ZkFold.Symbolic.Data.Bool        (Bool (..))
-import           ZkFold.Symbolic.Data.Class       (SymbolicData (..), SymbolicOutput)
-import           ZkFold.Symbolic.Data.Conditional (Conditional)
-import           ZkFold.Symbolic.Data.Eq          (Eq (..), SymbolicEq, (==))
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput)
-import           ZkFold.Symbolic.Data.Payloaded   (Payloaded (Payloaded))
-import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
+import           ZkFold.Symbolic.Class        (Symbolic (..), embedW, fromCircuit2F)
+import           ZkFold.Symbolic.Data.Class   (SymbolicData (..), SymbolicDataConstraint)
+import           ZkFold.Symbolic.Data.Eq      (Eq (..), (==))
+import           ZkFold.Symbolic.Data.Input   (SymbolicInput)
+import           ZkFold.Symbolic.Data.Witness (Wit (..))
+import           ZkFold.Symbolic.MonadCircuit (constraint)
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;
@@ -27,40 +21,34 @@ import           ZkFold.Symbolic.MonadCircuit     (constraint, unconstrained)
 --
 -- The relationship between datatypes and hashes is many-to-many
 -- so there's no functional dependency in either direction.
-class Hashable h a where
+class Hashable h x where
   -- | Hashing algorithm itself.
-  hasher :: a -> h
+  hasher :: x -> h
 
 -- | An invertible hash 'h' of a symbolic datatype 'a'.
-data Hash h a = Hash
-  { hHash  :: h
-  , hValue :: Payloaded (Layout a :*: Payload a) (Context h)
+data Hash h x c = Hash
+  { hHash  :: h c
+  , hValue :: Wit x c
   }
-  deriving (Generic)
+  deriving (Generic, Generic1)
 
-instance (SymbolicOutput h, SymbolicOutput a) => SymbolicData (Hash h a)
-instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
-instance (c ~ (Context h), Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
-instance (c ~ (Context h), Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
+instance (SymbolicData h, SymbolicDataConstraint x) => SymbolicData (Hash h x)
+instance (SymbolicInput h, SymbolicDataConstraint x) => SymbolicInput (Hash h x)
 
 -- | Restorably hash the data.
-hash :: (Hashable h a, SymbolicOutput a, Context h ~ Context a) => a -> Hash h a
-hash a = Hash (hasher a) $
-  Payloaded (witnessF (arithmetize a Proxy) :*: payload a Proxy)
+hash :: forall h x c . (Symbolic c, Hashable (h c) (x c), SymbolicDataConstraint x)
+  => x c -> Hash h x c
+hash a = Hash (hasher a) $ fromContext @(Wit x) (toContext a)
 
 -- | Restore the data which were hashed.
-preimage ::
-  forall h a c .
-  ( Hashable h a, SymbolicOutput a, Context h ~ c, Context a ~ c
-  , SymbolicEq h) => Hash h a -> a
+preimage :: forall h x c . (Symbolic c, Hashable (h c) (x c), SymbolicDataConstraint x, SymbolicDataConstraint h)
+  => Hash h x c -> x c
 preimage Hash {..} =
-  let Payloaded (l :*: p) = hValue
-      raw :: a = restore $ const
-        ( fromCircuitF hunit $ const (traverse unconstrained l)
-        , p)
-      Bool b = hasher raw == hHash
-   in restore $ \s ->
-      ( fromCircuit2F (arithmetize raw s) b $ \r (Par1 i) -> do
+  let Wit w = hValue
+      raw = fromContext $ embedW w :: x c
+      b = hasher raw == hHash
+   in fromContext $
+      ( fromCircuit2F (toContext raw) (toContext b) $ \r (Par1 i) -> do
           constraint (($ i) - one)
           return r
-      , payload raw s)
+      )

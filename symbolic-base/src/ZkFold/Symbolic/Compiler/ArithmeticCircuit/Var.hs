@@ -20,7 +20,7 @@ import           Prelude                                            (Eq, Ord)
 
 import           ZkFold.Algebra.Class
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
-import           ZkFold.Symbolic.MonadCircuit                       (Witness, at)
+import           ZkFold.Symbolic.MonadCircuit                       (Witness (..))
 
 data LinVar a v = LinVar a v a | ConstVar a
     deriving

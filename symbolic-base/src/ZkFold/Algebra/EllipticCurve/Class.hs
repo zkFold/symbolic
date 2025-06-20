@@ -222,22 +222,22 @@ instance
     type CurveOf (Weierstrass curve (JacobianPoint field)) = curve
     type BaseFieldOf (Weierstrass curve (JacobianPoint field)) = field
     isOnCurve p = isOnCurve (project p :: Weierstrass curve (Point field))
-deriving newtype instance
-  ( SymbolicEq field
-  ) => SymbolicData (Weierstrass curve (Point field))
-deriving newtype instance
-  ( SymbolicEq field
-  ) => SymbolicData (Weierstrass curve (JacobianPoint field))
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  ) => SymbolicInput (Weierstrass curve (Point field)) where
-    isValid = isOnCurve
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  ) => SymbolicInput (Weierstrass curve (JacobianPoint field)) where
-    isValid = isOnCurve
+-- deriving newtype instance
+--   ( SymbolicEq field
+--   ) => SymbolicData (Weierstrass curve (Point field))
+-- deriving newtype instance
+--   ( SymbolicEq field
+--   ) => SymbolicData (Weierstrass curve (JacobianPoint field))
+-- instance
+--   ( WeierstrassCurve curve field
+--   , SymbolicEq field
+--   ) => SymbolicInput (Weierstrass curve (Point field)) where
+--     isValid = isOnCurve
+-- instance
+--   ( WeierstrassCurve curve field
+--   , SymbolicEq field
+--   ) => SymbolicInput (Weierstrass curve (JacobianPoint field)) where
+--     isValid = isOnCurve
 deriving newtype instance Conditional bool point
   => Conditional bool (Weierstrass curve point)
 deriving newtype instance Eq point
@@ -389,15 +389,15 @@ deriving newtype instance Prelude.Eq point
   => Prelude.Eq (TwistedEdwards curve point)
 deriving newtype instance Prelude.Show point
   => Prelude.Show (TwistedEdwards curve point)
-deriving newtype instance SymbolicOutput field
-  => SymbolicData (TwistedEdwards curve (AffinePoint field))
-instance
-  ( Context field ~ ctx
-  , Symbolic ctx
-  , TwistedEdwardsCurve curve field
-  , SymbolicEq field
-  ) => SymbolicInput (TwistedEdwards curve (AffinePoint field)) where
-    isValid = isOnCurve
+-- deriving newtype instance SymbolicOutput field
+--   => SymbolicData (TwistedEdwards curve (AffinePoint field))
+-- instance
+--   ( Context field ~ ctx
+--   , Symbolic ctx
+--   , TwistedEdwardsCurve curve field
+--   , SymbolicEq field
+--   ) => SymbolicInput (TwistedEdwards curve (AffinePoint field)) where
+--     isValid = isOnCurve
 deriving newtype instance Conditional bool point
   => Conditional bool (TwistedEdwards curve point)
 deriving newtype instance Eq point
@@ -460,11 +460,11 @@ instance (Prelude.Show field, BooleanOf field ~ Prelude.Bool)
       ["(", Prelude.show x, ", ", Prelude.show y, ")"]
 deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Point field)
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
-instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
-  , Context field ~ Context (BooleanOf field)
-  ) => SymbolicData (Point field)
+-- instance
+--   ( SymbolicOutput (BooleanOf field)
+--   , SymbolicOutput field
+--   , Context field ~ Context (BooleanOf field)
+--   ) => SymbolicData (Point field)
 instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
 instance (Semiring field, Eq field) => HasPointInf (Point field) where
@@ -503,10 +503,10 @@ instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) whe
             z02 = square z0
             z03 = z0 * z02
     pt0 /= pt1 = not (pt0 Prelude.== pt1)
-instance
-  ( SymbolicOutput field
-  , Context field ~ Context (BooleanOf field)
-  ) => SymbolicData (JacobianPoint field)
+-- instance
+--   ( SymbolicOutput field
+--   , Context field ~ Context (BooleanOf field)
+--   ) => SymbolicData (JacobianPoint field)
 instance (Eq field, Field field) => Planar field (JacobianPoint field) where
   pointXY x y = JacobianPoint x y one
 instance (Semiring field, Eq field) => HasPointInf (JacobianPoint field) where
@@ -571,11 +571,11 @@ deriving instance (Prelude.Show (BooleanOf field), Prelude.Show field)
   => Prelude.Show (CompressedPoint field)
 deriving instance (Prelude.Eq (BooleanOf field), Prelude.Eq field)
   => Prelude.Eq (CompressedPoint field)
-instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
-  , Context field ~ Context (BooleanOf field)
-  ) => SymbolicData (CompressedPoint field)
+-- instance
+--   ( SymbolicOutput (BooleanOf field)
+--   , SymbolicOutput field
+--   , Context field ~ Context (BooleanOf field)
+--   ) => SymbolicData (CompressedPoint field)
 instance (BoolType (BooleanOf field), AdditiveMonoid field)
   => HasPointInf (CompressedPoint field) where
     pointInf = CompressedPoint zero true true
@@ -585,7 +585,7 @@ data AffinePoint field = AffinePoint
   , _y :: field
   } deriving (Generic, Prelude.Eq)
 deriving instance NFData field => NFData (AffinePoint field)
-instance SymbolicOutput field => SymbolicData (AffinePoint field)
+-- instance SymbolicOutput field => SymbolicData (AffinePoint field)
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 instance Conditional bool field => Conditional bool (AffinePoint field)
 instance

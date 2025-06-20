@@ -16,7 +16,7 @@ module ZkFold.Symbolic.Algorithm.RSA
     ) where
 
 import           Control.DeepSeq                     (NFData, force)
-import           GHC.Generics                        (Generic)
+import           GHC.Generics                        (Generic, Generic1)
 import           Prelude                             (($))
 import qualified Prelude                             as P
 
@@ -41,19 +41,18 @@ data PrivateKey keyLen ctx
         { prvD :: UInt keyLen 'Auto ctx
         , prvN :: UInt keyLen 'Auto ctx
         }
+    deriving (Generic1)
 
 deriving instance Generic (PrivateKey keyLen context)
 deriving instance HNFData context => NFData (PrivateKey keyLen context)
 deriving instance HEq context => P.Eq (PrivateKey keyLen context)
 deriving instance HShow context => P.Show (PrivateKey keyLen context)
 
-deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
+deriving instance SymbolicData (PrivateKey keyLen)
 
 instance
-  ( Symbolic ctx
-  , KnownNat keyLen
-  , KnownRegisters ctx keyLen 'Auto
-  ) => SymbolicInput (PrivateKey keyLen ctx) where
+  ( KnownNat keyLen
+  ) => SymbolicInput (PrivateKey keyLen) where
     isValid PrivateKey{..} = isValid prvD && isValid prvN
 
 type PubExponentSize = 18
@@ -63,24 +62,18 @@ data PublicKey keyLen ctx
         { pubE :: UInt PubExponentSize 'Auto ctx
         , pubN :: UInt keyLen 'Auto ctx
         }
+    deriving (Generic1)
 
 deriving instance Generic (PublicKey keyLen context)
 deriving instance HNFData context => NFData (PublicKey keyLen context)
 deriving instance HEq context => P.Eq (PublicKey keyLen context)
 deriving instance HShow context => P.Show (PublicKey keyLen context)
 
-deriving instance
-    ( Symbolic ctx
-    , KnownRegisters ctx PubExponentSize 'Auto
-    , KnownRegisters ctx keyLen 'Auto
-    ) => SymbolicData (PublicKey keyLen ctx)
+deriving instance SymbolicData (PublicKey keyLen)
 
 instance
-  ( Symbolic ctx
-  , KnownNat keyLen
-  , KnownRegisters ctx PubExponentSize 'Auto
-  , KnownRegisters ctx keyLen 'Auto
-  ) => SymbolicInput (PublicKey keyLen ctx) where
+  ( KnownNat keyLen
+  ) => SymbolicInput (PublicKey keyLen) where
     isValid PublicKey{..} = isValid pubE && isValid pubN
 
 type RSA keyLen msgLen ctx =

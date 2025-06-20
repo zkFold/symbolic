@@ -9,7 +9,7 @@ import           Data.Aeson
 import qualified Data.Bits                          as B
 import qualified Data.ByteString                    as BS
 import qualified Data.ByteString.Base64.URL         as B64
-import           GHC.Generics                       (Generic)
+import           GHC.Generics                       (Generic, Generic1)
 import           Prelude                            (pure, ($))
 import qualified Prelude                            as P
 
@@ -31,19 +31,17 @@ data Certificate ctx
         { pubKid :: VarByteString 320 ctx
         , pubKey :: PublicKey 2048 ctx
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 deriving instance HEq ctx => P.Eq (Certificate ctx)
 deriving instance HShow ctx => P.Show (Certificate ctx)
 deriving instance HNFData ctx => NFData (Certificate ctx)
 instance
-    ( SymbolicData (PublicKey 2048 ctx)
-    , Symbolic ctx
-    ) => SymbolicData (Certificate ctx)
+    ( SymbolicData (PublicKey 2048)
+    ) => SymbolicData (Certificate)
 instance
-    ( SymbolicInput (PublicKey 2048 ctx)
-    , Symbolic ctx
-    ) => SymbolicInput (Certificate ctx)
+    ( SymbolicInput (PublicKey 2048)
+    ) => SymbolicInput (Certificate)
 
 instance Symbolic ctx => FromJSON (Certificate ctx) where
     parseJSON = withObject "Certificate" $ \v -> do
@@ -70,19 +68,17 @@ data SigningKey ctx
         { prvKid :: VarByteString 320 ctx
         , prvKey :: PrivateKey 2048 ctx
         }
-    deriving Generic
+    deriving (Generic, Generic1)
 
 deriving instance HEq ctx => P.Eq (SigningKey ctx)
 deriving instance HShow ctx => P.Show (SigningKey ctx)
 deriving instance HNFData ctx => NFData (SigningKey ctx)
 instance
-    ( SymbolicData (PrivateKey 2048 ctx)
-    , Symbolic ctx
-    ) => SymbolicData (SigningKey ctx)
+    ( SymbolicData (PrivateKey 2048)
+    ) => SymbolicData (SigningKey)
 instance
-    ( SymbolicInput (PrivateKey 2048 ctx)
-    , Symbolic ctx
-    ) => SymbolicInput (SigningKey ctx)
+    ( SymbolicInput (PrivateKey 2048)
+    ) => SymbolicInput (SigningKey)
 
 instance SigningAlgorithm "RS256" where
     type SKey "RS256" ctx = SigningKey ctx
