@@ -1,24 +1,24 @@
 module ZkFold.Data.Bool where
 
-import           Data.Bool     (Bool (..))
-import qualified Data.Bool     as Haskell
-import           Data.Foldable (Foldable, foldr)
-import           Data.Function (id, (.))
+import Data.Bool (Bool (..))
+import qualified Data.Bool as Haskell
+import Data.Foldable (Foldable, foldr)
+import Data.Function (id, (.))
 
 class BoolType b where
-    true, false :: b
-    not :: b -> b
-    infixr 3 &&
-    infixr 2 ||
-    (&&), (||), xor :: b -> b -> b
+  true, false :: b
+  not :: b -> b
+  infixr 3 &&
+  infixr 2 ||
+  (&&), (||), xor :: b -> b -> b
 
 instance BoolType Bool where
-    true  = True
-    false = False
-    not   = Haskell.not
-    (&&)  = (Haskell.&&)
-    (||)  = (Haskell.||)
-    xor   = xor
+  true = True
+  false = False
+  not = Haskell.not
+  (&&) = (Haskell.&&)
+  (||) = (Haskell.||)
+  xor = xor
 
 all :: (BoolType b, Foldable t) => (x -> b) -> t x -> b
 all f = foldr ((&&) . f) true

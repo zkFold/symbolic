@@ -6,5 +6,5 @@
       "ghc": "9.10.1",
       "stack": null
     }, 
-    "haskell.formattingProvider": "stylish-haskell"
+    "haskell.formattingProvider": "fourmolu",
   }

@@ -2,9 +2,9 @@
 
 module ZkFold.Data.Product where
 
-import           Data.Function ((.))
-import           Data.Tuple    (fst, snd, uncurry)
-import           GHC.Generics  ((:*:) (..))
+import Data.Function ((.))
+import Data.Tuple (fst, snd, uncurry)
+import GHC.Generics ((:*:) (..))
 
 fromPair :: (f a, g a) -> (f :*: g) a
 fromPair = uncurry (:*:)

@@ -1,14 +1,14 @@
 {-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.Symbolic.Ledger.Types.Hash (
   Hash,
   HashSimple,
- ) where
+) where
 
-import           Prelude                           hiding (Bool, Eq, length, splitAt, (*), (+))
-
-import           ZkFold.Symbolic.Data.Class        (SymbolicData (Context))
-import           ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import qualified ZkFold.Symbolic.Data.Hash         as Symbolic.Hash
+import ZkFold.Symbolic.Data.Class (SymbolicData (Context))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import qualified ZkFold.Symbolic.Data.Hash as Symbolic.Hash
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Hash type used in the zkFold ledger.
 type Hash a = Symbolic.Hash.Hash (FieldElement (Context a)) a

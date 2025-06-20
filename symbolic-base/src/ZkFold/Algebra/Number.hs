@@ -1,44 +1,44 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE MagicHash            #-}
-{-# LANGUAGE NoStarIsType         #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Algebra.Number
-    ( Natural
-    , KnownNat
-    , Prime
-    , KnownPrime
-    , IsPrime
-    , Log2
-    , Mod
-    , Div
-    , value
-    , integral
-    , type (<=)
-    , type (*)
-    , type (+)
-    , type (-)
-    , type (^)
-    ) where
+module ZkFold.Algebra.Number (
+  Natural,
+  KnownNat,
+  Prime,
+  KnownPrime,
+  IsPrime,
+  Log2,
+  Mod,
+  Div,
+  value,
+  integral,
+  type (<=),
+  type (*),
+  type (+),
+  type (-),
+  type (^),
+) where
 
-import           Data.Bool      (Bool (..))
-import           Data.Kind      (Constraint)
-import           Data.Type.Bool (If, type (&&))
-import           GHC.Exts       (proxy#)
-import           GHC.Real       (Integral)
-import qualified GHC.Real       as Integral
-import           GHC.TypeLits   (ErrorMessage (..), TypeError)
-import           GHC.TypeNats
+import Data.Bool (Bool (..))
+import Data.Kind (Constraint)
+import Data.Type.Bool (If, type (&&))
+import GHC.Exts (proxy#)
+import GHC.Real (Integral)
+import qualified GHC.Real as Integral
+import GHC.TypeLits (ErrorMessage (..), TypeError)
+import GHC.TypeNats
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
 
-value :: forall n . KnownNat n => Natural
+value :: forall n. KnownNat n => Natural
 value = natVal' (proxy# @n)
 
-integral :: forall size n . (KnownNat size, Integral n) => n
+integral :: forall size n. (KnownNat size, Integral n) => n
 integral = Integral.fromIntegral (value @size)
 
 -- Use this overlappable instance for small enough primes and testing
