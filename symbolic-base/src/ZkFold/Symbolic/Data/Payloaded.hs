@@ -2,22 +2,21 @@
 
 module ZkFold.Symbolic.Data.Payloaded where
 
-import           Data.Function                    (const, ($), (.))
-import           Data.Functor.Rep                 (mzipWithRep)
-import           Data.Proxy                       (Proxy (..))
-import           Data.Tuple                       (snd)
-import           GHC.Generics                     (Par1 (..), U1 (..))
+import Data.Function (const, ($), (.))
+import Data.Functor.Rep (mzipWithRep)
+import Data.Proxy (Proxy (..))
+import Data.Tuple (snd)
+import GHC.Generics (Par1 (..), U1 (..))
+import ZkFold.Algebra.Class
+import ZkFold.Control.HApplicative (hunit)
+import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), true)
+import ZkFold.Symbolic.Data.Class
+import ZkFold.Symbolic.Data.Conditional (Conditional (..))
+import ZkFold.Symbolic.Data.Eq
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Control.HApplicative      (hunit)
-import           ZkFold.Symbolic.Class            (Symbolic (..))
-import           ZkFold.Symbolic.Data.Bool        (Bool (..), BoolType (..), true)
-import           ZkFold.Symbolic.Data.Class
-import           ZkFold.Symbolic.Data.Conditional (Conditional (..))
-import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Input       (SymbolicInput (..))
-
-newtype Payloaded f c = Payloaded { runPayloaded :: f (WitnessField c) }
+newtype Payloaded f c = Payloaded {runPayloaded :: f (WitnessField c)}
 
 instance (Symbolic c, PayloadFunctor f) => SymbolicData (Payloaded f c) where
   type Context (Payloaded f c) = c

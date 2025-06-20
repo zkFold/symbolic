@@ -1,24 +1,23 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Protocol.IVC.SpecialSound where
 
-import           Data.Binary                                        (Binary)
-import           Data.Function                                      (($), (.))
-import           Data.Functor                                       ((<$>))
-import           Data.Functor.Rep                                   (Representable (..))
-import           Data.List                                          (map)
-import           GHC.Generics                                       ((:*:) (..))
-import           Prelude                                            (undefined)
-
-import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Number
-import           ZkFold.Data.Vector                                 (Vector)
-import qualified ZkFold.Protocol.IVC.AlgebraicMap                   as AM
-import           ZkFold.Protocol.IVC.Predicate                      (Predicate (..))
-import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (ArithmeticCircuit (acContext), witnessGenerator)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
+import Data.Binary (Binary)
+import Data.Function (($), (.))
+import Data.Functor ((<$>))
+import Data.Functor.Rep (Representable (..))
+import Data.List (map)
+import GHC.Generics ((:*:) (..))
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number
+import ZkFold.Data.Vector (Vector)
+import qualified ZkFold.Protocol.IVC.AlgebraicMap as AM
+import ZkFold.Protocol.IVC.Predicate (Predicate (..))
+import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
+import Prelude (undefined)
 
 {-- | Section 3.1
 
@@ -33,56 +32,70 @@ and checks that the output is a zero vector of length l.
 --}
 
 data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
-  {
-    input ::
-         i f                            -- ^ previous public input
-      -> p f                            -- ^ witness
-      -> i f                            -- ^ public input
-
-  , prover ::
-         i f                            -- ^ previous public input
-      -> p f                            -- ^ witness
-      -> f                              -- ^ current random challenge
-      -> Natural                        -- ^ round number (starting from 1)
-      -> m                              -- ^ prover message
-
-  , verifier ::
-         i f                            -- ^ public input
-      -> Vector k m                     -- ^ prover messages
-      -> Vector (k-1) f                 -- ^ random challenges
-      -> o                              -- ^ verifier output
+  { input
+      :: i f
+      -- \^ previous public input
+      -> p f
+      -- \^ witness
+      -> i f
+  -- ^ public input
+  , prover
+      :: i f
+      -- \^ previous public input
+      -> p f
+      -- \^ witness
+      -> f
+      -- \^ current random challenge
+      -> Natural
+      -- \^ round number (starting from 1)
+      -> m
+  -- ^ prover message
+  , verifier
+      :: i f
+      -- \^ public input
+      -> Vector k m
+      -- \^ prover messages
+      -> Vector (k - 1) f
+      -- \^ random challenges
+      -> o
+  -- ^ verifier output
   }
 
-specialSoundProtocol :: forall d a i p f.
-    ( KnownNat (d+1)
-    , Arithmetic a
-    , Binary (Rep i)
-    , Binary (Rep p)
-    , Representable i
-    , Representable p
-    ) =>
-    (a -> f) -> (f -> a) -> Predicate a i p ->
-    SpecialSoundProtocol 1 i p [f] [a] a
+specialSoundProtocol
+  :: forall d a i p f
+   . ( KnownNat (d + 1)
+     , Arithmetic a
+     , Binary (Rep i)
+     , Binary (Rep p)
+     , Representable i
+     , Representable p
+     )
+  => (a -> f)
+  -> (f -> a)
+  -> Predicate a i p
+  -> SpecialSoundProtocol 1 i p [f] [a] a
 specialSoundProtocol af fa phi@Predicate {..} =
   let
-      prover pi0 w _ _ =
-        let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
-         in map (af . witnessGenerator predicateCircuit circuitInput)
-            $ getAllVars (acContext predicateCircuit)
-      verifier pi pm ts = AM.algebraicMap @d phi pi (map fa <$> pm) ts one
-  in
-      SpecialSoundProtocol predicateEval prover verifier
+    prover pi0 w _ _ =
+      let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
+       in map (af . witnessGenerator predicateCircuit circuitInput) $
+            getAllVars (acContext predicateCircuit)
+    verifier pi pm ts = AM.algebraicMap @d phi pi (map fa <$> pm) ts one
+   in
+    SpecialSoundProtocol predicateEval prover verifier
 
-specialSoundProtocol' :: forall d a i p f .
-    ( KnownNat (d+1)
-    , Representable i
-    , Binary (Rep i)
-    , Binary (Rep p)
-    , Ring f
-    , Scale a f
-    ) => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
+specialSoundProtocol'
+  :: forall d a i p f
+   . ( KnownNat (d + 1)
+     , Representable i
+     , Binary (Rep i)
+     , Binary (Rep p)
+     , Ring f
+     , Scale a f
+     )
+  => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
 specialSoundProtocol' phi =
   let
-      verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
-  in
-      SpecialSoundProtocol undefined undefined verifier
+    verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
+   in
+    SpecialSoundProtocol undefined undefined verifier

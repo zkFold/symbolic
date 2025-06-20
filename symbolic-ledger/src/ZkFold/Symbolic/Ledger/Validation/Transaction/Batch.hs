@@ -1,20 +1,19 @@
-{-# LANGUAGE BlockArguments     #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.Batch (
   validateTransactionBatch,
 ) where
 
-import           Prelude                                                 (snd, ($))
-
-import           ZkFold.Symbolic.Data.Bool                               (Bool, BoolType (true), (&&))
-import           ZkFold.Symbolic.Data.Eq
-import           ZkFold.Symbolic.Data.Hash
-import qualified ZkFold.Symbolic.Data.List                               as Symbolic.List
-import           ZkFold.Symbolic.Data.List                               (List)
-import           ZkFold.Symbolic.Data.Morph
-import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (true), (&&))
+import ZkFold.Symbolic.Data.Eq
+import ZkFold.Symbolic.Data.Hash
+import ZkFold.Symbolic.Data.List (List)
+import qualified ZkFold.Symbolic.Data.List as Symbolic.List
+import ZkFold.Symbolic.Data.Morph
+import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+import Prelude (snd, ($))
 
 -- | Witness for 'TransactionBatch' validation.
 data TransactionBatchWitness context = TransactionBatchWitness
@@ -22,20 +21,20 @@ data TransactionBatchWitness context = TransactionBatchWitness
   }
 
 -- | Validate 'TransactionBatch'.
-validateTransactionBatch ::
-  forall context.
-  Signature context =>
-  -- | Current tip.
-  TransactionBatch context ->
-  -- | Bridged in assets.
-  AssetValues context ->
-  -- | Bridged out assets.
-  AssetValues context ->
-  -- | New batch to be added.
-  TransactionBatch context ->
-  -- | Witness used for validation.
-  TransactionBatchWitness context ->
-  Bool context
+validateTransactionBatch
+  :: forall context
+   . Signature context
+  => TransactionBatch context
+  -- ^ Current tip.
+  -> AssetValues context
+  -- ^ Bridged in assets.
+  -> AssetValues context
+  -- ^ Bridged out assets.
+  -> TransactionBatch context
+  -- ^ New batch to be added.
+  -> TransactionBatchWitness context
+  -- ^ Witness used for validation.
+  -> Bool context
 validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} TransactionBatchWitness {..} =
   let ( -- Batch data hashes as computed via provided witness.
         resBatchAccDataHashes :: List context (DAIndex context, HashSimple context)
@@ -44,11 +43,22 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} T
         , _
         ) =
           Symbolic.List.foldl
-            ( Morph \((batchAccDataHashes :: List s (DAIndex s, HashSimple s), batchAccBatchesValid :: Bool s, batchAccBatchValidityInterval :: Interval s), (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)) ->
+            ( Morph \( ( batchAccDataHashes :: List s (DAIndex s, HashSimple s)
+                         , batchAccBatchesValid :: Bool s
+                         , batchAccBatchValidityInterval :: Interval s
+                         )
+                       , (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)
+                       ) ->
                 let (batchValid, batchDAIndex) = validateTransactionBatchDataWithIx batchAccBatchValidityInterval tbd tbdw
-                 in ((batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes, batchAccBatchesValid && batchValid, batchAccBatchValidityInterval)
+                 in ( (batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes
+                    , batchAccBatchesValid && batchValid
+                    , batchAccBatchValidityInterval
+                    )
             )
-            (Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context), true :: Bool context, tbValidityInterval)
+            ( Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context)
+            , true :: Bool context
+            , tbValidityInterval
+            )
             tbwBatchDatas
    in -- 'tbBridgeIn' represents correct hash.
       -- TODO: We might not need to do this check if this is performed by smart contract. Same for 'tbBridgeOut' and 'tbPreviousBatch'
@@ -71,7 +81,8 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} T
 -- TODO: Refactor following once improvements in symbolic list are merged and it supports more utilities like 'elem'.
 
 -- | Check if there are no duplicate 'DAIndex' in the given list.
-noDuplicateIndicesInBatch :: forall context. Signature context => List context (DAIndex context, HashSimple context) -> Bool context
+noDuplicateIndicesInBatch
+  :: forall context. Signature context => List context (DAIndex context, HashSimple context) -> Bool context
 noDuplicateIndicesInBatch ls =
   snd $
     Symbolic.List.foldl

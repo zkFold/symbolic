@@ -7,17 +7,16 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants (
   emptyState,
 ) where
 
-import           Data.Function                   (($))
-import           Data.Functor                    (Functor (..))
-import           Data.Functor.Rep                (Representable (..))
-import           GHC.IsList                      (fromList)
-import           GHC.TypeNats                    (Natural)
-
-import           ZkFold.Algebra.Class            (FromConstant (..))
-import           ZkFold.Algebra.Field            (Zp)
-import           ZkFold.Data.Vector              (Vector (..))
-import           ZkFold.Symbolic.Class           (Symbolic)
-import           ZkFold.Symbolic.Data.ByteString (ByteString)
+import Data.Function (($))
+import Data.Functor (Functor (..))
+import Data.Functor.Rep (Representable (..))
+import GHC.IsList (fromList)
+import GHC.TypeNats (Natural)
+import ZkFold.Algebra.Class (FromConstant (..))
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Data.Vector (Vector (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 -- | The number of rounds in the Keccak-f[1600] permutation.
 type NumRounds :: Natural
