@@ -1,8 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeOperators       #-}
-
-{-# OPTIONS_GHC -freduction-depth=0 #-} -- Avoid reduction overflow error caused by NumberOfRegisters
 
 module Tests.Symbolic.Data.UInt (specUInt) where
 
@@ -17,8 +14,8 @@ import           GHC.Generics                               (Par1 (Par1), U1)
 import           Prelude                                    (show, type (~))
 import qualified Prelude                                    as P
 import           Test.Hspec                                 (Spec, describe)
-import           Test.QuickCheck                            (Gen, Property, withMaxSuccess, (.&.), (===))
-import           Tests.Symbolic.ArithmeticCircuit           (exec1, it)
+import           Test.QuickCheck                            (Property, withMaxSuccess, (.&.), (===))
+import           Tests.Common                               (it, toss, toss1)
 import           Tests.Symbolic.Data.Common                 (specConstantRoundtrip, specSymbolicFunction0,
                                                              specSymbolicFunction1, specSymbolicFunction2)
 
@@ -27,9 +24,8 @@ import           ZkFold.Algebra.EllipticCurve.BLS12_381
 import           ZkFold.Algebra.Field                       (Zp)
 import           ZkFold.Algebra.Number
 import           ZkFold.Data.Vector                         (Vector)
-import           ZkFold.Prelude                             (chooseNatural)
 import           ZkFold.Symbolic.Class                      (Arithmetic)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString
 import           ZkFold.Symbolic.Data.Combinators           (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize,
@@ -38,12 +34,6 @@ import           ZkFold.Symbolic.Data.Eq
 import           ZkFold.Symbolic.Data.Ord
 import           ZkFold.Symbolic.Data.UInt
 import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
-
-toss :: Natural -> Gen Natural
-toss x = chooseNatural (0, x)
-
-toss1 :: Natural -> Gen Natural
-toss1 x = chooseNatural (1, x)
 
 type AC a = ArithmeticCircuit a U1
 
@@ -101,7 +91,7 @@ specUInt'
     => Spec
 specUInt' = do
     let n = value @n
-        m = 2 ^ n -! 1
+        m = 2 ^ n
     describe ("UInt" ++ show n ++ " specification") $ do
         specConstantRoundtrip @(Zp p) @(UInt n rs) ("UInt" ++ show n) "Natural" (toss m)
         specSymbolicFunction1 @(Zp p) @(UInt n rs) "identity" id
@@ -119,7 +109,7 @@ specUInt' = do
             isHom @n @p @rs strictSub strictSub (-!) x <$> toss x
         it "strictly multiplies correctly" $ do
             x <- toss m
-            isHom @n @p @rs strictMul strictMul (*) x <$> toss (m `P.div` x)
+            isHom @n @p @rs strictMul strictMul (*) x <$> toss (if x == 0 then m else m `P.div` x)
 
         -- Type-specific tests go here
         it "iso uint correctly" $ do
@@ -133,7 +123,7 @@ specUInt' = do
                 bx = fromConstant x :: ByteString n (AC (Zp p))
             return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
 
-        when (m > 0) $ it "performs divMod correctly" $ do
+        when (m > 1) $ it "performs divMod correctly" $ do
             num <- toss m
             d <- toss1 m
             let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d

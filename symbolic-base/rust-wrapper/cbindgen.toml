@@ -1,0 +1,3 @@
+include_guard = "RUST_WRAPPER_H"
+include_version = false
+language = "C"

@@ -1,18 +1,14 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE OverloadedStrings  #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
-import           Control.Applicative                                ((<*>))
-import           Control.Monad                                      (return)
 import qualified Data.ByteString                                    as B
 import qualified Data.ByteString.Base16                             as B16
 import           Data.Eq                                            (Eq)
 import           Data.Function                                      (const, ($))
-import           Data.Functor                                       (Functor, (<$>))
+import           Data.Functor                                       (Functor)
 import qualified Data.Text                                          as T
 import qualified Data.Text.Encoding                                 as TE
-import           GHC.Generics                                       (Par1 (..), U1 (..), (:*:) (..))
+import           GHC.Generics                                       ((:*:) (..))
 import           Prelude                                            (either, error, id, type (~), (.))
 import           System.IO                                          (IO)
 import           Test.Hspec                                         (describe, hspec)
@@ -22,6 +18,7 @@ import           Text.Show                                          (Show)
 
 import           ZkFold.Algebra.EllipticCurve.BLS12_381             (BLS12_381_Base)
 import           ZkFold.Algebra.Field                               (Zp)
+import           ZkFold.Data.Orphans                                ()
 import           ZkFold.Symbolic.Compiler                           (compile)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit         (eval)
 import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
@@ -43,15 +40,6 @@ areSame v t f =
   let acT = compile (v t)
       acF = compile f
    in property $ \i -> eval acT i === eval acF i
-
-instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
-  arbitrary = (:*:) <$> arbitrary <*> arbitrary
-
-instance Arbitrary (U1 a) where
-  arbitrary = return U1
-
-instance Arbitrary a => Arbitrary (Par1 a) where
-  arbitrary = Par1 <$> arbitrary
 
 tFalse, tTrue, tUnit :: Term
 tFalse = TConstant (CBool false)

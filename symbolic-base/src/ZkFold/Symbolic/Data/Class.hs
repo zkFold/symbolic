@@ -23,6 +23,7 @@ import           Data.Traversable            (Traversable)
 import           Data.Type.Equality          (type (~))
 import           GHC.Generics                (V1, (:*:) (..), (:.:) (..))
 import qualified GHC.Generics                as G
+import           Text.Show                   (Show)
 
 import           ZkFold.Algebra.Class        (Finite)
 import           ZkFold.Algebra.Number       (KnownNat)

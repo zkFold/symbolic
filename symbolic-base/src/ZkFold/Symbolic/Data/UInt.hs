@@ -161,6 +161,7 @@ exp65537Mod
     => UInt n r c
     -> UInt m r c
     -> UInt m r c
+--exp65537Mod n modulus = resize $ Haskell.snd $ productMod n' n' m'
 exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
     where
         m' :: UInt (2 * m) r c

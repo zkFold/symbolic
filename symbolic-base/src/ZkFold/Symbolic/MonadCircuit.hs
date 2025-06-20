@@ -126,7 +126,7 @@ class ( Monad m, FromConstant a var
 -- For now, this is handled partially with the help of 'desugarRanges' function.
 rangeConstraint :: (AdditiveMonoid a, MonadCircuit var a w m) => var -> a -> m ()
 rangeConstraint v upperBound =
-  lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
+    lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value

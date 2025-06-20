@@ -1,7 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Tests.Symbolic.Compiler (specCompiler) where
 
 import           Data.Function                          (($))

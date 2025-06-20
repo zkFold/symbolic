@@ -38,6 +38,8 @@ common options
     if !arch(wasm32)
       ghc-options:
         -threaded
+        -fprof-auto
+        -fprof-cafs
     if flag(pedantic)
       ghc-options:
         -Werror
@@ -88,6 +90,8 @@ common options-exe
       buildable: True
     ghc-options:
       -rtsopts
+      -fprof-auto
+      -fprof-cafs
     ghc-prof-options:
       -with-rtsopts=-pj
 
@@ -97,13 +101,12 @@ library
         ghc-options: 
             -no-hs-main 
             -optl-mexec-model=reactor 
-            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm
+            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm,-Llibs,-lrust_wrapper_wasm
     exposed-modules:
       ZkFold.Symbolic.Examples
       ZkFold.Symbolic.Examples.Blake2b
       ZkFold.Symbolic.Examples.BLS12_381
       ZkFold.Symbolic.Examples.ByteString
-      ZkFold.Symbolic.Examples.Commitment
       ZkFold.Symbolic.Examples.Conditional
       ZkFold.Symbolic.Examples.Constant
       ZkFold.Symbolic.Examples.ECDSA

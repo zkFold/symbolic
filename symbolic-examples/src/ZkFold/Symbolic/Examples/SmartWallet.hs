@@ -25,6 +25,7 @@ module ZkFold.Symbolic.Examples.SmartWallet
     , ByteStringFromHex (..)
     , mkProof
     , mkSetup
+    , identityFun
     ) where
 
 import           Data.Aeson                                   (withText)
@@ -79,7 +80,7 @@ import           ZkFold.Symbolic.Data.FieldElement
 import           ZkFold.Symbolic.Data.Input
 import           ZkFold.Symbolic.Data.UInt                    (OrdWord, UInt (..), exp65537Mod)
 import           ZkFold.Symbolic.Interpreter
-import           ZkFold.Symbolic.MonadCircuit                 (newAssigned)
+import           ZkFold.Symbolic.MonadCircuit                 (newAssigned, rangeConstraint)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -234,6 +235,7 @@ mkProof PlonkupProof {..} =
         , l1_xi         = ZKF $ convertZp xi
         }
 
+--type ExpModCircuitGates = 2^17
 type ExpModCircuitGates = 2^18
 
 type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
@@ -353,8 +355,24 @@ expModProof x ps ac ExpModProofInput{..} = proof
 
 type ExpModCircuitGatesMock = 2^18
 
+-- A meaningless function with range and polynomial constraints for debugging
+-- The number of constraints depends on ExpModCircuitGatesMock
+--
+identityFun :: forall c. Symbolic c => c Par1 -> c Par1
+identityFun cp = fromCircuitF cp $ \(Par1 i) -> do
+    o <- newAssigned $ \p -> p i + fromConstant @Natural 42
+    o' <- newAssigned $ \p -> p o * p i
+    let gates    = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+    let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+    rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1..gates]
+    mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
+    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
+    out' <- newAssigned $ \p -> p a + p i
+    out <- newAssigned $ \p -> p out' - p a
+    pure $ Par1 out
+
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = AC.idCircuit
+identityCircuit = AC.idCircuit -- C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) identityFun
 
 expModSetupMock :: forall t . TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV

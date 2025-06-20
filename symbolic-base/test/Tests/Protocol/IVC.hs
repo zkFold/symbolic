@@ -2,52 +2,51 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Tests.Protocol.IVC (specIVC) where
 
-import           Data.Functor.Constant                       (Constant)
-import           GHC.Generics                                (U1 (..))
-import           Prelude                                     hiding (Num (..), pi, replicate, sum, (+), (^))
-import           Test.Hspec                                  (Spec, describe, it)
-import           Test.QuickCheck                             (property, withMaxSuccess)
+import           Data.Bifunctor                               (first)
+import           GHC.Generics                                 (U1 (..))
+import           Prelude                                      hiding (Num (..), pi, replicate, sum, (+), (^))
+import           Test.Hspec                                   (Spec, describe, it)
+import           Test.QuickCheck                              (property, withMaxSuccess)
 
-import           ZkFold.Algebra.Class                        (FromConstant (..), fromConstant)
-import           ZkFold.Algebra.EllipticCurve.BLS12_381      (BLS12_381_G1_Point, BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                        (Zp)
-import           ZkFold.Algebra.Number                       (Natural, type (-))
-import           ZkFold.Algebra.Polynomial.Univariate        (evalPolyVec)
-import           ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
-import           ZkFold.Data.Package                         (packed, unpacked)
-import           ZkFold.Data.Vector                          (Vector (..), item, singleton)
-import           ZkFold.Protocol.IVC.Accumulator             (Accumulator (..), AccumulatorInstance (..),
-                                                              emptyAccumulator)
-import           ZkFold.Protocol.IVC.AccumulatorScheme       as Acc
-import           ZkFold.Protocol.IVC.CommitOpen              (commitOpen)
-import           ZkFold.Protocol.IVC.FiatShamir              (FiatShamir, fiatShamir)
-import           ZkFold.Protocol.IVC.NARK                    (NARKInstanceProof (..), NARKProof (..), narkInstanceProof)
-import           ZkFold.Protocol.IVC.Oracle                  (OracleSource (..), mimcHash)
-import           ZkFold.Protocol.IVC.Predicate               (Predicate (..), predicate)
-import           ZkFold.Protocol.IVC.SpecialSound            (specialSoundProtocol)
-import           ZkFold.Symbolic.Class                       (BaseField, Symbolic)
-import           ZkFold.Symbolic.Data.FieldElement           (FieldElement (..))
+import           ZkFold.Algebra.Class                         (FromConstant (..), ToConstant (..))
+import           ZkFold.Algebra.EllipticCurve.BLS12_381       (BLS12_381_Scalar)
+import           ZkFold.Algebra.Field                         (Zp)
+import           ZkFold.Algebra.Number                        (Natural, type (-))
+import           ZkFold.Algebra.Polynomial.Univariate         (evalPolyVec)
+import           ZkFold.Algebra.Polynomial.Univariate.Simple  (fromVector)
+import           ZkFold.Data.Package                          (packed, unpacked)
+import           ZkFold.Data.Vector                           (Vector (..), item, singleton)
+import           ZkFold.Protocol.IVC.Accumulator              (Accumulator (..), AccumulatorInstance (..),
+                                                               emptyAccumulator)
+import           ZkFold.Protocol.IVC.AccumulatorScheme        as Acc
+import           ZkFold.Protocol.IVC.CommitOpen               (commitOpen)
+import           ZkFold.Protocol.IVC.FiatShamir               (FiatShamir, fiatShamir)
+import           ZkFold.Protocol.IVC.NARK                     (NARKInstanceProof (..), NARKProof (..),
+                                                               narkInstanceProof)
+import           ZkFold.Protocol.IVC.Oracle                   (mimcHash)
+import           ZkFold.Protocol.IVC.Predicate                (Predicate (..), predicate)
+import           ZkFold.Protocol.IVC.RecursiveFunction        (DataSource (..))
+import           ZkFold.Protocol.IVC.SpecialSound             (specialSoundProtocol)
+import           ZkFold.Symbolic.Class                        (BaseField, Symbolic)
+import           ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
+import           ZkFold.Symbolic.Data.FieldElement            (FieldElement (..))
+import           ZkFold.Symbolic.Interpreter                  (Interpreter)
 
-type F = Zp BLS12_381_Scalar
-type C = Constant BLS12_381_G1_Point
+type A = Zp BLS12_381_Scalar
+type F = FieldElement (Interpreter A)
+type C = BLS12_381_G1_Point (Interpreter A)
 type I = Vector 1
 type P = U1
 type K = 1
--- type AC = ArithmeticCircuit F (I :*: P :*: I) U1
-type PHI = Predicate F I P
-type SPS = FiatShamir 1 I P C [F] [F] F
+type PHI = Predicate A I P
+type SPS = FiatShamir 1 I P (DataSource C) [F] [A] F
 type D = 2
 type PARDEG = 5
-type PAR = Vector PARDEG F
+type PAR = Vector PARDEG A
 
-instance OracleSource F (C F) where
-    source _ = []
-
-testFunction :: forall ctx . (Symbolic ctx, FromConstant F (BaseField ctx))
+testFunction :: forall ctx . (Symbolic ctx, FromConstant A (BaseField ctx))
     => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
 testFunction p i _ =
     let p' = fromVector $ fmap fromConstant p
@@ -62,12 +61,15 @@ testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
 
 testSPS :: PHI -> SPS
-testSPS = fiatShamir mimcHash . commitOpen . specialSoundProtocol @D
+testSPS =
+    fiatShamir mimcHash
+    . commitOpen fromConstant toConstant
+    . specialSoundProtocol @D fromConstant toConstant
 
-initAccumulator :: PHI -> Accumulator K I C F
+initAccumulator :: PHI -> Accumulator K I (DataSource C) F
 initAccumulator = emptyAccumulator @D
 
-initAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
+initAccumulatorInstance :: PHI -> AccumulatorInstance K I (DataSource C) F
 initAccumulatorInstance phi =
     let Accumulator ai _ = initAccumulator phi
     in ai
@@ -75,7 +77,7 @@ initAccumulatorInstance phi =
 testPublicInput0 :: I F
 testPublicInput0 = singleton $ fromConstant @Natural 42
 
-testInstanceProofPair :: PHI -> NARKInstanceProof K I C F
+testInstanceProofPair :: PHI -> NARKInstanceProof K I (DataSource C) F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
 -- testMessages :: PHI -> Vector K [F]
@@ -83,7 +85,7 @@ testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 --     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
 --     in ms
 
-testNarkProof :: PHI -> Vector K (C F)
+testNarkProof :: PHI -> Vector K (DataSource C)
 testNarkProof phi =
     let NARKInstanceProof _ (NARKProof cs _) = testInstanceProofPair phi
     in cs
@@ -93,10 +95,10 @@ testPublicInput phi =
     let NARKInstanceProof pi _ = testInstanceProofPair phi
     in pi
 
-testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I C F
+testAccumulatorScheme :: PHI -> AccumulatorScheme D 1 I (DataSource C) F
 testAccumulatorScheme = accumulatorScheme mimcHash
 
-testAccumulator :: PHI -> Accumulator K I C F
+testAccumulator :: PHI -> Accumulator K I (DataSource C) F
 testAccumulator phi =
     let s = testAccumulatorScheme phi
     in fst $ prover s (initAccumulator phi) $ testInstanceProofPair phi
@@ -104,9 +106,9 @@ testAccumulator phi =
 testAccumulatorInstance :: PHI -> AccumulatorInstance K I C F
 testAccumulatorInstance phi =
     let Accumulator ai _ = testAccumulator phi
-    in ai
+    in first dataSource ai
 
-testAccumulationProof :: PHI -> Vector (D - 1) (C F)
+testAccumulationProof :: PHI -> Vector (D - 1) (DataSource C)
 testAccumulationProof phi =
     let s = testAccumulatorScheme phi
     in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
@@ -119,7 +121,11 @@ testAccumulationProof phi =
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
     let s = testAccumulatorScheme phi
-    in verifier s (testPublicInput phi) (testNarkProof phi) (initAccumulatorInstance phi) (testAccumulationProof phi)
+    in first dataSource $
+        verifier s (testPublicInput phi)
+                   (testNarkProof phi)
+                   (initAccumulatorInstance phi)
+                   (testAccumulationProof phi)
 
 specAlgebraicMap :: Spec
 specAlgebraicMap = do
@@ -138,7 +144,9 @@ specAccumulatorScheme = do
         --         withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
         describe "verifier" $ do
             it "must output zeros" $ do
-                withMaxSuccess 10 $ property $ \p -> testVerifierResult (testPredicate p) == testAccumulatorInstance (testPredicate p)
+                withMaxSuccess 10 $ property $ \p ->
+                    testVerifierResult (testPredicate p)
+                    == testAccumulatorInstance (testPredicate p)
 
 specIVC :: Spec
 specIVC = do

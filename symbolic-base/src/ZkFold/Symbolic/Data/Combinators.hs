@@ -26,7 +26,7 @@ import           GHC.Base                     (const, return)
 import           GHC.List                     (reverse)
 import           GHC.TypeLits                 (Symbol, UnconsSymbol)
 import           GHC.TypeNats
-import           Prelude                      (error, head, pure, tail, ($), (.), (<$>), (<>))
+import           Prelude                      (error, head, pure, tail, ($), (.), (<$>), (<*>), (<>))
 import qualified Prelude                      as Haskell
 import           Type.Errors
 
@@ -34,7 +34,7 @@ import           ZkFold.Algebra.Class
 import           ZkFold.Algebra.Number        (value)
 import qualified ZkFold.Data.Vector           as V
 import           ZkFold.Data.Vector           (Vector)
-import           ZkFold.Prelude               (take)
+import           ZkFold.Prelude               (drop, take)
 import           ZkFold.Symbolic.Class        (Arithmetic, BaseField)
 import           ZkFold.Symbolic.MonadCircuit
 
@@ -328,8 +328,32 @@ splitExpansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> 
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
 splitExpansion n1 n2 k = do
+    words <- expansionW @16 numWords k
+
+    let partL = take (n1 `div` 16) words
+        partH = drop (n1 `div` 16) words
+
+    (l, h) <- case (n1 `mod` 16, partH) of
+                (0, _) -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
+                (m, (h0:rest)) -> do
+                    (hl, hh) <- splitExpansion16 m h0
+                    ls  <- hornerW @16 (partL <> [hl])
+                    hs' <- hornerW @16 rest
+                    hs  <- newAssigned $ \p -> scale (2 ^ (16 -! m) :: Natural) (p hs') + p hh
+                    pure (ls, hs)
+                _ -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
+
+    constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
+    return (l, h)
+    where
+        numWords = (n1 + n2 + 15) `div` 16
+
+-- | Same as @splitExpansion@ but only for variables of exactly 16 bits
+--
+splitExpansion16 :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m (i, i)
+splitExpansion16 n1 k = do
     l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower (at k)
-    h <- newRanged (fromConstant @Natural $ 2 ^ n2 -! 1) $ upper (at k)
+    h <- newRanged (fromConstant @Natural $ 2 ^ (16 -! n1) -! 1) $ upper (at k)
     constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
     return (l, h)
     where
@@ -340,15 +364,19 @@ splitExpansion n1 n2 k = do
         upper :: ResidueField a => a -> a
         upper =
             fromIntegral
-            . (`mod` fromConstant @Natural (2 ^ n2))
+            . (`mod` fromConstant @Natural (2 ^ (16 -! n1)))
             . (`div` fromConstant @Natural (2 ^ n1))
             . toIntegral
+
 
 runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
     js <- for is $ \i -> newConstrained (\x j -> x i * x j) (one - at i // at i)
     ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv (at i))
     return (js, ks)
+
+runInvertOrFail :: (MonadCircuit i a w m, Traversable f) => f i -> m (f i)
+runInvertOrFail is = for is $ \i -> newConstrained (\x j -> x i * x j - one) (finv (at i))
 
 isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is

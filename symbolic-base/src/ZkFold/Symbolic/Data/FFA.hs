@@ -22,6 +22,7 @@ import           GHC.Generics                      (Generic, Par1 (..), type (:*
 import           Numeric.Natural                   (Natural)
 import           Prelude                           (Integer)
 import qualified Prelude
+import           System.Random.Stateful            (Uniform (..))
 import           Text.Show                         (Show)
 
 import           ZkFold.Algebra.Class
@@ -43,6 +44,8 @@ import           ZkFold.Symbolic.Data.Ord          (Ord (..))
 import           ZkFold.Symbolic.Data.UInt         (OrdWord, UInt (..), natural, register, toNative)
 import           ZkFold.Symbolic.Interpreter       (Interpreter (..))
 import           ZkFold.Symbolic.MonadCircuit      (MonadCircuit (..), ResidueField (..), Witness (..))
+import qualified Prelude as Haskell
+import Data.Functor (fmap)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -95,6 +98,7 @@ instance (KnownNat p, KnownRegisterSize r) => SymbolicInput (FFA p r) where
 
 instance HNFData c => NFData (FFA p r c)
 deriving stock instance HShow c => Show (FFA p r c)
+deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
 bezoutFFA ::
   forall p a. (KnownNat p, KnownNat (FFAUIntSize p (Order a))) => Integer
@@ -119,10 +123,18 @@ instance (Symbolic c, KnownFFA p r c, FromConstant a (Zp p)) =>
     let c' = toConstant (fromConstant c :: Zp p)
      in FFA (fromConstant c') (fromConstant c')
 
+instance {-# OVERLAPPING #-}
+    (Symbolic c, Order (BaseField c) ~ p, KnownRegisterSize r) =>
+    FromConstant (FieldElement c) (FFA p r c) where
+    fromConstant nx = FFA nx zero
+
 instance {-# OVERLAPPING #-} FromConstant (FFA p r c) (FFA p r c)
 
 instance {-# OVERLAPPING #-}
   (Symbolic c, KnownFFA p r c) => Scale (FFA p r c) (FFA p r c)
+
+instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
+    uniformM = fmap fromConstant . uniformM @(Zp p)
 
 valueFFA ::
   forall p r c i a.
