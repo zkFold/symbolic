@@ -21,6 +21,9 @@ import Data.Constraint (withDict)
 import Data.Kind (Type)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Symbol)
+import Prelude (($), (.), type (~))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Class
@@ -31,8 +34,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.JWT.Utils
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import Prelude (($), (.), type (~))
-import qualified Prelude as P
 
 -- | Types than can be represented as a Symbolic JSON string
 class IsSymbolicJSON a where

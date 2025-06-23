@@ -37,12 +37,13 @@ import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Test.QuickCheck (Arbitrary (..), chooseInt)
+import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
-import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
-import qualified Prelude as P
 
 infixl 7 .*., ./.
 

@@ -7,6 +7,7 @@ import Data.Foldable (Foldable, foldMap)
 import Data.Function ((.))
 import Data.List ((++))
 import GHC.Generics
+
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC (mimcConstants, mimcHashN)
 import ZkFold.Data.Vector (Vector)

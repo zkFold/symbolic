@@ -27,13 +27,14 @@ import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.UTCTime (UTCTime)
 import ZkFold.Symbolic.Fold (SymbolicFold)
+import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import qualified Prelude as Haskell hiding ((||))
+
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Interval (Interval)
 import ZkFold.Symbolic.Ledger.Types.Output (Output (..))
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude as Haskell hiding ((||))
 
 -- TODO: Use POSIXTime instead of UTCTime?
 

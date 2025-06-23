@@ -7,16 +7,17 @@ import GHC.Generics (Generic)
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Data.Vector
-import ZkFold.Symbolic.Cardano.Types.Basic
-import ZkFold.Symbolic.Cardano.Types.Input (Input)
-import ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
-import ZkFold.Symbolic.Cardano.Types.Value (Value)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
+
+import ZkFold.Symbolic.Cardano.Types.Basic
+import ZkFold.Symbolic.Cardano.Types.Input (Input)
+import ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
+import ZkFold.Symbolic.Cardano.Types.Value (Value)
 
 data Transaction inputs rinputs outputs tokens mint datum context = Transaction
   { txRefInputs :: Vector rinputs (Input tokens datum context)

@@ -19,8 +19,6 @@ import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import Prelude hiding (
   Num (..),
   drop,
@@ -31,6 +29,9 @@ import Prelude hiding (
   (!!),
   (/),
  )
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 
 -- | A class for polynomials.
 -- `c` is the coefficient type,

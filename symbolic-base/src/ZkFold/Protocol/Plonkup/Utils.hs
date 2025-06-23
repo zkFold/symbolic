@@ -9,12 +9,6 @@ import Data.Functor.Rep (tabulate)
 import Data.List (sortOn)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import ZkFold.Algebra.Number
-import ZkFold.Data.Vector (Vector)
-import ZkFold.Prelude (iterateN', log2ceiling)
-import ZkFold.Symbolic.Class (Arithmetic)
 import Prelude hiding (
   Num (..),
   drop,
@@ -26,6 +20,13 @@ import Prelude hiding (
   (/),
   (^),
  )
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import ZkFold.Algebra.Number
+import ZkFold.Data.Vector (Vector)
+import ZkFold.Prelude (iterateN', log2ceiling)
+import ZkFold.Symbolic.Class (Arithmetic)
 
 getParams :: forall a. (FiniteField a, Ord a) => Natural -> (a, a, a)
 getParams n = findK' 0

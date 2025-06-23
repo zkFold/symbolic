@@ -10,6 +10,9 @@ import qualified Data.Bool as Haskell
 import Data.Kind (Type)
 import GHC.Generics (Generic, Par1 (..))
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Integer, ($), (.))
+import qualified Prelude as Haskell hiding ((-))
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -24,8 +27,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Prelude (Integer, ($), (.))
-import qualified Prelude as Haskell hiding ((-))
 
 newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int {uint :: UInt n r c}
 

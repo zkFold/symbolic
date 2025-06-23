@@ -1,6 +1,7 @@
 module ZkFold.Protocol.Plonkup.PlonkupConstraint where
 
 import Data.Ord (Ord)
+
 import ZkFold.Algebra.Class
 import ZkFold.Protocol.Plonkup.LookupConstraint (LookupConstraint (..))
 import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkConstraint)

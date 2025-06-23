@@ -11,8 +11,9 @@ import Data.Typeable
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck ((=/=), (===), (==>))
 import qualified Test.QuickCheck as QC
-import Tests.Common (it, typeAt)
 import Text.Show (Show, show)
+
+import Tests.Common (it, typeAt)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
 import ZkFold.Algebra.Number

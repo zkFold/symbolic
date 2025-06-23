@@ -7,10 +7,11 @@ module ZkFold.Protocol.Plonkup.Prover.Secret where
 import Data.Aeson.Types (FromJSON (..), ToJSON (..))
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.Vector (Vector (..))
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 newtype PlonkupProverSecret g = PlonkupProverSecret (Vector 19 (ScalarFieldOf g))
   deriving stock Generic

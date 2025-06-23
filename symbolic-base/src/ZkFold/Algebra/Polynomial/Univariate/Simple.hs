@@ -20,6 +20,7 @@ import qualified GHC.Num as Int
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, integral)
 import ZkFold.Algebra.Polynomial.Univariate

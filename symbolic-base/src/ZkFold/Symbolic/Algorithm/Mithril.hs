@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Algorithm.Mithril where
 import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.TypeLits (KnownNat)
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Data.Vector (Vector)

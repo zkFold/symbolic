@@ -7,8 +7,9 @@ import Data.Bool as B
 import Foreign
 import Foreign.C.Types
 import GHC.Generics
-import ZkFold.Control.Conditional
 import Prelude
+
+import ZkFold.Control.Conditional
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p

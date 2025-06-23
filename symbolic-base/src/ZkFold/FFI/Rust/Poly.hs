@@ -10,11 +10,12 @@ import Foreign
 import GHC.Base
 import GHC.Generics (Generic)
 import GHC.IO (unsafePerformIO)
+import Prelude hiding (drop, length, product, replicate, sum, take, (/), (^))
+
 import ZkFold.Algebra.Number (KnownNat, Natural, value)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Types
-import Prelude hiding (drop, length, product, replicate, sum, take, (/), (^))
 
 newtype RustPolyVec a (size :: Natural) = RustPV {rawPoly :: RustData}
   deriving Generic

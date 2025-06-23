@@ -15,6 +15,9 @@ import Data.Function (on)
 import Data.List (concatMap, reverse, zipWith)
 import Data.Traversable (traverse)
 import GHC.Generics
+import Prelude (Monoid, Semigroup, Show, fmap, map, ($), (.), (<$>), (<>), type (~))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -27,8 +30,6 @@ import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Prelude (Monoid, Semigroup, Show, fmap, map, ($), (.), (<$>), (<>), type (~))
-import qualified Prelude
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering

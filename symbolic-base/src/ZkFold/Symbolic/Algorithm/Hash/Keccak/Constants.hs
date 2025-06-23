@@ -12,6 +12,7 @@ import Data.Functor (Functor (..))
 import Data.Functor.Rep (Representable (..))
 import GHC.IsList (fromList)
 import GHC.TypeNats (Natural)
+
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Data.Vector (Vector (..))

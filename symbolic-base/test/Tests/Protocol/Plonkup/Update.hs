@@ -12,6 +12,8 @@ import Data.List (head)
 import GHC.Generics (Par1 (..))
 import Test.Hspec
 import Test.QuickCheck hiding (Witness, witness)
+import Prelude (fst)
+
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
@@ -27,7 +29,6 @@ import ZkFold.Protocol.Plonkup.Prover (PlonkupProverSetup (..))
 import ZkFold.Protocol.Plonkup.Update (updateProverSetup, updateVerifierSetup)
 import ZkFold.Protocol.Plonkup.Witness (witnessInput)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval)
-import Prelude (fst)
 
 type P i n =
   Plonkup

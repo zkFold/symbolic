@@ -13,13 +13,14 @@ module ZkFold.Protocol.IVC.Commit (
 
 import Data.Zip (Zip (..))
 import System.Random (Uniform, mkStdGen, uniform)
+import Prelude hiding (Num (..), sum, take, zipWith)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector, unsafeToVector)
 import ZkFold.Prelude (take)
 import ZkFold.Protocol.IVC.Oracle
-import Prelude hiding (Num (..), sum, take, zipWith)
 
 -- | Commit to the object @a@ with results of type @f@
 type Commit a f = a -> f

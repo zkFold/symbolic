@@ -7,6 +7,8 @@ import Data.Binary (Binary)
 import GHC.Generics (Par1 (..), U1 (..), type (:*:))
 import Test.Hspec
 import Test.QuickCheck.Property ((.&.), (===))
+import Prelude (Show, return, ($))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Symbolic.Class
@@ -14,7 +16,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (Show, return, ($))
 
 testFunc :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
 testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do

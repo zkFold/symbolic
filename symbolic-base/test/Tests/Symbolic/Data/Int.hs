@@ -9,6 +9,9 @@ import Data.List ((++))
 import GHC.Generics (Par1 (Par1), U1)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Gen, chooseInteger, elements, (.&.), (.||.), (===))
+import Prelude (Integer, show, type (~))
+import qualified Prelude as P
+
 import Tests.Common (it)
 import Tests.Symbolic.Data.Common (
   specConstantRoundtrip,
@@ -35,8 +38,6 @@ import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt (UInt (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
-import Prelude (Integer, show, type (~))
-import qualified Prelude as P
 
 tossInteger :: Natural -> Gen Integer
 tossInteger (P.fromIntegral -> x) = chooseInteger (-x, x)

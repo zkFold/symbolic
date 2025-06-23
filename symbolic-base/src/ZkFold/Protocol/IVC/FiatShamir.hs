@@ -5,13 +5,14 @@ module ZkFold.Protocol.IVC.FiatShamir where
 
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (plusMinusInverse1)
+import Prelude hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
+
 import ZkFold.Algebra.Class (Ring)
 import ZkFold.Algebra.Number (KnownNat, type (-))
 import ZkFold.Data.Vector (Vector, init, item, scanl, unfold)
 import ZkFold.Protocol.IVC.CommitOpen
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import Prelude hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
 type FiatShamir k i p c m o f =
   SpecialSoundProtocol 1 i p (Vector k (m, c)) (Vector k c, o) f

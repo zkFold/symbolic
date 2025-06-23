@@ -19,12 +19,13 @@ import Data.Ord (Ord (..))
 import Data.Ratio (Rational)
 import Data.Type.Equality (type (~))
 import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
+import Prelude (Integer)
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
 import ZkFold.Prelude (length, replicate, zipWith')
-import Prelude (Integer)
-import qualified Prelude as Haskell
 
 infixl 7 .*, *., *, /
 

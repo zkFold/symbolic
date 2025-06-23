@@ -9,11 +9,12 @@ module Tests.Algebra.Field (specField) where
 import Data.Data (Typeable, typeOf)
 import Test.Hspec
 import Test.QuickCheck
+import Prelude hiding (Fractional (..), Num (..), length)
+
 import ZkFold.Algebra.Class
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as BLS12_381
 import qualified ZkFold.Algebra.EllipticCurve.BN254 as BN254
 import qualified ZkFold.Algebra.EllipticCurve.Pasta as Pasta
-import Prelude hiding (Fractional (..), Num (..), length)
 
 specField' :: forall a. (Arbitrary a, Eq a, Field a, Show a, Typeable a) => Spec
 specField' = do

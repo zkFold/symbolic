@@ -24,6 +24,9 @@ import Data.Binary (Binary (..))
 import Data.Bool ((&&))
 import Data.Function (($))
 import Text.Show (Show)
+import Prelude (Bool, Integer)
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pairing
@@ -32,8 +35,6 @@ import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
-import Prelude (Bool, Integer)
-import qualified Prelude
 
 -------------------------- Scalar field & field towers -------------------------
 

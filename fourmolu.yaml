@@ -17,6 +17,9 @@ comma-style: leading
 # Styling of import/export lists (choices: leading, trailing, or diff-friendly)
 import-export-style: diff-friendly
 
+# Rules for grouping import declarations
+import-grouping: by-scope
+
 # Whether to full-indent or half-indent 'where' bindings past the preceding body
 indent-wheres: false
 

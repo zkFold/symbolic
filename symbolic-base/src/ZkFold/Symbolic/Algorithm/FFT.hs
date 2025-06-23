@@ -9,14 +9,15 @@ module ZkFold.Symbolic.Algorithm.FFT (
 
 import Data.Maybe (fromJust)
 import qualified Data.Vector as V
+import Prelude (pure, ($), (.))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Vector (Vector (..), toV)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), newAssigned)
-import Prelude (pure, ($), (.))
-import qualified Prelude as P
 
 fft :: forall ctx n. (KnownNat n, Symbolic ctx) => ctx (Vector (2 ^ n)) -> ctx (Vector (2 ^ n))
 fft v = hmap Vector $ fromCircuitF v (fft' (value @n) u one . toV)

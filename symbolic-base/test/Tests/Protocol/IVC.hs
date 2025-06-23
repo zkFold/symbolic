@@ -8,6 +8,8 @@ import Data.Bifunctor (first)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
+import Prelude hiding (Num (..), pi, replicate, sum, (+), (^))
+
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -37,7 +39,6 @@ import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import Prelude hiding (Num (..), pi, replicate, sum, (+), (^))
 
 type A = Zp BLS12_381_Scalar
 

@@ -5,9 +5,6 @@ module ZkFold.Algorithm.ReedSolomon where
 import Data.Bool (bool)
 import Data.Vector as V hiding (sum)
 import GHC.Natural (Natural)
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (KnownNat, value)
-import ZkFold.Algebra.Polynomial.Univariate
 import Prelude (
   Eq,
   Int,
@@ -23,6 +20,10 @@ import Prelude (
   (==),
  )
 import qualified Prelude as P
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number (KnownNat, value)
+import ZkFold.Algebra.Polynomial.Univariate
 
 numberOfError :: forall n k. (KnownNat k, KnownNat n) => Natural
 numberOfError = (value @n -! value @k) `div` 2

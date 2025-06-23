@@ -13,10 +13,6 @@ module ZkFold.Symbolic.Cardano.Types.Output (
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Cardano.Types.Address (Address)
-import ZkFold.Symbolic.Cardano.Types.Basic
-import ZkFold.Symbolic.Cardano.Types.Output.Datum
-import ZkFold.Symbolic.Cardano.Types.Value (SingleAsset, Value)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
@@ -25,6 +21,11 @@ import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
+
+import ZkFold.Symbolic.Cardano.Types.Address (Address)
+import ZkFold.Symbolic.Cardano.Types.Basic
+import ZkFold.Symbolic.Cardano.Types.Output.Datum
+import ZkFold.Symbolic.Cardano.Types.Value (SingleAsset, Value)
 
 data Liability context
   = Liability

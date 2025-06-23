@@ -46,6 +46,22 @@ import qualified Data.Zip as Z
 import GHC.Generics (Generic, Par1 (..), (:*:) (..))
 import GHC.Natural (naturalFromInteger)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
+import Prelude (
+  Integer,
+  const,
+  error,
+  flip,
+  otherwise,
+  return,
+  ($),
+  (++),
+  (.),
+  (<>),
+  (>>=),
+  type (~),
+ )
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
@@ -69,21 +85,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (
-  Integer,
-  const,
-  error,
-  flip,
-  otherwise,
-  return,
-  ($),
-  (++),
-  (.),
-  (<>),
-  (>>=),
-  type (~),
- )
-import qualified Prelude as Haskell
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type)

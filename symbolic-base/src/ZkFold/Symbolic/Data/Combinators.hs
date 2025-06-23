@@ -27,6 +27,9 @@ import GHC.List (reverse)
 import GHC.TypeLits (Symbol, UnconsSymbol)
 import GHC.TypeNats
 import Type.Errors
+import Prelude (error, head, pure, tail, ($), (.), (<$>), (<*>), (<>))
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Vector (Vector)
@@ -34,8 +37,6 @@ import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField)
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (error, head, pure, tail, ($), (.), (<$>), (<*>), (<>))
-import qualified Prelude as Haskell
 
 mzipWithMRep
   :: (Applicative m, Representable f, Traversable f)

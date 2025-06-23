@@ -14,6 +14,9 @@ import Data.Type.Equality (type (~))
 import Data.Vector (iterateN)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
+import Prelude (const, pure, return, zip, ($), (.))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (integral, value)
 import ZkFold.Data.Package
@@ -44,8 +47,6 @@ import ZkFold.Symbolic.Data.UInt (UInt (..), strictConv)
 import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (const, pure, return, zip, ($), (.))
-import qualified Prelude as P
 
 data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: (Context h) (Layout h)

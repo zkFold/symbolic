@@ -10,6 +10,8 @@ import Data.ByteString (ByteString)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 import Numeric.Natural (Natural)
+import Prelude hiding (Num ((*)), sum)
+
 import ZkFold.Algebra.Class (Bilinear (..), Scale (..), sum)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
@@ -19,7 +21,6 @@ import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()
 import ZkFold.FFI.Rust.Types ()
-import Prelude hiding (Num ((*)), sum)
 
 class Monoid ts => ToTranscript ts a where
   toTranscript :: a -> ts

@@ -45,25 +45,6 @@ import GHC.Generics (Generic, Par1 (..))
 import GHC.Natural (naturalFromInteger)
 import Numeric (readHex, showHex)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number
-import ZkFold.Data.HFunctor (HFunctor (..))
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import ZkFold.Data.Package (packWith, unpackWith)
-import ZkFold.Data.Utils (zipWithM)
-import ZkFold.Data.Vector (Vector (..))
-import qualified ZkFold.Data.Vector as V
-import ZkFold.Prelude (replicate, replicateA, (!!))
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Conditional (Conditional)
-import ZkFold.Symbolic.Data.Eq (Eq)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (ClosedPoly, newAssigned)
 import Prelude (
   Integer,
   const,
@@ -84,6 +65,26 @@ import Prelude (
   type (~),
  )
 import qualified Prelude as Haskell
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number
+import ZkFold.Data.HFunctor (HFunctor (..))
+import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
+import ZkFold.Data.Package (packWith, unpackWith)
+import ZkFold.Data.Utils (zipWithM)
+import ZkFold.Data.Vector (Vector (..))
+import qualified ZkFold.Data.Vector as V
+import ZkFold.Prelude (replicate, replicateA, (!!))
+import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.Conditional (Conditional)
+import ZkFold.Symbolic.Data.Eq (Eq)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import ZkFold.Symbolic.MonadCircuit (ClosedPoly, newAssigned)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.

@@ -3,9 +3,10 @@ module ZkFold.Data.Sparse.Matrix where
 import Data.Map (Map)
 import Data.Zip (Semialign (..), Zip (..))
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (length, sum, zip, zipWith, (*))
+
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
-import Prelude hiding (length, sum, zip, zipWith, (*))
 
 newtype SMatrix m n a = SMatrix {fromSMatrix :: Map (Zp m, Zp n) a}
   deriving (Eq, Show)

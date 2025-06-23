@@ -9,6 +9,7 @@ import Data.Proxy (Proxy (..))
 import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), (:*:) (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Symbolic.Class (Symbolic (fromCircuitF, witnessF), fromCircuit2F)

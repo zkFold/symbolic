@@ -4,6 +4,8 @@
 module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 
 import Data.Function (($))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf, Ed25519_Scalar)
@@ -14,7 +16,6 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
-import qualified Prelude
 
 type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 

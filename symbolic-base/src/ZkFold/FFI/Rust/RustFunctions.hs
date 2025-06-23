@@ -6,8 +6,9 @@ module ZkFold.FFI.Rust.RustFunctions where
 
 import Foreign
 import Foreign.C.String
-import ZkFold.FFI.Rust.Types
 import Prelude
+
+import ZkFold.FFI.Rust.Types
 
 runRustFunctionBinary
   :: RustFunctionBinary

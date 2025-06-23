@@ -5,6 +5,7 @@ module ZkFold.Symbolic.UPLC.Fun (Fun (..)) where
 import Data.Function ((.))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
+
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.UPLC.BuiltinType
 

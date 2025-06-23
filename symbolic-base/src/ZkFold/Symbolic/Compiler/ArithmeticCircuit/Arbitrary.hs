@@ -13,6 +13,7 @@ import Data.List ((++))
 import Data.Monoid (mempty)
 import Data.Traversable (Traversable)
 import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (elementsRep, replicateA)

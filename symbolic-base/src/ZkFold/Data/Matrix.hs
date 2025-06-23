@@ -8,10 +8,11 @@ import Data.Maybe (fromJust)
 import Data.These
 import System.Random (Random (..))
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (Num (..), length, sum, zip, zipWith)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector hiding (head, tail)
-import Prelude hiding (Num (..), length, sum, zip, zipWith)
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations

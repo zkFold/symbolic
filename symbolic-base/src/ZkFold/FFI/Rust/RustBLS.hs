@@ -16,6 +16,9 @@ import GHC.Base
 import GHC.IO (unsafePerformIO)
 import GHC.Natural (naturalToInteger)
 import Test.QuickCheck hiding (scale)
+import Prelude hiding (fromIntegral, negate, (+), (-), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (sum)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
@@ -30,8 +33,6 @@ import ZkFold.FFI.Rust.Poly
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
 import ZkFold.Symbolic.MonadCircuit
-import Prelude hiding (fromIntegral, negate, (+), (-), (^))
-import qualified Prelude as P
 
 pointSize :: Int
 pointSize = sizeOf (undefined :: Rust_BLS12_381_G1_Point)

@@ -4,6 +4,8 @@
 module ZkFold.Symbolic.Data.EllipticCurve.BN254 (BN254_G1_Point) where
 
 import Data.Function (($))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BN254 (BN254_Base, BN254_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class
@@ -14,7 +16,6 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
-import qualified Prelude
 
 type BN254_G1_Point ctx = Weierstrass "BN254_G1" (Point (FFA BN254_Base 'Auto ctx))
 

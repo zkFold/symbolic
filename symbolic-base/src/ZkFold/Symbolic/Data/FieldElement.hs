@@ -11,6 +11,9 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Tuple (snd)
 import GHC.Generics (Generic, Par1 (..))
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Integer)
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor (hmap)
@@ -27,8 +30,6 @@ import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Prelude (Integer)
-import qualified Prelude as Haskell
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic

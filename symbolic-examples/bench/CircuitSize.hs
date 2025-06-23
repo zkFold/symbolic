@@ -12,6 +12,7 @@ import qualified Test.Tasty.Golden as Golden
 import Text.Show (Show (..))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit as Circuit
+
 import ZkFold.Symbolic.Examples (ExampleOutput (..))
 import qualified ZkFold.Symbolic.Examples as Examples
 

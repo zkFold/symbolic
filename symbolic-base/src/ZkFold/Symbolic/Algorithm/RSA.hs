@@ -17,6 +17,9 @@ module ZkFold.Symbolic.Algorithm.RSA (
 
 import Control.DeepSeq (NFData, force)
 import GHC.Generics (Generic)
+import Prelude (($))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
@@ -36,8 +39,6 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
-import Prelude (($))
-import qualified Prelude as P
 
 type Signature keyLen ctx = ByteString keyLen ctx
 

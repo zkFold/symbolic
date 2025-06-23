@@ -9,6 +9,8 @@ import Data.Function ((.))
 import Data.Maybe (Maybe (..))
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
+import Prelude (Integer, error)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Control.Conditional (Conditional (..))
@@ -16,7 +18,6 @@ import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import Prelude (Integer, error)
 
 newtype MerkleHash (n :: Maybe Natural) = M {runHash :: ByteString}
 

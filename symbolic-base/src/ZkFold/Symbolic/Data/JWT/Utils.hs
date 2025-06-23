@@ -17,6 +17,9 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import GHC.Generics (Par1 (..))
 import GHC.TypeLits (withKnownNat)
+import Prelude (fmap, pure, ($), (.), (<$>), type (~))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor (hmap)
@@ -30,8 +33,6 @@ import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned)
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Prelude (fmap, pure, ($), (.), (<$>), type (~))
-import qualified Prelude as P
 
 -- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
 type BufLen n = Max (Log2 n + 1) 3

@@ -26,6 +26,20 @@ import           Data.List                                         (foldl')
 #endif
 import GHC.IsList (IsList (..))
 import qualified GHC.Num as GHC
+import Prelude hiding (
+  Num (..),
+  concat,
+  divMod,
+  length,
+  mod,
+  replicate,
+  splitAt,
+  truncate,
+  (!!),
+  (&&),
+  (^),
+ )
+
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
@@ -54,19 +68,6 @@ import ZkFold.Symbolic.Data.ByteString (
  )
 import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
-import Prelude hiding (
-  Num (..),
-  concat,
-  divMod,
-  length,
-  mod,
-  replicate,
-  splitAt,
-  truncate,
-  (!!),
-  (&&),
-  (^),
- )
 
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693

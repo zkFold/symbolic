@@ -13,6 +13,8 @@ import Data.Function (($))
 import Data.Functor ((<$>))
 import GHC.Generics (Generic, Par1 (..))
 import Text.Show (Show)
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Data.Bool
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -20,7 +22,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import qualified Prelude as Haskell
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)

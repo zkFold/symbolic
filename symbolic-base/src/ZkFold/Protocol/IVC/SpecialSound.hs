@@ -9,6 +9,8 @@ import Data.Functor ((<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.List (map)
 import GHC.Generics ((:*:) (..))
+import Prelude (undefined)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector)
@@ -17,7 +19,6 @@ import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
-import Prelude (undefined)
 
 {-- | Section 3.1
 

@@ -5,9 +5,10 @@ module ZkFold.Protocol.Plonkup.Testing where
 
 import Control.DeepSeq (NFData)
 import GHC.Generics (Generic)
+import Prelude hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPolyExtended)
-import Prelude hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
 
 data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
   { omega :: ScalarFieldOf g1

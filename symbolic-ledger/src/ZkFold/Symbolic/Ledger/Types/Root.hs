@@ -4,8 +4,9 @@ module ZkFold.Symbolic.Ledger.Types.Root (
   insert,
 ) where
 
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
 import Prelude hiding (Bool, Eq, Ord, length, splitAt, (*), (+))
+
+import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
 
 -- TODO: Move from Hash to correct type from symbolic-base.
 

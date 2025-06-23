@@ -9,6 +9,9 @@ import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude ((.), type (~))
+import qualified Prelude as P
+
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class
@@ -22,8 +25,6 @@ import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Utils
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import Prelude ((.), type (~))
-import qualified Prelude as P
 
 -- | Json Web Token payload with information about the user
 -- https://dev.twitch.tv/docs/extensions/reference/#jwt-schema

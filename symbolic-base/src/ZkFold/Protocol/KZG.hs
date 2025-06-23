@@ -14,13 +14,14 @@ import qualified Data.Vector as V
 import Data.Vector.Binary ()
 import Data.Word (Word8)
 import Test.QuickCheck (Arbitrary (..), chooseInt)
+import Prelude hiding (Num (..), length, sum, (/), (^))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.ByteString (Binary)
 import ZkFold.Protocol.NonInteractiveProof
-import Prelude hiding (Num (..), length, sum, (/), (^))
 
 -- | `d` is the degree of polynomials in the protocol
 newtype KZG g1 g2 (d :: Natural) pv = KZG (ScalarFieldOf g1)
