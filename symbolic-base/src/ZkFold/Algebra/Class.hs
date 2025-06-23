@@ -413,11 +413,10 @@ class (Ring a, Exponent a Integer, Eq a) => Field a where
   rootOfUnity 0 = Just one
   rootOfUnity _ = Nothing
 
-intPowF :: Field a => a -> Integer -> a
-
 -- | A default implementation for integer exponentiation. Uses only natural
 -- exponentiation and @'finv'@ so doesn't loop via an @'Exponent' Integer a@
 -- instance.
+intPowF :: Field a => a -> Integer -> a
 intPowF !a !n
   | n < 0 = finv a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
