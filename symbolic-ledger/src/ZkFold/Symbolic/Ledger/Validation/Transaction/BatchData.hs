@@ -151,22 +151,23 @@ updateAddrsTxsList
 updateAddrsTxsList addr addrTxs addrsTxs =
   let (_, _, newAddrsTxs, addrExists) =
         Symbolic.List.foldr
-          ( Morph \( ((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s)))
-                     , ( accAddrToFind :: Address s
-                         , accAddrTxs :: List s (HashSimple s)
-                         , accAddrsTxs :: List s (Address s, List s (HashSimple s))
-                         , accFound :: Bool s
-                         )
-                     ) ->
-              let elemMatches = accAddrToFind == iterAddr
-               in ( accAddrToFind
-                  , accAddrTxs
-                  , ifThenElse
-                      elemMatches
-                      ((iterAddr, accAddrTxs) .: accAddrsTxs)
-                      ((iterAddr, iterAddrTxs) .: accAddrsTxs)
-                  , accFound || elemMatches
-                  )
+          ( Morph
+              \( ((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s)))
+                 , ( accAddrToFind :: Address s
+                     , accAddrTxs :: List s (HashSimple s)
+                     , accAddrsTxs :: List s (Address s, List s (HashSimple s))
+                     , accFound :: Bool s
+                     )
+                 ) ->
+                  let elemMatches = accAddrToFind == iterAddr
+                   in ( accAddrToFind
+                      , accAddrTxs
+                      , ifThenElse
+                          elemMatches
+                          ((iterAddr, accAddrTxs) .: accAddrsTxs)
+                          ((iterAddr, iterAddrTxs) .: accAddrsTxs)
+                      , accFound || elemMatches
+                      )
           )
           (addr, addrTxs, emptyList :: List context (Address context, List context (HashSimple context)), false :: Bool context)
           addrsTxs
@@ -189,15 +190,16 @@ findAddrTxs
 findAddrTxs a ls =
   snd $
     Symbolic.List.foldl
-      ( Morph \( (accToFind :: Address s, accList :: List s (HashSimple s))
-                 , ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))
-                 ) ->
-          ( accToFind
-          , ifThenElse
-              (accToFind == addr)
-              addrTxHashes
-              accList
-          )
+      ( Morph
+          \( (accToFind :: Address s, accList :: List s (HashSimple s))
+             , ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))
+             ) ->
+              ( accToFind
+              , ifThenElse
+                  (accToFind == addr)
+                  addrTxHashes
+                  accList
+              )
       )
       (a, emptyList :: List context (HashSimple context))
       ls
