@@ -26,8 +26,6 @@ import GHC.Generics (Par1 (..), (:*:) (..))
 import GHC.IsList (fromList)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show (..))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Permutation (Permutation, fromCycles, mkIndexPartition)
@@ -47,6 +45,7 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext (..), 
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupTable (..), LookupType (LookupType))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import qualified Prelude as P
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
@@ -66,7 +65,7 @@ data PlonkupRelation i o n a pv = PlonkupRelation
   -- ^ The number of private inputs.
   }
 
-instance (Show (pv n), Show a) => Show (PlonkupRelation i o n a pv) where
+instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
   show PlonkupRelation {..} =
     "Plonkup Relation: "
       ++ show qM
@@ -90,15 +89,15 @@ instance (Show (pv n), Show a) => Show (PlonkupRelation i o n a pv) where
       ++ show sigma
 
 instance
-  ( Arbitrary (ArithmeticCircuit a i o)
-  , Arithmetic a
-  , Binary (Rep i)
-  , Foldable o
+  ( KnownNat n
+  , UnivariateRingPolyVec a pv
   , KnownNat (PlonkupPermutationSize n)
-  , KnownNat n
   , Representable i
   , Representable o
-  , UnivariateRingPolyVec a pv
+  , Foldable o
+  , Arithmetic a
+  , Binary (Rep i)
+  , Arbitrary (ArithmeticCircuit a i o)
   )
   => Arbitrary (PlonkupRelation i o n a pv)
   where
@@ -170,13 +169,13 @@ zipLongest !f !xs !ys =
 
 toPlonkupRelation
   :: forall i o n a pv
-   . ( Arithmetic a
+   . ( KnownNat n
+     , Arithmetic a
      , Binary (Rep i)
-     , Foldable o
-     , KnownNat n
+     , UnivariateRingPolyVec a pv
      , Representable i
      , Representable o
-     , UnivariateRingPolyVec a pv
+     , Foldable o
      )
   => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation !ac =

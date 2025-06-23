@@ -27,14 +27,13 @@ import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.UTCTime (UTCTime)
 import ZkFold.Symbolic.Fold (SymbolicFold)
-import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude as Haskell hiding ((||))
-
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Interval (Interval)
 import ZkFold.Symbolic.Ledger.Types.Output (Output (..))
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import qualified Prelude as Haskell hiding ((||))
 
 -- TODO: Use POSIXTime instead of UTCTime?
 
@@ -52,25 +51,25 @@ data Transaction context = Transaction
   deriving stock Generic
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => SymbolicData (Transaction context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Conditional (Bool context) (Transaction context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Eq (Transaction context)
@@ -78,10 +77,10 @@ instance
 -- | Builds a 'Transaction' validating that there is at least one input belonging to the "owner".
 mkTransaction
   :: forall context
-   . ( KnownRegisters context 11 Auto
+   . ( SymbolicFold context
      , KnownRegistersAssetQuantity context
      , KnownRegistersOutputIndex context
-     , SymbolicFold context
+     , KnownRegisters context 11 Auto
      )
   => List context (Input context)
   -> List context (Output context)
@@ -110,11 +109,11 @@ mkTransaction inputs outputs validityInterval owner =
 type TransactionId context = Hash (Transaction context)
 
 txId
-  :: ( Hashable (HashSimple context) (Transaction context)
-     , KnownRegisters context 11 Auto
-     , KnownRegistersAssetQuantity context
+  :: ( KnownRegistersAssetQuantity context
      , KnownRegistersOutputIndex context
+     , KnownRegisters context 11 Auto
      , Symbolic context
+     , Hashable (HashSimple context) (Transaction context)
      )
   => Transaction context -> TransactionId context
 txId = hash

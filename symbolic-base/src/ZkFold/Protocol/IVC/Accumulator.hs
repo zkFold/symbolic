@@ -11,8 +11,6 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Binary (Binary)
 import Data.Functor.Rep (Representable (..))
 import GHC.Generics (Generic)
-import Prelude hiding (length, pi)
-
 import ZkFold.Algebra.Class (Ring, Scale, zero)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector)
@@ -21,6 +19,7 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
+import Prelude hiding (length, pi)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f = AccumulatorInstance
@@ -30,7 +29,7 @@ data AccumulatorInstance k i c f = AccumulatorInstance
   , _e :: c -- E ∈ C in the paper
   , _mu :: f -- μ ∈ F in the paper
   }
-  deriving (Eq, Functor, Generic)
+  deriving (Generic, Functor, Eq)
 
 makeLenses ''AccumulatorInstance
 
@@ -45,20 +44,20 @@ instance Functor i => Bifunctor (AccumulatorInstance k i) where
       }
 
 instance
-  (Foldable i, OracleSource a c, OracleSource a f)
+  (OracleSource a f, OracleSource a c, Foldable i)
   => OracleSource a (AccumulatorInstance k i c f)
   where
   source AccumulatorInstance {..} =
     source (FoldableSource _pi, _c, _r, _e, _mu)
 
 instance
-  ( Context f ~ Context c
-  , KnownNat (k - 1)
+  ( KnownNat (k - 1)
   , KnownNat k
   , LayoutFunctor i
-  , Support f ~ Support c
   , SymbolicData c
   , SymbolicData f
+  , Context f ~ Context c
+  , Support f ~ Support c
   )
   => SymbolicData (AccumulatorInstance k i c f)
 
@@ -69,21 +68,21 @@ data Accumulator k i c f = Accumulator
   { _x :: AccumulatorInstance k i c f
   , _w :: Vector k [f]
   }
-  deriving (Functor, Generic)
+  deriving (Generic, Functor)
 
 makeLenses ''Accumulator
 
 emptyAccumulator
   :: forall d k a i p c f
-   . ( Binary (Rep i)
-     , Binary (Rep p)
-     , HomomorphicCommit [f] c
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , KnownNat (k - 1)
      , KnownNat k
      , Representable i
+     , HomomorphicCommit [f] c
      , Ring f
      , Scale a f
+     , Binary (Rep i)
+     , Binary (Rep p)
      )
   => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
@@ -98,15 +97,15 @@ emptyAccumulator phi =
 
 emptyAccumulatorInstance
   :: forall d k a i p c f
-   . ( Binary (Rep i)
-     , Binary (Rep p)
-     , HomomorphicCommit [f] c
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , KnownNat (k - 1)
      , KnownNat k
      , Representable i
+     , HomomorphicCommit [f] c
      , Ring f
      , Scale a f
+     , Binary (Rep i)
+     , Binary (Rep p)
      )
   => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

@@ -16,22 +16,21 @@ import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
-import Prelude (type (~))
-
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
+import Prelude (type (~))
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
-  ( -- TODO: Remove after Conditional becomes part of SymbolicData
-    Conditional (Bool c) v
+  ( Typeable v
+  , SymbolicOutput v
+  , SymbolicFold c
   , Context v ~ c
   , Support v ~ Proxy c
-  , SymbolicFold c
-  , SymbolicOutput v
-  , Typeable v
+  , -- TODO: Remove after Conditional becomes part of SymbolicData
+    Conditional (Bool c) v
   ) =>
   IsData (t :: BuiltinType) v c
     | t c -> v
@@ -53,7 +52,7 @@ type Sym c = (SymbolicFold c, Typeable c)
 
 type IntLength = 64
 
-instance (KnownRegisters c IntLength Auto, Sym c) => IsData BTInteger (Int IntLength Auto c) c where
+instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
   asPair _ = Nothing
   asList _ = Nothing
 
@@ -81,11 +80,11 @@ instance Sym c => IsData BTData (Symbolic.Data c) c where
   asPair _ = Nothing
   asList _ = Nothing
 
-instance (IsData t v c, Sym c) => IsData (BTList t) (L.List c v) c where
+instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
   asPair _ = Nothing
   asList l = Just (ExList l)
 
-instance (IsData t v c, IsData t' v' c, Sym c) => IsData (BTPair t t') (v, v') c where
+instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
   asList _ = Nothing
 

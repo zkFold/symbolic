@@ -6,7 +6,6 @@ module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 
 import Data.Type.Equality
 import GHC.TypeLits (KnownNat)
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class as S
@@ -20,17 +19,17 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 -- TODO: verify the actual message instead of a hash
 ecdsaVerify
   :: forall n point curve p q baseField scalarField ctx
-   . ( CyclicGroup point
-     , KnownFFA p 'Auto ctx
-     , KnownFFA q 'Auto ctx
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat n
-     , S.Symbolic ctx
-     , ScalarFieldOf point ~ scalarField
+   . ( S.Symbolic ctx
      , baseField ~ FFA q 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
      , scalarField ~ FFA p 'Auto ctx
+     , point ~ Weierstrass curve (Point baseField)
+     , ScalarFieldOf point ~ scalarField
+     , CyclicGroup point
+     , KnownFFA q 'Auto ctx
+     , KnownFFA p 'Auto ctx
+     , KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
      )
   => point
   -> scalarField

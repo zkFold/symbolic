@@ -42,12 +42,12 @@ exampleUIntProductMod
 exampleUIntProductMod = productMod
 
 exampleUIntDivMod
-  :: ( KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
-     , KnownNat k
-     , KnownNat n
+  :: ( KnownNat n
      , KnownRegisterSize r
-     , NumberOfRegisters (BaseField c) n r ~ k
      , Symbolic c
+     , NumberOfRegisters (BaseField c) n r ~ k
+     , KnownNat k
+     , KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
      )
   => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
 exampleUIntDivMod = divMod
@@ -79,17 +79,17 @@ exampleUIntStrictMul
 exampleUIntStrictMul = strictMul
 
 exampleUIntResize
-  :: (KnownNat k, KnownNat n, KnownRegisterSize r, Symbolic c)
+  :: (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c)
   => UInt n r c -> UInt k r c
 exampleUIntResize = resize
 
 exampleUIntLeq
-  :: ( KnownNat (Ceil regSize OrdWord)
-     , KnownNat n
+  :: ( KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
      , Symbolic c
+     , KnownRegisters c n r
      , regSize ~ GetRegisterSize (BaseField c) n r
+     , KnownNat (Ceil regSize OrdWord)
      )
   => UInt n r c -> UInt n r c -> Bool c
 exampleUIntLeq = (<=)

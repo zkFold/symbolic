@@ -8,9 +8,6 @@ import Data.Function (($))
 import System.Random (RandomGen)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (withMaxSuccess, (.&.), (===))
-import Prelude (pure)
-import qualified Prelude as P
-
 import Tests.Common (evalBool, it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
@@ -19,10 +16,12 @@ import ZkFold.Symbolic.Algorithm.RSA
 import ZkFold.Symbolic.Data.Combinators (ilog2)
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import Prelude (pure)
+import qualified Prelude as P
 
 type I = Interpreter Fr
 
-specRSA' :: forall keyLength g. (RSA keyLength 256 I, RandomGen g) => g -> Spec
+specRSA' :: forall keyLength g. (RandomGen g, RSA keyLength 256 I) => g -> Spec
 specRSA' gen = do
   describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
     it "signs and verifies correctly" $ withMaxSuccess 10 $ do

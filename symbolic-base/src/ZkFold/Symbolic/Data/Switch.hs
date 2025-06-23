@@ -2,7 +2,6 @@ module ZkFold.Symbolic.Data.Switch where
 
 import Data.Function (const, ($), (.))
 import Data.Proxy (Proxy (..))
-
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))

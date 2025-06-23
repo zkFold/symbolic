@@ -4,8 +4,6 @@
 module ZkFold.Symbolic.Data.EllipticCurve.Secp256k1 (Secp256k1_Point) where
 
 import Data.Function (($))
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_PointOf, Secp256k1_Scalar)
@@ -16,13 +14,14 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
+import qualified Prelude
 
 type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base 'Auto ctx)
 
 instance
-  ( KnownFFA Secp256k1_Base 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA Secp256k1_Base 'Auto ctx
   , KnownFFA Secp256k1_Scalar 'Auto ctx
-  , Symbolic ctx
   )
   => CyclicGroup (Secp256k1_Point ctx)
   where
@@ -33,9 +32,9 @@ instance
       (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
 
 instance
-  ( KnownFFA Secp256k1_Base 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA Secp256k1_Base 'Auto ctx
   , KnownFFA Secp256k1_Scalar 'Auto ctx
-  , Symbolic ctx
   )
   => Scale (FFA Secp256k1_Scalar 'Auto ctx) (Secp256k1_Point ctx)
   where

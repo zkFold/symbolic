@@ -26,20 +26,6 @@ import           Data.List                                         (foldl')
 #endif
 import GHC.IsList (IsList (..))
 import qualified GHC.Num as GHC
-import Prelude hiding (
-  Num (..),
-  concat,
-  divMod,
-  length,
-  mod,
-  replicate,
-  splitAt,
-  truncate,
-  (!!),
-  (&&),
-  (^),
- )
-
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
@@ -68,6 +54,19 @@ import ZkFold.Symbolic.Data.ByteString (
  )
 import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
+import Prelude hiding (
+  Num (..),
+  concat,
+  divMod,
+  length,
+  mod,
+  replicate,
+  splitAt,
+  truncate,
+  (!!),
+  (&&),
+  (^),
+ )
 
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
@@ -269,11 +268,11 @@ blake2b_compress Blake2bCtx {h, m, t} lastBlock =
 
 blake2b'
   :: forall bb' kk' ll' nn' c
-   . ( KnownNat bb'
+   . ( Symbolic c
+     , KnownNat bb'
      , KnownNat kk'
      , KnownNat ll'
      , KnownNat nn'
-     , Symbolic c
      )
   => [V.Vector (UInt 64 Auto c)] -> ByteString (8 * nn') c
 blake2b' d =
@@ -351,11 +350,11 @@ withBlake2bDivConstraint = withDict $ blake2bDivConstraint @n
 withConstraints
   :: forall n {r}
    . KnownNat n
-  => ( ( 8 * n <= 8 * n + ExtensionBits n
-       , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n
-       , KnownNat (8 * n + ExtensionBits n)
-       , KnownNat (8 * n)
+  => ( ( KnownNat (8 * n)
        , KnownNat (ExtensionBits n)
+       , KnownNat (8 * n + ExtensionBits n)
+       , 8 * n <= 8 * n + ExtensionBits n
+       , Div (8 * n + ExtensionBits n) 64 * 64 ~ 8 * n + ExtensionBits n
        )
        => r
      )
@@ -367,10 +366,10 @@ nLeInput = unsafeAxiom
 
 blake2b
   :: forall keyLen inputLen outputLen c n
-   . ( KnownNat inputLen
+   . ( Symbolic c
      , KnownNat keyLen
+     , KnownNat inputLen
      , KnownNat outputLen
-     , Symbolic c
      , n ~ (8 * inputLen + ExtensionBits inputLen)
      )
   => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
@@ -420,8 +419,8 @@ blake2b key input =
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
 blake2b_224
   :: forall inputLen c
-   . ( KnownNat inputLen
-     , Symbolic c
+   . ( Symbolic c
+     , KnownNat inputLen
      )
   => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 0
@@ -429,8 +428,8 @@ blake2b_224 = blake2b @0 @inputLen @28 0
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
 blake2b_256
   :: forall inputLen c
-   . ( KnownNat inputLen
-     , Symbolic c
+   . ( Symbolic c
+     , KnownNat inputLen
      )
   => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 0
@@ -438,8 +437,8 @@ blake2b_256 = blake2b @0 @inputLen @32 0
 -- | Hash a `ByteString` using the Blake2b-512 hash function.
 blake2b_512
   :: forall inputLen c
-   . ( KnownNat inputLen
-     , Symbolic c
+   . ( Symbolic c
+     , KnownNat inputLen
      )
   => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0

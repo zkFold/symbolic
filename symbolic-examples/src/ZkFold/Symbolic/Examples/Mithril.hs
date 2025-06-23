@@ -14,12 +14,12 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 exampleMithril
   :: forall n m ctx
-   . ( KnownFFA FpModulus 'Auto ctx
+   . ( Symbolic ctx
+     , KnownFFA FpModulus 'Auto ctx
      , KnownFFA FqModulus 'Auto ctx
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
      , KnownNat n
-     , Symbolic ctx
+     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
      )
   => StakeDistribution m (Pallas_Point ctx) ctx
   -> ScalarFieldOf (Pallas_Point ctx)

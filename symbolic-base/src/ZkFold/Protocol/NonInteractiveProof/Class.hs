@@ -10,8 +10,6 @@ import Data.ByteString (ByteString)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 import Numeric.Natural (Natural)
-import Prelude hiding (Num ((*)), sum)
-
 import ZkFold.Algebra.Class (Bilinear (..), Scale (..), sum)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
@@ -21,6 +19,7 @@ import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()
 import ZkFold.FFI.Rust.Types ()
+import Prelude hiding (Num ((*)), sum)
 
 class Monoid ts => ToTranscript ts a where
   toTranscript :: a -> ts
@@ -37,7 +36,7 @@ class Monoid ts => FromTranscript ts a where
 challenge :: forall ts a. FromTranscript ts a => ts -> a
 challenge = fromTranscript
 
-challenges :: (FromTranscript ts a, ToTranscript ts Word8) => ts -> Natural -> ([a], ts)
+challenges :: (ToTranscript ts Word8, FromTranscript ts a) => ts -> Natural -> ([a], ts)
 challenges ts0 n = go ts0 n []
  where
   go ts 0 acc = (acc, ts)
@@ -75,9 +74,9 @@ type RustFFI g pv rustg rustp =
 
 instance
   {-# OVERLAPPABLE #-}
-  ( RustFFI g (PolyVec f size) rustg rustp
+  ( f ~ ScalarFieldOf g
+  , RustFFI g (PolyVec f size) rustg rustp
   , UnivariateRingPolyVec f (PolyVec f)
-  , f ~ ScalarFieldOf g
   )
   => Bilinear (V.Vector rustg) (PolyVec f size) g
   where
@@ -88,8 +87,8 @@ instance
   ( CyclicGroup g
   , KnownNat size
   , NFData g
-  , UnivariateRingPolyVec f (PolyVec f)
   , f ~ ScalarFieldOf g
+  , UnivariateRingPolyVec f (PolyVec f)
   )
   => Bilinear (V.Vector g) (PolyVec f size) g
   where

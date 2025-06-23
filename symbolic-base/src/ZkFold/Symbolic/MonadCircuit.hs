@@ -13,15 +13,14 @@ import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
-import Prelude (Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import Prelude (Integer)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
-class (Euclidean (IntegralOf a), FiniteField a) => ResidueField a where
+class (FiniteField a, Euclidean (IntegralOf a)) => ResidueField a where
   type IntegralOf a :: Type
   fromIntegral :: IntegralOf a -> a
   toIntegral :: a -> IntegralOf a
@@ -79,9 +78,9 @@ type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
 class
-  ( FromConstant a var
+  ( Monad m
+  , FromConstant a var
   , FromConstant a w
-  , Monad m
   , Scale a w
   , Witness var w
   ) =>
@@ -105,7 +104,7 @@ class
   -- | Registers new lookup function in the system to be used in lookup tables
   --   (see 'lookupConstraint').
   registerFunction
-    :: (Binary (Rep f), Representable f, Traversable g, Typeable f, Typeable g)
+    :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
     => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.

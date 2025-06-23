@@ -12,13 +12,12 @@ import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.List (List)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-
 import ZkFold.Symbolic.Ledger.Types.DataAvailability (DAIndex)
 import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Interval (Interval)
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- TODO: Use POSIXTime instead of UTCTime?
 
@@ -38,25 +37,25 @@ data TransactionBatch context = TransactionBatch
   deriving stock Generic
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => SymbolicData (TransactionBatch context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Conditional (Bool context) (TransactionBatch context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Eq (TransactionBatch context)

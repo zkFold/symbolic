@@ -8,19 +8,6 @@ module ZkFold.Protocol.Plonkup.Update where
 import Data.Foldable (toList)
 import Data.Functor.Rep (Representable (..))
 import GHC.IsList (fromList)
-import Prelude hiding (
-  Num (..),
-  drop,
-  length,
-  pi,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number
@@ -37,11 +24,23 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Verifier (PlonkupVerifierSetup (..))
 import qualified ZkFold.Protocol.Plonkup.Verifier as Verifier
 import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
+import Prelude hiding (
+  Num (..),
+  drop,
+  length,
+  pi,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
 
 updateRelation
   :: forall i o n a pv
-   . ( KnownNat n
-     , Representable i
+   . ( Representable i
+     , KnownNat n
      , UnivariateRingPolyVec a pv
      )
   => PlonkupRelation i o n a pv -> [a] -> PlonkupRelation i o n a pv
@@ -66,9 +65,9 @@ updateRelation r@PlonkupRelation {..} inputs =
 
 updateProverSetup
   :: forall i o n g1 g2 pv
-   . ( KnownNat ((4 * n) + 6)
+   . ( Representable i
      , KnownNat n
-     , Representable i
+     , KnownNat ((4 * n) + 6)
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
      )
   => PlonkupProverSetup i o n g1 g2 pv -> [ScalarFieldOf g1] -> PlonkupProverSetup i o n g1 g2 pv
@@ -81,9 +80,9 @@ updateProverSetup setup@PlonkupProverSetup {..} inputs =
 
 updateVerifierSetup
   :: forall i o n g1 g2 pv
-   . ( AdditiveGroup g1
+   . ( Representable i
      , KnownNat n
-     , Representable i
+     , AdditiveGroup g1
      , Scale (ScalarFieldOf g1) g1
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
      )

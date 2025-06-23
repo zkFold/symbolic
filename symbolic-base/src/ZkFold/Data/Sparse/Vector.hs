@@ -4,15 +4,14 @@ import Data.Map (Map, empty, filter, fromList, map, toList)
 import Data.These (These (..))
 import Data.Zip (Semialign (..), Zip (..))
 import Test.QuickCheck (Arbitrary (..))
-import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.ByteString (Binary (..))
+import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 
 newtype SVector size a = SVector {fromSVector :: Map (Zp size) a}
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 instance (Binary a, KnownNat n) => Binary (SVector n a) where
   put = put . toList . fromSVector
@@ -34,10 +33,10 @@ instance KnownNat size => Zip (SVector size) where
 
   zipWith f (SVector as) (SVector bs) = SVector $ zipWith f as bs
 
-instance (Arbitrary a, KnownNat size) => Arbitrary (SVector size a) where
+instance (KnownNat size, Arbitrary a) => Arbitrary (SVector size a) where
   arbitrary = SVector <$> arbitrary
 
-instance (AdditiveMonoid a, Eq a, KnownNat size) => AdditiveSemigroup (SVector size a) where
+instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveSemigroup (SVector size a) where
   va + vb =
     SVector $
       filter (/= zero) $
@@ -51,19 +50,19 @@ instance (AdditiveMonoid a, Eq a, KnownNat size) => AdditiveSemigroup (SVector s
             va
             vb
 
-(.+) :: (AdditiveMonoid a, Eq a, KnownNat size) => SVector size a -> SVector size a -> SVector size a
+(.+) :: (KnownNat size, AdditiveMonoid a, Eq a) => SVector size a -> SVector size a -> SVector size a
 (.+) = (+)
 
 instance Scale c a => Scale c (SVector size a) where
   scale c (SVector as) = SVector (map (scale c) as)
 
-instance (AdditiveMonoid a, Eq a, KnownNat size) => AdditiveMonoid (SVector size a) where
+instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveMonoid (SVector size a) where
   zero = SVector empty
 
-instance (AdditiveGroup a, Eq a, KnownNat size) => AdditiveGroup (SVector size a) where
+instance (KnownNat size, AdditiveGroup a, Eq a) => AdditiveGroup (SVector size a) where
   negate = fmap negate
 
-(.-) :: (AdditiveGroup a, Eq a, KnownNat size) => SVector size a -> SVector size a -> SVector size a
+(.-) :: (KnownNat size, AdditiveGroup a, Eq a) => SVector size a -> SVector size a -> SVector size a
 (.-) = (-)
 
 (.*) :: (KnownNat size, MultiplicativeSemigroup a) => SVector size a -> SVector size a -> SVector size a

@@ -11,8 +11,6 @@ import Control.Monad
 import Data.Bits
 import Data.Foldable
 import Data.Word
-import Prelude hiding (Num (..), (/), (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pairing
@@ -22,6 +20,7 @@ import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.ByteString
 import qualified ZkFold.Symbolic.Data.Conditional as Symbolic
 import qualified ZkFold.Symbolic.Data.Eq as Symbolic
+import Prelude hiding (Num (..), (/), (^))
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -190,7 +189,7 @@ leBytesOf n =
     (n', fromIntegral r) : leBytesOf n'
 
 -- finite list of bytes, big endian order
-bytesOf :: (Const a ~ Natural, ToConstant a) => Int -> a -> [Word8]
+bytesOf :: (ToConstant a, Const a ~ Natural) => Int -> a -> [Word8]
 bytesOf n =
   reverse
     . take n
@@ -357,9 +356,9 @@ instance Binary BLS12_381_G2_CompressedPoint where
 newtype BLS12_381_GT = BLS12_381_GT Fq12
   deriving newtype
     ( Eq
-    , MultiplicativeMonoid
-    , MultiplicativeSemigroup
     , Show
+    , MultiplicativeSemigroup
+    , MultiplicativeMonoid
     , Symbolic.Conditional Prelude.Bool
     , Symbolic.Eq
     )

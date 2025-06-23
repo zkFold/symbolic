@@ -9,8 +9,6 @@ import Data.Functor ((<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.List (map)
 import GHC.Generics ((:*:) (..))
-import Prelude (undefined)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector)
@@ -19,6 +17,7 @@ import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
+import Prelude (undefined)
 
 {-- | Section 3.1
 
@@ -64,10 +63,10 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
 
 specialSoundProtocol
   :: forall d a i p f
-   . ( Arithmetic a
+   . ( KnownNat (d + 1)
+     , Arithmetic a
      , Binary (Rep i)
      , Binary (Rep p)
-     , KnownNat (d + 1)
      , Representable i
      , Representable p
      )
@@ -87,10 +86,10 @@ specialSoundProtocol af fa phi@Predicate {..} =
 
 specialSoundProtocol'
   :: forall d a i p f
-   . ( Binary (Rep i)
-     , Binary (Rep p)
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , Representable i
+     , Binary (Rep i)
+     , Binary (Rep p)
      , Ring f
      , Scale a f
      )

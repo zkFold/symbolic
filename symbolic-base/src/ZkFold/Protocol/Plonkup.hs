@@ -10,20 +10,6 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Rep, Representable)
 import qualified Data.Vector as V
 import Data.Word (Word8)
-import Prelude hiding (
-  Num (..),
-  div,
-  drop,
-  length,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
-import qualified Prelude as P hiding (length)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..), Pairing (..))
 import ZkFold.Algebra.Number
@@ -38,31 +24,44 @@ import ZkFold.Protocol.Plonkup.Setup
 import ZkFold.Protocol.Plonkup.Verifier
 import ZkFold.Protocol.Plonkup.Witness
 import ZkFold.Symbolic.Class (Arithmetic)
+import Prelude hiding (
+  Num (..),
+  div,
+  drop,
+  length,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
+import qualified Prelude as P hiding (length)
 
 -- | Based on the paper https://eprint.iacr.org/2022/086.pdf
 instance
   forall i o n g1 g2 gt ts pv rustG1 rustPv
    . -- instance forall i o n g1 g2 gt ts pv .
-  ( Arithmetic (ScalarFieldOf g1)
-  , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
-  , Binary (Rep i)
-  , Compressible g1
-  , Eq gt
-  , Foldable o
-  , FromTranscript ts (ScalarFieldOf g1)
-  , KnownNat (PlonkupPolyExtendedLength n)
-  , KnownNat n
-  , Pairing g1 g2 gt
+  ( KnownNat n
   , Representable i
   , Representable o
-  , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
-  , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
-  , RustHaskell rustG1 g1
-  , ToTranscript ts (Compressed g1)
-  , ToTranscript ts (ScalarFieldOf g1)
+  , Foldable o
+  , Pairing g1 g2 gt
+  , Compressible g1
+  , Eq gt
+  , Arithmetic (ScalarFieldOf g1)
+  , Binary (Rep i)
   , ToTranscript ts Word8
+  , ToTranscript ts (ScalarFieldOf g1)
+  , ToTranscript ts (Compressed g1)
+  , FromTranscript ts (ScalarFieldOf g1)
+  , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+  , KnownNat (PlonkupPolyExtendedLength n)
   , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
   , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
+  , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
+  , RustHaskell rustG1 g1
+  , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
   )
   => NonInteractiveProof (Plonkup i o n g1 g2 ts pv)
   where

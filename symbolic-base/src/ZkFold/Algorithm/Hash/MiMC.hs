@@ -7,10 +7,9 @@ import Data.List (reverse)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty)
 import Data.Maybe (Maybe (..))
 import Numeric.Natural (Natural)
-import Prelude (error)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC.Constants
+import Prelude (error)
 
 -- | MiMC-2n/n (Feistel) hash function.
 -- See https://eprint.iacr.org/2016/492.pdf, page 5

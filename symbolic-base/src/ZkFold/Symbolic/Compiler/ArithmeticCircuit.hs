@@ -59,7 +59,6 @@ import Test.QuickCheck (Arbitrary, Property)
 import qualified Test.QuickCheck as Q
 import Text.Pretty.Simple (pPrint)
 import Text.Show (Show)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial)
 import ZkFold.Control.HApplicative (HApplicative)
@@ -82,23 +81,23 @@ newtype ArithmeticCircuit a (i :: Type -> Type) o
   = ArithmeticCircuit {acContext :: CircuitContext a o}
   deriving Generic
   deriving newtype
-    ( FromJSON
+    ( HFunctor
     , HApplicative
-    , HFunctor
     , HNFData
     , HShow
+    , FromJSON
+    , ToJSON
     , NFData
     , Show
-    , ToJSON
     )
 
 instance
   ( Arbitrary a
   , Arithmetic a
-  , Binary (Rep i)
   , Binary a
   , Foldable i
   , Representable i
+  , Binary (Rep i)
   , Representable o
   , Traversable o
   )
@@ -128,13 +127,13 @@ instance (Arithmetic a, Binary a) => Symbolic (ArithmeticCircuit a i) where
 -------------------------- Constructors from context ---------------------------
 
 solder
-  :: (Binary (Rep i), Representable i)
+  :: (Representable i, Binary (Rep i))
   => (i NewVar -> CircuitContext a o) -> ArithmeticCircuit a i o
 solder = ArithmeticCircuit . ($ tabulate (EqVar . toByteString))
 
 guessOutput
   :: (Arithmetic a, Binary a, Representable j)
-  => (Binary (Rep j), Foldable o, Representable o)
+  => (Binary (Rep j), Representable o, Foldable o)
   => (forall x. j x -> (i x, o x))
   -> (i NewVar -> CircuitContext a o)
   -> ArithmeticCircuit a j U1
@@ -145,13 +144,13 @@ guessOutput f i = solder (Context.guessOutput i . fromPair . f)
 -- | Given a natural transformation from input @i@ to output @o@,
 -- returns a corresponding arithmetic circuit.
 naturalCircuit
-  :: (Arithmetic a, Binary (Rep i), Representable i)
+  :: (Arithmetic a, Representable i, Binary (Rep i))
   => (forall x. i x -> o x) -> ArithmeticCircuit a i o
 naturalCircuit f = solder (Context.crown Context.emptyContext . f . fmap toVar)
 
 -- | Identity circuit which returns its input @i@ and doesn't use the payload.
 idCircuit
-  :: (Arithmetic a, Binary (Rep i), Representable i) => ArithmeticCircuit a i i
+  :: (Arithmetic a, Representable i, Binary (Rep i)) => ArithmeticCircuit a i i
 idCircuit = naturalCircuit id
 
 ---------------------------- Circuit transformers ------------------------------
@@ -163,27 +162,27 @@ desugarRanges = over #acContext Desugaring.desugarRanges
 
 optimize
   :: forall a i o
-   . (Arithmetic a, Binary (Rep i), Binary a, Functor o)
+   . (Arithmetic a, Binary a, Binary (Rep i), Functor o)
   => ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = over #acContext $ Optimization.optimize (Optimization.isInputVar @i)
 
 ----------------------------- Evaluation functions -----------------------------
 
 witnessGenerator
-  :: (Arithmetic a, Binary (Rep i), Representable i)
+  :: (Arithmetic a, Representable i, Binary (Rep i))
   => ArithmeticCircuit a i o -> i a -> NewVar -> a
 witnessGenerator ArithmeticCircuit {..} =
   Context.allWitnesses acContext . (. fromJust . fromByteString) . index
 
 -- | Evaluates the arithmetic circuit using the supplied input.
 eval
-  :: (Arithmetic a, Binary (Rep i), Functor o, Representable i)
+  :: (Arithmetic a, Representable i, Binary (Rep i), Functor o)
   => ArithmeticCircuit a i o -> i a -> o a
 eval ac i = evalVar (witnessGenerator ac i) <$> acOutput (acContext ac)
 
 -- | Evaluates the arithmetic circuit with one output using the supplied input.
 eval1
-  :: (Arithmetic a, Binary (Rep i), Representable i)
+  :: (Arithmetic a, Representable i, Binary (Rep i))
   => ArithmeticCircuit a i Par1 -> i a -> a
 eval1 ac i = unPar1 (eval ac i)
 
@@ -217,7 +216,7 @@ acSizeT = length . acLookup . acContext
 --
 -- TODO: Move this elsewhere (?)
 acPrint
-  :: (Arithmetic a, Functor o, Show a, Show1 o)
+  :: (Arithmetic a, Show a, Show1 o, Functor o)
   => ArithmeticCircuit a U1 o -> IO ()
 acPrint ac@(ArithmeticCircuit ctx) = do
   let w = witnessGenerator ac U1

@@ -5,10 +5,9 @@ module ZkFold.Protocol.Plonkup.Testing where
 
 import Control.DeepSeq (NFData)
 import GHC.Generics (Generic)
-import Prelude hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
-
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPolyExtended)
+import Prelude hiding (Num (..), drop, length, pi, sum, take, (!!), (/), (^))
 
 data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
   { omega :: ScalarFieldOf g1
@@ -62,17 +61,17 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
   deriving Generic
 
 deriving instance
-  ( Show (PlonkupPolyExtended n g1 pv)
-  , Show (ScalarFieldOf g1)
+  ( Show g1
   , Show (pv n)
-  , Show g1
+  , Show (PlonkupPolyExtended n g1 pv)
+  , Show (ScalarFieldOf g1)
   )
   => Show (PlonkupProverTestInfo n g1 pv)
 
 deriving instance
-  ( NFData (PlonkupPolyExtended n g1 pv)
-  , NFData (ScalarFieldOf g1)
+  ( NFData g1
   , NFData (pv n)
-  , NFData g1
+  , NFData (PlonkupPolyExtended n g1 pv)
+  , NFData (ScalarFieldOf g1)
   )
   => NFData (PlonkupProverTestInfo n g1 pv)

@@ -7,20 +7,19 @@ import Data.Functor.Classes (Show1)
 import Data.List ((++))
 import Test.QuickCheck (Arbitrary (..), Arbitrary1, arbitrary1)
 import Text.Show (Show, show)
-
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 
 newtype PlonkupWitnessInput i g
   = PlonkupWitnessInput {witnessInput :: i (ScalarFieldOf g)}
 
 instance
-  (Show (ScalarFieldOf g), Show1 i)
+  (Show1 i, Show (ScalarFieldOf g))
   => Show (PlonkupWitnessInput i g)
   where
   show (PlonkupWitnessInput v) = "Plonkup Witness Input: " ++ show v
 
 instance
-  (Arbitrary (ScalarFieldOf g), Arbitrary1 i)
+  (Arbitrary1 i, Arbitrary (ScalarFieldOf g))
   => Arbitrary (PlonkupWitnessInput i g)
   where
   arbitrary = PlonkupWitnessInput <$> arbitrary1

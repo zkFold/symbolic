@@ -8,9 +8,6 @@ module ZkFold.Symbolic.Data.UTCTime where
 
 import GHC.Natural (Natural)
 import GHC.TypeNats (KnownNat)
-import Prelude hiding (Bool, Eq, Ord)
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class (FromConstant)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
@@ -21,19 +18,21 @@ import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
+import Prelude hiding (Bool, Eq, Ord)
+import qualified Prelude as Haskell
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
 
 deriving newtype instance HEq c => Haskell.Eq (UTCTime c)
 
-deriving newtype instance (KnownRegisters c 11 Auto, Symbolic c) => Conditional (Bool c) (UTCTime c)
+deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Conditional (Bool c) (UTCTime c)
 
-deriving newtype instance (KnownRegisters c 11 Auto, Symbolic c) => Eq (UTCTime c)
+deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Eq (UTCTime c)
 
-deriving newtype instance (KnownRegisters c 11 Auto, Symbolic c) => SymbolicData (UTCTime c)
+deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => SymbolicData (UTCTime c)
 
 deriving newtype instance
-  (KnownNat (Ceil regSize OrdWord), KnownRegisters c 11 Auto, Symbolic c, regSize ~ GetRegisterSize (BaseField c) 11 Auto)
+  (Symbolic c, KnownRegisters c 11 Auto, regSize ~ GetRegisterSize (BaseField c) 11 Auto, KnownNat (Ceil regSize OrdWord))
   => Ord (UTCTime c)
 
 deriving newtype instance FromConstant Natural (UInt 11 Auto c) => FromConstant Natural (UTCTime c)

@@ -15,7 +15,6 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector, singleton)
@@ -48,11 +47,11 @@ data IVCProof k c f
   , _proofW :: Vector k [f]
   -- ^ The witness of the recursion circuit satisfiability proof.
   }
-  deriving (Functor, Generic)
+  deriving (Generic, Functor)
 
 makeLenses ''IVCProof
 
-noIVCProof :: (AdditiveMonoid c, AdditiveMonoid f, KnownNat k) => IVCProof k c f
+noIVCProof :: (KnownNat k, AdditiveMonoid c, AdditiveMonoid f) => IVCProof k c f
 noIVCProof = IVCProof zero zero
 
 -- | The current result of recursion together with the first iteration flag,
@@ -63,7 +62,7 @@ data IVCResult k i c f
   , _acc :: Accumulator k (RecursiveI i) (DataSource c) f
   , _proof :: IVCProof k c f
   }
-  deriving (Functor, Generic)
+  deriving (Generic, Functor)
 
 makeLenses ''IVCResult
 
@@ -72,13 +71,13 @@ makeLenses ''IVCResult
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup
   :: forall d cc k a i p c
-   . ( FieldAssumptions a cc
-     , HomomorphicCommit [a] c
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , KnownNat (d - 1)
+     , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
-     , k ~ 1
+     , FieldAssumptions a cc
+     , HomomorphicCommit [a] c
      )
   => Hasher -> StepFunction a i p -> i a -> p a -> IVCResult k i c a
 ivcSetup hash f z0 witness =
@@ -96,19 +95,19 @@ ivcSetup hash f z0 witness =
 
 ivcProve
   :: forall d cc k a i p c f fe
-   . ( Context c ~ Interpreter a
-     , FieldAssumptions a cc
-     , HomomorphicCommit [fe] c
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , KnownNat (d - 1)
-     , Layout c ~ f
-     , Layout cc ~ f
+     , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
-     , Scale fe c
+     , FieldAssumptions a cc
+     , Layout cc ~ f
      , SymbolicOutput c
+     , Context c ~ Interpreter a
+     , Layout c ~ f
      , fe ~ FieldElement (Interpreter a)
-     , k ~ 1
+     , Scale fe c
+     , HomomorphicCommit [fe] c
      )
   => Hasher
   -> StepFunction a i p
@@ -127,7 +126,7 @@ ivcProve hash f res witness =
     pRec = recursivePredicate @cc $ recursiveFunction @cc hash f
 
     value
-      :: (Context x ~ Interpreter a, SymbolicOutput x) => x -> Layout x a
+      :: (SymbolicOutput x, Context x ~ Interpreter a) => x -> Layout x a
     value = runInterpreter . arithmetize0
 
     input :: RecursiveI i fe
@@ -175,13 +174,13 @@ ivcProve hash f res witness =
 
 ivcVerify
   :: forall d k a i p c f
-   . ( FieldAssumptions a c
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , KnownNat (d - 1)
+     , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
+     , FieldAssumptions a c
      , f ~ FieldElement (CircuitContext a)
-     , k ~ 1
      )
   => Hasher
   -> StepFunction a i p

@@ -5,19 +5,18 @@ module ZkFold.Protocol.IVC.NARK where
 import Control.DeepSeq (NFData (..))
 import Data.Zip (unzip)
 import GHC.Generics
-import Prelude hiding (head, length, pi, unzip)
-
 import ZkFold.Algebra.Class (Ring, zero)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.FiatShamir (FiatShamir)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
+import Prelude hiding (head, length, pi, unzip)
 
 -- Page 18, section 3.4, The accumulation predicate
 data NARKProof k c f = NARKProof
   { narkCommits :: Vector k c -- Commits [C_i] ∈ C^k
   , narkWitness :: Vector k [f] -- prover messages in the special-sound protocol [m_i]
   }
-  deriving (Generic, NFData, Show)
+  deriving (Show, Generic, NFData)
 
 narkProof
   :: Ring f
@@ -30,7 +29,7 @@ narkProof a pi0 w =
    in NARKProof {..}
 
 data NARKInstanceProof k i c f = NARKInstanceProof (i f) (NARKProof k c f)
-  deriving (Generic, NFData, Show)
+  deriving (Show, Generic, NFData)
 
 narkInstanceProof
   :: Ring f

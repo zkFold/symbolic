@@ -43,8 +43,6 @@ import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import Optics (over, set, zoom)
 import Text.Show
 import qualified Type.Reflection as R
-import Prelude (error, seq)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate (Poly, var)
@@ -62,20 +60,21 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation (UVar (..))
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
+import Prelude (error, seq)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural
 
 data CircuitFold a
   = forall p s j.
-  ( Binary (Rep j)
-  , Binary (Rep p)
-  , Binary (Rep s)
-  , NFData1 s
-  , Representable j
+  ( Binary (Rep p)
   , Representable p
-  , Representable s
   , Traversable s
+  , Representable s
+  , NFData1 s
+  , Binary (Rep s)
+  , Representable j
+  , Binary (Rep j)
   ) =>
   CircuitFold
   { foldStep
@@ -168,7 +167,7 @@ instance Show a => HShow (CircuitContext a) where
 
 -- TODO: add witness generation info to the JSON object
 instance
-  (Aeson.ToJSON a, Aeson.ToJSON1 o, Aeson.ToJSONKey a)
+  (Aeson.ToJSON a, Aeson.ToJSONKey a, Aeson.ToJSON1 o)
   => Aeson.ToJSON (CircuitContext a o)
   where
   toJSON CircuitContext {..} =
@@ -180,7 +179,7 @@ instance
 
 -- TODO: properly restore the witness generation function
 instance
-  (Aeson.FromJSON a, Aeson.FromJSON1 o, Aeson.FromJSONKey a, Ord a)
+  (Ord a, Aeson.FromJSON a, Aeson.FromJSONKey a, Aeson.FromJSON1 o)
   => Aeson.FromJSON (CircuitContext a o)
   where
   parseJSON =
@@ -305,7 +304,7 @@ instance (Arithmetic a, Binary a) => SymbolicFold (CircuitContext a) where
 -------------------------------- Compiler API ----------------------------------
 
 guessOutput
-  :: (Arithmetic a, Binary a, Foldable o, Representable o)
+  :: (Arithmetic a, Binary a, Representable o, Foldable o)
   => (i NewVar -> CircuitContext a o)
   -> (i :*: o) NewVar
   -> CircuitContext a U1
@@ -383,7 +382,7 @@ instance
 --
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
-witToVar :: forall a. (Binary a, Finite a) => WitnessF a NewVar -> ByteString
+witToVar :: forall a. (Finite a, Binary a) => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV
   FoldLVar fldID fldV -> merkleHash (fldID, False, fldV)

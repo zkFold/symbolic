@@ -36,9 +36,6 @@ import Data.String (IsString (..))
 import GHC.Generics (Generic, Par1 (..))
 import GHC.TypeLits (KnownSymbol (..), symbolVal, withKnownNat)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
-import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -57,6 +54,8 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
+import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
+import qualified Prelude as Haskell
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -79,9 +78,9 @@ deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ct
 
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
 
-deriving instance (KnownNat n, Symbolic ctx) => Eq (VarByteString n ctx)
+deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
 
-deriving instance (KnownNat n, Symbolic ctx) => Conditional (Bool ctx) (VarByteString n ctx)
+deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
 
 instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx) where
   arbitrary = do
@@ -91,7 +90,7 @@ instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx)
 
 toAsciiString
   :: forall n p
-   . ((Div n 8) * 8 ~ n, KnownNat (Div n 8), KnownNat p) => VarByteString n (Interpreter (Zp p)) -> Haskell.String
+   . (KnownNat (Div n 8), (Div n 8) * 8 ~ n, KnownNat p) => VarByteString n (Interpreter (Zp p)) -> Haskell.String
 toAsciiString VarByteString {..} = drop numZeros $ fromVector chars
  where
   ByteString (Interpreter v) = bsBuffer
@@ -101,43 +100,43 @@ toAsciiString VarByteString {..} = drop numZeros $ fromVector chars
   numZeros = value @(Div n 8) -! strLen
 
 instance
-  ( KnownNat m
-  , Symbolic ctx
+  ( Symbolic ctx
   , m * 8 ~ n
+  , KnownNat m
   )
   => IsString (VarByteString n ctx)
   where
   fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
-  ( KnownNat m
-  , Symbolic ctx
+  ( Symbolic ctx
   , m * 8 ~ n
+  , KnownNat m
   )
   => FromConstant Bytes.ByteString (VarByteString n ctx)
   where
   fromConstant bytes = VarByteString (fromConstant @Natural . (* 8) . Haskell.fromIntegral $ Bytes.length bytes) (fromConstant bytes)
 
-instance (KnownNat n, Symbolic ctx) => FromConstant Natural (VarByteString n ctx) where
+instance (Symbolic ctx, KnownNat n) => FromConstant Natural (VarByteString n ctx) where
   fromConstant 0 = VarByteString zero (fromConstant @Natural 0)
   fromConstant n = VarByteString (fromConstant $ Haskell.min (value @n) (ilog2 n + 1)) (fromConstant n)
 
-fromNatural :: forall n ctx. (KnownNat n, Symbolic ctx) => Natural -> Natural -> VarByteString n ctx
+fromNatural :: forall n ctx. (Symbolic ctx, KnownNat n) => Natural -> Natural -> VarByteString n ctx
 fromNatural numBits n = VarByteString (fromConstant numBits) (fromConstant n)
 
-fromByteString :: forall n ctx. (KnownNat n, Symbolic ctx) => ByteString n ctx -> VarByteString n ctx
+fromByteString :: forall n ctx. (Symbolic ctx, KnownNat n) => ByteString n ctx -> VarByteString n ctx
 fromByteString = VarByteString (fromConstant $ value @n)
 
-instance (KnownNat m, Symbolic ctx, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
+instance (Symbolic ctx, KnownNat m, m * 8 ~ n) => FromJSON (VarByteString n ctx) where
   parseJSON v = fromString <$> parseJSON v
 
 -- | Construct a VarByteString from a type-level string calculating its length automatically
 instance
-  ( KnownNat m
+  ( Symbolic ctx
   , KnownSymbol s
-  , Symbolic ctx
-  , m * 8 ~ l
   , m ~ Length s
+  , m * 8 ~ l
+  , KnownNat m
   )
   => IsTypeString s (VarByteString l ctx)
   where
@@ -271,8 +270,8 @@ deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Symbolic
 deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
 
 instance
-  ( KnownNat n
-  , Symbolic ctx
+  ( Symbolic ctx
+  , KnownNat n
   )
   => Iso (Words n ctx) (ByteString n ctx)
   where
@@ -286,8 +285,8 @@ instance
     pure $ unsafeToVector (hi <> lows)
 
 instance
-  ( KnownNat n
-  , Symbolic ctx
+  ( Symbolic ctx
+  , KnownNat n
   )
   => Iso (ByteString n ctx) (Words n ctx)
   where
@@ -379,7 +378,7 @@ shiftWordsR (Words regs) p2
     s <- newAssigned $ \p -> p h + scale ((2 :: Natural) ^ (regSize -! remShift)) (p carry)
     pure (s : acc, l)
 
-dropZeros :: forall n m c. (KnownNat (m - n), KnownNat n, Symbolic c, n <= m) => VarByteString m c -> VarByteString n c
+dropZeros :: forall n m c. (Symbolic c, KnownNat n, n <= m, KnownNat (m - n)) => VarByteString m c -> VarByteString n c
 dropZeros VarByteString {..} = ifThenElse (bsLength < feN) bsNMoreLen bsNLessLen
  where
   feN = fromConstant (value @n)

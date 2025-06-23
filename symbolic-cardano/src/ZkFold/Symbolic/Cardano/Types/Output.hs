@@ -13,6 +13,10 @@ module ZkFold.Symbolic.Cardano.Types.Output (
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq)
+import ZkFold.Symbolic.Cardano.Types.Address (Address)
+import ZkFold.Symbolic.Cardano.Types.Basic
+import ZkFold.Symbolic.Cardano.Types.Output.Datum
+import ZkFold.Symbolic.Cardano.Types.Value (SingleAsset, Value)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
@@ -21,11 +25,6 @@ import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
-
-import ZkFold.Symbolic.Cardano.Types.Address (Address)
-import ZkFold.Symbolic.Cardano.Types.Basic
-import ZkFold.Symbolic.Cardano.Types.Output.Datum
-import ZkFold.Symbolic.Cardano.Types.Value (SingleAsset, Value)
 
 data Liability context
   = Liability
@@ -37,12 +36,12 @@ deriving instance Generic (Liability context)
 
 deriving instance HEq context => Haskell.Eq (Liability context)
 
-deriving instance (KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (Liability context)
+deriving instance (Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Liability context)
 
 -- TODO: derive this automatically
 instance
-  ( KnownRegisters context 64 Auto
-  , Symbolic context
+  ( Symbolic context
+  , KnownRegisters context 64 Auto
   )
   => SymbolicInput (Liability context)
   where
@@ -59,27 +58,27 @@ deriving instance Generic (Output tokens datum context)
 deriving instance HEq context => Haskell.Eq (Output tokens datum context)
 
 deriving instance
-  (KnownNat tokens, KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (Output tokens datum context)
+  (KnownNat tokens, Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Output tokens datum context)
 
 instance
-  ( KnownNat tokens
+  ( Symbolic context
+  , KnownNat tokens
   , KnownRegisters context 64 Auto
-  , Symbolic context
   )
   => SymbolicInput (Output tokens datum context)
   where
   isValid (Output a t d) = isValid (a, t, d)
 
 instance
-  ( KnownNat tokens
+  ( Symbolic context
+  , KnownNat tokens
   , KnownRegisters context 64 Auto
-  , Symbolic context
   )
   => Conditional (Bool context) (Output tokens datum context)
 
 instance
-  ( KnownNat tokens
+  ( Symbolic context
+  , KnownNat tokens
   , KnownRegisters context 64 Auto
-  , Symbolic context
   )
   => Eq (Output tokens datum context)

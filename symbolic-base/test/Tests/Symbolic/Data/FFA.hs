@@ -7,10 +7,8 @@ import Data.List ((++))
 import GHC.Generics (U1)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, (===))
-import Text.Show (show)
-import Prelude (Integer)
-
 import Tests.Common (it)
+import Text.Show (show)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
@@ -22,6 +20,7 @@ import ZkFold.Symbolic.Data.FFA (FFA (FFA), KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
+import Prelude (Integer)
 
 type Prime256_1 = FpModulus
 
@@ -34,7 +33,7 @@ specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1 @(Fixed 16)
   specFFA' @BLS12_381_Scalar @Prime256_2 @(Fixed 16)
 
-specFFA' :: forall p q r. (KnownFFA q r (Interpreter (Zp p)), Prime q, PrimeField (Zp p)) => Spec
+specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Interpreter (Zp p))) => Spec
 specFFA' = do
   let q = value @q
   let r = regSize @r
@@ -56,7 +55,7 @@ specFFA' = do
 
 execAcFFA
   :: forall p q r
-   . (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
+   . (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
   => FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
 execAcFFA (FFA (FieldElement nv) (UInt uv)) =
   execZpFFA $
@@ -65,7 +64,7 @@ execAcFFA (FFA (FieldElement nv) (UInt uv)) =
       (UInt @_ @r $ Interpreter $ exec uv)
 
 execZpFFA
-  :: (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
+  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
   => FFA q r (Interpreter (Zp p)) -> Zp q
 execZpFFA = toConstant
 
@@ -74,7 +73,7 @@ type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property
 
 isHom
-  :: (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
+  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
   => Binary (FFA q r (Interpreter (Zp p)))
   -> Binary (FFA q r (ArithmeticCircuit (Zp p) U1))
   -> Predicate (Zp q)

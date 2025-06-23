@@ -11,11 +11,10 @@ import Test.Tasty.Bench
 import ZkFold.Algebra.Class (zero)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, witnessGenerator)
-
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
 
 benchmark
-  :: (Arithmetic a, Binary (Rep i), NFData1 o, Representable i)
+  :: (Arithmetic a, Representable i, Binary (Rep i), NFData1 o)
   => String -> (() -> ArithmeticCircuit a i o) -> Benchmark
 benchmark name circuit =
   bgroup

@@ -9,20 +9,19 @@ import Control.Exception (evaluate)
 import Test.QuickCheck.Arbitrary (Arbitrary (..))
 import Test.QuickCheck.Gen (generate)
 import Test.Tasty.Bench
-import Prelude hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Prelude (log2ceiling)
+import Prelude hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude as P
 
 type F = Zp BLS12_381_Scalar
 
 -- | Generate random polynomials of given size
-polynomials :: forall n c. (Arbitrary c, Eq c, KnownNat n, NFData c, Ring c) => IO (PolyVec c n)
+polynomials :: forall n c. (KnownNat n, Ring c, Arbitrary c, NFData c, Eq c) => IO (PolyVec c n)
 polynomials = do
   poly <- generate arbitrary
   evaluate . force $ poly

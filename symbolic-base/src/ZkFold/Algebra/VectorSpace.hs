@@ -11,6 +11,7 @@ import Data.Functor.Rep
 import Data.Kind (Type)
 import GHC.Generics hiding (Rep)
 import Numeric.Natural (Natural)
+import ZkFold.Algebra.Class
 import Prelude hiding (
   Num (..),
   div,
@@ -24,8 +25,6 @@ import Prelude hiding (
   (/),
   (^),
  )
-
-import ZkFold.Algebra.Class
 
 -- | Class of vector spaces with a basis. More accurately, when @a@ is
 -- a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then
@@ -57,12 +56,12 @@ scaleV :: (MultiplicativeSemigroup a, VectorSpace a v) => a -> v a -> v a
 scaleV c = mapV (c *)
 
 -- | basis vector e_i
-basisV :: (Eq (Basis a v), Semiring a, VectorSpace a v) => Basis a v -> v a
+basisV :: (Semiring a, VectorSpace a v, Eq (Basis a v)) => Basis a v -> v a
 basisV i = tabulateV $ \j -> if i == j then one else zero
 
 -- | dot product
 -- prop> v `dotV` basis i = indexV v i
-dotV :: (Foldable v, Semiring a, VectorSpace a v) => v a -> v a -> a
+dotV :: (Semiring a, VectorSpace a v, Foldable v) => v a -> v a -> a
 v `dotV` w = sum (zipWithV (*) v w)
 
 mapV :: VectorSpace a v => (a -> a) -> v a -> v a
@@ -77,7 +76,7 @@ zipWithV f as bs = tabulateV $ \k ->
 
 dimV
   :: forall a v
-   . (Foldable v, Functor v, VectorSpace a v)
+   . (Functor v, Foldable v, VectorSpace a v)
   => Natural
 dimV = sum (fmap (\_ -> 1) (pureV @a @v err))
  where
@@ -141,7 +140,7 @@ deriving via Representably Par1 instance VectorSpace a Par1
 
 -- direct sum of vector spaces
 instance
-  (VectorSpace a u, VectorSpace a v)
+  (VectorSpace a v, VectorSpace a u)
   => VectorSpace a (v :*: u)
   where
   type Basis a (v :*: u) = Either (Basis a v) (Basis a u)
@@ -189,9 +188,9 @@ type family OutputSpace a f where
 
 instance
   {-# OVERLAPPABLE #-}
-  ( InputSpace a (y a) ~ U1
+  ( VectorSpace a y
   , OutputSpace a (y a) ~ y
-  , VectorSpace a y
+  , InputSpace a (y a) ~ U1
   )
   => FunctionSpace a (y a)
   where
@@ -200,10 +199,10 @@ instance
 
 instance
   {-# OVERLAPPING #-}
-  ( FunctionSpace a f
-  , InputSpace a (x a -> f) ~ x :*: InputSpace a f
+  ( VectorSpace a x
   , OutputSpace a (x a -> f) ~ OutputSpace a f
-  , VectorSpace a x
+  , InputSpace a (x a -> f) ~ x :*: InputSpace a f
+  , FunctionSpace a f
   )
   => FunctionSpace a (x a -> f)
   where
@@ -211,8 +210,8 @@ instance
   curryV k x = curryV (k . (:*:) x)
 
 composeFunctions
-  :: ( FunctionSpace a f
-     , FunctionSpace a g
+  :: ( FunctionSpace a g
+     , FunctionSpace a f
      , OutputSpace a f ~ InputSpace a g
      )
   => g -> f -> InputSpace a f a -> OutputSpace a g a

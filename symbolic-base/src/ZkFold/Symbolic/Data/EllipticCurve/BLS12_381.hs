@@ -3,9 +3,6 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point) where
 
-import Prelude (($))
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class
@@ -16,13 +13,15 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
+import Prelude (($))
+import qualified Prelude
 
 type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_Base 'Auto ctx))
 
 instance
-  ( KnownFFA BLS12_381_Base 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
-  , Symbolic ctx
   )
   => CyclicGroup (BLS12_381_G1_Point ctx)
   where
@@ -37,10 +36,10 @@ instance
       )
 
 instance
-  ( FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
+  ( Symbolic ctx
   , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
-  , Symbolic ctx
+  , FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
   )
   => Scale k (BLS12_381_G1_Point ctx)
   where

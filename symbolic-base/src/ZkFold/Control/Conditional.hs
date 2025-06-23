@@ -9,9 +9,8 @@ import Data.Ratio (Rational)
 import Data.String (String)
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
-import Prelude (Integer)
-
 import ZkFold.Data.Bool
+import Prelude (Integer)
 
 -- TODO: move to ZkFold.Data.Bool
 

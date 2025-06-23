@@ -10,7 +10,6 @@ import Data.List.Infinite (Infinite)
 import Data.Traversable (Traversable)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1)
-
 import ZkFold.Data.ByteString (Binary1)
 import ZkFold.Symbolic.Class (Symbolic (..))
 
@@ -20,11 +19,11 @@ class Symbolic c => SymbolicFold c where
   --   To do this, you need quite a few arguments, see documentation.
   --   Or, even better, use more high-level Symbolic 'List' API.
   sfoldl
-    :: (Binary (Rep f), Binary1 f, NFData1 f, Representable f, Traversable f)
-    => (Binary (Rep g), Binary (Rep p), Representable g, Representable p)
+    :: (Binary (Rep f), Binary1 f, Representable f, NFData1 f, Traversable f)
+    => (Binary (Rep p), Representable p, Binary (Rep g), Representable g)
     => (Binary1 h, WitnessField c ~ wc)
     => ( forall s
-          . (BaseField s ~ BaseField c, SymbolicFold s)
+          . (SymbolicFold s, BaseField s ~ BaseField c)
          => -- \^ In anonymous context over same base field,
          s f
          -- \^ given a current state layout,

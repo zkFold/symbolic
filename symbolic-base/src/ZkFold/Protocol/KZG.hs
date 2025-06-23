@@ -14,14 +14,13 @@ import qualified Data.Vector as V
 import Data.Vector.Binary ()
 import Data.Word (Word8)
 import Test.QuickCheck (Arbitrary (..), chooseInt)
-import Prelude hiding (Num (..), length, sum, (/), (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.ByteString (Binary)
 import ZkFold.Protocol.NonInteractiveProof
+import Prelude hiding (Num (..), length, sum, (/), (^))
 
 -- | `d` is the degree of polynomials in the protocol
 newtype KZG g1 g2 (d :: Natural) pv = KZG (ScalarFieldOf g1)
@@ -47,9 +46,9 @@ instance (Show (ScalarFieldOf g1), Show (pv d)) => Show (WitnessKZG g1 g2 d pv) 
   show (WitnessKZG w) = "WitnessKZG " <> show w
 
 instance
-  ( Arbitrary (ScalarFieldOf g1)
+  ( KnownNat d
+  , Arbitrary (ScalarFieldOf g1)
   , Arbitrary (pv d)
-  , KnownNat d
   , Ord (ScalarFieldOf g1)
   , Ring (ScalarFieldOf g1)
   )
@@ -63,18 +62,18 @@ instance
 -- TODO (Issue #18): check list lengths
 instance
   forall f g1 g2 gt d kzg pv
-   . ( AdditiveGroup f
-     , Bilinear (V.Vector g1) (pv d) g1
-     , Binary f
-     , Binary g1
-     , Eq gt
-     , FiniteField f
-     , KZG g1 g2 d pv ~ kzg
+   . ( KZG g1 g2 d pv ~ kzg
      , KnownNat d
      , Ord f
-     , Pairing g1 g2 gt
-     , UnivariateFieldPolyVec f pv
+     , Binary f
+     , FiniteField f
+     , AdditiveGroup f
      , f ~ ScalarFieldOf g1
+     , Binary g1
+     , Pairing g1 g2 gt
+     , Eq gt
+     , Bilinear (V.Vector g1) (pv d) g1
+     , UnivariateFieldPolyVec f pv
      )
   => NonInteractiveProof (KZG g1 g2 d pv)
   where
@@ -157,5 +156,5 @@ instance
 ------------------------------------ Helper functions ------------------------------------
 
 provePolyVecEval
-  :: forall pv size f. (FiniteField f, KnownNat size, UnivariateFieldPolyVec f pv) => pv size -> f -> pv size
+  :: forall pv size f. (KnownNat size, FiniteField f, UnivariateFieldPolyVec f pv) => pv size -> f -> pv size
 provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]

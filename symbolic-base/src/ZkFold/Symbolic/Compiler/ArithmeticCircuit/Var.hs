@@ -16,25 +16,24 @@ import Data.Function ((.))
 import Data.Functor (Functor)
 import GHC.Generics (Generic)
 import GHC.Show (Show)
-import Prelude (Eq, Ord)
-
 import ZkFold.Algebra.Class
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 import ZkFold.Symbolic.MonadCircuit (Witness, at)
+import Prelude (Eq, Ord)
 
 data LinVar a v = LinVar a v a | ConstVar a
   deriving
-    ( Binary
-    , Eq
+    ( Generic
+    , Binary
     , FromJSON
     , FromJSONKey
-    , Functor
-    , Generic
-    , NFData
-    , Ord
-    , Show
     , ToJSON
     , ToJSONKey
+    , Show
+    , Eq
+    , Ord
+    , NFData
+    , Functor
     )
 
 $(deriveBifunctor ''LinVar)
@@ -66,16 +65,16 @@ data NewVar
   | FoldLVar ByteString ByteString
   | FoldPVar ByteString ByteString
   deriving
-    ( Binary
-    , Eq
+    ( Generic
+    , Binary
     , FromJSON
     , FromJSONKey
-    , Generic
-    , NFData
-    , Ord
-    , Show
     , ToJSON
     , ToJSONKey
+    , Show
+    , Eq
+    , Ord
+    , NFData
     )
 
 type CircuitWitness a = WitnessF a NewVar

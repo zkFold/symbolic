@@ -13,9 +13,8 @@ module ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants (
 
 import qualified Data.Vector as V
 import GHC.TypeNats (Natural)
-import Prelude (($), (<$>))
-
 import ZkFold.Algebra.Class (FromConstant (..))
+import Prelude (($), (<$>))
 
 -- | SHA2 family algorithms differ in constants and parameters used in the mostly identical internal loop.
 -- This module stores initial hashes and round constants.

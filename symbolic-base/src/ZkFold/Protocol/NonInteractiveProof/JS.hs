@@ -17,14 +17,13 @@ import Data.Word (Word8)
 import GHC.JS.Prim
 import Numeric.Natural (Natural)
 import System.IO.Unsafe (unsafePerformIO)
-import Prelude hiding (Num ((*)), sum)
-
 import ZkFold.Algebra.Class (Bilinear (..), Scale (..), sum)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
 import ZkFold.Data.ByteString
 import ZkFold.Protocol.NonInteractiveProof.Class
+import Prelude hiding (Num ((*)), sum)
 
 foreign import javascript unsafe "blake2b"
   blake2b :: JSVal -> JSVal -> JSVal -> JSVal -> JSVal -> IO JSVal

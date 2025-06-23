@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import GHC.Generics (Generic)
 import ZkFold.Data.HFunctor.Classes (HEq)
+import ZkFold.Symbolic.Cardano.Types.Basic
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
@@ -14,8 +15,6 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
-
-import ZkFold.Symbolic.Cardano.Types.Basic
 
 type TxRefId context = ByteString 256 context
 
@@ -30,17 +29,17 @@ data OutputRef context = OutputRef
 deriving instance HEq context => Haskell.Eq (OutputRef context)
 
 instance
-  (KnownRegisters context 32 Auto, Symbolic context)
+  (Symbolic context, KnownRegisters context 32 Auto)
   => SymbolicData (OutputRef context)
 
 instance
-  (KnownRegisters context 32 Auto, Symbolic context)
+  (Symbolic context, KnownRegisters context 32 Auto)
   => SymbolicInput (OutputRef context)
 
 instance
-  (KnownRegisters context 32 Auto, Symbolic context)
+  (Symbolic context, KnownRegisters context 32 Auto)
   => Conditional (Bool context) (OutputRef context)
 
 instance
-  (KnownRegisters context 32 Auto, Symbolic context)
+  (Symbolic context, KnownRegisters context 32 Auto)
   => Eq (OutputRef context)

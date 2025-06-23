@@ -13,14 +13,13 @@ module ZkFold.Protocol.IVC.Commit (
 
 import Data.Zip (Zip (..))
 import System.Random (Uniform, mkStdGen, uniform)
-import Prelude hiding (Num (..), sum, take, zipWith)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector, unsafeToVector)
 import ZkFold.Prelude (take)
 import ZkFold.Protocol.IVC.Oracle
+import Prelude hiding (Num (..), sum, take, zipWith)
 
 -- | Commit to the object @a@ with results of type @f@
 type Commit a f = a -> f
@@ -49,8 +48,8 @@ instance
      in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
 
 instance
-  ( CyclicGroup (Weierstrass curve (Point field))
-  , KnownNat n
+  ( KnownNat n
+  , CyclicGroup (Weierstrass curve (Point field))
   , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
   , n <= PedersonSetupMaxSize
   )
@@ -61,17 +60,17 @@ instance
     unsafeToVector $ take (value @n) $ groupElements @[]
 
 newtype PedersonCommit g = PedersonCommit {pedersonCommit :: g}
-  deriving newtype (AdditiveGroup, AdditiveMonoid, AdditiveSemigroup, Scale f)
+  deriving newtype (Scale f, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup)
 
 instance (Functor s, PedersonSetup s g) => PedersonSetup s (PedersonCommit g) where
   groupElements = PedersonCommit <$> groupElements
 
 instance
-  ( AdditiveGroup g
-  , Foldable s
-  , PedersonSetup s g
-  , Scale f g
+  ( PedersonSetup s g
   , Zip s
+  , Foldable s
+  , Scale f g
+  , AdditiveGroup g
   )
   => HomomorphicCommit (s f) (PedersonCommit g)
   where
@@ -81,7 +80,7 @@ deriving via
   (PedersonCommit (Weierstrass c (Point f)))
   instance
     ( CyclicGroup (Weierstrass c (Point f))
-    , Scale s (Weierstrass c (Point f))
     , Uniform (ScalarFieldOf (Weierstrass c (Point f)))
+    , Scale s (Weierstrass c (Point f))
     )
     => HomomorphicCommit [s] (Weierstrass c (Point f))

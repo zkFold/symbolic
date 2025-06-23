@@ -13,9 +13,6 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude (fmap, ($), (.), type (~))
-import qualified Prelude as P
-
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class
@@ -28,6 +25,8 @@ import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import Prelude (fmap, ($), (.), type (~))
+import qualified Prelude as P
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL
 data GooglePayload ctx
@@ -88,7 +87,7 @@ instance Symbolic ctx => FromJSON (GooglePayload ctx) where
     stringify (JSON.Object o) = JSON.Object $ fmap stringify o
     stringify rest = rest
 
-instance (Context (GooglePayload ctx) ~ ctx, Symbolic ctx) => IsSymbolicJSON (GooglePayload ctx) where
+instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (GooglePayload ctx) where
   type MaxLength (GooglePayload ctx) = 7088
   toJsonBits GooglePayload {..} =
     (fromType @"{\"iss\":\"")
@@ -125,7 +124,7 @@ instance Symbolic ctx => IsBits (GooglePayload ctx) where
   type BitCount (GooglePayload ctx) = 9456
   toBits = toAsciiBits
 
-instance (RSA.RSA 2048 10328 ctx, Symbolic ctx, TokenBits (GooglePayload ctx)) => IsTokenPayload "RS256" (GooglePayload ctx) where
+instance (Symbolic ctx, TokenBits (GooglePayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (GooglePayload ctx) where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"

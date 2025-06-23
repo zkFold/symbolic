@@ -8,7 +8,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Maybe (isJust)
-
 import ZkFold.Symbolic.UPLC.Data (Data)
 import ZkFold.Symbolic.UPLC.Evaluation (ExValue (ExValue), MaybeValue (..), Sym, eval)
 import ZkFold.UPLC.Term (Term)

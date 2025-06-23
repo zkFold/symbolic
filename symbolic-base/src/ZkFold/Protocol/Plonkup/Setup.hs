@@ -6,8 +6,6 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Maybe (fromJust)
 import qualified Data.Vector as V
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Pairing)
 import ZkFold.Algebra.Number (KnownNat, value)
@@ -30,6 +28,7 @@ import ZkFold.Protocol.Plonkup.Prover.Polynomials (PlonkupCircuitPolynomials (..
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..), toPlonkupRelation)
 import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import ZkFold.Symbolic.Class (Arithmetic)
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
   { omega :: !(ScalarFieldOf g1)
@@ -47,12 +46,12 @@ data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
   }
 
 instance
-  ( Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
-  , Show (ScalarFieldOf g1)
-  , Show (pv (PlonkupPolyExtendedLength n))
-  , Show (pv n)
-  , Show g1
+  ( Show g1
   , Show g2
+  , Show (ScalarFieldOf g1)
+  , Show (pv n)
+  , Show (pv (PlonkupPolyExtendedLength n))
+  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
   )
   => Show (PlonkupSetup i o n g1 g2 pv)
   where
@@ -84,17 +83,17 @@ instance
 
 plonkupSetup
   :: forall i o n g1 g2 gt ts pv rustG1
-   . ( Arithmetic (ScalarFieldOf g1)
-     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
-     , Binary (Rep i)
-     , Foldable o
-     , KnownNat (PlonkupPolyExtendedLength n)
-     , KnownNat n
-     , Pairing g1 g2 gt
-     , Representable i
+   . ( Representable i
      , Representable o
-     , RustHaskell rustG1 g1
+     , Foldable o
+     , Binary (Rep i)
+     , Arithmetic (ScalarFieldOf g1)
+     , Pairing g1 g2 gt
+     , KnownNat n
+     , KnownNat (PlonkupPolyExtendedLength n)
      , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+     , RustHaskell rustG1 g1
+     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
      )
   => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =

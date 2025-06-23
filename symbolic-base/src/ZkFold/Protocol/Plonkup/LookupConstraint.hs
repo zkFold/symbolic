@@ -8,7 +8,6 @@ import Data.Function ((.))
 import Data.Functor ((<$>))
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
-
 import ZkFold.Algebra.Class (Semiring)
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..), Var, toVar)
@@ -18,7 +17,7 @@ data LookupConstraint i a = LookupConstraint
   , lkVar2 :: Var a
   , lkVar3 :: Var a
   }
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 instance (Arbitrary a, Binary a, Semiring a) => Arbitrary (LookupConstraint i a) where
   arbitrary =

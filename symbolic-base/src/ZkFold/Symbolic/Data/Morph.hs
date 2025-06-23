@@ -5,7 +5,6 @@ module ZkFold.Symbolic.Data.Morph where
 import Data.Function (const, ($), (.))
 import Data.Proxy (Proxy (..))
 import Data.Type.Equality (type (~))
-
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
 import ZkFold.Symbolic.Fold (SymbolicFold)
@@ -46,5 +45,5 @@ Morph f @ x =
 -- * applied there in an anonymous context to an argument.
 type MorphFrom ctx input output =
   forall c
-   . (BaseField c ~ BaseField ctx, SymbolicFold c)
+   . (SymbolicFold c, BaseField c ~ BaseField ctx)
   => MorphTo c input output

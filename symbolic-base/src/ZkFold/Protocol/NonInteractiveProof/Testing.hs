@@ -3,9 +3,8 @@
 
 module ZkFold.Protocol.NonInteractiveProof.Testing where
 
-import Prelude
-
 import ZkFold.Protocol.NonInteractiveProof.Class
+import Prelude
 
 class (NonInteractiveProof a, NonInteractiveProof b) => CompatibleNonInteractiveProofs a b where
   nipSetupTransform :: SetupVerify a -> SetupVerify b

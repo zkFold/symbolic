@@ -17,9 +17,6 @@ module ZkFold.Symbolic.Algorithm.RSA (
 
 import Control.DeepSeq (NFData, force)
 import GHC.Generics (Generic)
-import Prelude (($))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
@@ -39,6 +36,8 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
+import Prelude (($))
+import qualified Prelude as P
 
 type Signature keyLen ctx = ByteString keyLen ctx
 
@@ -56,12 +55,12 @@ deriving instance HEq context => P.Eq (PrivateKey keyLen context)
 
 deriving instance HShow context => P.Show (PrivateKey keyLen context)
 
-deriving instance (KnownRegisters ctx keyLen 'Auto, Symbolic ctx) => SymbolicData (PrivateKey keyLen ctx)
+deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
 
 instance
-  ( KnownNat keyLen
+  ( Symbolic ctx
+  , KnownNat keyLen
   , KnownRegisters ctx keyLen 'Auto
-  , Symbolic ctx
   )
   => SymbolicInput (PrivateKey keyLen ctx)
   where
@@ -84,17 +83,17 @@ deriving instance HEq context => P.Eq (PublicKey keyLen context)
 deriving instance HShow context => P.Show (PublicKey keyLen context)
 
 deriving instance
-  ( KnownRegisters ctx PubExponentSize 'Auto
+  ( Symbolic ctx
+  , KnownRegisters ctx PubExponentSize 'Auto
   , KnownRegisters ctx keyLen 'Auto
-  , Symbolic ctx
   )
   => SymbolicData (PublicKey keyLen ctx)
 
 instance
-  ( KnownNat keyLen
+  ( Symbolic ctx
+  , KnownNat keyLen
   , KnownRegisters ctx PubExponentSize 'Auto
   , KnownRegisters ctx keyLen 'Auto
-  , Symbolic ctx
   )
   => SymbolicInput (PublicKey keyLen ctx)
   where

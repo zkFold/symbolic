@@ -11,9 +11,6 @@ import Data.Constraint.Nat (plusMinusInverse1)
 import Data.Foldable (Foldable)
 import Data.Functor.Rep (Representable (..), mzipWithRep)
 import Data.Zip (Zip (..))
-import Prelude (fmap, ($), (<$>))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (polyVecLinear)
@@ -27,6 +24,8 @@ import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (LayoutData), layoutData)
+import Prelude (fmap, ($), (<$>))
+import qualified Prelude as P
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c f = AccumulatorScheme
@@ -47,19 +46,19 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
 
 accumulatorScheme
   :: forall d c k a i p f
-   . ( Binary (Rep i)
-     , Binary (Rep p)
-     , Field f
-     , Foldable i
-     , HomomorphicCommit [f] c
+   . ( KnownNat (d - 1)
      , KnownNat (d + 1)
-     , KnownNat (d - 1)
-     , OracleSource f c
-     , OracleSource f f
      , Representable i
-     , Scale a (SimplePoly f (d + 1))
+     , Foldable i
+     , OracleSource f f
+     , OracleSource f c
+     , HomomorphicCommit [f] c
+     , Field f
      , Scale a f
+     , Scale a (SimplePoly f (d + 1))
      , Scale f c
+     , Binary (Rep i)
+     , Binary (Rep p)
      )
   => Hasher -> Predicate a i p -> AccumulatorScheme d k i c f
 accumulatorScheme hash phi =

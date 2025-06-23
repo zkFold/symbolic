@@ -4,11 +4,10 @@ import Data.Bits ((.<<.), (.>>.), (.|.))
 import qualified Data.STRef as ST
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
-import Prelude hiding (mod, sum, (*), (+), (-), (/), (^))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
+import Prelude hiding (mod, sum, (*), (+), (-), (/), (^))
+import qualified Prelude as P
 
 -- | Generif FFT algorithm. Can be both direct and inverse depending on @wn@ (root of unity or its inverse) supplied.
 -- Does not apply scaling when it's inverse.

@@ -8,17 +8,16 @@ import Data.Maybe (fromJust)
 import Data.These
 import System.Random (Random (..))
 import Test.QuickCheck (Arbitrary (..))
-import Prelude hiding (Num (..), length, sum, zip, zipWith)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector hiding (head, tail)
+import Prelude hiding (Num (..), length, sum, zip, zipWith)
 
 -- TODO: implement a proper matrix algebra
 -- Could be useful for speeding up the proof computations
 
 newtype Matrix m n a = Matrix (Vector m (Vector n a))
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
 toMatrix :: forall m n a. (KnownNat m, KnownNat n) => [[a]] -> Maybe (Matrix m n a)
 toMatrix as = do
@@ -48,7 +47,7 @@ matrixDotProduct :: forall m n a. Semiring a => Matrix m n a -> Matrix m n a -> 
 matrixDotProduct a b = let Matrix m = a * b in sum $ fmap sum m
 
 -- -- | Matrix multiplication
-(.*.) :: (KnownNat k, KnownNat n, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
+(.*.) :: (KnownNat n, KnownNat k, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
 a .*. b =
   let Matrix a' = a
       Matrix b' = transpose b
@@ -74,4 +73,4 @@ instance Zip (Matrix m n) where
 
 deriving newtype instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (Matrix m n a)
 
-deriving newtype instance (KnownNat m, KnownNat n, Random a) => Random (Matrix m n a)
+deriving newtype instance (Random a, KnownNat m, KnownNat n) => Random (Matrix m n a)

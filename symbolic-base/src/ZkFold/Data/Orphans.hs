@@ -23,11 +23,11 @@ instance NFData1 Par1
 
 instance NFData a => NFData (Par1 a)
 
-instance (NFData (f a), NFData (g a), NFData a, NFData1 f, NFData1 g) => NFData ((:*:) f g a)
+instance (NFData1 f, NFData1 g, NFData a, NFData (f a), NFData (g a)) => NFData ((:*:) f g a)
 
 instance (NFData1 f, NFData1 g) => NFData1 (f :*: g)
 
-instance (NFData (f (g a)), NFData (f a), NFData a, NFData1 f, NFData1 g) => NFData ((:.:) f g a)
+instance (NFData1 f, NFData1 g, NFData a, NFData (f a), NFData (f (g a))) => NFData ((:.:) f g a)
 
 instance (Functor f, NFData1 f, NFData1 g) => NFData1 (f :.: g)
 
@@ -48,12 +48,12 @@ instance ToJSON a => ToJSON (Par1 a)
 
 instance FromJSON a => FromJSON (Par1 a)
 
-instance (ToJSON (f a), ToJSON (g a), ToJSON a) => ToJSON ((:*:) f g a)
+instance (ToJSON a, ToJSON (f a), ToJSON (g a)) => ToJSON ((:*:) f g a)
 
-instance (FromJSON (f a), FromJSON (g a), FromJSON a) => FromJSON ((:*:) f g a)
+instance (FromJSON a, FromJSON (f a), FromJSON (g a)) => FromJSON ((:*:) f g a)
 
-instance (ToJSON (f (g a)), ToJSON (g a), ToJSON a) => ToJSON ((:.:) f g a)
+instance (ToJSON a, ToJSON (f (g a)), ToJSON (g a)) => ToJSON ((:.:) f g a)
 
-instance (FromJSON (f (g a)), FromJSON (g a), FromJSON a) => FromJSON ((:.:) f g a)
+instance (FromJSON a, FromJSON (f (g a)), FromJSON (g a)) => FromJSON ((:.:) f g a)
 
 deriving newtype instance Binary (Rep f) => Binary (WrappedRep f)

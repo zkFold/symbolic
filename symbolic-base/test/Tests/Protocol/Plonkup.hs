@@ -18,7 +18,6 @@ import qualified Data.Vector as V
 import GHC.IsList (IsList (fromList))
 import Test.Hspec
 import Test.QuickCheck hiding (witness)
-
 import Tests.Protocol.Plonkup.Update (specPlonkupUpdate)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -41,7 +40,7 @@ import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 -- | Polynomial types and specific polynomials that were causing exceptions
-problematicPolynomials :: (FiniteField a, Ord a) => [PM.Poly a (Var a) Natural]
+problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a) Natural]
 problematicPolynomials =
   [ var (ConstVar one)
   , var (ConstVar zero)
@@ -53,13 +52,13 @@ problematicPolynomials =
   , polynomial [(one, M $ fromList [(toVar (EqVar "v1"), 1), (ConstVar one, 1)])]
   ]
 
-propPlonkConstraintConversion :: (FiniteField a, Ord a) => PlonkConstraint (Vector 1) a -> Bool
+propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vector 1) a -> Bool
 propPlonkConstraintConversion p =
   toPlonkConstraint (fromPlonkConstraint p) == p
 
 propPlonkupRelationHolds
   :: forall i o n a
-   . (Arithmetic a, KnownNat n)
+   . (KnownNat n, Arithmetic a)
   => PlonkupRelation i o n a (PolyVec a)
   -> i a
   -> a
@@ -80,7 +79,7 @@ propSortByListIsCorrect xs = sortByList xs (sort xs) == sort xs
 
 propPlonkPolyEquality
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -101,7 +100,7 @@ propPlonkPolyEquality plonk witness secret pow =
 
 propPlonkGrandProductIsCorrect
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -120,7 +119,7 @@ propPlonkGrandProductIsCorrect plonk witness secret =
 
 propPlonkGrandProductEquality
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -154,7 +153,7 @@ propPlonkGrandProductEquality plonk witness secret pow =
 
 propLookupPolyEquality
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -176,7 +175,7 @@ propLookupPolyEquality plonk witness secret pow =
 
 propLookupGrandProductIsCorrect
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -195,7 +194,7 @@ propLookupGrandProductIsCorrect plonk witness secret =
 
 propLookupGrandProductEquality
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o
@@ -227,7 +226,7 @@ propLookupGrandProductEquality plonk witness secret pow =
 
 propLinearizationPolyEvaluation
   :: forall i o n
-   . (Binary (Rep i), Foldable o, KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i, Representable o)
+   . (KnownNat n, Representable i, Representable o, Foldable o, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
   => Plonkup
        i
        o

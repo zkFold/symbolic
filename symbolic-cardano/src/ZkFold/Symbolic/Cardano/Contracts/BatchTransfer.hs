@@ -8,6 +8,7 @@ import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
+import ZkFold.Symbolic.Cardano.Types
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -17,8 +18,6 @@ import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (StrictConv (..))
 import Prelude hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
-
-import ZkFold.Symbolic.Cardano.Types
 
 type Tokens = 10
 
@@ -30,9 +29,9 @@ type Tx context = Transaction 6 0 11 Tokens 0 () context
 
 verifySignature
   :: forall context
-   . ( KnownRegisters context 256 'Auto
-     , Symbolic context
+   . ( Symbolic context
      , SymbolicData (TxOut context)
+     , KnownRegisters context 256 'Auto
      )
   => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
@@ -45,10 +44,10 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 
 batchTransfer
   :: forall context
-   . ( KnownRegisters context 256 'Auto
-     , KnownRegisters context 64 'Auto
-     , Symbolic context
+   . ( Symbolic context
      , SymbolicInput (TxOut context)
+     , KnownRegisters context 256 'Auto
+     , KnownRegisters context 64 'Auto
      )
   => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context) -> Bool context
 batchTransfer tx transfers =

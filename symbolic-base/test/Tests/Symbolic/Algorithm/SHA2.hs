@@ -17,11 +17,8 @@ import System.FilePath.Posix
 import System.IO (IO)
 import Test.Hspec (Spec, describe, runIO, shouldBe)
 import Test.QuickCheck (withMaxSuccess, (===))
-import Text.Regex.TDFA
-import Prelude (String, otherwise, pure, read, (<>), (==))
-import qualified Prelude as Haskell
-
 import Tests.Common (it, toss)
+import Text.Regex.TDFA
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -34,6 +31,8 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
+import Prelude (String, otherwise, pure, read, (<>), (==))
+import qualified Prelude as Haskell
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.

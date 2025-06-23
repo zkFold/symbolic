@@ -5,7 +5,6 @@ module ZkFold.Symbolic.UPLC.Fun (Fun (..)) where
 import Data.Function ((.))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
-
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.UPLC.BuiltinType
 
@@ -20,7 +19,7 @@ instance IsData t v c => FromConstant (Symbolic.Maybe c v) (Fun '[] t c) where
   fromConstant = FSat
 
 instance
-  (FromConstant f (Fun ss t c), IsData s v c)
+  (IsData s v c, FromConstant f (Fun ss t c))
   => FromConstant (v -> f) (Fun (s ': ss) t c)
   where
   fromConstant f = FLam (fromConstant . f)

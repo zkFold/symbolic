@@ -1,6 +1,10 @@
 module ZkFold.Algebra.Polynomial.Multivariate.Substitution where
 
 import Data.Map (Map, lookup)
+import ZkFold.Algebra.Field (Zp, fromZp)
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
+import ZkFold.Data.Vector (Vector, fromVector)
+import ZkFold.Prelude ((!!))
 import Prelude hiding (
   Num (..),
   length,
@@ -11,11 +15,6 @@ import Prelude hiding (
   (!!),
   (^),
  )
-
-import ZkFold.Algebra.Field (Zp, fromZp)
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
-import ZkFold.Data.Vector (Vector, fromVector)
-import ZkFold.Prelude ((!!))
 
 -- | Data structure `s` can be viewed as a substitution from `i` to `b`
 class Substitution s i b where

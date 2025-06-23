@@ -11,9 +11,8 @@ import Data.Typeable
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck ((=/=), (===), (==>))
 import qualified Test.QuickCheck as QC
-import Text.Show (Show, show)
-
 import Tests.Common (it, typeAt)
+import Text.Show (Show, show)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
 import ZkFold.Algebra.Number
@@ -23,7 +22,7 @@ import ZkFold.Data.Vector (Vector, toV, zipWith)
 
 specSimplePoly'
   :: forall a n
-   . (Eq a, Field a, KnownNat n, QC.Arbitrary a, Show a, Typeable a) => Spec
+   . (QC.Arbitrary a, Eq a, Field a, Show a, Typeable a, KnownNat n) => Spec
 specSimplePoly' = describe (show (typeAt @(SimplePoly a n)) <> " spec") do
   describe "vec2poly" do
     it "respects addition" \(p :: SimplePoly a n) q ->

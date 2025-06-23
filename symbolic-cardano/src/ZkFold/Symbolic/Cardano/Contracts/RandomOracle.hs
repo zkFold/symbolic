@@ -7,6 +7,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Log2)
 import ZkFold.Data.Vector (Vector, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
+import ZkFold.Symbolic.Cardano.Types
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString as Symbolic
@@ -27,8 +28,6 @@ import Prelude hiding (
   (==),
  )
 
-import ZkFold.Symbolic.Cardano.Types
-
 type Tokens = 2
 
 type TxOut context = Output Tokens () context
@@ -39,9 +38,9 @@ type Tx context = Transaction 1 0 2 Tokens 1 () context
 
 randomOracle
   :: forall context
-   . ( Bits (FieldElement context) ~ context (Vector 256)
+   . ( Symbolic context
+     , Bits (FieldElement context) ~ context (Vector 256)
      , Log2 (Order (BaseField context)) ~ 255
-     , Symbolic context
      )
   => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =

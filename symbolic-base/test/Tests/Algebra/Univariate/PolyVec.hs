@@ -11,6 +11,12 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as VA
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
+import ZkFold.Algebra.Number
+import ZkFold.Algebra.Polynomial.Univariate
+import ZkFold.Data.Vector (Vector, fromVector)
+import ZkFold.Prelude (length, take)
 import Prelude (abs)
 import Prelude hiding (
   Fractional (..),
@@ -24,16 +30,9 @@ import Prelude hiding (
   (^),
  )
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
-import ZkFold.Algebra.Number
-import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Data.Vector (Vector, fromVector)
-import ZkFold.Prelude (length, take)
-
 propToPolyVec
   :: forall c s
-   . (Eq c, KnownNat s, Ring c)
+   . (Ring c, Eq c, KnownNat s)
   => [c] -> Bool
 propToPolyVec cs =
   let p = toPolyVec @_ @(PolyVec c) @s $ V.fromList cs
@@ -41,7 +40,7 @@ propToPolyVec cs =
 
 propCastPolyVec
   :: forall c s s'
-   . (Eq c, Field c, KnownNat s, KnownNat s')
+   . (Field c, KnownNat s, KnownNat s', Eq c)
   => [c] -> Bool
 propCastPolyVec cs =
   let n = min (value @s) (value @s')
@@ -51,7 +50,7 @@ propCastPolyVec cs =
 
 propPolyVecDivision
   :: forall c s
-   . (Eq c, Field c, KnownNat s)
+   . (Field c, KnownNat s, Eq c)
   => PolyVec c s -> PolyVec c s -> Bool
 propPolyVecDivision p q =
   let d1 = deg @c @(Poly c) $ vec2poly p
@@ -61,8 +60,8 @@ propPolyVecDivision p q =
 -- TODO: Don't use a hardcoded root of unity
 propPolyVecZero
   :: forall c s d
-   . (KnownNat d, KnownNat s)
-  => (Eq c, Field c)
+   . (KnownNat s, KnownNat d)
+  => (Field c, Eq c)
   => Natural -> Bool
 propPolyVecZero i =
   let Just omega = rootOfUnity 5 :: Maybe c
@@ -73,8 +72,8 @@ propPolyVecZero i =
 -- TODO: Don't use a hardcoded root of unity
 propPolyVecLagrange
   :: forall c s d
-   . (KnownNat d, KnownNat s)
-  => (Eq c, Field c)
+   . (KnownNat s, KnownNat d)
+  => (Field c, Eq c)
   => Natural -> Bool
 propPolyVecLagrange i =
   let Just omega = rootOfUnity 5 :: Maybe c
@@ -94,8 +93,8 @@ propPolyVecGrandProduct p beta gamma =
 
 specUnivariatePolyVec'
   :: forall c s d
-   . (KnownNat d, KnownNat s)
-  => (Arbitrary c, Field c, Ord c, Show c, Typeable c)
+   . (KnownNat s, KnownNat d)
+  => (Arbitrary c, Show c, Typeable c, Field c, Ord c)
   => Spec
 specUnivariatePolyVec' = do
   describe "Univariate polynomials specification" $ do
@@ -145,8 +144,8 @@ specUnivariatePolyVec' = do
 
 specUnivariatePolyVecClass
   :: forall c s
-   . (KnownNat (s - 3), KnownNat s)
-  => (Arbitrary c, Field c, Ord c, Show c, Typeable c)
+   . (KnownNat s, KnownNat (s - 3))
+  => (Arbitrary c, Show c, Typeable c, Field c, Ord c)
   => Spec
 specUnivariatePolyVecClass = do
   describe ("Type: " ++ show (typeOf @(PolyVec c s) zero)) $ do

@@ -29,20 +29,20 @@ type KnownFFA1 c = KnownFFA Prime256_1 RegSize c
 
 type KnownFFA2 c = KnownFFA Prime256_2 RegSize c
 
-exampleFFAaddNative :: (KnownFFA1 c, Symbolic c) => FFA1 c -> FFA1 c -> FFA1 c
+exampleFFAaddNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
 exampleFFAaddNative = (+)
 
-exampleFFAmulNative :: (KnownFFA1 c, Symbolic c) => FFA1 c -> FFA1 c -> FFA1 c
+exampleFFAmulNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c -> FFA1 c
 exampleFFAmulNative = (*)
 
-exampleFFAinvNative :: (KnownFFA1 c, Symbolic c) => FFA1 c -> FFA1 c
+exampleFFAinvNative :: (Symbolic c, KnownFFA1 c) => FFA1 c -> FFA1 c
 exampleFFAinvNative = finv
 
-exampleFFAaddForeign :: (KnownFFA2 c, Symbolic c) => FFA2 c -> FFA2 c -> FFA2 c
+exampleFFAaddForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
 exampleFFAaddForeign = (+)
 
-exampleFFAmulForeign :: (KnownFFA2 c, Symbolic c) => FFA2 c -> FFA2 c -> FFA2 c
+exampleFFAmulForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c -> FFA2 c
 exampleFFAmulForeign = (*)
 
-exampleFFAinvForeign :: (KnownFFA2 c, Symbolic c) => FFA2 c -> FFA2 c
+exampleFFAinvForeign :: (Symbolic c, KnownFFA2 c) => FFA2 c -> FFA2 c
 exampleFFAinvForeign = finv

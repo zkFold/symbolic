@@ -8,6 +8,18 @@ module ZkFold.Protocol.Plonkup.Verifier (
 
 import Data.Word (Word8)
 import GHC.IsList (IsList (..))
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.Number (KnownNat, Natural, value)
+import ZkFold.Algebra.Polynomial.Univariate hiding (qr)
+import ZkFold.Prelude (replicate)
+import ZkFold.Protocol.NonInteractiveProof hiding (verify)
+import ZkFold.Protocol.Plonkup.Input
+import ZkFold.Protocol.Plonkup.Internal
+import ZkFold.Protocol.Plonkup.Proof
+import ZkFold.Protocol.Plonkup.Relation (prvNum)
+import ZkFold.Protocol.Plonkup.Verifier.Commitments
+import ZkFold.Protocol.Plonkup.Verifier.Setup
 import Prelude hiding (
   Num (..),
   Ord (..),
@@ -21,30 +33,17 @@ import Prelude hiding (
   (^),
  )
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
-import ZkFold.Algebra.Number (KnownNat, Natural, value)
-import ZkFold.Algebra.Polynomial.Univariate hiding (qr)
-import ZkFold.Prelude (replicate)
-import ZkFold.Protocol.NonInteractiveProof hiding (verify)
-import ZkFold.Protocol.Plonkup.Input
-import ZkFold.Protocol.Plonkup.Internal
-import ZkFold.Protocol.Plonkup.Proof
-import ZkFold.Protocol.Plonkup.Relation (prvNum)
-import ZkFold.Protocol.Plonkup.Verifier.Commitments
-import ZkFold.Protocol.Plonkup.Verifier.Setup
-
 plonkupVerify
   :: forall i o n g1 g2 gt ts pv
-   . ( Compressible g1
+   . ( Pairing g1 g2 gt
+     , Compressible g1
      , Eq gt
-     , FromTranscript ts (ScalarFieldOf g1)
-     , KnownNat (PlonkupPolyExtendedLength n)
-     , KnownNat n
-     , Pairing g1 g2 gt
-     , ToTranscript ts (Compressed g1)
-     , ToTranscript ts (ScalarFieldOf g1)
      , ToTranscript ts Word8
+     , ToTranscript ts (ScalarFieldOf g1)
+     , ToTranscript ts (Compressed g1)
+     , FromTranscript ts (ScalarFieldOf g1)
+     , KnownNat n
+     , KnownNat (PlonkupPolyExtendedLength n)
      , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
      )
   => PlonkupVerifierSetup i o n g1 g2 pv -> PlonkupInput g1 -> PlonkupProof g1 -> Bool

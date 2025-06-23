@@ -7,17 +7,16 @@ import GHC.Generics (Generic)
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Data.Vector
+import ZkFold.Symbolic.Cardano.Types.Basic
+import ZkFold.Symbolic.Cardano.Types.Input (Input)
+import ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
+import ZkFold.Symbolic.Cardano.Types.Value (Value)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
-
-import ZkFold.Symbolic.Cardano.Types.Basic
-import ZkFold.Symbolic.Cardano.Types.Input (Input)
-import ZkFold.Symbolic.Cardano.Types.Output (Liability (..), Output)
-import ZkFold.Symbolic.Cardano.Types.Value (Value)
 
 data Transaction inputs rinputs outputs tokens mint datum context = Transaction
   { txRefInputs :: Vector rinputs (Input tokens datum context)
@@ -36,28 +35,28 @@ deriving instance
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-  ( KnownNat inputs
-  , KnownNat mint
-  , KnownNat outputs
-  , KnownNat rinputs
-  , KnownNat tokens
-  , KnownRegisters context 11 Auto
+  ( Symbolic context
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
-  , Symbolic context
+  , KnownRegisters context 11 Auto
+  , KnownNat tokens
+  , KnownNat rinputs
+  , KnownNat inputs
+  , KnownNat outputs
+  , KnownNat mint
   )
   => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context)
 
 instance
-  ( KnownNat inputs
-  , KnownNat mint
-  , KnownNat outputs
-  , KnownNat rinputs
-  , KnownNat tokens
-  , KnownRegisters context 11 Auto
+  ( Symbolic context
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
-  , Symbolic context
+  , KnownRegisters context 11 Auto
+  , KnownNat tokens
+  , KnownNat rinputs
+  , KnownNat outputs
+  , KnownNat mint
+  , KnownNat inputs
   )
   => SymbolicInput (Transaction inputs rinputs outputs tokens mint datum context)
   where

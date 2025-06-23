@@ -6,7 +6,6 @@ import Data.Foldable (Foldable)
 import Data.Function ((.))
 import Data.Functor (Functor (..))
 import GHC.Generics (Par1 (..), (:.:) (..))
-
 import ZkFold.Data.HFunctor (HFunctor (..))
 
 -- | A @'Package'@ is a higher-order functor (@'HFunctor'@) which allows to
@@ -52,9 +51,9 @@ class HFunctor c => Package c where
   packWith f = hmap (f . unComp1) . pack
 
 -- | Performs the full unpacking.
-unpacked :: (Functor f, Package c) => c f -> f (c Par1)
+unpacked :: (Package c, Functor f) => c f -> f (c Par1)
 unpacked = unpackWith (fmap Par1)
 
 -- | Performs the full package.
-packed :: (Foldable f, Functor f, Package c) => f (c Par1) -> c f
+packed :: (Package c, Foldable f, Functor f) => f (c Par1) -> c f
 packed = packWith (fmap unPar1)

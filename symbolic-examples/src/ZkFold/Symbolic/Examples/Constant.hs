@@ -14,7 +14,6 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
 import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
 

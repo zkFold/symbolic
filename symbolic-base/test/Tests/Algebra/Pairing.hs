@@ -7,13 +7,12 @@ import Data.Kind (Type)
 import Data.Typeable (Typeable, typeOf)
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
-import Prelude hiding (Fractional (..), Num (..), length, (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.BN254
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Protocol.NonInteractiveProof ()
+import Prelude hiding (Fractional (..), Num (..), length, (^))
 
 specPairing'
   :: forall (g1 :: Type) (g2 :: Type) gt f

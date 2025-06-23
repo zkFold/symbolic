@@ -1,12 +1,11 @@
 module ZkFold.Protocol.IVC.CommitOpen where
 
 import Data.Zip (zipWith)
-import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
-
 import ZkFold.Algebra.Class (AdditiveGroup (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (hcommit))
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
+import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
 type CommitOpen k i p c m o f =
   SpecialSoundProtocol k i p (m, c) (Vector k c, o) f

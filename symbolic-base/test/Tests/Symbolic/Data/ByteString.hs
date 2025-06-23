@@ -13,9 +13,6 @@ import Data.List ((++))
 import GHC.Generics (U1)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, chooseInteger, withMaxSuccess, (===))
-import Prelude (show, (<>), type (~))
-import qualified Prelude as Haskell
-
 import Tests.Common (it, toss)
 import Tests.Symbolic.Data.Common (
   specConstantRoundtrip,
@@ -36,6 +33,8 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
+import Prelude (show, (<>), type (~))
+import qualified Prelude as Haskell
 
 type AC a = ArithmeticCircuit a U1
 

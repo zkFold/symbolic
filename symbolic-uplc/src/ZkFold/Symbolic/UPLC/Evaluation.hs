@@ -39,13 +39,12 @@ import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 import ZkFold.Symbolic.Data.Ord qualified as Symbolic
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString
-import Prelude (error, foldr, fromIntegral)
-
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Term
+import Prelude (error, foldr, fromIntegral)
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -271,10 +270,10 @@ withArms Nothing (Just (MaybeValue @_ @_ @v e0)) f = f (Symbolic.nothing @v) e0
 withArms Nothing Nothing _ = Nothing
 
 -- | Helper function.
-symMaybe :: (IsData d t c, Sym c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
+symMaybe :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
 symMaybe b v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b)
 
-symMaybe2 :: (IsData d t c, Sym c) => Symbolic.Maybe c u -> Symbolic.Maybe c w -> t -> Symbolic.Maybe c t
+symMaybe2 :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> Symbolic.Maybe c w -> t -> Symbolic.Maybe c t
 symMaybe2 b1 b2 v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b1 && Symbolic.isJust b2)
 
 -- | Some Symbolic value of a definite UPLC builtin type.

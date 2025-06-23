@@ -15,15 +15,14 @@ import Data.Int (Int8)
 import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
 import Numeric.Natural (Natural)
-import Prelude (fromInteger)
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
 import ZkFold.Symbolic.Data.Bool hiding (Bool)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
+import Prelude (fromInteger)
+import qualified Prelude
 
 -- Ate pairing implementation adapted from:
 -- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs
@@ -32,8 +31,8 @@ type Untwisted baseField i j = Ext2 (Ext3 baseField i) j
 
 finalExponentiation
   :: forall scalarField baseField g i j
-   . (Finite baseField, Finite scalarField)
-  => (Exponent g Natural, g ~ Untwisted baseField i j)
+   . (Finite scalarField, Finite baseField)
+  => (g ~ Untwisted baseField i j, Exponent g Natural)
   => g -> g
 finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
  where
@@ -128,8 +127,8 @@ millerLoop p q = impl
 
 frobTwisted
   :: forall c fld
-   . ( Conditional (BooleanOf fld) (BooleanOf fld)
-     , WeierstrassCurve c fld
+   . ( WeierstrassCurve c fld
+     , Conditional (BooleanOf fld) (BooleanOf fld)
      )
   => Natural -> fld -> Weierstrass c (Point fld) -> Weierstrass c (Point fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =

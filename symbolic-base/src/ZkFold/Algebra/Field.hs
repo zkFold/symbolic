@@ -36,9 +36,6 @@ import GHC.TypeLits (Symbol)
 import System.Random (Random (..))
 import System.Random.Stateful (Uniform (..), UniformRange (..))
 import Test.QuickCheck hiding (scale)
-import Prelude (Integer)
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
@@ -46,12 +43,14 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.ByteString
 import ZkFold.Data.Eq
 import ZkFold.Prelude (iterate', log2ceiling)
+import Prelude (Integer)
+import qualified Prelude as Haskell
 
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
   deriving Generic
-  deriving newtype (FromJSONKey, NFData, ToJSONKey)
+  deriving newtype (NFData, ToJSONKey, FromJSONKey)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
@@ -69,7 +68,7 @@ instance ToConstant (Zp p) where
   type Const (Zp p) = Natural
   toConstant = fromZp
 
-instance (KnownNat (NumberOfBits (Zp p)), KnownNat p) => Finite (Zp p) where
+instance (KnownNat p, KnownNat (NumberOfBits (Zp p))) => Finite (Zp p) where
   type Order (Zp p) = p
 
 instance KnownNat p => Haskell.Eq (Zp p) where
@@ -240,12 +239,12 @@ class (Ring poly, UnivariateFieldPolynomial f poly) => IrreduciblePoly poly f (e
   irreduciblePoly :: poly
 
 data Ext2 f (e :: Symbol) = Ext2 f f
-  deriving (FromJSON, Generic, Haskell.Eq, Haskell.Show, ToJSON)
+  deriving (Haskell.Eq, Haskell.Show, Generic, ToJSON, FromJSON)
 
 instance Haskell.Ord f => Haskell.Ord (Ext2 f e) where
   Ext2 a b <= Ext2 c d = [b, a] Haskell.<= ([d, c] :: [f])
 
-instance (KnownNat (NumberOfBits (Ext2 f e)), KnownNat (Order (Ext2 f e))) => Finite (Ext2 f e) where
+instance (KnownNat (Order (Ext2 f e)), KnownNat (NumberOfBits (Ext2 f e))) => Finite (Ext2 f e) where
   type Order (Ext2 f e) = Order f ^ 2
 
 instance {-# OVERLAPPING #-} FromConstant (Ext2 f e) (Ext2 f e)
@@ -263,15 +262,15 @@ instance Field f => AdditiveGroup (Ext2 f e) where
   negate (Ext2 a b) = Ext2 (negate a) (negate b)
   Ext2 a b - Ext2 c d = Ext2 (a - c) (b - d)
 
-instance {-# OVERLAPPING #-} (Eq f, Field f, IrreduciblePoly poly f e) => Scale (Ext2 f e) (Ext2 f e)
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext2 f e) (Ext2 f e)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext2 f e) where
   Ext2 a b * Ext2 c d = fromConstant @poly (toPoly @f @poly [a, b] * toPoly @f @poly [c, d])
 
 instance MultiplicativeMonoid (Ext2 f e) => Exponent (Ext2 f e) Natural where
   (^) = natPow
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext2 f e) where
   one = Ext2 one zero
 
 instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
@@ -281,7 +280,7 @@ instance Conditional bool field => Conditional bool (Ext2 field i)
 
 instance Eq field => Eq (Ext2 field i)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
   finv (Ext2 a b) =
     let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @poly @f @e)
      in case fromPoly $ scaleP (one // lt g) 0 s of
@@ -297,24 +296,24 @@ instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext2
     [x] -> Ext2 x zero
     v -> Ext2 (v V.! 0) (v V.! 1)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Semiring (Ext2 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Semiring (Ext2 f e)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Ring (Ext2 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Ring (Ext2 f e)
 
 instance Binary f => Binary (Ext2 f e) where
   put (Ext2 a b) = put a <> put b
   get = Ext2 <$> get <*> get
 
-instance (Arbitrary f, Eq f, Field f, IrreduciblePoly poly f e) => Arbitrary (Ext2 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ext2 f e) where
   arbitrary = Ext2 <$> arbitrary <*> arbitrary
 
 data Ext3 f (e :: Symbol) = Ext3 f f f
-  deriving (FromJSON, Generic, Haskell.Eq, Haskell.Show, ToJSON)
+  deriving (Haskell.Eq, Haskell.Show, Generic, ToJSON, FromJSON)
 
 instance Haskell.Ord f => Haskell.Ord (Ext3 f e) where
   Ext3 a b c <= Ext3 d e f = [c, b, a] Haskell.<= ([f, e, d] :: [f])
 
-instance (KnownNat (NumberOfBits (Ext3 f e)), KnownNat (Order (Ext3 f e))) => Finite (Ext3 f e) where
+instance (KnownNat (Order (Ext3 f e)), KnownNat (NumberOfBits (Ext3 f e))) => Finite (Ext3 f e) where
   type Order (Ext3 f e) = Order f ^ 3
 
 instance {-# OVERLAPPING #-} FromConstant (Ext3 f e) (Ext3 f e)
@@ -332,15 +331,15 @@ instance Field f => AdditiveGroup (Ext3 f e) where
   negate (Ext3 a b c) = Ext3 (negate a) (negate b) (negate c)
   Ext3 a b c - Ext3 d e f = Ext3 (a - d) (b - e) (c - f)
 
-instance {-# OVERLAPPING #-} (Eq f, Field f, IrreduciblePoly poly f e) => Scale (Ext3 f e) (Ext3 f e)
+instance {-# OVERLAPPING #-} (Field f, Eq f, IrreduciblePoly poly f e) => Scale (Ext3 f e) (Ext3 f e)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeSemigroup (Ext3 f e) where
   Ext3 a b c * Ext3 d e f = fromConstant @poly (toPoly [a, b, c] * toPoly [d, e, f])
 
 instance MultiplicativeMonoid (Ext3 f e) => Exponent (Ext3 f e) Natural where
   (^) = natPow
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext3 f e) where
   one = Ext3 one zero zero
 
 instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
@@ -350,7 +349,7 @@ instance Conditional bool field => Conditional bool (Ext3 field i)
 
 instance Eq field => Eq (Ext3 field i)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
   finv (Ext3 a b c) =
     let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @poly @f @e)
      in case fromPoly $ scaleP (one // lt g) 0 s of
@@ -368,13 +367,13 @@ instance (FromConstant c poly, IrreduciblePoly poly f e) => FromConstant c (Ext3
     [x, y] -> Ext3 x y zero
     v -> Ext3 (v V.! 0) (v V.! 1) (v V.! 2)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Semiring (Ext3 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Semiring (Ext3 f e)
 
-instance (Eq f, Field f, IrreduciblePoly poly f e) => Ring (Ext3 f e)
+instance (Field f, Eq f, IrreduciblePoly poly f e) => Ring (Ext3 f e)
 
 instance Binary f => Binary (Ext3 f e) where
   put (Ext3 a b c) = put a <> put b <> put c
   get = Ext3 <$> get <*> get <*> get
 
-instance (Arbitrary f, Eq f, Field f, IrreduciblePoly poly f e) => Arbitrary (Ext3 f e) where
+instance (Field f, Eq f, IrreduciblePoly poly f e, Arbitrary f) => Arbitrary (Ext3 f e) where
   arbitrary = Ext3 <$> arbitrary <*> arbitrary <*> arbitrary

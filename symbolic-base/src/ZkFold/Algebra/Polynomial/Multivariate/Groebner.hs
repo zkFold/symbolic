@@ -3,6 +3,10 @@ module ZkFold.Algebra.Polynomial.Multivariate.Groebner where
 import Data.Bool (bool)
 import Data.List (sortBy)
 import GHC.Natural (Natural)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Polynomial.Multivariate.Internal
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
+import ZkFold.Prelude (length, (!!))
 import Prelude hiding (
   Num (..),
   drop,
@@ -14,11 +18,6 @@ import Prelude hiding (
   (/),
  )
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate.Internal
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
-import ZkFold.Prelude (length, (!!))
-
 reducable :: Polynomial c i j => Poly c i j -> Poly c i j -> Bool
 reducable l r = dividable (snd $ lt l) (snd $ lt r)
 
@@ -26,7 +25,7 @@ reducable l r = dividable (snd $ lt l) (snd $ lt r)
 
 reduce
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -37,7 +36,7 @@ reduce l r =
 
 reduceMany
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -54,7 +53,7 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
 
 fullReduceMany
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -66,7 +65,7 @@ fullReduceMany h fs =
 
 systemReduce
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => [Poly c i j]
   -> [Poly c i j]
 systemReduce = foldr f []
@@ -81,7 +80,7 @@ data GroebnerParams c i j = GroebnerParams
   }
 
 makeSPoly
-  :: (Polynomial c i j, Ring j)
+  :: (Ring j, Polynomial c i j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -102,7 +101,7 @@ makeSPoly l r =
         else r' - l'
 
 groebnerStep
-  :: (Polynomial c i j, Ring j)
+  :: (Ring j, Polynomial c i j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -117,7 +116,7 @@ groebnerStep GroebnerParams {..} ps =
 
 groebner
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -129,7 +128,7 @@ groebner GroebnerParams {..} ps =
 
 verifyGroebner
   :: forall c i j
-   . (Polynomial c i j, Ring j)
+   . (Ring j, Polynomial c i j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> Poly c i j

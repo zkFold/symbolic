@@ -15,7 +15,6 @@ import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (
   Poly,
@@ -39,9 +38,9 @@ data PlonkConstraint i a = PlonkConstraint
   , x2 :: Var a
   , x3 :: Var a
   }
-  deriving (Eq, Show)
+  deriving (Show, Eq)
 
-instance (Arbitrary a, Binary a, Ord a, Semiring a) => Arbitrary (PlonkConstraint i a) where
+instance (Ord a, Arbitrary a, Binary a, Semiring a) => Arbitrary (PlonkConstraint i a) where
   arbitrary = do
     qm <- arbitrary
     ql <- arbitrary
@@ -53,7 +52,7 @@ instance (Arbitrary a, Binary a, Ord a, Semiring a) => Arbitrary (PlonkConstrain
     let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
     return $ PlonkConstraint qm ql qr qo qc x1 x2 x3
 
-toPlonkConstraint :: forall a i. (FiniteField a, Ord a) => Poly a (Var a) Natural -> PlonkConstraint i a
+toPlonkConstraint :: forall a i. (Ord a, FiniteField a) => Poly a (Var a) Natural -> PlonkConstraint i a
 toPlonkConstraint p =
   let xs = Just <$> toList (variables p)
       perms = nubOrd $ map (take 3) $ permutations $ case length xs of
@@ -92,7 +91,7 @@ toPlonkConstraint p =
         [] -> toPlonkConstraint zero
         _ -> head $ mapMaybe getCoefs perms
 
-fromPlonkConstraint :: (Field a, Ord a) => PlonkConstraint i a -> Poly a (Var a) Natural
+fromPlonkConstraint :: (Ord a, Field a) => PlonkConstraint i a -> Poly a (Var a) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
   let xa = var a
       xb = var b

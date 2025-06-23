@@ -17,10 +17,8 @@ import Data.Typeable (Proxy (..))
 import GHC.Generics (U1 (..), type (:*:) (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary (..), Gen, (===))
-import Text.Show (Show)
-import Prelude (String, return, (++), type (~))
-
 import Tests.Common (it)
+import Text.Show (Show)
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
@@ -36,6 +34,7 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (String, return, (++), type (~))
 
 {-
   For all symbolic types we need to do the following:
@@ -48,11 +47,11 @@ import ZkFold.Symbolic.Interpreter (Interpreter (..))
 specConstantRoundtrip'
   :: forall x
    . ( Arbitrary x
-     , Eq (Const x)
      , Eq x
-     , FromConstant (Const x) x
-     , Show (Const x)
+     , Eq (Const x)
      , Show x
+     , Show (Const x)
+     , FromConstant (Const x) x
      , ToConstant x
      )
   => String -> String -> Gen (Const x) -> Spec
@@ -66,11 +65,11 @@ specConstantRoundtrip' symType hType gen = do
 specConstantRoundtrip
   :: forall a x
    . ( Arbitrary (x (Interpreter a))
-     , Eq (Const (x (Interpreter a)))
      , Eq (x (Interpreter a))
-     , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
-     , Show (Const (x (Interpreter a)))
+     , Eq (Const (x (Interpreter a)))
      , Show (x (Interpreter a))
+     , Show (Const (x (Interpreter a)))
+     , FromConstant (Const (x (Interpreter a))) (x (Interpreter a))
      , ToConstant (x (Interpreter a))
      )
   => String -> String -> Gen (Const (x (Interpreter a))) -> Spec
@@ -100,9 +99,9 @@ type MatchingSymbolicOutput a x = (Matching SymbolicData a x, Eq (x (Interpreter
 evalCircuit0
   :: forall x a
    . ( Arithmetic a
+     , SymbolicInput x
      , Context x ~ Interpreter a
      , Payload x ~ U1
-     , SymbolicInput x
      )
   => ArithmeticCircuit a U1 (Layout x) -> x
 evalCircuit0 ac =
@@ -111,11 +110,11 @@ evalCircuit0 ac =
 evalCircuit1
   :: forall x y a
    . ( Arithmetic a
+     , SymbolicInput x
      , Context x ~ Interpreter a
+     , SymbolicOutput y
      , Context y ~ Interpreter a
      , Payload y ~ U1
-     , SymbolicInput x
-     , SymbolicOutput y
      )
   => ArithmeticCircuit a (Layout x) (Layout y) -> x -> y
 evalCircuit1 ac input =
@@ -124,13 +123,13 @@ evalCircuit1 ac input =
 evalCircuit2
   :: forall x y z a
    . ( Arithmetic a
+     , SymbolicInput x
      , Context x ~ Interpreter a
+     , SymbolicInput y
      , Context y ~ Interpreter a
+     , SymbolicOutput z
      , Context z ~ Interpreter a
      , Payload z ~ U1
-     , SymbolicInput x
-     , SymbolicInput y
-     , SymbolicOutput z
      )
   => ArithmeticCircuit a (Layout x :*: Layout y) (Layout z) -> x -> y -> z
 evalCircuit2 ac x y =
@@ -143,10 +142,10 @@ evalCircuit2 ac x y =
 compileCircuit0
   :: forall x a o
    . ( Binary a
+     , SymbolicInput x
      , Context x ~ CircuitContext a
      , Layout x ~ o
      , Payload x ~ U1
-     , SymbolicInput x
      )
   => x -> ArithmeticCircuit a U1 (Layout x)
 compileCircuit0 = compileWith @a solder (\U1 -> (U1, U1))
@@ -154,11 +153,11 @@ compileCircuit0 = compileWith @a solder (\U1 -> (U1, U1))
 compileCircuit1
   :: forall x y a
    . ( Binary a
-     , Context x ~ CircuitContext a
-     , Context y ~ CircuitContext a
-     , Payload x ~ U1
      , SymbolicInput x
+     , Context x ~ CircuitContext a
+     , Payload x ~ U1
      , SymbolicOutput y
+     , Context y ~ CircuitContext a
      )
   => (x -> y) -> ArithmeticCircuit a (Layout x) (Layout y)
 compileCircuit1 = compileWith @a solder (\i -> (U1 :*: U1, i :*: U1))
@@ -166,14 +165,14 @@ compileCircuit1 = compileWith @a solder (\i -> (U1 :*: U1, i :*: U1))
 compileCircuit2
   :: forall x y z a
    . ( Binary a
-     , Context x ~ CircuitContext a
-     , Context y ~ CircuitContext a
-     , Context z ~ CircuitContext a
-     , Payload x ~ U1
-     , Payload y ~ U1
      , SymbolicInput x
+     , Context x ~ CircuitContext a
+     , Payload x ~ U1
      , SymbolicInput y
+     , Context y ~ CircuitContext a
+     , Payload y ~ U1
      , SymbolicOutput z
+     , Context z ~ CircuitContext a
      )
   => (x -> y -> z) -> ArithmeticCircuit a (Layout x :*: Layout y) (Layout z)
 compileCircuit2 =
@@ -219,9 +218,9 @@ specSymbolicFunction1 desc func = describe desc $ do
 specSymbolicFunction1WithPar
   :: forall par a x y
    . ( Arbitrary par
+     , Show par
      , MatchingSymbolicInput a x
      , MatchingSymbolicOutput a y
-     , Show par
      )
   => String -> (par -> SymbolicFunction1 x y) -> Spec
 specSymbolicFunction1WithPar desc func = describe desc $ do

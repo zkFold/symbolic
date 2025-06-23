@@ -9,9 +9,6 @@ import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude ((.), type (~))
-import qualified Prelude as P
-
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class
@@ -25,6 +22,8 @@ import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Utils
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import Prelude ((.), type (~))
+import qualified Prelude as P
 
 -- | Json Web Token payload with information about the user
 -- https://dev.twitch.tv/docs/extensions/reference/#jwt-schema
@@ -66,7 +65,7 @@ deriving instance Symbolic ctx => SymbolicInput (PubSubPerms ctx)
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
   arbitrary = genericArbitrary uniform
 
-instance (Context (PubSubPerms ctx) ~ ctx, Symbolic ctx) => IsSymbolicJSON (PubSubPerms ctx) where
+instance (Symbolic ctx, Context (PubSubPerms ctx) ~ ctx) => IsSymbolicJSON (PubSubPerms ctx) where
   type MaxLength (PubSubPerms ctx) = 4248
   toJsonBits PubSubPerms {..} =
     (fromType @"{\"listen\":")
@@ -115,7 +114,7 @@ instance Symbolic ctx => IsBits (TwitchPayload ctx) where
   type BitCount (TwitchPayload ctx) = 9056
   toBits = toAsciiBits
 
-instance (RSA.RSA 2048 10328 ctx, Symbolic ctx, TokenBits (TwitchPayload ctx)) => IsTokenPayload "RS256" (TwitchPayload ctx) where
+instance (Symbolic ctx, TokenBits (TwitchPayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (TwitchPayload ctx) where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"

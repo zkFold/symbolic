@@ -7,7 +7,6 @@ import Data.Foldable (toList)
 import Data.Function (flip, (.))
 import Data.Functor (fmap)
 import Data.Proxy (Proxy (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC
 import ZkFold.Data.HFunctor (hmap)

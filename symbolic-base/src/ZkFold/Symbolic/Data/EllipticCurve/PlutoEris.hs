@@ -5,9 +5,6 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.PlutoEris (Pluto_Point, Eris_Point) where
 
-import Prelude (fromInteger, ($))
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.PlutoEris (PlutoEris_p, PlutoEris_q)
@@ -18,6 +15,8 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
+import Prelude (fromInteger, ($))
+import qualified Prelude
 
 type Pluto_Point ctx =
   Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_p 'Auto ctx))
@@ -26,9 +25,9 @@ type Eris_Point ctx =
   Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_q 'Auto ctx))
 
 instance
-  ( KnownFFA PlutoEris_p 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
-  , Symbolic ctx
   )
   => CyclicGroup (Pluto_Point ctx)
   where
@@ -39,9 +38,9 @@ instance
       (fromConstant (7 :: Prelude.Integer))
 
 instance
-  ( KnownFFA PlutoEris_p 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
-  , Symbolic ctx
   )
   => Scale (FFA PlutoEris_q 'Auto ctx) (Pluto_Point ctx)
   where
@@ -59,9 +58,9 @@ instance
     upper = value @(FFAMaxBits PlutoEris_q ctx) -! 1
 
 instance
-  ( KnownFFA PlutoEris_p 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
-  , Symbolic ctx
   )
   => CyclicGroup (Eris_Point ctx)
   where
@@ -72,9 +71,9 @@ instance
       (fromConstant (7 :: Prelude.Integer))
 
 instance
-  ( KnownFFA PlutoEris_p 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
-  , Symbolic ctx
   )
   => Scale (FFA PlutoEris_p 'Auto ctx) (Eris_Point ctx)
   where

@@ -8,8 +8,6 @@ import Data.Proxy
 import GHC.TypeLits
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
-import Prelude hiding (Num (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.BN254
@@ -19,6 +17,7 @@ import ZkFold.Algebra.EllipticCurve.Pasta
 import ZkFold.Algebra.EllipticCurve.PlutoEris
 import ZkFold.Algebra.EllipticCurve.Secp256k1
 import ZkFold.Symbolic.Data.Eq (BooleanOf)
+import Prelude hiding (Num (..))
 
 specEllipticCurve :: Spec
 specEllipticCurve = do
@@ -63,14 +62,14 @@ specEllipticCurve = do
 
 specEllipticCurveGenerator
   :: forall point
-   . ( Arbitrary (ScalarFieldOf point)
-     , BooleanOf (BaseFieldOf point) ~ Bool
+   . ( EllipticCurve point
      , CyclicGroup point
-     , EllipticCurve point
      , Eq point
-     , KnownSymbol (CurveOf point)
-     , Show (ScalarFieldOf point)
      , Show point
+     , Arbitrary (ScalarFieldOf point)
+     , Show (ScalarFieldOf point)
+     , KnownSymbol (CurveOf point)
+     , BooleanOf (BaseFieldOf point) ~ Bool
      )
   => Spec
 specEllipticCurveGenerator = do
@@ -89,18 +88,18 @@ specEllipticCurveGenerator = do
 
 specProjections
   :: forall point1 point2
-   . ( Arbitrary (ScalarFieldOf point1)
-     , BooleanOf (BaseFieldOf point2) ~ Bool
-     , CyclicGroup point1
-     , CyclicGroup point2
-     , EllipticCurve point2
+   . ( CyclicGroup point1
      , Eq point1
+     , Arbitrary (ScalarFieldOf point1)
+     , Show (ScalarFieldOf point1)
      , KnownSymbol (CurveOf point1)
      , Project point1 point2
      , Project point2 point1
      , ScalarFieldOf point1 ~ ScalarFieldOf point2
-     , Show (ScalarFieldOf point1)
+     , EllipticCurve point2
+     , CyclicGroup point2
      , Show point2
+     , BooleanOf (BaseFieldOf point2) ~ Bool
      )
   => Spec
 specProjections = do

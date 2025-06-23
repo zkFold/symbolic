@@ -19,10 +19,9 @@ import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Data.Maybe
 import ZkFold.Symbolic.Data.Morph
-import Prelude (fst, snd, undefined, ($))
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction.Core (validateTransactionWithAssetDiff)
+import Prelude (fst, snd, undefined, ($))
 
 -- | Witness needed to validate a 'TransactionBatchData'.
 data TransactionBatchDataWitness context = TransactionBatchDataWitness

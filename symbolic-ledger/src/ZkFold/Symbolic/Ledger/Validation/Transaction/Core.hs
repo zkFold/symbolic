@@ -11,9 +11,8 @@ import ZkFold.Symbolic.Data.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Eq ((==))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Data.Morph
-import Prelude (fst, undefined, ($), (.))
-
 import ZkFold.Symbolic.Ledger.Types
+import Prelude (fst, undefined, ($), (.))
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction

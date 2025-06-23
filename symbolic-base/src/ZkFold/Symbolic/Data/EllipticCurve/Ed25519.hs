@@ -4,8 +4,6 @@
 module ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point) where
 
 import Data.Function (($))
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_PointOf, Ed25519_Scalar)
@@ -16,13 +14,14 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
+import qualified Prelude
 
 type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 
 instance
-  ( KnownFFA Ed25519_Base 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
-  , Symbolic ctx
   )
   => CyclicGroup (Ed25519_Point ctx)
   where
@@ -33,9 +32,9 @@ instance
       (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
 instance
-  ( KnownFFA Ed25519_Base 'Auto ctx
+  ( Symbolic ctx
+  , KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
-  , Symbolic ctx
   )
   => Scale (FFA Ed25519_Scalar 'Auto ctx) (Ed25519_Point ctx)
   where

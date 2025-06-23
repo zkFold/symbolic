@@ -9,8 +9,6 @@ module Tests.Algebra.Group (specGroup) where
 import Data.Data (Typeable, typeOf)
 import Test.Hspec
 import Test.QuickCheck
-import Prelude hiding (Fractional (..), Num (..), length)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.BN254
@@ -28,8 +26,9 @@ import ZkFold.Algebra.EllipticCurve.PlutoEris (
   Pluto_Point,
  )
 import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_JacobianPoint, Secp256k1_Point)
+import Prelude hiding (Fractional (..), Num (..), length)
 
-specGroup' :: forall a. (AdditiveGroup a, Arbitrary a, Eq a, Show a, Typeable a) => Spec
+specGroup' :: forall a. (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
 specGroup' = do
   describe "Group specification" $ do
     describe ("Type: " ++ show (typeOf @a zero)) $ do

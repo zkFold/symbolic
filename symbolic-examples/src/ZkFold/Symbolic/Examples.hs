@@ -21,7 +21,6 @@ import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-
 import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.ByteString
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
@@ -48,20 +47,20 @@ type C a = ArithmeticCircuit a
 data ExampleOutput where
   ExampleOutput
     :: forall a i o
-     . (Arithmetic a, Binary (Rep i), NFData1 o, Representable i)
+     . (Representable i, Binary (Rep i), NFData1 o, Arithmetic a)
     => (() -> C a i o) -> ExampleOutput
 
 exampleOutput
   :: forall a i o c f
-   . ( Binary a
-     , Context (Support f) ~ c
+   . ( SymbolicData f
+     , c ~ CircuitContext a
      , Context f ~ c
      , Layout f ~ o
-     , NFData1 o
-     , SymbolicData f
      , SymbolicInput (Support f)
-     , c ~ CircuitContext a
+     , Context (Support f) ~ c
      , i ~ Payload (Support f) :*: Layout (Support f)
+     , NFData1 o
+     , Binary a
      )
   => f -> ExampleOutput
 exampleOutput = ExampleOutput @a @i @o . const . compile

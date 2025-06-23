@@ -8,11 +8,10 @@ import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Datum (Datum)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Transaction output.
 data Output context = Output

@@ -10,9 +10,6 @@ import Data.List (foldl')
 import Data.Map.Strict (Map, keys)
 import qualified Data.Map.Strict as M
 import Data.Maybe (Maybe (..))
-import Prelude (fmap, zip, ($), (.), (<$>))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate
@@ -25,6 +22,8 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acSystem, acWitness)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Symbolic.Data.Eq
+import Prelude (fmap, zip, ($), (.), (<$>))
+import qualified Prelude as P
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.
@@ -32,10 +31,10 @@ import ZkFold.Symbolic.Data.Eq
 -- The main application is to define the verifier's algebraic map in the NARK protocol.
 algebraicMap
   :: forall d k a i p f
-   . ( Binary (Rep i)
-     , Binary (Rep p)
-     , KnownNat (d + 1)
+   . ( KnownNat (d + 1)
      , Representable i
+     , Binary (Rep i)
+     , Binary (Rep p)
      , Ring f
      , Scale a f
      )
@@ -73,9 +72,9 @@ algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
 
 padDecomposition
   :: forall d f
-   . ( AdditiveMonoid f
+   . ( MultiplicativeMonoid f
+     , AdditiveMonoid f
      , KnownNat (d + 1)
-     , MultiplicativeMonoid f
      )
   => f -> V.Vector (d + 1) [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) *) <$> p)

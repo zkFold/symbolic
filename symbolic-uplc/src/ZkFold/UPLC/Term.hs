@@ -8,10 +8,9 @@ import Data.Text (Text)
 import Data.Word (Word64)
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import Prelude (Integer)
-
 import ZkFold.UPLC.BuiltinFunction (BuiltinFunction)
 import ZkFold.UPLC.BuiltinType (BuiltinType (..))
+import Prelude (Integer)
 
 -- | Constructor tags used on Cardano.
 --

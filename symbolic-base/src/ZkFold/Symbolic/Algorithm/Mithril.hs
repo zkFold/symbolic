@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Algorithm.Mithril where
 import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.TypeLits (KnownNat)
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Data.Vector (Vector)
@@ -22,17 +21,17 @@ type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx
-   . ( CyclicGroup point
-     , KnownFFA p 'Auto ctx
-     , KnownFFA q 'Auto ctx
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
-     , KnownNat n
-     , ScalarFieldOf point ~ scalarField
-     , Symbolic ctx
+   . ( Symbolic ctx
      , baseField ~ FFA q 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
      , scalarField ~ FFA p 'Auto ctx
+     , point ~ Weierstrass curve (Point baseField)
+     , ScalarFieldOf point ~ scalarField
+     , CyclicGroup point
+     , KnownFFA q 'Auto ctx
+     , KnownFFA p 'Auto ctx
+     , KnownNat n
+     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
      )
   => StakeDistribution m point ctx
   -> scalarField

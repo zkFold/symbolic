@@ -10,9 +10,6 @@ import GHC.Generics (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary, Gen)
-import Prelude (return, ($), (.))
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -33,6 +30,8 @@ import ZkFold.Symbolic.Data.MerkleTree
 import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (return, ($), (.))
+import qualified Prelude as Haskell
 
 -- evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 -- evalBool (Bool ac) = exec1 ac
@@ -61,7 +60,7 @@ testIso3 x y z w =
   let v = V.unsafeToVector [x, y, z, w]
    in v == (from (from v :: MerkleTree 3 (FieldElement c)) :: Vector 4 (FieldElement c))
 
-testPath :: forall d c. (KnownNat d, Symbolic c) => FieldElement c -> Bool c
+testPath :: forall d c. (Symbolic c, KnownNat d) => FieldElement c -> Bool c
 testPath fe@(FieldElement e) = fe == (FieldElement . ind $ indToPath @c @d e)
 
 testLayerFolding

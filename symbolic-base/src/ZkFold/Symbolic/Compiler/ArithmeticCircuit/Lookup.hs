@@ -20,12 +20,11 @@ import Data.Typeable (Typeable)
 import qualified Data.Typeable as T
 import GHC.Generics (Generic, Par1, (:*:))
 import qualified Type.Reflection as R
+import ZkFold.Data.ByteString ()
 import Prelude (Show, undefined)
 
-import ZkFold.Data.ByteString ()
-
 newtype FunctionId f = FunctionId {funcHash :: ByteString}
-  deriving (Eq, Generic, NFData, Ord, Show, ToJSON)
+  deriving (Eq, Ord, Show, Generic, NFData, ToJSON)
 
 -- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
 -- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.

@@ -14,14 +14,13 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Optics ((&))
 import Test.QuickCheck (Arbitrary (..), generate, vectorOf)
-import Prelude
-
 import ZkFold.Data.ByteString
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))
+import Prelude
 
 newtype ProofBytes = ProofBytes
   {fromWitnessBytes :: ByteString}
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Show, Eq, Generic, NFData)
 
 instance ToJSON ProofBytes where
   toJSON (ProofBytes b) = String . T.pack . BS.unpack . B64.encode $ b
@@ -33,7 +32,7 @@ instance FromJSON ProofBytes where
       Right bs -> return $ ProofBytes bs
 
 data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Show, Eq, Generic, NFData)
 
 instance ToJSON ProveAPIResult where
   toJSON (ProveAPISuccess bs) =
@@ -65,11 +64,11 @@ instance FromJSON ProveAPIResult where
 
 proveAPI
   :: forall a
-   . ( Binary (Input a)
-     , Binary (Proof a)
+   . ( NonInteractiveProof a
      , Binary (SetupProve a)
      , Binary (Witness a)
-     , NonInteractiveProof a
+     , Binary (Input a)
+     , Binary (Proof a)
      )
   => ByteString
   -> ByteString

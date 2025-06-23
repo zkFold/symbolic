@@ -3,6 +3,7 @@ module ZkFold.Symbolic.Cardano.Contracts.SponsoredTx (sponsoredTx) where
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
+import ZkFold.Symbolic.Cardano.Types
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
@@ -11,8 +12,6 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Maybe
 import Prelude (($))
 import qualified Prelude as P
-
-import ZkFold.Symbolic.Cardano.Types
 
 -- | Works almost like Babel fees but there's no reward for covering the liability.
 sponsoredTx

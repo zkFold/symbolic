@@ -10,9 +10,6 @@ import qualified Data.Bits as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64
 import GHC.Generics (Generic)
-import Prelude (pure, ($))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -23,6 +20,8 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
+import Prelude (pure, ($))
+import qualified Prelude as P
 
 -- | RSA Public key with Key ID
 data Certificate ctx
@@ -39,14 +38,14 @@ deriving instance HShow ctx => P.Show (Certificate ctx)
 deriving instance HNFData ctx => NFData (Certificate ctx)
 
 instance
-  ( Symbolic ctx
-  , SymbolicData (PublicKey 2048 ctx)
+  ( SymbolicData (PublicKey 2048 ctx)
+  , Symbolic ctx
   )
   => SymbolicData (Certificate ctx)
 
 instance
-  ( Symbolic ctx
-  , SymbolicInput (PublicKey 2048 ctx)
+  ( SymbolicInput (PublicKey 2048 ctx)
+  , Symbolic ctx
   )
   => SymbolicInput (Certificate ctx)
 
@@ -83,14 +82,14 @@ deriving instance HShow ctx => P.Show (SigningKey ctx)
 deriving instance HNFData ctx => NFData (SigningKey ctx)
 
 instance
-  ( Symbolic ctx
-  , SymbolicData (PrivateKey 2048 ctx)
+  ( SymbolicData (PrivateKey 2048 ctx)
+  , Symbolic ctx
   )
   => SymbolicData (SigningKey ctx)
 
 instance
-  ( Symbolic ctx
-  , SymbolicInput (PrivateKey 2048 ctx)
+  ( SymbolicInput (PrivateKey 2048 ctx)
+  , Symbolic ctx
   )
   => SymbolicInput (SigningKey ctx)
 

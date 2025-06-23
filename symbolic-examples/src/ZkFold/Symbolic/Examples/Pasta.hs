@@ -14,8 +14,8 @@ import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA
 
 examplePallas_Add
-  :: ( KnownFFA FpModulus 'Auto ctx
-     , Symbolic ctx
+  :: ( Symbolic ctx
+     , KnownFFA FpModulus 'Auto ctx
      )
   => Pallas_Point ctx
   -> Pallas_Point ctx
@@ -23,9 +23,9 @@ examplePallas_Add
 examplePallas_Add = (+)
 
 examplePallas_Scale
-  :: ( KnownFFA FpModulus 'Auto ctx
+  :: ( Symbolic ctx
+     , KnownFFA FpModulus 'Auto ctx
      , KnownFFA FqModulus 'Auto ctx
-     , Symbolic ctx
      )
   => ScalarFieldOf (Pallas_Point ctx)
   -> Pallas_Point ctx

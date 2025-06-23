@@ -6,9 +6,6 @@ import Data.Function (($))
 import System.Random (mkStdGen)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (arbitrary, withMaxSuccess, (.&.), (===))
-import Prelude (pure)
-import qualified Prelude as P
-
 import Tests.Common (evalBool, it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
@@ -20,6 +17,8 @@ import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Twitch
 import ZkFold.Symbolic.Data.VarByteString (VarByteString, fromNatural)
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import Prelude (pure)
+import qualified Prelude as P
 
 type I = Interpreter Fr
 

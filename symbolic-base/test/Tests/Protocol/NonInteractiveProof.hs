@@ -6,8 +6,6 @@ import Data.ByteString (ByteString)
 import Data.Typeable (Proxy (..), Typeable, typeRep)
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (Arbitrary (..), Testable (property), withMaxSuccess)
-import Prelude hiding (Fractional (..), Num (..), length)
-
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
@@ -15,6 +13,7 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.KZG (KZG)
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 import ZkFold.Protocol.Plonkup (Plonkup)
+import Prelude hiding (Fractional (..), Num (..), length)
 
 propNonInteractiveProof :: forall a. NonInteractiveProof a => (a, Witness a) -> Bool
 propNonInteractiveProof (a, w) =
@@ -25,12 +24,12 @@ propNonInteractiveProof (a, w) =
 
 specNonInteractiveProof'
   :: forall a
-   . ( Arbitrary (Witness a)
-     , Arbitrary a
+   . ( Typeable a
      , NonInteractiveProof a
-     , Show (Witness a)
      , Show a
-     , Typeable a
+     , Show (Witness a)
+     , Arbitrary a
+     , Arbitrary (Witness a)
      )
   => Spec
 specNonInteractiveProof' = do

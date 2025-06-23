@@ -11,12 +11,11 @@ import Data.Maybe (fromJust)
 import Data.Typeable (Proxy (..), Typeable, typeRep)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Prelude
-
 import ZkFold.Algebra.Class (FromConstant (..), Scale (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import ZkFold.Algebra.EllipticCurve.BN254 (BN254_G1_Point, BN254_G2_Point)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import Prelude
 
 data Group = forall pt. (CyclicGroup pt, Show pt, ToJSON pt, Typeable pt) => Group
 
@@ -72,8 +71,8 @@ optionsParser =
 
 runGroupElementsGeneric
   :: forall pt
-   . ( FromConstant Natural (ScalarFieldOf pt)
-     , Scale (ScalarFieldOf pt) pt
+   . ( Scale (ScalarFieldOf pt) pt
+     , FromConstant Natural (ScalarFieldOf pt)
      , Show pt
      , ToJSON pt
      )

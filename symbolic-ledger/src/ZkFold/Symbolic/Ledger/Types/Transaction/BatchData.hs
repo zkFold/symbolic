@@ -12,13 +12,12 @@ import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.List (List)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Root (Root)
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Transaction batch data, given to us by a data provider source. Thus all the 'Address' entries here must have same 'DAIndex'.
 data TransactionBatchData context = TransactionBatchData
@@ -32,25 +31,25 @@ data TransactionBatchData context = TransactionBatchData
   deriving stock Generic
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => SymbolicData (TransactionBatchData context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Conditional (Bool context) (TransactionBatchData context)
 
 instance
-  ( KnownRegisters context 11 Auto
-  , KnownRegistersAssetQuantity context
+  ( KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
+  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Eq (TransactionBatchData context)

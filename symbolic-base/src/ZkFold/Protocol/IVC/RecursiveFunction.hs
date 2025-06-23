@@ -12,8 +12,6 @@ import Data.Foldable (toList)
 import Data.Function (const, (.))
 import Data.Proxy (Proxy (..))
 import GHC.Generics (Generic, Par1, (:*:))
-import Prelude (($), (<$>), type (~))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Empty (Empty, empty)
@@ -31,25 +29,26 @@ import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..), SymbolicOutput)
 import ZkFold.Symbolic.Data.Conditional (bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
+import Prelude (($), (<$>), type (~))
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1
 
 newtype DataSource c = DataSource {dataSource :: c}
   deriving newtype
-    ( AdditiveGroup
+    ( AdditiveSemigroup
     , AdditiveMonoid
-    , AdditiveSemigroup
-    , HomomorphicCommit h
-    , Scale a
+    , AdditiveGroup
     , SymbolicData
+    , Scale a
+    , HomomorphicCommit h
     )
 
 arithmetize0 :: SymbolicOutput x => x -> Context x (Layout x)
 arithmetize0 x = arithmetize x Proxy
 
 instance
-  (Context c ~ ctx, SymbolicOutput c)
+  (SymbolicOutput c, Context c ~ ctx)
   => OracleSource (FieldElement ctx) (DataSource c)
   where
   source = toList . fieldElements . arithmetize0
@@ -70,12 +69,12 @@ data RecursivePayload d k i p c = RecursivePayload
   deriving Generic
 
 instance
-  ( KnownNat (d - 1)
-  , KnownNat (k - 1)
-  , KnownNat k
-  , LayoutFunctor i
+  ( SymbolicOutput c
   , LayoutFunctor p
-  , SymbolicOutput c
+  , LayoutFunctor i
+  , KnownNat k
+  , KnownNat (k - 1)
+  , KnownNat (d - 1)
   )
   => SymbolicData (RecursivePayload d k i p c)
 
@@ -100,19 +99,19 @@ instance OracleSource (FieldElement ctx) (FieldElement ctx) where
 -- | Transform a step function into a recursive function
 recursiveFunction
   :: forall c d k a i p
-   . ( FieldAssumptions a c
-     , KnownNat (d + 1)
+   . ( LayoutFunctor i
+     , LayoutFunctor p
      , KnownNat (d - 1)
+     , KnownNat (d + 1)
      , KnownNat (k - 1)
      , KnownNat k
-     , LayoutFunctor i
-     , LayoutFunctor p
+     , FieldAssumptions a c
      )
   => Hasher -> StepFunction a i p -> RecursiveFunction d k a i p c
 recursiveFunction hash func =
   let
     restore0
-      :: (Empty (Payload x), SymbolicData x) => Context x (Layout x) -> x
+      :: (SymbolicData x, Empty (Payload x)) => Context x (Layout x) -> x
     restore0 l = restore $ const (l, empty)
 
     -- A helper function to derive the accumulator scheme
@@ -146,11 +145,11 @@ recursiveFunction hash func =
 
 recursivePredicate
   :: forall c d k a i p
-   . ( Arithmetic a
-     , Binary a
-     , KnownNat (d - 1)
+   . ( KnownNat k
      , KnownNat (k - 1)
-     , KnownNat k
+     , KnownNat (d - 1)
+     , Arithmetic a
+     , Binary a
      , LayoutFunctor i
      , LayoutFunctor p
      , SymbolicOutput c

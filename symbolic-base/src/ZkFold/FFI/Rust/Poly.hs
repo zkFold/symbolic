@@ -10,12 +10,11 @@ import Foreign
 import GHC.Base
 import GHC.Generics (Generic)
 import GHC.IO (unsafePerformIO)
-import Prelude hiding (drop, length, product, replicate, sum, take, (/), (^))
-
 import ZkFold.Algebra.Number (KnownNat, Natural, value)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Types
+import Prelude hiding (drop, length, product, replicate, sum, take, (/), (^))
 
 newtype RustPolyVec a (size :: Natural) = RustPV {rawPoly :: RustData}
   deriving Generic
@@ -32,10 +31,10 @@ pokeArrayV :: Storable a => Ptr a -> V.Vector a -> IO ()
 pokeArrayV ptr = V.imapM_ (pokeElemOff ptr)
 
 instance
-  ( KnownNat size
-  , RustHaskell r h
-  , Storable h
+  ( Storable h
   , UnivariateRingPolyVec h (PolyVec h)
+  , RustHaskell r h
+  , KnownNat size
   )
   => RustHaskell (RustPolyVec r size) (PolyVec h size)
   where

@@ -18,5 +18,5 @@ instance Empty U1 where
 instance (Empty f, Empty g) => Empty (f :*: g) where
   empty = empty :*: empty
 
-instance (Empty g, Representable f) => Empty (f :.: g) where
+instance (Representable f, Empty g) => Empty (f :.: g) where
   empty = Comp1 $ tabulate (const empty)

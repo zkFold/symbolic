@@ -19,6 +19,8 @@ import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import Prelude hiding (
   Num (..),
   drop,
@@ -30,9 +32,6 @@ import Prelude hiding (
   (/),
  )
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
-
 -- | A class for polynomials.
 -- `c` is the coefficient type,
 -- `i` is the variable type,
@@ -41,7 +40,7 @@ type Polynomial c i j = (Eq c, Field c, Monomial i j)
 
 -- | Polynomial type
 newtype Poly c i j = P [(c, Mono i j)]
-  deriving (FromJSON, Generic, NFData, ToJSON)
+  deriving (Generic, NFData, FromJSON, ToJSON)
 
 ---------------------------------- List-based polynomials with map-based monomials ----------------------------------
 
@@ -80,7 +79,7 @@ instance Polynomial c i j => IsList (Poly c i j) where
   toList (P p) = second (\(M m) -> m) <$> p
   fromList p = polynomial $ second monomial <$> p
 
-instance (Monomial i j, Show c, Show i, Show j) => Show (Poly c i j) where
+instance (Show c, Show i, Show j, Monomial i j) => Show (Poly c i j) where
   show (P p) =
     intercalate " + " $
       p <&> \(c, m) -> show c <> "∙" <> show (m :: Mono i j)
@@ -95,7 +94,7 @@ instance Polynomial c i j => Ord (Poly c i j) where
       (snd <$> l)
       (snd <$> r)
 
-instance (Arbitrary (Mono i j), Arbitrary c) => Arbitrary (Poly c i j) where
+instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
   arbitrary = P <$> arbitrary
 
 instance {-# OVERLAPPING #-} FromConstant (Poly c i j) (Poly c i j)

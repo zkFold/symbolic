@@ -4,7 +4,6 @@ module ZkFold.Control.HApplicative where
 
 import Data.Function (const, ($), (.))
 import GHC.Generics (U1 (..), (:*:) (..))
-
 import ZkFold.Data.HFunctor
 
 -- | A higher-order functor with application, providing operations to apply a

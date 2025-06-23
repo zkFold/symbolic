@@ -23,27 +23,26 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (false, true)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import Prelude (either, error, id, (.), type (~))
-
 import ZkFold.Symbolic.UPLC.Converter (contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Term
+import Prelude (either, error, id, (.), type (~))
 
 areSame
-  :: ( Arbitrary (i a)
+  :: ( SymbolicData f
      , Context f ~ c
-     , Context s ~ c
-     , Eq (l a)
-     , Functor l
-     , Layout f ~ l
-     , Show (i a)
-     , Show (l a)
      , Support f ~ s
-     , SymbolicData f
-     , SymbolicInput s
-     , a ~ Zp BLS12_381_Base
+     , Layout f ~ l
      , c ~ CircuitContext a
+     , Arbitrary (i a)
+     , Show (i a)
+     , SymbolicInput s
+     , Context s ~ c
      , i ~ Payload s :*: Layout s
+     , Functor l
+     , Eq (l a)
+     , Show (l a)
+     , a ~ Zp BLS12_381_Base
      )
   => (Term -> f) -> Term -> f -> Property
 areSame v t f =

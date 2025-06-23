@@ -9,9 +9,6 @@ import qualified Data.Vector as V
 import GHC.Natural (Natural)
 import Test.Hspec
 import Test.QuickCheck
-import Prelude
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class hiding ((*), (+))
 import qualified ZkFold.Algebra.Class as C
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as BLS12_381
@@ -19,6 +16,8 @@ import qualified ZkFold.Algebra.EllipticCurve.BN254 as BN254
 import qualified ZkFold.Algebra.EllipticCurve.Pasta as Pasta
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Algorithm.ReedSolomon
+import Prelude
+import qualified Prelude as P
 
 data ReedSolomonExample f = ReedSolomonExample
   { pe :: f -- primitive element
@@ -29,7 +28,7 @@ data ReedSolomonExample f = ReedSolomonExample
   }
   deriving Show
 
-instance (Arbitrary f, Eq f, FiniteField f) => Arbitrary (ReedSolomonExample f) where
+instance (Arbitrary f, FiniteField f, Eq f) => Arbitrary (ReedSolomonExample f) where
   arbitrary = do
     let pe = fromConstant (3 :: Natural)
         c = fromIntegral $ min 100 (order @f)
@@ -47,19 +46,19 @@ polyErr kt t = do
 
 ----------------------------------------------------------------------------------------
 
-propGenerator :: forall c. (Eq c, FiniteField c) => ReedSolomonExample c -> Bool
+propGenerator :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propGenerator ReedSolomonExample {..} =
   let vals = take r $ iterate (C.* pe) (pe :: c)
       polyGen = generator r pe
    in all (\x -> evalPoly polyGen x == zero) vals
 
-propEncoder :: forall c. (Eq c, Field c) => ReedSolomonExample c -> Bool
+propEncoder :: forall c. (Field c, Eq c) => ReedSolomonExample c -> Bool
 propEncoder ReedSolomonExample {..} =
   let encodedMsg = encode msg pe r
       reminder = snd $ qr encodedMsg (generator r pe)
    in deg reminder == -1
 
-propBerlekampNoError :: forall c. (Eq c, FiniteField c) => ReedSolomonExample c -> Bool
+propBerlekampNoError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propBerlekampNoError ReedSolomonExample {..} =
   let
     vals = V.iterateN r (C.* pe) pe
@@ -84,13 +83,13 @@ propBerlekampWithErrors ReedSolomonExample {..} =
    in
     sort roots == sort rightLocators
 
-propDecodeWithoutError :: forall c. (Eq c, FiniteField c) => ReedSolomonExample c -> Bool
+propDecodeWithoutError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propDecodeWithoutError ReedSolomonExample {..} =
   let encoded = encode msg pe r
       decoded = decode encoded pe r (k + r)
    in toPoly (V.fromList msg) == decoded
 
-propDecodeWithError :: forall c. (Eq c, FiniteField c) => ReedSolomonExample c -> Bool
+propDecodeWithError :: forall c. (FiniteField c, Eq c) => ReedSolomonExample c -> Bool
 propDecodeWithError ReedSolomonExample {..} =
   let encoded' = encode msg pe r
       errorMsg = toPoly $ V.fromList err
@@ -98,7 +97,7 @@ propDecodeWithError ReedSolomonExample {..} =
       decoded = decode encoded pe r (k + r)
    in toPoly (V.fromList msg) == decoded
 
-specReedSolomon' :: forall a. (Arbitrary a, FiniteField a, Ord a, Show a, Typeable a) => Spec
+specReedSolomon' :: forall a. (FiniteField a, Ord a, Arbitrary a, Show a, Typeable a) => Spec
 specReedSolomon' = do
   describe "Reed-Solomon" $ do
     describe ("Type: " ++ show (typeOf @a zero)) $ do

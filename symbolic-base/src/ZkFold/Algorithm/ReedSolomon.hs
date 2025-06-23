@@ -5,6 +5,9 @@ module ZkFold.Algorithm.ReedSolomon where
 import Data.Bool (bool)
 import Data.Vector as V hiding (sum)
 import GHC.Natural (Natural)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number (KnownNat, value)
+import ZkFold.Algebra.Polynomial.Univariate
 import Prelude (
   Eq,
   Int,
@@ -21,20 +24,16 @@ import Prelude (
  )
 import qualified Prelude as P
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (KnownNat, value)
-import ZkFold.Algebra.Polynomial.Univariate
-
-numberOfError :: forall n k. (KnownNat k, KnownNat n) => Natural
+numberOfError :: forall n k. (KnownNat n, KnownNat k) => Natural
 numberOfError = (value @n -! value @k) `div` 2
 
-generator :: (Eq a, Field a) => Int -> a -> Poly a
+generator :: (Field a, Eq a) => Int -> a -> Poly a
 generator r a = V.foldr (\ai pi -> toLinPoly ai * pi) one roots
  where
   roots = V.iterateN r (* a) a
   toLinPoly p = toPoly $ fromList [negate p, one]
 
-encode :: (Eq c, Field c) => [c] -> c -> Int -> Poly c
+encode :: (Field c, Eq c) => [c] -> c -> Int -> Poly c
 encode msg prim_elem r = msg_padded - reminder
  where
   g_x = generator r prim_elem
@@ -43,7 +42,7 @@ encode msg prim_elem r = msg_padded - reminder
   (_, reminder) = qr msg_padded g_x
 
 -- beta = one
-decode :: forall c. (Eq c, Field c) => Poly c -> c -> Int -> Int -> Poly c
+decode :: forall c. (Field c, Eq c) => Poly c -> c -> Int -> Int -> Poly c
 decode encoded primeElement r n = bool decoded encoded' isCorrect
  where
   rElems = iterateN r (* primeElement) primeElement
@@ -76,7 +75,7 @@ decode encoded primeElement r n = bool decoded encoded' isCorrect
 
   decoded = bool (error "Can't decode") (toPoly $ V.drop r $ fromPoly fx) (all (== zero) checkSum)
 
-berlekamp :: forall c. (Eq c, Field c) => Poly c -> Int -> (Integer, Poly c)
+berlekamp :: forall c. (Field c, Eq c) => Poly c -> Int -> (Integer, Poly c)
 berlekamp s r
   | deg s == -1 = (0, one)
   | P.otherwise = go сx0 bx0 0 0 1 one
@@ -105,5 +104,5 @@ scalarN q l lv rv = bool (sum $ V.zipWith (*) lPadded rPadded) zero (min l (leng
   lPadded = V.drop (q P.- V.length rv) lv
   rPadded = V.reverse $ V.take q rv
 
-diff :: (Eq c, Field c) => Poly c -> Poly c
+diff :: (Field c, Eq c) => Poly c -> Poly c
 diff p = let cs = fromPoly p in toPoly $ V.tail $ V.imap (\i c -> scale (fromIntegral i :: Integer) c) cs

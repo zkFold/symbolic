@@ -37,9 +37,6 @@ import qualified Data.Vector.Mutable as VM
 import Data.Word (Word8)
 import GHC.TypeLits (SomeNat (..), Symbol)
 import GHC.TypeNats (someNatVal, type (<=?))
-import Prelude (($), (.), (<$>))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (fromZp)
 import ZkFold.Algebra.Number
@@ -74,6 +71,8 @@ import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import Prelude (($), (.), (<$>))
+import qualified Prelude as P
 
 -- | Width of each lane (in bits) in the Keccak sponge state.
 --
@@ -101,24 +100,21 @@ numRounds = value @NumRounds
 -- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
 -- This class links these varying parts with the appropriate algorithm.
 class
-  ( -- Padded message is a multiple of rate (in bits), and thus we want rate to be a multiple of 8 to obtain valid "byte"strings.
-
-    -- Requiring rate to be a multiple of 'LaneWidth'. As we would eventually obtain 'LaneWidth' bit words.
-
-    -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, it is equivalent to saying that rate is positive.
+  ( KnownNat (Rate algorithm)
+  , -- Padded message is a multiple of rate (in bits), and thus we want rate to be a multiple of 8 to obtain valid "byte"strings.
+    Mod (Rate algorithm) 8 ~ 0
+  , -- Requiring rate to be a multiple of 'LaneWidth'. As we would eventually obtain 'LaneWidth' bit words.
+    Mod (Rate algorithm) LaneWidth ~ 0
+  , -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, it is equivalent to saying that rate is positive.
     (1 <=? Div (Rate algorithm) 8) ~ 'P.True
   , -- Redundant constraint but GHC is unable to derive it as such.
     (1 <=? Div (Rate algorithm) LaneWidth) ~ 'P.True
   , -- Some of the code actually assumes that lane width is 64. This constraint is just a safety valve to let code break if developer tries changing value of @LaneWidth@.
-
-    (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
-  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
-  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
+    LaneWidth ~ 64
   , KnownNat (Div (Rate algorithm) LaneWidth)
-  , KnownNat (Rate algorithm)
-  , LaneWidth ~ 64
-  , Mod (Rate algorithm) 8 ~ 0
-  , Mod (Rate algorithm) LaneWidth ~ 0
+  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
+  , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
+  , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
   ) =>
   AlgorithmSetup (algorithm :: Symbol)
   where
@@ -214,22 +210,22 @@ type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBit
 
 withMessageLengthConstraints
   :: forall msgBits rateBits {r} {msgBytes} {rateBytes}
-   . ( 1 <= Div rateBits 8
-     , 1 <= Div rateBits LaneWidth
-     , KnownNat msgBits
+   . ( KnownNat msgBits
      , KnownNat rateBits
+     , 1 <= Div rateBits 8
+     , 1 <= Div rateBits LaneWidth
      , msgBytes ~ Div msgBits 8
      , rateBytes ~ Div rateBits 8
      )
-  => ( ( (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
-       , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
+  => ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
+       , KnownNat (PaddedLengthBits msgBits rateBits)
        , KnownNat
            ( Div
                (NumBlocks msgBits rateBits)
                (AbsorbChunkSize' rateBits)
            )
-       , KnownNat (PaddedLengthBits msgBits rateBits)
-       , KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
+       , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
+       , (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
        )
        => r
      )

@@ -24,9 +24,6 @@ import Data.Binary (Binary (..))
 import Data.Bool ((&&))
 import Data.Function (($))
 import Text.Show (Show)
-import Prelude (Bool, Integer)
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pairing
@@ -35,6 +32,8 @@ import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
+import Prelude (Bool, Integer)
+import qualified Prelude
 
 -------------------------- Scalar field & field towers -------------------------
 
@@ -142,12 +141,12 @@ instance Scale Fr BN254_G2_JacobianPoint where
 
 newtype BN254_GT = BN254_GT Fp12
   deriving
-    ( Conditional Prelude.Bool
-    , Eq
-    , MultiplicativeMonoid
-    , MultiplicativeSemigroup
-    , Prelude.Eq
+    ( Prelude.Eq
     , Show
+    , MultiplicativeSemigroup
+    , MultiplicativeMonoid
+    , Conditional Prelude.Bool
+    , Eq
     )
 
 instance Exponent BN254_GT Natural where

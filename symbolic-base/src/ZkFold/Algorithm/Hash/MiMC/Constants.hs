@@ -2,10 +2,9 @@ module ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants) where
 
 import Crypto.Hash.SHA256 (hash)
 import Data.Maybe (fromJust)
-import Prelude
-
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Data.ByteString
+import Prelude
 
 mimcSeed :: LittleEndian
 mimcSeed = 42

@@ -16,10 +16,9 @@ import Foreign.Marshal.Array (newArray)
 import Foreign.Ptr (Ptr)
 import GHC.Wasm.Prim
 import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
-import Prelude hiding (Num ((*)), sum)
-
 import ZkFold.Data.ByteString
 import ZkFold.Protocol.NonInteractiveProof.Class
+import Prelude hiding (Num ((*)), sum)
 
 foreign import javascript unsafe "blake2b($1, $2, $3, $4, $5)"
   blake2b :: JSVal -> JSString -> Int32 -> Int32 -> Int32 -> IO JSString

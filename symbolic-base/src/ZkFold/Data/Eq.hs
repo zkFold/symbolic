@@ -13,10 +13,9 @@ import Data.String (String)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
-import Prelude (Integer)
-
 import ZkFold.Control.Conditional (Conditional, GConditional)
 import ZkFold.Data.Bool
+import Prelude (Integer)
 
 class Conditional (BooleanOf a) a => Eq a where
   type BooleanOf a
@@ -25,14 +24,14 @@ class Conditional (BooleanOf a) a => Eq a where
   infix 4 ==
   (==) :: a -> a -> BooleanOf a
   default (==)
-    :: (BooleanOf a ~ GBooleanOf (G.Rep a), G.Generic a, GEq (G.Rep a))
+    :: (G.Generic a, GEq (G.Rep a), BooleanOf a ~ GBooleanOf (G.Rep a))
     => a -> a -> BooleanOf a
   x == y = geq (G.from x) (G.from y)
 
   infix 4 /=
   (/=) :: a -> a -> BooleanOf a
   default (/=)
-    :: (BooleanOf a ~ GBooleanOf (G.Rep a), G.Generic a, GEq (G.Rep a))
+    :: (G.Generic a, GEq (G.Rep a), BooleanOf a ~ GBooleanOf (G.Rep a))
     => a -> a -> BooleanOf a
   x /= y = gneq (G.from x) (G.from y)
 
@@ -71,32 +70,32 @@ instance Eq Rational where
   (==) = (Haskell.==)
   (/=) = (Haskell./=)
 
-instance (Conditional (BooleanOf a) (Maybe a), Eq a) => Eq (Maybe a) where
+instance (Eq a, Conditional (BooleanOf a) (Maybe a)) => Eq (Maybe a) where
   type BooleanOf (Maybe a) = BooleanOf a
   Just x == Just y = x == y
   Nothing == Nothing = true
   _ == _ = false
   x /= y = not (x == y)
 
-instance (BooleanOf x0 ~ BooleanOf x1, Eq x0, Eq x1) => Eq (x0, x1)
+instance (Eq x0, Eq x1, BooleanOf x0 ~ BooleanOf x1) => Eq (x0, x1)
 
 instance
-  ( BooleanOf x0 ~ BooleanOf x1
-  , BooleanOf x1 ~ BooleanOf x2
-  , Eq x0
+  ( Eq x0
   , Eq x1
   , Eq x2
+  , BooleanOf x0 ~ BooleanOf x1
+  , BooleanOf x1 ~ BooleanOf x2
   )
   => Eq (x0, x1, x2)
 
 instance
-  ( BooleanOf x0 ~ BooleanOf x1
-  , BooleanOf x1 ~ BooleanOf x2
-  , BooleanOf x2 ~ BooleanOf x3
-  , Eq x0
+  ( Eq x0
   , Eq x1
   , Eq x2
   , Eq x3
+  , BooleanOf x0 ~ BooleanOf x1
+  , BooleanOf x1 ~ BooleanOf x2
+  , BooleanOf x2 ~ BooleanOf x3
   )
   => Eq (x0, x1, x2, x3)
 

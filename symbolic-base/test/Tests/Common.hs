@@ -7,13 +7,12 @@ import GHC.Generics (Par1 (..))
 import qualified Test.Hspec as Hspec
 import Test.QuickCheck (Gen)
 import qualified Test.QuickCheck as QC
-import Prelude (String)
-
 import ZkFold.Algebra.Class ((-!))
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Prelude (chooseNatural)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (String)
 
 it :: QC.Testable prop => String -> prop -> Hspec.SpecWith (Hspec.Arg QC.Property)
 it desc prop = Hspec.it desc (QC.property prop)

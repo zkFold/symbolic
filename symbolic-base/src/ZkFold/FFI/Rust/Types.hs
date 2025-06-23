@@ -7,18 +7,17 @@ import Data.Bool as B
 import Foreign
 import Foreign.C.Types
 import GHC.Generics
-import Prelude
-
 import ZkFold.Control.Conditional
+import Prelude
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
 
 newtype Scalar curve s = RScalar {rawScalar :: s}
-  deriving (Generic, NFData)
+  deriving (NFData, Generic)
 
 newtype Point curve s = RPoint {rawPoint :: s}
-  deriving (Generic, NFData)
+  deriving (NFData, Generic)
 
 type FCString = ForeignPtr CChar
 
@@ -26,7 +25,7 @@ instance NFData FCString where
   rnf _ = ()
 
 newtype RustData = RData {rawData :: FCString}
-  deriving (Generic, NFData)
+  deriving (NFData, Generic)
 
 instance Conditional Bool RustData where bool = B.bool
 

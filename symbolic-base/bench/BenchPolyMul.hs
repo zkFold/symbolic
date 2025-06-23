@@ -9,14 +9,13 @@ import Control.Monad (forM_, replicateM)
 import qualified Data.Vector as V
 import System.Random (randomIO)
 import Test.Tasty.Bench
-import Prelude hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Univariate
+import Prelude hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude as P
 
 -- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.

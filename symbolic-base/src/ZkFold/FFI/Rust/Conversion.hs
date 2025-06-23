@@ -15,8 +15,6 @@ import GHC.IO (unsafePerformIO)
 import GHC.Num.Integer (integerToInt#)
 import GHC.Num.Natural (naturalFromAddr, naturalToAddr)
 import GHC.Ptr (Ptr (..))
-import Prelude hiding (Eq, Num (..), sum, (/), (^))
-
 import ZkFold.Algebra.Class hiding (sum)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
@@ -24,6 +22,7 @@ import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.FFI.Rust.Types
+import Prelude hiding (Eq, Num (..), sum, (/), (^))
 
 class RustHaskell r h | r -> h, h -> r where
   h2r :: h -> r
