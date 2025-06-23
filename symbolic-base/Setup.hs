@@ -24,13 +24,13 @@ import qualified Distribution.Utils.Path as UtilsPath
 
 main :: IO ()
 main = defaultMainWithHooks hooks
- where
-  hooks =
-    simpleUserHooks
+  where
+
+    hooks = simpleUserHooks
       { preConf = \_ _ -> execCargoBuild >> return emptyHookedBuildInfo
       , confHook = \a flags ->
           confHook simpleUserHooks a flags
-            >>= rsAddDirs
+              >>= rsAddDirs
       }
 
 rsFolder :: FilePath
@@ -41,46 +41,43 @@ libName = "librust_wrapper.a"
 
 execCargoBuild :: IO ()
 execCargoBuild = do
-  cargoPath <- findProgramOnSearchPath Verbosity.silent defaultProgramSearchPath "cargo"
-  let cargoExec = case cargoPath of
-        Just (p, _) -> p
-        Nothing -> "cargo"
-  buildResult <-
-    system $ cargoExec ++ " +nightly build --release --manifest-path rust-wrapper/Cargo.toml -Z unstable-options"
+    cargoPath <- findProgramOnSearchPath Verbosity.silent defaultProgramSearchPath "cargo"
+    let cargoExec = case cargoPath of
+            Just (p, _) -> p
+            Nothing     -> "cargo"
+    buildResult <- system $ cargoExec ++ " +nightly build --release --manifest-path rust-wrapper/Cargo.toml -Z unstable-options"
 
-  case buildResult of
-    ExitSuccess -> return ()
-    ExitFailure exitCode -> do
-      throwIO $ userError $ "Build rust library failed with exit code " <> show exitCode
+    case buildResult of
+      ExitSuccess          -> return ()
+      ExitFailure exitCode -> do
+        throwIO $ userError $ "Build rust library failed with exit code " <> show exitCode
 
 rsAddDirs :: LocalBuildInfo -> IO LocalBuildInfo
 rsAddDirs lbi' = do
-  dir <- getCurrentDirectory
-  let rustIncludeDir = dir </> rsFolder
-      rustLibDir = dir </> rsFolder </> "target/release"
+    dir <- getCurrentDirectory
+    let rustIncludeDir = dir </> rsFolder
+        rustLibDir = dir </> rsFolder </> "target/release"
 
-  (includeRustDir, extraLibDir) <- case findIndex (isPrefixOf "dist-newstyle") (tails dir) of
-    Just ind -> do
-      let pathToDistNewstyle = take ind dir
-          pathToRustLib = pathToDistNewstyle ++ "dist-newstyle"
-      copyFile (rustLibDir </> libName) (pathToRustLib </> libName)
+    (includeRustDir, extraLibDir) <- case findIndex (isPrefixOf "dist-newstyle") (tails dir) of
+      Just ind -> do
+        let pathToDistNewstyle = take ind dir
+            pathToRustLib = pathToDistNewstyle ++ "dist-newstyle"
+        copyFile (rustLibDir </> libName) (pathToRustLib </> libName)
 
-      return (pathToRustLib, pathToRustLib)
-    Nothing -> return (rustLibDir, rustLibDir)
+        return (pathToRustLib, pathToRustLib)
+      Nothing -> return (rustLibDir, rustLibDir)
 
-  let updateLbi lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
-      updatePkgDescr pkgDescr =
-        pkgDescr
-          { library = updateLib <$> library pkgDescr
-          , executables = updateExe <$> executables pkgDescr
-          , benchmarks = updateBench <$> benchmarks pkgDescr
-          , testSuites = updateTests <$> testSuites pkgDescr
-          }
+    let updateLbi lbi = lbi{localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
+        updatePkgDescr pkgDescr =
+            pkgDescr{ library = updateLib <$> library pkgDescr
+                    , executables = updateExe <$> executables pkgDescr
+                    , benchmarks = updateBench <$> benchmarks pkgDescr
+                    , testSuites = updateTests <$> testSuites pkgDescr}
 
-      updateLib lib = lib {libBuildInfo = updateBi (libBuildInfo lib)}
-      updateExe exe = exe {buildInfo = updateBi (buildInfo exe)}
-      updateBench bench = bench {benchmarkBuildInfo = updateBi (benchmarkBuildInfo bench)}
-      updateTests test = test {testBuildInfo = updateBi (testBuildInfo test)}
+        updateLib lib = lib{libBuildInfo = updateBi (libBuildInfo lib)}
+        updateExe exe = exe{buildInfo = updateBi (buildInfo exe)}
+        updateBench bench = bench{benchmarkBuildInfo = updateBi (benchmarkBuildInfo bench)}
+        updateTests test = test{testBuildInfo = updateBi (testBuildInfo test)}
 
         updateBi bi =
           bi
