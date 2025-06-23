@@ -9,10 +9,13 @@ import Foreign.C.Types
 import GHC.Generics
 import Prelude
 
-import ZkFold.Control.Conditional
+import           ZkFold.Control.Conditional
+
+toForeignPtr :: Ptr a -> IO (ForeignPtr a)
+toForeignPtr = newForeignPtr finalizerFree
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
-callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
+callocForeignPtrBytes n = do { p <- callocBytes n; toForeignPtr p }
 
 newtype Scalar curve s = RScalar {rawScalar :: s}
   deriving (Generic, NFData)
