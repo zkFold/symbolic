@@ -380,72 +380,14 @@ instance Pairing BLS12_381_G1_Point BLS12_381_G2_Point BLS12_381_GT where
       finalExponentiation @Fr $
         millerAlgorithmBLS12 param a b
    where
-    param =
-      [ -1
-      , -1
-      , 0
-      , -1
-      , 0
-      , 0
-      , -1
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , -1
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , -1
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
-      , 0
+{- FOURMOLU_DISABLE -}
+    param = [-1
+      ,-1, 0,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+      , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+      , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1, 0
+      , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       ]
+{- FOURMOLU_ENABLE -}
 
 -- TODO: Keep this implementation for now and benchmark the performance
 -- Is it worth implementing pairing in Jacobian coordinates?
