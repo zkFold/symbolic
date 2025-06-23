@@ -225,12 +225,11 @@ instance KnownNat p => UniformRange (Zp p) where
     | a Haskell.<= b = fmap Zp . uniformRM (a, b)
     | Haskell.otherwise = fmap fromConstant . uniformRM (a, b + integral @p)
 
-{- | Exponentiation by an element of a finite field is well-defined (and lawful)
-if and only if the base is a finite multiplicative group of a matching order.
-
-Note that left distributivity is satisfied, meaning
-@a ^ (m + n) = (a ^ m) * (a ^ n)@.
--}
+-- | Exponentiation by an element of a finite field is well-defined (and lawful)
+-- if and only if the base is a finite multiplicative group of a matching order.
+--
+-- Note that left distributivity is satisfied, meaning
+-- @a ^ (m + n) = (a ^ m) * (a ^ n)@.
 instance (MultiplicativeGroup a, Order a ~ p) => Exponent a (Zp p) where
   a ^ n = a ^ fromZp n
 

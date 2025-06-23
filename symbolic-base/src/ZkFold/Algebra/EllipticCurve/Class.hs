@@ -51,18 +51,17 @@ import ZkFold.Symbolic.Data.Input
 import Prelude (Integer, fromInteger, return, ($), (<$>), (>>=), type (~))
 import qualified Prelude
 
-{- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
-Elliptic curves always have genus @1@ and are birationally equivalent
-to a projective curve of degree @3@. As such, elliptic curves are
-the simplest curves after conic sections, curves of degree @2@,
-and lines, curves of degree @1@. Bézout's theorem implies
-that a line in general position will intersect with an
-elliptic curve at 3 points counting multiplicity;
-@point0@, @point1@ and @point2@.
-The geometric group law of the elliptic curve is:
-
-> point0 + point1 + point2 = zero
--}
+-- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
+-- Elliptic curves always have genus @1@ and are birationally equivalent
+-- to a projective curve of degree @3@. As such, elliptic curves are
+-- the simplest curves after conic sections, curves of degree @2@,
+-- and lines, curves of degree @1@. Bézout's theorem implies
+-- that a line in general position will intersect with an
+-- elliptic curve at 3 points counting multiplicity;
+-- @point0@, @point1@ and @point2@.
+-- The geometric group law of the elliptic curve is:
+--
+-- > point0 + point1 + point2 = zero
 class
   ( Field (BaseFieldOf point)
   , Eq (BaseFieldOf point)
@@ -74,25 +73,23 @@ class
   type CurveOf point :: Symbol
   type BaseFieldOf point :: Type
 
-  {- | `isOnCurve` validates an equation for a plane algebraic curve
-  which has degree 3 up to some birational equivalence.
-  -}
+  -- | `isOnCurve` validates an equation for a plane algebraic curve
+  --   which has degree 3 up to some birational equivalence.
   isOnCurve :: point -> BooleanOf (BaseFieldOf point)
 
-{- | Both the ECDSA and ECDH algorithms make use of
-the elliptic curve discrete logarithm problem, ECDLP.
-There may be a discrete "exponential" function
-from a `PrimeField` of scalars
-into the `AdditiveGroup` of points on an elliptic curve.
-It's given naturally by scaling a point of prime order,
-if there is one on the curve.
-
-prop> scale order pointGen = zero
-
->>> let discreteExp scalar = scale scalar pointGen
-
-Then the inverse of `discreteExp` is hard to compute.
--}
+-- | Both the ECDSA and ECDH algorithms make use of
+-- the elliptic curve discrete logarithm problem, ECDLP.
+-- There may be a discrete "exponential" function
+-- from a `PrimeField` of scalars
+-- into the `AdditiveGroup` of points on an elliptic curve.
+-- It's given naturally by scaling a point of prime order,
+-- if there is one on the curve.
+--
+-- prop> scale order pointGen = zero
+--
+-- >>> let discreteExp scalar = scale scalar pointGen
+--
+-- Then the inverse of `discreteExp` is hard to compute.
 class
   ( AdditiveGroup g
   , FiniteField (ScalarFieldOf g)
@@ -102,17 +99,15 @@ class
   where
   type ScalarFieldOf g :: Type
 
-  {- | generator of a cyclic subgroup
-
-  prop> scale (order @(ScalarFieldOf g)) pointGen = zero
-  -}
+  -- | generator of a cyclic subgroup
+  --
+  --   prop> scale (order @(ScalarFieldOf g)) pointGen = zero
   pointGen :: g
 
-{- |
-A cycle of two curves elliptic curves over finite fields
-such that the number of points on one curve is equal to
-the size of the field of definition of the next, in a cyclic way.
--}
+-- |
+-- A cycle of two curves elliptic curves over finite fields
+-- such that the number of points on one curve is equal to
+-- the size of the field of definition of the next, in a cyclic way.
 type CycleOfCurves g1 g2 =
   ( EllipticCurve g1
   , EllipticCurve g2
@@ -122,27 +117,25 @@ type CycleOfCurves g1 g2 =
   , BaseFieldOf g1 ~ ScalarFieldOf g2
   )
 
-{- | The standard form of an elliptic curve is the Weierstrass equation:
-
-> y^2 = x^3 + a*x + b
-
-* Weierstrass curves have x-axis symmetry.
-* The characteristic of the field must not be @2@ or @3@.
-* The curve must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
-* When @a = 0@ some computations can be simplified so all the public
-  Weierstrass curves have @a = zero@ and nonzero @b@ and we do too.
--}
+-- | The standard form of an elliptic curve is the Weierstrass equation:
+--
+-- > y^2 = x^3 + a*x + b
+--
+-- * Weierstrass curves have x-axis symmetry.
+-- * The characteristic of the field must not be @2@ or @3@.
+-- * The curve must have nonzero discriminant @Δ = -16 * (4*a^3 + 27*b^3)@.
+-- * When @a = 0@ some computations can be simplified so all the public
+--   Weierstrass curves have @a = zero@ and nonzero @b@ and we do too.
 class Field field => WeierstrassCurve (curve :: Symbol) field where
   weierstrassB :: field
 
-{- | A twisted Edwards curve is defined by the equation:
-
-> a*x^2 + y^2 = 1 + d*x^2*y^2
-
-* Twisted Edwards curves have y-axis symmetry.
-* The characteristic of the field must not be @2@.
-* @a@ and @d@ must be nonzero.
--}
+-- | A twisted Edwards curve is defined by the equation:
+--
+-- > a*x^2 + y^2 = 1 + d*x^2*y^2
+--
+-- * Twisted Edwards curves have y-axis symmetry.
+-- * The characteristic of the field must not be @2@.
+-- * @a@ and @d@ must be nonzero.
 class Field field => TwistedEdwardsCurve (curve :: Symbol) field where
   twistedEdwardsA :: field
   twistedEdwardsD :: field
@@ -168,20 +161,17 @@ class
   where
   pairing :: g1 -> g2 -> gt
 
-{- | A class for smart constructor method
-`pointXY` for constructing points from an @x@ and @y@ coordinate.
--}
+-- | A class for smart constructor method
+-- `pointXY` for constructing points from an @x@ and @y@ coordinate.
 class Planar field point | point -> field where
   pointXY :: field -> field -> point
 
-{- | A class for smart constructor method
-`pointInf` for constructing the point at infinity.
--}
+-- | A class for smart constructor method
+-- `pointInf` for constructing the point at infinity.
 class HasPointInf point where pointInf :: point
 
-{- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
-with a phantom `WeierstrassCurve` @curve@.
--}
+-- | `Weierstrass` tags a `ProjectivePlanar` @point@, over a `Field` @field@,
+-- with a phantom `WeierstrassCurve` @curve@.
 newtype Weierstrass curve point = Weierstrass {pointWeierstrass :: point}
   deriving Generic
 
@@ -469,9 +459,8 @@ instance
   where
   scale = intScale
 
-{- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
-with a phantom `TwistedEdwardsCurve` @curve@.
--}
+-- | `TwistedEdwards` tags a `Planar` @point@, over a `Field` @field@,
+-- with a phantom `TwistedEdwardsCurve` @curve@.
 newtype TwistedEdwards curve point = TwistedEdwards {pointTwistedEdwards :: point}
   deriving Generic
 

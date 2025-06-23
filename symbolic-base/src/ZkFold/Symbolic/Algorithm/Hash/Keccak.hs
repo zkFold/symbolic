@@ -74,10 +74,9 @@ import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import Prelude (($), (.), (<$>))
 import qualified Prelude as P
 
-{- | Width of each lane (in bits) in the Keccak sponge state.
-
-This is state width by number of lanes. For computation efficiency, this number is usually a power of 2 and is 64 for our case.
--}
+-- | Width of each lane (in bits) in the Keccak sponge state.
+--
+-- This is state width by number of lanes. For computation efficiency, this number is usually a power of 2 and is 64 for our case.
 type LaneWidth :: Natural
 type LaneWidth = Div Width NumLanes
 
@@ -98,9 +97,8 @@ type Capacity rate = Width - rate
 numRounds :: Natural
 numRounds = value @NumRounds
 
-{- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
-This class links these varying parts with the appropriate algorithm.
--}
+-- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
+-- This class links these varying parts with the appropriate algorithm.
 class
   ( KnownNat (Rate algorithm)
   , -- Padded message is a multiple of rate (in bits), and thus we want rate to be a multiple of 8 to obtain valid "byte"strings.
@@ -181,12 +179,11 @@ keccak bs =
     & absorbBlocks @algorithm @context @k
     & squeeze @algorithm @context
 
-{- | Like 'keccak' but for 'VarByteString'.
-
-__NOTE__: It is assumed that length of 'ByteString' (in bits) inside 'VarByteString' is multiple of 8 (so that we have valid "byte" string).
-
-__WARNING__: This function is not yet tested. See https://github.com/zkFold/symbolic/issues/598 & https://github.com/zkFold/symbolic/issues/597.
--}
+-- | Like 'keccak' but for 'VarByteString'.
+--
+-- __NOTE__: It is assumed that length of 'ByteString' (in bits) inside 'VarByteString' is multiple of 8 (so that we have valid "byte" string).
+--
+-- __WARNING__: This function is not yet tested. See https://github.com/zkFold/symbolic/issues/598 & https://github.com/zkFold/symbolic/issues/597.
 keccakVar
   :: forall algorithm context k
    . Keccak algorithm context k

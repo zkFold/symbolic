@@ -1,9 +1,8 @@
 module ZkFold.UPLC.BuiltinType where
 
-{- | Builtin types available on Cardano network.
-According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
-(accessed in Nov 2024)
--}
+-- | Builtin types available on Cardano network.
+-- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
+-- (accessed in Nov 2024)
 data BuiltinType
   = BTInteger
   | BTByteString

@@ -15,12 +15,11 @@ import Prelude (Integer)
 -- TODO: move to ZkFold.Data.Bool
 
 class BoolType b => Conditional b a where
-  {- | Properties:
-
-  [On true] @bool onFalse onTrue 'true' == onTrue@
-
-  [On false] @bool onFalse onTrue 'false' == onFalse@
-  -}
+  -- | Properties:
+  --
+  --   [On true] @bool onFalse onTrue 'true' == onTrue@
+  --
+  --   [On false] @bool onFalse onTrue 'false' == onFalse@
   bool :: a -> a -> b -> a
   default bool :: (G.Generic a, GConditional b (G.Rep a)) => a -> a -> b -> a
   bool f t b = G.to (gbool (G.from f) (G.from t) b)

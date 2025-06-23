@@ -20,10 +20,9 @@ import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
 import Prelude (type (~))
 
-{- | Class of Symbolic datatypes used inside Converter.
-Each instance enforces a one-to-one correspondence between some 'BuiltinType'
-and its interpretation as a Symbolic datatype in arbitrary context 'c'.
--}
+-- | Class of Symbolic datatypes used inside Converter.
+-- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
+-- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
   ( Typeable v
   , SymbolicOutput v
@@ -47,9 +46,8 @@ data ExList c = forall t v. IsData t v c => ExList (L.List c v)
 -- | Existential wrapper around 'IsData' Symbolic types.
 data ExValue c = forall t v. IsData t v c => ExValue v
 
-{- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
-it is also 'Typeable'.
--}
+-- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
+-- it is also 'Typeable'.
 type Sym c = (SymbolicFold c, Typeable c)
 
 type IntLength = 64

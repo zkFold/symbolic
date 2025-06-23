@@ -39,9 +39,8 @@ type BufLen n = Max (Log2 n + 1) 3
 -- | The smallest multiple of 6 not less than @n@
 type Next6 (n :: Natural) = (Div (n + 5) 6) * 6
 
-{- | The number of bits required to store a base64 representation as an ASCII string
-Each symbol in base64 requires 6 bits, but in ASCII it takes 8 bits, hence the ratio of 8/6
--}
+-- | The number of bits required to store a base64 representation as an ASCII string
+-- Each symbol in base64 requires 6 bits, but in ASCII it takes 8 bits, hence the ratio of 8/6
 type ASCII (n :: Natural) = (Div n 6) * 8
 
 ---------------------------------------------------------------------------------------------------
@@ -147,9 +146,8 @@ padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
           withDiv @(BufLen n) $
             ui `mod` fromConstant @Natural 6
 
-{- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
-Required for base64 encoding.
--}
+-- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
+-- Required for base64 encoding.
 padBytestring6
   :: forall n ctx
    . Symbolic ctx
@@ -160,10 +158,9 @@ padBytestring6 VarByteString {..} = VarByteString (bsLength + mod6) (withNext6 @
   mod6 = padTo6 @n $ feToUInt @n bsLength
   newBuf = withNext6 @n $ resize bsBuffer
 
-{- | Convert a base64-encoded string into an ASCII-encoded string
-It is expected that both capacity and length of the input bytestring are divisible by 6
-If either of them is not, apply @padBytestring6@ first.
--}
+-- | Convert a base64-encoded string into an ASCII-encoded string
+-- It is expected that both capacity and length of the input bytestring are divisible by 6
+-- If either of them is not, apply @padBytestring6@ first.
 base64ToAscii
   :: forall n ctx
    . Symbolic ctx

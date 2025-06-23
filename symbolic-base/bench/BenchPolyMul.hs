@@ -17,10 +17,9 @@ import ZkFold.Algebra.Polynomial.Univariate
 import Prelude hiding (sum, (*), (+), (-), (/), (^))
 import qualified Prelude as P
 
-{- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
-DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
-Choosing 257 allows us to calculate DFT of polynomials of length up to 256 as all these numbers divide 257 - 1.
--}
+-- | Only for testing DFT with smaller numbers which can be easily calculated by hand for cross-check.
+-- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
+-- Choosing 257 allows us to calculate DFT of polynomials of length up to 256 as all these numbers divide 257 - 1.
 type TestPrime = 257
 
 -- | Generate random polynomials of given size

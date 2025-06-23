@@ -178,9 +178,8 @@ bitwiseCompare :: forall c. Symbolic c => c [] -> c [] -> Ordering c
 bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
 getBitsBE :: forall c f. (Symbolic c, LayoutFunctor f) => c f -> c []
-{- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
-youngest.
--}
+-- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
+-- youngest.
 getBitsBE x =
   symbolicF
     x

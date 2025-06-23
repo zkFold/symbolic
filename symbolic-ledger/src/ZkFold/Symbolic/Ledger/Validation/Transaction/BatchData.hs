@@ -43,17 +43,16 @@ validateTransactionBatchData
   => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
 validateTransactionBatchData tbInterval tbd tbdw = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw
 
-{- | Validate a 'TransactionBatchData'.
-
-To check:
-  * All addresses corresponding to spent inputs have same data availability source.
-  * Merkle root is computed correctly.
-  * Online addresses list is computed correctly.
-  * Offline txs list is computed correctly.
-  * Interval of the overarching transaction batch is within the interval of individual transactions.
-  * Txs are valid.
-  * Batch as a whole is balanced.
--}
+-- | Validate a 'TransactionBatchData'.
+--
+-- To check:
+--   * All addresses corresponding to spent inputs have same data availability source.
+--   * Merkle root is computed correctly.
+--   * Online addresses list is computed correctly.
+--   * Offline txs list is computed correctly.
+--   * Interval of the overarching transaction batch is within the interval of individual transactions.
+--   * Txs are valid.
+--   * Batch as a whole is balanced.
 validateTransactionBatchDataWithIx
   :: forall context
    . Signature context
@@ -140,10 +139,9 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
       , fromJust resTxAccIx
       )
 
-{- | Update the entry for the given address with given list of transaction hashes.
-
-If the address does not exist, then it is prepended to this list.
--}
+-- | Update the entry for the given address with given list of transaction hashes.
+--
+-- If the address does not exist, then it is prepended to this list.
 updateAddrsTxsList
   :: forall context
    . Signature context
@@ -181,10 +179,9 @@ updateAddrsTxsList addr addrTxs addrsTxs =
 
 -- TODO: Refactor following once symbolic list is able to support more generic functions.
 
-{- | Find a transaction hash list corresponding to given address.
-
-If the address is not found, we return an empty list.
--}
+-- | Find a transaction hash list corresponding to given address.
+--
+-- If the address is not found, we return an empty list.
 findAddrTxs
   :: forall context
    . Signature context

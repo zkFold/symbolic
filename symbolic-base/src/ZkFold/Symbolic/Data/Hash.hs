@@ -20,13 +20,12 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (Payloaded))
 import ZkFold.Symbolic.MonadCircuit (constraint, unconstrained)
 
-{- | A generic hashing interface for Symbolic DSL.
-'h' is the result of the hashing algorithm;
-'a' is the datatype being hashed.
-
-The relationship between datatypes and hashes is many-to-many
-so there's no functional dependency in either direction.
--}
+-- | A generic hashing interface for Symbolic DSL.
+-- 'h' is the result of the hashing algorithm;
+-- 'a' is the datatype being hashed.
+--
+-- The relationship between datatypes and hashes is many-to-many
+-- so there's no functional dependency in either direction.
 class Hashable h a where
   -- | Hashing algorithm itself.
   hasher :: a -> h

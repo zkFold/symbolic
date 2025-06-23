@@ -31,84 +31,76 @@ infixl 7 .*, *., *, /
 infixl 6 +, -, -!
 
 class Bilinear p s g where
-  {- | Bilinear function. Should satisfy the following:
-
-  [First argument linearity] @bilinear c (scale k a + b) == scale k (bilinear c a) + bilinear c b@
-  [First argument absorption] @bilinear c zero == zero@
-
-  [Second argument linearity] @bilinear (scale k c + d) a == scale k (bilinear c a) + bilinear d a@
-  [Second argument absorption] @bilinear zero a == zero@
-
-  The default implementation is the multiplication by a constant.
-  -}
+  -- | Bilinear function. Should satisfy the following:
+  --
+  --   [First argument linearity] @bilinear c (scale k a + b) == scale k (bilinear c a) + bilinear c b@
+  --   [First argument absorption] @bilinear c zero == zero@
+  --
+  --   [Second argument linearity] @bilinear (scale k c + d) a == scale k (bilinear c a) + bilinear d a@
+  --   [Second argument absorption] @bilinear zero a == zero@
+  --
+  --   The default implementation is the multiplication by a constant.
   bilinear :: p -> s -> g
 
-{- | Every algebraic structure has a handful of "constant types" related
-with it: natural numbers, integers, field of constants etc. This typeclass
-captures this relation.
--}
+-- | Every algebraic structure has a handful of "constant types" related
+-- with it: natural numbers, integers, field of constants etc. This typeclass
+-- captures this relation.
 class FromConstant a b where
-  {- | Builds an element of an algebraic structure from a constant.
-
-  @fromConstant@ should preserve algebraic structure, e.g. if both the
-  structure and the type of constants are additive monoids, the following
-  should hold:
-
-  [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
-  -}
+  -- | Builds an element of an algebraic structure from a constant.
+  --
+  --   @fromConstant@ should preserve algebraic structure, e.g. if both the
+  --   structure and the type of constants are additive monoids, the following
+  --   should hold:
+  --
+  --   [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
   fromConstant :: a -> b
   default fromConstant :: a ~ b => a -> b
   fromConstant = id
 
 instance FromConstant a a
 
-{- | A class of algebraic structures which can be converted to "constant type"
-related with it: natural numbers, integers, rationals etc. Subject to the
-following law:
-
-[Inverse] @'fromConstant' ('toConstant' x) == x@
--}
+-- | A class of algebraic structures which can be converted to "constant type"
+-- related with it: natural numbers, integers, rationals etc. Subject to the
+-- following law:
+--
+-- [Inverse] @'fromConstant' ('toConstant' x) == x@
 class ToConstant a where
-  {- | One of "constant types" related with @a@.
-  Typically the smallest type among them by inclusion.
-  -}
+  -- | One of "constant types" related with @a@.
+  --   Typically the smallest type among them by inclusion.
   type Const a :: Type
 
-  {- | A way to turn element of @a@ into a @'Const' a@.
-  According to the law of @'ToConstant'@,
-  has to be right inverse to @'fromConstant'@.
-  -}
+  -- | A way to turn element of @a@ into a @'Const' a@.
+  --   According to the law of @'ToConstant'@,
+  --   has to be right inverse to @'fromConstant'@.
   toConstant :: a -> Const a
 
 --------------------------------------------------------------------------------
 
-{- | A class for actions where multiplicative notation is the most natural
-(including multiplication by constant itself).
--}
+-- | A class for actions where multiplicative notation is the most natural
+-- (including multiplication by constant itself).
 class Scale b a where
-  {- | A left monoid action on a type. Should satisfy the following:
-
-  [Compatibility] @scale (c * d) a == scale c (scale d a)@
-  [Left identity] @scale one a == a@
-
-  If, in addition, a cast from constant is defined, they should agree:
-
-  [Scale agrees] @scale c a == fromConstant c * a@
-  [Cast agrees] @fromConstant c == scale c one@
-
-  If the action is on an abelian structure, scaling should respect it:
-
-  [Left distributivity] @scale c (a + b) == scale c a + scale c b@
-  [Right absorption] @scale c zero == zero@
-
-  If, in addition, the scaling itself is abelian, this structure should
-  propagate:
-
-  [Right distributivity] @scale (c + d) a == scale c a + scale d a@
-  [Left absorption] @scale zero a == zero@
-
-  The default implementation is the multiplication by a constant.
-  -}
+  -- | A left monoid action on a type. Should satisfy the following:
+  --
+  --   [Compatibility] @scale (c * d) a == scale c (scale d a)@
+  --   [Left identity] @scale one a == a@
+  --
+  --   If, in addition, a cast from constant is defined, they should agree:
+  --
+  --   [Scale agrees] @scale c a == fromConstant c * a@
+  --   [Cast agrees] @fromConstant c == scale c one@
+  --
+  --   If the action is on an abelian structure, scaling should respect it:
+  --
+  --   [Left distributivity] @scale c (a + b) == scale c a + scale c b@
+  --   [Right absorption] @scale c zero == zero@
+  --
+  --   If, in addition, the scaling itself is abelian, this structure should
+  --   propagate:
+  --
+  --   [Right distributivity] @scale (c + d) a == scale c a + scale d a@
+  --   [Left absorption] @scale zero a == zero@
+  --
+  --   The default implementation is the multiplication by a constant.
   scale :: b -> a -> a
   default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
   scale !b !a = a * fromConstant b
@@ -117,88 +109,79 @@ class Scale b a where
 (*.) :: Scale b a => b -> a -> a
 (*.) = scale
 
-{- | Flipped version of '*.'.
-
-NOTE: we do not distinguish between left and right actions
-since multiplicative actions we are interested in are commutative.
--}
+-- | Flipped version of '*.'.
+--
+-- NOTE: we do not distinguish between left and right actions
+-- since multiplicative actions we are interested in are commutative.
 (.*) :: Scale b a => a -> b -> a
 (.*) = flip scale
 
 instance MultiplicativeSemigroup a => Scale a a
 
-{- | A class of types with a binary associative operation with a multiplicative
-feel to it. Not necessarily commutative.
--}
+-- | A class of types with a binary associative operation with a multiplicative
+-- feel to it. Not necessarily commutative.
 class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
-  {- | A binary associative operation. The following should hold:
-
-  [Associativity] @x * (y * z) == (x * y) * z@
-  -}
+  -- | A binary associative operation. The following should hold:
+  --
+  --   [Associativity] @x * (y * z) == (x * y) * z@
   (*) :: a -> a -> a
 
-  {- | @square@ is offered purely for computational efficiency
-  in cases where there exist faster ways to squarean element
-  than to multiply it by itself (e.g. Zp)
-  -}
+  -- | @square@ is offered purely for computational efficiency
+  --   in cases where there exist faster ways to squarean element
+  --   than to multiply it by itself (e.g. Zp)
   square :: a -> a
   square a = a * a
 
 product1 :: (Foldable t, MultiplicativeSemigroup a) => t a -> a
 product1 = foldl1 (*)
 
-{- | A class for actions on types where exponential notation is the most natural
-(including an exponentiation itself).
--}
+-- | A class for actions on types where exponential notation is the most natural
+-- (including an exponentiation itself).
 class Exponent a b where
-  {- | A right action on a type.
-
-  If exponents form a semigroup, the following should hold:
-
-  [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
-
-  If exponents form a monoid, the following should also hold:
-
-  [Right identity] @a ^ one == a@
-
-  NOTE, however, that even if exponents form a semigroup, left
-  distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is desirable but
-  not required: otherwise instance for Bool as exponent could not be made
-  lawful.
-  -}
+  -- | A right action on a type.
+  --
+  --   If exponents form a semigroup, the following should hold:
+  --
+  --   [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
+  --
+  --   If exponents form a monoid, the following should also hold:
+  --
+  --   [Right identity] @a ^ one == a@
+  --
+  --   NOTE, however, that even if exponents form a semigroup, left
+  --   distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is desirable but
+  --   not required: otherwise instance for Bool as exponent could not be made
+  --   lawful.
   (^) :: a -> b -> a
 
-{- | A class of types with a binary associative operation with a multiplicative
-feel to it and an identity element. Not necessarily commutative.
-
-While exponentiation by a natural is specified as a constraint, a default
-implementation is provided as a @'natPow'@ function. You can provide a faster
-alternative, but do not forget to check that it satisfies the following
-(in addition to the properties already stated in @'Exponent'@ documentation):
-
-[Left identity] @one ^ n == one@
-[Absorption] @a ^ 0 == one@
-[Left distributivity] @a ^ (m + n) == (a ^ m) * (a ^ n)@
-
-Finally, if the base monoid operation is commutative, power should
-distribute over @('*')@:
-
-[Right distributivity] @(a * b) ^ n == (a ^ n) * (b ^ n)@
--}
+-- | A class of types with a binary associative operation with a multiplicative
+-- feel to it and an identity element. Not necessarily commutative.
+--
+-- While exponentiation by a natural is specified as a constraint, a default
+-- implementation is provided as a @'natPow'@ function. You can provide a faster
+-- alternative, but do not forget to check that it satisfies the following
+-- (in addition to the properties already stated in @'Exponent'@ documentation):
+--
+-- [Left identity] @one ^ n == one@
+-- [Absorption] @a ^ 0 == one@
+-- [Left distributivity] @a ^ (m + n) == (a ^ m) * (a ^ n)@
+--
+-- Finally, if the base monoid operation is commutative, power should
+-- distribute over @('*')@:
+--
+-- [Right distributivity] @(a * b) ^ n == (a ^ n) * (b ^ n)@
 class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a where
-  {- | An identity with respect to multiplication:
-
-  [Left identity] @one * x == x@
-  [Right identity] @x * one == x@
-  -}
+  -- | An identity with respect to multiplication:
+  --
+  --   [Left identity] @one * x == x@
+  --   [Right identity] @x * one == x@
   one :: a
 
 {-# INLINE natPow #-}
 natPow :: MultiplicativeMonoid a => a -> Natural -> a
 
-{- | A default implementation for natural exponentiation. Uses only @('*')@ and
-@'one'@ so doesn't loop via an @'Exponent' Natural a@ instance.
--}
+-- | A default implementation for natural exponentiation. Uses only @('*')@ and
+-- @'one'@ so doesn't loop via an @'Exponent' Natural a@ instance.
 natPow _ 0 = one
 natPow !a !n
   | m == 1 = a * f
@@ -214,40 +197,36 @@ product = foldl' (*) one
 multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
 multiExp a = foldl' (\(!x) (!y) -> x * (a ^ y)) one
 
-{- | A class of groups in a multiplicative notation.
-
-While exponentiation by an integer is specified in a constraint, a default
-implementation is provided as an @'intPow'@ function. You can provide a faster
-alternative yourself, but do not forget to check that your implementation
-computes the same results on all inputs.
--}
+-- | A class of groups in a multiplicative notation.
+--
+-- While exponentiation by an integer is specified in a constraint, a default
+-- implementation is provided as an @'intPow'@ function. You can provide a faster
+-- alternative yourself, but do not forget to check that your implementation
+-- computes the same results on all inputs.
 class (MultiplicativeMonoid a, Exponent a Integer) => MultiplicativeGroup a where
   {-# MINIMAL (invert | (/)) #-}
 
-  {- | Division in a group. The following should hold:
-
-  [Division] @x / x == one@
-  [Cancellation] @(y / x) * x == y@
-  [Agreement] @x / y == x * invert y@
-  -}
+  -- | Division in a group. The following should hold:
+  --
+  --   [Division] @x / x == one@
+  --   [Cancellation] @(y / x) * x == y@
+  --   [Agreement] @x / y == x * invert y@
   (/) :: a -> a -> a
   x / y = x * invert y
 
-  {- | Inverse in a group. The following should hold:
-
-  [Left inverse] @invert x * x == one@
-  [Right inverse] @x * invert x == one@
-  [Agreement] @invert x == one / x@
-  -}
+  -- | Inverse in a group. The following should hold:
+  --
+  --   [Left inverse] @invert x * x == one@
+  --   [Right inverse] @x * invert x == one@
+  --   [Agreement] @invert x == one / x@
   invert :: a -> a
   invert x = one / x
 
 intPow :: MultiplicativeGroup a => a -> Integer -> a
 
-{- | A default implementation for integer exponentiation. Uses only natural
-exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
-instance.
--}
+-- | A default implementation for integer exponentiation. Uses only natural
+-- exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
+-- instance.
 intPow !a !n
   | n < 0 = invert a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
@@ -256,38 +235,33 @@ intPow !a !n
 
 -- | A class of types with a binary associative, commutative operation.
 class FromConstant a a => AdditiveSemigroup a where
-  {- | A binary associative commutative operation. The following should hold:
-
-  [Associativity] @x + (y + z) == (x + y) + z@
-  [Commutativity] @x + y == y + x@
-  -}
+  -- | A binary associative commutative operation. The following should hold:
+  --
+  --   [Associativity] @x + (y + z) == (x + y) + z@
+  --   [Commutativity] @x + y == y + x@
   (+) :: a -> a -> a
 
-  {- | @double@ is offered purely for computational efficiency
-  in cases where there exist faster ways to double an element
-  than to add it to itself (e.g. elliptic curves)
-  -}
+  -- | @double@ is offered purely for computational efficiency
+  --   in cases where there exist faster ways to double an element
+  --   than to add it to itself (e.g. elliptic curves)
   double :: a -> a
   double a = a + a
 
-{- | A class of types with a binary associative, commutative operation and with
-an identity element.
-
-While scaling by a natural is specified as a constraint, a default
-implementation is provided as a @'natScale'@ function.
--}
+-- | A class of types with a binary associative, commutative operation and with
+-- an identity element.
+--
+-- While scaling by a natural is specified as a constraint, a default
+-- implementation is provided as a @'natScale'@ function.
 class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
-  {- | An identity with respect to addition:
-
-  [Identity] @x + zero == x@
-  -}
+  -- | An identity with respect to addition:
+  --
+  --   [Identity] @x + zero == x@
   zero :: a
 
 natScale :: AdditiveMonoid a => Natural -> a -> a
 
-{- | A default implementation for natural scaling. Uses only @('+')@ and
-@'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
--}
+-- | A default implementation for natural scaling. Uses only @('+')@ and
+-- @'zero'@ so doesn't loop via a @'Scale' Natural a@ instance.
 natScale 0 _ = zero
 natScale !n !a
   | m == 1 = a + f
@@ -300,61 +274,55 @@ natScale !n !a
 sum :: (Foldable t, AdditiveMonoid a) => t a -> a
 sum = foldl' (+) zero
 
-{- | A class of abelian groups.
-
-While scaling by an integer is specified in a constraint, a default
-implementation is provided as an @'intScale'@ function.
--}
+-- | A class of abelian groups.
+--
+-- While scaling by an integer is specified in a constraint, a default
+-- implementation is provided as an @'intScale'@ function.
 class (AdditiveMonoid a, Scale Integer a) => AdditiveGroup a where
   {-# MINIMAL (negate | (-)) #-}
 
-  {- | Subtraction in an abelian group. The following should hold:
-
-  [Subtraction] @x - x == zero@
-  [Agreement] @x - y == x + negate y@
-  -}
+  -- | Subtraction in an abelian group. The following should hold:
+  --
+  --   [Subtraction] @x - x == zero@
+  --   [Agreement] @x - y == x + negate y@
   (-) :: a -> a -> a
   x - y = x + negate y
 
-  {- | Inverse in an abelian group. The following should hold:
-
-  [Negative] @x + negate x == zero@
-  [Agreement] @negate x == zero - x@
-  -}
+  -- | Inverse in an abelian group. The following should hold:
+  --
+  --   [Negative] @x + negate x == zero@
+  --   [Agreement] @negate x == zero - x@
   negate :: a -> a
   negate x = zero - x
 
 intScale :: AdditiveGroup a => Integer -> a -> a
 
-{- | A default implementation for integer scaling. Uses only natural scaling and
-@'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
--}
+-- | A default implementation for integer scaling. Uses only natural scaling and
+-- @'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
 intScale !n !a
   | n < 0 = naturalFromInteger (-n) `scale` negate a
   | otherwise = naturalFromInteger n `scale` a
 
 --------------------------------------------------------------------------------
 
-{- | Class of semirings with both 0 and 1. The following should hold:
-
-[Left distributivity] @a * (b + c) == a * b + a * c@
-[Right distributivity] @(a + b) * c == a * c + b * c@
--}
+-- | Class of semirings with both 0 and 1. The following should hold:
+--
+-- [Left distributivity] @a * (b + c) == a * b + a * c@
+-- [Right distributivity] @(a + b) * c == a * c + b * c@
 class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
 
-{- | A semi-Euclidean-domain @a@ is a semiring without zero divisors which can
-be endowed with at least one function @f : a\{0} -> R+@ s.t. if @x@ and @y@ are
-in @a@ and @y@ is nonzero, then there exist @q@ and @r@ in @a@ such that
-@x = qy + r@ and either @r = 0@ or @f(r) < f(y)@.
-
-@q@ and @r@ are called respectively a quotient and a remainder of the division
-(or Euclidean division) of @x@ by @y@.
-
-The function @divMod@ associated with this class produces @q@ and @r@
-given @a@ and @b@.
-
-This is a generalization of a notion of Euclidean domains to semirings.
--}
+-- | A semi-Euclidean-domain @a@ is a semiring without zero divisors which can
+-- be endowed with at least one function @f : a\{0} -> R+@ s.t. if @x@ and @y@ are
+-- in @a@ and @y@ is nonzero, then there exist @q@ and @r@ in @a@ such that
+-- @x = qy + r@ and either @r = 0@ or @f(r) < f(y)@.
+--
+-- @q@ and @r@ are called respectively a quotient and a remainder of the division
+-- (or Euclidean division) of @x@ by @y@.
+--
+-- The function @divMod@ associated with this class produces @q@ and @r@
+-- given @a@ and @b@.
+--
+-- This is a generalization of a notion of Euclidean domains to semirings.
 class Semiring a => SemiEuclidean a where
   {-# MINIMAL divMod | (div, mod) #-}
 
@@ -367,21 +335,19 @@ class Semiring a => SemiEuclidean a where
   mod :: a -> a -> a
   mod n d = Haskell.snd $ divMod n d
 
-{- | Class of rings with both 0, 1 and additive inverses. The following should hold:
-
-[Left distributivity] @a * (b - c) == a * b - a * c@
-[Right distributivity] @(a - b) * c == a * c - b * c@
--}
+-- | Class of rings with both 0, 1 and additive inverses. The following should hold:
+--
+-- [Left distributivity] @a * (b - c) == a * b - a * c@
+-- [Right distributivity] @(a - b) * c == a * c - b * c@
 class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
 
-{- | A 'Euclidean' ring is a 'Ring' which is a 'SemiEuclidean' domain and,
-in addition, admits a notion of /greatest common divisor/ @gcd x y@
-together with Bezout coefficients @bezoutL x y@
-(and, correspondingly, @bezoutR x y@) such that:
-@
-bezoutL x y * x + bezoutR x y * y = gcd x y
-@
--}
+-- | A 'Euclidean' ring is a 'Ring' which is a 'SemiEuclidean' domain and,
+-- in addition, admits a notion of /greatest common divisor/ @gcd x y@
+-- together with Bezout coefficients @bezoutL x y@
+-- (and, correspondingly, @bezoutR x y@) such that:
+-- @
+-- bezoutL x y * x + bezoutR x y * y = gcd x y
+-- @
 class (Ring a, SemiEuclidean a) => Euclidean a where
   {-# MINIMAL eea | (gcd, bezoutL, bezoutR) #-}
 
@@ -397,73 +363,66 @@ class (Ring a, SemiEuclidean a) => Euclidean a where
   bezoutR :: a -> a -> a
   bezoutR x y = let (_, _, t) = eea x y in t
 
-{- | Type of modules/algebras over the base type of constants @b@. As all the
-required laws are implied by the constraints, this is simply an alias rather
-than a typeclass in its own right.
-
-Note the following useful facts:
-
-* every 'Ring' is an algebra over natural numbers and over integers;
-* every 'Ring' is an algebra over itself. However, due to the possible
-overlapping instances of @Scale a a@ and @FromConstant a a@ you might
-need to defer the resolution of these constraints until @a@ is specified.
--}
+-- | Type of modules/algebras over the base type of constants @b@. As all the
+-- required laws are implied by the constraints, this is simply an alias rather
+-- than a typeclass in its own right.
+--
+-- Note the following useful facts:
+--
+-- * every 'Ring' is an algebra over natural numbers and over integers;
+-- * every 'Ring' is an algebra over itself. However, due to the possible
+-- overlapping instances of @Scale a a@ and @FromConstant a a@ you might
+-- need to defer the resolution of these constraints until @a@ is specified.
 type Algebra b a = (Ring a, Scale b a, FromConstant b a)
 
-{- | Class of fields. As a ring, each field is commutative, that is:
-
-[Commutativity] @x * y == y * x@
-
-While exponentiation by an integer is specified in a constraint, a default
-implementation is provided as an @'intPowF'@ function. You can provide a faster
-alternative yourself, but do not forget to check that your implementation
-computes the same results on all inputs.
--}
+-- | Class of fields. As a ring, each field is commutative, that is:
+--
+-- [Commutativity] @x * y == y * x@
+--
+-- While exponentiation by an integer is specified in a constraint, a default
+-- implementation is provided as an @'intPowF'@ function. You can provide a faster
+-- alternative yourself, but do not forget to check that your implementation
+-- computes the same results on all inputs.
 class (Ring a, Exponent a Integer, Eq a) => Field a where
   {-# MINIMAL (finv | (//)) #-}
 
-  {- | Division in a field. The following should hold:
-
-  [Division] If @x /= 0@, @x // x == one@
-  [Div by 0] @x // zero == zero@
-  [Agreement] @x // y == x * finv y@
-  -}
+  -- | Division in a field. The following should hold:
+  --
+  --   [Division] If @x /= 0@, @x // x == one@
+  --   [Div by 0] @x // zero == zero@
+  --   [Agreement] @x // y == x * finv y@
   (//) :: a -> a -> a
   x // y = x * finv y
 
-  {- | Inverse in a field. The following should hold:
-
-  [Inverse] If @x /= 0@, @x * inverse x == one@
-  [Inv of 0] @inverse zero == zero@
-  [Agreement] @finv x == one // x@
-  -}
+  -- | Inverse in a field. The following should hold:
+  --
+  --   [Inverse] If @x /= 0@, @x * inverse x == one@
+  --   [Inv of 0] @inverse zero == zero@
+  --   [Agreement] @finv x == one // x@
   finv :: a -> a
   finv x = one // x
 
-  {- | @rootOfUnity n@ is an element of a characteristic @2^n@, that is,
-
-  [Root of 0] @rootOfUnity 0 == Just one@
-  [Root property] If @rootOfUnity n == Just x@, @x ^ (2 ^ n) == one@
-  [Smallest root] If @rootOfUnity n == Just x@ and @m < n@, @x ^ (2 ^ m) /= one@
-  [All roots] If @rootOfUnity n == Just x@ and @m < n@, @rootOfUnity m /= Nothing@
-  -}
+  -- | @rootOfUnity n@ is an element of a characteristic @2^n@, that is,
+  --
+  --   [Root of 0] @rootOfUnity 0 == Just one@
+  --   [Root property] If @rootOfUnity n == Just x@, @x ^ (2 ^ n) == one@
+  --   [Smallest root] If @rootOfUnity n == Just x@ and @m < n@, @x ^ (2 ^ m) /= one@
+  --   [All roots] If @rootOfUnity n == Just x@ and @m < n@, @rootOfUnity m /= Nothing@
   rootOfUnity :: Natural -> Maybe a
   rootOfUnity 0 = Just one
   rootOfUnity _ = Nothing
 
 intPowF :: Field a => a -> Integer -> a
 
-{- | A default implementation for integer exponentiation. Uses only natural
-exponentiation and @'finv'@ so doesn't loop via an @'Exponent' Integer a@
-instance.
--}
+-- | A default implementation for integer exponentiation. Uses only natural
+-- exponentiation and @'finv'@ so doesn't loop via an @'Exponent' Integer a@
+-- instance.
 intPowF !a !n
   | n < 0 = finv a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
 
-{- | Class of finite structures. @Order a@ should be the actual number of
-elements in the type, identified up to the associated equality relation.
--}
+-- | Class of finite structures. @Order a@ should be the actual number of
+-- elements in the type, identified up to the associated equality relation.
 class (KnownNat (Order a), KnownNat (NumberOfBits a)) => Finite (a :: Type) where
   type Order a :: Natural
 
@@ -485,15 +444,14 @@ type PrimeField a = (FiniteField a, Prime (Order a))
 
 --------------------------------------------------------------------------------
 
-{- | Class of semirings where a binary expansion of elements can be computed.
-The methods store binary expansion of @a@ as objects of type @b@.
-Note: numbers should convert to Little-endian bit representation.
-
-The following should hold:
-
-* @fromBinary . binaryExpansion == id@
-* @fromBinary xs == foldr (\x y -> x + y + y) zero xs@
--}
+-- | Class of semirings where a binary expansion of elements can be computed.
+-- The methods store binary expansion of @a@ as objects of type @b@.
+-- Note: numbers should convert to Little-endian bit representation.
+--
+-- The following should hold:
+--
+-- * @fromBinary . binaryExpansion == id@
+-- * @fromBinary xs == foldr (\x y -> x + y + y) zero xs@
 class Semiring a => BinaryExpansion a where
   type Bits a :: Type
 
@@ -515,9 +473,8 @@ castBits (x : xs)
 
 --------------------------------------------------------------------------------
 
-{- | A multiplicative subgroup of nonzero elements of a field.
-TODO: hide constructor
--}
+-- | A multiplicative subgroup of nonzero elements of a field.
+-- TODO: hide constructor
 newtype NonZero a = NonZero a
   deriving newtype (MultiplicativeSemigroup, MultiplicativeMonoid)
 

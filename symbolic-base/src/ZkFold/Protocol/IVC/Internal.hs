@@ -54,9 +54,8 @@ makeLenses ''IVCProof
 noIVCProof :: (KnownNat k, AdditiveMonoid c, AdditiveMonoid f) => IVCProof k c f
 noIVCProof = IVCProof zero zero
 
-{- | The current result of recursion together with the first iteration flag,
-the corresponding accumulator, and the recursion circuit satisfiability proof.
--}
+-- | The current result of recursion together with the first iteration flag,
+-- the corresponding accumulator, and the recursion circuit satisfiability proof.
 data IVCResult k i c f
   = IVCResult
   { _z :: i f
@@ -67,10 +66,9 @@ data IVCResult k i c f
 
 makeLenses ''IVCResult
 
-{- | Create the first IVC result
-
-It differs from the rest of the iterations as we don't have anything accumulated just yet.
--}
+-- | Create the first IVC result
+--
+-- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup
   :: forall d cc k a i p c
    . ( KnownNat (d + 1)

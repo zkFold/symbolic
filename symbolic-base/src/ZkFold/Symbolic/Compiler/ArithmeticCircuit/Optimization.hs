@@ -39,13 +39,12 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..))
 import Prelude (error)
 
-{- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
-by dropping such variables @x@ from the @ctx@
-and replacing @x@ with @negate c // k@ in the system and in the witnesses,
-excluding variables for which @keep@ returns true.
-
-For an example of a suitable @keep@ predicate, take a look at 'isInputVar'.
--}
+-- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
+-- by dropping such variables @x@ from the @ctx@
+-- and replacing @x@ with @negate c // k@ in the system and in the witnesses,
+-- excluding variables for which @keep@ returns true.
+--
+-- For an example of a suitable @keep@ predicate, take a look at 'isInputVar'.
 optimize
   :: forall a o
    . (Arithmetic a, Binary a, Functor o)

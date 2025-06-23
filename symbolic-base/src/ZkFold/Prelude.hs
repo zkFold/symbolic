@@ -46,19 +46,17 @@ iterate' f x =
   let x' = f x
    in x' `seq` (x : iterate' f x')
 
-{- | Like 'iterate', but with a fixed number of iterations.
-Produces a list of length n: [x, f x, f^2 x, ..., f^(n-1) x].
--}
+-- | Like 'iterate', but with a fixed number of iterations.
+-- Produces a list of length n: [x, f x, f^2 x, ..., f^(n-1) x].
 iterateN' :: Natural -> (a -> a) -> a -> [a]
 iterateN' 0 _ _ = []
 iterateN' n f x =
   let x' = f x
    in x' `seq` (x : iterateN' (n - 1) f x')
 
-{- | Like 'iterate', but with a monadic action.
-For input n, produces a monadic action
-that applies the function n times.
--}
+-- | Like 'iterate', but with a monadic action.
+-- For input n, produces a monadic action
+-- that applies the function n times.
 iterateM :: Monad m => Natural -> (a -> m a) -> a -> m a
 iterateM 0 _ x = return x
 iterateM n f x = f x >>= iterateM (n - 1) f

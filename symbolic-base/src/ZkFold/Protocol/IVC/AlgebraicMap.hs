@@ -25,11 +25,10 @@ import ZkFold.Symbolic.Data.Eq
 import Prelude (fmap, zip, ($), (.), (<$>))
 import qualified Prelude as P
 
-{- | Algebraic map of @a@.
-It calculates a system of equations defining @a@ in some way.
-The inputs are polymorphic in a ring element @f@.
-The main application is to define the verifier's algebraic map in the NARK protocol.
--}
+-- | Algebraic map of @a@.
+-- It calculates a system of equations defining @a@ in some way.
+-- The inputs are polymorphic in a ring element @f@.
+-- The main application is to define the verifier's algebraic map in the NARK protocol.
 algebraicMap
   :: forall d k a i p f
    . ( KnownNat (d + 1)

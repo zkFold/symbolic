@@ -267,18 +267,17 @@ cast n =
     let (ys, zs) = greedySplitAt (m -! 1) xs
      in (x : ys, zs)
 
-{- | Extended Euclidean algorithm.
-Exploits the fact that @s_i@ and @t_i@ change signs in turns on each iteration, so it adjusts the formulas correspondingly
-and never requires signed arithmetic.
-(i.e. it calculates @x = b - a@ instead of @x = a - b@ when @a - b@ is negative
-and changes @y - x@ to @y + x@ on the following iteration)
-This only affects Bezout coefficients, remainders are calculated without changes as they are always non-negative.
-
-If the algorithm is used to calculate Bezout coefficients,
-it requires that @a@ and @b@ are coprime, @b@ is not 1 and @a@ is not 0, otherwise the optimisation above is not valid.
-
-If the algorithm is only used to find @gcd(a, b)@ (i.e. @s@ and @t@ will be discarded), @a@ and @b@ can be arbitrary integers.
--}
+-- | Extended Euclidean algorithm.
+-- Exploits the fact that @s_i@ and @t_i@ change signs in turns on each iteration, so it adjusts the formulas correspondingly
+-- and never requires signed arithmetic.
+-- (i.e. it calculates @x = b - a@ instead of @x = a - b@ when @a - b@ is negative
+-- and changes @y - x@ to @y + x@ on the following iteration)
+-- This only affects Bezout coefficients, remainders are calculated without changes as they are always non-negative.
+--
+-- If the algorithm is used to calculate Bezout coefficients,
+-- it requires that @a@ and @b@ are coprime, @b@ is not 1 and @a@ is not 0, otherwise the optimisation above is not valid.
+--
+-- If the algorithm is only used to find @gcd(a, b)@ (i.e. @s@ and @t@ will be discarded), @a@ and @b@ can be arbitrary integers.
 eea
   :: forall n c r
    . Symbolic c
@@ -681,10 +680,9 @@ instance
     xPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF x padSecondNextPow2
     yPadded = withNumberOfRegisters @n @rs @(BaseField c) $ fromCircuitF y padSecondNextPow2
 
-{- | Multiply two UInts assuming neither of them holds a value of more than @n / 2@ bits.
-Requires less constraints than regular multiplication but its behaviour is undefined if the assumption does not hold.
-Intended for internal usage
--}
+-- | Multiply two UInts assuming neither of them holds a value of more than @n / 2@ bits.
+-- Requires less constraints than regular multiplication but its behaviour is undefined if the assumption does not hold.
+-- Intended for internal usage
 unsafeMulNoPad
   :: forall n c rs
    . Symbolic c

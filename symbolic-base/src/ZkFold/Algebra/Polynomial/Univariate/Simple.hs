@@ -25,23 +25,21 @@ import ZkFold.Algebra.Number (KnownNat, integral)
 import ZkFold.Algebra.Polynomial.Univariate
 import qualified ZkFold.Data.Vector as ZkFold
 
-{- | A "simple" polynomial-vector type, meaning that
-it uses a simple multiplication algorithm.
-
-Not particularly efficient, but still usable in Symbolic
-since its operations do not require 'Prelude.Eq'.
--}
+-- | A "simple" polynomial-vector type, meaning that
+-- it uses a simple multiplication algorithm.
+--
+-- Not particularly efficient, but still usable in Symbolic
+-- since its operations do not require 'Prelude.Eq'.
 newtype SimplePoly a (n :: Natural) = SimplePoly
   { coeffs :: V.Vector a
-  {- ^ Vector of coefficients in ascending-degree order.
-
-  NOTE there is no guarantee that length of 'coeffs' is @n@,
-  only that its length is _not greater than_ @n@.
-  To get correctly sized vector, use 'toVector'.
-
-  NOTE since 'SimplePoly' does not use 'Prelude.Eq', it is possible that
-  there are some non-zeroed greater coefficients. Use with care.
-  -}
+  -- ^ Vector of coefficients in ascending-degree order.
+  --
+  --   NOTE there is no guarantee that length of 'coeffs' is @n@,
+  --   only that its length is _not greater than_ @n@.
+  --   To get correctly sized vector, use 'toVector'.
+  --
+  --   NOTE since 'SimplePoly' does not use 'Prelude.Eq', it is possible that
+  --   there are some non-zeroed greater coefficients. Use with care.
   }
   deriving Show
 

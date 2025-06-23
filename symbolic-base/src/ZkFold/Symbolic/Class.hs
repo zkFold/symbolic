@@ -21,9 +21,8 @@ import ZkFold.Data.Product (uncurryP)
 import ZkFold.Symbolic.MonadCircuit
 import Prelude (Enum, Integer)
 
-{- | Field of residues with decidable equality and ordering
-is called an ``arithmetic'' field.
--}
+-- | Field of residues with decidable equality and ordering
+-- is called an ``arithmetic'' field.
 type Arithmetic a =
   ( ResidueField a
   , IntegralOf a ~ Integer
@@ -35,16 +34,15 @@ type Arithmetic a =
   , NFData a
   )
 
-{- | A type of mappings between functors inside a circuit.
-@fs@ are input functors, @g@ is an output functor, @c@ is context.
-
-A function is a mapping between functors inside a circuit if,
-given an arbitrary builder of circuits @m@ over @c@ with arbitrary @i@ as
-variables, it maps @f@ many inputs to @g@ many outputs using @m@.
-
-NOTE: the property above is correct by construction for each function of a
-suitable type, you don't have to check it yourself.
--}
+-- | A type of mappings between functors inside a circuit.
+-- @fs@ are input functors, @g@ is an output functor, @c@ is context.
+--
+-- A function is a mapping between functors inside a circuit if,
+-- given an arbitrary builder of circuits @m@ over @c@ with arbitrary @i@ as
+-- variables, it maps @f@ many inputs to @g@ many outputs using @m@.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
 type CircuitFun (fs :: [Type -> Type]) (g :: Type -> Type) (c :: (Type -> Type) -> Type) =
   forall i m. (NFData i, MonadCircuit i (BaseField c) (WitnessField c) m) => FunBody fs g i m
 
@@ -52,9 +50,8 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
   FunBody '[] g i m = m (g i)
   FunBody (f ': fs) g i m = f i -> FunBody fs g i m
 
-{- | A Symbolic DSL for performant pure computations with arithmetic circuits.
-@c@ is a generic context in which computations are performed.
--}
+-- | A Symbolic DSL for performant pure computations with arithmetic circuits.
+-- @c@ is a generic context in which computations are performed.
 class
   ( HApplicative c
   , Package c
@@ -73,15 +70,13 @@ class
   -- | Computes witnesses (exact value may depend on the input to context).
   witnessF :: Functor f => c f -> f (WitnessField c)
 
-  {- | To perform computations in a generic context @c@ -- that is, to form a
-  mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
-  provide an algorithm for turning @f@ into @g@ inside a circuit.
-  -}
+  -- | To perform computations in a generic context @c@ -- that is, to form a
+  --   mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
+  --   provide an algorithm for turning @f@ into @g@ inside a circuit.
   fromCircuitF :: c f -> CircuitFun '[f] g c -> c g
 
-  {- | If there is a simpler implementation of a function in pure context,
-  you can provide it via 'sanityF' to use it in pure contexts.
-  -}
+  -- | If there is a simpler implementation of a function in pure context,
+  --   you can provide it via 'sanityF' to use it in pure contexts.
   sanityF :: BaseField c ~ a => c f -> (f a -> g a) -> (c f -> c g) -> c g
   sanityF x _ f = f x
 

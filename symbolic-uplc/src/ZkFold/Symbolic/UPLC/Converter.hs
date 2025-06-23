@@ -21,11 +21,10 @@ data ScriptType
   | -- | Plutus V3 scripts.
     V3
 
-{- | Result of a UPLC Converter is a circuit:
-1. with arbitrary input;
-2. with a single success/fail output;
-3. over BLS base field.
--}
+-- | Result of a UPLC Converter is a circuit:
+-- 1. with arbitrary input;
+-- 2. with a single success/fail output;
+-- 3. over BLS base field.
 data SomeCircuit = forall i. SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) i Par1)
 
 -- | Converter itself.
@@ -49,23 +48,20 @@ type RedeemerCtx c = Data c
 -- | Script context.
 type ScriptCtx c = Data c
 
-{- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
-A v1/v2 spending script takes a datum context, a redeemer context
-and a script context as input.
--}
+-- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
+-- A v1/v2 spending script takes a datum context, a redeemer context
+-- and a script context as input.
 spendingContract :: Sym c => Term -> DatumCtx c -> RedeemerCtx c -> ScriptCtx c -> Bool c
 spendingContract t d r s = contract t [ExValue d, ExValue r, ExValue s]
 
-{- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
-A v1/v2 minting, certifying and rewarding scripts each take
-a redeemer context and a script context as input.
--}
+-- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
+-- A v1/v2 minting, certifying and rewarding scripts each take
+-- a redeemer context and a script context as input.
 otherContract :: Sym c => Term -> RedeemerCtx c -> ScriptCtx c -> Bool c
 otherContract t r s = contract t [ExValue r, ExValue s]
 
-{- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
-A v3 script takes a single script context as input.
--}
+-- | As per [Plutus User Guide](https://plutus.cardano.intersectmbo.org/docs/working-with-scripts/ledger-language-version),
+-- A v3 script takes a single script context as input.
 contractV3 :: Sym c => Term -> ScriptCtx c -> Bool c
 contractV3 t s = contract t [ExValue s]
 

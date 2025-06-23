@@ -67,9 +67,8 @@ instance (SymbolicData x, c ~ Context x) => Conditional (Bool c) (List c x)
 
 instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
 
-{- | TODO: A proof-of-concept where hash == id.
-Replace id with a proper hash if we need lists to be cryptographically secure.
--}
+-- | TODO: A proof-of-concept where hash == id.
+-- Replace id with a proper hash if we need lists to be cryptographically secure.
 emptyList
   :: forall context x
    . SymbolicData x

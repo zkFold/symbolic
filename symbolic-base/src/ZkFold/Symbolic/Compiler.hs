@@ -29,9 +29,8 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 
-{- | A constraint defining what it means
-for function of type @f@ to be compilable.
--}
+-- | A constraint defining what it means
+-- for function of type @f@ to be compilable.
 type CompilesWith c s f =
   ( SymbolicData f
   , Context f ~ c
@@ -40,14 +39,12 @@ type CompilesWith c s f =
   , Context s ~ c
   )
 
-{- | A constraint defining what it means
-for data of type @y@ to be properly restorable.
--}
+-- | A constraint defining what it means
+-- for data of type @y@ to be properly restorable.
 type RestoresFrom c y = (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 
-{- | @compileWith opts inputT f@ compiles a function @f@ into an optimized
-arithmetic circuit packed inside a suitable 'SymbolicData'.
--}
+-- | @compileWith opts inputT f@ compiles a function @f@ into an optimized
+-- arithmetic circuit packed inside a suitable 'SymbolicData'.
 compileWith
   :: forall a y i j s f c0 c1
    . ( CompilesWith c0 s f
@@ -68,9 +65,8 @@ compileWith opts support f = restore . const . (,U1) . optimize $ opts \x ->
         constraint (one - ($ i))
         return r
 
-{- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
-packed inside a suitable 'SymbolicData'.
--}
+-- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
+-- packed inside a suitable 'SymbolicData'.
 compile
   :: forall a y s f
    . ( CompilesWith (CircuitContext a) s f

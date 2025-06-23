@@ -141,9 +141,8 @@ guessOutput f i = solder (Context.guessOutput i . fromPair . f)
 
 --------------------------- Arrow-like constructors ----------------------------
 
-{- | Given a natural transformation from input @i@ to output @o@,
-returns a corresponding arithmetic circuit.
--}
+-- | Given a natural transformation from input @i@ to output @o@,
+-- returns a corresponding arithmetic circuit.
 naturalCircuit
   :: (Arithmetic a, Representable i, Binary (Rep i))
   => (forall x. i x -> o x) -> ArithmeticCircuit a i o
@@ -213,10 +212,9 @@ acSizeL = sum . fmap length . acLookup . acContext
 acSizeT :: ArithmeticCircuit a i o -> Natural
 acSizeT = length . acLookup . acContext
 
-{- | Prints the constraint system, the witness, and the output.
-
-TODO: Move this elsewhere (?)
--}
+-- | Prints the constraint system, the witness, and the output.
+--
+-- TODO: Move this elsewhere (?)
 acPrint
   :: (Arithmetic a, Show a, Show1 o, Functor o)
   => ArithmeticCircuit a U1 o -> IO ()

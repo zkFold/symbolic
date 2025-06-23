@@ -9,11 +9,10 @@ import ZkFold.Algebra.Number
 import Prelude hiding (mod, sum, (*), (+), (-), (/), (^))
 import qualified Prelude as P
 
-{- | Generif FFT algorithm. Can be both direct and inverse depending on @wn@ (root of unity or its inverse) supplied.
-Does not apply scaling when it's inverse.
-Requires the vector to be of length 2^@n@.
-Implementation: iterative radix-2 FFT algorithm implemented using bit-reversal permutation (in-place).
--}
+-- | Generif FFT algorithm. Can be both direct and inverse depending on @wn@ (root of unity or its inverse) supplied.
+-- Does not apply scaling when it's inverse.
+-- Requires the vector to be of length 2^@n@.
+-- Implementation: iterative radix-2 FFT algorithm implemented using bit-reversal permutation (in-place).
 genericDft
   :: forall a
    . Ring a
@@ -51,11 +50,10 @@ forRange_ !from !to !step f
   | from > to = pure ()
   | otherwise = f from >> forRange_ (from P.+ step) to step f
 
-{- | Bit-reversal permutation is a permutation of a sequence of n items, where n = 2^k.
-It is defined by indexing the elements of the sequence by the numbers from 0 to n − 1,
-representing each of these numbers by its binary representation (padded to have length exactly k),
-and mapping each item to the item whose representation has the same bits in the reversed order.
--}
+-- | Bit-reversal permutation is a permutation of a sequence of n items, where n = 2^k.
+-- It is defined by indexing the elements of the sequence by the numbers from 0 to n − 1,
+-- representing each of these numbers by its binary representation (padded to have length exactly k),
+-- and mapping each item to the item whose representation has the same bits in the reversed order.
 bitReversalPermutation :: forall a. V.Vector a -> V.Vector a
 bitReversalPermutation !v = V.generate n $ \i -> v V.! (reverseBits n2 i)
  where

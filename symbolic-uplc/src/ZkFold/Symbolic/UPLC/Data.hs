@@ -10,9 +10,8 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
-{- | Plutus Core's Data as a Symbolic datatype.
-TODO: Proper symbolic Data type
--}
+-- | Plutus Core's Data as a Symbolic datatype.
+-- TODO: Proper symbolic Data type
 newtype Data c = Data (c Par1)
 
 deriving newtype instance Symbolic c => SymbolicData (Data c)

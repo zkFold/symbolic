@@ -11,9 +11,8 @@ import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC.Constants
 import Prelude (error)
 
-{- | MiMC-2n/n (Feistel) hash function.
-See https://eprint.iacr.org/2016/492.pdf, page 5
--}
+-- | MiMC-2n/n (Feistel) hash function.
+-- See https://eprint.iacr.org/2016/492.pdf, page 5
 mimcHash2 :: forall x. Ring x => [x] -> x -> x -> x -> x
 mimcHash2 xs k = case nonEmpty (reverse xs) of
   Just cs -> go cs

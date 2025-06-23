@@ -57,11 +57,10 @@ import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
 import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
 import qualified Prelude as Haskell
 
-{- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
-The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
-
-TODO: Declare all the instances ByteString has for VarByteString
--}
+-- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
+-- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
+--
+-- TODO: Declare all the instances ByteString has for VarByteString
 data VarByteString (maxLen :: Natural) (context :: (Type -> Type) -> Type)
   = VarByteString
   { bsLength :: FieldElement context
@@ -149,10 +148,9 @@ monoMax = unsafeAxiom
 withMax :: forall (m :: Natural) (n :: Natural) {r}. (Max (m + n) n ~ (m + n) => r) -> r
 withMax = withDict (monoMax @m @n)
 
-{- | Join two variable-length ByteStrings and move all the unsaaigned space towards lower indices.
-Let @u@ denote the unassigned space. Then,
-uu1010 `append` u10010 == uuu101010010
--}
+-- | Join two variable-length ByteStrings and move all the unsaaigned space towards lower indices.
+-- Let @u@ denote the unassigned space. Then,
+-- uu1010 `append` u10010 == uuu101010010
 append
   :: forall m n ctx
    . Symbolic ctx

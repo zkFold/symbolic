@@ -23,11 +23,10 @@ validateTransaction
   -> Bool context
 validateTransaction = fst . validateTransactionWithAssetDiff
 
-{- | Validate a 'Transaction'.
-
-To check:
-  * TODO: write checks.
--}
+-- | Validate a 'Transaction'.
+--
+-- To check:
+--   * TODO: write checks.
 validateTransactionWithAssetDiff
   :: forall context
    . Signature context

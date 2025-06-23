@@ -65,13 +65,12 @@ getSecretParams x =
    in (gs, h1)
 
 sortByList :: Ord a => [a] -> [a] -> [a]
-{- ^ Given two lists @l1@ and @l2@,
-sorts elements from @l1@ according to the order specified in @l2@.
-
-Preconditions:
-* @all (`elem` l2) l1@
-* @map head (group l2) == nub l2@
--}
+-- ^ Given two lists @l1@ and @l2@,
+-- sorts elements from @l1@ according to the order specified in @l2@.
+--
+-- Preconditions:
+-- * @all (`elem` l2) l1@
+-- * @map head (group l2) == nub l2@
 sortByList f t =
   let ixMap = M.fromList (zip t [(0 :: Int) ..])
    in sortOn (ixMap M.!) f

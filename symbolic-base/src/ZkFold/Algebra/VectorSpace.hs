@@ -26,17 +26,15 @@ import Prelude hiding (
   (^),
  )
 
-{- | Class of vector spaces with a basis. More accurately, when @a@ is
-a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then
-we have a free module, rather than a vector space. `VectorSpace` may also be thought of
-as a "monorepresentable" class, similar to `Representable` but with a fixed
-element type. A `VectorSpace` can be thought of as a space of fixed size
-tuple of variables @(x1,..,xn)@.
--}
+-- | Class of vector spaces with a basis. More accurately, when @a@ is
+-- a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then
+-- we have a free module, rather than a vector space. `VectorSpace` may also be thought of
+-- as a "monorepresentable" class, similar to `Representable` but with a fixed
+-- element type. A `VectorSpace` can be thought of as a space of fixed size
+-- tuple of variables @(x1,..,xn)@.
 class VectorSpace a v where
-  {- | The `Basis` for a `VectorSpace`. More accurately, `Basis` will be a spanning
-    set with "out-of-bounds" basis elements corresponding with 0.
-  -}
+  -- | The `Basis` for a `VectorSpace`. More accurately, `Basis` will be a spanning
+  --     set with "out-of-bounds" basis elements corresponding with 0.
   type Basis a v :: Type
 
   tabulateV :: (Basis a v -> a) -> v a
@@ -61,9 +59,8 @@ scaleV c = mapV (c *)
 basisV :: (Semiring a, VectorSpace a v, Eq (Basis a v)) => Basis a v -> v a
 basisV i = tabulateV $ \j -> if i == j then one else zero
 
-{- | dot product
-prop> v `dotV` basis i = indexV v i
--}
+-- | dot product
+-- prop> v `dotV` basis i = indexV v i
 dotV :: (Semiring a, VectorSpace a v, Foldable v) => v a -> v a -> a
 v `dotV` w = sum (zipWithV (*) v w)
 
@@ -160,19 +157,18 @@ instance
   tabulateV = Comp1 . tabulate . fmap tabulateV . curry
   indexV (Comp1 fg) (i, j) = indexV (index fg i) j
 
-{- | `FunctionSpace` class of functions between `VectorSpace`s.
-
-The type @FunctionSpace a f => f@ should be equal to some
-
-@(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
-
-which via multiple-uncurrying is equivalent to
-
-@(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1 :*: U1) a -> v0 a@
-
-A `FunctionSpace` can be thought of as the space of functions of the form
-@(y1,..,yj) = f(x1,..,xi)@
--}
+-- | `FunctionSpace` class of functions between `VectorSpace`s.
+--
+-- The type @FunctionSpace a f => f@ should be equal to some
+--
+-- @(VectorSpace a v0, .. ,VectorSpace a vN) => vN a -> .. -> v1 a -> v0 a@
+--
+-- which via multiple-uncurrying is equivalent to
+--
+-- @(VectorSpace a v0, .. ,VectorSpace a vN) => (vN :*: .. :*: v1 :*: U1) a -> v0 a@
+--
+-- A `FunctionSpace` can be thought of as the space of functions of the form
+-- @(y1,..,yj) = f(x1,..,xi)@
 class
   ( VectorSpace a (InputSpace a f)
   , VectorSpace a (OutputSpace a f)

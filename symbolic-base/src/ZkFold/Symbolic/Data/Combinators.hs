@@ -44,15 +44,13 @@ mzipWithMRep f x y = sequenceA (mzipWithRep f x y)
 
 --------------------------------------------------------------------------------------------------
 
-{- | A class for isomorphic types.
-The @Iso b a@ context ensures that transformations in both directions are defined
--}
+-- | A class for isomorphic types.
+-- The @Iso b a@ context ensures that transformations in both directions are defined
 class Iso b a => Iso a b where
   from :: a -> b
 
-{- | Describes types that can increase or shrink their capacity by adding zero bits to the beginning (i.e. before the higher register)
-or removing higher bits.
--}
+-- | Describes types that can increase or shrink their capacity by adding zero bits to the beginning (i.e. before the higher register)
+-- or removing higher bits.
 class Resize a b where
   resize :: a -> b
 
@@ -172,29 +170,25 @@ getNatural = natVal (Proxy :: Proxy n)
 maxBitsPerFieldElement :: forall p. Finite p => Natural
 maxBitsPerFieldElement = Haskell.floor $ log2 (order @p)
 
-{- | The maximum number of bits it makes sense to encode in a register.
-That is, if the field elements can encode more bits than required, choose the smaller number.
--}
+-- | The maximum number of bits it makes sense to encode in a register.
+-- That is, if the field elements can encode more bits than required, choose the smaller number.
 maxBitsPerRegister :: forall p n. (Finite p, KnownNat n) => Natural
 maxBitsPerRegister = Haskell.min (maxBitsPerFieldElement @p) (getNatural @n)
 
-{- | The number of bits remaining for the higher register
-assuming that all smaller registers have the same optimal number of bits.
--}
+-- | The number of bits remaining for the higher register
+-- assuming that all smaller registers have the same optimal number of bits.
 highRegisterBits :: forall p n. (Finite p, KnownNat n) => Natural
 highRegisterBits = case getNatural @n `mod` maxBitsPerFieldElement @p of
   0 -> maxBitsPerFieldElement @p
   m -> m
 
-{- | The lowest possible number of registers to encode @n@ bits using Field elements from @p@
-assuming that each register storest the largest possible number of bits.
--}
+-- | The lowest possible number of registers to encode @n@ bits using Field elements from @p@
+-- assuming that each register storest the largest possible number of bits.
 minNumberOfRegisters :: forall p n. (Finite p, KnownNat n) => Natural
 minNumberOfRegisters = (getNatural @n + maxBitsPerRegister @p @n -! 1) `div` maxBitsPerRegister @p @n
 
-{- | Convert a type-level string into a term.
-Useful for ByteStrings and VarByteStrings as it will calculate their length automatically
--}
+-- | Convert a type-level string into a term.
+-- Useful for ByteStrings and VarByteStrings as it will calculate their length automatically
 class IsTypeString (s :: Symbol) a where
   fromType :: a
 
@@ -291,15 +285,13 @@ expansionW n k = do
   return words
 
 bitsOf :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
-{- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
-bits of @k@.
--}
+-- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
+-- bits of @k@.
 bitsOf = wordsOf @1
 
 wordsOf :: forall r i a w m. (KnownNat r, MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
-{- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
-words of @k@.
--}
+-- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
+-- words of @k@.
 wordsOf n k = for [0 .. n -! 1] $ \j ->
   newRanged (fromConstant $ wordSize -! 1) (repr j (at k))
  where
@@ -314,9 +306,8 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
       . toIntegral
 
 hornerW :: forall r i a w m. (KnownNat r, MonadCircuit i a w m) => [i] -> m i
-{- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
-Horner's scheme.
--}
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + (2^r) b1 + ... + 2^rn bn@ using
+-- Horner's scheme.
 hornerW xs = case reverse xs of
   [] -> newAssigned (const zero)
   (b : bs) -> foldlM (\a i -> newAssigned (\x -> x i + scale wordSize (x a))) b bs
@@ -325,16 +316,14 @@ hornerW xs = case reverse xs of
   wordSize = 2 ^ (value @r)
 
 horner :: MonadCircuit i a w m => [i] -> m i
-{- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
-Horner's scheme.
--}
+-- ^ @horner [b0,...,bn]@ computes the sum @b0 + 2 b1 + ... + 2^n bn@ using
+-- Horner's scheme.
 horner = hornerW @1
 
 splitExpansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
-{- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
-@k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
-values exist).
--}
+-- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
+-- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
+-- values exist).
 splitExpansion n1 n2 k = do
   words <- expansionW @16 numWords k
 

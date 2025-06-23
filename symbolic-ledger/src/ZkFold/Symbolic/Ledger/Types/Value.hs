@@ -114,10 +114,9 @@ assetValuesFromList
   -> AssetValues context
 assetValuesFromList = Symbolic.List.foldr (Morph \(x, acc) -> addAssetValue x acc) emptyAssetValues
 
-{- | Add an 'AssetValue' to 'AssetValues'.
-
-If the asset already exists in the list, the quantities are added. Else the asset is added to the list.
--}
+-- | Add an 'AssetValue' to 'AssetValues'.
+--
+-- If the asset already exists in the list, the quantities are added. Else the asset is added to the list.
 addAssetValue
   :: forall context
    . SymbolicFold context

@@ -71,9 +71,8 @@ import ZkFold.Symbolic.MonadCircuit (newAssigned)
 import Prelude (Int, id, pure, zip, ($), ($!), (.), (>>=))
 import qualified Prelude as P
 
-{- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
-This class links these varying parts with the appropriate algorithm.
--}
+-- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
+-- This class links these varying parts with the appropriate algorithm.
 class
   ( Symbolic context
   , KnownNat (ChunkSize algorithm)
@@ -88,9 +87,8 @@ class
   -- ^ The length of words the algorithm operates internally, in bits.
 
   type ChunkSize algorithm :: Natural
-  {- ^ Hashing algorithms from SHA2 family require splitting the input message into blocks.
-  This type describes the size of these blocks, in bits.
-  -}
+  -- ^ Hashing algorithms from SHA2 family require splitting the input message into blocks.
+  --   This type describes the size of these blocks, in bits.
 
   type ResultSize algorithm :: Natural
   -- ^ The length of the resulting hash, in bits.
@@ -174,18 +172,17 @@ instance Symbolic c => AlgorithmSetup "SHA512/256" c where
 type family NextMultiple (n :: Natural) (divisor :: Natural) :: Natural where
   NextMultiple n divisor = divisor * Div (n + divisor - 1) divisor
 
-{- | On type level, determine the length of the message after padding.
-    Padding algorithm is described below:
-
-    1. begin with the original message of length L bits
-    2. append a single '1' bit
-    3. append K '0' bits, where K is the minimum number >= 0 such that (L + 1 + K + 64) is a multiple of 512
-    4. append L as a 64-bit big-endian integer, making the total post-processed length a multiple of 512 bits
-
-    such that the bits in the message are: <original message of length L> 1 <K zeros> <L as 64 bit integer>
-
-    For SHA384, SHA512 and SHA512/t, replace 512 with 1024 and 64 with 128.
--}
+-- | On type level, determine the length of the message after padding.
+--     Padding algorithm is described below:
+--
+--     1. begin with the original message of length L bits
+--     2. append a single '1' bit
+--     3. append K '0' bits, where K is the minimum number >= 0 such that (L + 1 + K + 64) is a multiple of 512
+--     4. append L as a 64-bit big-endian integer, making the total post-processed length a multiple of 512 bits
+--
+--     such that the bits in the message are: <original message of length L> 1 <K zeros> <L as 64 bit integer>
+--
+--     For SHA384, SHA512 and SHA512/t, replace 512 with 1024 and 64 with 128.
 type family PaddedLength (msg :: Natural) (block :: Natural) (lenBits :: Natural) :: Natural where
   PaddedLength msg block lenBits =
     If (NextMultiple msg block - msg <=? lenBits) (block + NextMultiple msg block) (NextMultiple msg block)
@@ -230,12 +227,11 @@ withDivisibleDiv = withDict (divisibleDiv @a @b)
 -- | Constraints required for a type-safe SHA2
 type SHA2 algorithm context k = (AlgorithmSetup algorithm context, KnownNat k)
 
-{- | A generalised version of SHA2. It is agnostic of the ByteString base field.
-Sample usage:
-
->>> bs = fromConstant (42 :: Natural) :: ByteString 8 (Zp BLS12_381_Scalar)
->>> hash = sha2 @"SHA256" bs
--}
+-- | A generalised version of SHA2. It is agnostic of the ByteString base field.
+-- Sample usage:
+--
+-- >>> bs = fromConstant (42 :: Natural) :: ByteString 8 (Zp BLS12_381_Scalar)
+-- >>> hash = sha2 @"SHA256" bs
 sha2
   :: forall (algorithm :: Symbol) context k {d}
    . SHA2 algorithm context k
@@ -355,10 +351,9 @@ sha2PadVar VarByteString {..} = VarByteString paddedLengthFe $ withPaddedLength 
           (`VB.shiftL` (diff - one)) . P.flip set (paddedL -! 1) . (`shiftBitsL` 1) $
             resized
 
-{- | This allows us to calculate hash of a bytestring represented by a Natural number.
-This is only useful for testing when the length of the test string is unknown at compile time.
-This should not be exposed to users (and they probably won't find it useful anyway).
--}
+-- | This allows us to calculate hash of a bytestring represented by a Natural number.
+-- This is only useful for testing when the length of the test string is unknown at compile time.
+-- This should not be exposed to users (and they probably won't find it useful anyway).
 toWordsNat :: forall n c. (KnownNat n, FromConstant Natural (ByteString n c)) => Natural -> [ByteString n c]
 toWordsNat = P.reverse . toWords'
  where
@@ -372,9 +367,8 @@ toWordsNat = P.reverse . toWords'
 -- | Constraints required for a SHA2 of a Natural number.
 type SHA2N algorithm context = AlgorithmSetup algorithm context
 
-{- | Same as @sha2@ but accepts a Natural number and length of message in bits instead of a ByteString.
-Only used for testing.
--}
+-- | Same as @sha2@ but accepts a Natural number and length of message in bits instead of a ByteString.
+-- Only used for testing.
 sha2Natural
   :: forall (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
    . SHA2N algorithm context
@@ -404,11 +398,10 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
   chunks :: [ByteString (ChunkSize algorithm) context]
   chunks = toWordsNat paddedMessage
 
-{- | Internal loop of the SHA2 family algorithms.
-
-A note on @force@: it is really necessary, otherwise the algorithm keeps piling up thunks.
-Even 16 GB of RAM is not enough.
--}
+-- | Internal loop of the SHA2 family algorithms.
+--
+-- A note on @force@: it is really necessary, otherwise the algorithm keeps piling up thunks.
+-- Even 16 GB of RAM is not enough.
 sha2Blocks
   :: forall algorithm (context :: (Type -> Type) -> Type)
    . AlgorithmSetup algorithm context
@@ -423,9 +416,8 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize al
 
     pure hn
 
-{- | Same as @sha2Blocks@ but ignores unassigned blocks of a VarByteString
-The current length of the VarByteString being processed is stored in the FieldElement
--}
+-- | Same as @sha2Blocks@ but ignores unassigned blocks of a VarByteString
+-- The current length of the VarByteString being processed is stored in the FieldElement
 sha2BlocksVar
   :: forall algorithm (context :: (Type -> Type) -> Type)
    . AlgorithmSetup algorithm context

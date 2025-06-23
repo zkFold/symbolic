@@ -37,9 +37,8 @@ arbitraryContext vars nconstraints = do
   out <- fmap toVar <$> elementsRep (vars ++ getAllVars ac)
   return $ ac `crown` out
 
-{- | Add a random Plonk constraint to the circuit.
-TODO: generalize the constraint
--}
+-- | Add a random Plonk constraint to the circuit.
+-- TODO: generalize the constraint
 arbitraryPolynomialConstraint
   :: forall a o
    . (Arbitrary a, Arithmetic a, Binary a)
@@ -56,9 +55,8 @@ arbitraryPolynomialConstraint inVars ac = do
       (\x o -> p x + scale qo (x o))
       (negate $ p at // fromConstant qo)
 
-{- | Add a random range constraint to the circuit.
-TODO: generalize the constraint
--}
+-- | Add a random range constraint to the circuit.
+-- TODO: generalize the constraint
 arbitraryLookupConstraint
   :: forall a o
    . (Arithmetic a, Binary a)

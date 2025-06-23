@@ -25,9 +25,8 @@ import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import Prelude ((.), type (~))
 import qualified Prelude as P
 
-{- | Json Web Token payload with information about the user
-https://dev.twitch.tv/docs/extensions/reference/#jwt-schema
--}
+-- | Json Web Token payload with information about the user
+-- https://dev.twitch.tv/docs/extensions/reference/#jwt-schema
 data TwitchPayload ctx
   = TwitchPayload
   { twChannelId :: VarByteString 512 ctx

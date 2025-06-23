@@ -11,10 +11,9 @@ import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import Prelude (Integer)
 
-{- | The Fibonacci index function.
-If `x` is a Fibonacci number, returns its index (up until `nMax`).
-Otherwise, returns `0`.
--}
+-- | The Fibonacci index function.
+-- If `x` is a Fibonacci number, returns its index (up until `nMax`).
+-- Otherwise, returns `0`.
 exampleFibonacciMod
   :: forall c. Symbolic c => Integer -> FieldElement c -> FieldElement c
 exampleFibonacciMod nMax x =

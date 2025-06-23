@@ -85,9 +85,8 @@ import Prelude (
  )
 import qualified Prelude as Haskell
 
-{- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
-Bit layout is Big-endian.
--}
+-- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
+-- Bit layout is Big-endian.
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
   deriving Generic
 
@@ -167,10 +166,9 @@ instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
    where
     base = 2
 
-{- | Pack a ByteString using one field element per bit.
-@fromConstant@ discards bits after @n@.
-If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
--}
+-- | Pack a ByteString using one field element per bit.
+-- @fromConstant@ discards bits after @n@.
+-- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
 instance (Symbolic c, KnownNat n) => FromConstant Natural (ByteString n c) where
   fromConstant n = ByteString . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
 
@@ -257,12 +255,11 @@ orRight l r = bitwiseOperation l r cons
         xj = x j
      in xi + xj - xi * xj
 
-{- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
-1. @wordSize@ is not greater than @n@;
-2. @wordSize@ is not zero;
-3. The bytestring is not empty;
-4. @wordSize@ divides @n@.
--}
+-- | A ByteString of length @n@ can only be split into words of length @wordSize@ if all of the following conditions are met:
+-- 1. @wordSize@ is not greater than @n@;
+-- 2. @wordSize@ is not zero;
+-- 3. The bytestring is not empty;
+-- 4. @wordSize@ divides @n@.
 toWords
   :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
 toWords (ByteString bits) = ByteString <$> unpackWith (V.chunks @m @wordSize) bits
@@ -397,11 +394,10 @@ toBase :: Natural -> Natural -> Maybe (Natural, Natural)
 toBase _ 0 = Nothing
 toBase base b = let (d, m) = b `divMod` base in Just (m, d)
 
-{- | A generic bitwise operation on two ByteStrings.
-If one of the strings is longer, the operation is applied to the least significant bits. The remaining bits are not affected, i.e.
-101 || 01001 == 01101
-TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
--}
+-- | A generic bitwise operation on two ByteStrings.
+-- If one of the strings is longer, the operation is applied to the least significant bits. The remaining bits are not affected, i.e.
+-- 101 || 01001 == 01101
+-- TODO: Shall we expose it to users? Can they do something malicious having such function? AFAIK there are checks that constrain each bit to 0 or 1.
 bitwiseOperation
   :: forall m n c
    . Symbolic c

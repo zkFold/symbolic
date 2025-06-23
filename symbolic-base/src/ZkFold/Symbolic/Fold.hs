@@ -14,11 +14,10 @@ import ZkFold.Data.ByteString (Binary1)
 import ZkFold.Symbolic.Class (Symbolic (..))
 
 class Symbolic c => SymbolicFold c where
-  {- | A function to perform folding in a generic context.
-
-  To do this, you need quite a few arguments, see documentation.
-  Or, even better, use more high-level Symbolic 'List' API.
-  -}
+  -- | A function to perform folding in a generic context.
+  --
+  --   To do this, you need quite a few arguments, see documentation.
+  --   Or, even better, use more high-level Symbolic 'List' API.
   sfoldl
     :: (Binary (Rep f), Binary1 f, Representable f, NFData1 f, Traversable f)
     => (Binary (Rep p), Representable p, Binary (Rep g), Representable g)

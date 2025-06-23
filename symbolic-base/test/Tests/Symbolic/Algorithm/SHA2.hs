@@ -34,10 +34,9 @@ import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
 import Prelude (String, otherwise, pure, read, (<>), (==))
 import qualified Prelude as Haskell
 
-{- | These test files are provided by the Computer Security Resource Center.
-Passing these tests is a requirement for having an implementation of a hashing function officially validated.
-https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
--}
+-- | These test files are provided by the Computer Security Resource Center.
+-- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
+-- https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
 dataDir :: FilePath
 dataDir = "test/data/shabittestvectors/"
 

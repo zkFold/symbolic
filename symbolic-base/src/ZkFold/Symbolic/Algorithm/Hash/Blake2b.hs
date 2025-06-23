@@ -68,9 +68,8 @@ import Prelude hiding (
   (^),
  )
 
-{- | BLAKE2b Cryptographic hash. Reference:
-https://tools.ietf.org/html/rfc7693
--}
+-- | BLAKE2b Cryptographic hash. Reference:
+-- https://tools.ietf.org/html/rfc7693
 
 {-
 2.1.  Parameters

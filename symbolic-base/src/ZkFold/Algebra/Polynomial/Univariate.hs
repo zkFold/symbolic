@@ -364,20 +364,18 @@ class
   -- | (toPolyVec [a0, ..., an])(x) == a0 + ... + an x^n
   toPolyVec :: KnownNat size => V.Vector c -> pv size
 
-  {- | fromPolyVec (\x -> a0 + ... + an x^n) == [a0, ..., an].
-
-  NOTE: size of the vector is implementation-defined.
-  -}
+  -- | fromPolyVec (\x -> a0 + ... + an x^n) == [a0, ..., an].
+  --
+  --   NOTE: size of the vector is implementation-defined.
   fromPolyVec :: KnownNat size => pv size -> V.Vector c
 
   -- | evalPolyVec p x = p(x)
   evalPolyVec :: KnownNat size => pv size -> c -> c
 
-{- | Flipped version of a '+.'.
-
-NOTE: we do not distinguish between left and right additive actions
-since all our (additive) groups are abelian.
--}
+-- | Flipped version of a '+.'.
+--
+-- NOTE: we do not distinguish between left and right additive actions
+-- since all our (additive) groups are abelian.
 (.+) :: (UnivariateRingPolyVec c pv, KnownNat size) => pv size -> c -> pv size
 (.+) = flip (+.)
 
@@ -515,9 +513,8 @@ instance
     | all (== zero) (V.drop (fromIntegral (value @size')) cs) = toPolyVec cs
     | otherwise = error "castPolyVec: Cannot cast polynomial vector to smaller size!"
 
-{- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
-Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
--}
+-- | Determines whether a polynomial is of the form 'ax^m + b' (m > 0) and returns @Just (m, a, b)@ if so.
+-- Multiplication and division by polynomials of such form can be performed much faster than with general algorithms.
 isShiftedMono :: forall c. (Field c, Eq c) => V.Vector c -> Maybe (Natural, c, c)
 isShiftedMono cs
   | V.length filtered /= 2 = Nothing
@@ -531,22 +528,21 @@ isShiftedMono cs
   filtered :: V.Vector (c, Natural)
   filtered = V.filter ((/= zero) . fst) ixed
 
-{- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
-The remainder is discarded.
-The algorithm requires (size - m) field multiplications.
-
-Division is performed from higher degrees downwards.
-
-i-th step of the algorithm:
-
- ci * x^i =
- ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
- ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
-
- > set the (i-m)-th coefficient of the result to be @ci@
- > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
- > Proceed to degree @i-1@
--}
+-- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
+-- The remainder is discarded.
+-- The algorithm requires (size - m) field multiplications.
+--
+-- Division is performed from higher degrees downwards.
+--
+-- i-th step of the algorithm:
+--
+--  ci * x^i =
+--  ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
+--  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
+--
+--  > set the (i-m)-th coefficient of the result to be @ci@
+--  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
+--  > Proceed to degree @i-1@
 divShiftedMono :: forall c size. Field c => PolyVec c size -> Natural -> c -> PolyVec c size
 divShiftedMono (PV cs) m b = PV $ V.create $ do
   let intLen = V.length cs

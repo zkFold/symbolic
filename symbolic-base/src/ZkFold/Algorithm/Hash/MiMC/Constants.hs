@@ -9,9 +9,8 @@ import Prelude
 mimcSeed :: LittleEndian
 mimcSeed = 42
 
-{- | The round constants ci are random elements of F_2n except for the first and
-  last round constants which are equal to 0.
--}
+-- | The round constants ci are random elements of F_2n except for the first and
+--   last round constants which are equal to 0.
 mimcConstants :: forall a. FromConstant Integer a => [a]
 mimcConstants =
   let

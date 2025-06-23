@@ -63,12 +63,11 @@ type Element = Zp BLS12_381_Scalar
 -- | Symbolic context.
 type Context = Interpreter Element
 
-{- | These test files are provided by the Computer Security Resource Center.
-Passing these tests is a requirement for having an implementation of a hashing function officially validated.
-https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
-
-Folder also includes https://keccak.team/obsolete/KeccakKAT-3.zip, which contains test vectors for Keccak.
--}
+-- | These test files are provided by the Computer Security Resource Center.
+-- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
+-- https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing#shavs
+--
+-- Folder also includes https://keccak.team/obsolete/KeccakKAT-3.zip, which contains test vectors for Keccak.
 dataDir :: FilePath
 dataDir = "test/data/sha-3bytetestvectors/"
 

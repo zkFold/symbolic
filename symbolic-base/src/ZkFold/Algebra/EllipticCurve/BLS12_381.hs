@@ -351,9 +351,8 @@ instance Binary BLS12_381_G2_CompressedPoint where
 
 --------------------------------------- Pairing ---------------------------------------
 
-{- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
-of order @'BLS12_381_Scalar'@.
--}
+-- | An image of a pairing is a cyclic multiplicative subgroup of @'Fq12'@
+-- of order @'BLS12_381_Scalar'@.
 newtype BLS12_381_GT = BLS12_381_GT Fq12
   deriving newtype
     ( Eq

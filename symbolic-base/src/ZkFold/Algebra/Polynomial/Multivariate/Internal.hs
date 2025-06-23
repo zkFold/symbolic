@@ -32,11 +32,10 @@ import Prelude hiding (
   (/),
  )
 
-{- | A class for polynomials.
-`c` is the coefficient type,
-`i` is the variable type,
-`j` is the power type.
--}
+-- | A class for polynomials.
+-- `c` is the coefficient type,
+-- `i` is the variable type,
+-- `j` is the power type.
 type Polynomial c i j = (Eq c, Field c, Monomial i j)
 
 -- | Polynomial type

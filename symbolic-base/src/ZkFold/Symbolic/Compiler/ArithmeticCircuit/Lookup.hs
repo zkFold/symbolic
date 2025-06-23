@@ -26,9 +26,8 @@ import Prelude (Show, undefined)
 newtype FunctionId f = FunctionId {funcHash :: ByteString}
   deriving (Eq, Ord, Show, Generic, NFData, ToJSON)
 
-{- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
-@a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
--}
+-- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
+-- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
 data LookupTable a f where
   -- | @Ranges@ describes a set of disjoint segments of the base field.
   Ranges :: Set (a, a) -> LookupTable a Par1

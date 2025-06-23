@@ -16,11 +16,10 @@ import GHC.TypeNats (Natural)
 import ZkFold.Algebra.Class (FromConstant (..))
 import Prelude (($), (<$>))
 
-{- | SHA2 family algorithms differ in constants and parameters used in the mostly identical internal loop.
-This module stores initial hashes and round constants.
-They were taken from the official SHA2 description:
-https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf, pages 11 to 17
--}
+-- | SHA2 family algorithms differ in constants and parameters used in the mostly identical internal loop.
+-- This module stores initial hashes and round constants.
+-- They were taken from the official SHA2 description:
+-- https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf, pages 11 to 17
 sha256InitialHashes :: FromConstant Natural a => V.Vector a
 sha256InitialHashes =
   V.fromList $

@@ -12,10 +12,9 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Maybe
 import Prelude (($))
 
-{- | The original paper: https://arxiv.org/pdf/2106.01161
-It introduces a babel fee output holding a liability and a reward for covering it.
-This contract checks that the second transaction consumes the liability and pays back the transaction fee
--}
+-- | The original paper: https://arxiv.org/pdf/2106.01161
+-- It introduces a babel fee output holding a liability and a reward for covering it.
+-- This contract checks that the second transaction consumes the liability and pays back the transaction fee
 babelFees
   :: forall context i1 ri1 i2 ri2
    . Symbolic context

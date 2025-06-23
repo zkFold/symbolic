@@ -361,28 +361,27 @@ instance
     zoom #acLookupFunction $ modify (M.insert functionId $ LookupFunction f)
     pure (FunctionId functionId)
 
-{- | Generates new variable index given a witness for it.
-
-It is a root hash (sha256) of a Merkle tree which is obtained from witness:
-
-1. Due to parametricity, the only operations inside witness are
-   operations from 'WitnessField' interface;
-
-2. Thus witness can be viewed as an AST of a 'WitnessField' "language" where:
-
-    * leafs are 'fromConstant' calls and variables;
-    * nodes are algebraic operations;
-    * root is the witness value for new variable.
-
-3. To inspect this AST, we instantiate witness with a special inspector type
-   whose 'WitnessField' instances perform inspection.
-
-4. Inspector type used here, 'MerkleHash', treats AST as a Merkle tree and
-   performs the calculation of hashes for it.
-
-5. Thus the result of running the witness with 'MerkleHash' as a
-   'WitnessField' is a root hash of a Merkle tree for a witness.
--}
+-- | Generates new variable index given a witness for it.
+--
+-- It is a root hash (sha256) of a Merkle tree which is obtained from witness:
+--
+-- 1. Due to parametricity, the only operations inside witness are
+--    operations from 'WitnessField' interface;
+--
+-- 2. Thus witness can be viewed as an AST of a 'WitnessField' "language" where:
+--
+--     * leafs are 'fromConstant' calls and variables;
+--     * nodes are algebraic operations;
+--     * root is the witness value for new variable.
+--
+-- 3. To inspect this AST, we instantiate witness with a special inspector type
+--    whose 'WitnessField' instances perform inspection.
+--
+-- 4. Inspector type used here, 'MerkleHash', treats AST as a Merkle tree and
+--    performs the calculation of hashes for it.
+--
+-- 5. Thus the result of running the witness with 'MerkleHash' as a
+--    'WitnessField' is a root hash of a Merkle tree for a witness.
 witToVar :: forall a. (Finite a, Binary a) => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV

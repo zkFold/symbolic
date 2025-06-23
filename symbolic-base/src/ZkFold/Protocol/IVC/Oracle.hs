@@ -15,10 +15,9 @@ import ZkFold.Data.Vector (Vector)
 
 -- TODO: add more specific instances for efficiency
 
-{- | @OracleSource a b@ links together base field @a@ and source of randomness @b@ to use in 'oracle'.
-
-'Generic' deriving via @b@ is available.
--}
+-- | @OracleSource a b@ links together base field @a@ and source of randomness @b@ to use in 'oracle'.
+--
+-- 'Generic' deriving via @b@ is available.
 class OracleSource a b where
   source :: b -> [a]
   -- ^ Extracts random seed from the source.
@@ -50,9 +49,8 @@ instance
   )
   => OracleSource a (b, c, d, e, f)
 
-{- | A newtype to derive 'OracleSource' for any 'Foldable'
-as long as its element type is also 'OracleSource'.
--}
+-- | A newtype to derive 'OracleSource' for any 'Foldable'
+-- as long as its element type is also 'OracleSource'.
 newtype FoldableSource f a = FoldableSource {foldableSource :: f a}
   deriving Foldable
 

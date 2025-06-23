@@ -68,9 +68,8 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
       take (toConstant cnt) $
         toList stream
 
-{- | An example implementation of a @'MonadCircuit'@ which computes witnesses
-immediately and drops the constraints.
--}
+-- | An example implementation of a @'MonadCircuit'@ which computes witnesses
+-- immediately and drops the constraints.
 newtype Witnesses a x = Witnesses {runWitnesses :: x}
   deriving (Functor, Applicative, Monad) via Identity
 

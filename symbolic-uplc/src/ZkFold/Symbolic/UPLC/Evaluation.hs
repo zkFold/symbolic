@@ -51,58 +51,52 @@ import Prelude (error, foldr, fromIntegral)
 -- This part is not meant to be changed when extending the Converter
 -- (except for bugfixing, of course).
 
-{- | According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf),
-evaluation of a UPLC term is a partial function.
-
-In addition, successful evaluation of a smart contract compiled to UPLC
-should yield a value of a builtin type.
-
-We encode this with a Symbolic 'Maybe' of an arbitrary 'IsData'.
--}
+-- | According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf),
+-- evaluation of a UPLC term is a partial function.
+--
+-- In addition, successful evaluation of a smart contract compiled to UPLC
+-- should yield a value of a builtin type.
+--
+-- We encode this with a Symbolic 'Maybe' of an arbitrary 'IsData'.
 data MaybeValue c = forall t v. IsData t v c => MaybeValue (Symbolic.Maybe c v)
 
-{- | Evaluation function.
-
-Given enough arguments, we can evaluate a first-order
-(that is, not taking functions as arguments)
-UPLC term into a value of builtin type.
--}
+-- | Evaluation function.
+--
+-- Given enough arguments, we can evaluate a first-order
+-- (that is, not taking functions as arguments)
+-- UPLC term into a value of builtin type.
 eval :: forall c. Sym c => Term -> [ExValue c] -> MaybeValue c
 eval t args = case impl [] t $ map aValue args of
   Just v -> v
   Nothing -> MaybeValue (Symbolic.nothing :: Symbolic.Maybe c (Proxy c))
 
-{- | Type actually used inside Converter to represent evaluation result.
-
-@Nothing@ is used to encode failure, just as @Just nothing@, but is used in
-case when the expected type of a term is unknown.
-
-@Just nothing@ is used to encode failure in cases when the expected type is
-known, but the success/failure outcome is undecidable (that is, context
-doesn't provide concrete values).
-
-The case when both the success/failure outcome and type are unknown is
-impossible.
--}
+-- | Type actually used inside Converter to represent evaluation result.
+--
+-- @Nothing@ is used to encode failure, just as @Just nothing@, but is used in
+-- case when the expected type of a term is unknown.
+--
+-- @Just nothing@ is used to encode failure in cases when the expected type is
+-- known, but the success/failure outcome is undecidable (that is, context
+-- doesn't provide concrete values).
+--
+-- The case when both the success/failure outcome and type are unknown is
+-- impossible.
 type SomeValue c = Maybe (MaybeValue c)
 
-{- | Type of terms/values stored in a term environment during evaluation.
-
-The reason we store unevaluated terms in an environment is to evaluate
-higher-rank programs correctly, e.g. @(\x -> ...) 'IfThenElse'@.
--}
+-- | Type of terms/values stored in a term environment during evaluation.
+--
+-- The reason we store unevaluated terms in an environment is to evaluate
+-- higher-rank programs correctly, e.g. @(\x -> ...) 'IfThenElse'@.
 type Thunk c = Either Term (SomeValue c)
 
-{- | With [De Bruijn indices](https://en.wikipedia.org/wiki/De_Bruijn_index) as variables,
-an [environment](https://en.wikipedia.org/wiki/Typing_environment) is just a list of thunks.
--}
+-- | With [De Bruijn indices](https://en.wikipedia.org/wiki/De_Bruijn_index) as variables,
+-- an [environment](https://en.wikipedia.org/wiki/Typing_environment) is just a list of thunks.
 type Env c = [Thunk c]
 
-{- | Arguments to UPLC terms that we apply to obtain the result.
-
-Note that we represent pattern-matching on constructors as an argument to
-defer pattern-matching until we reach the actual constructor being matched.
--}
+-- | Arguments to UPLC terms that we apply to obtain the result.
+--
+-- Note that we represent pattern-matching on constructors as an argument to
+-- defer pattern-matching until we reach the actual constructor being matched.
 data Arg c = ACase [Term] | AThunk (Thunk c)
 
 -- | Actual evaluation function.
@@ -138,9 +132,8 @@ applyVar ctx i args = case ctx !! i of
   Left t -> impl ctx t args -- evaluate the term
   Right v -> if null args then v else Nothing -- data are not functions!
 
-{- | Prepares context and arguments to enter new scope, and evaluates the body.
-Classic stuff when working with de Bruijn indices.
--}
+-- | Prepares context and arguments to enter new scope, and evaluates the body.
+-- Classic stuff when working with de Bruijn indices.
 beta :: Sym c => Thunk c -> Env c -> Term -> [Arg c] -> SomeValue c
 beta e env t args = impl (e : map shiftT env) t (map shiftA args)
  where
@@ -183,12 +176,11 @@ aTerm = AThunk . Left
 aValue :: Sym c => ExValue c -> Arg c
 aValue (ExValue v) = AThunk . Right . Just $ MaybeValue (Symbolic.just v)
 
-{- | Apply the monomorphic function to its arguments, fully saturated.
-
-Straightforward:
-1. given an argument, try to convert to the correct type;
-2. go further.
--}
+-- | Apply the monomorphic function to its arguments, fully saturated.
+--
+-- Straightforward:
+-- 1. given an argument, try to convert to the correct type;
+-- 2. go further.
 applyMono :: Sym c => Bool c -> Fun s t c -> [SomeValue c] -> SomeValue c
 applyMono b (FSat x) [] = Just $ MaybeValue (bool Symbolic.nothing x b)
 applyMono _ (FSat _) (_ : _) = Nothing
@@ -202,22 +194,21 @@ applyMono b (FLam f) (v : args) = do
 
 -- This part is meant to be changed when completing the Converter implementation.
 
-{- | Apply polymorphic function to its arguments, fully saturated.
-
-General algorithm:
-* If this is a "destructuring" operation:
-    a. Evaluate a single operand as a builtin datatype;
-    b. Apply the destructuring function.
-
-* If this is a "choice" operation:
-    a. Evaluate first operand as a builtin datatype;
-    b. Evaluate branches with the rest of the args supplied as their args;
-    c. Cast branches to the same type;
-    d. Apply the choice function.
-
-Be careful with two layers of Maybe! Think about which errors do you wish to
-propagate.
--}
+-- | Apply polymorphic function to its arguments, fully saturated.
+--
+-- General algorithm:
+-- * If this is a "destructuring" operation:
+--     a. Evaluate a single operand as a builtin datatype;
+--     b. Apply the destructuring function.
+--
+-- * If this is a "choice" operation:
+--     a. Evaluate first operand as a builtin datatype;
+--     b. Evaluate branches with the rest of the args supplied as their args;
+--     c. Cast branches to the same type;
+--     d. Apply the choice function.
+--
+-- Be careful with two layers of Maybe! Think about which errors do you wish to
+-- propagate.
 applyPoly :: forall c s t. Sym c => Env c -> BuiltinPolyFunction s t -> [Arg c] -> SomeValue c
 applyPoly ctx IfThenElse (ct : tt : et : args) = do
   MaybeValue c0 <- evalArg ctx ct []
@@ -288,9 +279,8 @@ symMaybe2 b1 b2 v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b1 
 -- | Some Symbolic value of a definite UPLC builtin type.
 data SymValue t c = forall v. IsData t v c => SymValue v
 
-{- | Given a UPLC constant, evaluate it as a corresponding Symbolic value.
-Types would not let you go (terribly) wrong!
--}
+-- | Given a UPLC constant, evaluate it as a corresponding Symbolic value.
+-- Types would not let you go (terribly) wrong!
 evalConstant :: forall c t. Sym c => Constant t -> SymValue t c
 evalConstant (CBool b) = SymValue (if b then true else false)
 evalConstant (CInteger i) = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ SymValue (fromConstant i)
@@ -320,14 +310,13 @@ consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJus
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c
 constr _ _ = error "FIXME: UPLC Data support"
 
-{- | Given a monomorphic UPLC builtin, evaluate it
-as a corresponding Symbolic function.
-
-Types will not let you go (terribly) wrong!
-
-Note that you can use 'FromConstant' instances defined above
-to get rid of the 'FSat'/'FLam' boilerplate.
--}
+-- | Given a monomorphic UPLC builtin, evaluate it
+-- as a corresponding Symbolic function.
+--
+-- Types will not let you go (terribly) wrong!
+--
+-- Note that you can use 'FromConstant' instances defined above
+-- to get rid of the 'FSat'/'FLam' boilerplate.
 evalMono :: forall c s t. Sym c => BuiltinMonoFunction s t -> Fun s t c
 evalMono (BMFInteger AddInteger) = addIntegerFun
 evalMono (BMFInteger SubtractInteger) = subtractIntegerFun
