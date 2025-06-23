@@ -37,6 +37,9 @@ import qualified Data.Vector.Mutable as VM
 import Data.Word (Word8)
 import GHC.TypeLits (SomeNat (..), Symbol)
 import GHC.TypeNats (someNatVal, type (<=?))
+import Prelude (($), (.), (<$>))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (fromZp)
 import ZkFold.Algebra.Number
@@ -71,8 +74,6 @@ import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import Prelude (($), (.), (<$>))
-import qualified Prelude as P
 
 -- | Width of each lane (in bits) in the Keccak sponge state.
 --

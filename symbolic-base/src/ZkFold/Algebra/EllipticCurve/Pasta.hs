@@ -16,6 +16,9 @@ module ZkFold.Algebra.EllipticCurve.Pasta (
 ) where
 
 import Control.Monad
+import Prelude (($), type (~))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
@@ -23,8 +26,6 @@ import ZkFold.Algebra.Number
 import ZkFold.Data.ByteString
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Eq
-import Prelude (($), type (~))
-import qualified Prelude
 
 -------------------------------- Introducing Fields ----------------------------------
 

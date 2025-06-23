@@ -13,6 +13,9 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (fmap, ($), (.), type (~))
+import qualified Prelude as P
+
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class
@@ -25,8 +28,6 @@ import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import Prelude (fmap, ($), (.), type (~))
-import qualified Prelude as P
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL
 data GooglePayload ctx

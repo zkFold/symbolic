@@ -18,12 +18,13 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (Num (..), drop, length, mod, (!!))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector (..), unsafeToVector)
 import ZkFold.Prelude (chooseNatural, drop, length, (!!))
-import Prelude hiding (Num (..), drop, length, mod, (!!))
-import qualified Prelude as P
 
 -- TODO (Issue #18): make the code safer
 

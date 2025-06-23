@@ -12,6 +12,8 @@ import Data.Foldable (toList)
 import Data.Function (const, (.))
 import Data.Proxy (Proxy (..))
 import GHC.Generics (Generic, Par1, (:*:))
+import Prelude (($), (<$>), type (~))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Empty (Empty, empty)
@@ -29,7 +31,6 @@ import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..), SymbolicOutput)
 import ZkFold.Symbolic.Data.Conditional (bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
-import Prelude (($), (<$>), type (~))
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1

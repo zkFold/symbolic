@@ -11,6 +11,8 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Binary (Binary)
 import Data.Functor.Rep (Representable (..))
 import GHC.Generics (Generic)
+import Prelude hiding (length, pi)
+
 import ZkFold.Algebra.Class (Ring, Scale, zero)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector)
@@ -19,7 +21,6 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
-import Prelude hiding (length, pi)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f = AccumulatorInstance

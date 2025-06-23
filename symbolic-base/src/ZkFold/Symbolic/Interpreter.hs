@@ -17,6 +17,7 @@ import Data.List.Infinite (toList)
 import Data.Tuple (uncurry)
 import GHC.Generics (Generic, Par1 (..))
 import Text.Show (Show (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative
 import ZkFold.Data.HFunctor

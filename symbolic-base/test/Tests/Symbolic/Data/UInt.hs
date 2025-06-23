@@ -13,6 +13,9 @@ import Data.List ((++))
 import GHC.Generics (Par1 (Par1), U1)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, withMaxSuccess, (.&.), (===))
+import Prelude (show, type (~))
+import qualified Prelude as P
+
 import Tests.Common (it, toss, toss1)
 import Tests.Symbolic.Data.Common (
   specConstantRoundtrip,
@@ -41,8 +44,6 @@ import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
-import Prelude (show, type (~))
-import qualified Prelude as P
 
 type AC a = ArithmeticCircuit a U1
 

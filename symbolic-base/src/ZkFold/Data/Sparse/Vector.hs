@@ -4,11 +4,12 @@ import Data.Map (Map, empty, filter, fromList, map, toList)
 import Data.These (These (..))
 import Data.Zip (Semialign (..), Zip (..))
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.ByteString (Binary (..))
-import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 
 newtype SVector size a = SVector {fromSVector :: Map (Zp size) a}
   deriving (Eq, Show)

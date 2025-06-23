@@ -2,10 +2,11 @@ module ZkFold.Symbolic.Ledger.Types.Address (
   Address,
 ) where
 
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+
 import ZkFold.Symbolic.Ledger.Types.Circuit (Circuit)
 import ZkFold.Symbolic.Ledger.Types.DataAvailability
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Address on the zkFold ledger.
 --

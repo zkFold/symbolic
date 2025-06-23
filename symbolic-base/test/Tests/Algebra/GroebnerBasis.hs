@@ -3,10 +3,11 @@ module Tests.Algebra.GroebnerBasis (specGroebner) where
 import Data.Map (empty, fromList)
 import GHC.Natural (Natural)
 import Test.Hspec
+import Prelude hiding (Eq (..), Num (..), (/), (^))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Polynomial.Multivariate
-import Prelude hiding (Eq (..), Num (..), (/), (^))
 
 testPoly :: [Poly Fr Natural Integer]
 testPoly =

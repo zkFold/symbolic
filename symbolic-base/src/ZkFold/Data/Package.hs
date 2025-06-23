@@ -6,6 +6,7 @@ import Data.Foldable (Foldable)
 import Data.Function ((.))
 import Data.Functor (Functor (..))
 import GHC.Generics (Par1 (..), (:.:) (..))
+
 import ZkFold.Data.HFunctor (HFunctor (..))
 
 -- | A @'Package'@ is a higher-order functor (@'HFunctor'@) which allows to

@@ -9,16 +9,6 @@ import Data.Constraint.Nat (plusNat, timesNat)
 import Data.Functor.Classes (Show1)
 import qualified Data.Vector as V
 import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Algebra.Class (Bilinear (..), Scale (..))
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import ZkFold.Algebra.Number
-import ZkFold.Algebra.Polynomial.Univariate (UnivariateFieldPolyVec (..))
-import ZkFold.Data.Vector (Vector)
-import ZkFold.FFI.Rust.Conversion
-import ZkFold.Protocol.Plonkup.Utils (getParams, getSecretParams)
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
 import Prelude hiding (
   Num (..),
   drop,
@@ -29,6 +19,17 @@ import Prelude hiding (
   (/),
   (^),
  )
+
+import ZkFold.Algebra.Class (Bilinear (..), Scale (..))
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import ZkFold.Algebra.Number
+import ZkFold.Algebra.Polynomial.Univariate (UnivariateFieldPolyVec (..))
+import ZkFold.Data.Vector (Vector)
+import ZkFold.FFI.Rust.Conversion
+import ZkFold.Protocol.Plonkup.Utils (getParams, getSecretParams)
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext))
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

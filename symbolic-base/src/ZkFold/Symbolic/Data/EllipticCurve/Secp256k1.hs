@@ -4,6 +4,8 @@
 module ZkFold.Symbolic.Data.EllipticCurve.Secp256k1 (Secp256k1_Point) where
 
 import Data.Function (($))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_PointOf, Secp256k1_Scalar)
@@ -14,7 +16,6 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
-import qualified Prelude
 
 type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base 'Auto ctx)
 

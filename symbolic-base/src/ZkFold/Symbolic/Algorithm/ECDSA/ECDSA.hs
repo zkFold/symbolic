@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 
 import Data.Type.Equality
 import GHC.TypeLits (KnownNat)
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
 import qualified ZkFold.Symbolic.Class as S

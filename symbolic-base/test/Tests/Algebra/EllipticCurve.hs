@@ -8,6 +8,8 @@ import Data.Proxy
 import GHC.TypeLits
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
+import Prelude hiding (Num (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.BN254
@@ -17,7 +19,6 @@ import ZkFold.Algebra.EllipticCurve.Pasta
 import ZkFold.Algebra.EllipticCurve.PlutoEris
 import ZkFold.Algebra.EllipticCurve.Secp256k1
 import ZkFold.Symbolic.Data.Eq (BooleanOf)
-import Prelude hiding (Num (..))
 
 specEllipticCurve :: Spec
 specEllipticCurve = do

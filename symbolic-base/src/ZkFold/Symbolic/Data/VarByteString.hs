@@ -36,6 +36,9 @@ import Data.String (IsString (..))
 import GHC.Generics (Generic, Par1 (..))
 import GHC.TypeLits (KnownSymbol (..), symbolVal, withKnownNat)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
+import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -54,8 +57,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
-import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
-import qualified Prelude as Haskell
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.

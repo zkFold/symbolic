@@ -9,14 +9,15 @@ import Control.Exception (evaluate)
 import Test.QuickCheck.Arbitrary (Arbitrary (..))
 import Test.QuickCheck.Gen (generate)
 import Test.Tasty.Bench
+import Prelude hiding (sum, (*), (+), (-), (/), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Prelude (log2ceiling)
-import Prelude hiding (sum, (*), (+), (-), (/), (^))
-import qualified Prelude as P
 
 type F = Zp BLS12_381_Scalar
 

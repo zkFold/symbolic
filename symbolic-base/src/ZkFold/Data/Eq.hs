@@ -13,9 +13,10 @@ import Data.String (String)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
+import Prelude (Integer)
+
 import ZkFold.Control.Conditional (Conditional, GConditional)
 import ZkFold.Data.Bool
-import Prelude (Integer)
 
 class Conditional (BooleanOf a) a => Eq a where
   type BooleanOf a

@@ -4,6 +4,7 @@ module ZkFold.Protocol.Plonkup.Input where
 
 import Data.List ((++))
 import Text.Show (Show, show)
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 
 newtype PlonkupInput g = PlonkupInput {unPlonkupInput :: [ScalarFieldOf g]}

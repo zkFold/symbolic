@@ -23,6 +23,8 @@ import Data.Semigroup ((<>))
 import Data.Set (Set)
 import qualified Data.Set as S
 import GHC.Generics ((:*:))
+import Prelude (error)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial)
 import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
@@ -37,7 +39,6 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (
  )
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..))
-import Prelude (error)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@

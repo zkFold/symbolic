@@ -10,6 +10,20 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Rep, Representable)
 import qualified Data.Vector as V
 import Data.Word (Word8)
+import Prelude hiding (
+  Num (..),
+  div,
+  drop,
+  length,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
+import qualified Prelude as P hiding (length)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..), Pairing (..))
 import ZkFold.Algebra.Number
@@ -24,19 +38,6 @@ import ZkFold.Protocol.Plonkup.Setup
 import ZkFold.Protocol.Plonkup.Verifier
 import ZkFold.Protocol.Plonkup.Witness
 import ZkFold.Symbolic.Class (Arithmetic)
-import Prelude hiding (
-  Num (..),
-  div,
-  drop,
-  length,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
-import qualified Prelude as P hiding (length)
 
 -- | Based on the paper https://eprint.iacr.org/2022/086.pdf
 instance

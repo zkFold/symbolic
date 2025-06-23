@@ -4,8 +4,9 @@ module ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants (blake2b_iv, sigma) wher
 
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
-import ZkFold.Algebra.Class (FromConstant (..))
 import Prelude (Int, map, ($), (<$>), type (~))
+
+import ZkFold.Algebra.Class (FromConstant (..))
 
 -- | Initialization Vector (same as for SHA-512)
 blake2b_iv :: (FromConstant Natural x, IsList (v x), Item (v x) ~ x) => v x

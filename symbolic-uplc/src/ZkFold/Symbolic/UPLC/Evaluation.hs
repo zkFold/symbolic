@@ -39,12 +39,13 @@ import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 import ZkFold.Symbolic.Data.Ord qualified as Symbolic
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString
+import Prelude (error, foldr, fromIntegral)
+
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Term
-import Prelude (error, foldr, fromIntegral)
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 

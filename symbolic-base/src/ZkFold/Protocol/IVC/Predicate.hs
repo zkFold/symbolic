@@ -6,6 +6,7 @@ module ZkFold.Protocol.IVC.Predicate where
 import Data.Binary (Binary)
 import Data.Function (const, ($), (.))
 import GHC.Generics (U1 (..), (:*:) (..))
+
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, guessOutput, solder)

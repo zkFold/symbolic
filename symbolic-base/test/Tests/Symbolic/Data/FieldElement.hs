@@ -6,6 +6,8 @@ import Data.Function (id, ($))
 import Data.List ((++))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (arbitrary)
+import Prelude (Integer)
+
 import Tests.Symbolic.Data.Common (
   specConstantRoundtrip,
   specSymbolicFunction0,
@@ -17,7 +19,6 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import Prelude (Integer)
 
 specFieldElement' :: forall p. PrimeField (Zp p) => Spec
 specFieldElement' = do

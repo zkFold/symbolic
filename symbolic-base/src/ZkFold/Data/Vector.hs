@@ -43,6 +43,9 @@ import GHC.IsList (IsList (..))
 import System.Random (Random (..))
 import Test.QuickCheck (Arbitrary (..), Arbitrary1 (..), arbitrary1)
 import Text.Show (Show)
+import Prelude (Integer)
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -51,8 +54,6 @@ import ZkFold.Data.Bool
 import ZkFold.Data.ByteString (Binary (..))
 import ZkFold.Data.Eq
 import ZkFold.Prelude (length)
-import Prelude (Integer)
-import qualified Prelude as P
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)

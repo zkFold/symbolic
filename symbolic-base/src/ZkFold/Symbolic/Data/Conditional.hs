@@ -9,6 +9,8 @@ import Data.Function (($))
 import Data.Functor.Rep (mzipWithRep)
 import Data.Proxy
 import GHC.Generics (Par1 (..))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional
 import ZkFold.Symbolic.Class
@@ -16,7 +18,6 @@ import ZkFold.Symbolic.Data.Bool (Bool (Bool))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import qualified Prelude
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 

@@ -43,6 +43,8 @@ import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import Optics (over, set, zoom)
 import Text.Show
 import qualified Type.Reflection as R
+import Prelude (error, seq)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate (Poly, var)
@@ -60,7 +62,6 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation (UVar (..))
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (error, seq)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural

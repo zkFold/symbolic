@@ -3,11 +3,12 @@
 module ZkFold.Protocol.Plonkup.Prover.Setup where
 
 import qualified Data.Vector as V
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPolyExtendedLength)
 import ZkFold.Protocol.Plonkup.Prover.Polynomials
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
   { omega :: !(ScalarFieldOf g1)

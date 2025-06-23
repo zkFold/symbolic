@@ -5,6 +5,9 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point, Vesta_Point) where
 
+import Prelude (fromInteger, ($))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
@@ -15,8 +18,6 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
-import Prelude (fromInteger, ($))
-import qualified Prelude
 
 type Pallas_Point ctx =
   Weierstrass "Pasta" (Point (FFA FpModulus 'Auto ctx))

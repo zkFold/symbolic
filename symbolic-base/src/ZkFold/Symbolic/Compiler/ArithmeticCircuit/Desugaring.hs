@@ -13,6 +13,8 @@ import Data.Maybe (maybe)
 import qualified Data.Set as S
 import Data.Traversable (traverse)
 import Data.Tuple (fst, uncurry)
+import Prelude (error)
+
 import ZkFold.Algebra.Class
 import ZkFold.Prelude (assert, length)
 import ZkFold.Symbolic.Class (Arithmetic)
@@ -21,7 +23,6 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (asRange)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (toVar)
 import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (error)
 
 desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
 desugarRange i (a, b)

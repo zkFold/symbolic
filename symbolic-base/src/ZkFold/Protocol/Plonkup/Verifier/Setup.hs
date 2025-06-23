@@ -2,10 +2,11 @@
 
 module ZkFold.Protocol.Plonkup.Verifier.Setup where
 
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupVerifierSetup i o n g1 g2 pv = PlonkupVerifierSetup
   { omega :: !(ScalarFieldOf g1)

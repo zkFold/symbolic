@@ -15,6 +15,7 @@ import Data.Traversable (traverse)
 import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.HFunctor (hmap)

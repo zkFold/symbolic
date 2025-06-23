@@ -7,6 +7,8 @@ import Control.DeepSeq (NFData)
 import GHC.Generics (U1)
 import System.Random (randomRIO)
 import Test.Tasty.Bench
+import Prelude hiding (sum, (*), (+), (-), (/), (^))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
@@ -19,7 +21,6 @@ import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
 import ZkFold.Symbolic.Interpreter
-import Prelude hiding (sum, (*), (+), (-), (/), (^))
 
 type I = Interpreter (Zp BLS12_381_Scalar)
 

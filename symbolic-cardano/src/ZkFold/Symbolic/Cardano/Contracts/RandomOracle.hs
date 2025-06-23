@@ -7,7 +7,6 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Log2)
 import ZkFold.Data.Vector (Vector, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
-import ZkFold.Symbolic.Cardano.Types
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString as Symbolic
@@ -27,6 +26,8 @@ import Prelude hiding (
   (+),
   (==),
  )
+
+import ZkFold.Symbolic.Cardano.Types
 
 type Tokens = 2
 

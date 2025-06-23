@@ -20,8 +20,9 @@ import Data.Typeable (Typeable)
 import qualified Data.Typeable as T
 import GHC.Generics (Generic, Par1, (:*:))
 import qualified Type.Reflection as R
-import ZkFold.Data.ByteString ()
 import Prelude (Show, undefined)
+
+import ZkFold.Data.ByteString ()
 
 newtype FunctionId f = FunctionId {funcHash :: ByteString}
   deriving (Eq, Generic, NFData, Ord, Show, ToJSON)

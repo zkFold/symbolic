@@ -30,6 +30,9 @@ import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Par1 (..))
 import GHC.TypeLits (Symbol)
 import GHC.TypeNats (withKnownNat, type (<=?))
+import Prelude (Int, id, pure, zip, ($), ($!), (.), (>>=))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor (hmap)
@@ -68,8 +71,6 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Prelude (Int, id, pure, zip, ($), ($!), (.), (>>=))
-import qualified Prelude as P
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.

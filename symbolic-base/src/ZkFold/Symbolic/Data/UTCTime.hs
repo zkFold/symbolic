@@ -8,6 +8,9 @@ module ZkFold.Symbolic.Data.UTCTime where
 
 import GHC.Natural (Natural)
 import GHC.TypeNats (KnownNat)
+import Prelude hiding (Bool, Eq, Ord)
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class (FromConstant)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
@@ -18,8 +21,6 @@ import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
-import Prelude hiding (Bool, Eq, Ord)
-import qualified Prelude as Haskell
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
 

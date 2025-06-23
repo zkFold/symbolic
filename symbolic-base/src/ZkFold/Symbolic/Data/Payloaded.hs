@@ -7,6 +7,7 @@ import Data.Functor.Rep (mzipWithRep)
 import Data.Proxy (Proxy (..))
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Symbolic.Class (Symbolic (..))

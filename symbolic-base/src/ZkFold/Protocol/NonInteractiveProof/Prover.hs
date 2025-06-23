@@ -14,9 +14,10 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Optics ((&))
 import Test.QuickCheck (Arbitrary (..), generate, vectorOf)
+import Prelude
+
 import ZkFold.Data.ByteString
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))
-import Prelude
 
 newtype ProofBytes = ProofBytes
   {fromWitnessBytes :: ByteString}

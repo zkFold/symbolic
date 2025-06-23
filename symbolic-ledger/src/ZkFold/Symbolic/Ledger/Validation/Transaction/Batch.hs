@@ -11,9 +11,10 @@ import ZkFold.Symbolic.Data.Hash
 import ZkFold.Symbolic.Data.List (List)
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Data.Morph
+import Prelude (snd, ($))
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
-import Prelude (snd, ($))
 
 -- | Witness for 'TransactionBatch' validation.
 data TransactionBatchWitness context = TransactionBatchWitness

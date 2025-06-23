@@ -9,13 +9,14 @@ import Data.Eq (Eq, (==))
 import Data.Function ((.))
 import Data.Functor (Functor, fmap)
 import Data.Maybe (Maybe (..))
+import Prelude (Integral)
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
-import Prelude (Integral)
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 

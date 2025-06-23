@@ -22,6 +22,9 @@ import System.FilePath.Posix
 import System.IO (IO)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe)
 import Text.Regex.TDFA
+import Prelude (String, pure, read, (<>), (==))
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -30,8 +33,6 @@ import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, keccak)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import Prelude (String, pure, read, (<>), (==))
-import qualified Prelude as Haskell
 
 -- | Adds following obvious constraints.
 withConstraints

@@ -25,8 +25,9 @@ import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Algebra.Class
 import Prelude hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!), (/), (^))
+
+import ZkFold.Algebra.Class
 
 type Variable i = (Eq i, Ord i)
 

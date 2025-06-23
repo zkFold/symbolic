@@ -8,6 +8,19 @@ module ZkFold.Protocol.Plonkup.Update where
 import Data.Foldable (toList)
 import Data.Functor.Rep (Representable (..))
 import GHC.IsList (fromList)
+import Prelude hiding (
+  Num (..),
+  drop,
+  length,
+  pi,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number
@@ -24,18 +37,6 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Verifier (PlonkupVerifierSetup (..))
 import qualified ZkFold.Protocol.Plonkup.Verifier as Verifier
 import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
-import Prelude hiding (
-  Num (..),
-  drop,
-  length,
-  pi,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
 
 updateRelation
   :: forall i o n a pv

@@ -18,6 +18,7 @@ import qualified Data.Vector as V
 import GHC.IsList (IsList (fromList))
 import Test.Hspec
 import Test.QuickCheck hiding (witness)
+
 import Tests.Protocol.Plonkup.Update (specPlonkupUpdate)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381

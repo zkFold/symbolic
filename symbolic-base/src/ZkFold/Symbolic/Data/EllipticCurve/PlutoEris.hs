@@ -5,6 +5,9 @@
 
 module ZkFold.Symbolic.Data.EllipticCurve.PlutoEris (Pluto_Point, Eris_Point) where
 
+import Prelude (fromInteger, ($))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.PlutoEris (PlutoEris_p, PlutoEris_q)
@@ -15,8 +18,6 @@ import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
-import Prelude (fromInteger, ($))
-import qualified Prelude
 
 type Pluto_Point ctx =
   Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_p 'Auto ctx))

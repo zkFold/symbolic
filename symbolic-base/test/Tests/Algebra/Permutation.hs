@@ -7,9 +7,10 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as V
 import Test.Hspec
 import Test.QuickCheck
+import Prelude hiding (Fractional (..), Num (..), length)
+
 import ZkFold.Algebra.Permutation
 import ZkFold.Data.Vector (fromVector)
-import Prelude hiding (Fractional (..), Num (..), length)
 
 specPermutation :: Spec
 specPermutation = do

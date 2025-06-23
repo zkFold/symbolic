@@ -59,6 +59,7 @@ import Test.QuickCheck (Arbitrary, Property)
 import qualified Test.QuickCheck as Q
 import Text.Pretty.Simple (pPrint)
 import Text.Show (Show)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial)
 import ZkFold.Control.HApplicative (HApplicative)

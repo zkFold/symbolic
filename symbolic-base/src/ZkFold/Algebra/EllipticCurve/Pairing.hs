@@ -15,14 +15,15 @@ import Data.Int (Int8)
 import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
 import Numeric.Natural (Natural)
+import Prelude (fromInteger)
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
 import ZkFold.Symbolic.Data.Bool hiding (Bool)
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
-import Prelude (fromInteger)
-import qualified Prelude
 
 -- Ate pairing implementation adapted from:
 -- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs

@@ -16,10 +16,11 @@ import Data.Function ((.))
 import Data.Functor (Functor)
 import GHC.Generics (Generic)
 import GHC.Show (Show)
+import Prelude (Eq, Ord)
+
 import ZkFold.Algebra.Class
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
 import ZkFold.Symbolic.MonadCircuit (Witness, at)
-import Prelude (Eq, Ord)
 
 data LinVar a v = LinVar a v a | ConstVar a
   deriving

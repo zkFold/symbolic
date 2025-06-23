@@ -10,6 +10,9 @@ import qualified Data.Bits as B
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64
 import GHC.Generics (Generic)
+import Prelude (pure, ($))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -20,8 +23,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
-import Prelude (pure, ($))
-import qualified Prelude as P
 
 -- | RSA Public key with Key ID
 data Certificate ctx

@@ -13,6 +13,9 @@ module ZkFold.Symbolic.Data.Eq (
 import Data.Bool (bool)
 import Data.Functor.Rep (mzipRep, mzipWithRep)
 import Data.Traversable (for)
+import Prelude (return, ($), type (~))
+import qualified Prelude as Haskell
+
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.Package
@@ -22,8 +25,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Conditional ()
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (return, ($), type (~))
-import qualified Prelude as Haskell
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 

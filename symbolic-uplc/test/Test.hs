@@ -23,10 +23,11 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (false, true)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import Prelude (either, error, id, (.), type (~))
+
 import ZkFold.Symbolic.UPLC.Converter (contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Term
-import Prelude (either, error, id, (.), type (~))
 
 areSame
   :: ( SymbolicData f

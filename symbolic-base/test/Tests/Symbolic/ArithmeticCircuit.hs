@@ -8,6 +8,9 @@ import Data.Functor ((<$>))
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck
+import Prelude (Show, id, ($))
+import qualified Prelude as Haskell
+
 import Tests.Common (it)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -19,8 +22,6 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Ord ((<=))
-import Prelude (Show, id, ($))
-import qualified Prelude as Haskell
 
 -- TODO: Add `desugarRanges` specification
 

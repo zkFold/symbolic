@@ -11,7 +11,6 @@ import Data.Functor.Rep
 import Data.Kind (Type)
 import GHC.Generics hiding (Rep)
 import Numeric.Natural (Natural)
-import ZkFold.Algebra.Class
 import Prelude hiding (
   Num (..),
   div,
@@ -25,6 +24,8 @@ import Prelude hiding (
   (/),
   (^),
  )
+
+import ZkFold.Algebra.Class
 
 -- | Class of vector spaces with a basis. More accurately, when @a@ is
 -- a `Field` then @v a@ is a vector space over it. If @a@ is a `Ring` then

@@ -10,6 +10,7 @@ import Data.List.Infinite (Infinite)
 import Data.Traversable (Traversable)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1)
+
 import ZkFold.Data.ByteString (Binary1)
 import ZkFold.Symbolic.Class (Symbolic (..))
 

@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Data.Morph where
 import Data.Function (const, ($), (.))
 import Data.Proxy (Proxy (..))
 import Data.Type.Equality (type (~))
+
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
 import ZkFold.Symbolic.Fold (SymbolicFold)

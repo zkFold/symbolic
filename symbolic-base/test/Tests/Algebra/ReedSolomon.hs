@@ -9,6 +9,9 @@ import qualified Data.Vector as V
 import GHC.Natural (Natural)
 import Test.Hspec
 import Test.QuickCheck
+import Prelude
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding ((*), (+))
 import qualified ZkFold.Algebra.Class as C
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as BLS12_381
@@ -16,8 +19,6 @@ import qualified ZkFold.Algebra.EllipticCurve.BN254 as BN254
 import qualified ZkFold.Algebra.EllipticCurve.Pasta as Pasta
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Algorithm.ReedSolomon
-import Prelude
-import qualified Prelude as P
 
 data ReedSolomonExample f = ReedSolomonExample
   { pe :: f -- primitive element

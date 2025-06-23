@@ -11,12 +11,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as VA
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
-import ZkFold.Algebra.Number
-import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Data.Vector (Vector, fromVector)
-import ZkFold.Prelude (length, take)
 import Prelude (abs)
 import Prelude hiding (
   Fractional (..),
@@ -29,6 +23,13 @@ import Prelude hiding (
   (!!),
   (^),
  )
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fq, Fr)
+import ZkFold.Algebra.Number
+import ZkFold.Algebra.Polynomial.Univariate
+import ZkFold.Data.Vector (Vector, fromVector)
+import ZkFold.Prelude (length, take)
 
 propToPolyVec
   :: forall c s
