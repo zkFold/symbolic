@@ -46,9 +46,9 @@ type LayoutFunctor f = (Binary1 f, NFData1 f, PayloadFunctor f, Traversable f)
 
 -- | A class for Symbolic data types.
 class
-  ( Symbolic (Context x)
-  , LayoutFunctor (Layout x)
+  ( LayoutFunctor (Layout x)
   , PayloadFunctor (Payload x)
+  , Symbolic (Context x)
   ) =>
   SymbolicData x
   where
@@ -67,22 +67,22 @@ class
   -- | Returns the circuit that makes up `x`.
   arithmetize :: x -> Support x -> Context x (Layout x)
   default arithmetize
-    :: ( G.Generic x
+    :: ( Context x ~ GContext (G.Rep x)
+       , G.Generic x
        , GSymbolicData (G.Rep x)
-       , Context x ~ GContext (G.Rep x)
-       , Support x ~ GSupport (G.Rep x)
        , Layout x ~ GLayout (G.Rep x)
+       , Support x ~ GSupport (G.Rep x)
        )
     => x -> Support x -> Context x (Layout x)
   arithmetize x = garithmetize (G.from x)
 
   payload :: x -> Support x -> Payload x (WitnessField (Context x))
   default payload
-    :: ( G.Generic x
+    :: ( Context x ~ GContext (G.Rep x)
+       , G.Generic x
        , GSymbolicData (G.Rep x)
-       , Context x ~ GContext (G.Rep x)
-       , Support x ~ GSupport (G.Rep x)
        , Payload x ~ GPayload (G.Rep x)
+       , Support x ~ GSupport (G.Rep x)
        )
     => x -> Support x -> Payload x (WitnessField (Context x))
   payload x = gpayload (G.from x)
@@ -92,20 +92,20 @@ class
     :: Context x ~ c
     => (Support x -> (c (Layout x), Payload x (WitnessField c))) -> x
   default restore
-    :: ( Context x ~ c
+    :: ( Context x ~ GContext (G.Rep x)
+       , Context x ~ c
        , G.Generic x
        , GSymbolicData (G.Rep x)
-       , Context x ~ GContext (G.Rep x)
-       , Support x ~ GSupport (G.Rep x)
        , Layout x ~ GLayout (G.Rep x)
        , Payload x ~ GPayload (G.Rep x)
+       , Support x ~ GSupport (G.Rep x)
        )
     => (Support x -> (c (Layout x), Payload x (WitnessField c))) -> x
   restore f = G.to (grestore f)
 
 type SymbolicOutput x = (SymbolicData x, Support x ~ Proxy (Context x))
 
-instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
+instance (LayoutFunctor f, Symbolic c) => SymbolicData (c f) where
   type Context (c f) = c
   type Support (c f) = Proxy c
   type Layout (c f) = f
@@ -126,45 +126,40 @@ instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
   restore _ = Proxy
 
 instance
-  ( SymbolicData x
-  , SymbolicData y
-  , Context x ~ Context y
+  ( Context x ~ Context y
   , Support x ~ Support y
+  , SymbolicData x
+  , SymbolicData y
   )
   => SymbolicData (x, y)
 
 instance
-  ( SymbolicData x
-  , SymbolicData y
-  , SymbolicData z
-  , Context x ~ Context y
+  ( Context x ~ Context y
   , Context y ~ Context z
   , Support x ~ Support y
   , Support y ~ Support z
+  , SymbolicData x
+  , SymbolicData y
+  , SymbolicData z
   )
   => SymbolicData (x, y, z)
 
 instance
-  ( SymbolicData w
-  , SymbolicData x
-  , SymbolicData y
-  , SymbolicData z
-  , Context w ~ Context x
+  ( Context w ~ Context x
   , Context x ~ Context y
   , Context y ~ Context z
   , Support w ~ Support x
   , Support x ~ Support y
   , Support y ~ Support z
-  )
-  => SymbolicData (w, x, y, z)
-
-instance
-  ( SymbolicData v
   , SymbolicData w
   , SymbolicData x
   , SymbolicData y
   , SymbolicData z
-  , Context v ~ Context w
+  )
+  => SymbolicData (w, x, y, z)
+
+instance
+  ( Context v ~ Context w
   , Context w ~ Context x
   , Context x ~ Context y
   , Context y ~ Context z
@@ -172,17 +167,16 @@ instance
   , Support w ~ Support x
   , Support x ~ Support y
   , Support y ~ Support z
-  )
-  => SymbolicData (v, w, x, y, z)
-
-instance
-  ( SymbolicData u
   , SymbolicData v
   , SymbolicData w
   , SymbolicData x
   , SymbolicData y
   , SymbolicData z
-  , Context u ~ Context v
+  )
+  => SymbolicData (v, w, x, y, z)
+
+instance
+  ( Context u ~ Context v
   , Context v ~ Context w
   , Context w ~ Context x
   , Context x ~ Context y
@@ -192,18 +186,17 @@ instance
   , Support w ~ Support x
   , Support x ~ Support y
   , Support y ~ Support z
-  )
-  => SymbolicData (u, v, w, x, y, z)
-
-instance
-  ( SymbolicData t
   , SymbolicData u
   , SymbolicData v
   , SymbolicData w
   , SymbolicData x
   , SymbolicData y
   , SymbolicData z
-  , Context t ~ Context u
+  )
+  => SymbolicData (u, v, w, x, y, z)
+
+instance
+  ( Context t ~ Context u
   , Context u ~ Context v
   , Context v ~ Context w
   , Context w ~ Context x
@@ -215,13 +208,20 @@ instance
   , Support w ~ Support x
   , Support x ~ Support y
   , Support y ~ Support z
+  , SymbolicData t
+  , SymbolicData u
+  , SymbolicData v
+  , SymbolicData w
+  , SymbolicData x
+  , SymbolicData y
+  , SymbolicData z
   )
   => SymbolicData (t, u, v, w, x, y, z)
 
 newtype LayoutData f x = LayoutData {layoutData :: f x}
-  deriving newtype (Show, Eq, Functor, Foldable, NFData1)
+  deriving newtype (Eq, Foldable, Functor, NFData1, Show)
 
-instance (NFData1 f, NFData x) => NFData (LayoutData f x) where
+instance (NFData x, NFData1 f) => NFData (LayoutData f x) where
   rnf = liftRnf rnf
 
 instance
@@ -245,7 +245,7 @@ instance
 deriving via
   (LayoutData (Vector n) x)
   instance
-    (SymbolicData x, KnownNat n) => SymbolicData (Vector n x)
+    (KnownNat n, SymbolicData x) => SymbolicData (Vector n x)
 
 instance SymbolicData f => SymbolicData (x -> f) where
   type Context (x -> f) = Context f
@@ -258,9 +258,9 @@ instance SymbolicData f => SymbolicData (x -> f) where
   restore f x = restore (f . (x,))
 
 class
-  ( Symbolic (GContext u)
-  , LayoutFunctor (GLayout u)
+  ( LayoutFunctor (GLayout u)
   , PayloadFunctor (GPayload u)
+  , Symbolic (GContext u)
   ) =>
   GSymbolicData u
   where
@@ -276,10 +276,10 @@ class
     => (GSupport u -> (c (GLayout u), GPayload u (WitnessField c))) -> u x
 
 instance
-  ( GSymbolicData u
-  , GSymbolicData v
-  , GContext u ~ GContext v
+  ( GContext u ~ GContext v
   , GSupport u ~ GSupport v
+  , GSymbolicData u
+  , GSymbolicData v
   )
   => GSymbolicData (u :*: v)
   where

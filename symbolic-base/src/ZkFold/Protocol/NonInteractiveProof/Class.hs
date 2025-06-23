@@ -36,7 +36,7 @@ class Monoid ts => FromTranscript ts a where
 challenge :: forall ts a. FromTranscript ts a => ts -> a
 challenge = fromTranscript
 
-challenges :: (ToTranscript ts Word8, FromTranscript ts a) => ts -> Natural -> ([a], ts)
+challenges :: (FromTranscript ts a, ToTranscript ts Word8) => ts -> Natural -> ([a], ts)
 challenges ts0 n = go ts0 n []
  where
   go ts 0 acc = (acc, ts)
@@ -74,9 +74,9 @@ type RustFFI g pv rustg rustp =
 
 instance
   {-# OVERLAPPABLE #-}
-  ( f ~ ScalarFieldOf g
-  , RustFFI g (PolyVec f size) rustg rustp
+  ( RustFFI g (PolyVec f size) rustg rustp
   , UnivariateRingPolyVec f (PolyVec f)
+  , f ~ ScalarFieldOf g
   )
   => Bilinear (V.Vector rustg) (PolyVec f size) g
   where
@@ -87,8 +87,8 @@ instance
   ( CyclicGroup g
   , KnownNat size
   , NFData g
-  , f ~ ScalarFieldOf g
   , UnivariateRingPolyVec f (PolyVec f)
+  , f ~ ScalarFieldOf g
   )
   => Bilinear (V.Vector g) (PolyVec f size) g
   where

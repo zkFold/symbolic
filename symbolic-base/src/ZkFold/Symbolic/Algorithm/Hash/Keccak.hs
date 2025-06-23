@@ -100,21 +100,24 @@ numRounds = value @NumRounds
 -- | Keccak is a family of hashing functions with almost identical implementations but different parameters.
 -- This class links these varying parts with the appropriate algorithm.
 class
-  ( KnownNat (Rate algorithm)
-  , -- Padded message is a multiple of rate (in bits), and thus we want rate to be a multiple of 8 to obtain valid "byte"strings.
-    Mod (Rate algorithm) 8 ~ 0
-  , -- Requiring rate to be a multiple of 'LaneWidth'. As we would eventually obtain 'LaneWidth' bit words.
-    Mod (Rate algorithm) LaneWidth ~ 0
-  , -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, it is equivalent to saying that rate is positive.
+  ( -- Padded message is a multiple of rate (in bits), and thus we want rate to be a multiple of 8 to obtain valid "byte"strings.
+
+    -- Requiring rate to be a multiple of 'LaneWidth'. As we would eventually obtain 'LaneWidth' bit words.
+
+    -- This constraint is needed so that dividing by 8 does not lead to zero. Given the above constraints, it is equivalent to saying that rate is positive.
     (1 <=? Div (Rate algorithm) 8) ~ 'P.True
   , -- Redundant constraint but GHC is unable to derive it as such.
     (1 <=? Div (Rate algorithm) LaneWidth) ~ 'P.True
   , -- Some of the code actually assumes that lane width is 64. This constraint is just a safety valve to let code break if developer tries changing value of @LaneWidth@.
-    LaneWidth ~ 64
-  , KnownNat (Div (Rate algorithm) LaneWidth)
-  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
-  , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
+
+    (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
   , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
+  , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
+  , KnownNat (Div (Rate algorithm) LaneWidth)
+  , KnownNat (Rate algorithm)
+  , LaneWidth ~ 64
+  , Mod (Rate algorithm) 8 ~ 0
+  , Mod (Rate algorithm) LaneWidth ~ 0
   ) =>
   AlgorithmSetup (algorithm :: Symbol)
   where
@@ -210,22 +213,22 @@ type NumBlocks msgBits rateBits = Div (PaddedLengthBytesFromBits msgBits rateBit
 
 withMessageLengthConstraints
   :: forall msgBits rateBits {r} {msgBytes} {rateBytes}
-   . ( KnownNat msgBits
-     , KnownNat rateBits
-     , 1 <= Div rateBits 8
+   . ( 1 <= Div rateBits 8
      , 1 <= Div rateBits LaneWidth
+     , KnownNat msgBits
+     , KnownNat rateBits
      , msgBytes ~ Div msgBits 8
      , rateBytes ~ Div rateBits 8
      )
-  => ( ( KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
-       , KnownNat (PaddedLengthBits msgBits rateBits)
+  => ( ( (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
+       , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
        , KnownNat
            ( Div
                (NumBlocks msgBits rateBits)
                (AbsorbChunkSize' rateBits)
            )
-       , (Div (PaddedLengthBytesFromBits msgBits rateBits) 8) * 64 ~ PaddedLengthBits msgBits rateBits
-       , (Div (NumBlocks msgBits rateBits) (Div rateBits LaneWidth)) * Div rateBits LaneWidth ~ NumBlocks msgBits rateBits
+       , KnownNat (PaddedLengthBits msgBits rateBits)
+       , KnownNat (PaddedLengthBytesFromBits msgBits rateBits)
        )
        => r
      )

@@ -42,7 +42,7 @@ mkIndexPartition vs =
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-  deriving (Show, Eq, Generic, NFData)
+  deriving (Eq, Generic, NFData, Show)
 
 instance KnownNat n => Arbitrary (Permutation n) where
   arbitrary =

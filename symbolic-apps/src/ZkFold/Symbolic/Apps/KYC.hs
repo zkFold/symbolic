@@ -68,13 +68,13 @@ isCitizen = elem
 
 kycExample
   :: forall n r rsc context
-   . ( Symbolic context
+   . ( Eq (KYCHash context)
+     , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
      , KnownNat n
      , KnownNat rsc
-     , Eq (KYCHash context)
      , KnownRegisterSize r
      , KnownRegisters context 64 r
-     , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
+     , Symbolic context
      )
   => KYCData n context -> KYCHash context -> Bool context
 kycExample kycData hash =
@@ -98,8 +98,8 @@ kycExample kycData hash =
 
 userA
   :: forall r context
-   . ( Symbolic context
-     , KnownRegisterSize r
+   . ( KnownRegisterSize r
+     , Symbolic context
      )
   => User r context
 userA =
@@ -118,8 +118,8 @@ iso3166 = \case
 
 restrictedCountries
   :: forall m context
-   . ( Symbolic context
-     , KnownNat m
+   . ( KnownNat m
+     , Symbolic context
      )
   => Vector m (ByteString 128 context)
 restrictedCountries =

@@ -32,7 +32,7 @@ import Prelude hiding (
 
 propToPolyVec
   :: forall c s
-   . (Ring c, Eq c, KnownNat s)
+   . (Eq c, KnownNat s, Ring c)
   => [c] -> Bool
 propToPolyVec cs =
   let p = toPolyVec @_ @(PolyVec c) @s $ V.fromList cs
@@ -40,7 +40,7 @@ propToPolyVec cs =
 
 propCastPolyVec
   :: forall c s s'
-   . (Field c, KnownNat s, KnownNat s', Eq c)
+   . (Eq c, Field c, KnownNat s, KnownNat s')
   => [c] -> Bool
 propCastPolyVec cs =
   let n = min (value @s) (value @s')
@@ -50,7 +50,7 @@ propCastPolyVec cs =
 
 propPolyVecDivision
   :: forall c s
-   . (Field c, KnownNat s, Eq c)
+   . (Eq c, Field c, KnownNat s)
   => PolyVec c s -> PolyVec c s -> Bool
 propPolyVecDivision p q =
   let d1 = deg @c @(Poly c) $ vec2poly p
@@ -60,8 +60,8 @@ propPolyVecDivision p q =
 -- TODO: Don't use a hardcoded root of unity
 propPolyVecZero
   :: forall c s d
-   . (KnownNat s, KnownNat d)
-  => (Field c, Eq c)
+   . (KnownNat d, KnownNat s)
+  => (Eq c, Field c)
   => Natural -> Bool
 propPolyVecZero i =
   let Just omega = rootOfUnity 5 :: Maybe c
@@ -72,8 +72,8 @@ propPolyVecZero i =
 -- TODO: Don't use a hardcoded root of unity
 propPolyVecLagrange
   :: forall c s d
-   . (KnownNat s, KnownNat d)
-  => (Field c, Eq c)
+   . (KnownNat d, KnownNat s)
+  => (Eq c, Field c)
   => Natural -> Bool
 propPolyVecLagrange i =
   let Just omega = rootOfUnity 5 :: Maybe c
@@ -93,8 +93,8 @@ propPolyVecGrandProduct p beta gamma =
 
 specUnivariatePolyVec'
   :: forall c s d
-   . (KnownNat s, KnownNat d)
-  => (Arbitrary c, Show c, Typeable c, Field c, Ord c)
+   . (KnownNat d, KnownNat s)
+  => (Arbitrary c, Field c, Ord c, Show c, Typeable c)
   => Spec
 specUnivariatePolyVec' = do
   describe "Univariate polynomials specification" $ do
@@ -144,8 +144,8 @@ specUnivariatePolyVec' = do
 
 specUnivariatePolyVecClass
   :: forall c s
-   . (KnownNat s, KnownNat (s - 3))
-  => (Arbitrary c, Show c, Typeable c, Field c, Ord c)
+   . (KnownNat (s - 3), KnownNat s)
+  => (Arbitrary c, Field c, Ord c, Show c, Typeable c)
   => Spec
 specUnivariatePolyVecClass = do
   describe ("Type: " ++ show (typeOf @(PolyVec c s) zero)) $ do

@@ -115,7 +115,7 @@ data ZKSetupBytes = ZKSetupBytes
   , cmT2_bytes :: ByteString
   , cmT3_bytes :: ByteString
   }
-  deriving stock (Show, Generic)
+  deriving stock (Generic, Show)
 
 mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
@@ -145,7 +145,7 @@ mkSetup PlonkupVerifierSetup {..} =
 
 -- | Field element.
 newtype ZKF = ZKF Integer
-  deriving stock (Show, Eq, Ord, Generic)
+  deriving stock (Eq, Generic, Ord, Show)
   deriving newtype (FromJSON, ToJSON)
 
 -- | 'ByteString' whose on wire representation is given in hexadecimal encoding.
@@ -199,7 +199,7 @@ data ZKProofBytes = ZKProofBytes
   , l_xi :: !ZKF
   , l1_xi :: !ZKF
   }
-  deriving stock (Show, Generic)
+  deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
 
 mkProof :: forall i (n :: Natural). Proof (PlonkupTs i n ByteString) -> ZKProofBytes
@@ -264,16 +264,16 @@ data ExpModInput c
   deriving Generic
 
 deriving instance
-  ( Symbolic ctx
+  ( KnownRegisters ctx 2048 'Auto
   , KnownRegisters ctx RSA.PubExponentSize 'Auto
-  , KnownRegisters ctx 2048 'Auto
+  , Symbolic ctx
   )
   => SymbolicData (ExpModInput ctx)
 
 deriving instance
-  ( Symbolic ctx
+  ( KnownRegisters ctx 2048 'Auto
   , KnownRegisters ctx RSA.PubExponentSize 'Auto
-  , KnownRegisters ctx 2048 'Auto
+  , Symbolic ctx
   )
   => SymbolicInput (ExpModInput ctx)
 

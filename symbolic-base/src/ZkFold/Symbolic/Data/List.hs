@@ -144,11 +144,11 @@ tail = snd . uncons
 
 foldl
   :: forall x y c
-   . ( SymbolicOutput x
-     , Context x ~ c
-     , SymbolicOutput y
+   . ( Context x ~ c
      , Context y ~ c
      , SymbolicFold c
+     , SymbolicOutput x
+     , SymbolicOutput y
      )
   => MorphFrom c (y, x) y -> y -> List c x -> y
 foldl f y List {..} = restore \s ->
@@ -165,7 +165,7 @@ foldl f y List {..} = restore \s ->
  where
   foldOp
     :: forall s
-     . (SymbolicFold s, BaseField s ~ BaseField c)
+     . (BaseField s ~ BaseField c, SymbolicFold s)
     => s (Layout y)
     -> Payload y (WitnessField s)
     -> s (Layout x :*: Payload x)
@@ -181,32 +181,32 @@ foldl f y List {..} = restore \s ->
 
 revapp
   :: forall c x
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => List c x -> List c x -> List c x
 
 -- | revapp xs ys = reverse xs ++ ys
 revapp xs ys = foldl (Morph \(zs, x :: Switch s x) -> x .: zs) ys xs
 
 reverse
-  :: (SymbolicOutput x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+  :: (Context x ~ c, SymbolicFold c, SymbolicOutput x) => List c x -> List c x
 reverse xs = revapp xs emptyList
 
-last :: (SymbolicOutput x, Context x ~ c, SymbolicFold c) => List c x -> x
+last :: (Context x ~ c, SymbolicFold c, SymbolicOutput x) => List c x -> x
 last = head . reverse
 
 init
-  :: (SymbolicOutput x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+  :: (Context x ~ c, SymbolicFold c, SymbolicOutput x) => List c x -> List c x
 init = reverse . tail . reverse
 
 (++)
-  :: (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+  :: (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => List c x -> List c x -> List c x
 xs ++ ys = revapp (reverse xs) ys
 
 foldr
   :: forall c x y
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
-  => (SymbolicOutput y, Context y ~ c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
+  => (Context y ~ c, SymbolicOutput y)
   => MorphFrom c (x, y) y -> y -> List c x -> y
 foldr f s xs =
   foldl
@@ -218,7 +218,7 @@ foldr f s xs =
 
 filter
   :: forall c x
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => MorphFrom c x (Bool c) -> List c x -> List c x
 filter pred =
   foldr
@@ -229,7 +229,7 @@ filter pred =
 
 delete
   :: forall c x
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => MorphFrom c (x, x) (Bool c) -> x -> List c x -> List c x
 delete eq x xs =
   let (_, _, result) =
@@ -244,7 +244,7 @@ delete eq x xs =
 
 setminus
   :: forall c x
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => MorphFrom c (x, x) (Bool c) -> List c x -> List c x -> List c x
 setminus eq = foldl $ Morph \(xs, x :: Switch s x) ->
   delete
@@ -264,7 +264,7 @@ singleton x = x .: emptyList
 
 (!!)
   :: forall x c n
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => (KnownNat n, KnownRegisters c n Auto)
   => List c x -> UInt n Auto c -> x
 xs !! n =
@@ -278,7 +278,7 @@ xs !! n =
 
 concat
   :: forall c x
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => List c (List c x) -> List c x
 concat xs =
   reverse $
@@ -286,7 +286,7 @@ concat xs =
 
 findIndex
   :: forall x c n
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => ( KnownNat n
      , KnownRegisters c n Auto
      )
@@ -302,7 +302,7 @@ findIndex p xs =
 
 insert
   :: forall x c n
-   . (SymbolicOutput x, Context x ~ c, SymbolicFold c)
+   . (Context x ~ c, SymbolicFold c, SymbolicOutput x)
   => (KnownNat n, KnownRegisters c n Auto)
   => List c x -> UInt n Auto c -> x -> List c x
 insert xs n xi =

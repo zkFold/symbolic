@@ -29,9 +29,9 @@ type Tx context = Transaction 6 0 11 Tokens 0 () context
 
 verifySignature
   :: forall context
-   . ( Symbolic context
+   . ( KnownRegisters context 256 'Auto
+     , Symbolic context
      , SymbolicData (TxOut context)
-     , KnownRegisters context 256 'Auto
      )
   => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
@@ -44,10 +44,10 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
 
 batchTransfer
   :: forall context
-   . ( Symbolic context
-     , SymbolicInput (TxOut context)
-     , KnownRegisters context 256 'Auto
+   . ( KnownRegisters context 256 'Auto
      , KnownRegisters context 64 'Auto
+     , Symbolic context
+     , SymbolicInput (TxOut context)
      )
   => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context) -> Bool context
 batchTransfer tx transfers =

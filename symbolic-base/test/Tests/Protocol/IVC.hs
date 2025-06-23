@@ -63,7 +63,7 @@ type PAR = Vector PARDEG A
 
 testFunction
   :: forall ctx
-   . (Symbolic ctx, FromConstant A (BaseField ctx))
+   . (FromConstant A (BaseField ctx), Symbolic ctx)
   => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
 testFunction p i _ =
   let p' = fromVector $ fmap fromConstant p

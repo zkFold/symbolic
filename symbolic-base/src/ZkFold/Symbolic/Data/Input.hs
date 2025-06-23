@@ -22,7 +22,7 @@ import Prelude (($), (.))
 class SymbolicOutput d => SymbolicInput d where
   isValid :: d -> Bool (Context d)
   default isValid
-    :: (G.Generic d, GSymbolicInput (G.Rep d), GContext (G.Rep d) ~ Context d)
+    :: (G.Generic d, GContext (G.Rep d) ~ Context d, GSymbolicInput (G.Rep d))
     => d -> Bool (Context d)
   isValid = gisValid @(G.Rep d) . G.from
 
@@ -33,7 +33,7 @@ instance Symbolic c => SymbolicInput (Bool c) where
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-instance (Symbolic c, LayoutFunctor f) => SymbolicInput (c f) where
+instance (LayoutFunctor f, Symbolic c) => SymbolicInput (c f) where
   isValid _ = true
 
 instance Symbolic c => SymbolicInput (Proxy c) where

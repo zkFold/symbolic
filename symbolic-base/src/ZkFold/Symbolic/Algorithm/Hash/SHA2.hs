@@ -74,12 +74,12 @@ import qualified Prelude as P
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
 class
-  ( Symbolic context
+  ( (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
+  , Div (ChunkSize algorithm) (WordSize algorithm) * WordSize algorithm ~ ChunkSize algorithm
   , KnownNat (ChunkSize algorithm)
   , KnownNat (WordSize algorithm)
   , Mod (ChunkSize algorithm) (WordSize algorithm) ~ 0
-  , Div (ChunkSize algorithm) (WordSize algorithm) * WordSize algorithm ~ ChunkSize algorithm
-  , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
+  , Symbolic context
   ) =>
   AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
   where
@@ -199,7 +199,7 @@ paddedLen m b l =
 withPaddedLength' :: forall m b l. (KnownNat m, KnownNat b, KnownNat l) :- KnownNat (PaddedLength m b l)
 withPaddedLength' = Sub $ withKnownNat @(PaddedLength m b l) (unsafeSNat (paddedLen (value @m) (value @b) (value @l))) Dict
 
-withPaddedLength :: forall n d l {r}. (KnownNat d, KnownNat n, KnownNat l) => (KnownNat (PaddedLength n d l) => r) -> r
+withPaddedLength :: forall n d l {r}. (KnownNat d, KnownNat l, KnownNat n) => (KnownNat (PaddedLength n d l) => r) -> r
 withPaddedLength = withDict (withPaddedLength' @n @d @l)
 
 modPaddedLength
@@ -354,7 +354,7 @@ sha2PadVar VarByteString {..} = VarByteString paddedLengthFe $ withPaddedLength 
 -- | This allows us to calculate hash of a bytestring represented by a Natural number.
 -- This is only useful for testing when the length of the test string is unknown at compile time.
 -- This should not be exposed to users (and they probably won't find it useful anyway).
-toWordsNat :: forall n c. (KnownNat n, FromConstant Natural (ByteString n c)) => Natural -> [ByteString n c]
+toWordsNat :: forall n c. (FromConstant Natural (ByteString n c), KnownNat n) => Natural -> [ByteString n c]
 toWordsNat = P.reverse . toWords'
  where
   toWords' :: Natural -> [ByteString n c]

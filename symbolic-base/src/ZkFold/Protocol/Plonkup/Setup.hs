@@ -46,12 +46,12 @@ data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
   }
 
 instance
-  ( Show g1
-  , Show g2
+  ( Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
   , Show (ScalarFieldOf g1)
-  , Show (pv n)
   , Show (pv (PlonkupPolyExtendedLength n))
-  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
+  , Show (pv n)
+  , Show g1
+  , Show g2
   )
   => Show (PlonkupSetup i o n g1 g2 pv)
   where
@@ -83,17 +83,17 @@ instance
 
 plonkupSetup
   :: forall i o n g1 g2 gt ts pv rustG1
-   . ( Representable i
-     , Representable o
-     , Foldable o
-     , Binary (Rep i)
-     , Arithmetic (ScalarFieldOf g1)
-     , Pairing g1 g2 gt
-     , KnownNat n
-     , KnownNat (PlonkupPolyExtendedLength n)
-     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-     , RustHaskell rustG1 g1
+   . ( Arithmetic (ScalarFieldOf g1)
      , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+     , Binary (Rep i)
+     , Foldable o
+     , KnownNat (PlonkupPolyExtendedLength n)
+     , KnownNat n
+     , Pairing g1 g2 gt
+     , Representable i
+     , Representable o
+     , RustHaskell rustG1 g1
+     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
      )
   => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =

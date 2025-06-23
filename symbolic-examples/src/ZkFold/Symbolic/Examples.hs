@@ -47,20 +47,20 @@ type C a = ArithmeticCircuit a
 data ExampleOutput where
   ExampleOutput
     :: forall a i o
-     . (Representable i, Binary (Rep i), NFData1 o, Arithmetic a)
+     . (Arithmetic a, Binary (Rep i), NFData1 o, Representable i)
     => (() -> C a i o) -> ExampleOutput
 
 exampleOutput
   :: forall a i o c f
-   . ( SymbolicData f
-     , c ~ CircuitContext a
+   . ( Binary a
+     , Context (Support f) ~ c
      , Context f ~ c
      , Layout f ~ o
-     , SymbolicInput (Support f)
-     , Context (Support f) ~ c
-     , i ~ Payload (Support f) :*: Layout (Support f)
      , NFData1 o
-     , Binary a
+     , SymbolicData f
+     , SymbolicInput (Support f)
+     , c ~ CircuitContext a
+     , i ~ Payload (Support f) :*: Layout (Support f)
      )
   => f -> ExampleOutput
 exampleOutput = ExampleOutput @a @i @o . const . compile

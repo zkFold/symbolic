@@ -39,8 +39,8 @@ import Prelude hiding (
 
 updateRelation
   :: forall i o n a pv
-   . ( Representable i
-     , KnownNat n
+   . ( KnownNat n
+     , Representable i
      , UnivariateRingPolyVec a pv
      )
   => PlonkupRelation i o n a pv -> [a] -> PlonkupRelation i o n a pv
@@ -65,9 +65,9 @@ updateRelation r@PlonkupRelation {..} inputs =
 
 updateProverSetup
   :: forall i o n g1 g2 pv
-   . ( Representable i
+   . ( KnownNat ((4 * n) + 6)
      , KnownNat n
-     , KnownNat ((4 * n) + 6)
+     , Representable i
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
      )
   => PlonkupProverSetup i o n g1 g2 pv -> [ScalarFieldOf g1] -> PlonkupProverSetup i o n g1 g2 pv
@@ -80,9 +80,9 @@ updateProverSetup setup@PlonkupProverSetup {..} inputs =
 
 updateVerifierSetup
   :: forall i o n g1 g2 pv
-   . ( Representable i
+   . ( AdditiveGroup g1
      , KnownNat n
-     , AdditiveGroup g1
+     , Representable i
      , Scale (ScalarFieldOf g1) g1
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
      )

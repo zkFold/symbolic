@@ -29,20 +29,20 @@ import ZkFold.UPLC.Term
 import Prelude (either, error, id, (.), type (~))
 
 areSame
-  :: ( SymbolicData f
+  :: ( Arbitrary (i a)
      , Context f ~ c
-     , Support f ~ s
-     , Layout f ~ l
-     , c ~ CircuitContext a
-     , Arbitrary (i a)
-     , Show (i a)
-     , SymbolicInput s
      , Context s ~ c
-     , i ~ Payload s :*: Layout s
-     , Functor l
      , Eq (l a)
+     , Functor l
+     , Layout f ~ l
+     , Show (i a)
      , Show (l a)
+     , Support f ~ s
+     , SymbolicData f
+     , SymbolicInput s
      , a ~ Zp BLS12_381_Base
+     , c ~ CircuitContext a
+     , i ~ Payload s :*: Layout s
      )
   => (Term -> f) -> Term -> f -> Property
 areSame v t f =

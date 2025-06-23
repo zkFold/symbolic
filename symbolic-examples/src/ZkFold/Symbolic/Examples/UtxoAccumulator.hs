@@ -61,7 +61,7 @@ type UtxoAccumulatorOutput n = Par1 :*: Vector n :*: Vector n
 
 utxoAccumulatorCircuit
   :: forall n a
-   . (KnownNat n, Arithmetic a, Binary a)
+   . (Arithmetic a, Binary a, KnownNat n)
   => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
   hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3)
@@ -89,7 +89,7 @@ data UtxoAccumulatorCRS = UtxoAccumulatorCRS
   , crsAccElems :: [BLS12_381_G1_Point]
   , crsDistElems :: [BLS12_381_G1_Point]
   }
-  deriving (Generic, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, ToJSON)
 
 type UtxoAccumulatorProtocol n m =
   Plonkup
@@ -103,7 +103,7 @@ type UtxoAccumulatorProtocol n m =
 
 utxoAccumulatorProtocol
   :: forall n m
-   . (KnownNat n, KnownNat m)
+   . (KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> UtxoAccumulatorProtocol n m
 utxoAccumulatorProtocol crs =
@@ -116,7 +116,7 @@ utxoAccumulatorProtocol crs =
 
 utxoAccumulatorProverSetup
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> [ScalarFieldOf BLS12_381_G1_Point]
   -> [ScalarFieldOf BLS12_381_G1_Point]
@@ -136,7 +136,7 @@ utxoAccumulatorProverSetup crs hs as =
 
 utxoAccumulatorProverSetupInit
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> PlonkupProverSetup
        (UtxoAccumulatorInput n)
@@ -159,7 +159,7 @@ utxoAccumulatorHash a r =
 
 utxoAccumulatorProve
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> [ScalarFieldOf BLS12_381_G1_Point]
   -> [ScalarFieldOf BLS12_381_G1_Point]
@@ -176,7 +176,7 @@ utxoAccumulatorProve crs hs as a r =
 
 utxoAccumulatorVerifierSetup
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> PlonkupVerifierSetup
        (UtxoAccumulatorInput n)
@@ -190,7 +190,7 @@ utxoAccumulatorVerifierSetup crs =
 
 utxoAccumulatorGroupElements
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> [BLS12_381_G1_Point]
 utxoAccumulatorGroupElements crs =
@@ -201,14 +201,14 @@ utxoAccumulatorGroupElements crs =
 
 validationGroupElement
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> BLS12_381_G1_Point
 validationGroupElement crs = utxoAccumulatorGroupElements @n @m crs !! 0
 
 accumulationGroupElements
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> Vector n BLS12_381_G1_Point
 accumulationGroupElements crs =
@@ -219,7 +219,7 @@ accumulationGroupElements crs =
 
 distributionGroupElements
   :: forall n m
-   . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
+   . (KnownNat (PlonkupPolyExtendedLength m), KnownNat m, KnownNat n)
   => UtxoAccumulatorCRS
   -> Vector n BLS12_381_G1_Point
 distributionGroupElements crs = tabulate (\(toConstant -> i) -> utxoAccumulatorGroupElements @n @m crs !! (value @n + i + 1))

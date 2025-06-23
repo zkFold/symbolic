@@ -98,23 +98,23 @@ deriving anyclass instance HNFData c => NFData (ByteString n c)
 
 deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
 
-deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
+deriving newtype instance (KnownNat n, Symbolic c) => Eq (ByteString n c)
 
-deriving newtype instance (Symbolic c, KnownNat n) => Conditional (Bool c) (ByteString n c)
+deriving newtype instance (KnownNat n, Symbolic c) => Conditional (Bool c) (ByteString n c)
 
 instance
-  ( Symbolic c
+  ( KnownNat m
+  , Symbolic c
   , m * 8 ~ n
-  , KnownNat m
   )
   => IsString (ByteString n c)
   where
   fromString = fromConstant . fromString @Bytes.ByteString
 
 instance
-  ( Symbolic c
+  ( KnownNat m
+  , Symbolic c
   , m * 8 ~ n
-  , KnownNat m
   )
   => FromConstant Bytes.ByteString (ByteString n c)
   where
@@ -169,13 +169,13 @@ instance Arithmetic a => ToConstant (ByteString n (Interpreter a)) where
 -- | Pack a ByteString using one field element per bit.
 -- @fromConstant@ discards bits after @n@.
 -- If the constant is greater than @2^n@, only the part modulo @2^n@ will be converted into a ByteString.
-instance (Symbolic c, KnownNat n) => FromConstant Natural (ByteString n c) where
+instance (KnownNat n, Symbolic c) => FromConstant Natural (ByteString n c) where
   fromConstant n = ByteString . embed @c $ V.unsafeToVector $ fromConstant <$> toBsBits n (value @n)
 
-instance (Symbolic c, KnownNat n) => FromConstant Integer (ByteString n c) where
+instance (KnownNat n, Symbolic c) => FromConstant Integer (ByteString n c) where
   fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
 
-instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
+instance (KnownNat n, Symbolic c) => Arbitrary (ByteString n c) where
   arbitrary = ByteString . embed @c . V.unsafeToVector <$> replicateA (value @n) (toss (1 :: Natural))
    where
     toss b = fromConstant <$> chooseInteger (0, 2 ^ b - 1)
@@ -183,8 +183,8 @@ instance (Symbolic c, KnownNat n) => Arbitrary (ByteString n c) where
 reverseEndianness'
   :: forall wordSize k m x {n}
    . ( KnownNat wordSize
-     , n ~ k * wordSize
      , m * 8 ~ wordSize
+     , n ~ k * wordSize
      )
   => Vector n x -> Vector n x
 reverseEndianness' v =
@@ -194,15 +194,15 @@ reverseEndianness' v =
 
 reverseEndianness
   :: forall wordSize k c m {n}
-   . ( Symbolic c
-     , KnownNat wordSize
-     , n ~ k * wordSize
+   . ( KnownNat wordSize
+     , Symbolic c
      , m * 8 ~ wordSize
+     , n ~ k * wordSize
      )
   => ByteString n c -> ByteString n c
 reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
 
-instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
+instance (KnownNat n, Symbolic c) => BoolType (ByteString n c) where
   false = fromConstant (0 :: Natural)
   true = not false
 
@@ -234,7 +234,7 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
             zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
         )
    where
-    vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
+    vecToNat :: (Const a ~ Natural, ToConstant a) => Vector n a -> Natural
     vecToNat = Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
     cons i j x =
@@ -261,7 +261,7 @@ orRight l r = bitwiseOperation l r cons
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 toWords
-  :: forall m wordSize c. (Symbolic c, KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+  :: forall m wordSize c. (KnownNat wordSize, Symbolic c) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
 toWords (ByteString bits) = ByteString <$> unpackWith (V.chunks @m @wordSize) bits
 
 concat :: forall k m c. Symbolic c => Vector k (ByteString m c) -> ByteString (k * m) c
@@ -270,8 +270,8 @@ concat bs = ByteString $ packWith V.concat ((\(ByteString bits) -> bits) <$> bs)
 -- | Describes types that can be truncated by dropping several bits from the end (i.e. stored in the lower registers)
 truncate
   :: forall m n c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
+     , Symbolic c
      , n <= m
      )
   => ByteString m c -> ByteString n c
@@ -279,8 +279,8 @@ truncate (ByteString bits) = ByteString $ hmap (V.take @n) bits
 
 dropN
   :: forall n m c
-   . ( Symbolic c
-     , KnownNat (m - n)
+   . ( KnownNat (m - n)
+     , Symbolic c
      , n <= m
      )
   => ByteString m c -> ByteString n c
@@ -298,7 +298,7 @@ append (ByteString bits1) (ByteString bits2) =
   ByteString $ fromCircuit2F bits1 bits2 $ \v1 v2 -> pure $ v1 `V.append` v2
 
 --------------------------------------------------------------------------------
-instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
+instance (KnownNat n, Symbolic c) => ShiftBits (ByteString n c) where
   shiftBits bs@(ByteString oldBits) s
     | s == 0 = bs
     | Haskell.abs s >= Haskell.fromIntegral (getNatural @n) = false
@@ -322,9 +322,9 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
   rotateBits (ByteString bits) s = ByteString $ hmap (`V.rotate` s) bits
 
 instance
-  ( Symbolic c
-  , KnownNat k
+  ( KnownNat k
   , KnownNat n
+  , Symbolic c
   )
   => Resize (ByteString k c) (ByteString n c)
   where
@@ -347,8 +347,8 @@ instance
     zeroA = Haskell.replicate diff (fromConstant (0 :: Integer))
 
 instance
-  ( Symbolic c
-  , KnownNat n
+  ( KnownNat n
+  , Symbolic c
   )
   => SymbolicInput (ByteString n c)
   where
@@ -360,10 +360,10 @@ instance
       [] -> Par1 <$> newAssigned (const one)
       (b : bs) -> foldlM (\(Par1 v1) (Par1 v2) -> Par1 <$> newAssigned (($ v1) * ($ v2))) b bs
 
-set :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
+set :: forall c n. (KnownNat n, Symbolic c) => ByteString n c -> Natural -> ByteString n c
 set (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const one) else pure v)
 
-unset :: forall c n. (Symbolic c, KnownNat n) => ByteString n c -> Natural -> ByteString n c
+unset :: forall c n. (KnownNat n, Symbolic c) => ByteString n c -> Natural -> ByteString n c
 unset (ByteString bits) ix = ByteString $ fromCircuitF bits $ V.mapMWithIx (\i v -> if i == ix then newAssigned (const zero) else pure v)
 
 isSet :: forall c n. Symbolic c => ByteString n c -> Natural -> Bool c
@@ -413,14 +413,14 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
       This i -> pure i
       That j -> pure j
 
-instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
+instance (NumberOfBits (BaseField c) ~ n, Symbolic c) => Iso (FieldElement c) (ByteString n c) where
   from = ByteString . binaryExpansion
 
-instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
+instance (NumberOfBits (BaseField c) ~ n, Symbolic c) => Iso (ByteString n c) (FieldElement c) where
   from (ByteString a) = fromBinary a
 
 instance
-  (Symbolic c, KnownNat n)
+  (KnownNat n, Symbolic c)
   => FromJSON (ByteString n c)
   where
   parseJSON val = do
@@ -435,7 +435,7 @@ instance Arithmetic a => ToJSON (ByteString n (Interpreter a)) where
 byteStringToHex :: Arithmetic a => ByteString n (Interpreter a) -> Haskell.String
 byteStringToHex bytes = showHex (toConstant bytes) ""
 
-hexToByteString :: (Symbolic c, KnownNat n) => Haskell.String -> Maybe (ByteString n c)
+hexToByteString :: (KnownNat n, Symbolic c) => Haskell.String -> Maybe (ByteString n c)
 hexToByteString str = case readHex str of
   [(n, "")] -> Just (fromConstant @Natural n)
   _ -> Nothing

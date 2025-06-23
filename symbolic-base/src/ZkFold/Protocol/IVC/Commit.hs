@@ -48,8 +48,8 @@ instance
      in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
 
 instance
-  ( KnownNat n
-  , CyclicGroup (Weierstrass curve (Point field))
+  ( CyclicGroup (Weierstrass curve (Point field))
+  , KnownNat n
   , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
   , n <= PedersonSetupMaxSize
   )
@@ -60,17 +60,17 @@ instance
     unsafeToVector $ take (value @n) $ groupElements @[]
 
 newtype PedersonCommit g = PedersonCommit {pedersonCommit :: g}
-  deriving newtype (Scale f, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup)
+  deriving newtype (AdditiveGroup, AdditiveMonoid, AdditiveSemigroup, Scale f)
 
 instance (Functor s, PedersonSetup s g) => PedersonSetup s (PedersonCommit g) where
   groupElements = PedersonCommit <$> groupElements
 
 instance
-  ( PedersonSetup s g
-  , Zip s
+  ( AdditiveGroup g
   , Foldable s
+  , PedersonSetup s g
   , Scale f g
-  , AdditiveGroup g
+  , Zip s
   )
   => HomomorphicCommit (s f) (PedersonCommit g)
   where
@@ -80,7 +80,7 @@ deriving via
   (PedersonCommit (Weierstrass c (Point f)))
   instance
     ( CyclicGroup (Weierstrass c (Point f))
-    , Uniform (ScalarFieldOf (Weierstrass c (Point f)))
     , Scale s (Weierstrass c (Point f))
+    , Uniform (ScalarFieldOf (Weierstrass c (Point f)))
     )
     => HomomorphicCommit [s] (Weierstrass c (Point f))

@@ -28,7 +28,7 @@ import ZkFold.Algebra.EllipticCurve.PlutoEris (
 import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_JacobianPoint, Secp256k1_Point)
 import Prelude hiding (Fractional (..), Num (..), length)
 
-specGroup' :: forall a. (AdditiveGroup a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
+specGroup' :: forall a. (AdditiveGroup a, Arbitrary a, Eq a, Show a, Typeable a) => Spec
 specGroup' = do
   describe "Group specification" $ do
     describe ("Type: " ++ show (typeOf @a zero)) $ do

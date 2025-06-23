@@ -38,14 +38,14 @@ deriving instance HShow ctx => P.Show (Certificate ctx)
 deriving instance HNFData ctx => NFData (Certificate ctx)
 
 instance
-  ( SymbolicData (PublicKey 2048 ctx)
-  , Symbolic ctx
+  ( Symbolic ctx
+  , SymbolicData (PublicKey 2048 ctx)
   )
   => SymbolicData (Certificate ctx)
 
 instance
-  ( SymbolicInput (PublicKey 2048 ctx)
-  , Symbolic ctx
+  ( Symbolic ctx
+  , SymbolicInput (PublicKey 2048 ctx)
   )
   => SymbolicInput (Certificate ctx)
 
@@ -82,14 +82,14 @@ deriving instance HShow ctx => P.Show (SigningKey ctx)
 deriving instance HNFData ctx => NFData (SigningKey ctx)
 
 instance
-  ( SymbolicData (PrivateKey 2048 ctx)
-  , Symbolic ctx
+  ( Symbolic ctx
+  , SymbolicData (PrivateKey 2048 ctx)
   )
   => SymbolicData (SigningKey ctx)
 
 instance
-  ( SymbolicInput (PrivateKey 2048 ctx)
-  , Symbolic ctx
+  ( Symbolic ctx
+  , SymbolicInput (PrivateKey 2048 ctx)
   )
   => SymbolicInput (SigningKey ctx)
 

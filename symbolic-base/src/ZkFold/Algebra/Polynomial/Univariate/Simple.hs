@@ -65,12 +65,12 @@ instance {-# OVERLAPPING #-} FromConstant (SimplePoly a n) (SimplePoly a n)
 instance FromConstant k a => FromConstant k (SimplePoly a n) where
   fromConstant = SimplePoly . V.singleton . fromConstant
 
-instance {-# OVERLAPPING #-} (Semiring a, KnownNat n) => Scale (SimplePoly a n) (SimplePoly a n)
+instance {-# OVERLAPPING #-} (KnownNat n, Semiring a) => Scale (SimplePoly a n) (SimplePoly a n)
 
 instance Scale k a => Scale k (SimplePoly a n) where
   scale k = SimplePoly . fmap (scale k) . coeffs
 
-instance (Semiring a, KnownNat n) => Exponent (SimplePoly a n) Natural where
+instance (KnownNat n, Semiring a) => Exponent (SimplePoly a n) Natural where
   (^) = natPow
 
 instance AdditiveSemigroup a => AdditiveSemigroup (SimplePoly a n) where
@@ -82,7 +82,7 @@ instance AdditiveMonoid a => AdditiveMonoid (SimplePoly a n) where
 instance AdditiveGroup a => AdditiveGroup (SimplePoly a n) where
   negate = SimplePoly . fmap negate . coeffs
 
-instance (Semiring a, KnownNat n) => MultiplicativeSemigroup (SimplePoly a n) where
+instance (KnownNat n, Semiring a) => MultiplicativeSemigroup (SimplePoly a n) where
   SimplePoly p * SimplePoly q =
     let pLen = V.length p
         qLen = V.length q
@@ -97,12 +97,12 @@ instance (Semiring a, KnownNat n) => MultiplicativeSemigroup (SimplePoly a n) wh
             , j < qLen
             ]
 
-instance (Semiring a, KnownNat n) => MultiplicativeMonoid (SimplePoly a n) where
+instance (KnownNat n, Semiring a) => MultiplicativeMonoid (SimplePoly a n) where
   one = fromConstant (one :: a)
 
-instance (Semiring a, KnownNat n) => Semiring (SimplePoly a n)
+instance (KnownNat n, Semiring a) => Semiring (SimplePoly a n)
 
-instance (Ring a, KnownNat n) => Ring (SimplePoly a n)
+instance (KnownNat n, Ring a) => Ring (SimplePoly a n)
 
 instance Ring a => UnivariateRingPolyVec a (SimplePoly a) where
   SimplePoly p .*. SimplePoly q =

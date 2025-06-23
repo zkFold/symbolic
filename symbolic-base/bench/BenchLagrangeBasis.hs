@@ -21,7 +21,7 @@ import qualified Prelude as P
 type F = Zp BLS12_381_Scalar
 
 -- | Generate random polynomials of given size
-polynomials :: forall n c. (KnownNat n, Ring c, Arbitrary c, NFData c, Eq c) => IO (PolyVec c n)
+polynomials :: forall n c. (Arbitrary c, Eq c, KnownNat n, NFData c, Ring c) => IO (PolyVec c n)
 polynomials = do
   poly <- generate arbitrary
   evaluate . force $ poly

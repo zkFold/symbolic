@@ -29,7 +29,7 @@ testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString
 testFunction = (&&)
 
 witGen
-  :: (Arithmetic a, Representable i, Binary (Rep i))
+  :: (Arithmetic a, Binary (Rep i), Representable i)
   => ArithmeticCircuit a i o -> i a -> Map NewVar a
 witGen circuit input =
   let wg = witnessGenerator circuit input

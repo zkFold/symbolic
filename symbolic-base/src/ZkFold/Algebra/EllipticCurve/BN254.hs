@@ -141,12 +141,12 @@ instance Scale Fr BN254_G2_JacobianPoint where
 
 newtype BN254_GT = BN254_GT Fp12
   deriving
-    ( Prelude.Eq
-    , Show
-    , MultiplicativeSemigroup
-    , MultiplicativeMonoid
-    , Conditional Prelude.Bool
+    ( Conditional Prelude.Bool
     , Eq
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , Prelude.Eq
+    , Show
     )
 
 instance Exponent BN254_GT Natural where

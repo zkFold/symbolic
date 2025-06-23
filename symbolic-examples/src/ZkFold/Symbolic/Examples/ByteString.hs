@@ -26,7 +26,7 @@ exampleByteStringOr
 exampleByteStringOr = (||)
 
 exampleByteStringResize
-  :: (KnownNat n, KnownNat k, Symbolic c)
+  :: (KnownNat k, KnownNat n, Symbolic c)
   => ByteString n c -> ByteString k c
 exampleByteStringResize = resize
 

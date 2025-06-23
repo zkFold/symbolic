@@ -38,9 +38,9 @@ type Tx context = Transaction 1 0 2 Tokens 1 () context
 
 randomOracle
   :: forall context
-   . ( Symbolic context
-     , Bits (FieldElement context) ~ context (Vector 256)
+   . ( Bits (FieldElement context) ~ context (Vector 256)
      , Log2 (Order (BaseField context)) ~ 255
+     , Symbolic context
      )
   => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =

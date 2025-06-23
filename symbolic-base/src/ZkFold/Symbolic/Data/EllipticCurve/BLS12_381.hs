@@ -19,9 +19,9 @@ import qualified Prelude
 type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_Base 'Auto ctx))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA BLS12_381_Base 'Auto ctx
+  ( KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (BLS12_381_G1_Point ctx)
   where
@@ -36,10 +36,10 @@ instance
       )
 
 instance
-  ( Symbolic ctx
+  ( FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
   , KnownFFA BLS12_381_Base 'Auto ctx
   , KnownFFA BLS12_381_Scalar 'Auto ctx
-  , FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
+  , Symbolic ctx
   )
   => Scale k (BLS12_381_G1_Point ctx)
   where

@@ -21,7 +21,7 @@ import ZkFold.Data.Vector (Vector)
 class OracleSource a b where
   source :: b -> [a]
   -- ^ Extracts random seed from the source.
-  default source :: (Generic b, GOracleSource a (Rep b)) => b -> [a]
+  default source :: (GOracleSource a (Rep b), Generic b) => b -> [a]
   source = gsource . from
 
 instance
@@ -86,7 +86,7 @@ class GOracleSource a f where
   gsource :: f x -> [a]
 
 instance
-  (Ring a, GOracleSource a f, GOracleSource a g)
+  (GOracleSource a f, GOracleSource a g, Ring a)
   => GOracleSource a (f :+: g)
   where
   gsource (L1 x) = zero : gsource x

@@ -27,7 +27,7 @@ import qualified Prelude as Haskell
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 
-instance (Symbolic c, LayoutFunctor f) => Eq (c f) where
+instance (LayoutFunctor f, Symbolic c) => Eq (c f) where
   type BooleanOf (c f) = Bool c
   x == y =
     let

@@ -65,7 +65,7 @@ data PlonkupRelation i o n a pv = PlonkupRelation
   -- ^ The number of private inputs.
   }
 
-instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
+instance (Show (pv n), Show a) => Show (PlonkupRelation i o n a pv) where
   show PlonkupRelation {..} =
     "Plonkup Relation: "
       ++ show qM
@@ -89,15 +89,15 @@ instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
       ++ show sigma
 
 instance
-  ( KnownNat n
-  , UnivariateRingPolyVec a pv
-  , KnownNat (PlonkupPermutationSize n)
-  , Representable i
-  , Representable o
-  , Foldable o
+  ( Arbitrary (ArithmeticCircuit a i o)
   , Arithmetic a
   , Binary (Rep i)
-  , Arbitrary (ArithmeticCircuit a i o)
+  , Foldable o
+  , KnownNat (PlonkupPermutationSize n)
+  , KnownNat n
+  , Representable i
+  , Representable o
+  , UnivariateRingPolyVec a pv
   )
   => Arbitrary (PlonkupRelation i o n a pv)
   where
@@ -169,13 +169,13 @@ zipLongest !f !xs !ys =
 
 toPlonkupRelation
   :: forall i o n a pv
-   . ( KnownNat n
-     , Arithmetic a
+   . ( Arithmetic a
      , Binary (Rep i)
-     , UnivariateRingPolyVec a pv
+     , Foldable o
+     , KnownNat n
      , Representable i
      , Representable o
-     , Foldable o
+     , UnivariateRingPolyVec a pv
      )
   => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation !ac =

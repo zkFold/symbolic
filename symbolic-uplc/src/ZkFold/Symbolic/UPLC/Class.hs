@@ -24,13 +24,13 @@ import Prelude (type (~))
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
-  ( Typeable v
-  , SymbolicOutput v
-  , SymbolicFold c
+  ( -- TODO: Remove after Conditional becomes part of SymbolicData
+    Conditional (Bool c) v
   , Context v ~ c
   , Support v ~ Proxy c
-  , -- TODO: Remove after Conditional becomes part of SymbolicData
-    Conditional (Bool c) v
+  , SymbolicFold c
+  , SymbolicOutput v
+  , Typeable v
   ) =>
   IsData (t :: BuiltinType) v c
     | t c -> v
@@ -52,7 +52,7 @@ type Sym c = (SymbolicFold c, Typeable c)
 
 type IntLength = 64
 
-instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
+instance (KnownRegisters c IntLength Auto, Sym c) => IsData BTInteger (Int IntLength Auto c) c where
   asPair _ = Nothing
   asList _ = Nothing
 
@@ -80,11 +80,11 @@ instance Sym c => IsData BTData (Symbolic.Data c) c where
   asPair _ = Nothing
   asList _ = Nothing
 
-instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
+instance (IsData t v c, Sym c) => IsData (BTList t) (L.List c v) c where
   asPair _ = Nothing
   asList l = Just (ExList l)
 
-instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
+instance (IsData t v c, IsData t' v' c, Sym c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
   asList _ = Nothing
 

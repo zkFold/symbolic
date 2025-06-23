@@ -99,9 +99,9 @@ instance Scale Fp Vesta_JacobianPoint where
 
 instance
   ( Binary field
-  , Field field
-  , Eq field
   , BooleanOf field ~ Prelude.Bool
+  , Eq field
+  , Field field
   )
   => Binary (Pasta_Point field)
   where

@@ -46,9 +46,9 @@ instance (Show (ScalarFieldOf g1), Show (pv d)) => Show (WitnessKZG g1 g2 d pv) 
   show (WitnessKZG w) = "WitnessKZG " <> show w
 
 instance
-  ( KnownNat d
-  , Arbitrary (ScalarFieldOf g1)
+  ( Arbitrary (ScalarFieldOf g1)
   , Arbitrary (pv d)
+  , KnownNat d
   , Ord (ScalarFieldOf g1)
   , Ring (ScalarFieldOf g1)
   )
@@ -62,18 +62,18 @@ instance
 -- TODO (Issue #18): check list lengths
 instance
   forall f g1 g2 gt d kzg pv
-   . ( KZG g1 g2 d pv ~ kzg
+   . ( AdditiveGroup f
+     , Bilinear (V.Vector g1) (pv d) g1
+     , Binary f
+     , Binary g1
+     , Eq gt
+     , FiniteField f
+     , KZG g1 g2 d pv ~ kzg
      , KnownNat d
      , Ord f
-     , Binary f
-     , FiniteField f
-     , AdditiveGroup f
-     , f ~ ScalarFieldOf g1
-     , Binary g1
      , Pairing g1 g2 gt
-     , Eq gt
-     , Bilinear (V.Vector g1) (pv d) g1
      , UnivariateFieldPolyVec f pv
+     , f ~ ScalarFieldOf g1
      )
   => NonInteractiveProof (KZG g1 g2 d pv)
   where
@@ -156,5 +156,5 @@ instance
 ------------------------------------ Helper functions ------------------------------------
 
 provePolyVecEval
-  :: forall pv size f. (KnownNat size, FiniteField f, UnivariateFieldPolyVec f pv) => pv size -> f -> pv size
+  :: forall pv size f. (FiniteField f, KnownNat size, UnivariateFieldPolyVec f pv) => pv size -> f -> pv size
 provePolyVecEval f z = (f - toPolyVec [negate $ f `evalPolyVec` z]) `polyVecDiv` toPolyVec [negate z, one]

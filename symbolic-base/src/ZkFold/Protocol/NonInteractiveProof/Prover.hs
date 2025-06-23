@@ -20,7 +20,7 @@ import Prelude
 
 newtype ProofBytes = ProofBytes
   {fromWitnessBytes :: ByteString}
-  deriving (Show, Eq, Generic, NFData)
+  deriving (Eq, Generic, NFData, Show)
 
 instance ToJSON ProofBytes where
   toJSON (ProofBytes b) = String . T.pack . BS.unpack . B64.encode $ b
@@ -32,7 +32,7 @@ instance FromJSON ProofBytes where
       Right bs -> return $ ProofBytes bs
 
 data ProveAPIResult = ProveAPISuccess ProofBytes | ProveAPIErrorSetup | ProveAPIErrorWitness
-  deriving (Show, Eq, Generic, NFData)
+  deriving (Eq, Generic, NFData, Show)
 
 instance ToJSON ProveAPIResult where
   toJSON (ProveAPISuccess bs) =
@@ -64,11 +64,11 @@ instance FromJSON ProveAPIResult where
 
 proveAPI
   :: forall a
-   . ( NonInteractiveProof a
+   . ( Binary (Input a)
+     , Binary (Proof a)
      , Binary (SetupProve a)
      , Binary (Witness a)
-     , Binary (Input a)
-     , Binary (Proof a)
+     , NonInteractiveProof a
      )
   => ByteString
   -> ByteString

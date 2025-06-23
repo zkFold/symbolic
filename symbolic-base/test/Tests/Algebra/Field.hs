@@ -15,7 +15,7 @@ import qualified ZkFold.Algebra.EllipticCurve.BN254 as BN254
 import qualified ZkFold.Algebra.EllipticCurve.Pasta as Pasta
 import Prelude hiding (Fractional (..), Num (..), length)
 
-specField' :: forall a. (Field a, Eq a, Show a, Arbitrary a, Typeable a) => Spec
+specField' :: forall a. (Arbitrary a, Eq a, Field a, Show a, Typeable a) => Spec
 specField' = do
   describe "Field specification" $ do
     describe ("Type: " ++ show (typeOf @a zero)) $ do

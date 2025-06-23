@@ -19,17 +19,17 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 -- TODO: verify the actual message instead of a hash
 ecdsaVerify
   :: forall n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
-     , baseField ~ FFA q 'Auto ctx
-     , scalarField ~ FFA p 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
-     , ScalarFieldOf point ~ scalarField
-     , CyclicGroup point
-     , KnownFFA q 'Auto ctx
+   . ( CyclicGroup point
      , KnownFFA p 'Auto ctx
-     , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownFFA q 'Auto ctx
      , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat n
+     , S.Symbolic ctx
+     , ScalarFieldOf point ~ scalarField
+     , baseField ~ FFA q 'Auto ctx
+     , point ~ Weierstrass curve (Point baseField)
+     , scalarField ~ FFA p 'Auto ctx
      )
   => point
   -> scalarField

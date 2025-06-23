@@ -31,8 +31,8 @@ type Untwisted baseField i j = Ext2 (Ext3 baseField i) j
 
 finalExponentiation
   :: forall scalarField baseField g i j
-   . (Finite scalarField, Finite baseField)
-  => (g ~ Untwisted baseField i j, Exponent g Natural)
+   . (Finite baseField, Finite scalarField)
+  => (Exponent g Natural, g ~ Untwisted baseField i j)
   => g -> g
 finalExponentiation x = x ^ ((p ^ (12 :: Natural) -! 1) `div` r)
  where
@@ -127,8 +127,8 @@ millerLoop p q = impl
 
 frobTwisted
   :: forall c fld
-   . ( WeierstrassCurve c fld
-     , Conditional (BooleanOf fld) (BooleanOf fld)
+   . ( Conditional (BooleanOf fld) (BooleanOf fld)
+     , WeierstrassCurve c fld
      )
   => Natural -> fld -> Weierstrass c (Point fld) -> Weierstrass c (Point fld)
 frobTwisted q xi (Weierstrass (Point x y isInf)) =

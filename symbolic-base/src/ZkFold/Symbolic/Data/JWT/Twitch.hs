@@ -65,7 +65,7 @@ deriving instance Symbolic ctx => SymbolicInput (PubSubPerms ctx)
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
   arbitrary = genericArbitrary uniform
 
-instance (Symbolic ctx, Context (PubSubPerms ctx) ~ ctx) => IsSymbolicJSON (PubSubPerms ctx) where
+instance (Context (PubSubPerms ctx) ~ ctx, Symbolic ctx) => IsSymbolicJSON (PubSubPerms ctx) where
   type MaxLength (PubSubPerms ctx) = 4248
   toJsonBits PubSubPerms {..} =
     (fromType @"{\"listen\":")
@@ -114,7 +114,7 @@ instance Symbolic ctx => IsBits (TwitchPayload ctx) where
   type BitCount (TwitchPayload ctx) = 9056
   toBits = toAsciiBits
 
-instance (Symbolic ctx, TokenBits (TwitchPayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (TwitchPayload ctx) where
+instance (RSA.RSA 2048 10328 ctx, Symbolic ctx, TokenBits (TwitchPayload ctx)) => IsTokenPayload "RS256" (TwitchPayload ctx) where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"

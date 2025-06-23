@@ -73,7 +73,7 @@ fromByteString x = case runGetOrFail get (Lazy.fromStrict x) of
 -- un little, deux little, trois little endians
 newtype LittleEndian = LittleEndian {unLittleEndian :: Natural}
   deriving stock (Read, Show)
-  deriving newtype (Eq, Ord, Num, Enum, Real, Integral)
+  deriving newtype (Enum, Eq, Integral, Num, Ord, Real)
 
 instance Binary LittleEndian where
   get = do
@@ -93,7 +93,7 @@ instance Arbitrary LittleEndian where
 -- Big-endian encoding for unsigned & unsized integers
 newtype BigEndian = BigEndian {unBigEndian :: Natural}
   deriving stock (Read, Show)
-  deriving newtype (Eq, Ord, Num, Enum, Real, Integral)
+  deriving newtype (Enum, Eq, Integral, Num, Ord, Real)
 
 instance Binary BigEndian where
   get = do

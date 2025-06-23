@@ -36,19 +36,19 @@ type RecursiveI i = i :*: Par1
 
 newtype DataSource c = DataSource {dataSource :: c}
   deriving newtype
-    ( AdditiveSemigroup
+    ( AdditiveGroup
     , AdditiveMonoid
-    , AdditiveGroup
-    , SymbolicData
-    , Scale a
+    , AdditiveSemigroup
     , HomomorphicCommit h
+    , Scale a
+    , SymbolicData
     )
 
 arithmetize0 :: SymbolicOutput x => x -> Context x (Layout x)
 arithmetize0 x = arithmetize x Proxy
 
 instance
-  (SymbolicOutput c, Context c ~ ctx)
+  (Context c ~ ctx, SymbolicOutput c)
   => OracleSource (FieldElement ctx) (DataSource c)
   where
   source = toList . fieldElements . arithmetize0
@@ -69,12 +69,12 @@ data RecursivePayload d k i p c = RecursivePayload
   deriving Generic
 
 instance
-  ( SymbolicOutput c
-  , LayoutFunctor p
-  , LayoutFunctor i
-  , KnownNat k
+  ( KnownNat (d - 1)
   , KnownNat (k - 1)
-  , KnownNat (d - 1)
+  , KnownNat k
+  , LayoutFunctor i
+  , LayoutFunctor p
+  , SymbolicOutput c
   )
   => SymbolicData (RecursivePayload d k i p c)
 
@@ -99,19 +99,19 @@ instance OracleSource (FieldElement ctx) (FieldElement ctx) where
 -- | Transform a step function into a recursive function
 recursiveFunction
   :: forall c d k a i p
-   . ( LayoutFunctor i
-     , LayoutFunctor p
-     , KnownNat (d - 1)
+   . ( FieldAssumptions a c
      , KnownNat (d + 1)
+     , KnownNat (d - 1)
      , KnownNat (k - 1)
      , KnownNat k
-     , FieldAssumptions a c
+     , LayoutFunctor i
+     , LayoutFunctor p
      )
   => Hasher -> StepFunction a i p -> RecursiveFunction d k a i p c
 recursiveFunction hash func =
   let
     restore0
-      :: (SymbolicData x, Empty (Payload x)) => Context x (Layout x) -> x
+      :: (Empty (Payload x), SymbolicData x) => Context x (Layout x) -> x
     restore0 l = restore $ const (l, empty)
 
     -- A helper function to derive the accumulator scheme
@@ -145,11 +145,11 @@ recursiveFunction hash func =
 
 recursivePredicate
   :: forall c d k a i p
-   . ( KnownNat k
-     , KnownNat (k - 1)
-     , KnownNat (d - 1)
-     , Arithmetic a
+   . ( Arithmetic a
      , Binary a
+     , KnownNat (d - 1)
+     , KnownNat (k - 1)
+     , KnownNat k
      , LayoutFunctor i
      , LayoutFunctor p
      , SymbolicOutput c

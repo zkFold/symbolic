@@ -33,7 +33,7 @@ specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1 @(Fixed 16)
   specFFA' @BLS12_381_Scalar @Prime256_2 @(Fixed 16)
 
-specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Interpreter (Zp p))) => Spec
+specFFA' :: forall p q r. (KnownFFA q r (Interpreter (Zp p)), Prime q, PrimeField (Zp p)) => Spec
 specFFA' = do
   let q = value @q
   let r = regSize @r
@@ -55,7 +55,7 @@ specFFA' = do
 
 execAcFFA
   :: forall p q r
-   . (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+   . (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
   => FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
 execAcFFA (FFA (FieldElement nv) (UInt uv)) =
   execZpFFA $
@@ -64,7 +64,7 @@ execAcFFA (FFA (FieldElement nv) (UInt uv)) =
       (UInt @_ @r $ Interpreter $ exec uv)
 
 execZpFFA
-  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+  :: (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
   => FFA q r (Interpreter (Zp p)) -> Zp q
 execZpFFA = toConstant
 
@@ -73,7 +73,7 @@ type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property
 
 isHom
-  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+  :: (KnownFFA q r (Interpreter (Zp p)), PrimeField (Zp p))
   => Binary (FFA q r (Interpreter (Zp p)))
   -> Binary (FFA q r (ArithmeticCircuit (Zp p) U1))
   -> Predicate (Zp q)

@@ -42,26 +42,26 @@ import qualified Prelude as P hiding (length)
 instance
   forall i o n g1 g2 gt ts pv rustG1 rustPv
    . -- instance forall i o n g1 g2 gt ts pv .
-  ( KnownNat n
-  , Representable i
-  , Representable o
-  , Foldable o
-  , Pairing g1 g2 gt
+  ( Arithmetic (ScalarFieldOf g1)
+  , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+  , Binary (Rep i)
   , Compressible g1
   , Eq gt
-  , Arithmetic (ScalarFieldOf g1)
-  , Binary (Rep i)
-  , ToTranscript ts Word8
-  , ToTranscript ts (ScalarFieldOf g1)
-  , ToTranscript ts (Compressed g1)
+  , Foldable o
   , FromTranscript ts (ScalarFieldOf g1)
-  , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
   , KnownNat (PlonkupPolyExtendedLength n)
+  , KnownNat n
+  , Pairing g1 g2 gt
+  , Representable i
+  , Representable o
+  , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
+  , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
+  , RustHaskell rustG1 g1
+  , ToTranscript ts (Compressed g1)
+  , ToTranscript ts (ScalarFieldOf g1)
+  , ToTranscript ts Word8
   , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
   , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
-  , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
-  , RustHaskell rustG1 g1
-  , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
   )
   => NonInteractiveProof (Plonkup i o n g1 g2 ts pv)
   where

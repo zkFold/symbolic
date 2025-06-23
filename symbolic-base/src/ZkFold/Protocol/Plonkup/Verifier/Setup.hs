@@ -21,11 +21,11 @@ data PlonkupVerifierSetup i o n g1 g2 pv = PlonkupVerifierSetup
 
 instance
   ( CyclicGroup g1
-  , Show g1
-  , Show g2
+  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
   , Show (ScalarFieldOf g1)
   , Show (pv n)
-  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
+  , Show g1
+  , Show g2
   )
   => Show (PlonkupVerifierSetup i o n g1 g2 pv)
   where

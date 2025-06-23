@@ -38,7 +38,7 @@ class KnownNat p => Prime p
 value :: forall n. KnownNat n => Natural
 value = natVal' (proxy# @n)
 
-integral :: forall size n. (KnownNat size, Integral n) => n
+integral :: forall size n. (Integral n, KnownNat size) => n
 integral = Integral.fromIntegral (value @size)
 
 -- Use this overlappable instance for small enough primes and testing

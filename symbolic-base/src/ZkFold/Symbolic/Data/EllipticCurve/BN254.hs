@@ -19,9 +19,9 @@ import qualified Prelude
 type BN254_G1_Point ctx = Weierstrass "BN254_G1" (Point (FFA BN254_Base 'Auto ctx))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA BN254_Base 'Auto ctx
+  ( KnownFFA BN254_Base 'Auto ctx
   , KnownFFA BN254_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (BN254_G1_Point ctx)
   where
@@ -32,9 +32,9 @@ instance
       (fromConstant (2 :: Natural))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA BN254_Base 'Auto ctx
+  ( KnownFFA BN254_Base 'Auto ctx
   , KnownFFA BN254_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA BN254_Scalar 'Auto ctx) (BN254_G1_Point ctx)
   where

@@ -14,7 +14,7 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, witnessGen
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
 
 benchmark
-  :: (Arithmetic a, Representable i, Binary (Rep i), NFData1 o)
+  :: (Arithmetic a, Binary (Rep i), NFData1 o, Representable i)
   => String -> (() -> ArithmeticCircuit a i o) -> Benchmark
 benchmark name circuit =
   bgroup

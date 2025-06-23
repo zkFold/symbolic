@@ -31,25 +31,25 @@ data TransactionBatchData context = TransactionBatchData
   deriving stock Generic
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => SymbolicData (TransactionBatchData context)
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Conditional (Bool context) (TransactionBatchData context)
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Eq (TransactionBatchData context)

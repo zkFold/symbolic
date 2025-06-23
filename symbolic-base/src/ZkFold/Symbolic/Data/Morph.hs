@@ -45,5 +45,5 @@ Morph f @ x =
 -- * applied there in an anonymous context to an argument.
 type MorphFrom ctx input output =
   forall c
-   . (SymbolicFold c, BaseField c ~ BaseField ctx)
+   . (BaseField c ~ BaseField ctx, SymbolicFold c)
   => MorphTo c input output

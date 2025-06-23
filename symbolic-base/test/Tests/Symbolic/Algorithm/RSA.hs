@@ -21,7 +21,7 @@ import qualified Prelude as P
 
 type I = Interpreter Fr
 
-specRSA' :: forall keyLength g. (RandomGen g, RSA keyLength 256 I) => g -> Spec
+specRSA' :: forall keyLength g. (RSA keyLength 256 I, RandomGen g) => g -> Spec
 specRSA' gen = do
   describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
     it "signs and verifies correctly" $ withMaxSuccess 10 $ do

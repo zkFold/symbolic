@@ -36,12 +36,12 @@ deriving instance Generic (Liability context)
 
 deriving instance HEq context => Haskell.Eq (Liability context)
 
-deriving instance (Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Liability context)
+deriving instance (KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (Liability context)
 
 -- TODO: derive this automatically
 instance
-  ( Symbolic context
-  , KnownRegisters context 64 Auto
+  ( KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => SymbolicInput (Liability context)
   where
@@ -58,27 +58,27 @@ deriving instance Generic (Output tokens datum context)
 deriving instance HEq context => Haskell.Eq (Output tokens datum context)
 
 deriving instance
-  (KnownNat tokens, Symbolic context, KnownRegisters context 64 Auto) => SymbolicData (Output tokens datum context)
+  (KnownNat tokens, KnownRegisters context 64 Auto, Symbolic context) => SymbolicData (Output tokens datum context)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => SymbolicInput (Output tokens datum context)
   where
   isValid (Output a t d) = isValid (a, t, d)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => Conditional (Bool context) (Output tokens datum context)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => Eq (Output tokens datum context)

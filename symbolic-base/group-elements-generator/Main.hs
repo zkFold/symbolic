@@ -71,8 +71,8 @@ optionsParser =
 
 runGroupElementsGeneric
   :: forall pt
-   . ( Scale (ScalarFieldOf pt) pt
-     , FromConstant Natural (ScalarFieldOf pt)
+   . ( FromConstant Natural (ScalarFieldOf pt)
+     , Scale (ScalarFieldOf pt) pt
      , Show pt
      , ToJSON pt
      )

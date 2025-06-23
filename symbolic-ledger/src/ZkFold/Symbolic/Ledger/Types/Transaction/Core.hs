@@ -51,25 +51,25 @@ data Transaction context = Transaction
   deriving stock Generic
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => SymbolicData (Transaction context)
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Conditional (Bool context) (Transaction context)
 
 instance
-  ( KnownRegistersAssetQuantity context
+  ( KnownRegisters context 11 Auto
+  , KnownRegistersAssetQuantity context
   , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
   , Symbolic context
   )
   => Eq (Transaction context)
@@ -77,10 +77,10 @@ instance
 -- | Builds a 'Transaction' validating that there is at least one input belonging to the "owner".
 mkTransaction
   :: forall context
-   . ( SymbolicFold context
+   . ( KnownRegisters context 11 Auto
      , KnownRegistersAssetQuantity context
      , KnownRegistersOutputIndex context
-     , KnownRegisters context 11 Auto
+     , SymbolicFold context
      )
   => List context (Input context)
   -> List context (Output context)
@@ -109,11 +109,11 @@ mkTransaction inputs outputs validityInterval owner =
 type TransactionId context = Hash (Transaction context)
 
 txId
-  :: ( KnownRegistersAssetQuantity context
-     , KnownRegistersOutputIndex context
+  :: ( Hashable (HashSimple context) (Transaction context)
      , KnownRegisters context 11 Auto
+     , KnownRegistersAssetQuantity context
+     , KnownRegistersOutputIndex context
      , Symbolic context
-     , Hashable (HashSimple context) (Transaction context)
      )
   => Transaction context -> TransactionId context
 txId = hash

@@ -87,7 +87,7 @@ instance Symbolic ctx => FromJSON (GooglePayload ctx) where
     stringify (JSON.Object o) = JSON.Object $ fmap stringify o
     stringify rest = rest
 
-instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (GooglePayload ctx) where
+instance (Context (GooglePayload ctx) ~ ctx, Symbolic ctx) => IsSymbolicJSON (GooglePayload ctx) where
   type MaxLength (GooglePayload ctx) = 7088
   toJsonBits GooglePayload {..} =
     (fromType @"{\"iss\":\"")
@@ -124,7 +124,7 @@ instance Symbolic ctx => IsBits (GooglePayload ctx) where
   type BitCount (GooglePayload ctx) = 9456
   toBits = toAsciiBits
 
-instance (Symbolic ctx, TokenBits (GooglePayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (GooglePayload ctx) where
+instance (RSA.RSA 2048 10328 ctx, Symbolic ctx, TokenBits (GooglePayload ctx)) => IsTokenPayload "RS256" (GooglePayload ctx) where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"

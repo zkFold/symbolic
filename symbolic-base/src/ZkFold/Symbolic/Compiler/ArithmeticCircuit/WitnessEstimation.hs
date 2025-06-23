@@ -24,15 +24,15 @@ instance FromConstant c a => FromConstant c (UVar a) where
 
 instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)
 
-instance (Scale k a, AdditiveMonoid k, Eq k, AdditiveMonoid a) => Scale k (UVar a) where
+instance (AdditiveMonoid a, AdditiveMonoid k, Eq k, Scale k a) => Scale k (UVar a) where
   scale k v
     | k == zero = ConstUVar zero
     | otherwise = fmap (scale k) v
 
-instance {-# OVERLAPPING #-} (Semiring a, Eq a) => Scale (UVar a) (UVar a) where
+instance {-# OVERLAPPING #-} (Eq a, Semiring a) => Scale (UVar a) (UVar a) where
   scale = (*)
 
-instance (Exponent a e, MultiplicativeMonoid a, Integral e) => Exponent (UVar a) e where
+instance (Exponent a e, Integral e, MultiplicativeMonoid a) => Exponent (UVar a) e where
   _ ^ 0 = ConstUVar one
   v ^ 1 = v
   ConstUVar c ^ n = ConstUVar (c ^ n)
@@ -59,17 +59,17 @@ instance (AdditiveMonoid a, Eq a) => AdditiveMonoid (UVar a) where
 instance (AdditiveGroup a, Eq a) => AdditiveGroup (UVar a) where
   negate = fmap negate
 
-instance (Semiring a, Eq a) => MultiplicativeSemigroup (UVar a) where
+instance (Eq a, Semiring a) => MultiplicativeSemigroup (UVar a) where
   ConstUVar c * x = scale c x
   x * ConstUVar c = scale c x
   _ * _ = More
 
-instance (Semiring a, Eq a) => MultiplicativeMonoid (UVar a) where
+instance (Eq a, Semiring a) => MultiplicativeMonoid (UVar a) where
   one = ConstUVar one
 
-instance (Semiring a, Eq a) => Semiring (UVar a)
+instance (Eq a, Semiring a) => Semiring (UVar a)
 
-instance (Ring a, Eq a) => Ring (UVar a)
+instance (Eq a, Ring a) => Ring (UVar a)
 
 instance BoolType (Maybe Bool) where
   true = Just True
@@ -93,14 +93,14 @@ instance Eq a => ZkFold.Eq (UVar a) where
   _ == _ = Nothing
   u /= v = not (u ZkFold.== v)
 
-instance (Field a, Eq a) => Field (UVar a) where
+instance (Eq a, Field a) => Field (UVar a) where
   finv (ConstUVar c) = ConstUVar (finv c)
   finv _ = More
 
 instance Finite a => Finite (UVar a) where
   type Order (UVar a) = Order a
 
-instance (ResidueField a, Eq a) => ResidueField (UVar a) where
+instance (Eq a, ResidueField a) => ResidueField (UVar a) where
   type IntegralOf (UVar a) = Maybe (IntegralOf a)
   fromIntegral (Just x) = ConstUVar (fromIntegral x)
   fromIntegral Nothing = More

@@ -56,9 +56,9 @@ data MerkleTree (d :: Natural) h = MerkleTree
 -- | Сreates a layer above the current one in the merkle tree
 layerFolding
   :: forall c x
-   . ( SymbolicOutput x
-     , Context x ~ c
+   . ( Context x ~ c
      , SymbolicFold c
+     , SymbolicOutput x
      )
   => List c x -> List c x
 layerFolding xs = res
@@ -84,13 +84,13 @@ newVer l' r' = Switch (hashAux @s @y false (sLayout l') (sLayout r')) (sPayload 
 
 zeroMerkleTree
   :: forall d x c
-   . ( SymbolicFold c
-     , SymbolicOutput x
-     , Context x ~ c
-     , KnownNat d
-     , 1 <= d
-     , KnownNat (2 ^ (d - 1))
+   . ( 1 <= d
      , AdditiveMonoid x
+     , Context x ~ c
+     , KnownNat (2 ^ (d - 1))
+     , KnownNat d
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => MerkleTree d x
 zeroMerkleTree =
@@ -104,12 +104,12 @@ zeroMerkleTree =
 
 instance
   forall c x d n
-   . ( SymbolicFold c
-     , SymbolicOutput x
+   . ( 1 <= d
+     , 2 ^ (d - 1) ~ n
      , Context x ~ c
      , KnownNat d
-     , 2 ^ (d - 1) ~ n
-     , 1 <= d
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => Iso (Vector n x) (MerkleTree d x)
   where
@@ -122,18 +122,18 @@ instance
 
 instance
   forall c x d n
-   . ( SymbolicFold c
-     , SymbolicOutput x
+   . ( 1 <= d
+     , 2 ^ (d - 1) ~ n
      , Context x ~ c
      , KnownNat d
-     , 2 ^ (d - 1) ~ n
-     , 1 <= d
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => Iso (MerkleTree d x) (Vector n x)
   where
   from (MerkleTree _ l) = V.unsafeToVector @n $ helper @c (V.last l) (2 ^ (value @d -! 1))
    where
-    helper :: forall s y. (SymbolicOutput y, Symbolic s, Context y ~ s) => List s y -> Natural -> [y]
+    helper :: forall s y. (Context y ~ s, Symbolic s, SymbolicOutput y) => List s y -> Natural -> [y]
     helper ls k = case k of
       0 -> []
       _ -> let (n, ns) = L.uncons ls in n : helper @s ns (k -! 1)
@@ -153,21 +153,21 @@ hashAux b h g =
   merkleHasher :: [Vec (Layout x) c] -> Vec (Layout x) c
   merkleHasher = mimcHashN mimcConstants zero
 
-instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
+instance (KnownNat d, SymbolicData h) => SymbolicData (MerkleTree d h)
 
-instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
+instance (KnownNat d, SymbolicInput h) => SymbolicInput (MerkleTree d h)
 
 instance
-  (SymbolicData h, KnownNat d, Context h ~ c)
+  (Context h ~ c, KnownNat d, SymbolicData h)
   => Conditional (Bool c) (MerkleTree d h)
 
 -- | Finds an element satisfying the constraint
 find
   :: forall c h d
    . ( Conditional (Bool c) h
-     , SymbolicInput h
      , Context h ~ c
      , SymbolicFold c
+     , SymbolicInput h
      )
   => MorphFrom c h (Bool c) -> MerkleTree d h -> Maybe c h
 find p MerkleTree {..} =
@@ -178,19 +178,19 @@ find p MerkleTree {..} =
 newtype MerkleTreePath (d :: Natural) c = MerkleTreePath {mPath :: Vector (d - 1) (Bool c)}
   deriving Generic
 
-instance (Symbolic c, KnownNat (d - 1)) => SymbolicData (MerkleTreePath d c)
+instance (KnownNat (d - 1), Symbolic c) => SymbolicData (MerkleTreePath d c)
 
-instance (Symbolic c, KnownNat (d - 1)) => Conditional (Bool c) (MerkleTreePath d c)
+instance (KnownNat (d - 1), Symbolic c) => Conditional (Bool c) (MerkleTreePath d c)
 
 -- | Finds a path to an element satisfying the constraint
 findPath
   :: forall x c d n
-   . ( SymbolicOutput x
+   . ( 1 <= d
      , Context x ~ c
-     , SymbolicFold c
      , KnownNat d
-     , 1 <= d
      , NumberOfBits (BaseField c) ~ n
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => MorphFrom c x (Bool c) -> MerkleTree d x -> Maybe c (MerkleTreePath d c)
 findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @_ @c) (just path) (p @ lookup @x @c mt path :: Bool c)
@@ -201,7 +201,7 @@ findPath p mt@(MerkleTree _ nodes) = withDict (minusNat @d @1) $ bool (nothing @
       MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . from $
         findIndex p leaves
 
-indToPath :: forall c d. (Symbolic c, KnownNat d) => c Par1 -> Vector (d - 1) (c Par1)
+indToPath :: forall c d. (KnownNat d, Symbolic c) => c Par1 -> Vector (d - 1) (c Par1)
 indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
   ee <- expansion (integral @d) i
   return $ Comp1 (V.unsafeToVector @(d - 1) $ P.map Par1 ee)
@@ -209,11 +209,11 @@ indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
 -- | Returns the element corresponding to a path
 lookup
   :: forall x c d
-   . ( SymbolicOutput x
+   . ( 1 <= d
      , Context x ~ c
-     , SymbolicFold c
      , KnownNat d
-     , 1 <= d
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => MerkleTree d x -> MerkleTreePath d c -> x
 lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
@@ -260,10 +260,10 @@ lookup (MerkleTree root nodes) (MerkleTreePath p) = xA
 -- element by index
 leaf
   :: forall c x d
-   . ( SymbolicOutput x
-     , Context x ~ c
-     , SymbolicFold c
+   . ( Context x ~ c
      , KnownNat d
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => List c x -> c Par1 -> x
 leaf l i =
@@ -280,12 +280,12 @@ ind vb = fromCircuitF (pack vb) $ \vb' -> do
 -- | Inserts an element at a specified position in a tree
 insertLeaf
   :: forall x c d
-   . ( SymbolicOutput x
+   . ( 1 <= d
      , Context x ~ c
-     , SymbolicFold c
      , KnownNat d
-     , 1 <= d
      , KnownRegisters c d Auto
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => MerkleTree d x -> MerkleTreePath d c -> x -> MerkleTree d x
 insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preimage) (V.unsafeToVector z3)
@@ -338,13 +338,13 @@ insertLeaf (MerkleTree _ nodes) (MerkleTreePath p) xI = MerkleTree (V.head preim
 -- | Replaces an element satisfying the constraint. A composition of `findPath` and `insert`
 replace
   :: forall x c d n
-   . ( SymbolicOutput x
+   . ( 1 <= d
      , Context x ~ c
-     , SymbolicFold c
      , KnownNat d
-     , 1 <= d
      , KnownRegisters c d Auto
      , NumberOfBits (BaseField c) ~ n
+     , SymbolicFold c
+     , SymbolicOutput x
      )
   => MorphFrom c x (Bool c) -> MerkleTree d x -> x -> MerkleTree d x
 replace p t x =

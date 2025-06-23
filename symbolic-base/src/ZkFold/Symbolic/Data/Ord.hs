@@ -49,14 +49,14 @@ class
 
   ordering :: a -> a -> a -> OrderingOf a -> a
   default ordering
-    :: (Generic a, GOrd (Rep a), OrderingOf a ~ GOrderingOf (Rep a))
+    :: (GOrd (Rep a), Generic a, OrderingOf a ~ GOrderingOf (Rep a))
     => a -> a -> a -> OrderingOf a -> a
   ordering ltCase eqCase gtCase o =
     to (gordering (from ltCase) (from eqCase) (from gtCase) o)
 
   compare :: a -> a -> OrderingOf a
   default compare
-    :: (Generic a, GOrd (Rep a), OrderingOf a ~ GOrderingOf (Rep a))
+    :: (GOrd (Rep a), Generic a, OrderingOf a ~ GOrderingOf (Rep a))
     => a -> a -> OrderingOf a
   compare x y = gcompare (from x) (from y)
 
@@ -169,7 +169,7 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
+instance (LayoutFunctor f, Symbolic c) => Ord (c f) where
   type OrderingOf (c f) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
   compare = bitwiseCompare `on` getBitsBE
@@ -177,7 +177,7 @@ instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
 bitwiseCompare :: forall c. Symbolic c => c [] -> c [] -> Ordering c
 bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
-getBitsBE :: forall c f. (Symbolic c, LayoutFunctor f) => c f -> c []
+getBitsBE :: forall c f. (LayoutFunctor f, Symbolic c) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x =
@@ -210,9 +210,9 @@ class
   gcompare :: u x -> u x -> GOrderingOf u
 
 instance
-  ( GOrd u
+  ( GBooleanOf u ~ GBooleanOf v
+  , GOrd u
   , GOrd v
-  , GBooleanOf u ~ GBooleanOf v
   , GOrderingOf u ~ GOrderingOf v
   )
   => GOrd (u :*: v)

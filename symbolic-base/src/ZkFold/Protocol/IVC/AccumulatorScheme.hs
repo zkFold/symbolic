@@ -46,19 +46,19 @@ data AccumulatorScheme d k i c f = AccumulatorScheme
 
 accumulatorScheme
   :: forall d c k a i p f
-   . ( KnownNat (d - 1)
-     , KnownNat (d + 1)
-     , Representable i
-     , Foldable i
-     , OracleSource f f
-     , OracleSource f c
-     , HomomorphicCommit [f] c
-     , Field f
-     , Scale a f
-     , Scale a (SimplePoly f (d + 1))
-     , Scale f c
-     , Binary (Rep i)
+   . ( Binary (Rep i)
      , Binary (Rep p)
+     , Field f
+     , Foldable i
+     , HomomorphicCommit [f] c
+     , KnownNat (d + 1)
+     , KnownNat (d - 1)
+     , OracleSource f c
+     , OracleSource f f
+     , Representable i
+     , Scale a (SimplePoly f (d + 1))
+     , Scale a f
+     , Scale f c
      )
   => Hasher -> Predicate a i p -> AccumulatorScheme d k i c f
 accumulatorScheme hash phi =

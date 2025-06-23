@@ -24,12 +24,12 @@ propNonInteractiveProof (a, w) =
 
 specNonInteractiveProof'
   :: forall a
-   . ( Typeable a
-     , NonInteractiveProof a
-     , Show a
-     , Show (Witness a)
+   . ( Arbitrary (Witness a)
      , Arbitrary a
-     , Arbitrary (Witness a)
+     , NonInteractiveProof a
+     , Show (Witness a)
+     , Show a
+     , Typeable a
      )
   => Spec
 specNonInteractiveProof' = do

@@ -47,20 +47,20 @@ import Prelude hiding (
 
 plonkupProve
   :: forall i o n g1 g2 ts pv rustG1 rustPv
-   . ( Ord (ScalarFieldOf g1)
+   . ( Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
      , Compressible g1
-     , ToTranscript ts Word8
-     , ToTranscript ts (ScalarFieldOf g1)
-     , ToTranscript ts (Compressed g1)
      , FromTranscript ts (ScalarFieldOf g1)
-     , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
-     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
-     , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
-     , RustHaskell rustG1 g1
+     , KnownNat n
+     , Ord (ScalarFieldOf g1)
      , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
      , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
+     , RustHaskell rustG1 g1
+     , ToTranscript ts (Compressed g1)
+     , ToTranscript ts (ScalarFieldOf g1)
+     , ToTranscript ts Word8
+     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+     , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
      )
   => PlonkupProverSetup i o n g1 g2 pv
   -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1)

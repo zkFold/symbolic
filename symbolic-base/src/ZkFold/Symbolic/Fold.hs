@@ -19,11 +19,11 @@ class Symbolic c => SymbolicFold c where
   --   To do this, you need quite a few arguments, see documentation.
   --   Or, even better, use more high-level Symbolic 'List' API.
   sfoldl
-    :: (Binary (Rep f), Binary1 f, Representable f, NFData1 f, Traversable f)
-    => (Binary (Rep p), Representable p, Binary (Rep g), Representable g)
+    :: (Binary (Rep f), Binary1 f, NFData1 f, Representable f, Traversable f)
+    => (Binary (Rep g), Binary (Rep p), Representable g, Representable p)
     => (Binary1 h, WitnessField c ~ wc)
     => ( forall s
-          . (SymbolicFold s, BaseField s ~ BaseField c)
+          . (BaseField s ~ BaseField c, SymbolicFold s)
          => -- \^ In anonymous context over same base field,
          s f
          -- \^ given a current state layout,

@@ -11,7 +11,7 @@ import ZkFold.Data.ByteString (Binary (..))
 import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 
 newtype SVector size a = SVector {fromSVector :: Map (Zp size) a}
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 instance (Binary a, KnownNat n) => Binary (SVector n a) where
   put = put . toList . fromSVector
@@ -33,10 +33,10 @@ instance KnownNat size => Zip (SVector size) where
 
   zipWith f (SVector as) (SVector bs) = SVector $ zipWith f as bs
 
-instance (KnownNat size, Arbitrary a) => Arbitrary (SVector size a) where
+instance (Arbitrary a, KnownNat size) => Arbitrary (SVector size a) where
   arbitrary = SVector <$> arbitrary
 
-instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveSemigroup (SVector size a) where
+instance (AdditiveMonoid a, Eq a, KnownNat size) => AdditiveSemigroup (SVector size a) where
   va + vb =
     SVector $
       filter (/= zero) $
@@ -50,19 +50,19 @@ instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveSemigroup (SVector s
             va
             vb
 
-(.+) :: (KnownNat size, AdditiveMonoid a, Eq a) => SVector size a -> SVector size a -> SVector size a
+(.+) :: (AdditiveMonoid a, Eq a, KnownNat size) => SVector size a -> SVector size a -> SVector size a
 (.+) = (+)
 
 instance Scale c a => Scale c (SVector size a) where
   scale c (SVector as) = SVector (map (scale c) as)
 
-instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveMonoid (SVector size a) where
+instance (AdditiveMonoid a, Eq a, KnownNat size) => AdditiveMonoid (SVector size a) where
   zero = SVector empty
 
-instance (KnownNat size, AdditiveGroup a, Eq a) => AdditiveGroup (SVector size a) where
+instance (AdditiveGroup a, Eq a, KnownNat size) => AdditiveGroup (SVector size a) where
   negate = fmap negate
 
-(.-) :: (KnownNat size, AdditiveGroup a, Eq a) => SVector size a -> SVector size a -> SVector size a
+(.-) :: (AdditiveGroup a, Eq a, KnownNat size) => SVector size a -> SVector size a -> SVector size a
 (.-) = (-)
 
 (.*) :: (KnownNat size, MultiplicativeSemigroup a) => SVector size a -> SVector size a -> SVector size a

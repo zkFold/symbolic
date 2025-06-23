@@ -170,7 +170,7 @@ class Exponent a b where
 -- distribute over @('*')@:
 --
 -- [Right distributivity] @(a * b) ^ n == (a ^ n) * (b ^ n)@
-class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a where
+class (Exponent a Natural, MultiplicativeSemigroup a) => MultiplicativeMonoid a where
   -- | An identity with respect to multiplication:
   --
   --   [Left identity] @one * x == x@
@@ -194,7 +194,7 @@ natPow !a !n
 product :: (Foldable t, MultiplicativeMonoid a) => t a -> a
 product = foldl' (*) one
 
-multiExp :: (MultiplicativeMonoid a, Exponent a b, Foldable t) => a -> t b -> a
+multiExp :: (Exponent a b, Foldable t, MultiplicativeMonoid a) => a -> t b -> a
 multiExp a = foldl' (\(!x) (!y) -> x * (a ^ y)) one
 
 -- | A class of groups in a multiplicative notation.
@@ -203,7 +203,7 @@ multiExp a = foldl' (\(!x) (!y) -> x * (a ^ y)) one
 -- implementation is provided as an @'intPow'@ function. You can provide a faster
 -- alternative yourself, but do not forget to check that your implementation
 -- computes the same results on all inputs.
-class (MultiplicativeMonoid a, Exponent a Integer) => MultiplicativeGroup a where
+class (Exponent a Integer, MultiplicativeMonoid a) => MultiplicativeGroup a where
   {-# MINIMAL (invert | (/)) #-}
 
   -- | Division in a group. The following should hold:
@@ -271,7 +271,7 @@ natScale !n !a
   d = n `shiftRNatural` 1
   f = natScale d (double a)
 
-sum :: (Foldable t, AdditiveMonoid a) => t a -> a
+sum :: (AdditiveMonoid a, Foldable t) => t a -> a
 sum = foldl' (+) zero
 
 -- | A class of abelian groups.
@@ -309,7 +309,7 @@ intScale !n !a
 --
 -- [Left distributivity] @a * (b + c) == a * b + a * c@
 -- [Right distributivity] @(a + b) * c == a * c + b * c@
-class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semiring a
+class (AdditiveMonoid a, FromConstant Natural a, MultiplicativeMonoid a) => Semiring a
 
 -- | A semi-Euclidean-domain @a@ is a semiring without zero divisors which can
 -- be endowed with at least one function @f : a\{0} -> R+@ s.t. if @x@ and @y@ are
@@ -339,7 +339,7 @@ class Semiring a => SemiEuclidean a where
 --
 -- [Left distributivity] @a * (b - c) == a * b - a * c@
 -- [Right distributivity] @(a - b) * c == a * c - b * c@
-class (Semiring a, AdditiveGroup a, FromConstant Integer a) => Ring a
+class (AdditiveGroup a, FromConstant Integer a, Semiring a) => Ring a
 
 -- | A 'Euclidean' ring is a 'Ring' which is a 'SemiEuclidean' domain and,
 -- in addition, admits a notion of /greatest common divisor/ @gcd x y@
@@ -383,7 +383,7 @@ type Algebra b a = (Ring a, Scale b a, FromConstant b a)
 -- implementation is provided as an @'intPowF'@ function. You can provide a faster
 -- alternative yourself, but do not forget to check that your implementation
 -- computes the same results on all inputs.
-class (Ring a, Exponent a Integer, Eq a) => Field a where
+class (Eq a, Exponent a Integer, Ring a) => Field a where
   {-# MINIMAL (finv | (//)) #-}
 
   -- | Division in a field. The following should hold:
@@ -423,7 +423,7 @@ intPowF !a !n
 
 -- | Class of finite structures. @Order a@ should be the actual number of
 -- elements in the type, identified up to the associated equality relation.
-class (KnownNat (Order a), KnownNat (NumberOfBits a)) => Finite (a :: Type) where
+class (KnownNat (NumberOfBits a), KnownNat (Order a)) => Finite (a :: Type) where
   type Order a :: Natural
 
 order :: forall a. Finite a => Natural
@@ -464,7 +464,7 @@ class Semiring a => BinaryExpansion a where
 padBits :: forall a. AdditiveMonoid a => Natural -> [a] -> [a]
 padBits !n !xs = xs ++ replicate (n -! length xs) zero
 
-castBits :: (Semiring a, Haskell.Eq a, Semiring b) => [a] -> [b]
+castBits :: (Haskell.Eq a, Semiring a, Semiring b) => [a] -> [b]
 castBits [] = []
 castBits (x : xs)
   | x Haskell.== zero = zero : castBits xs
@@ -476,7 +476,7 @@ castBits (x : xs)
 -- | A multiplicative subgroup of nonzero elements of a field.
 -- TODO: hide constructor
 newtype NonZero a = NonZero a
-  deriving newtype (MultiplicativeSemigroup, MultiplicativeMonoid)
+  deriving newtype (MultiplicativeMonoid, MultiplicativeSemigroup)
 
 instance Exponent a b => Exponent (NonZero a) b where
   NonZero a ^ b = NonZero (a ^ b)
@@ -486,7 +486,7 @@ instance Field a => MultiplicativeGroup (NonZero a) where
   NonZero x / NonZero y = NonZero (x // y)
 
 instance
-  (KnownNat (Order (NonZero a)), KnownNat (NumberOfBits (NonZero a)))
+  (KnownNat (NumberOfBits (NonZero a)), KnownNat (Order (NonZero a)))
   => Finite (NonZero a)
   where
   type Order (NonZero a) = Order a - 1
@@ -616,7 +616,7 @@ floorN = Haskell.floor
 instance MultiplicativeSemigroup Bool where
   (*) = (&&)
 
-instance (Semiring a, Haskell.Eq a) => Exponent Bool a where
+instance (Haskell.Eq a, Semiring a) => Exponent Bool a where
   x ^ p
     | p Haskell.== zero = one
     | otherwise = x
@@ -772,9 +772,9 @@ instance AdditiveGroup a => AdditiveGroup (Constant a f) where
 
   negate (Constant x) = Constant (negate x)
 
-instance (Semiring a, Scale (Constant a f) (Constant a f)) => Semiring (Constant a f)
+instance (Scale (Constant a f) (Constant a f), Semiring a) => Semiring (Constant a f)
 
-instance (SemiEuclidean a, Scale (Constant a f) (Constant a f)) => SemiEuclidean (Constant a f) where
+instance (Scale (Constant a f) (Constant a f), SemiEuclidean a) => SemiEuclidean (Constant a f) where
   divMod (Constant x) (Constant y) = (Constant q, Constant r)
    where
     (q, r) = divMod x y
@@ -834,7 +834,7 @@ instance AdditiveGroup a => AdditiveGroup (Maybe a) where
 
 instance Ring a => Ring (Maybe a)
 
-instance (Field a, Conditional (BooleanOf a) (Maybe a)) => Field (Maybe a) where
+instance (Conditional (BooleanOf a) (Maybe a), Field a) => Field (Maybe a) where
   finv :: Maybe a -> Maybe a
   finv = fmap finv
 

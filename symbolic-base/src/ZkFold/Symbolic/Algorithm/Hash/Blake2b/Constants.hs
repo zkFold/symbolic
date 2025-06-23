@@ -42,10 +42,10 @@ blake2b_iv =
 
 sigma
   :: forall v
-   . ( IsList (v Int)
-     , IsList (v (v Int))
-     , Item (v Int) ~ Int
+   . ( IsList (v (v Int))
+     , IsList (v Int)
      , Item (v (v Int)) ~ v Int
+     , Item (v Int) ~ Int
      )
   => v (v Int)
 sigma =

@@ -55,12 +55,12 @@ deriving instance HEq context => P.Eq (PrivateKey keyLen context)
 
 deriving instance HShow context => P.Show (PrivateKey keyLen context)
 
-deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
+deriving instance (KnownRegisters ctx keyLen 'Auto, Symbolic ctx) => SymbolicData (PrivateKey keyLen ctx)
 
 instance
-  ( Symbolic ctx
-  , KnownNat keyLen
+  ( KnownNat keyLen
   , KnownRegisters ctx keyLen 'Auto
+  , Symbolic ctx
   )
   => SymbolicInput (PrivateKey keyLen ctx)
   where
@@ -83,17 +83,17 @@ deriving instance HEq context => P.Eq (PublicKey keyLen context)
 deriving instance HShow context => P.Show (PublicKey keyLen context)
 
 deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx PubExponentSize 'Auto
+  ( KnownRegisters ctx PubExponentSize 'Auto
   , KnownRegisters ctx keyLen 'Auto
+  , Symbolic ctx
   )
   => SymbolicData (PublicKey keyLen ctx)
 
 instance
-  ( Symbolic ctx
-  , KnownNat keyLen
+  ( KnownNat keyLen
   , KnownRegisters ctx PubExponentSize 'Auto
   , KnownRegisters ctx keyLen 'Auto
+  , Symbolic ctx
   )
   => SymbolicInput (PublicKey keyLen ctx)
   where

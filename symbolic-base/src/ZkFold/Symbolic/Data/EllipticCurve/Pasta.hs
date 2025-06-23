@@ -25,9 +25,9 @@ type Vesta_Point ctx =
   Weierstrass "Pasta" (Point (FFA FqModulus 'Auto ctx))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA FpModulus 'Auto ctx
+  ( KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Pallas_Point ctx)
   where
@@ -38,9 +38,9 @@ instance
       (fromConstant (0x02 :: Natural))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA FpModulus 'Auto ctx
+  ( KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA FqModulus 'Auto ctx) (Pallas_Point ctx)
   where
@@ -58,9 +58,9 @@ instance
     upper = value @(FFAMaxBits FqModulus ctx) -! 1
 
 instance
-  ( Symbolic ctx
-  , KnownFFA FpModulus 'Auto ctx
+  ( KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Vesta_Point ctx)
   where
@@ -71,9 +71,9 @@ instance
       (fromConstant (0x02 :: Natural))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA FpModulus 'Auto ctx
+  ( KnownFFA FpModulus 'Auto ctx
   , KnownFFA FqModulus 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA FpModulus 'Auto ctx) (Vesta_Point ctx)
   where

@@ -33,7 +33,7 @@ import qualified Prelude as Haskell
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
 
-fieldElements :: (Package c, Functor f) => c f -> f (FieldElement c)
+fieldElements :: (Functor f, Package c) => c f -> f (FieldElement c)
 fieldElements = fmap FieldElement . unpacked
 
 deriving stock instance HShow c => Haskell.Show (FieldElement c)
@@ -52,7 +52,7 @@ deriving newtype instance Symbolic c => Eq (FieldElement c)
 
 deriving newtype instance Symbolic c => Ord (FieldElement c)
 
-instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
+instance {-# INCOHERENT #-} (FromConstant k (BaseField c), Symbolic c) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant
 
 instance ToConstant (FieldElement (Interpreter a)) where
@@ -65,7 +65,7 @@ instance Symbolic c => Exponent (FieldElement c) Natural where
 instance Symbolic c => Exponent (FieldElement c) Integer where
   (^) = intPowF
 
-instance (Symbolic c, Scale k (BaseField c)) => Scale k (FieldElement c) where
+instance (Scale k (BaseField c), Symbolic c) => Scale k (FieldElement c) where
   scale k (FieldElement c) = FieldElement $ fromCircuitF c $ \(Par1 i) ->
     Par1 <$> newAssigned (\x -> fromConstant (scale k one :: BaseField c) * x i)
 
@@ -108,8 +108,8 @@ instance Symbolic c => Field (FieldElement c) where
         fmap snd . runInvert
 
 instance
-  ( KnownNat (Order (FieldElement c))
-  , KnownNat (NumberOfBits (FieldElement c))
+  ( KnownNat (NumberOfBits (FieldElement c))
+  , KnownNat (Order (FieldElement c))
   )
   => Finite (FieldElement c)
   where
@@ -133,5 +133,5 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
 instance Symbolic c => SymbolicInput (FieldElement c) where
   isValid _ = true
 
-instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where
+instance (Arbitrary (BaseField c), Symbolic c) => Arbitrary (FieldElement c) where
   arbitrary = FieldElement . embed . Par1 <$> arbitrary

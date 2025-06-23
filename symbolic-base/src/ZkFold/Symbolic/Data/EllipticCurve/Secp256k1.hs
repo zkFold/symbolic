@@ -19,9 +19,9 @@ import qualified Prelude
 type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base 'Auto ctx)
 
 instance
-  ( Symbolic ctx
-  , KnownFFA Secp256k1_Base 'Auto ctx
+  ( KnownFFA Secp256k1_Base 'Auto ctx
   , KnownFFA Secp256k1_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Secp256k1_Point ctx)
   where
@@ -32,9 +32,9 @@ instance
       (fromConstant (0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8 :: Natural))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA Secp256k1_Base 'Auto ctx
+  ( KnownFFA Secp256k1_Base 'Auto ctx
   , KnownFFA Secp256k1_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA Secp256k1_Scalar 'Auto ctx) (Secp256k1_Point ctx)
   where

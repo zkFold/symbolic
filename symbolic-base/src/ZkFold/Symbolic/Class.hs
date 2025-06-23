@@ -44,7 +44,7 @@ type Arithmetic a =
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 type CircuitFun (fs :: [Type -> Type]) (g :: Type -> Type) (c :: (Type -> Type) -> Type) =
-  forall i m. (NFData i, MonadCircuit i (BaseField c) (WitnessField c) m) => FunBody fs g i m
+  forall i m. (MonadCircuit i (BaseField c) (WitnessField c) m, NFData i) => FunBody fs g i m
 
 type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m :: Type -> Type) where
   FunBody '[] g i m = m (g i)
@@ -53,10 +53,10 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
 class
-  ( HApplicative c
-  , Package c
+  ( Arithmetic (BaseField c)
+  , HApplicative c
   , HNFData c
-  , Arithmetic (BaseField c)
+  , Package c
   , ResidueField (WitnessField c)
   ) =>
   Symbolic c
@@ -81,11 +81,11 @@ class
   sanityF x _ f = f x
 
 -- | Embeds the pure value(s) into generic context @c@.
-embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
+embed :: (Functor f, Symbolic c) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
 symbolicF
-  :: (Symbolic c, BaseField c ~ a)
+  :: (BaseField c ~ a, Symbolic c)
   => c f
   -> (f a -> g a)
   -> CircuitFun '[f] g c
@@ -93,7 +93,7 @@ symbolicF
 symbolicF x f c = sanityF x f (`fromCircuitF` c)
 
 symbolic2F
-  :: (Symbolic c, BaseField c ~ a)
+  :: (BaseField c ~ a, Symbolic c)
   => c f
   -> c g
   -> (f a -> g a -> h a)
@@ -109,7 +109,7 @@ fromCircuit2F :: Symbolic c => c f -> c g -> CircuitFun '[f, g] h c -> c h
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
 
 symbolic3F
-  :: (Symbolic c, BaseField c ~ a)
+  :: (BaseField c ~ a, Symbolic c)
   => c f
   -> c g
   -> c h
@@ -127,7 +127,7 @@ fromCircuit3F
 fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
 
 symbolicVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w, Foldable f, Functor f)
+  :: (BaseField c ~ a, Foldable f, Functor f, Symbolic c, WitnessField c ~ w)
   => f (c g)
   -> (f (g a) -> h a)
   -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i))
@@ -137,7 +137,7 @@ symbolicVF
 symbolicVF xs f m = symbolicF (pack xs) (f . unComp1) (m . unComp1)
 
 fromCircuitVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w, Foldable f, Functor f)
+  :: (BaseField c ~ a, Foldable f, Functor f, Symbolic c, WitnessField c ~ w)
   => f (c g) -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
 
 -- | Given a generic context @c@, runs the @'CircuitFun'@ from @f@ many @c g@'s into @c h@.

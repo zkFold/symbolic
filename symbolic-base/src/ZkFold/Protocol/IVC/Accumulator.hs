@@ -29,7 +29,7 @@ data AccumulatorInstance k i c f = AccumulatorInstance
   , _e :: c -- E ∈ C in the paper
   , _mu :: f -- μ ∈ F in the paper
   }
-  deriving (Generic, Functor, Eq)
+  deriving (Eq, Functor, Generic)
 
 makeLenses ''AccumulatorInstance
 
@@ -44,20 +44,20 @@ instance Functor i => Bifunctor (AccumulatorInstance k i) where
       }
 
 instance
-  (OracleSource a f, OracleSource a c, Foldable i)
+  (Foldable i, OracleSource a c, OracleSource a f)
   => OracleSource a (AccumulatorInstance k i c f)
   where
   source AccumulatorInstance {..} =
     source (FoldableSource _pi, _c, _r, _e, _mu)
 
 instance
-  ( KnownNat (k - 1)
+  ( Context f ~ Context c
+  , KnownNat (k - 1)
   , KnownNat k
   , LayoutFunctor i
+  , Support f ~ Support c
   , SymbolicData c
   , SymbolicData f
-  , Context f ~ Context c
-  , Support f ~ Support c
   )
   => SymbolicData (AccumulatorInstance k i c f)
 
@@ -68,21 +68,21 @@ data Accumulator k i c f = Accumulator
   { _x :: AccumulatorInstance k i c f
   , _w :: Vector k [f]
   }
-  deriving (Generic, Functor)
+  deriving (Functor, Generic)
 
 makeLenses ''Accumulator
 
 emptyAccumulator
   :: forall d k a i p c f
-   . ( KnownNat (d + 1)
+   . ( Binary (Rep i)
+     , Binary (Rep p)
+     , HomomorphicCommit [f] c
+     , KnownNat (d + 1)
      , KnownNat (k - 1)
      , KnownNat k
      , Representable i
-     , HomomorphicCommit [f] c
      , Ring f
      , Scale a f
-     , Binary (Rep i)
-     , Binary (Rep p)
      )
   => Predicate a i p -> Accumulator k i c f
 emptyAccumulator phi =
@@ -97,15 +97,15 @@ emptyAccumulator phi =
 
 emptyAccumulatorInstance
   :: forall d k a i p c f
-   . ( KnownNat (d + 1)
+   . ( Binary (Rep i)
+     , Binary (Rep p)
+     , HomomorphicCommit [f] c
+     , KnownNat (d + 1)
      , KnownNat (k - 1)
      , KnownNat k
      , Representable i
-     , HomomorphicCommit [f] c
      , Ring f
      , Scale a f
-     , Binary (Rep i)
-     , Binary (Rep p)
      )
   => Predicate a i p -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

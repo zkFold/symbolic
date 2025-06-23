@@ -20,7 +20,7 @@ import qualified Prelude
 
 -- TODO: move to ZkFold.Symbolic.Data.Bool
 
-instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
+instance (LayoutFunctor f, Symbolic c) => Conditional (Bool c) (c f) where
   bool x y (Bool b) = restore $ \s ->
     ( symbolic3F
         b

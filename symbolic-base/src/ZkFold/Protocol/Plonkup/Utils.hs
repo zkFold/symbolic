@@ -27,7 +27,7 @@ import Prelude hiding (
   (^),
  )
 
-getParams :: forall a. (Ord a, FiniteField a) => Natural -> (a, a, a)
+getParams :: forall a. (FiniteField a, Ord a) => Natural -> (a, a, a)
 getParams n = findK' 0
  where
   omega = case rootOfUnity @a (log2ceiling n) of
@@ -51,10 +51,10 @@ getParams n = findK' 0
 
 getSecretParams
   :: forall n g1 g2
-   . ( KnownNat (n + 6)
-     , Arithmetic (ScalarFieldOf g1)
+   . ( Arithmetic (ScalarFieldOf g1)
      , CyclicGroup g1
      , CyclicGroup g2
+     , KnownNat (n + 6)
      , Scale (ScalarFieldOf g1) g2
      )
   => ScalarFieldOf g1 -> (Vector (n + 6) g1, g2)

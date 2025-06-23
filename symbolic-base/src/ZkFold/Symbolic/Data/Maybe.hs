@@ -30,17 +30,17 @@ import qualified Prelude as Haskell
 
 data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
   deriving stock
-    ( Haskell.Functor
+    ( Generic
     , Haskell.Foldable
+    , Haskell.Functor
     , Haskell.Traversable
-    , Generic
     )
 
 deriving stock instance (HEq c, Haskell.Eq x) => Haskell.Eq (Maybe c x)
 
-instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x)
+instance (Context x ~ c, SymbolicOutput x) => SymbolicData (Maybe c x)
 
-instance (SymbolicOutput x, Context x ~ c, Conditional (Bool c) x) => Conditional (Bool c) (Maybe c x)
+instance (Conditional (Bool c) x, Context x ~ c, SymbolicOutput x) => Conditional (Bool c) (Maybe c x)
 
 instance (Context x ~ c, SymbolicEq x) => Eq (Maybe c x)
 
@@ -49,7 +49,7 @@ just = Maybe true
 
 nothing
   :: forall x c
-   . (SymbolicData x, Context x ~ c)
+   . (Context x ~ c, SymbolicData x)
   => Maybe c x
 nothing =
   Maybe false $ restore $ Haskell.const (embed (pureRep zero), pureRep zero)
@@ -71,7 +71,7 @@ maybe d h m = fromMaybe d (h <$> m)
 
 find
   :: forall a c t
-   . (SymbolicOutput a, Context a ~ c, Haskell.Foldable t, Conditional (Bool c) a)
+   . (Conditional (Bool c) a, Context a ~ c, Haskell.Foldable t, SymbolicOutput a)
   => (a -> Bool c) -> t a -> Maybe c a
 find p =
   let n = nothing

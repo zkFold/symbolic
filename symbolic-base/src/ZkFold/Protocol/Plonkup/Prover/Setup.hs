@@ -23,12 +23,12 @@ data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
 
 instance
   ( CyclicGroup g1
+  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
+  , Show (ScalarFieldOf g1)
+  , Show (pv (PlonkupPolyExtendedLength n))
+  , Show (pv n)
   , Show g1
   , Show g2
-  , Show (ScalarFieldOf g1)
-  , Show (pv n)
-  , Show (pv (PlonkupPolyExtendedLength n))
-  , Show (PlonkupRelation i o n (ScalarFieldOf g1) pv)
   )
   => Show (PlonkupProverSetup i o n g1 g2 pv)
   where

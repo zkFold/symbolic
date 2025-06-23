@@ -47,12 +47,12 @@ type RestoresFrom c y = (SymbolicOutput y, Context y ~ c, Payload y ~ U1)
 -- arithmetic circuit packed inside a suitable 'SymbolicData'.
 compileWith
   :: forall a y i j s f c0 c1
-   . ( CompilesWith c0 s f
-     , c0 ~ CircuitContext a
-     , RestoresFrom c1 y
-     , c1 ~ ArithmeticCircuit a i
+   . ( Binary (Rep i)
      , Binary a
-     , Binary (Rep i)
+     , CompilesWith c0 s f
+     , RestoresFrom c1 y
+     , c0 ~ CircuitContext a
+     , c1 ~ ArithmeticCircuit a i
      )
   => ((j NewVar -> c0 (Layout f)) -> c1 (Layout y))
   -> (forall x. j x -> (Payload s x, Layout s x))
@@ -69,9 +69,9 @@ compileWith opts support f = restore . const . (,U1) . optimize $ opts \x ->
 -- packed inside a suitable 'SymbolicData'.
 compile
   :: forall a y s f
-   . ( CompilesWith (CircuitContext a) s f
+   . ( Binary a
+     , CompilesWith (CircuitContext a) s f
      , Layout y ~ Layout f
-     , Binary a
      , RestoresFrom (ArithmeticCircuit a (Payload s :*: Layout s)) y
      )
   => f -> y
@@ -80,7 +80,7 @@ compile = compileWith solder toPair
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO
   :: forall a s f
-   . (ToJSON a, ToJSONKey a, Binary a, ToJSON1 (Layout f))
+   . (Binary a, ToJSON a, ToJSON1 (Layout f), ToJSONKey a)
   => CompilesWith (CircuitContext a) s f
   => FilePath -> f -> IO ()
 compileIO scriptFile f = do

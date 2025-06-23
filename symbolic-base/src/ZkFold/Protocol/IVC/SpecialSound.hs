@@ -63,10 +63,10 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
 
 specialSoundProtocol
   :: forall d a i p f
-   . ( KnownNat (d + 1)
-     , Arithmetic a
+   . ( Arithmetic a
      , Binary (Rep i)
      , Binary (Rep p)
+     , KnownNat (d + 1)
      , Representable i
      , Representable p
      )
@@ -86,10 +86,10 @@ specialSoundProtocol af fa phi@Predicate {..} =
 
 specialSoundProtocol'
   :: forall d a i p f
-   . ( KnownNat (d + 1)
-     , Representable i
-     , Binary (Rep i)
+   . ( Binary (Rep i)
      , Binary (Rep p)
+     , KnownNat (d + 1)
+     , Representable i
      , Ring f
      , Scale a f
      )

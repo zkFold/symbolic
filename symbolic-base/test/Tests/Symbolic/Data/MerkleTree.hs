@@ -60,7 +60,7 @@ testIso3 x y z w =
   let v = V.unsafeToVector [x, y, z, w]
    in v == (from (from v :: MerkleTree 3 (FieldElement c)) :: Vector 4 (FieldElement c))
 
-testPath :: forall d c. (Symbolic c, KnownNat d) => FieldElement c -> Bool c
+testPath :: forall d c. (KnownNat d, Symbolic c) => FieldElement c -> Bool c
 testPath fe@(FieldElement e) = fe == (FieldElement . ind $ indToPath @c @d e)
 
 testLayerFolding

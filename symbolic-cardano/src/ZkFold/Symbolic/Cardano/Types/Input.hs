@@ -28,36 +28,36 @@ data Input tokens datum context = Input
   deriving Generic
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => Conditional (Bool context) (Input tokens datum context)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => Eq (Input tokens datum context)
 
 deriving instance HEq context => Haskell.Eq (Input tokens datum context)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => SymbolicData (Input tokens datum context)
 
 instance
-  ( Symbolic context
-  , KnownNat tokens
+  ( KnownNat tokens
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
+  , Symbolic context
   )
   => SymbolicInput (Input tokens datum context)
 

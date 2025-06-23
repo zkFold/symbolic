@@ -55,7 +55,7 @@ type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
   FFAUIntSize p q = NumberOfBits (Zp (Ceil (p * p) q))
 
-isNative :: forall p r c. (Symbolic c, KnownFFA p r c) => Prelude.Bool
+isNative :: forall p r c. (KnownFFA p r c, Symbolic c) => Prelude.Bool
 isNative = value @p == value @(Order (BaseField c))
 
 type UIntFFA p r c = UInt (FFAUIntSize p (Order (BaseField c))) r c
@@ -84,9 +84,9 @@ type KnownFFA p r c =
   , KnownNat (NumberOfBits (Zp p))
   )
 
-instance (Symbolic c, KnownFFA p r c) => SymbolicData (FFA p r c)
+instance (KnownFFA p r c, Symbolic c) => SymbolicData (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => SymbolicInput (FFA p r c) where
   isValid ffa@(FFA _ ux) =
     if isNative @p @r @c
       then true
@@ -96,14 +96,14 @@ instance HNFData c => NFData (FFA p r c)
 
 deriving stock instance HShow c => Show (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
+instance (KnownFFA p r c, Symbolic c, b ~ Bool c) => Conditional b (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
+instance (KnownFFA p r c, Symbolic c) => Eq (FFA p r c)
 
 deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
 bezoutFFA
-  :: forall p a. (KnownNat p, KnownNat (FFAUIntSize p (Order a))) => Integer
+  :: forall p a. (KnownNat (FFAUIntSize p (Order a)), KnownNat p) => Integer
 bezoutFFA =
   bezoutR
     (1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p (Order a))))
@@ -123,7 +123,7 @@ instance
      in fromConstant (k * fromConstant (order @a) + n)
 
 instance
-  (Symbolic c, KnownFFA p r c, FromConstant a (Zp p))
+  (FromConstant a (Zp p), KnownFFA p r c, Symbolic c)
   => FromConstant a (FFA p r c)
   where
   fromConstant c =
@@ -132,21 +132,21 @@ instance
 
 instance
   {-# OVERLAPPING #-}
-  (Symbolic c, Order (BaseField c) ~ p, KnownRegisterSize r)
+  (KnownRegisterSize r, Order (BaseField c) ~ p, Symbolic c)
   => FromConstant (FieldElement c) (FFA p r c)
   where
   fromConstant nx = FFA nx zero
 
 instance {-# OVERLAPPING #-} FromConstant (FFA p r c) (FFA p r c)
 
-instance {-# OVERLAPPING #-} (Symbolic c, KnownFFA p r c) => Scale (FFA p r c) (FFA p r c)
+instance {-# OVERLAPPING #-} (KnownFFA p r c, Symbolic c) => Scale (FFA p r c) (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => Uniform (FFA p r c) where
   uniformM = fmap fromConstant . uniformM @(Zp p)
 
 valueFFA
   :: forall p r c i a
-   . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c)
+   . (KnownFFA p r c, Symbolic c, Witness i (WitnessField c), a ~ BaseField c)
   => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i
   -> IntegralOf (WitnessField c)
 valueFFA (Par1 ni :*: ui) =
@@ -157,7 +157,7 @@ valueFFA (Par1 ni :*: ui) =
 
 layoutFFA
   :: forall p r c a w
-   . (Symbolic c, KnownFFA p r c, a ~ BaseField c, w ~ WitnessField c)
+   . (KnownFFA p r c, Symbolic c, a ~ BaseField c, w ~ WitnessField c)
   => IntegralOf w
   -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) w
 layoutFFA c =
@@ -185,7 +185,7 @@ toFFA n =
         fromConstant n :: FFA p r (Interpreter a)
    in x :*: v
 
-instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => MultiplicativeSemigroup (FFA p r c) where
   FFA nx ux * FFA ny uy =
     if isNative @p @r @c
       then FFA (nx * ny) zero
@@ -231,13 +231,13 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
           , U1 :*: U1
           )
 
-instance (Symbolic c, KnownFFA p r c) => Exponent (FFA p r c) Natural where
+instance (KnownFFA p r c, Symbolic c) => Exponent (FFA p r c) Natural where
   x ^ a = x `natPow` (a `mod` (value @p -! 1))
 
-instance (Symbolic c, KnownFFA p r c) => MultiplicativeMonoid (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => MultiplicativeMonoid (FFA p r c) where
   one = fromConstant (one :: Zp p)
 
-instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => AdditiveSemigroup (FFA p r c) where
   FFA nx ux + FFA ny uy =
     if isNative @p @r @c
       then FFA (nx + ny) zero
@@ -287,13 +287,13 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
           , U1 :*: U1
           )
 
-instance (Symbolic c, KnownFFA p r c, Scale a (Zp p)) => Scale a (FFA p r c) where
+instance (KnownFFA p r c, Scale a (Zp p), Symbolic c) => Scale a (FFA p r c) where
   scale k x = fromConstant (scale k one :: Zp p) * x
 
-instance (Symbolic c, KnownFFA p r c) => AdditiveMonoid (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => AdditiveMonoid (FFA p r c) where
   zero = fromConstant (zero :: Zp p)
 
-instance (Symbolic c, KnownFFA p r c) => AdditiveGroup (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => AdditiveGroup (FFA p r c) where
   -- \| negate cannot overflow if value is nonzero.
   negate (FFA nx ux) =
     if isNative @p @r @c
@@ -304,11 +304,11 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveGroup (FFA p r c) where
           (FFA nx ux)
           (nx == zero && ux == zero)
 
-instance (Symbolic c, KnownFFA p r c) => Semiring (FFA p r c)
+instance (KnownFFA p r c, Symbolic c) => Semiring (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c) => Ring (FFA p r c)
+instance (KnownFFA p r c, Symbolic c) => Ring (FFA p r c)
 
-instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer where
+instance (KnownFFA p r c, Prime p, Symbolic c) => Exponent (FFA p r c) Integer where
   x ^ a
     | neg Prelude.< pos = finv x ^ neg
     | otherwise = x ^ pos
@@ -316,7 +316,7 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer w
     pos = Prelude.fromIntegral (a `mod` Prelude.fromIntegral (value @p -! 1))
     neg = value @p -! (pos + 1)
 
-instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
+instance (KnownFFA p r c, Prime p, Symbolic c) => Field (FFA p r c) where
   finv (FFA nx ux) =
     if isNative @p @r @c
       then FFA (finv nx) zero
@@ -372,22 +372,22 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
 
-instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
+instance (KnownFFA p r c, Symbolic c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c
   binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
   fromBinary = fromUInt @(NumberOfBits (Zp p)) . from
 
 fromUInt
   :: forall n p r c
-   . (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
+   . (KnownFFA p r c, Symbolic c)
+  => (KnownNat (GetRegisterSize (BaseField c) n r), KnownNat n)
   => UInt n r c -> FFA p r c
 fromUInt ux = FFA (toNative ux) (resize ux)
 
 toUInt
   :: forall n p r c
-   . (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n r))
+   . (KnownFFA p r c, Symbolic c)
+  => (KnownNat (NumberOfRegisters (BaseField c) n r), KnownNat n)
   => KnownNat (GetRegisterSize (BaseField c) n r)
   => FFA p r c -> UInt n r c
 toUInt x = uy

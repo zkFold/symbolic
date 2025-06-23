@@ -23,17 +23,17 @@ import Prelude (Eq, Ord)
 
 data LinVar a v = LinVar a v a | ConstVar a
   deriving
-    ( Generic
-    , Binary
+    ( Binary
+    , Eq
     , FromJSON
     , FromJSONKey
+    , Functor
+    , Generic
+    , NFData
+    , Ord
+    , Show
     , ToJSON
     , ToJSONKey
-    , Show
-    , Eq
-    , Ord
-    , NFData
-    , Functor
     )
 
 $(deriveBifunctor ''LinVar)
@@ -65,16 +65,16 @@ data NewVar
   | FoldLVar ByteString ByteString
   | FoldPVar ByteString ByteString
   deriving
-    ( Generic
-    , Binary
+    ( Binary
+    , Eq
     , FromJSON
     , FromJSONKey
+    , Generic
+    , NFData
+    , Ord
+    , Show
     , ToJSON
     , ToJSONKey
-    , Show
-    , Eq
-    , Ord
-    , NFData
     )
 
 type CircuitWitness a = WitnessF a NewVar

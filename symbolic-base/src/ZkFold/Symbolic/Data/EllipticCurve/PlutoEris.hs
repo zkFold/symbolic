@@ -25,9 +25,9 @@ type Eris_Point ctx =
   Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_q 'Auto ctx))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA PlutoEris_p 'Auto ctx
+  ( KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Pluto_Point ctx)
   where
@@ -38,9 +38,9 @@ instance
       (fromConstant (7 :: Prelude.Integer))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA PlutoEris_p 'Auto ctx
+  ( KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA PlutoEris_q 'Auto ctx) (Pluto_Point ctx)
   where
@@ -58,9 +58,9 @@ instance
     upper = value @(FFAMaxBits PlutoEris_q ctx) -! 1
 
 instance
-  ( Symbolic ctx
-  , KnownFFA PlutoEris_p 'Auto ctx
+  ( KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Eris_Point ctx)
   where
@@ -71,9 +71,9 @@ instance
       (fromConstant (7 :: Prelude.Integer))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA PlutoEris_p 'Auto ctx
+  ( KnownFFA PlutoEris_p 'Auto ctx
   , KnownFFA PlutoEris_q 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA PlutoEris_p 'Auto ctx) (Eris_Point ctx)
   where

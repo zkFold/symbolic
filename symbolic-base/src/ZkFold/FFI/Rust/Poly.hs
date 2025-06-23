@@ -31,10 +31,10 @@ pokeArrayV :: Storable a => Ptr a -> V.Vector a -> IO ()
 pokeArrayV ptr = V.imapM_ (pokeElemOff ptr)
 
 instance
-  ( Storable h
-  , UnivariateRingPolyVec h (PolyVec h)
+  ( KnownNat size
   , RustHaskell r h
-  , KnownNat size
+  , Storable h
+  , UnivariateRingPolyVec h (PolyVec h)
   )
   => RustHaskell (RustPolyVec r size) (PolyVec h size)
   where

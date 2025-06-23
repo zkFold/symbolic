@@ -35,28 +35,28 @@ deriving instance
 
 -- TODO: Think how to prettify this abomination
 deriving instance
-  ( Symbolic context
+  ( KnownNat inputs
+  , KnownNat mint
+  , KnownNat outputs
+  , KnownNat rinputs
+  , KnownNat tokens
+  , KnownRegisters context 11 Auto
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
-  , KnownRegisters context 11 Auto
-  , KnownNat tokens
-  , KnownNat rinputs
-  , KnownNat inputs
-  , KnownNat outputs
-  , KnownNat mint
+  , Symbolic context
   )
   => SymbolicData (Transaction inputs rinputs outputs tokens mint datum context)
 
 instance
-  ( Symbolic context
+  ( KnownNat inputs
+  , KnownNat mint
+  , KnownNat outputs
+  , KnownNat rinputs
+  , KnownNat tokens
+  , KnownRegisters context 11 Auto
   , KnownRegisters context 32 Auto
   , KnownRegisters context 64 Auto
-  , KnownRegisters context 11 Auto
-  , KnownNat tokens
-  , KnownNat rinputs
-  , KnownNat outputs
-  , KnownNat mint
-  , KnownNat inputs
+  , Symbolic context
   )
   => SymbolicInput (Transaction inputs rinputs outputs tokens mint datum context)
   where

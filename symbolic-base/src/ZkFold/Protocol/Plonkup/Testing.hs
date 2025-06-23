@@ -61,17 +61,17 @@ data PlonkupProverTestInfo n g1 pv = PlonkupProverTestInfo
   deriving Generic
 
 deriving instance
-  ( Show g1
-  , Show (pv n)
-  , Show (PlonkupPolyExtended n g1 pv)
+  ( Show (PlonkupPolyExtended n g1 pv)
   , Show (ScalarFieldOf g1)
+  , Show (pv n)
+  , Show g1
   )
   => Show (PlonkupProverTestInfo n g1 pv)
 
 deriving instance
-  ( NFData g1
-  , NFData (pv n)
-  , NFData (PlonkupPolyExtended n g1 pv)
+  ( NFData (PlonkupPolyExtended n g1 pv)
   , NFData (ScalarFieldOf g1)
+  , NFData (pv n)
+  , NFData g1
   )
   => NFData (PlonkupProverTestInfo n g1 pv)

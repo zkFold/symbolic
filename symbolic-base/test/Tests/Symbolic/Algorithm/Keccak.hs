@@ -37,8 +37,8 @@ import qualified Prelude as Haskell
 withConstraints
   :: forall n {r}
    . KnownNat n
-  => ( ( Mod (n * 8) 8 ~ 0
-       , KnownNat (n * 8)
+  => ( ( KnownNat (n * 8)
+       , Mod (n * 8) 8 ~ 0
        )
        => r
      )

@@ -18,13 +18,13 @@ import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), newAssigned)
 import Prelude (pure, ($), (.))
 import qualified Prelude as P
 
-fft :: forall ctx n. (Symbolic ctx, KnownNat n) => ctx (Vector (2 ^ n)) -> ctx (Vector (2 ^ n))
+fft :: forall ctx n. (KnownNat n, Symbolic ctx) => ctx (Vector (2 ^ n)) -> ctx (Vector (2 ^ n))
 fft v = hmap Vector $ fromCircuitF v (fft' (value @n) u one . toV)
  where
   u :: BaseField ctx
   u = (fromJust $ rootOfUnity (value @n))
 
-ifft :: forall ctx n. (Symbolic ctx, KnownNat n) => ctx (Vector (2 ^ n)) -> ctx (Vector (2 ^ n))
+ifft :: forall ctx n. (KnownNat n, Symbolic ctx) => ctx (Vector (2 ^ n)) -> ctx (Vector (2 ^ n))
 ifft v = hmap Vector $ fromCircuitF v (fft' (value @n) u nInv . toV)
  where
   u :: BaseField ctx

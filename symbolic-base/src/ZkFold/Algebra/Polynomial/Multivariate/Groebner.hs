@@ -25,7 +25,7 @@ reducable l r = dividable (snd $ lt l) (snd $ lt r)
 
 reduce
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -36,7 +36,7 @@ reduce l r =
 
 reduceMany
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -53,7 +53,7 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
 
 fullReduceMany
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -65,7 +65,7 @@ fullReduceMany h fs =
 
 systemReduce
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => [Poly c i j]
   -> [Poly c i j]
 systemReduce = foldr f []
@@ -80,7 +80,7 @@ data GroebnerParams c i j = GroebnerParams
   }
 
 makeSPoly
-  :: (Ring j, Polynomial c i j)
+  :: (Polynomial c i j, Ring j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -101,7 +101,7 @@ makeSPoly l r =
         else r' - l'
 
 groebnerStep
-  :: (Ring j, Polynomial c i j)
+  :: (Polynomial c i j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -116,7 +116,7 @@ groebnerStep GroebnerParams {..} ps =
 
 groebner
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -128,7 +128,7 @@ groebner GroebnerParams {..} ps =
 
 verifyGroebner
   :: forall c i j
-   . (Ring j, Polynomial c i j)
+   . (Polynomial c i j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> Poly c i j

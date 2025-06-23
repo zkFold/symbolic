@@ -19,7 +19,7 @@ instance IsData t v c => FromConstant (Symbolic.Maybe c v) (Fun '[] t c) where
   fromConstant = FSat
 
 instance
-  (IsData s v c, FromConstant f (Fun ss t c))
+  (FromConstant f (Fun ss t c), IsData s v c)
   => FromConstant (v -> f) (Fun (s ': ss) t c)
   where
   fromConstant f = FLam (fromConstant . f)

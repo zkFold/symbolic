@@ -31,10 +31,10 @@ import qualified Prelude as P
 -- The main application is to define the verifier's algebraic map in the NARK protocol.
 algebraicMap
   :: forall d k a i p f
-   . ( KnownNat (d + 1)
-     , Representable i
-     , Binary (Rep i)
+   . ( Binary (Rep i)
      , Binary (Rep p)
+     , KnownNat (d + 1)
+     , Representable i
      , Ring f
      , Scale a f
      )
@@ -72,9 +72,9 @@ algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
 
 padDecomposition
   :: forall d f
-   . ( MultiplicativeMonoid f
-     , AdditiveMonoid f
+   . ( AdditiveMonoid f
      , KnownNat (d + 1)
+     , MultiplicativeMonoid f
      )
   => f -> V.Vector (d + 1) [f] -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) *) <$> p)

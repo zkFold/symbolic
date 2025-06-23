@@ -13,13 +13,13 @@ newtype PlonkupWitnessInput i g
   = PlonkupWitnessInput {witnessInput :: i (ScalarFieldOf g)}
 
 instance
-  (Show1 i, Show (ScalarFieldOf g))
+  (Show (ScalarFieldOf g), Show1 i)
   => Show (PlonkupWitnessInput i g)
   where
   show (PlonkupWitnessInput v) = "Plonkup Witness Input: " ++ show v
 
 instance
-  (Arbitrary1 i, Arbitrary (ScalarFieldOf g))
+  (Arbitrary (ScalarFieldOf g), Arbitrary1 i)
   => Arbitrary (PlonkupWitnessInput i g)
   where
   arbitrary = PlonkupWitnessInput <$> arbitrary1

@@ -17,7 +17,7 @@ import Prelude hiding (Num (..), length, sum, zip, zipWith)
 -- Could be useful for speeding up the proof computations
 
 newtype Matrix m n a = Matrix (Vector m (Vector n a))
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 toMatrix :: forall m n a. (KnownNat m, KnownNat n) => [[a]] -> Maybe (Matrix m n a)
 toMatrix as = do
@@ -47,7 +47,7 @@ matrixDotProduct :: forall m n a. Semiring a => Matrix m n a -> Matrix m n a -> 
 matrixDotProduct a b = let Matrix m = a * b in sum $ fmap sum m
 
 -- -- | Matrix multiplication
-(.*.) :: (KnownNat n, KnownNat k, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
+(.*.) :: (KnownNat k, KnownNat n, Semiring a) => Matrix m n a -> Matrix n k a -> Matrix m k a
 a .*. b =
   let Matrix a' = a
       Matrix b' = transpose b
@@ -73,4 +73,4 @@ instance Zip (Matrix m n) where
 
 deriving newtype instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (Matrix m n a)
 
-deriving newtype instance (Random a, KnownNat m, KnownNat n) => Random (Matrix m n a)
+deriving newtype instance (KnownNat m, KnownNat n, Random a) => Random (Matrix m n a)

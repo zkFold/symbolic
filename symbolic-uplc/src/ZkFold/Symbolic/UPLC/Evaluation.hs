@@ -270,10 +270,10 @@ withArms Nothing (Just (MaybeValue @_ @_ @v e0)) f = f (Symbolic.nothing @v) e0
 withArms Nothing Nothing _ = Nothing
 
 -- | Helper function.
-symMaybe :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
+symMaybe :: (IsData d t c, Sym c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
 symMaybe b v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b)
 
-symMaybe2 :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> Symbolic.Maybe c w -> t -> Symbolic.Maybe c t
+symMaybe2 :: (IsData d t c, Sym c) => Symbolic.Maybe c u -> Symbolic.Maybe c w -> t -> Symbolic.Maybe c t
 symMaybe2 b1 b2 v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b1 && Symbolic.isJust b2)
 
 -- | Some Symbolic value of a definite UPLC builtin type.

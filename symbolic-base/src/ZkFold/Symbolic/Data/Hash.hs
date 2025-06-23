@@ -37,16 +37,16 @@ data Hash h a = Hash
   }
   deriving Generic
 
-instance (SymbolicOutput h, SymbolicOutput a) => SymbolicData (Hash h a)
+instance (SymbolicOutput a, SymbolicOutput h) => SymbolicData (Hash h a)
 
-instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
+instance (SymbolicInput a, SymbolicInput h) => SymbolicInput (Hash h a)
 
-instance (c ~ (Context h), Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
+instance (Conditional (Bool c) h, Symbolic c, SymbolicData a, c ~ (Context h)) => Conditional (Bool c) (Hash h a)
 
-instance (c ~ (Context h), Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
+instance (BooleanOf h ~ Bool c, Eq h, Symbolic c, SymbolicData a, c ~ (Context h)) => Eq (Hash h a)
 
 -- | Restorably hash the data.
-hash :: (Hashable h a, SymbolicOutput a, Context h ~ Context a) => a -> Hash h a
+hash :: (Context h ~ Context a, Hashable h a, SymbolicOutput a) => a -> Hash h a
 hash a =
   Hash (hasher a) $
     Payloaded (witnessF (arithmetize a Proxy) :*: payload a Proxy)
@@ -54,11 +54,11 @@ hash a =
 -- | Restore the data which were hashed.
 preimage
   :: forall h a c
-   . ( Hashable h a
-     , SymbolicOutput a
+   . ( Context a ~ c
      , Context h ~ c
-     , Context a ~ c
+     , Hashable h a
      , SymbolicEq h
+     , SymbolicOutput a
      )
   => Hash h a -> a
 preimage Hash {..} =

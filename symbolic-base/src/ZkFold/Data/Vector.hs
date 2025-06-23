@@ -55,13 +55,13 @@ import Prelude (Integer)
 import qualified Prelude as P
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-  deriving (Show, Show1, P.Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, P.Ord)
+  deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
   deriving newtype (FromJSON, ToJSON)
 
-instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
+instance (Conditional bool x, KnownNat n) => Conditional bool (Vector n x) where
   bool fv tv b = mzipWithRep (\f t -> bool f t b) fv tv
 
-instance (KnownNat n, Eq x) => Eq (Vector n x) where
+instance (Eq x, KnownNat n) => Eq (Vector n x) where
   type BooleanOf (Vector n x) = BooleanOf x
   u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
   u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
@@ -209,7 +209,7 @@ slice (Vector v) = Vector $ V.slice (P.fromIntegral $ value @i) (P.fromIntegral 
 backpermute :: forall n m a. Vector n a -> Vector m (Zp n) -> Vector m a
 backpermute (Vector v) (Vector is) = Vector $ V.backpermute v $ V.map (P.fromIntegral . fromZp) is
 
-instance (KnownNat n, Binary a) => Binary (Vector n a) where
+instance (Binary a, KnownNat n) => Binary (Vector n a) where
   put = fold . V.map put . toV
   get = Vector <$> V.replicateM (integral @n) get
 
@@ -249,7 +249,7 @@ instance (Arbitrary a, KnownNat size) => Arbitrary (Vector size a) where
 instance KnownNat size => Arbitrary1 (Vector size) where
   liftArbitrary = sequenceA . pureRep
 
-instance (Random a, KnownNat size) => Random (Vector size a) where
+instance (KnownNat size, Random a) => Random (Vector size a) where
   random = runState (sequenceA (pureRep (state random)))
   randomR = runState . traverse (state . randomR) . uncurry mzipRep
 

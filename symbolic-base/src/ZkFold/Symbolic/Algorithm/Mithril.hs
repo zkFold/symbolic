@@ -21,17 +21,17 @@ type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx
-   . ( Symbolic ctx
-     , baseField ~ FFA q 'Auto ctx
-     , scalarField ~ FFA p 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
-     , ScalarFieldOf point ~ scalarField
-     , CyclicGroup point
-     , KnownFFA q 'Auto ctx
+   . ( CyclicGroup point
      , KnownFFA p 'Auto ctx
-     , KnownNat n
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
+     , KnownFFA q 'Auto ctx
      , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
+     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
+     , KnownNat n
+     , ScalarFieldOf point ~ scalarField
+     , Symbolic ctx
+     , baseField ~ FFA q 'Auto ctx
+     , point ~ Weierstrass curve (Point baseField)
+     , scalarField ~ FFA p 'Auto ctx
      )
   => StakeDistribution m point ctx
   -> scalarField

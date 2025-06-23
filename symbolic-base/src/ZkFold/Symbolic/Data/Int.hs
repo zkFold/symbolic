@@ -39,22 +39,22 @@ deriving instance HShow c => Haskell.Show (Int n r c)
 
 deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
 
-deriving instance (KnownRegisters c n r, KnownNat n, KnownRegisterSize r, Symbolic c) => SymbolicInput (Int n r c)
+deriving instance (KnownNat n, KnownRegisterSize r, KnownRegisters c n r, Symbolic c) => SymbolicInput (Int n r c)
 
 deriving instance (KnownRegisters c n r, Symbolic c) => Conditional (Bool c) (Int n r c)
 
 deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)
 
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)
+deriving newtype instance (KnownNat n, KnownRegisterSize r, Symbolic c) => FromConstant Natural (Int n r c)
 
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (Int n r c)
+deriving newtype instance (KnownNat n, KnownRegisterSize r, Symbolic c) => FromConstant Integer (Int n r c)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Exponent (Int n r c) Natural where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Exponent (Int n r c) Natural where
   (^) = natPow
 
 ------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r (Interpreter a)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => ToConstant (Int n r (Interpreter a)) where
   type Const (Int n r (Interpreter a)) = Integer
   toConstant i@(Int u) =
     withGetRegisterSize @n @r @a $
@@ -63,52 +63,52 @@ instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r 
         (negate . Haskell.toInteger . toConstant $ negate u)
         (isNegative i Haskell.== true)
 
-isNegative :: forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Bool c
+isNegative :: forall n r c. (KnownNat n, KnownRegisterSize r, Symbolic c) => Int n r c -> Bool c
 isNegative (Int (UInt u)) = Bool $ fromCircuitF u $ \regs -> do
   let hd = Haskell.last $ fromVector regs
   (_, h) <- splitExpansion (highRegisterSize @(BaseField c) @n @r -! 1) 1 hd
   Haskell.return $ Par1 h
 
-isNotNegative :: forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Bool c
+isNotNegative :: forall n r c. (KnownNat n, KnownRegisterSize r, Symbolic c) => Int n r c -> Bool c
 isNotNegative i = not (isNegative i)
 
-abs :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Int n r c
+abs :: forall c n r. (KnownNat n, KnownRegisterSize r, Symbolic c) => Int n r c -> Int n r c
 abs i = withNumberOfRegisters @n @r @(BaseField c) $ bool i (negate i) (isNegative i)
 
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (Int n r c)
+deriving newtype instance (KnownNat n, KnownRegisterSize r, Symbolic c) => MultiplicativeMonoid (Int n r c)
 
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (Int n r c)
+deriving newtype instance (KnownNat n, KnownRegisterSize r, Symbolic c) => AdditiveMonoid (Int n r c)
 
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (Int n r c)
+deriving newtype instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Arbitrary (Int n r c)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Natural (Int n r c)
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Scale Natural (Int n r c)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (Int n r c)
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Scale Integer (Int n r c)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Semiring (Int n r c)
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Semiring (Int n r c)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (Int n r c) (UInt n r c) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Iso (Int n r c) (UInt n r c) where
   from (Int u) = u
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (Int n r c) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => Iso (UInt n r c) (Int n r c) where
   from = Int
 
 ------------------------------------------------------------------------------
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (Int n r c) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => AdditiveSemigroup (Int n r c) where
   Int u1 + Int u2 = Int (u1 + u2)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveGroup (Int n r c) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => AdditiveGroup (Int n r c) where
   Int u1 - Int u2 = Int (u1 - u2)
   negate (Int u) = Int (negate u)
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeSemigroup (Int n r c) where
+instance (KnownNat n, KnownRegisterSize r, Symbolic c) => MultiplicativeSemigroup (Int n r c) where
   Int x * Int y = Int $ x * y
 
 instance
-  ( Symbolic c
-  , KnownNat n
+  ( KnownNat n
   , KnownRegisterSize r
   , KnownRegisters c n r
+  , Symbolic c
   )
   => SemiEuclidean (Int n r c)
   where
@@ -131,30 +131,30 @@ instance
 
 div
   :: forall n r c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
      , KnownRegisterSize r
      , KnownRegisters c n r
+     , Symbolic c
      )
   => Int n r c -> Int n r c -> Int n r c
 div i1 i2 = Haskell.fst $ divMod i1 i2
 
 mod
   :: forall n r c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
      , KnownRegisterSize r
      , KnownRegisters c n r
+     , Symbolic c
      )
   => Int n r c -> Int n r c -> Int n r c
 mod i1 i2 = Haskell.snd $ divMod i1 i2
 
 quotRem
   :: forall n r c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
      , KnownRegisterSize r
      , KnownRegisters c n r
+     , Symbolic c
      )
   => Int n r c -> Int n r c -> (Int n r c, Int n r c)
 quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
@@ -175,29 +175,29 @@ quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
 
 quot
   :: forall n r c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
      , KnownRegisterSize r
      , KnownRegisters c n r
+     , Symbolic c
      )
   => Int n r c -> Int n r c -> Int n r c
 quot i1 i2 = Haskell.fst $ quotRem i1 i2
 
 rem
   :: forall n r c
-   . ( Symbolic c
-     , KnownNat n
+   . ( KnownNat n
      , KnownRegisterSize r
      , KnownRegisters c n r
+     , Symbolic c
      )
   => Int n r c -> Int n r c -> Int n r c
 rem i1 i2 = Haskell.snd $ quotRem i1 i2
 
 instance
-  ( Symbolic c
-  , KnownNat n
+  ( KnownNat n
   , KnownRegisterSize r
   , KnownRegisters c n r
+  , Symbolic c
   )
   => Ord (Int n r c)
   where

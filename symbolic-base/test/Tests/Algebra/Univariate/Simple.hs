@@ -22,7 +22,7 @@ import ZkFold.Data.Vector (Vector, toV, zipWith)
 
 specSimplePoly'
   :: forall a n
-   . (QC.Arbitrary a, Eq a, Field a, Show a, Typeable a, KnownNat n) => Spec
+   . (Eq a, Field a, KnownNat n, QC.Arbitrary a, Show a, Typeable a) => Spec
 specSimplePoly' = describe (show (typeAt @(SimplePoly a n)) <> " spec") do
   describe "vec2poly" do
     it "respects addition" \(p :: SimplePoly a n) q ->

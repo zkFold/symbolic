@@ -34,7 +34,7 @@ type Monomial i j = (Variable i, Ord j, Semiring j)
 
 -- | Monomial type
 newtype Mono i j = M (Map i j)
-  deriving (Generic, NFData, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, NFData, ToJSON)
 
 ------------------------------------ Map-based monomials ------------------------------------
 
@@ -64,7 +64,7 @@ instance Monomial i j => IsList (Mono i j) where
   toList (M m) = toList m
   fromList m = M $ fromListWith (+) m
 
-instance (Show i, Show j, Monomial i j) => Show (Mono i j) where
+instance (Monomial i j, Show i, Show j) => Show (Mono i j) where
   show (M m) = intercalate "∙" . map showVar $ toList m
    where
     showVar :: (i, j) -> String
@@ -83,7 +83,7 @@ instance Monomial i j => Ord (Mono i j) where
       | k1 == k2 = if a1 == a2 then go xs ys else compare a1 a2
       | otherwise = compare k2 k1
 
-instance (Monomial i j, Arbitrary i, Arbitrary j) => Arbitrary (Mono i j) where
+instance (Arbitrary i, Arbitrary j, Monomial i j) => Arbitrary (Mono i j) where
   arbitrary = M <$> arbitrary
 
 instance Monomial i j => MultiplicativeSemigroup (Mono i j) where

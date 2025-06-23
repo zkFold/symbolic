@@ -8,7 +8,7 @@ import ZkFold.Algebra.Number (KnownNat)
 import Prelude hiding (length, sum, zip, zipWith, (*))
 
 newtype SMatrix m n a = SMatrix {fromSMatrix :: Map (Zp m, Zp n) a}
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 instance Foldable (SMatrix m n) where
   foldr f z (SMatrix as) = foldr f z as
@@ -26,5 +26,5 @@ instance (KnownNat m, KnownNat n) => Zip (SMatrix m n) where
 
   zipWith f (SMatrix as) (SMatrix bs) = SMatrix $ zipWith f as bs
 
-instance (KnownNat m, KnownNat n, Arbitrary a) => Arbitrary (SMatrix m n a) where
+instance (Arbitrary a, KnownNat m, KnownNat n) => Arbitrary (SMatrix m n a) where
   arbitrary = SMatrix <$> arbitrary

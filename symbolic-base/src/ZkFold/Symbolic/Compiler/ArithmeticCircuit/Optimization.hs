@@ -51,7 +51,7 @@ optimize
   => (NewVar -> Bool) -> CircuitContext a o -> CircuitContext a o
 optimize keep (CircuitContext s lf lc w f o) =
   let (newSystem, consts) = varsToReplace (s, M.empty)
-      prune :: (Monad e, FromConstant a (e NewVar)) => e NewVar -> e NewVar
+      prune :: (FromConstant a (e NewVar), Monad e) => e NewVar -> e NewVar
       prune = (>>= \v -> maybe (pure v) fromConstant (consts M.!? v))
    in CircuitContext
         { acSystem = newSystem <> inputConstraints consts

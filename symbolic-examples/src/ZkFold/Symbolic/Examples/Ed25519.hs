@@ -13,9 +13,9 @@ import ZkFold.Symbolic.Data.EllipticCurve.Ed25519
 import ZkFold.Symbolic.Data.FFA
 
 exampleEd25519Scale
-  :: ( Symbolic ctx
-     , KnownFFA Ed25519_Base 'Auto ctx
+  :: ( KnownFFA Ed25519_Base 'Auto ctx
      , KnownFFA Ed25519_Scalar 'Auto ctx
+     , Symbolic ctx
      )
   => ScalarFieldOf (Ed25519_Point ctx)
   -> Ed25519_Point ctx

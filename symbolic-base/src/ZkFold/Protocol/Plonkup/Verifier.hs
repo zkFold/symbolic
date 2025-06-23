@@ -35,15 +35,15 @@ import Prelude hiding (
 
 plonkupVerify
   :: forall i o n g1 g2 gt ts pv
-   . ( Pairing g1 g2 gt
-     , Compressible g1
+   . ( Compressible g1
      , Eq gt
-     , ToTranscript ts Word8
-     , ToTranscript ts (ScalarFieldOf g1)
-     , ToTranscript ts (Compressed g1)
      , FromTranscript ts (ScalarFieldOf g1)
-     , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
+     , KnownNat n
+     , Pairing g1 g2 gt
+     , ToTranscript ts (Compressed g1)
+     , ToTranscript ts (ScalarFieldOf g1)
+     , ToTranscript ts Word8
      , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
      )
   => PlonkupVerifierSetup i o n g1 g2 pv -> PlonkupInput g1 -> PlonkupProof g1 -> Bool

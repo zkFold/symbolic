@@ -14,7 +14,7 @@ import ZkFold.Symbolic.Fold (SymbolicFold)
 
 exampleMerkleTree
   :: forall d c
-   . (SymbolicFold c, KnownNat d, 1 <= d)
+   . (1 <= d, KnownNat d, SymbolicFold c)
   => MerkleTree d (FieldElement c) -> FieldElement c -> Bool c
 exampleMerkleTree t x =
   x == lookup t (fromJust (findPath (Morph \(_ :: FieldElement s) -> (true :: Bool s)) t))

@@ -56,12 +56,12 @@ scaleV :: (MultiplicativeSemigroup a, VectorSpace a v) => a -> v a -> v a
 scaleV c = mapV (c *)
 
 -- | basis vector e_i
-basisV :: (Semiring a, VectorSpace a v, Eq (Basis a v)) => Basis a v -> v a
+basisV :: (Eq (Basis a v), Semiring a, VectorSpace a v) => Basis a v -> v a
 basisV i = tabulateV $ \j -> if i == j then one else zero
 
 -- | dot product
 -- prop> v `dotV` basis i = indexV v i
-dotV :: (Semiring a, VectorSpace a v, Foldable v) => v a -> v a -> a
+dotV :: (Foldable v, Semiring a, VectorSpace a v) => v a -> v a -> a
 v `dotV` w = sum (zipWithV (*) v w)
 
 mapV :: VectorSpace a v => (a -> a) -> v a -> v a
@@ -76,7 +76,7 @@ zipWithV f as bs = tabulateV $ \k ->
 
 dimV
   :: forall a v
-   . (Functor v, Foldable v, VectorSpace a v)
+   . (Foldable v, Functor v, VectorSpace a v)
   => Natural
 dimV = sum (fmap (\_ -> 1) (pureV @a @v err))
  where
@@ -140,7 +140,7 @@ deriving via Representably Par1 instance VectorSpace a Par1
 
 -- direct sum of vector spaces
 instance
-  (VectorSpace a v, VectorSpace a u)
+  (VectorSpace a u, VectorSpace a v)
   => VectorSpace a (v :*: u)
   where
   type Basis a (v :*: u) = Either (Basis a v) (Basis a u)
@@ -188,9 +188,9 @@ type family OutputSpace a f where
 
 instance
   {-# OVERLAPPABLE #-}
-  ( VectorSpace a y
+  ( InputSpace a (y a) ~ U1
   , OutputSpace a (y a) ~ y
-  , InputSpace a (y a) ~ U1
+  , VectorSpace a y
   )
   => FunctionSpace a (y a)
   where
@@ -199,10 +199,10 @@ instance
 
 instance
   {-# OVERLAPPING #-}
-  ( VectorSpace a x
-  , OutputSpace a (x a -> f) ~ OutputSpace a f
+  ( FunctionSpace a f
   , InputSpace a (x a -> f) ~ x :*: InputSpace a f
-  , FunctionSpace a f
+  , OutputSpace a (x a -> f) ~ OutputSpace a f
+  , VectorSpace a x
   )
   => FunctionSpace a (x a -> f)
   where
@@ -210,8 +210,8 @@ instance
   curryV k x = curryV (k . (:*:) x)
 
 composeFunctions
-  :: ( FunctionSpace a g
-     , FunctionSpace a f
+  :: ( FunctionSpace a f
+     , FunctionSpace a g
      , OutputSpace a f ~ InputSpace a g
      )
   => g -> f -> InputSpace a f a -> OutputSpace a g a

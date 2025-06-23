@@ -51,9 +51,9 @@ class HFunctor c => Package c where
   packWith f = hmap (f . unComp1) . pack
 
 -- | Performs the full unpacking.
-unpacked :: (Package c, Functor f) => c f -> f (c Par1)
+unpacked :: (Functor f, Package c) => c f -> f (c Par1)
 unpacked = unpackWith (fmap Par1)
 
 -- | Performs the full package.
-packed :: (Package c, Foldable f, Functor f) => f (c Par1) -> c f
+packed :: (Foldable f, Functor f, Package c) => f (c Par1) -> c f
 packed = packWith (fmap unPar1)

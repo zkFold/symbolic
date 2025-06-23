@@ -19,9 +19,9 @@ import qualified Prelude
 type Ed25519_Point ctx = Ed25519_PointOf (FFA Ed25519_Base 'Auto ctx)
 
 instance
-  ( Symbolic ctx
-  , KnownFFA Ed25519_Base 'Auto ctx
+  ( KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => CyclicGroup (Ed25519_Point ctx)
   where
@@ -32,9 +32,9 @@ instance
       (fromConstant (46316835694926478169428394003475163141307993866256225615783033603165251855960 :: Natural))
 
 instance
-  ( Symbolic ctx
-  , KnownFFA Ed25519_Base 'Auto ctx
+  ( KnownFFA Ed25519_Base 'Auto ctx
   , KnownFFA Ed25519_Scalar 'Auto ctx
+  , Symbolic ctx
   )
   => Scale (FFA Ed25519_Scalar 'Auto ctx) (Ed25519_Point ctx)
   where

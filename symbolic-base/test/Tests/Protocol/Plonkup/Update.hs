@@ -41,7 +41,7 @@ type P i n =
 
 propUpdateSetupIsCorrect
   :: forall i n
-   . (KnownNat n, Representable i, Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n))
+   . (Binary (Rep i), KnownNat (PlonkupPolyExtendedLength n), KnownNat n, Representable i)
   => P i n -> Witness (P i n) -> Bool
 propUpdateSetupIsCorrect plonkup witness =
   let pi = witnessInput $ fst witness

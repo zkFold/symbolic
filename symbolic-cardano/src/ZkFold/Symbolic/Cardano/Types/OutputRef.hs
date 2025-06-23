@@ -29,17 +29,17 @@ data OutputRef context = OutputRef
 deriving instance HEq context => Haskell.Eq (OutputRef context)
 
 instance
-  (Symbolic context, KnownRegisters context 32 Auto)
+  (KnownRegisters context 32 Auto, Symbolic context)
   => SymbolicData (OutputRef context)
 
 instance
-  (Symbolic context, KnownRegisters context 32 Auto)
+  (KnownRegisters context 32 Auto, Symbolic context)
   => SymbolicInput (OutputRef context)
 
 instance
-  (Symbolic context, KnownRegisters context 32 Auto)
+  (KnownRegisters context 32 Auto, Symbolic context)
   => Conditional (Bool context) (OutputRef context)
 
 instance
-  (Symbolic context, KnownRegisters context 32 Auto)
+  (KnownRegisters context 32 Auto, Symbolic context)
   => Eq (OutputRef context)

@@ -19,7 +19,7 @@ type FiatShamir k i p c m o f =
 -- The transcript of the Fiat-Shamired protocol (ignoring the last round)
 transcript
   :: forall k c f
-   . (Ring f, OracleSource f f, OracleSource f c)
+   . (OracleSource f c, OracleSource f f, Ring f)
   => Hasher -> f -> Vector k c -> Vector (k - 1) f
 transcript hash r0 cs =
   withDict (plusMinusInverse1 @1 @k) $
@@ -29,7 +29,7 @@ transcript hash r0 cs =
 
 fiatShamir
   :: forall k i p c m o f
-   . (KnownNat k, Ring f, OracleSource f f, OracleSource f c, Foldable i)
+   . (Foldable i, KnownNat k, OracleSource f c, OracleSource f f, Ring f)
   => Hasher -> CommitOpen k i p c m o f -> FiatShamir k i p c m o f
 fiatShamir hash SpecialSoundProtocol {..} =
   let

@@ -16,6 +16,6 @@ type Interval context = (UTCTime context, UTCTime context)
 
 -- | @a contains b@ is true if @b@ is entirely contained in @a@.
 contains
-  :: (Symbolic c, KnownRegisters c 11 Auto, regSize ~ GetRegisterSize (BaseField c) 11 Auto, KnownNat (Ceil regSize OrdWord))
+  :: (KnownNat (Ceil regSize OrdWord), KnownRegisters c 11 Auto, Symbolic c, regSize ~ GetRegisterSize (BaseField c) 11 Auto)
   => Interval c -> Interval c -> Bool c
 contains (as, ae) (bs, be) = as <= bs && be <= ae
