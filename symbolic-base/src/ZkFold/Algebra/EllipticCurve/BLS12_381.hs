@@ -356,9 +356,9 @@ instance Binary BLS12_381_G2_CompressedPoint where
 newtype BLS12_381_GT = BLS12_381_GT Fq12
   deriving newtype
     ( Eq
-    , Show
-    , MultiplicativeSemigroup
     , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , Show
     , Symbolic.Conditional Prelude.Bool
     , Symbolic.Eq
     )

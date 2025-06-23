@@ -34,7 +34,7 @@ type Monomial i j = (Variable i, Ord j, Semiring j)
 
 -- | Monomial type
 newtype Mono i j = M (Map i j)
-  deriving (Generic, NFData, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, NFData, ToJSON)
 
 ------------------------------------ Map-based monomials ------------------------------------
 

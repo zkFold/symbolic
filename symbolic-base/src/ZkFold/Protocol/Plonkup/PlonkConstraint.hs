@@ -38,7 +38,7 @@ data PlonkConstraint i a = PlonkConstraint
   , x2 :: Var a
   , x3 :: Var a
   }
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 instance (Ord a, Arbitrary a, Binary a, Semiring a) => Arbitrary (PlonkConstraint i a) where
   arbitrary = do

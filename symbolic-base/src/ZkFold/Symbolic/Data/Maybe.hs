@@ -30,10 +30,10 @@ import qualified Prelude as Haskell
 
 data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
   deriving stock
-    ( Haskell.Functor
+    ( Generic
     , Haskell.Foldable
+    , Haskell.Functor
     , Haskell.Traversable
-    , Generic
     )
 
 deriving stock instance (HEq c, Haskell.Eq x) => Haskell.Eq (Maybe c x)

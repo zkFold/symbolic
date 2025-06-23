@@ -47,7 +47,7 @@ data IVCProof k c f
   , _proofW :: Vector k [f]
   -- ^ The witness of the recursion circuit satisfiability proof.
   }
-  deriving (Generic, Functor)
+  deriving (Functor, Generic)
 
 makeLenses ''IVCProof
 
@@ -62,7 +62,7 @@ data IVCResult k i c f
   , _acc :: Accumulator k (RecursiveI i) (DataSource c) f
   , _proof :: IVCProof k c f
   }
-  deriving (Generic, Functor)
+  deriving (Functor, Generic)
 
 makeLenses ''IVCResult
 

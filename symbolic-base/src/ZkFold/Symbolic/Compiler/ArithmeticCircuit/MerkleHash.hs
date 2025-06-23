@@ -34,7 +34,7 @@ data Prec
   | BezoutR
   | Exp
   | Const
-  deriving (Generic, Binary)
+  deriving (Binary, Generic)
 
 merkleHash :: Binary a => a -> MerkleHash n
 merkleHash = M . hash . toByteString

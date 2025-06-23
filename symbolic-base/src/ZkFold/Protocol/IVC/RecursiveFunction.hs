@@ -36,12 +36,12 @@ type RecursiveI i = i :*: Par1
 
 newtype DataSource c = DataSource {dataSource :: c}
   deriving newtype
-    ( AdditiveSemigroup
+    ( AdditiveGroup
     , AdditiveMonoid
-    , AdditiveGroup
-    , SymbolicData
-    , Scale a
+    , AdditiveSemigroup
     , HomomorphicCommit h
+    , Scale a
+    , SymbolicData
     )
 
 arithmetize0 :: SymbolicOutput x => x -> Context x (Layout x)

@@ -14,10 +14,10 @@ callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
 
 newtype Scalar curve s = RScalar {rawScalar :: s}
-  deriving (NFData, Generic)
+  deriving (Generic, NFData)
 
 newtype Point curve s = RPoint {rawPoint :: s}
-  deriving (NFData, Generic)
+  deriving (Generic, NFData)
 
 type FCString = ForeignPtr CChar
 
@@ -25,7 +25,7 @@ instance NFData FCString where
   rnf _ = ()
 
 newtype RustData = RData {rawData :: FCString}
-  deriving (NFData, Generic)
+  deriving (Generic, NFData)
 
 instance Conditional Bool RustData where bool = B.bool
 

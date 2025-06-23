@@ -40,7 +40,7 @@ type Polynomial c i j = (Eq c, Field c, Monomial i j)
 
 -- | Polynomial type
 newtype Poly c i j = P [(c, Mono i j)]
-  deriving (Generic, NFData, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, NFData, ToJSON)
 
 ---------------------------------- List-based polynomials with map-based monomials ----------------------------------
 

@@ -29,7 +29,7 @@ data AccumulatorInstance k i c f = AccumulatorInstance
   , _e :: c -- E ∈ C in the paper
   , _mu :: f -- μ ∈ F in the paper
   }
-  deriving (Generic, Functor, Eq)
+  deriving (Eq, Functor, Generic)
 
 makeLenses ''AccumulatorInstance
 
@@ -68,7 +68,7 @@ data Accumulator k i c f = Accumulator
   { _x :: AccumulatorInstance k i c f
   , _w :: Vector k [f]
   }
-  deriving (Generic, Functor)
+  deriving (Functor, Generic)
 
 makeLenses ''Accumulator
 

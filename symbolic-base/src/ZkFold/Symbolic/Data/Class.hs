@@ -219,7 +219,7 @@ instance
   => SymbolicData (t, u, v, w, x, y, z)
 
 newtype LayoutData f x = LayoutData {layoutData :: f x}
-  deriving newtype (Show, Eq, Functor, Foldable, NFData1)
+  deriving newtype (Eq, Foldable, Functor, NFData1, Show)
 
 instance (NFData1 f, NFData x) => NFData (LayoutData f x) where
   rnf = liftRnf rnf

@@ -29,7 +29,7 @@ import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
 
 newtype Interpreter a f = Interpreter {runInterpreter :: f a}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Generic, Show)
   deriving newtype (FromJSON, ToJSON)
 
 instance Eq a => HEq (Interpreter a) where
@@ -71,7 +71,7 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.
 newtype Witnesses a x = Witnesses {runWitnesses :: x}
-  deriving (Functor, Applicative, Monad) via Identity
+  deriving (Applicative, Functor, Monad) via Identity
 
 instance Arithmetic a => Witness a a where
   at = id

@@ -60,7 +60,7 @@ instance
     unsafeToVector $ take (value @n) $ groupElements @[]
 
 newtype PedersonCommit g = PedersonCommit {pedersonCommit :: g}
-  deriving newtype (Scale f, AdditiveSemigroup, AdditiveMonoid, AdditiveGroup)
+  deriving newtype (AdditiveGroup, AdditiveMonoid, AdditiveSemigroup, Scale f)
 
 instance (Functor s, PedersonSetup s g) => PedersonSetup s (PedersonCommit g) where
   groupElements = PedersonCommit <$> groupElements

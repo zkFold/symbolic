@@ -89,7 +89,7 @@ data UtxoAccumulatorCRS = UtxoAccumulatorCRS
   , crsAccElems :: [BLS12_381_G1_Point]
   , crsDistElems :: [BLS12_381_G1_Point]
   }
-  deriving (Generic, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, ToJSON)
 
 type UtxoAccumulatorProtocol n m =
   Plonkup

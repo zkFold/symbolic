@@ -11,7 +11,7 @@ import ZkFold.Data.ByteString (Binary (..))
 import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 
 newtype SVector size a = SVector {fromSVector :: Map (Zp size) a}
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 instance (Binary a, KnownNat n) => Binary (SVector n a) where
   put = put . toList . fromSVector

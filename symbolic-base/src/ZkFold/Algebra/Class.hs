@@ -476,7 +476,7 @@ castBits (x : xs)
 -- | A multiplicative subgroup of nonzero elements of a field.
 -- TODO: hide constructor
 newtype NonZero a = NonZero a
-  deriving newtype (MultiplicativeSemigroup, MultiplicativeMonoid)
+  deriving newtype (MultiplicativeMonoid, MultiplicativeSemigroup)
 
 instance Exponent a b => Exponent (NonZero a) b where
   NonZero a ^ b = NonZero (a ^ b)

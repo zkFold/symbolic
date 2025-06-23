@@ -17,7 +17,7 @@ import Prelude hiding (Num (..), length, sum, zip, zipWith)
 -- Could be useful for speeding up the proof computations
 
 newtype Matrix m n a = Matrix (Vector m (Vector n a))
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 toMatrix :: forall m n a. (KnownNat m, KnownNat n) => [[a]] -> Maybe (Matrix m n a)
 toMatrix as = do

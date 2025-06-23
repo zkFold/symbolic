@@ -55,3 +55,13 @@ fixities: []
 
 # Module reexports Fourmolu should know about
 reexports: []
+
+# This option determines whether classes in deriving clauses should be sorted alphabetically or left alone.
+sort-derived-classes: true
+
+# This option determines whether deriving clauses should be sorted alphabetically or left alone.
+sort-derived-clauses: true
+
+# This option determines whether constraints should be sorted alphabetically or left alone.
+# We have set it to false for now since order of constraints lead to implicit ordering of type variables, changing it now would break existing code.
+sort-constraints: false

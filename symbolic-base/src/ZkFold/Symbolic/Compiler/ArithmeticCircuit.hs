@@ -81,14 +81,14 @@ newtype ArithmeticCircuit a (i :: Type -> Type) o
   = ArithmeticCircuit {acContext :: CircuitContext a o}
   deriving Generic
   deriving newtype
-    ( HFunctor
+    ( FromJSON
     , HApplicative
+    , HFunctor
     , HNFData
     , HShow
-    , FromJSON
-    , ToJSON
     , NFData
     , Show
+    , ToJSON
     )
 
 instance

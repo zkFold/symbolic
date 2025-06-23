@@ -17,7 +17,7 @@ data LookupConstraint i a = LookupConstraint
   , lkVar2 :: Var a
   , lkVar3 :: Var a
   }
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 instance (Arbitrary a, Binary a, Semiring a) => Arbitrary (LookupConstraint i a) where
   arbitrary =

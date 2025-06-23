@@ -55,7 +55,7 @@ import Prelude (Integer)
 import qualified Prelude as P
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
-  deriving (Show, Show1, P.Eq, Eq1, Functor, Foldable, Traversable, Generic, NFData, NFData1, P.Ord)
+  deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
   deriving newtype (FromJSON, ToJSON)
 
 instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where

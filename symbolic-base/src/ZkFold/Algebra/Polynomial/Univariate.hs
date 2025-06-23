@@ -150,7 +150,7 @@ instance
 
 -- TODO (Issue #17): hide constructor
 newtype Poly c = P (V.Vector c)
-  deriving (Eq, Show, Functor, Generic, NFData)
+  deriving (Eq, Functor, Generic, NFData, Show)
 
 instance {-# OVERLAPPING #-} FromConstant (Poly c) (Poly c)
 
@@ -345,7 +345,7 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Show, Generic, NFData)
+  deriving (Eq, Generic, NFData, Show)
 
 class
   ( Ring c

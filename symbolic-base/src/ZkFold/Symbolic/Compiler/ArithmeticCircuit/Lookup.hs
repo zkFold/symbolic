@@ -24,7 +24,7 @@ import ZkFold.Data.ByteString ()
 import Prelude (Show, undefined)
 
 newtype FunctionId f = FunctionId {funcHash :: ByteString}
-  deriving (Eq, Ord, Show, Generic, NFData, ToJSON)
+  deriving (Eq, Generic, NFData, Ord, Show, ToJSON)
 
 -- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
 -- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.

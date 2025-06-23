@@ -16,7 +16,7 @@ data NARKProof k c f = NARKProof
   { narkCommits :: Vector k c -- Commits [C_i] ∈ C^k
   , narkWitness :: Vector k [f] -- prover messages in the special-sound protocol [m_i]
   }
-  deriving (Show, Generic, NFData)
+  deriving (Generic, NFData, Show)
 
 narkProof
   :: Ring f
@@ -29,7 +29,7 @@ narkProof a pi0 w =
    in NARKProof {..}
 
 data NARKInstanceProof k i c f = NARKInstanceProof (i f) (NARKProof k c f)
-  deriving (Show, Generic, NFData)
+  deriving (Generic, NFData, Show)
 
 narkInstanceProof
   :: Ring f
