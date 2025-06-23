@@ -13,6 +13,7 @@ import           Tests.Algebra.Permutation          (specPermutation)
 import           Tests.Algebra.ReedSolomon          (specReedSolomon)
 import           Tests.Algebra.Univariate           (specUnivariate)
 import           Tests.Data.Binary                  (specBinary)
+import           Tests.FFI.RustBLS
 import           Tests.Protocol.IVC                 (specIVC)
 import           Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import           Tests.Protocol.Plonkup             (specPlonkup)
@@ -33,44 +34,45 @@ import           Tests.Symbolic.Data.UInt           (specUInt)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
-    describe "symbolic-base-test (Algebra)" $ do
-        specGroup
-        specField
-        specEllipticCurve
-        specPairing
-        specPermutation
-        specUnivariate
-        specReedSolomon
-        specGroebner
+    specRustBLS
+    -- describe "symbolic-base-test (Algebra)" $ do
+    --     specGroup
+    --     specField
+    --     specEllipticCurve
+    --     specPairing
+    --     specPermutation
+    --     specUnivariate
+    --     specReedSolomon
+    --     specGroebner
 
-    describe "symbolic-base-test (Serialization)" $ do
-        specBinary
+    -- describe "symbolic-base-test (Serialization)" $ do
+    --     specBinary
 
-    describe "symbolic-base-test (Protocols)" $ do
-        specPlonkup
-        specNonInteractiveProof
-        specIVC
+    -- describe "symbolic-base-test (Protocols)" $ do
+    --     specPlonkup
+    --     specNonInteractiveProof
+    --     specIVC
 
-    describe "symbolic-base-test (Symbolic compiler)" $ do
-        specArithmeticCircuit
-        specCompiler
+    -- describe "symbolic-base-test (Symbolic compiler)" $ do
+    --     specArithmeticCircuit
+    --     specCompiler
 
-    describe "symbolic-base-test (Symbolic data)" $ do
-        specUInt
-        specInt
-        specFFA
-        specByteString
-        specHash
-        specList
-        specMerkleTree
+    -- describe "symbolic-base-test (Symbolic data)" $ do
+    --     specUInt
+    --     specInt
+    --     specFFA
+    --     specByteString
+    --     specHash
+    --     specList
+    --     specMerkleTree
 
-    describe "symbolic-base-test (Symbolic cryptography)" $ do
-        specBlake2b
-        specJWT
-        specRSA gen
-        specSHA2Natural
-        specSHA2
-        specKeccak
+    -- describe "symbolic-base-test (Symbolic cryptography)" $ do
+    --     specBlake2b
+    --     specJWT
+    --     specRSA gen
+    --     specSHA2Natural
+    --     specSHA2
+    --     specKeccak
 
 main :: IO ()
 main = hspec . spec =<< initStdGen

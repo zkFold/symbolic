@@ -400,6 +400,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.List
       Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.UInt
+      Tests.FFI.RustBLS
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,
