@@ -27,10 +27,10 @@ record-brace-space: true
 newlines-between-decls: 1
 
 # How to print Haddock comments (choices: single-line, multi-line, or multi-line-compact)
-haddock-style: multi-line
+haddock-style: single-line
 
 # How to print module docstring
-haddock-style-module: multi-line
+haddock-style-module: single-line
 
 # Styling of let blocks (choices: auto, inline, newline, or mixed)
 let-style: auto
