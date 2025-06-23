@@ -1,5 +1,5 @@
-{-# LANGUAGE BlockArguments       #-}
-{-# LANGUAGE ImpredicativeTypes   #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData (
@@ -8,21 +8,21 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData (
   validateTransactionBatchDataWithIx,
 ) where
 
-import           Data.Function                                      ((&))
-import           GHC.Generics                                       (Generic)
-import           Prelude                                            (fst, snd, undefined, ($))
+import Data.Function ((&))
+import GHC.Generics (Generic)
+import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Eq (Eq, (==))
+import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
+import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
+import qualified ZkFold.Symbolic.Data.List as Symbolic.List
+import ZkFold.Symbolic.Data.Maybe
+import ZkFold.Symbolic.Data.Morph
+import Prelude (fst, snd, undefined, ($))
 
-import           ZkFold.Control.Conditional                         (ifThenElse)
-import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.Class                         (SymbolicData)
-import           ZkFold.Symbolic.Data.Eq                            (Eq, (==))
-import           ZkFold.Symbolic.Data.Hash                          (Hashable (..), preimage)
-import qualified ZkFold.Symbolic.Data.List                          as Symbolic.List
-import           ZkFold.Symbolic.Data.List                          (List, emptyList, (.:))
-import           ZkFold.Symbolic.Data.Maybe
-import           ZkFold.Symbolic.Data.Morph
-import           ZkFold.Symbolic.Ledger.Types
-import           ZkFold.Symbolic.Ledger.Validation.Transaction.Core (validateTransactionWithAssetDiff)
+import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Validation.Transaction.Core (validateTransactionWithAssetDiff)
 
 -- | Witness needed to validate a 'TransactionBatchData'.
 data TransactionBatchDataWitness context = TransactionBatchDataWitness
@@ -36,21 +36,29 @@ instance Signature context => SymbolicData (TransactionBatchDataWitness context)
 instance Signature context => Eq (TransactionBatchDataWitness context)
 
 -- | This function extracts boolean from 'validateTransactionBatchDataWithIx, see it for more details.
-validateTransactionBatchData :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
+validateTransactionBatchData
+  :: forall context
+   . Signature context
+  => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> Bool context
 validateTransactionBatchData tbInterval tbd tbdw = fst $ validateTransactionBatchDataWithIx tbInterval tbd tbdw
 
-{- | Validate a 'TransactionBatchData'.
-
-To check:
-  * All addresses corresponding to spent inputs have same data availability source.
-  * Merkle root is computed correctly.
-  * Online addresses list is computed correctly.
-  * Offline txs list is computed correctly.
-  * Interval of the overarching transaction batch is within the interval of individual transactions.
-  * Txs are valid.
-  * Batch as a whole is balanced.
--}
-validateTransactionBatchDataWithIx :: forall context. Signature context => Interval context -> TransactionBatchData context -> TransactionBatchDataWitness context -> (Bool context, DAIndex context)
+-- | Validate a 'TransactionBatchData'.
+--
+-- To check:
+--   * All addresses corresponding to spent inputs have same data availability source.
+--   * Merkle root is computed correctly.
+--   * Online addresses list is computed correctly.
+--   * Offline txs list is computed correctly.
+--   * Interval of the overarching transaction batch is within the interval of individual transactions.
+--   * Txs are valid.
+--   * Batch as a whole is balanced.
+validateTransactionBatchDataWithIx
+  :: forall context
+   . Signature context
+  => Interval context
+  -> TransactionBatchData context
+  -> TransactionBatchDataWitness context
+  -> (Bool context, DAIndex context)
 validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} TransactionBatchDataWitness {..} =
   let ( -- Data availability index for this batch. Must not be @Nothing@.
         resTxAccIx :: Maybe context (DAIndex context)
@@ -71,15 +79,15 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
           Symbolic.List.foldl
             ( Morph
                 \( ( txAccIx :: Maybe s (DAIndex s)
-                    , txAccBatchInterval :: Interval s
-                    , txAccIsConsistent :: Bool s
-                    , txAccOnlineAddresses :: List s (Address s)
-                    , txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s))
-                    , txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))
-                    , txAccValuesDiff :: AssetValues s
-                    )
-                  , tx :: Transaction s
-                  ) ->
+                     , txAccBatchInterval :: Interval s
+                     , txAccIsConsistent :: Bool s
+                     , txAccOnlineAddresses :: List s (Address s)
+                     , txAccOfflineAddrsTxs :: List s (Address s, List s (HashSimple s))
+                     , txAccOnlineAddrsTxs :: Root (Address s, List s (HashSimple s))
+                     , txAccValuesDiff :: AssetValues s
+                     )
+                   , tx :: Transaction s
+                   ) ->
                     let txOwner' = txOwner tx
                         (_ownerAddrCir, ownerAddrIx, ownerAddrType) = txOwner' & preimage
                         jownerAddrIx = just ownerAddrIx
@@ -98,7 +106,11 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
                             )
                             (txAccOfflineAddrsTxs, undefined, txOwner' .: txAccOnlineAddresses) -- TODO: Update once Merkle tree API is available.
                         (isTxValid, txValuesDiff) = validateTransactionWithAssetDiff tx
-                        newTxAccIsConsistent = txAccIsConsistent && (contains (txValidityInterval tx) txAccBatchInterval) && (txAccIxFinal == jownerAddrIx) && isTxValid
+                        newTxAccIsConsistent =
+                          txAccIsConsistent
+                            && (contains (txValidityInterval tx) txAccBatchInterval)
+                            && (txAccIxFinal == jownerAddrIx)
+                            && isTxValid
                      in ( txAccIxFinal
                         , txAccBatchInterval
                         , newTxAccIsConsistent
@@ -126,21 +138,26 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
       , fromJust resTxAccIx
       )
 
-{- | Update the entry for the given address with given list of transaction hashes.
-
-If the address does not exist, then it is prepended to this list.
--}
-updateAddrsTxsList ::
-  forall context.
-  Signature context =>
-  Address context ->
-  List context (HashSimple context) ->
-  List context (Address context, List context (HashSimple context)) ->
-  List context (Address context, List context (HashSimple context))
+-- | Update the entry for the given address with given list of transaction hashes.
+--
+-- If the address does not exist, then it is prepended to this list.
+updateAddrsTxsList
+  :: forall context
+   . Signature context
+  => Address context
+  -> List context (HashSimple context)
+  -> List context (Address context, List context (HashSimple context))
+  -> List context (Address context, List context (HashSimple context))
 updateAddrsTxsList addr addrTxs addrsTxs =
   let (_, _, newAddrsTxs, addrExists) =
         Symbolic.List.foldr
-          ( Morph \(((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s))), (accAddrToFind :: Address s, accAddrTxs :: List s (HashSimple s), accAddrsTxs :: List s (Address s, List s (HashSimple s)), accFound :: Bool s)) ->
+          ( Morph \( ((iterAddr :: Address s, iterAddrTxs :: List s (HashSimple s)))
+                     , ( accAddrToFind :: Address s
+                         , accAddrTxs :: List s (HashSimple s)
+                         , accAddrsTxs :: List s (Address s, List s (HashSimple s))
+                         , accFound :: Bool s
+                         )
+                     ) ->
               let elemMatches = accAddrToFind == iterAddr
                in ( accAddrToFind
                   , accAddrTxs
@@ -160,20 +177,21 @@ updateAddrsTxsList addr addrTxs addrsTxs =
 
 -- TODO: Refactor following once symbolic list is able to support more generic functions.
 
-{- | Find a transaction hash list corresponding to given address.
-
-If the address is not found, we return an empty list.
--}
-findAddrTxs ::
-  forall context.
-  Signature context =>
-  Address context ->
-  List context (Address context, List context (HashSimple context)) ->
-  List context (HashSimple context)
+-- | Find a transaction hash list corresponding to given address.
+--
+-- If the address is not found, we return an empty list.
+findAddrTxs
+  :: forall context
+   . Signature context
+  => Address context
+  -> List context (Address context, List context (HashSimple context))
+  -> List context (HashSimple context)
 findAddrTxs a ls =
   snd $
     Symbolic.List.foldl
-      ( Morph \((accToFind :: Address s, accList :: List s (HashSimple s)), ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))) ->
+      ( Morph \( (accToFind :: Address s, accList :: List s (HashSimple s))
+                 , ((addr :: Address s, addrTxHashes :: List s (HashSimple s)))
+                 ) ->
           ( accToFind
           , ifThenElse
               (accToFind == addr)
@@ -187,12 +205,12 @@ findAddrTxs a ls =
 -- TODO: Use generic 'elem' from symbolic list module once available.
 
 -- | Check if an item is present in the list.
-elem ::
-  forall context.
-  Signature context =>
-  Address context ->
-  List context (Address context) ->
-  Bool context
+elem
+  :: forall context
+   . Signature context
+  => Address context
+  -> List context (Address context)
+  -> Bool context
 elem x xs =
   fst $
     Symbolic.List.foldl
@@ -207,10 +225,10 @@ elem x xs =
 -- TODO: Use a generic function once available.
 
 -- | Remove duplicates from list.
-removeDuplicates ::
-  forall context.
-  Signature context =>
-  List context (Address context) -> List context (Address context)
+removeDuplicates
+  :: forall context
+   . Signature context
+  => List context (Address context) -> List context (Address context)
 removeDuplicates ls =
   Symbolic.List.foldr
     ( Morph \(l :: Address s, acc :: List s (Address s)) ->

@@ -2,20 +2,20 @@
 
 module ZkFold.Control.Conditional where
 
-import           Data.Bool        (Bool)
-import qualified Data.Bool        as H
+import Data.Bool (Bool)
+import qualified Data.Bool as H
 
-import           ZkFold.Data.Bool
+import ZkFold.Data.Bool
 
 -- TODO: move to ZkFold.Data.Bool
 
 class BoolType b => Conditional b a where
-    -- | Properties:
-    --
-    -- [On true] @bool onFalse onTrue 'true' == onTrue@
-    --
-    -- [On false] @bool onFalse onTrue 'false' == onFalse@
-    bool :: a -> a -> b -> a
+  -- | Properties:
+  --
+  -- [On true] @bool onFalse onTrue 'true' == onTrue@
+  --
+  -- [On false] @bool onFalse onTrue 'false' == onFalse@
+  bool :: a -> a -> b -> a
 
 ifThenElse :: Conditional b a => b -> a -> a -> a
 ifThenElse b x y = bool y x b
