@@ -2,10 +2,10 @@
 
 module ZkFold.Control.HApplicative where
 
-import           Data.Function        (const, ($), (.))
-import           GHC.Generics         (U1 (..), (:*:) (..))
+import Data.Function (const, ($), (.))
+import GHC.Generics (U1 (..), (:*:) (..))
 
-import           ZkFold.Data.HFunctor
+import ZkFold.Data.HFunctor
 
 -- | A higher-order functor with application, providing operations to apply a
 -- function of type @(forall a. f a -> g a -> ...)@ of arbitrary arity to
@@ -14,56 +14,56 @@ class HFunctor c => HApplicative c where
   {-# MINIMAL (hpure | hunit), (hap | hliftA2 | hpair) #-}
 
   -- | Lift a proxy functor into the structure. If 'hunit' is specified instead,
-  -- a default definition is available. The following is expected to hold:
+  --   a default definition is available. The following is expected to hold:
   --
-  -- [Definition] @'hpure' x == 'hmap' ('const' x) 'hunit'@
+  --   [Definition] @'hpure' x == 'hmap' ('const' x) 'hunit'@
   hpure :: (forall a. f a) -> c f
   hpure f = hmap (const f) hunit
 
   -- | Lift a concrete proxy functor @'U1'@ into the structure.
-  -- Note that it is almost always better to define @'hpure'@ instead and rely
-  -- on the default implementation of @'hunit'@.
-  -- The following is expected to hold:
+  --   Note that it is almost always better to define @'hpure'@ instead and rely
+  --   on the default implementation of @'hunit'@.
+  --   The following is expected to hold:
   --
-  -- [Definition] @'hunit' == 'hpure' 'U1'@
+  --   [Definition] @'hunit' == 'hpure' 'U1'@
   hunit :: c U1
   hunit = hpure U1
 
   -- | Sequential application. It is hard to find the legitimate usecase for
-  -- this function; this is only provided for comparison with classic
-  -- @'Applicative'@ class.
+  --   this function; this is only provided for comparison with classic
+  --   @'Applicative'@ class.
   --
-  -- The default definition is via @'hpair'@. The following is expected to hold:
+  --   The default definition is via @'hpair'@. The following is expected to hold:
   --
-  -- [Definition] @'hap' t f == 'hmap' (\\('Transform' g ':*:' x) -> g x) ('hpair' t x)@
+  --   [Definition] @'hap' t f == 'hmap' (\\('Transform' g ':*:' x) -> g x) ('hpair' t x)@
   hap :: c (Transform f g) -> c f -> c g
   hap t = hmap (\(Transform g :*: x) -> g x) . hpair t
 
   -- | Applies a binary function of type @(forall a. f a -> g a -> h a)@ to a
-  -- pair of arguments of types @c f@ and @c g@,
-  -- yielding the result of type @c h@.
+  --   pair of arguments of types @c f@ and @c g@,
+  --   yielding the result of type @c h@.
   --
-  -- If @'hap'@ is specified instead, a default definition is available.
-  -- The following is expected to hold:
+  --   If @'hap'@ is specified instead, a default definition is available.
+  --   The following is expected to hold:
   --
-  -- [Definition] @'hliftA2' f x y == 'hap' ('hmap' ('Transform' '.' f) x) y@
-  -- [Compatibility] @'hmap' f x == 'hliftA2' ('const' f) 'hunit' x@
+  --   [Definition] @'hliftA2' f x y == 'hap' ('hmap' ('Transform' '.' f) x) y@
+  --   [Compatibility] @'hmap' f x == 'hliftA2' ('const' f) 'hunit' x@
   hliftA2 :: (forall a. f a -> g a -> h a) -> c f -> c g -> c h
   hliftA2 f = hap . hmap (Transform . f)
 
   -- | Joins two structures, preserving the outputs. Note that it is almost
-  -- always better to define @'hliftA2'@ instead and rely on the default
-  -- implementation of @'hpair'@. The following is expected to hold:
+  --   always better to define @'hliftA2'@ instead and rely on the default
+  --   implementation of @'hpair'@. The following is expected to hold:
   --
-  -- [Definition] @'hpair' x y == 'hliftA2' (':*:') x y@
-  -- [Associativity] @'hliftA2' (\\(a ':*:' b) c -> a ':*:' (b ':*:' c)) ('hpair' x y) z == 'hpair' x ('hpair' y z)@
-  -- [Left identity] @'hliftA2' 'const' x 'hunit' == x@
-  -- [Right identity] @'hliftA2' ('const' 'id') 'hunit' y == y@
+  --   [Definition] @'hpair' x y == 'hliftA2' (':*:') x y@
+  --   [Associativity] @'hliftA2' (\\(a ':*:' b) c -> a ':*:' (b ':*:' c)) ('hpair' x y) z == 'hpair' x ('hpair' y z)@
+  --   [Left identity] @'hliftA2' 'const' x 'hunit' == x@
+  --   [Right identity] @'hliftA2' ('const' 'id') 'hunit' y == y@
   hpair :: c f -> c g -> c (f :*: g)
   hpair = hliftA2 (:*:)
 
 -- | A newtype wrapper for natural transformations used in @'hap'@ definition.
-newtype Transform f g a = Transform { runTransform :: f a -> g a }
+newtype Transform f g a = Transform {runTransform :: f a -> g a}
 
 -- | If @'hap'@ and @'hpure'@ do not rely on @'hmap'@ (i.e. at least are not
 -- implemented by default), this function can be used to implement @'hmap'@.

@@ -1,6 +1,6 @@
-{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   AssetPolicy,
@@ -22,26 +22,40 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   addAssetValues,
 ) where
 
-import           Data.Coerce                          (coerce)
-import           Data.Function                        ((&))
-import           GHC.Generics                         (Generic)
-import           Prelude                              hiding (Bool, Eq, Int, all, foldr, length, negate, null, splitAt,
-                                                       (&&), (*), (+), (==), (||))
+import Data.Coerce (coerce)
+import Data.Function ((&))
+import GHC.Generics (Generic)
+import ZkFold.Algebra.Class
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
+import ZkFold.Symbolic.Data.Eq (Eq (..))
+import ZkFold.Symbolic.Data.Int (Int)
+import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
+import qualified ZkFold.Symbolic.Data.List as Symbolic.List
+import ZkFold.Symbolic.Data.Morph (MorphTo (..))
+import ZkFold.Symbolic.Fold (SymbolicFold)
+import Prelude hiding (
+  Bool,
+  Eq,
+  Int,
+  all,
+  foldr,
+  length,
+  negate,
+  null,
+  splitAt,
+  (&&),
+  (*),
+  (+),
+  (==),
+  (||),
+ )
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Symbolic.Class                (Symbolic)
-import           ZkFold.Symbolic.Data.Bool            (Bool, BoolType (..))
-import           ZkFold.Symbolic.Data.Class           (SymbolicData (..))
-import           ZkFold.Symbolic.Data.Combinators     (KnownRegisters, RegisterSize (Auto))
-import           ZkFold.Symbolic.Data.Conditional     (Conditional, ifThenElse)
-import           ZkFold.Symbolic.Data.Eq              (Eq (..))
-import           ZkFold.Symbolic.Data.Int             (Int)
-import qualified ZkFold.Symbolic.Data.List            as Symbolic.List
-import           ZkFold.Symbolic.Data.List            (List, emptyList, (.:))
-import           ZkFold.Symbolic.Data.Morph           (MorphTo (..))
-import           ZkFold.Symbolic.Fold                 (SymbolicFold)
-import           ZkFold.Symbolic.Ledger.Types.Address (Address)
-import           ZkFold.Symbolic.Ledger.Types.Datum   (Datum)
+import ZkFold.Symbolic.Ledger.Types.Address (Address)
+import ZkFold.Symbolic.Ledger.Types.Datum (Datum)
 
 -- | Asset policy is the address of the initial UTxO that contains the asset.
 type AssetPolicy context = Address context
@@ -56,8 +70,8 @@ type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
 
 -- | A value represents the details of an asset that is contained in a transaction output.
 data AssetValue context = AssetValue
-  { assetPolicy   :: AssetPolicy context
-  , assetName     :: AssetName context
+  { assetPolicy :: AssetPolicy context
+  , assetName :: AssetName context
   , assetQuantity :: AssetQuantity context
   }
   deriving stock Generic
@@ -73,7 +87,8 @@ newtype AssetValues context = UnsafeAssetValues (List context (AssetValue contex
 
 deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (AssetValues context)
 
-deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (AssetValues context)
+deriving newtype instance
+  (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (AssetValues context)
 
 deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValues context)
 
@@ -86,44 +101,50 @@ unsafeAssetValuesFromList :: List context (AssetValue context) -> AssetValues co
 unsafeAssetValuesFromList = UnsafeAssetValues
 
 -- | Construct an empty 'AssetValues'.
-emptyAssetValues ::
-  KnownRegistersAssetQuantity context =>
-  Symbolic context =>
-  AssetValues context
+emptyAssetValues
+  :: KnownRegistersAssetQuantity context
+  => Symbolic context
+  => AssetValues context
 emptyAssetValues = UnsafeAssetValues emptyList
 
 -- | Safe constructor for 'AssetValues'.
-assetValuesFromList ::
-  SymbolicFold context =>
-  KnownRegistersAssetQuantity context =>
-  List context (AssetValue context) ->
-  AssetValues context
+assetValuesFromList
+  :: SymbolicFold context
+  => KnownRegistersAssetQuantity context
+  => List context (AssetValue context)
+  -> AssetValues context
 assetValuesFromList = Symbolic.List.foldr (Morph \(x, acc) -> addAssetValue x acc) emptyAssetValues
 
-{- | Add an 'AssetValue' to 'AssetValues'.
-
-If the asset already exists in the list, the quantities are added. Else the asset is added to the list.
--}
-addAssetValue ::
-  forall context.
-  SymbolicFold context =>
-  KnownRegistersAssetQuantity context =>
-  AssetValue context ->
-  AssetValues context ->
-  AssetValues context
+-- | Add an 'AssetValue' to 'AssetValues'.
+--
+-- If the asset already exists in the list, the quantities are added. Else the asset is added to the list.
+addAssetValue
+  :: forall context
+   . SymbolicFold context
+  => KnownRegistersAssetQuantity context
+  => AssetValue context
+  -> AssetValues context
+  -> AssetValues context
 addAssetValue givenAssetVal (UnsafeAssetValues assetValList) =
   let (assetExisted, _, r) =
         Symbolic.List.foldr
           ( Morph
               \( y :: AssetValue s
-                , (found :: Bool s, givenAssetVal' :: AssetValue s, ys)
-                ) ->
+                 , (found :: Bool s, givenAssetVal' :: AssetValue s, ys)
+                 ) ->
                   let isSame :: Bool s = givenAssetVal' == y
                    in ( found || isSame
                       , givenAssetVal'
                       , ifThenElse
                           isSame
-                          ((AssetValue {assetPolicy = assetPolicy y, assetName = assetName y, assetQuantity = assetQuantity y + (assetQuantity givenAssetVal')}) .: ys)
+                          ( ( AssetValue
+                                { assetPolicy = assetPolicy y
+                                , assetName = assetName y
+                                , assetQuantity = assetQuantity y + (assetQuantity givenAssetVal')
+                                }
+                            )
+                              .: ys
+                          )
                           (y .: ys)
                       )
           )
@@ -135,12 +156,12 @@ addAssetValue givenAssetVal (UnsafeAssetValues assetValList) =
         (UnsafeAssetValues $ givenAssetVal .: assetValList)
 
 -- | Negate quantities present inside 'AssetValues'.
-negateAssetValues ::
-  forall context.
-  SymbolicFold context =>
-  KnownRegistersAssetQuantity context =>
-  AssetValues context ->
-  AssetValues context
+negateAssetValues
+  :: forall context
+   . SymbolicFold context
+  => KnownRegistersAssetQuantity context
+  => AssetValues context
+  -> AssetValues context
 negateAssetValues (UnsafeAssetValues ls) =
   UnsafeAssetValues $
     Symbolic.List.foldr
@@ -151,13 +172,13 @@ negateAssetValues (UnsafeAssetValues ls) =
       ls
 
 -- | Add two 'AssetValues'.
-addAssetValues ::
-  forall context.
-  SymbolicFold context =>
-  KnownRegistersAssetQuantity context =>
-  AssetValues context ->
-  AssetValues context ->
-  AssetValues context
+addAssetValues
+  :: forall context
+   . SymbolicFold context
+  => KnownRegistersAssetQuantity context
+  => AssetValues context
+  -> AssetValues context
+  -> AssetValues context
 addAssetValues as (UnsafeAssetValues bs) =
   Symbolic.List.foldl
     ( Morph \(acc :: AssetValues s, b :: AssetValue s) ->

@@ -1,30 +1,29 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
-
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE MagicHash            #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.FFI.Rust.Conversion where
 
-import           Control.Monad
-import           Data.Binary
-import           Data.Bits
-import qualified Data.ByteString                        as BS
-import           Foreign
-import           GHC.Base
-import           GHC.IO                                 (unsafePerformIO)
-import           GHC.Num.Integer                        (integerToInt#)
-import           GHC.Num.Natural                        (naturalFromAddr, naturalToAddr)
-import           GHC.Ptr                                (Ptr (..))
-import           Prelude                                hiding (Eq, Num (..), sum, (/), (^))
+import Control.Monad
+import Data.Binary
+import Data.Bits
+import qualified Data.ByteString as BS
+import Foreign
+import GHC.Base
+import GHC.IO (unsafePerformIO)
+import GHC.Num.Integer (integerToInt#)
+import GHC.Num.Natural (naturalFromAddr, naturalToAddr)
+import GHC.Ptr (Ptr (..))
+import Prelude hiding (Eq, Num (..), sum, (/), (^))
 
-import           ZkFold.Algebra.Class                   hiding (sum)
+import ZkFold.Algebra.Class hiding (sum)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
-import           ZkFold.Algebra.EllipticCurve.Class
-import           ZkFold.Algebra.Field
-import           ZkFold.Algebra.Number
-import           ZkFold.FFI.Rust.Types
+import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.Field
+import ZkFold.Algebra.Number
+import ZkFold.FFI.Rust.Types
 
 class RustHaskell r h | r -> h, h -> r where
   h2r :: h -> r
@@ -40,8 +39,8 @@ instance {-# OVERLAPPABLE #-} (RustHaskell r h, Storable h) => Storable r where
   peek :: Ptr r -> IO r
   peek = error "Do not call peek on Rust type"
 
---  peekElemOff = error "Do not call peekElemOff on Rust type"
---  peekByteOff = error "Do not call peekByteOff on Rust type"
+  --  peekElemOff = error "Do not call peekElemOff on Rust type"
+  --  peekByteOff = error "Do not call peekByteOff on Rust type"
 
   poke :: Ptr r -> r -> IO ()
   poke = error "Do not call poke on Rust type"
@@ -65,22 +64,25 @@ instance Storable EC.Fr where
   poke = pokeZpLE
 
 instance RustHaskell Fr EC.Fr where
-  r2h (RScalar (RData fptr)) = {-# SCC r2h_fr #-} unsafePerformIO $
-    withForeignPtr fptr $ \ptr -> do
-    peek (castPtr $ ptr)
+  r2h (RScalar (RData fptr)) =
+    {-# SCC "r2h_fr" #-}
+    unsafePerformIO $
+      withForeignPtr fptr $ \ptr -> do
+        peek (castPtr $ ptr)
 
-  h2r p = {-# SCC h2r_fr #-} unsafePerformIO $ do
-    fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.Fr))
-    withForeignPtr fptr $ \ptr -> do
-      poke (castPtr ptr) p
-    return $ RScalar $ RData fptr
+  h2r p =
+    {-# SCC "h2r_fr" #-}
+    unsafePerformIO $ do
+      fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.Fr))
+      withForeignPtr fptr $ \ptr -> do
+        poke (castPtr ptr) p
+      return $ RScalar $ RData fptr
 
 -- Fq
 
 instance Storable EC.Fq where
-
   sizeOf :: EC.Fq -> Int
-  sizeOf    _ = 48
+  sizeOf _ = 48
 
   alignment :: EC.Fq -> Int
   alignment _ = 8
@@ -94,7 +96,6 @@ instance Storable EC.Fq where
 -- G1
 
 instance Storable BLS12_381_G1_Point where
-
   sizeOf :: BLS12_381_G1_Point -> Int
   sizeOf _ = 96
 
@@ -105,8 +106,8 @@ instance Storable BLS12_381_G1_Point where
   peek ptr = do
     a <- BS.packCStringLen (castPtr ptr, sizeOf @BLS12_381_G1_Point undefined)
     if BS.pack infByteStringRepr == a
-    then return $ Weierstrass $ Point zero zero True
-    else do
+      then return $ Weierstrass $ Point zero zero True
+      else do
         x <- peek @EC.Fq (castPtr ptr)
         y <- peek @EC.Fq (ptr `plusPtr` sizeOf @EC.Fq undefined)
         return $ Weierstrass $ Point x y False
@@ -131,15 +132,19 @@ instance Storable BLS12_381_G1_JacobianPoint where
   poke ptr pt = poke (castPtr ptr) (project @_ @BLS12_381_G1_Point pt)
 
 instance RustHaskell Rust_BLS12_381_G1_Point BLS12_381_G1_Point where
-  r2h (RPoint (RData fptr)) = {-# SCC r2h_bls_g1 #-} unsafePerformIO $
-    withForeignPtr fptr $ \ptr -> do
-    peek (castPtr $ ptr)
+  r2h (RPoint (RData fptr)) =
+    {-# SCC "r2h_bls_g1" #-}
+    unsafePerformIO $
+      withForeignPtr fptr $ \ptr -> do
+        peek (castPtr $ ptr)
 
-  h2r p = {-# SCC h2r_bls_g1 #-} unsafePerformIO $ do
-    fptr <- callocForeignPtrBytes (sizeOf (undefined :: BLS12_381_G1_Point))
-    withForeignPtr fptr $ \ptr -> do
-      poke (castPtr ptr) p
-    return $ RPoint $ RData fptr
+  h2r p =
+    {-# SCC "h2r_bls_g1" #-}
+    unsafePerformIO $ do
+      fptr <- callocForeignPtrBytes (sizeOf (undefined :: BLS12_381_G1_Point))
+      withForeignPtr fptr $ \ptr -> do
+        poke (castPtr ptr) p
+      return $ RPoint $ RData fptr
 
 instance RustHaskell Rust_BLS12_381_G1_JacobianPoint BLS12_381_G1_JacobianPoint where
   r2h (G1_Jacobian rp) = project @BLS12_381_G1_Point $ r2h rp
@@ -152,7 +157,6 @@ infByteStringRepr :: [Word8]
 infByteStringRepr = replicate 47 0 <> (bit 6 : replicate 48 0)
 
 instance Storable BLS12_381_G2_Point where
-
   sizeOf :: BLS12_381_G2_Point -> Int
   sizeOf _ = 192
 
@@ -160,14 +164,15 @@ instance Storable BLS12_381_G2_Point where
   alignment _ = 8
 
   peek :: Ptr BLS12_381_G2_Point -> IO BLS12_381_G2_Point
-  peek ptr = decode . BS.fromStrict <$>
-    BS.packCStringLen (castPtr ptr, sizeOf @BLS12_381_G2_Point undefined)
+  peek ptr =
+    decode . BS.fromStrict
+      <$> BS.packCStringLen (castPtr ptr, sizeOf @BLS12_381_G2_Point undefined)
 
   poke :: Ptr BLS12_381_G2_Point -> BLS12_381_G2_Point -> IO ()
   poke ptr p =
-    BS.useAsCStringLen (BS.toStrict $ encode p) (
-      \(fptr, len) -> copyArray (castPtr $ ptr) fptr len
-        )
+    BS.useAsCStringLen
+      (BS.toStrict $ encode p)
+      (\(fptr, len) -> copyArray (castPtr $ ptr) fptr len)
 
 instance Storable BLS12_381_G2_JacobianPoint where
   sizeOf :: BLS12_381_G2_JacobianPoint -> Int
@@ -185,7 +190,7 @@ instance Storable BLS12_381_G2_JacobianPoint where
 instance RustHaskell Rust_BLS12_381_G2_Point BLS12_381_G2_Point where
   r2h (RPoint (RData fptr)) = unsafePerformIO $
     withForeignPtr fptr $ \ptr -> do
-    peek (castPtr $ ptr)
+      peek (castPtr $ ptr)
 
   h2r p = unsafePerformIO $ do
     fptr <- callocForeignPtrBytes (sizeOf (undefined :: BLS12_381_G2_Point))
@@ -198,16 +203,15 @@ instance RustHaskell Rust_BLS12_381_G2_JacobianPoint BLS12_381_G2_JacobianPoint 
 
   h2r p = G2_Jacobian $ h2r (project @_ @BLS12_381_G2_Point p)
 
-
 -- Zp
 
 peekZpLE :: KnownNat a => Int -> Ptr (Zp a) -> IO (Zp a)
 peekZpLE size ptr = do
-    let !(Ptr addr) = ptr
-    toZp . toInteger <$> naturalFromAddr (int2Word# (integerToInt# $ toInteger size)) addr 0#
+  let !(Ptr addr) = ptr
+  toZp . toInteger <$> naturalFromAddr (int2Word# (integerToInt# $ toInteger size)) addr 0#
 
 pokeZpLE :: Ptr (Zp a) -> Zp a -> IO ()
 pokeZpLE ptr p = do
-    let !(Ptr addr) = ptr
-    !_ <- naturalToAddr (fromZp p) addr 0#
-    return ()
+  let !(Ptr addr) = ptr
+  !_ <- naturalToAddr (fromZp p) addr 0#
+  return ()

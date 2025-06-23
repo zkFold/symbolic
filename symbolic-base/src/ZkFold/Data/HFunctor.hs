@@ -6,9 +6,9 @@ module ZkFold.Data.HFunctor where
 -- into an @c g@, preserving the structure of @c@.
 class HFunctor c where
   -- | Applies a function of type @(forall a. f a -> g a)@
-  -- to a value of type @c f@, where @c@ is a higher-order functor,
-  -- to produce a value of type @c g@. Usual laws of functors should hold:
+  --   to a value of type @c f@, where @c@ is a higher-order functor,
+  --   to produce a value of type @c g@. Usual laws of functors should hold:
   --
-  -- [Identity] @'hmap' 'id' x == x@
-  -- [Composition] @'hmap' (f '.' g) x == 'hmap' f ('hmap' g x)@
+  --   [Identity] @'hmap' 'id' x == x@
+  --   [Composition] @'hmap' (f '.' g) x == 'hmap' f ('hmap' g x)@
   hmap :: (forall a. f a -> g a) -> c f -> c g

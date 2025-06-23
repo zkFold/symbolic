@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Protocol.IVC.VerifierCircuit where
 

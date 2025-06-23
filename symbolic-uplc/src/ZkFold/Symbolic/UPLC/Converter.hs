@@ -1,26 +1,26 @@
 module ZkFold.Symbolic.UPLC.Converter where
 
-import           Data.Function                              (($))
-import           GHC.Generics                               (Par1)
+import Data.Function (($))
+import GHC.Generics (Par1)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Symbolic.Compiler (compile)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
+import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.Maybe (isJust)
 
-import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                       (Zp)
-import           ZkFold.Symbolic.Compiler                   (compile)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
-import           ZkFold.Symbolic.Data.Bool                  (Bool)
-import           ZkFold.Symbolic.Data.Maybe                 (isJust)
-import           ZkFold.Symbolic.UPLC.Data                  (Data)
-import           ZkFold.Symbolic.UPLC.Evaluation            (ExValue (ExValue), MaybeValue (..), Sym, eval)
-import           ZkFold.UPLC.Term                           (Term)
+import ZkFold.Symbolic.UPLC.Data (Data)
+import ZkFold.Symbolic.UPLC.Evaluation (ExValue (ExValue), MaybeValue (..), Sym, eval)
+import ZkFold.UPLC.Term (Term)
 
 -- | Different script types used on Cardano network.
 data ScriptType
-  -- | Plutus V1/V2 spending scripts.
-  = SpendingV1
-  -- | Plutus V1/V2 minting, certifying and rewarding scripts.
-  | OtherV1
-  -- | Plutus V3 scripts.
-  | V3
+  = -- | Plutus V1/V2 spending scripts.
+    SpendingV1
+  | -- | Plutus V1/V2 minting, certifying and rewarding scripts.
+    OtherV1
+  | -- | Plutus V3 scripts.
+    V3
 
 -- | Result of a UPLC Converter is a circuit:
 -- 1. with arbitrary input;
@@ -29,13 +29,16 @@ data ScriptType
 data SomeCircuit = forall i. SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) i Par1)
 
 -- | Converter itself.
-convert ::
-  Term -> -- ^ Term to convert.
-  ScriptType -> -- ^ Type of a script.
-  SomeCircuit -- ^ Result of a conversion.
+convert
+  :: Term
+  -- ^ Term to convert.
+  -> ScriptType
+  -- ^ Type of a script.
+  -> SomeCircuit
+  -- ^ Result of a conversion.
 convert t SpendingV1 = SomeCircuit $ compile (spendingContract t)
-convert t OtherV1    = SomeCircuit $ compile (otherContract t)
-convert t V3         = SomeCircuit $ compile (contractV3 t)
+convert t OtherV1 = SomeCircuit $ compile (otherContract t)
+convert t V3 = SomeCircuit $ compile (contractV3 t)
 
 -- | Datum context.
 type DatumCtx c = Data c

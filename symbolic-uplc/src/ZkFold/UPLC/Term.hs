@@ -2,16 +2,16 @@
 
 module ZkFold.UPLC.Term where
 
-import           Data.Bool                              (Bool)
-import           Data.ByteString                        (ByteString)
-import           Data.Text                              (Text)
-import           Data.Word                              (Word64)
-import           Numeric.Natural                        (Natural)
-import           Prelude                                (Integer)
+import Data.Bool (Bool)
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+import Data.Word (Word64)
+import Numeric.Natural (Natural)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import Prelude (Integer)
 
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import           ZkFold.UPLC.BuiltinFunction            (BuiltinFunction)
-import           ZkFold.UPLC.BuiltinType                (BuiltinType (..))
+import ZkFold.UPLC.BuiltinFunction (BuiltinFunction)
+import ZkFold.UPLC.BuiltinType (BuiltinType (..))
 
 -- | Constructor tags used on Cardano.
 --

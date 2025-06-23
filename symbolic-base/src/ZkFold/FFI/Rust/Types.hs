@@ -2,31 +2,31 @@
 
 module ZkFold.FFI.Rust.Types where
 
-import           Control.DeepSeq
-import           Data.Bool                  as B
-import           Foreign
-import           Foreign.C.Types
-import           GHC.Generics
-import           Prelude
+import Control.DeepSeq
+import Data.Bool as B
+import Foreign
+import Foreign.C.Types
+import GHC.Generics
+import Prelude
 
-import           ZkFold.Control.Conditional
+import ZkFold.Control.Conditional
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
-callocForeignPtrBytes n = do { p <- callocBytes n; newForeignPtr finalizerFree p }
+callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
 
-newtype Scalar curve s = RScalar { rawScalar :: s }
-    deriving (NFData, Generic)
+newtype Scalar curve s = RScalar {rawScalar :: s}
+  deriving (Generic, NFData)
 
-newtype Point curve s = RPoint { rawPoint :: s }
-    deriving (NFData, Generic)
+newtype Point curve s = RPoint {rawPoint :: s}
+  deriving (Generic, NFData)
 
 type FCString = ForeignPtr CChar
 
 instance NFData FCString where
-    rnf _ = ()
+  rnf _ = ()
 
-newtype RustData = RData { rawData :: FCString }
-    deriving (NFData, Generic)
+newtype RustData = RData {rawData :: FCString}
+  deriving (Generic, NFData)
 
 instance Conditional Bool RustData where bool = B.bool
 
