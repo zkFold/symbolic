@@ -2,12 +2,10 @@
 
 module ZkFold.Symbolic.Data.Morph where
 
-import Data.Function (const, ($), (.))
-import Data.Proxy (Proxy (..))
+import Data.Function (($))
 import Data.Type.Equality (type (~))
-
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Fold (SymbolicFold)
 
 -- | A type @u@ is a 'Replica' of type @t@ in context @c@ iff:
@@ -15,7 +13,7 @@ import ZkFold.Symbolic.Fold (SymbolicFold)
 -- * its context is @c@;
 -- * its representation (layout and payload) match those of @t@.
 type Replica c t u =
-  ( SymbolicOutput u
+  ( SymbolicData u
   , Context u ~ c
   , Layout u ~ Layout t
   , Payload u ~ Payload t
@@ -32,10 +30,12 @@ data MorphTo c input output
 -- if they provide 'Replica's of @input@ and @output@ in context @c@.
 (@)
   :: (Replica c input i, Replica c output o)
-  => MorphTo c input output -> i -> o
+  => MorphTo c input output
+  -> i
+  -> o
 Morph f @ x =
-  let y = f . restore $ const (arithmetize x Proxy, payload x Proxy)
-   in restore $ const (arithmetize y Proxy, payload y Proxy)
+  let y = f $ restore (arithmetize x, payload x)
+   in restore (arithmetize y, payload y)
 
 -- | A function is a "morph" of a function of type @input -> output@
 -- /from/ context @ctx@ iff, for each context @c@ over same base field,

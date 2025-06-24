@@ -11,7 +11,6 @@ import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary (..), (===))
 import Text.Show (Show)
-
 import ZkFold.Data.Product (toPair)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
@@ -25,13 +24,16 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Symbolic.Data.Bool ((&&))
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Class (symFunc2)
 
 testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString 256 c
 testFunction = (&&)
 
 witGen
   :: (Arithmetic a, Representable i, Binary (Rep i))
-  => ArithmeticCircuit a i o -> i a -> Map NewVar a
+  => ArithmeticCircuit a i o
+  -> i a
+  -> Map NewVar a
 witGen circuit input =
   let wg = witnessGenerator circuit input
    in fromList [(v, wg v) | v <- getAllVars (acContext circuit)]
@@ -43,5 +45,5 @@ specCompileWith = describe "CompileWith specification" $ do
           compileWith @a
             (guessOutput toPair)
             (\(p :*: q) -> (U1 :*: U1 :*: U1, p :*: q :*: U1))
-            testFunction
+            (symFunc2 testFunction)
      in \x p q -> witGen circuit (x :*: p) === witGen circuit (x :*: q)

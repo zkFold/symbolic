@@ -40,9 +40,6 @@ import Data.String (fromString)
 import GHC.Generics
 import GHC.TypeLits (Symbol)
 import Test.QuickCheck hiding (scale)
-import Prelude (Integer, fromInteger, return, ($), (<$>), (>>=), type (~))
-import qualified Prelude
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class
@@ -51,6 +48,8 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input
+import Prelude (Integer, fromInteger, return, ($), (<$>), (>>=), type (~))
+import qualified Prelude
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
@@ -490,7 +489,7 @@ deriving newtype instance
   => Prelude.Show (TwistedEdwards curve point)
 
 deriving newtype instance
-  SymbolicOutput field
+  SymbolicData field
   => SymbolicData (TwistedEdwards curve (AffinePoint field))
 
 instance
@@ -604,8 +603,8 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
 instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
+  ( SymbolicData (BooleanOf field)
+  , SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (Point field)
@@ -658,7 +657,7 @@ instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) whe
   pt0 /= pt1 = not (pt0 Prelude.== pt1)
 
 instance
-  ( SymbolicOutput field
+  ( SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (JacobianPoint field)
@@ -753,8 +752,8 @@ deriving instance
   => Prelude.Eq (CompressedPoint field)
 
 instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
+  ( SymbolicData (BooleanOf field)
+  , SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (CompressedPoint field)
@@ -773,7 +772,7 @@ data AffinePoint field = AffinePoint
 
 deriving instance NFData field => NFData (AffinePoint field)
 
-instance SymbolicOutput field => SymbolicData (AffinePoint field)
+instance SymbolicData field => SymbolicData (AffinePoint field)
 
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 

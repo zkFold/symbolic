@@ -10,9 +10,6 @@ import GHC.Generics (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary, Gen)
-import Prelude (return, ($), (.))
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -24,6 +21,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (symFunc1, symFunc2, symFunc4)
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
@@ -33,6 +31,8 @@ import ZkFold.Symbolic.Data.MerkleTree
 import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (return, ($), (.))
+import qualified Prelude as Haskell
 
 -- evalBool :: forall a . (Arithmetic a, Binary a) => Bool (AC a) -> a
 -- evalBool (Bool ac) = exec1 ac
@@ -110,26 +110,30 @@ tossPow m = chooseNatural (0, (2 :: Natural) ^ m -! 1)
 
 specMerkleTree'
   :: forall a d
-   . (Arbitrary a, Arithmetic a, Binary a, Haskell.Show a, KnownNat d) => Spec
+   . (Arbitrary a, Arithmetic a, Binary a, Haskell.Show a, KnownNat d)
+  => Spec
 specMerkleTree' = do
   describe "MerkleTree specification" $ do
     prop "testId2" $ \x y ->
-      let ac = eval1 (compile @a testIso2) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+      let ac = eval1 (compile @a $ symFunc2 testIso2) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
           i = evalBoolVec $ testIso2 (fromConstant x) (fromConstant y)
        in ac Haskell.== i && (i Haskell.== one)
     prop "testId3" $ \x y z w ->
-      let ac = eval1 (compile @a testIso3) ((U1 :*: U1 :*: U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
+      let ac =
+            eval1
+              (compile @a $ symFunc4 testIso3)
+              ((U1 :*: U1 :*: U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
           i = evalBoolVec $ testIso3 (fromConstant x) (fromConstant y) (fromConstant z) (fromConstant w)
        in ac Haskell.== i && (i Haskell.== one)
     prop "testPath" $ do
       r <- tossPow (value @d)
-      let ac = eval1 (compile @a (testPath @d)) ((U1 :*: U1) :*: Par1 (fromConstant r) :*: U1)
+      let ac = eval1 (compile @a $ symFunc1 $ testPath @d) ((U1 :*: U1) :*: Par1 (fromConstant r) :*: U1)
           i = evalBoolVec $ testPath @d (fromConstant r)
       return $ ac Haskell.== i && (i Haskell.== one)
     prop "testLayerFolding" $ \x y z w ->
       let ac =
             eval1
-              (compile @a testLayerFolding)
+              (compile @a $ symFunc4 testLayerFolding)
               ((U1 :*: U1 :*: U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: Par1 z :*: Par1 w :*: U1)
           i = evalBoolVec $ testLayerFolding (fromConstant x) (fromConstant y) (fromConstant z) (fromConstant w)
        in ac Haskell.== i && (i Haskell.== one)

@@ -5,16 +5,14 @@ module ZkFold.Symbolic.Data.Hash where
 
 import Control.Monad (return)
 import Data.Function (const, ($))
-import Data.Proxy (Proxy (..))
 import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), (:*:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Symbolic.Class (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq (..), SymbolicEq, (==))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -38,42 +36,42 @@ data Hash h a = Hash
   }
   deriving Generic
 
-instance (SymbolicOutput h, SymbolicOutput a) => SymbolicData (Hash h a)
+instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
 instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
 
-instance (c ~ (Context h), Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
+instance (c ~ Context h, Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
 
-instance (c ~ (Context h), Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
+instance (c ~ Context h, Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
 
 -- | Restorably hash the data.
-hash :: (Hashable h a, SymbolicOutput a, Context h ~ Context a) => a -> Hash h a
+hash :: (Hashable h a, SymbolicData a, Context h ~ Context a) => a -> Hash h a
 hash a =
   Hash (hasher a) $
-    Payloaded (witnessF (arithmetize a Proxy) :*: payload a Proxy)
+    Payloaded (witnessF (arithmetize a) :*: payload a)
 
 -- | Restore the data which were hashed.
 preimage
   :: forall h a c
    . ( Hashable h a
-     , SymbolicOutput a
+     , SymbolicData a
      , Context h ~ c
      , Context a ~ c
      , SymbolicEq h
      )
-  => Hash h a -> a
+  => Hash h a
+  -> a
 preimage Hash {..} =
   let Payloaded (l :*: p) = hValue
       raw :: a =
-        restore $
-          const
-            ( fromCircuitF hunit $ const (traverse unconstrained l)
-            , p
-            )
+        restore
+          ( fromCircuitF hunit $ const (traverse unconstrained l)
+          , p
+          )
       Bool b = hasher raw == hHash
-   in restore $ \s ->
-        ( fromCircuit2F (arithmetize raw s) b $ \r (Par1 i) -> do
+   in restore
+        ( fromCircuit2F (arithmetize raw) b $ \r (Par1 i) -> do
             constraint (($ i) - one)
             return r
-        , payload raw s
+        , payload raw
         )

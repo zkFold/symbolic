@@ -7,8 +7,8 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.Class (symFunc1, symFunc2, symFunc3)
 import ZkFold.Symbolic.Data.Maybe (isJust)
-
 import ZkFold.Symbolic.UPLC.Data (Data)
 import ZkFold.Symbolic.UPLC.Evaluation (ExValue (ExValue), MaybeValue (..), Sym, eval)
 import ZkFold.UPLC.Term (Term)
@@ -36,9 +36,9 @@ convert
   -- ^ Type of a script.
   -> SomeCircuit
   -- ^ Result of a conversion.
-convert t SpendingV1 = SomeCircuit $ compile (spendingContract t)
-convert t OtherV1 = SomeCircuit $ compile (otherContract t)
-convert t V3 = SomeCircuit $ compile (contractV3 t)
+convert t SpendingV1 = SomeCircuit $ compile (symFunc3 $ spendingContract t)
+convert t OtherV1 = SomeCircuit $ compile (symFunc2 $ otherContract t)
+convert t V3 = SomeCircuit $ compile (symFunc1 $ contractV3 t)
 
 -- | Datum context.
 type DatumCtx c = Data c

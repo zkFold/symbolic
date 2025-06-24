@@ -6,12 +6,11 @@ module ZkFold.Protocol.IVC.Predicate where
 import Data.Binary (Binary)
 import Data.Function (const, ($), (.))
 import GHC.Generics (U1 (..), (:*:) (..))
-
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, guessOutput, solder)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Symbolic.Data.Class (LayoutFunctor)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, symFunc2)
 
 data Predicate a i p = Predicate
   { predicateEval :: i a -> p a -> i a
@@ -24,14 +23,15 @@ type StepFunction a i p =
 predicate
   :: forall a i p
    . (Arithmetic a, Binary a, LayoutFunctor i, LayoutFunctor p)
-  => StepFunction a i p -> Predicate a i p
+  => StepFunction a i p
+  -> Predicate a i p
 predicate func =
   Predicate
     { predicateEval = \x u ->
-        exec . compileWith solder (const (U1, U1)) $ func (embed x) (embed u)
+        exec . compileWith solder (const (U1, U1)) $ symFunc2 func (embed x) (embed u)
     , predicateCircuit =
         compileWith
           (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
           (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1))
-          func
+          (symFunc2 func)
     }

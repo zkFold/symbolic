@@ -20,20 +20,20 @@ import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Symbolic.Data.Bool (false, true)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Bool (Bool, false, true)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicFunction (..), SymbolicFunctionResult, symFunc1)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import Prelude (either, error, id, (.), type (~))
-
-import ZkFold.Symbolic.UPLC.Converter (contractV3)
+import ZkFold.Symbolic.UPLC.Class (Sym)
+import ZkFold.Symbolic.UPLC.Converter (ScriptCtx, contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Term
+import Prelude (either, error, id, (.), type (~))
 
 areSame
-  :: ( SymbolicData f
-     , Context f ~ c
+  :: ( SymbolicFunction f
+     , ContextF f ~ c
      , Support f ~ s
-     , Layout f ~ l
+     , Domain f ~ l
      , c ~ CircuitContext a
      , Arbitrary (i a)
      , Show (i a)
@@ -45,7 +45,10 @@ areSame
      , Show (l a)
      , a ~ Zp BLS12_381_Base
      )
-  => (Term -> f) -> Term -> f -> Property
+  => (Term -> f)
+  -> Term
+  -> f
+  -> Property
 areSame v t f =
   let acT = compile (v t)
       acF = compile f
@@ -72,110 +75,113 @@ infixl 1 $$
 ($$) :: Term -> Term -> Term
 ($$) = TApp
 
+symContractV3 :: Sym c => Term -> ScriptCtx c -> SymbolicFunctionResult (Bool c)
+symContractV3 t = symFunc1 $ contractV3 t
+
 main :: IO ()
 main = hspec $ describe "UPLC tests" $ do
-  prop "false is ok" $ areSame contractV3 (TLam tFalse) (const true)
-  prop "error is not ok" $ areSame contractV3 (TLam TError) (const false)
+  prop "false is ok" $ areSame symContractV3 (TLam tFalse) (symFunc1 $ const true)
+  prop "error is not ok" $ areSame symContractV3 (TLam TError) (symFunc1 $ const false)
   prop "substitution is ok" $
-    areSame contractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (const true)
+    areSame symContractV3 (TLam $ TLam (TVariable 0) $$ tTrue) (symFunc1 $ const true)
   prop "pair is ok" $
     areSame
-      contractV3
+      symContractV3
       (TLam $ TBuiltin (BFPoly FstPair) $$ TConstant (CPair (CUnit ()) (CBool false)))
-      (const true)
+      (symFunc1 $ const true)
   prop "bool is not a pair" $
-    areSame contractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (const false)
+    areSame symContractV3 (TLam $ TBuiltin (BFPoly SndPair) $$ tTrue) (symFunc1 $ const false)
   prop "trivial if if ok" $
     areSame
-      contractV3
+      symContractV3
       (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tTrue $$ tFalse)
-      (const true)
+      (symFunc1 $ const true)
   prop "lazy error in if is ok" $
     areSame
-      contractV3
+      symContractV3
       (TLam $ TBuiltin (BFPoly IfThenElse) $$ tTrue $$ tUnit $$ TError)
-      (const true)
+      (symFunc1 $ const true)
   prop "error propagation in if" $
     areSame
-      contractV3
+      symContractV3
       (TLam $ TBuiltin (BFPoly IfThenElse) $$ tFalse $$ tUnit $$ TError)
-      (const false)
+      (symFunc1 $ const false)
   prop "if as an argument is ok" $
     areSame
-      contractV3
+      symContractV3
       (TLam $ TLam (TVariable 0 $$ tTrue $$ tUnit $$ TError) $$ TBuiltin (BFPoly IfThenElse))
-      (const true)
+      (symFunc1 $ const true)
   prop "strings are equal" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString1 $$ tString1)
       )
-      (const true)
+      (symFunc1 $ const true)
   prop "strings are not equal" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ (TBuiltin (BFMono $ BMFString EqualsString) $$ tString1 $$ tString2)
       )
-      (const false)
+      (symFunc1 $ const false)
   prop "append string is correct" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFString EqualsString)
-                   $$ tString12
-                   $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString1 $$ tString2)
+                  $$ tString12
+                  $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString1 $$ tString2)
                )
       )
-      (const true)
+      (symFunc1 $ const true)
   prop "append string is correct-2" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFString EqualsString)
-                   $$ tString12
-                   $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)
+                  $$ tString12
+                  $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)
                )
       )
-      (const false)
+      (symFunc1 $ const false)
   -- Hash result obtained from https://emn178.github.io/online-tools/sha256.html.
   prop "sha2_256 on empty string is correct" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                   $$ unsafeTBSFromHex "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                   $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "")
+                  $$ unsafeTBSFromHex "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "")
                )
       )
-      (const true)
+      (symFunc1 $ const true)
   prop "sha2_256 on small (length < 256) string is correct" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                   $$ unsafeTBSFromHex "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"
-                   $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "ab")
+                  $$ unsafeTBSFromHex "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"
+                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "ab")
                )
       )
-      (const true)
+      (symFunc1 $ const true)
   prop "sha2_256 on large (length > 256) string is correct" $
     areSame
-      contractV3
+      symContractV3
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                   $$ unsafeTBSFromHex "ac137fce49837c7c2945f6160d3c0e679e6f40070850420a22bc10e0692cbdc7"
-                   $$ ( TBuiltin (BFMono $ BMFAlgorithm SHA2_256)
-                          $$ tBSFromUtf8 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                      )
+                  $$ unsafeTBSFromHex "ac137fce49837c7c2945f6160d3c0e679e6f40070850420a22bc10e0692cbdc7"
+                  $$ ( TBuiltin (BFMono $ BMFAlgorithm SHA2_256)
+                        $$ tBSFromUtf8 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                     )
                )
       )
-      (const true)
+      (symFunc1 $ const true)

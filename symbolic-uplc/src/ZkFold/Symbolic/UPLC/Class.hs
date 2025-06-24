@@ -9,27 +9,25 @@ import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
-import Prelude (type (~))
-
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
+import Prelude (type (~))
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
 -- and its interpretation as a Symbolic datatype in arbitrary context 'c'.
 class
   ( Typeable v
-  , SymbolicOutput v
+  , SymbolicData v
   , SymbolicFold c
   , Context v ~ c
-  , Support v ~ Proxy c
   , -- TODO: Remove after Conditional becomes part of SymbolicData
     Conditional (Bool c) v
   ) =>

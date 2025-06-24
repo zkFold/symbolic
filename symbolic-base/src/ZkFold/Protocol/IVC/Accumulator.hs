@@ -11,8 +11,6 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Binary (Binary)
 import Data.Functor.Rep (Representable (..))
 import GHC.Generics (Generic)
-import Prelude hiding (length, pi)
-
 import ZkFold.Algebra.Class (Ring, Scale, zero)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector)
@@ -21,6 +19,7 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
+import Prelude hiding (length, pi)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f = AccumulatorInstance
@@ -58,7 +57,6 @@ instance
   , SymbolicData c
   , SymbolicData f
   , Context f ~ Context c
-  , Support f ~ Support c
   )
   => SymbolicData (AccumulatorInstance k i c f)
 
@@ -85,7 +83,8 @@ emptyAccumulator
      , Binary (Rep i)
      , Binary (Rep p)
      )
-  => Predicate a i p -> Accumulator k i c f
+  => Predicate a i p
+  -> Accumulator k i c f
 emptyAccumulator phi =
   let accW = tabulate (const zero)
       aiC = fmap hcommit accW
@@ -108,5 +107,6 @@ emptyAccumulatorInstance
      , Binary (Rep i)
      , Binary (Rep p)
      )
-  => Predicate a i p -> AccumulatorInstance k i c f
+  => Predicate a i p
+  -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x

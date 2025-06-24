@@ -33,7 +33,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as BS16
 import Data.Coerce (coerce)
 import Data.Foldable (foldrM)
-import Data.Proxy
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Word (Word8)
@@ -301,11 +300,14 @@ expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * t
     pure $ Par1 ans
 
 expModCircuit :: ExpModCircuit
-expModCircuit = C.compile @Fr expModContract
+expModCircuit = C.compile @Fr $ symFunc1 expModContract
 
 expModSetup
   :: forall t
-   . TranscriptConstraints t => Fr -> ExpModCircuit -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+   . TranscriptConstraints t
+  => Fr
+  -> ExpModCircuit
+  -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
 expModSetup x ac = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
@@ -343,7 +345,7 @@ expModProof x ps ac ExpModProofInput {..} = proof
       (fromConstant piTokenName)
 
   witnessInputs :: ExpModLayout Fr
-  witnessInputs = runInterpreter $ arithmetize input Proxy
+  witnessInputs = runInterpreter $ arithmetize input
 
   paddedWitnessInputs :: ExpModCompiledInput Fr
   paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)

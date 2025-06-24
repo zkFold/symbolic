@@ -34,6 +34,7 @@ import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, solder)
 import ZkFold.Symbolic.Data.Bool (Bool (..), all, any, (&&))
+import ZkFold.Symbolic.Data.Class (symFunc3)
 import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
@@ -72,6 +73,7 @@ utxoAccumulatorCircuit =
           , Comp1 (fmap Par1 i1) :*: Comp1 (fmap Par1 i2) :*: i3 :*: U1
           )
       )
+    $ symFunc3
     $ utxoAccumulator @n
 
 utxoAccumulatorInput
@@ -121,12 +123,12 @@ utxoAccumulatorProverSetup
   -> [ScalarFieldOf BLS12_381_G1_Point]
   -> [ScalarFieldOf BLS12_381_G1_Point]
   -> PlonkupProverSetup
-       (UtxoAccumulatorInput n)
-       (UtxoAccumulatorOutput n)
-       m
-       BLS12_381_G1_Point
-       BLS12_381_G2_Point
-       (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+      (UtxoAccumulatorInput n)
+      (UtxoAccumulatorOutput n)
+      m
+      BLS12_381_G1_Point
+      BLS12_381_G2_Point
+      (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 utxoAccumulatorProverSetup crs hs as =
   flip updateProverSetup (as ++ replicate (value @n -! length hs) zero) $
     flip updateProverSetup (hs ++ replicate (value @n -! length hs) zero) $
@@ -139,12 +141,12 @@ utxoAccumulatorProverSetupInit
    . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
   => UtxoAccumulatorCRS
   -> PlonkupProverSetup
-       (UtxoAccumulatorInput n)
-       (UtxoAccumulatorOutput n)
-       m
-       BLS12_381_G1_Point
-       BLS12_381_G2_Point
-       (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+      (UtxoAccumulatorInput n)
+      (UtxoAccumulatorOutput n)
+      m
+      BLS12_381_G1_Point
+      BLS12_381_G2_Point
+      (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 utxoAccumulatorProverSetupInit crs = utxoAccumulatorProverSetup crs [] []
 
 utxoAccumulatorHash
@@ -179,12 +181,12 @@ utxoAccumulatorVerifierSetup
    . (KnownNat n, KnownNat m, KnownNat (PlonkupPolyExtendedLength m))
   => UtxoAccumulatorCRS
   -> PlonkupVerifierSetup
-       (UtxoAccumulatorInput n)
-       (UtxoAccumulatorOutput n)
-       m
-       BLS12_381_G1_Point
-       BLS12_381_G2_Point
-       (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+      (UtxoAccumulatorInput n)
+      (UtxoAccumulatorOutput n)
+      m
+      BLS12_381_G1_Point
+      BLS12_381_G2_Point
+      (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
 utxoAccumulatorVerifierSetup crs =
   updateVerifierSetup (setupVerify $ utxoAccumulatorProtocol crs) [one] [validationGroupElement @n @m crs]
 

@@ -15,7 +15,6 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector, singleton)
@@ -36,7 +35,7 @@ import ZkFold.Protocol.IVC.SpecialSound (
  )
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (true)
-import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
@@ -80,7 +79,11 @@ ivcSetup
      , FieldAssumptions a cc
      , HomomorphicCommit [a] c
      )
-  => Hasher -> StepFunction a i p -> i a -> p a -> IVCResult k i c a
+  => Hasher
+  -> StepFunction a i p
+  -> i a
+  -> p a
+  -> IVCResult k i c a
 ivcSetup hash f z0 witness =
   let
     p :: Predicate a i p
@@ -103,7 +106,7 @@ ivcProve
      , LayoutFunctor p
      , FieldAssumptions a cc
      , Layout cc ~ f
-     , SymbolicOutput c
+     , SymbolicData c
      , Context c ~ Interpreter a
      , Layout c ~ f
      , fe ~ FieldElement (Interpreter a)
@@ -127,8 +130,8 @@ ivcProve hash f res witness =
     pRec = recursivePredicate @cc $ recursiveFunction @cc hash f
 
     value
-      :: (SymbolicOutput x, Context x ~ Interpreter a) => x -> Layout x a
-    value = runInterpreter . arithmetize0
+      :: (SymbolicData x, Context x ~ Interpreter a) => x -> Layout x a
+    value = runInterpreter . arithmetize
 
     input :: RecursiveI i fe
     input =
