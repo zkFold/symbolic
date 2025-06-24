@@ -17,8 +17,10 @@ import Data.Typeable (Proxy (..))
 import GHC.Generics (U1 (..), type (:*:) (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary (..), Gen, (===))
-import Tests.Common (it)
 import Text.Show (Show)
+import Prelude (String, return, (++), type (~))
+
+import Tests.Common (it)
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
@@ -34,7 +36,6 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), symFunc1, symFunc2)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Prelude (String, return, (++), type (~))
 
 {-
   For all symbolic types we need to do the following:
@@ -276,5 +277,4 @@ specSymbolicFunction2 desc func = describe desc $ do
   it "satisfies constraints" $
     checkCircuit
       (compileCircuit2 $ func @(CircuitContext a))
-      ( \((x, y) :: (x (Interpreter a), y (Interpreter a))) -> runInterpreter (arithmetize x) :*: runInterpreter (arithmetize y)
-      )
+      (\((x, y) :: (x (Interpreter a), y (Interpreter a))) -> runInterpreter (arithmetize x) :*: runInterpreter (arithmetize y))

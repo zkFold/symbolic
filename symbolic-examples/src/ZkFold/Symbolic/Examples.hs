@@ -21,6 +21,7 @@ import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicFunction (..), symFunc0, symFunc1, symFunc2, symFunc3)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+
 import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.ByteString
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)

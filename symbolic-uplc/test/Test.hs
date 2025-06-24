@@ -23,11 +23,12 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (Bool, false, true)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicFunction (..), SymbolicFunctionResult, symFunc1)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import Prelude (either, error, id, (.), type (~))
+
 import ZkFold.Symbolic.UPLC.Class (Sym)
 import ZkFold.Symbolic.UPLC.Converter (ScriptCtx, contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Term
-import Prelude (either, error, id, (.), type (~))
 
 areSame
   :: ( SymbolicFunction f
@@ -133,8 +134,8 @@ main = hspec $ describe "UPLC tests" $ do
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFString EqualsString)
-                  $$ tString12
-                  $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString1 $$ tString2)
+                   $$ tString12
+                   $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString1 $$ tString2)
                )
       )
       (symFunc1 $ const true)
@@ -144,8 +145,8 @@ main = hspec $ describe "UPLC tests" $ do
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFString EqualsString)
-                  $$ tString12
-                  $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)
+                   $$ tString12
+                   $$ (TBuiltin (BFMono $ BMFString AppendString) $$ tString2 $$ tString1)
                )
       )
       (symFunc1 $ const false)
@@ -156,8 +157,8 @@ main = hspec $ describe "UPLC tests" $ do
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                  $$ unsafeTBSFromHex "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "")
+                   $$ unsafeTBSFromHex "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                   $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "")
                )
       )
       (symFunc1 $ const true)
@@ -167,8 +168,8 @@ main = hspec $ describe "UPLC tests" $ do
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                  $$ unsafeTBSFromHex "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"
-                  $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "ab")
+                   $$ unsafeTBSFromHex "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603"
+                   $$ (TBuiltin (BFMono $ BMFAlgorithm SHA2_256) $$ tBSFromUtf8 "ab")
                )
       )
       (symFunc1 $ const true)
@@ -178,10 +179,10 @@ main = hspec $ describe "UPLC tests" $ do
       ( TLam $
           TLam (TBuiltin (BFPoly IfThenElse) $$ TVariable 0 $$ tUnit $$ TError)
             $$ ( TBuiltin (BFMono $ BMFByteString EqualsByteString)
-                  $$ unsafeTBSFromHex "ac137fce49837c7c2945f6160d3c0e679e6f40070850420a22bc10e0692cbdc7"
-                  $$ ( TBuiltin (BFMono $ BMFAlgorithm SHA2_256)
-                        $$ tBSFromUtf8 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                     )
+                   $$ unsafeTBSFromHex "ac137fce49837c7c2945f6160d3c0e679e6f40070850420a22bc10e0692cbdc7"
+                   $$ ( TBuiltin (BFMono $ BMFAlgorithm SHA2_256)
+                          $$ tBSFromUtf8 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                      )
                )
       )
       (symFunc1 $ const true)

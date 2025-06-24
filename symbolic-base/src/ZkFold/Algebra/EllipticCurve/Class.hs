@@ -40,6 +40,9 @@ import Data.String (fromString)
 import GHC.Generics
 import GHC.TypeLits (Symbol)
 import Test.QuickCheck hiding (scale)
+import Prelude (Integer, fromInteger, return, ($), (<$>), (>>=), type (~))
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class
@@ -48,8 +51,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input
-import Prelude (Integer, fromInteger, return, ($), (<$>), (>>=), type (~))
-import qualified Prelude
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent

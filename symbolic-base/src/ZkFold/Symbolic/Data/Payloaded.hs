@@ -6,6 +6,7 @@ import Data.Function (const, ($), (.))
 import Data.Functor.Rep (mzipWithRep)
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Symbolic.Class (Symbolic (..))

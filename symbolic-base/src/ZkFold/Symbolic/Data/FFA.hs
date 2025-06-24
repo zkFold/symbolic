@@ -21,6 +21,9 @@ import GHC.Generics (Generic, Par1 (..), U1 (..), type (:*:) (..))
 import Numeric.Natural (Natural)
 import System.Random.Stateful (Uniform (..))
 import Text.Show (Show)
+import Prelude (Integer)
+import qualified Prelude
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
@@ -47,8 +50,6 @@ import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), ResidueField (..), Witness (..))
-import Prelude (Integer)
-import qualified Prelude
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0

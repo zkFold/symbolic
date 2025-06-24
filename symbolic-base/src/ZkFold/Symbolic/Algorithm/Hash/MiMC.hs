@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Algorithm.Hash.MiMC (
 import Data.Foldable (toList)
 import Data.Function ((.))
 import Data.Functor (fmap)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC
 import ZkFold.Data.HFunctor (hmap)

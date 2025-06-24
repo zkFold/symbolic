@@ -9,6 +9,8 @@ import GHC.Exts (IsString (fromString))
 import GHC.Generics hiding (from)
 import Numeric.Natural (Natural)
 import Test.Hspec (Spec, describe, it)
+import Prelude (Eq (..), ($))
+
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import ZkFold.Algebra.Field (Zp)
@@ -23,7 +25,6 @@ import ZkFold.Symbolic.Data.ByteString (ByteString (..))
 import ZkFold.Symbolic.Data.Class (symFunc2)
 import qualified ZkFold.Symbolic.Data.Eq as Symbolic
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Prelude (Eq (..), ($))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
 blake2bNumeric =
