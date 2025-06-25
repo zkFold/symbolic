@@ -11,6 +11,7 @@ module ZkFold.Algebra.EllipticCurve.Jubjub (
 ) where
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -20,10 +21,9 @@ type Jubjub_Scalar = 65544843968907738099309675635232457297059212658723172813653
 
 instance Prime Jubjub_Scalar
 
--- | As defined in https://github.com/zkcrypto/jubjub.
-type Jubjub_Base = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-
-instance Prime Jubjub_Base
+-- | "The choice of GF(q) is made to be the scalar field of the BLS12-381 elliptic curve
+-- construction."
+type Jubjub_Base = BLS12_381_Scalar
 
 type Jubjub_PointOf baseField = TwistedEdwards "jubjub" (AffinePoint baseField)
 
@@ -39,11 +39,6 @@ instance Field field => TwistedEdwardsCurve "jubjub" field where
     negate fromConstant (10240 :: Natural)
       // fromConstant (10241 :: Natural)
 
--- | Test that the Jubjub generator point indeed lies on the curve.
---
--- >>> let g = pointGen :: Jubjub_Point
--- >>> isOnCurve g
--- True
 instance CyclicGroup Jubjub_Point where
   type ScalarFieldOf Jubjub_Point = Fl
   pointGen =
