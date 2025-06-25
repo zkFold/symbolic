@@ -253,6 +253,7 @@ library
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Sum
       ZkFold.Symbolic.Data.Switch
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
