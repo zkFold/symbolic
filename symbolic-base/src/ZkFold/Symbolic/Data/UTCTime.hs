@@ -14,10 +14,8 @@ import qualified Prelude as Haskell
 import ZkFold.Algebra.Class (FromConstant)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
@@ -25,8 +23,6 @@ import ZkFold.Symbolic.Data.UInt
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
 
 deriving newtype instance HEq c => Haskell.Eq (UTCTime c)
-
-deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Conditional (Bool c) (UTCTime c)
 
 deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Eq (UTCTime c)
 

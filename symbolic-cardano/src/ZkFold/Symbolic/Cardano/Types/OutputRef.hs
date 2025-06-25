@@ -9,7 +9,6 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -36,10 +35,6 @@ instance
 instance
   (Symbolic context, KnownRegisters context 32 Auto)
   => SymbolicInput (OutputRef context)
-
-instance
-  (Symbolic context, KnownRegisters context 32 Auto)
-  => Conditional (Bool context) (OutputRef context)
 
 instance
   (Symbolic context, KnownRegisters context 32 Auto)

@@ -8,7 +8,6 @@
 module ZkFold.FFI.Rust.RustBLS where
 
 import Control.Monad
-import qualified Data.Bool
 import qualified Data.Vector as V
 import Foreign
 import Foreign.C.Types
@@ -25,7 +24,6 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Control.Conditional
 import ZkFold.Data.ByteString
 import qualified ZkFold.Data.Eq
 import ZkFold.FFI.Rust.Conversion
@@ -72,8 +70,6 @@ instance Exponent BLS12_381_GT Fr where
 
 instance Eq Fr where
   (==) a b = (r2h a) == (r2h b)
-
-instance Conditional Bool Fr where bool = Data.Bool.bool
 
 instance ZkFold.Data.Eq.Eq Fr where
   type BooleanOf Fr = Bool

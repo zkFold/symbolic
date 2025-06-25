@@ -21,10 +21,9 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (true))
+import ZkFold.Symbolic.Data.Bool (BoolType (true))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
-import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
@@ -46,8 +45,6 @@ deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldEleme
 deriving newtype instance HNFData c => NFData (FieldElement c)
 
 deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
-
-deriving newtype instance Symbolic c => Conditional (Bool c) (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (FieldElement c)
 

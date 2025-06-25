@@ -34,13 +34,13 @@ infixl 6 +, -, -!
 class Bilinear p s g where
   -- | Bilinear function. Should satisfy the following:
   --
-  --   [First argument linearity] @bilinear c (scale k a + b) == scale k (bilinear c a) + bilinear c b@
-  --   [First argument absorption] @bilinear c zero == zero@
+  -- [First argument linearity] @bilinear c (scale k a + b) == scale k (bilinear c a) + bilinear c b@
+  -- [First argument absorption] @bilinear c zero == zero@
   --
-  --   [Second argument linearity] @bilinear (scale k c + d) a == scale k (bilinear c a) + bilinear d a@
-  --   [Second argument absorption] @bilinear zero a == zero@
+  -- [Second argument linearity] @bilinear (scale k c + d) a == scale k (bilinear c a) + bilinear d a@
+  -- [Second argument absorption] @bilinear zero a == zero@
   --
-  --   The default implementation is the multiplication by a constant.
+  -- The default implementation is the multiplication by a constant.
   bilinear :: p -> s -> g
 
 -- | Every algebraic structure has a handful of "constant types" related
@@ -49,11 +49,11 @@ class Bilinear p s g where
 class FromConstant a b where
   -- | Builds an element of an algebraic structure from a constant.
   --
-  --   @fromConstant@ should preserve algebraic structure, e.g. if both the
-  --   structure and the type of constants are additive monoids, the following
-  --   should hold:
+  -- @fromConstant@ should preserve algebraic structure, e.g. if both the
+  -- structure and the type of constants are additive monoids, the following
+  -- should hold:
   --
-  --   [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
+  -- [Homomorphism] @fromConstant (c + d) == fromConstant c + fromConstant d@
   fromConstant :: a -> b
   default fromConstant :: a ~ b => a -> b
   fromConstant = id
@@ -67,12 +67,12 @@ instance FromConstant a a
 -- [Inverse] @'fromConstant' ('toConstant' x) == x@
 class ToConstant a where
   -- | One of "constant types" related with @a@.
-  --   Typically the smallest type among them by inclusion.
+  -- Typically the smallest type among them by inclusion.
   type Const a :: Type
 
   -- | A way to turn element of @a@ into a @'Const' a@.
-  --   According to the law of @'ToConstant'@,
-  --   has to be right inverse to @'fromConstant'@.
+  -- According to the law of @'ToConstant'@,
+  -- has to be right inverse to @'fromConstant'@.
   toConstant :: a -> Const a
 
 --------------------------------------------------------------------------------
@@ -82,26 +82,26 @@ class ToConstant a where
 class Scale b a where
   -- | A left monoid action on a type. Should satisfy the following:
   --
-  --   [Compatibility] @scale (c * d) a == scale c (scale d a)@
-  --   [Left identity] @scale one a == a@
+  -- [Compatibility] @scale (c * d) a == scale c (scale d a)@
+  -- [Left identity] @scale one a == a@
   --
-  --   If, in addition, a cast from constant is defined, they should agree:
+  -- If, in addition, a cast from constant is defined, they should agree:
   --
-  --   [Scale agrees] @scale c a == fromConstant c * a@
-  --   [Cast agrees] @fromConstant c == scale c one@
+  -- [Scale agrees] @scale c a == fromConstant c * a@
+  -- [Cast agrees] @fromConstant c == scale c one@
   --
-  --   If the action is on an abelian structure, scaling should respect it:
+  -- If the action is on an abelian structure, scaling should respect it:
   --
-  --   [Left distributivity] @scale c (a + b) == scale c a + scale c b@
-  --   [Right absorption] @scale c zero == zero@
+  -- [Left distributivity] @scale c (a + b) == scale c a + scale c b@
+  -- [Right absorption] @scale c zero == zero@
   --
-  --   If, in addition, the scaling itself is abelian, this structure should
-  --   propagate:
+  -- If, in addition, the scaling itself is abelian, this structure should
+  -- propagate:
   --
-  --   [Right distributivity] @scale (c + d) a == scale c a + scale d a@
-  --   [Left absorption] @scale zero a == zero@
+  -- [Right distributivity] @scale (c + d) a == scale c a + scale d a@
+  -- [Left absorption] @scale zero a == zero@
   --
-  --   The default implementation is the multiplication by a constant.
+  -- The default implementation is the multiplication by a constant.
   scale :: b -> a -> a
   default scale :: (FromConstant b a, MultiplicativeSemigroup a) => b -> a -> a
   scale !b !a = a * fromConstant b
@@ -124,12 +124,12 @@ instance MultiplicativeSemigroup a => Scale a a
 class (FromConstant a a, Scale a a) => MultiplicativeSemigroup a where
   -- | A binary associative operation. The following should hold:
   --
-  --   [Associativity] @x * (y * z) == (x * y) * z@
+  -- [Associativity] @x * (y * z) == (x * y) * z@
   (*) :: a -> a -> a
 
   -- | @square@ is offered purely for computational efficiency
-  --   in cases where there exist faster ways to squarean element
-  --   than to multiply it by itself (e.g. Zp)
+  -- in cases where there exist faster ways to squarean element
+  -- than to multiply it by itself (e.g. Zp)
   square :: a -> a
   square a = a * a
 
@@ -141,18 +141,18 @@ product1 = foldl1 (*)
 class Exponent a b where
   -- | A right action on a type.
   --
-  --   If exponents form a semigroup, the following should hold:
+  -- If exponents form a semigroup, the following should hold:
   --
-  --   [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
+  -- [Compatibility] @a ^ (m * n) == (a ^ m) ^ n@
   --
-  --   If exponents form a monoid, the following should also hold:
+  -- If exponents form a monoid, the following should also hold:
   --
-  --   [Right identity] @a ^ one == a@
+  -- [Right identity] @a ^ one == a@
   --
-  --   NOTE, however, that even if exponents form a semigroup, left
-  --   distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is desirable but
-  --   not required: otherwise instance for Bool as exponent could not be made
-  --   lawful.
+  -- NOTE, however, that even if exponents form a semigroup, left
+  -- distributivity (that @a ^ (m + n) == (a ^ m) * (a ^ n)@) is desirable but
+  -- not required: otherwise instance for Bool as exponent could not be made
+  -- lawful.
   (^) :: a -> b -> a
 
 -- | A class of types with a binary associative operation with a multiplicative
@@ -174,8 +174,8 @@ class Exponent a b where
 class (MultiplicativeSemigroup a, Exponent a Natural) => MultiplicativeMonoid a where
   -- | An identity with respect to multiplication:
   --
-  --   [Left identity] @one * x == x@
-  --   [Right identity] @x * one == x@
+  -- [Left identity] @one * x == x@
+  -- [Right identity] @x * one == x@
   one :: a
 
 {-# INLINE natPow #-}
@@ -209,17 +209,17 @@ class (MultiplicativeMonoid a, Exponent a Integer) => MultiplicativeGroup a wher
 
   -- | Division in a group. The following should hold:
   --
-  --   [Division] @x / x == one@
-  --   [Cancellation] @(y / x) * x == y@
-  --   [Agreement] @x / y == x * invert y@
+  -- [Division] @x / x == one@
+  -- [Cancellation] @(y / x) * x == y@
+  -- [Agreement] @x / y == x * invert y@
   (/) :: a -> a -> a
   x / y = x * invert y
 
   -- | Inverse in a group. The following should hold:
   --
-  --   [Left inverse] @invert x * x == one@
-  --   [Right inverse] @x * invert x == one@
-  --   [Agreement] @invert x == one / x@
+  -- [Left inverse] @invert x * x == one@
+  -- [Right inverse] @x * invert x == one@
+  -- [Agreement] @invert x == one / x@
   invert :: a -> a
   invert x = one / x
 
@@ -238,13 +238,13 @@ intPow !a !n
 class FromConstant a a => AdditiveSemigroup a where
   -- | A binary associative commutative operation. The following should hold:
   --
-  --   [Associativity] @x + (y + z) == (x + y) + z@
-  --   [Commutativity] @x + y == y + x@
+  -- [Associativity] @x + (y + z) == (x + y) + z@
+  -- [Commutativity] @x + y == y + x@
   (+) :: a -> a -> a
 
   -- | @double@ is offered purely for computational efficiency
-  --   in cases where there exist faster ways to double an element
-  --   than to add it to itself (e.g. elliptic curves)
+  -- in cases where there exist faster ways to double an element
+  -- than to add it to itself (e.g. elliptic curves)
   double :: a -> a
   double a = a + a
 
@@ -256,7 +256,7 @@ class FromConstant a a => AdditiveSemigroup a where
 class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
   -- | An identity with respect to addition:
   --
-  --   [Identity] @x + zero == x@
+  -- [Identity] @x + zero == x@
   zero :: a
 
 natScale :: AdditiveMonoid a => Natural -> a -> a
@@ -284,15 +284,15 @@ class (AdditiveMonoid a, Scale Integer a) => AdditiveGroup a where
 
   -- | Subtraction in an abelian group. The following should hold:
   --
-  --   [Subtraction] @x - x == zero@
-  --   [Agreement] @x - y == x + negate y@
+  -- [Subtraction] @x - x == zero@
+  -- [Agreement] @x - y == x + negate y@
   (-) :: a -> a -> a
   x - y = x + negate y
 
   -- | Inverse in an abelian group. The following should hold:
   --
-  --   [Negative] @x + negate x == zero@
-  --   [Agreement] @negate x == zero - x@
+  -- [Negative] @x + negate x == zero@
+  -- [Agreement] @negate x == zero - x@
   negate :: a -> a
   negate x = zero - x
 
@@ -384,31 +384,31 @@ type Algebra b a = (Ring a, Scale b a, FromConstant b a)
 -- implementation is provided as an @'intPowF'@ function. You can provide a faster
 -- alternative yourself, but do not forget to check that your implementation
 -- computes the same results on all inputs.
-class (Ring a, Exponent a Integer, Eq a) => Field a where
+class (Ring a, Exponent a Integer, Eq a, Conditional (BooleanOf a) a) => Field a where
   {-# MINIMAL (finv | (//)) #-}
 
   -- | Division in a field. The following should hold:
   --
-  --   [Division] If @x /= 0@, @x // x == one@
-  --   [Div by 0] @x // zero == zero@
-  --   [Agreement] @x // y == x * finv y@
+  -- [Division] If @x /= 0@, @x // x == one@
+  -- [Div by 0] @x // zero == zero@
+  -- [Agreement] @x // y == x * finv y@
   (//) :: a -> a -> a
   x // y = x * finv y
 
   -- | Inverse in a field. The following should hold:
   --
-  --   [Inverse] If @x /= 0@, @x * inverse x == one@
-  --   [Inv of 0] @inverse zero == zero@
-  --   [Agreement] @finv x == one // x@
+  -- [Inverse] If @x /= 0@, @x * inverse x == one@
+  -- [Inv of 0] @inverse zero == zero@
+  -- [Agreement] @finv x == one // x@
   finv :: a -> a
   finv x = one // x
 
   -- | @rootOfUnity n@ is an element of a characteristic @2^n@, that is,
   --
-  --   [Root of 0] @rootOfUnity 0 == Just one@
-  --   [Root property] If @rootOfUnity n == Just x@, @x ^ (2 ^ n) == one@
-  --   [Smallest root] If @rootOfUnity n == Just x@ and @m < n@, @x ^ (2 ^ m) /= one@
-  --   [All roots] If @rootOfUnity n == Just x@ and @m < n@, @rootOfUnity m /= Nothing@
+  -- [Root of 0] @rootOfUnity 0 == Just one@
+  -- [Root property] If @rootOfUnity n == Just x@, @x ^ (2 ^ n) == one@
+  -- [Smallest root] If @rootOfUnity n == Just x@ and @m < n@, @x ^ (2 ^ m) /= one@
+  -- [All roots] If @rootOfUnity n == Just x@ and @m < n@, @rootOfUnity m /= Nothing@
   rootOfUnity :: Natural -> Maybe a
   rootOfUnity 0 = Just one
   rootOfUnity _ = Nothing

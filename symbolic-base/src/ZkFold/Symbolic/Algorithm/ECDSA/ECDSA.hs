@@ -9,10 +9,10 @@ import GHC.TypeLits (KnownNat)
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Control.Conditional (ifThenElse)
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
 import ZkFold.Symbolic.Data.UInt (UInt)
