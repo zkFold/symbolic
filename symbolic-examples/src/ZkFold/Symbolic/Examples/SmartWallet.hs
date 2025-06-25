@@ -359,7 +359,7 @@ expModProof x ps ac ExpModProofInput {..} = proof
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 15
+type ExpModCircuitGatesMock = 2 ^ 10
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
