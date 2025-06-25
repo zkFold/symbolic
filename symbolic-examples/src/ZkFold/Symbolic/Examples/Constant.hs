@@ -1,22 +1,22 @@
-module ZkFold.Symbolic.Examples.Constant
-    ( exampleConst
-    , exampleConditionalConst
-    , exampleConditionalConstConst
-    , exampleEqConst
-    , exampleEqVectorConst) where
+module ZkFold.Symbolic.Examples.Constant (
+  exampleConst,
+  exampleConditionalConst,
+  exampleConditionalConstConst,
+  exampleEqConst,
+  exampleEqVectorConst,
+) where
 
-import           Control.Monad.Representable.Reader   (Representable (tabulate))
-import           Data.Function                        (const, ($))
+import Control.Monad.Representable.Reader (Representable (tabulate))
+import Data.Function (const, ($))
+import ZkFold.Algebra.Class (FromConstant (..))
+import ZkFold.Algebra.Number (KnownNat, Natural)
+import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
-import           ZkFold.Algebra.Class                 (FromConstant (..))
-import           ZkFold.Algebra.Number                (KnownNat, Natural)
-import           ZkFold.Data.Vector                   (Vector)
-import           ZkFold.Symbolic.Class                (Symbolic)
-import           ZkFold.Symbolic.Data.Bool            (Bool)
-import           ZkFold.Symbolic.Data.FieldElement    (FieldElement)
-import           ZkFold.Symbolic.Examples.Conditional (exampleConditional)
-import           ZkFold.Symbolic.Examples.Eq          (exampleEq, exampleEqVector)
-
+import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
+import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
 
 exampleConst :: Symbolic c => FieldElement c
 exampleConst = fromConstant (5 :: Natural)
@@ -30,7 +30,8 @@ exampleConditionalConstConst b = exampleConditional b (fromConstant @Natural 3) 
 exampleEqConst :: Symbolic c => FieldElement c -> Bool c
 exampleEqConst = exampleEq exampleConst
 
-exampleEqVectorConst :: (KnownNat n, Symbolic c)
-    => Vector n (FieldElement c)
-    -> Bool c
+exampleEqVectorConst
+  :: (KnownNat n, Symbolic c)
+  => Vector n (FieldElement c)
+  -> Bool c
 exampleEqVectorConst = exampleEqVector (tabulate $ const exampleConst)

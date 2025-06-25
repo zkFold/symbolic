@@ -2,7 +2,7 @@
 
 module ZkFold.UPLC.BuiltinFunction where
 
-import           ZkFold.UPLC.BuiltinType (BuiltinType (..))
+import ZkFold.UPLC.BuiltinType (BuiltinType (..))
 
 -- | Builtin functions available on Cardano network.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf) (accessed in Nov 2024)
@@ -14,10 +14,10 @@ import           ZkFold.UPLC.BuiltinType (BuiltinType (..))
 -- 2. Monomorphic and polymorphic functions are treated differently in the
 --    Converter so here they are split in two types for convenience.
 data BuiltinFunction s t
-    -- | Monomorphic builtin functions.
-  = BFMono (BuiltinMonoFunction s t)
-    -- | Polymorphic builtin functions.
-  | BFPoly (BuiltinPolyFunction s t)
+  = -- | Monomorphic builtin functions.
+    BFMono (BuiltinMonoFunction s t)
+  | -- | Polymorphic builtin functions.
+    BFPoly (BuiltinPolyFunction s t)
 
 -- | Builtin monomorphic functions available on Cardano network.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf) (accessed in Nov 2024)
@@ -34,10 +34,10 @@ data BuiltinMonoFunction (s :: [BuiltinType]) (t :: BuiltinType)
   | BMFString (BuiltinStringFunction s t)
   | BMFAlgorithm (BuiltinAlgorithm s t)
   | BMFData (BuiltinDataFunction s t)
-    -- | Available since Batch 4
-  | BMFCurve (BuiltinBLSFunction s t)
-    -- | Available since Batch 5
-  | BMFBitwise (BuiltinBitwiseFunction s t)
+  | -- | Available since Batch 4
+    BMFCurve (BuiltinBLSFunction s t)
+  | -- | Available since Batch 5
+    BMFBitwise (BuiltinBitwiseFunction s t)
 
 -- | Builtin polymorphic functions available on Cardano network.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf) (accessed in Nov 2024)

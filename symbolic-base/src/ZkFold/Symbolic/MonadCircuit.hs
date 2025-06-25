@@ -1,23 +1,23 @@
-{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
-import           Control.Monad                                     (Monad (return))
-import           Data.Binary                                       (Binary)
-import           Data.Foldable                                     (Foldable)
-import           Data.Function                                     (($), (.))
-import           Data.Functor.Rep                                  (Rep, Representable)
-import           Data.Kind                                         (Type)
-import           Data.Set                                          (singleton)
-import           Data.Traversable                                  (Traversable)
-import           Data.Typeable                                     (Typeable)
-import           GHC.Generics                                      (Par1 (..))
-import           Prelude                                           (Integer)
+import Control.Monad (Monad (return))
+import Data.Binary (Binary)
+import Data.Foldable (Foldable)
+import Data.Function (($), (.))
+import Data.Functor.Rep (Rep, Representable)
+import Data.Kind (Type)
+import Data.Set (singleton)
+import Data.Traversable (Traversable)
+import Data.Typeable (Typeable)
+import GHC.Generics (Par1 (..))
+import Prelude (Integer)
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field                              (Zp)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
@@ -48,7 +48,7 @@ class ResidueField w => Witness i w | w -> i where
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type ClosedPoly var a = forall x . Algebra a x => (var -> x) -> x
+type ClosedPoly var a = forall x. Algebra a x => (var -> x) -> x
 
 -- | A type of constraints for new variables.
 -- @var@ is a type of variables, @a@ is a base field.
@@ -60,7 +60,7 @@ type ClosedPoly var a = forall x . Algebra a x => (var -> x) -> x
 --
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
-type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
+type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 
 -- | A monadic DSL for constructing arithmetic circuits.
 -- @var@ is a type of variables, @a@ is a base field, @w@ is a type of witnesses
@@ -78,44 +78,53 @@ type NewConstraint var a = forall x . Algebra a x => (var -> x) -> var -> x
 -- * That provided witnesses satisfy the provided constraints. To check this,
 --   you can use 'ZkFold.Symbolic.Compiler.ArithmeticCircuit.checkCircuit'.
 -- * That introduced constraints are supported by the zk-SNARK utilized for later proving.
-class ( Monad m, FromConstant a var
-      , FromConstant a w, Scale a w, Witness var w
-      ) => MonadCircuit var a w m | m -> var, m -> a, m -> w where
+class
+  ( Monad m
+  , FromConstant a var
+  , FromConstant a w
+  , Scale a w
+  , Witness var w
+  ) =>
+  MonadCircuit var a w m
+    | m -> var
+    , m -> a
+    , m -> w
+  where
   -- | Creates new variable from witness.
   --
-  -- NOTE: this does not add any constraints to the system,
-  -- use 'rangeConstraint' or 'constraint' to add them.
+  --   NOTE: this does not add any constraints to the system,
+  --   use 'rangeConstraint' or 'constraint' to add them.
   unconstrained :: w -> m var
 
   -- | Adds new polynomial constraint to the system.
-  -- E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
+  --   E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
   --
-  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
+  --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   constraint :: ClosedPoly var a -> m ()
 
   -- | Registers new lookup function in the system to be used in lookup tables
-  -- (see 'lookupConstraint').
-  registerFunction ::
-    (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g) =>
-    (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
+  --   (see 'lookupConstraint').
+  registerFunction
+    :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
+    => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.
-  -- For examples of lookup constraints, see 'rangeConstraint'.
+  --   For examples of lookup constraints, see 'rangeConstraint'.
   --
-  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-  lookupConstraint ::
-    (Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
+  --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
+  lookupConstraint
+    :: (Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
 
   -- | Creates new variable given a polynomial witness
-  -- AND adds a corresponding polynomial constraint.
+  --   AND adds a corresponding polynomial constraint.
   --
-  -- E.g., @'newAssigned' (\\x -> x i + x j)@ creates new variable @k@
-  -- whose value is equal to \(x_i + x_j\)
-  -- and a constraint \(x_i + x_j - x_k = 0\).
+  --   E.g., @'newAssigned' (\\x -> x i + x j)@ creates new variable @k@
+  --   whose value is equal to \(x_i + x_j\)
+  --   and a constraint \(x_i + x_j - x_k = 0\).
   --
-  -- NOTE: this adds a polynomial constraint to the system.
+  --   NOTE: this adds a polynomial constraint to the system.
   --
-  -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
+  --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   newAssigned :: ClosedPoly var a -> m var
   newAssigned p = newConstrained (\x var -> p x - x var) (p at)
 
@@ -126,7 +135,7 @@ class ( Monad m, FromConstant a var
 -- For now, this is handled partially with the help of 'desugarRanges' function.
 rangeConstraint :: (AdditiveMonoid a, MonadCircuit var a w m) => var -> a -> m ()
 rangeConstraint v upperBound =
-    lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
+  lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
 -- | Creates new variable from witness constrained with an inclusive upper bound.
 -- E.g., @'newRanged' b (\\x -> x var - one)@ creates new variable whose value

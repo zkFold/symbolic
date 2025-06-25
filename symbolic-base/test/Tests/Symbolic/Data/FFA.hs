@@ -2,28 +2,29 @@
 
 module Tests.Symbolic.Data.FFA (specFFA) where
 
-import           Data.Function                              (($))
-import           Data.List                                  ((++))
-import           GHC.Generics                               (U1)
-import           Prelude                                    (Integer)
-import           Test.Hspec                                 (Spec, describe)
-import           Test.QuickCheck                            (Property, (===))
-import           Tests.Common                               (it)
-import           Text.Show                                  (show)
+import Data.Function (($))
+import Data.List ((++))
+import GHC.Generics (U1)
+import Test.Hspec (Spec, describe)
+import Test.QuickCheck (Property, (===))
+import Text.Show (show)
+import Prelude (Integer)
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381     (BLS12_381_Scalar)
-import           ZkFold.Algebra.EllipticCurve.Pasta         (FpModulus, FqModulus)
-import           ZkFold.Algebra.Field                       (Zp)
-import           ZkFold.Algebra.Number                      (Prime, value)
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
-import           ZkFold.Symbolic.Data.Combinators           (KnownRegisterSize (..), RegisterSize (..))
-import           ZkFold.Symbolic.Data.FFA                   (FFA (FFA), KnownFFA)
-import           ZkFold.Symbolic.Data.FieldElement          (FieldElement (FieldElement))
-import           ZkFold.Symbolic.Data.UInt                  (UInt (..))
-import           ZkFold.Symbolic.Interpreter                (Interpreter (Interpreter))
+import Tests.Common (it)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Algebra.Number (Prime, value)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize (..), RegisterSize (..))
+import ZkFold.Symbolic.Data.FFA (FFA (FFA), KnownFFA)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
+import ZkFold.Symbolic.Data.UInt (UInt (..))
+import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
 
 type Prime256_1 = FpModulus
+
 type Prime256_2 = FqModulus
 
 specFFA :: Spec
@@ -53,24 +54,28 @@ specFFA' = do
     it "powers correctly" $ \(x :: Zp q) (e :: Integer) ->
       execAcFFA @p @q @r (fromConstant x ^ e) === x ^ e
 
-execAcFFA ::
-  forall p q r.
-  (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) =>
-  FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
+execAcFFA
+  :: forall p q r
+   . (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+  => FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
 execAcFFA (FFA (FieldElement nv) (UInt uv)) =
-  execZpFFA $ FFA (FieldElement $ Interpreter $ exec nv)
-                  (UInt @_ @r $ Interpreter $ exec uv)
+  execZpFFA $
+    FFA
+      (FieldElement $ Interpreter $ exec nv)
+      (UInt @_ @r $ Interpreter $ exec uv)
 
-execZpFFA ::
-  (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) =>
-  FFA q r (Interpreter (Zp p)) -> Zp q
+execZpFFA
+  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+  => FFA q r (Interpreter (Zp p)) -> Zp q
 execZpFFA = toConstant
 
 type Binary a = a -> a -> a
+
 type Predicate a = a -> a -> Property
 
-isHom ::
-  (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p))) =>
-  Binary (FFA q r (Interpreter (Zp p))) ->
-  Binary (FFA q r (ArithmeticCircuit (Zp p) U1)) -> Predicate (Zp q)
+isHom
+  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
+  => Binary (FFA q r (Interpreter (Zp p)))
+  -> Binary (FFA q r (ArithmeticCircuit (Zp p) U1))
+  -> Predicate (Zp q)
 isHom f g x y = execAcFFA (fromConstant x `g` fromConstant y) === execZpFFA (fromConstant x `f` fromConstant y)

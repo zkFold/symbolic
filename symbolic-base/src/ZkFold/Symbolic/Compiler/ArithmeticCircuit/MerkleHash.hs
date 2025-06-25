@@ -2,28 +2,40 @@
 
 module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash where
 
-import           Crypto.Hash.SHA256           (hash)
-import           Data.Binary                  (Binary (..))
-import           Data.ByteString              (ByteString)
-import           Data.Function                ((.))
-import           Data.Maybe                   (Maybe (..))
-import           GHC.Generics                 (Generic)
-import           Numeric.Natural              (Natural)
-import           Prelude                      (Integer, error)
+import Crypto.Hash.SHA256 (hash)
+import Data.Binary (Binary (..))
+import Data.ByteString (ByteString)
+import Data.Function ((.))
+import Data.Maybe (Maybe (..))
+import GHC.Generics (Generic)
+import Numeric.Natural (Natural)
+import Prelude (Integer, error)
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.Field         (Zp)
-import           ZkFold.Control.Conditional   (Conditional (..))
-import           ZkFold.Data.Bool             (BoolType (..))
-import           ZkFold.Data.ByteString       (toByteString)
-import           ZkFold.Data.Eq               (Eq (..))
-import           ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.ByteString (toByteString)
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
-newtype MerkleHash (n :: Maybe Natural) = M { runHash :: ByteString }
+newtype MerkleHash (n :: Maybe Natural) = M {runHash :: ByteString}
 
-data Prec = If | Or | Eq | Neq | Add | Mul | Div | Mod
-          | Gcd | BezoutL | BezoutR | Exp | Const
-  deriving (Generic, Binary)
+data Prec
+  = If
+  | Or
+  | Eq
+  | Neq
+  | Add
+  | Mul
+  | Div
+  | Mod
+  | Gcd
+  | BezoutL
+  | BezoutR
+  | Exp
+  | Const
+  deriving (Binary, Generic)
 
 merkleHash :: Binary a => a -> MerkleHash n
 merkleHash = M . hash . toByteString

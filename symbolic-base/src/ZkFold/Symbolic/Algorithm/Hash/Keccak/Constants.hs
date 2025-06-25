@@ -7,17 +7,17 @@ module ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants (
   emptyState,
 ) where
 
-import           Data.Function                   (($))
-import           Data.Functor                    (Functor (..))
-import           Data.Functor.Rep                (Representable (..))
-import           GHC.IsList                      (fromList)
-import           GHC.TypeNats                    (Natural)
+import Data.Function (($))
+import Data.Functor (Functor (..))
+import Data.Functor.Rep (Representable (..))
+import GHC.IsList (fromList)
+import GHC.TypeNats (Natural)
 
-import           ZkFold.Algebra.Class            (FromConstant (..))
-import           ZkFold.Algebra.Field            (Zp)
-import           ZkFold.Data.Vector              (Vector (..))
-import           ZkFold.Symbolic.Class           (Symbolic)
-import           ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Algebra.Class (FromConstant (..))
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Data.Vector (Vector (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 -- | The number of rounds in the Keccak-f[1600] permutation.
 type NumRounds :: Natural
@@ -27,10 +27,9 @@ type NumRounds = 24
 type NumLanes :: Natural
 type NumLanes = 25
 
-{- | Keccak round constants for the 24 rounds.
-
-These are the first 64 bits of the binary expansion of the fractional parts of the cube roots of the first 24 prime numbers.
--}
+-- | Keccak round constants for the 24 rounds.
+--
+-- These are the first 64 bits of the binary expansion of the fractional parts of the cube roots of the first 24 prime numbers.
 roundConstants :: Symbolic context => Vector NumRounds (ByteString 64 context)
 roundConstants =
   fromList $
@@ -62,9 +61,8 @@ roundConstants =
       , 0x8000000080008008
       ]
 
-{- | Rotation offsets for the Keccak-f[1600] permutation.
-These are the rotation offsets for each lane in the 5x5 state array.
--}
+-- | Rotation offsets for the Keccak-f[1600] permutation.
+-- These are the rotation offsets for each lane in the 5x5 state array.
 rotationConstants :: Vector NumLanes Natural
 rotationConstants =
   fromList
@@ -95,12 +93,11 @@ rotationConstants =
     , 14
     ]
 
-{- | The pi constants for the Keccak-f[1600] permutation.
-
-These constants define the lane permutation in the π step of Keccak-f[1600].
-Each value represents the new position for the lane at that index in the 5x5 state array.
-For example, the lane at position 1 moves to position 15, position 2 moves to position 5, etc.
--}
+-- | The pi constants for the Keccak-f[1600] permutation.
+--
+-- These constants define the lane permutation in the π step of Keccak-f[1600].
+-- Each value represents the new position for the lane at that index in the 5x5 state array.
+-- For example, the lane at position 1 moves to position 15, position 2 moves to position 5, etc.
 piConstants :: Vector NumLanes (Zp NumLanes)
 piConstants =
   fromList

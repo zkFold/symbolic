@@ -2,21 +2,25 @@
 
 module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
-import           Data.Function                          (id, ($))
-import           Data.List                              ((++))
-import           Prelude                                (Integer)
-import           Test.Hspec                             (Spec, describe)
-import           Test.QuickCheck                        (arbitrary)
-import           Tests.Symbolic.Data.Common             (specConstantRoundtrip, specSymbolicFunction0,
-                                                         specSymbolicFunction1, specSymbolicFunction1WithPar,
-                                                         specSymbolicFunction2)
+import Data.Function (id, ($))
+import Data.List ((++))
+import Test.Hspec (Spec, describe)
+import Test.QuickCheck (arbitrary)
+import Prelude (Integer)
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import           ZkFold.Algebra.Field                   (Zp)
-import           ZkFold.Symbolic.Data.FieldElement      (FieldElement)
+import Tests.Symbolic.Data.Common (
+  specConstantRoundtrip,
+  specSymbolicFunction0,
+  specSymbolicFunction1,
+  specSymbolicFunction1WithPar,
+  specSymbolicFunction2,
+ )
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
-specFieldElement' :: forall p . (PrimeField (Zp p)) => Spec
+specFieldElement' :: forall p. PrimeField (Zp p) => Spec
 specFieldElement' = do
   describe ("FieldElement" ++ " specification") $ do
     specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp" arbitrary
@@ -30,7 +34,8 @@ specFieldElement' = do
     specSymbolicFunction1 @(Zp p) @FieldElement "inversion" finv
     specSymbolicFunction2 @(Zp p) @FieldElement "division" (//)
     specSymbolicFunction1WithPar @Integer @(Zp p) @FieldElement "exponentiation" (\e x -> x ^ e)
-    -- Type-specific tests go here
+
+-- Type-specific tests go here
 
 specFieldElement :: Spec
 specFieldElement = do

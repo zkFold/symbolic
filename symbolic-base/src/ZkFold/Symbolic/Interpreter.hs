@@ -1,38 +1,37 @@
-{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
 
-import           Control.Applicative                               (Applicative)
-import           Control.DeepSeq                                   (NFData (..), NFData1 (..))
-import           Control.Monad                                     (Monad, return)
-import           Data.Aeson                                        (FromJSON, ToJSON)
-import           Data.Eq                                           (Eq (..))
-import           Data.Function                                     (id, on, ($), (.))
-import           Data.Functor                                      (Functor, (<$>))
-import           Data.Functor.Identity                             (Identity (..))
-import           Data.List                                         (foldl')
-import           Data.List.Infinite                                (toList)
-import           Data.Tuple                                        (uncurry)
-import           GHC.Generics                                      (Generic, Par1 (..))
-import           Text.Show                                         (Show (..))
+import Control.Applicative (Applicative)
+import Control.DeepSeq (NFData (..), NFData1 (..))
+import Control.Monad (Monad, return)
+import Data.Aeson (FromJSON, ToJSON)
+import Data.Eq (Eq (..))
+import Data.Function (id, on, ($), (.))
+import Data.Functor (Functor, (<$>))
+import Data.Functor.Identity (Identity (..))
+import Data.List (foldl')
+import Data.List.Infinite (toList)
+import Data.Tuple (uncurry)
+import GHC.Generics (Generic, Par1 (..))
+import Text.Show (Show (..))
 
-import           ZkFold.Algebra.Class
-import           ZkFold.Control.HApplicative
-import           ZkFold.Data.HFunctor
-import           ZkFold.Data.HFunctor.Classes                      (HEq (..), HNFData (..), HShow (..))
-import           ZkFold.Data.Package
-import           ZkFold.Prelude                                    (take)
-import           ZkFold.Symbolic.Class
-import           ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
-import           ZkFold.Symbolic.Fold
-import           ZkFold.Symbolic.MonadCircuit
+import ZkFold.Algebra.Class
+import ZkFold.Control.HApplicative
+import ZkFold.Data.HFunctor
+import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
+import ZkFold.Data.Package
+import ZkFold.Prelude (take)
+import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..))
+import ZkFold.Symbolic.Fold
+import ZkFold.Symbolic.MonadCircuit
 
-newtype Interpreter a f = Interpreter { runInterpreter :: f a }
-    deriving (Eq, Show, Generic)
-    deriving newtype (FromJSON, ToJSON)
+newtype Interpreter a f = Interpreter {runInterpreter :: f a}
+  deriving (Eq, Generic, Show)
+  deriving newtype (FromJSON, ToJSON)
 
 instance Eq a => HEq (Interpreter a) where
   hliftEq f = f (==) `on` runInterpreter
@@ -66,13 +65,14 @@ instance Arithmetic a => Symbolic (Interpreter a) where
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
   sfoldl fun seed pload _ stream (Interpreter (Par1 cnt)) =
-    foldl' ((. Interpreter) . uncurry fun) (seed, pload)
-      $ take (toConstant cnt) $ toList stream
+    foldl' ((. Interpreter) . uncurry fun) (seed, pload) $
+      take (toConstant cnt) $
+        toList stream
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.
-newtype Witnesses a x = Witnesses { runWitnesses :: x }
-  deriving (Functor, Applicative, Monad) via Identity
+newtype Witnesses a x = Witnesses {runWitnesses :: x}
+  deriving (Applicative, Functor, Monad) via Identity
 
 instance Arithmetic a => Witness a a where
   at = id
