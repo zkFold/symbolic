@@ -28,6 +28,13 @@ import Text.Show (Show, show)
 import Prelude (Double, Integral)
 import qualified Prelude as P
 
+#if defined(wasm32_HOST_ARCH)
+import           GHC.Wasm.Prim
+import           System.IO.Unsafe     (unsafePerformIO)
+#else
+import qualified Debug.Trace as Trace
+#endif
+
 log2ceiling :: (Integral a, Integral b) => a -> b
 log2ceiling = P.ceiling @Double . P.logBase 2 . P.fromIntegral
 
@@ -144,3 +151,26 @@ zipVectorsWithDefault d f u v = V.zipWith f u' v'
   lv = V.length v
   u' = if lu < lv then u V.++ V.replicate (lv P.- lu) d else u
   v' = if lv < lu then v V.++ V.replicate (lu P.- lv) d else v
+
+-- Backend-specific trace functions
+
+#if defined(wasm32_HOST_ARCH)
+foreign import javascript unsafe "console.log($1)"
+  js_print :: JSString -> IO ()
+
+-- | traces from Debug.Trace do not work in wasm. For pure debug logs in wasm, these functions must me used.
+--
+traceWith :: (a -> P.String) -> P.String -> a -> a
+traceWith f string expr = unsafePerformIO $ do
+    js_print $ toJSString (string P.<> f expr)
+    return expr
+#else
+traceWith :: (a -> P.String) -> P.String -> a -> a
+traceWith f s a = Trace.trace (s P.<> f a) a
+#endif
+
+traceShow :: Show a => P.String -> a -> a
+traceShow = traceWith show
+
+trace :: P.String -> a -> a
+trace = traceWith (const "")
