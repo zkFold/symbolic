@@ -40,7 +40,7 @@ import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Algorithm.Interpolation (interpolation)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField)
 
 type PayloadFunctor f = (Representable f, Binary (R.Rep f))
@@ -127,7 +127,7 @@ instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
 
   arithmetize = const
   payload _ _ = U1
-  interpolate = interpolation
+  interpolate = I.interpolate
   restore = fst . ($ Proxy)
 
 instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where

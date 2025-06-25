@@ -38,11 +38,11 @@ interpolateW fs pt =
         let is = (`index` r) . snd <$> toList fs
          in sum [i * k | (i, k) <- P.zip is ks]
 
-interpolation
+interpolate
   :: forall c f
    . (Symbolic c, Representable f, Traversable f)
   => NonEmpty (BaseField c, c f) -> c Par1 -> c f
-interpolation bs point = symbolic2F
+interpolate bs point = symbolic2F
   (pack $ Comp1 bs)
   point
   (\(Comp1 (Comp1 fs)) (Par1 x) -> fromJust . lookup x $ toList fs)
