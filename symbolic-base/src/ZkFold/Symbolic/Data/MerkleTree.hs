@@ -19,12 +19,13 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (integral, value)
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Package
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (false))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (false), bool)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (
   Iso (from),
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Data.Combinators (
   mzipWithMRep,
   withNumberOfRegisters,
  )
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement, fromFieldElement))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.List
@@ -158,15 +158,10 @@ instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
 
 instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
 
-instance
-  (SymbolicData h, KnownNat d, Context h ~ c)
-  => Conditional (Bool c) (MerkleTree d h)
-
 -- | Finds an element satisfying the constraint
 find
   :: forall c h d
-   . ( Conditional (Bool c) h
-     , SymbolicInput h
+   . ( SymbolicInput h
      , Context h ~ c
      , SymbolicFold c
      )
@@ -180,8 +175,6 @@ newtype MerkleTreePath (d :: Natural) c = MerkleTreePath {mPath :: Vector (d - 1
   deriving Generic
 
 instance (Symbolic c, KnownNat (d - 1)) => SymbolicData (MerkleTreePath d c)
-
-instance (Symbolic c, KnownNat (d - 1)) => Conditional (Bool c) (MerkleTreePath d c)
 
 -- | Finds a path to an element satisfying the constraint
 findPath

@@ -7,7 +7,6 @@ import GHC.Generics (Generic)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -31,8 +30,6 @@ data Address context = Address
 deriving instance HEq context => Haskell.Eq (Address context)
 
 instance Symbolic context => Eq (Address context)
-
-instance Symbolic context => Conditional (Bool context) (Address context)
 
 instance Symbolic context => SymbolicData (Address context)
 

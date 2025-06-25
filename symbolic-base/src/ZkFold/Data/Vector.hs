@@ -20,14 +20,7 @@ import Data.Foldable (Foldable, fold)
 import Data.Function (const, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1, Show1)
-import Data.Functor.Rep (
-  Representable (..),
-  collectRep,
-  distributeRep,
-  mzipRep,
-  mzipWithRep,
-  pureRep,
- )
+import Data.Functor.Rep (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
 import Data.Semigroup ((<>))
@@ -49,7 +42,6 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
-import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.ByteString (Binary (..))
 import ZkFold.Data.Eq
@@ -59,10 +51,7 @@ newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
   deriving newtype (FromJSON, ToJSON)
 
-instance (KnownNat n, Conditional bool x) => Conditional bool (Vector n x) where
-  bool fv tv b = mzipWithRep (\f t -> bool f t b) fv tv
-
-instance (KnownNat n, Eq x) => Eq (Vector n x) where
+instance Eq x => Eq (Vector n x) where
   type BooleanOf (Vector n x) = BooleanOf x
   u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
   u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))

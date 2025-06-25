@@ -10,11 +10,11 @@ import GHC.TypeLits (KnownNat)
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
 import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 

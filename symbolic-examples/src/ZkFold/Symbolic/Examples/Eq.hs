@@ -1,6 +1,5 @@
 module ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector) where
 
-import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
@@ -11,7 +10,8 @@ exampleEq :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 exampleEq x y = x == y
 
 exampleEqVector
-  :: (KnownNat n, Symbolic c)
+  :: forall n c
+   . Symbolic c
   => Vector n (FieldElement c)
   -> Vector n (FieldElement c)
   -> Bool c

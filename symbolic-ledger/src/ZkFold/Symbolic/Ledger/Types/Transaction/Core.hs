@@ -13,11 +13,11 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
 ) where
 
 import GHC.Generics (Generic)
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
 import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.List (List)
@@ -58,14 +58,6 @@ instance
   , Symbolic context
   )
   => SymbolicData (Transaction context)
-
-instance
-  ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
-  , Symbolic context
-  )
-  => Conditional (Bool context) (Transaction context)
 
 instance
   ( KnownRegistersAssetQuantity context
@@ -137,10 +129,6 @@ instance
   (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context)
   => SymbolicData (OutputRef context)
 
-instance
-  (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context)
-  => Conditional (Bool context) (OutputRef context)
-
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (OutputRef context)
 
 -- | Input to a transaction.
@@ -155,9 +143,5 @@ data Input context = Input
 instance
   (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context)
   => SymbolicData (Input context)
-
-instance
-  (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context)
-  => Conditional (Bool context) (Input context)
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (Input context)

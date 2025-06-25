@@ -10,9 +10,9 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData (
 
 import Data.Function ((&))
 import GHC.Generics (Generic)
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
 import ZkFold.Symbolic.Data.Eq (Eq, (==))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
@@ -32,8 +32,6 @@ data TransactionBatchDataWitness context = TransactionBatchDataWitness
   deriving stock Generic
 
 instance Signature context => SymbolicData (TransactionBatchDataWitness context)
-
-instance Signature context => Conditional (Bool context) (TransactionBatchDataWitness context)
 
 instance Signature context => Eq (TransactionBatchDataWitness context)
 

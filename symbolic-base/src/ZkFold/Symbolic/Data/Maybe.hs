@@ -26,7 +26,6 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 
 data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
@@ -40,8 +39,6 @@ data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
 deriving stock instance (HEq c, Haskell.Eq x) => Haskell.Eq (Maybe c x)
 
 instance (SymbolicOutput x, Context x ~ c) => SymbolicData (Maybe c x)
-
-instance (SymbolicOutput x, Context x ~ c, Conditional (Bool c) x) => Conditional (Bool c) (Maybe c x)
 
 instance (Context x ~ c, SymbolicEq x) => Eq (Maybe c x)
 
@@ -72,7 +69,7 @@ maybe d h m = fromMaybe d (h <$> m)
 
 find
   :: forall a c t
-   . (SymbolicOutput a, Context a ~ c, Haskell.Foldable t, Conditional (Bool c) a)
+   . (SymbolicOutput a, Context a ~ c, Haskell.Foldable t)
   => (a -> Bool c) -> t a -> Maybe c a
 find p =
   let n = nothing

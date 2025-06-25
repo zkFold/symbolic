@@ -31,7 +31,7 @@ import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (
@@ -43,7 +43,6 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.Conditional (Conditional (..))
 import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
@@ -96,8 +95,6 @@ instance (Symbolic c, KnownFFA p r c) => SymbolicInput (FFA p r c) where
 instance HNFData c => NFData (FFA p r c)
 
 deriving stock instance HShow c => Show (FFA p r c)
-
-instance (Symbolic c, KnownFFA p r c, b ~ Bool c) => Conditional b (FFA p r c)
 
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
 

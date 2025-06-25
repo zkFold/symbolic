@@ -8,10 +8,8 @@ import GHC.Generics (Generic)
 import ZkFold.Algebra.Number
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
@@ -27,14 +25,6 @@ data Input tokens datum context = Input
   , txiOutput :: Output tokens datum context
   }
   deriving Generic
-
-instance
-  ( Symbolic context
-  , KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
-  )
-  => Conditional (Bool context) (Input tokens datum context)
 
 instance
   ( Symbolic context

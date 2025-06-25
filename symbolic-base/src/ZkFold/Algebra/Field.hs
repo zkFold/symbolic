@@ -20,7 +20,6 @@ import Control.Applicative (liftA2, pure, (<*>), (<|>))
 import Control.DeepSeq (NFData (..))
 import Data.Aeson (FromJSON (..), FromJSONKey, ToJSON (..), ToJSONKey)
 import Data.Bool (Bool)
-import qualified Data.Bool as Bool
 import Data.Function (const, id, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.List ((++))
@@ -135,8 +134,6 @@ instance KnownNat p => Ring (Zp p)
 instance Prime p => Exponent (Zp p) Integer where
   -- \| By Fermat's little theorem
   a ^ n = a ^ (Haskell.fromIntegral $ n `Haskell.mod` (fromConstant (value @p) - 1) :: Natural)
-
-instance Conditional Bool (Zp n) where bool = Bool.bool
 
 instance KnownNat n => Eq (Zp n) where
   type BooleanOf (Zp n) = Bool
@@ -277,11 +274,16 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext2
 instance Field (Ext2 f e) => Exponent (Ext2 f e) Integer where
   (^) = intPowF
 
-instance Conditional bool field => Conditional bool (Ext2 field i)
-
 instance Eq field => Eq (Ext2 field i)
 
-instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext2 f e) where
+instance
+  ( Field f
+  , Eq f
+  , Conditional (BooleanOf f) (Ext2 f e)
+  , IrreduciblePoly poly f e
+  )
+  => Field (Ext2 f e)
+  where
   finv (Ext2 a b) =
     let (g, s) = eea (toPoly [a, b]) (irreduciblePoly @poly @f @e)
      in case fromPoly $ scaleP (one // lt g) 0 s of
@@ -346,11 +348,16 @@ instance (Field f, Eq f, IrreduciblePoly poly f e) => MultiplicativeMonoid (Ext3
 instance Field (Ext3 f e) => Exponent (Ext3 f e) Integer where
   (^) = intPowF
 
-instance Conditional bool field => Conditional bool (Ext3 field i)
-
 instance Eq field => Eq (Ext3 field i)
 
-instance (Field f, Eq f, IrreduciblePoly poly f e) => Field (Ext3 f e) where
+instance
+  ( Field f
+  , Eq f
+  , Conditional (BooleanOf f) (Ext3 f e)
+  , IrreduciblePoly poly f e
+  )
+  => Field (Ext3 f e)
+  where
   finv (Ext3 a b c) =
     let (g, s) = eea (toPoly [a, b, c]) (irreduciblePoly @poly @f @e)
      in case fromPoly $ scaleP (one // lt g) 0 s of

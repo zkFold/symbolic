@@ -14,7 +14,6 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
 
 type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_Base 'Auto ctx))
@@ -47,7 +46,7 @@ instance
   scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar 'Auto ctx)) x =
     sum $
       Prelude.zipWith
-        (\b p -> bool @(Bool ctx) zero p (isSet bits b))
+        (\b p -> bool zero p (isSet bits b))
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
