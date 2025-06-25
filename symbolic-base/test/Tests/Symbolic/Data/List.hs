@@ -11,7 +11,6 @@ import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary)
 import Text.Show (Show)
-
 import ZkFold.Algebra.Class (one)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -20,7 +19,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (acContext, eval1)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Class (symFunc1, symFunc2)
 import ZkFold.Symbolic.Data.Eq ((==))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.List (List, emptyList, foldr, head, lSize, tail, (.:))
@@ -46,15 +44,15 @@ specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
 specList' = describe "List spec" $ do
   let _headChecks =
         -- compile-time test
-        acOutput $ acContext (compile @a $ symFunc1 headFun)
+        acOutput $ acContext (compile @a headFun)
   prop "Head works fine" $ \x y ->
-    eval1 (compile @a $ symFunc2 headTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (compile @a headTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
   prop "Tail works fine" $ \x y ->
-    eval1 (compile @a $ symFunc2 tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (compile @a tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
   prop "Foldr works fine" $ \x y ->
-    eval1 (compile @a $ symFunc2 foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (compile @a foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
 
 specList :: Spec

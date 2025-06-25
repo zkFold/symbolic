@@ -12,15 +12,12 @@ module Tests.Symbolic.Data.Common (
 
 import Data.Binary (Binary)
 import Data.Eq (Eq)
-import Data.Function (($), (.))
-import Data.Typeable (Proxy (..))
+import Data.Function (($))
 import GHC.Generics (U1 (..), type (:*:) (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary (..), Gen, (===))
-import Text.Show (Show)
-import Prelude (String, return, (++), type (~))
-
 import Tests.Common (it)
+import Text.Show (Show)
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
@@ -33,9 +30,10 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit (
   solder,
  )
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), symFunc1, symFunc2)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (String, return, (++), type (~))
 
 {-
   For all symbolic types we need to do the following:
@@ -160,7 +158,7 @@ compileCircuit0
      )
   => x
   -> ArithmeticCircuit a U1 (Layout x)
-compileCircuit0 x = compileWith @a solder (\U1 -> (U1 :*: U1, U1 :*: U1)) $ symFunc1 @(Proxy (CircuitContext a)) (\Proxy -> x)
+compileCircuit0 = compileWith @a solder (\U1 -> (U1, U1))
 
 compileCircuit1
   :: forall x y a
@@ -173,7 +171,7 @@ compileCircuit1
      )
   => (x -> y)
   -> ArithmeticCircuit a (Layout x) (Layout y)
-compileCircuit1 = compileWith @a solder (\i -> (U1 :*: U1, i :*: U1)) . symFunc1
+compileCircuit1 = compileWith @a solder (\i -> (U1 :*: U1, i :*: U1))
 
 compileCircuit2
   :: forall x y z a
@@ -190,7 +188,7 @@ compileCircuit2
   => (x -> y -> z)
   -> ArithmeticCircuit a (Layout x :*: Layout y) (Layout z)
 compileCircuit2 =
-  compileWith @a solder (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1)) . symFunc2
+  compileWith @a solder (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1))
 
 type SymbolicFunction0 x =
   forall c
@@ -277,4 +275,5 @@ specSymbolicFunction2 desc func = describe desc $ do
   it "satisfies constraints" $
     checkCircuit
       (compileCircuit2 $ func @(CircuitContext a))
-      (\((x, y) :: (x (Interpreter a), y (Interpreter a))) -> runInterpreter (arithmetize x) :*: runInterpreter (arithmetize y))
+      ( \((x, y) :: (x (Interpreter a), y (Interpreter a))) -> runInterpreter (arithmetize x) :*: runInterpreter (arithmetize y)
+      )

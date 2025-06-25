@@ -9,8 +9,6 @@ import GHC.Exts (IsString (fromString))
 import GHC.Generics hiding (from)
 import Numeric.Natural (Natural)
 import Test.Hspec (Spec, describe, it)
-import Prelude (Eq (..), ($))
-
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import ZkFold.Algebra.Field (Zp)
@@ -22,9 +20,9 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval1)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Data.Class (symFunc2)
 import qualified ZkFold.Symbolic.Data.Eq as Symbolic
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude (Eq (..), ($))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
 blake2bNumeric =
@@ -61,7 +59,7 @@ equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c i
 blake2bSymbolic :: Spec
 blake2bSymbolic =
   let ac :: ArithmeticCircuit Fr ((U1 :*: U1) :*: Vector 24 :*: U1) Par1
-      ac = compile @Fr $ symFunc2 equalityBlake $ hash 28 BI.empty "abc"
+      ac = compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
       ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
       input = runInterpreter bs
    in it "simple test with cardano-crypto " $ eval1 ac ((U1 :*: U1) :*: input :*: U1) == 1

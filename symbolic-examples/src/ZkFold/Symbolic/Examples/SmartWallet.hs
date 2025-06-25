@@ -300,7 +300,7 @@ expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * t
     pure $ Par1 ans
 
 expModCircuit :: ExpModCircuit
-expModCircuit = C.compile @Fr $ symFunc1 expModContract
+expModCircuit = C.compile @Fr expModContract
 
 expModSetup
   :: forall t

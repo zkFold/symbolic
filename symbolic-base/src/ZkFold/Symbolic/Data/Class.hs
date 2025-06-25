@@ -8,12 +8,8 @@ module ZkFold.Symbolic.Data.Class (
   PayloadFunctor,
   SymbolicData (..),
   SymbolicFunction (..),
-  SymbolicFunctionResult,
-  symFunc0,
-  symFunc1,
-  symFunc2,
-  symFunc3,
-  symFunc4,
+  Domain,
+  Range,
   LayoutData (..),
   GSymbolicData (..),
 ) where
@@ -35,7 +31,6 @@ import Data.Typeable (Proxy (..))
 import GHC.Generics (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics as G
 import Text.Show (Show)
-
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.HApplicative (hliftA2, hpure)
 import ZkFold.Data.ByteString (Binary1)
@@ -55,6 +50,8 @@ class
   ( Symbolic (Context x)
   , LayoutFunctor (Layout x)
   , PayloadFunctor (Payload x)
+  , Range x ~ x
+  , Domain x ~ Proxy (Context x)
   ) =>
   SymbolicData x
   where
@@ -271,45 +268,20 @@ instance SymbolicData x => GSymbolicData (G.Rec0 x) where
   gpayload (G.K1 x) = payload x
   grestore f = G.K1 (restore f)
 
-newtype SymbolicFunctionResult x = SymbolicFunctionResult x
+type family Domain a where
+  Domain (x -> y) = (x, Domain y)
+  Domain x = Proxy (Context x)
 
-symFunc0 :: x -> (Proxy (Context x) -> SymbolicFunctionResult x)
-symFunc0 x _ = SymbolicFunctionResult x
+type family Range a where
+  Range (x -> y) = Range y
+  Range y = y
 
-symFunc1 :: (x -> y) -> (x -> SymbolicFunctionResult y)
-symFunc1 f x = SymbolicFunctionResult (f x)
-
-symFunc2 :: (x -> y -> z) -> x -> y -> SymbolicFunctionResult z
-symFunc2 f x y = SymbolicFunctionResult (f x y)
-
-symFunc3 :: (x -> y -> z -> w) -> x -> y -> z -> SymbolicFunctionResult w
-symFunc3 f x y z = SymbolicFunctionResult (f x y z)
-
-symFunc4 :: (x -> y -> z -> w -> v) -> x -> y -> z -> w -> SymbolicFunctionResult v
-symFunc4 f x y z w = SymbolicFunctionResult (f x y z w)
-
-class LayoutFunctor (Domain f) => SymbolicFunction f where
-  type ContextF f :: (Type -> Type) -> Type
-
-  type Support f :: Type
-
-  type Domain f :: Type -> Type
-
-  type PayloadF f :: Type -> Type
-
+class (LayoutFunctor (Layout (Range f)), Domain (Range f) ~ Proxy (Context (Range f))) => SymbolicFunction f where
   -- | Converts a function to a symbolic context.
-  arithmetizeF :: f -> Support f -> ContextF f (Domain f)
+  apply :: f -> Domain f -> (Context (Range f)) (Layout (Range f))
 
-instance SymbolicData x => SymbolicFunction (SymbolicFunctionResult x) where
-  type ContextF (SymbolicFunctionResult x) = Context x
-  type Support (SymbolicFunctionResult x) = Proxy (Context x)
-  type Domain (SymbolicFunctionResult x) = Layout x
-  type PayloadF (SymbolicFunctionResult x) = Payload x
-  arithmetizeF (SymbolicFunctionResult x) _ = arithmetize x
+instance {-# INCOHERENT #-} SymbolicFunction y => SymbolicFunction (x -> y) where
+  apply f (x, y) = apply (f x) y
 
-instance SymbolicFunction y => SymbolicFunction (x -> y) where
-  type ContextF (x -> y) = ContextF y
-  type Support (x -> y) = (x, Support y)
-  type Domain (x -> y) = Domain y
-  type PayloadF (x -> y) = PayloadF y
-  arithmetizeF f (x, y) = arithmetizeF (f x) y
+instance {-# OVERLAPPABLE #-} (SymbolicData x, Range x ~ x, Domain x ~ Proxy (Context x)) => SymbolicFunction x where
+  apply x _ = arithmetize x

@@ -13,11 +13,10 @@ import Data.Functor (fmap)
 import Data.Functor.Rep (Rep)
 import Data.List ((++))
 import Data.Tuple (swap)
-import Data.Type.Equality
+import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:))
 import System.IO (FilePath, IO, putStrLn)
 import Text.Show (show)
-
 import ZkFold.Algebra.Class
 import ZkFold.Data.Product (toPair)
 import ZkFold.Prelude (writeFileJSON)
@@ -34,8 +33,8 @@ import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 -- for function of type @f@ to be compilable.
 type CompilesWith c s f =
   ( SymbolicFunction f
-  , ContextF f ~ c
-  , Support f ~ s
+  , Context (Range f) ~ c
+  , Domain f ~ s
   , SymbolicInput s
   , Context s ~ c
   )
@@ -55,14 +54,14 @@ compileWith
      , Binary a
      , Binary (Rep i)
      )
-  => ((j NewVar -> c0 (Domain f)) -> c1 (Layout y))
+  => ((j NewVar -> c0 (Layout (Range f))) -> c1 (Layout y))
   -> (forall x. j x -> (Payload s x, Layout s x))
   -> f
   -> y
 compileWith opts support f = restore . (,U1) . optimize $ opts \x ->
   let input = restore . bimap fool (fmap pure) $ swap (support x)
       Bool b = isValid input
-   in fromCircuit2F (arithmetizeF f input) b \r (Par1 i) -> do
+   in fromCircuit2F (apply f input) b \r (Par1 i) -> do
         constraint (one - ($ i))
         return r
 
@@ -71,7 +70,7 @@ compileWith opts support f = restore . (,U1) . optimize $ opts \x ->
 compile
   :: forall a y s f
    . ( CompilesWith (CircuitContext a) s f
-     , Layout y ~ Domain f
+     , Layout y ~ Layout (Range f)
      , Binary a
      , RestoresFrom (ArithmeticCircuit a (Payload s :*: Layout s)) y
      )
@@ -82,7 +81,7 @@ compile = compileWith solder toPair
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO
   :: forall a s f
-   . (ToJSON a, ToJSONKey a, Binary a, ToJSON1 (Domain f))
+   . (ToJSON a, ToJSONKey a, Binary a, ToJSON1 (Layout (Range f)))
   => CompilesWith (CircuitContext a) s f
   => FilePath
   -> f
