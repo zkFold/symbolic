@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point) where
 
 import Data.Function (($))
+import ZkFold.Symbolic.Data.Conditional
 import qualified Prelude
 
 import ZkFold.Algebra.Class
@@ -14,7 +15,6 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.FFA
 
 type Jubjub_Point ctx = Jubjub_PointOf (FFA Jubjub_Base 'Auto ctx)
