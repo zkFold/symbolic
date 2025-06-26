@@ -17,6 +17,7 @@ import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:))
 import System.IO (FilePath, IO, putStrLn)
 import Text.Show (show)
+
 import ZkFold.Algebra.Class
 import ZkFold.Data.Product (toPair)
 import ZkFold.Prelude (writeFileJSON)

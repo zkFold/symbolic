@@ -1,6 +1,7 @@
 module ZkFold.Symbolic.Data.Switch where
 
 import Data.Functor (fmap, (<$>))
+
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..))

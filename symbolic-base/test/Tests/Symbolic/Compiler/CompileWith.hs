@@ -11,6 +11,7 @@ import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary (..), (===))
 import Text.Show (Show)
+
 import ZkFold.Data.Product (toPair)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)

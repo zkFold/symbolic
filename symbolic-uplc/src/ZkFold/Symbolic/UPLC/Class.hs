@@ -15,9 +15,10 @@ import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
+import Prelude (type (~))
+
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
-import Prelude (type (~))
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
