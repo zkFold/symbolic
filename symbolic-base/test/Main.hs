@@ -38,6 +38,7 @@ import Tests.Symbolic.Data.Hash (specHash)
 import Tests.Symbolic.Data.Int (specInt)
 import Tests.Symbolic.Data.List (specList)
 import Tests.Symbolic.Data.MerkleTree (specMerkleTree)
+import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
 
 spec :: RandomGen g => g -> Spec
@@ -72,6 +73,7 @@ spec gen = do
     specHash
     specList
     specMerkleTree
+    specSum
 
   describe "symbolic-base-test (Symbolic cryptography)" $ do
     specBlake2b

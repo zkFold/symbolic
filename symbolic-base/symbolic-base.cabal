@@ -401,6 +401,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
       Tests.Symbolic.Data.MerkleTree
+      Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
     build-depends:
       base                          >= 4.9 && < 5,
@@ -415,6 +416,7 @@ test-suite symbolic-base-test
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
       QuickCheck                                 ,
+      quickcheck-instances                       ,
       regex-tdfa                       <= 1.3.2.2,
       RSA                                   < 1.1,
       split                               < 0.2.6,
