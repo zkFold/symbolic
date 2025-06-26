@@ -14,7 +14,6 @@ import Data.Traversable (traverse)
 import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.Conditional (ifThenElse)
@@ -146,7 +145,6 @@ tail = snd . uncons
 foldl
   :: forall x y c
    . ( SymbolicData x
-     , Context x ~ c
      , SymbolicData y
      , Context y ~ c
      , SymbolicFold c
