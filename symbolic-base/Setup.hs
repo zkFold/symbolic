@@ -1,31 +1,41 @@
 {-# LANGUAGE CPP #-}
 
-import           Control.Exception                  (throwIO)
-import           Control.Monad
-import           Data.Functor                       (($>))
-import           Data.List                          (dropWhile, find, findIndex,
-                                                     isPrefixOf, tails)
-import           Data.Maybe                         (fromMaybe)
-import           Distribution.PackageDescription    hiding (libName)
-import           Distribution.Simple
-import           Distribution.Simple.LocalBuildInfo (LocalBuildInfo (..),
-                                                     localPkgDescr)
-import           Distribution.Simple.Program.Find   (defaultProgramSearchPath,
-                                                     findProgramOnSearchPath)
-import           Distribution.Simple.Setup
-import           Distribution.Types.HookedBuildInfo
-import           Distribution.Verbosity             (Verbosity)
-import qualified Distribution.Verbosity             as Verbosity
-import           System.Directory
-import           System.Exit
-import           System.FilePath
-import           System.Process                     (system)
+import Control.Exception (throwIO)
+import Control.Monad
+import Data.Functor (($>))
+import Data.List (
+  dropWhile,
+  find,
+  findIndex,
+  isPrefixOf,
+  tails,
+ )
+import Data.Maybe (fromMaybe)
+import Distribution.PackageDescription hiding (libName)
+import Distribution.Simple
+import Distribution.Simple.LocalBuildInfo (
+  LocalBuildInfo (..),
+  localPkgDescr,
+ )
+import Distribution.Simple.Program.Find (
+  defaultProgramSearchPath,
+  findProgramOnSearchPath,
+ )
+import Distribution.Simple.Setup
+import Distribution.Types.HookedBuildInfo
+import Distribution.Verbosity (Verbosity)
+import qualified Distribution.Verbosity as Verbosity
+import System.Directory
+import System.Exit
+import System.FilePath
+import System.Process (system)
 
 #if MIN_VERSION_Cabal(3,14,0)
 import qualified Distribution.Utils.Path            as UtilsPath
 #endif
 
 type StaticLibPath = FilePath
+
 type DynamicLibPath = FilePath
 
 rsSourceDir :: FilePath
@@ -53,37 +63,33 @@ main = defaultMainWithHooks hooks
     simpleUserHooks
       { preConf = \a b -> execCargoBuild >> preConf simpleUserHooks a b
       , confHook = \args flags -> do
-        dir <- getCurrentDirectory
-        let pathToDistNewstyle      = joinPath . reverse . dropWhile (not . isPrefixOf "dist-") . reverse . splitPath $ dir
-            absoluteRustOutputPath  = dir </> defaultRustOuputPath
+          dir <- getCurrentDirectory
+          let pathToDistNewstyle = joinPath . reverse . dropWhile (not . isPrefixOf "dist-") . reverse . splitPath $ dir
+              absoluteRustOutputPath = dir </> defaultRustOuputPath
 
-        path <- if null pathToDistNewstyle
-        then return absoluteRustOutputPath
-        else do
-          copyFile (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
-          copyFile (absoluteRustOutputPath </> dynamicLibName) (pathToDistNewstyle </> dynamicLibName)
-          return pathToDistNewstyle
+          path <-
+            if null pathToDistNewstyle
+              then return absoluteRustOutputPath
+              else do
+                copyFile (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
+                copyFile (absoluteRustOutputPath </> dynamicLibName) (pathToDistNewstyle </> dynamicLibName)
+                return pathToDistNewstyle
 
-        addExtraLibDir path <$> confHook simpleUserHooks args flags
-
+          addExtraLibDir path <$> confHook simpleUserHooks args flags
       , preBuild = \args flags -> do
-        return (Just $ emptyBuildInfo { extraLibs = ["rust_wrapper_stat"] } , [])
-
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preReg = \args flags -> do
-        return (Just $ emptyBuildInfo { extraLibs = ["rust_wrapper_stat"] } , [])
-
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preRepl = \args flags -> do
-        return (Just $ emptyBuildInfo { extraLibs = ["rust_wrapper_dyn"] } , [])
-
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }
 
 addExtraLibDir :: FilePath -> LocalBuildInfo -> LocalBuildInfo
 addExtraLibDir extraLibDir lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
-  where
-      updatePkgDescr pkgDescr = pkgDescr { library = updateLib <$> library pkgDescr }
-      updateLib lib           = lib {libBuildInfo = updateBi (libBuildInfo lib)}
-      updateBi bi             = bi { extraLibDirs = mkSymbolicPath extraLibDir : extraLibDirs bi}
-
+ where
+  updatePkgDescr pkgDescr = pkgDescr {library = updateLib <$> library pkgDescr}
+  updateLib lib = lib {libBuildInfo = updateBi (libBuildInfo lib)}
+  updateBi bi = bi {extraLibDirs = mkSymbolicPath extraLibDir : extraLibDirs bi}
 
 runCargoOrThrow :: String -> IO ()
 runCargoOrThrow cargoArgs = do
@@ -91,7 +97,7 @@ runCargoOrThrow cargoArgs = do
 
   let cargo = case cargoPath of
         Just (p, _) -> p
-        Nothing     -> "cargo"
+        Nothing -> "cargo"
       cargoRun = cargo <> " " <> cargoArgs
 
   buildResult <- system cargoRun
