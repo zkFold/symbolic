@@ -15,6 +15,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.BN254
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Ed25519
+import ZkFold.Algebra.EllipticCurve.Jubjub
 import ZkFold.Algebra.EllipticCurve.Pasta
 import ZkFold.Algebra.EllipticCurve.PlutoEris
 import ZkFold.Algebra.EllipticCurve.Secp256k1
@@ -36,6 +37,7 @@ specEllipticCurve = do
   specEllipticCurveGenerator @BN254_G1_Point
   specEllipticCurveGenerator @BN254_G2_Point
   specEllipticCurveGenerator @Ed25519_Point
+  specEllipticCurveGenerator @Jubjub_Point
   specEllipticCurveGenerator @Pallas_Point
   specEllipticCurveGenerator @Vesta_Point
   specEllipticCurveGenerator @Pluto_Point
