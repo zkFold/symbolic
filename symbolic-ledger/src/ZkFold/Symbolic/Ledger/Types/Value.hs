@@ -26,11 +26,11 @@ import Data.Coerce (coerce)
 import Data.Function ((&))
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Class
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.Conditional (Conditional, ifThenElse)
 import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
@@ -78,17 +78,12 @@ data AssetValue context = AssetValue
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (AssetValue context)
 
-instance (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (AssetValue context)
-
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
 -- | Denotes multiple assets.
 newtype AssetValues context = UnsafeAssetValues (List context (AssetValue context))
 
 deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (AssetValues context)
-
-deriving newtype instance
-  (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (AssetValues context)
 
 deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValues context)
 

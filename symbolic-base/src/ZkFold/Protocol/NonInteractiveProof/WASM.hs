@@ -27,15 +27,6 @@ foreign import javascript unsafe "blake2b($1, $2, $3, $4, $5)"
 foreign import javascript unsafe "new Uint8Array(__exports.memory.buffer, $1, $2)"
   js_toUint8Array :: Ptr Word8 -> Int -> IO JSVal
 
-foreign import javascript unsafe "console.log($1)"
-  js_print :: JSString -> IO ()
-
--- | traces do not work in wasm. For pure debug logs in wasm, this function must me used.
-mentallyBrokenJsTrace :: Show a => String -> a -> a
-mentallyBrokenJsTrace string expr = unsafePerformIO $ do
-  js_print $ toJSString (string <> show expr)
-  return expr
-
 bsToUint8Array :: ByteString -> JSVal
 bsToUint8Array bs = unsafeDupablePerformIO $ do
   let l = BS.length bs

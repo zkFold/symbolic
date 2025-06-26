@@ -6,8 +6,8 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   validateTransactionWithAssetDiff,
 ) where
 
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Eq ((==))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Data.Morph
