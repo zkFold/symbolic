@@ -8,13 +8,11 @@ import Data.Function (const, ($))
 import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), (:*:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Symbolic.Class (Symbolic (fromCircuitF, witnessF), fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq (..), SymbolicEq, (==))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (Payloaded))
@@ -40,8 +38,6 @@ data Hash h a = Hash
 instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
 instance (SymbolicInput h, SymbolicInput a) => SymbolicInput (Hash h a)
-
-instance (c ~ Context h, Conditional (Bool c) h, Symbolic c, SymbolicData a) => Conditional (Bool c) (Hash h a)
 
 instance (c ~ Context h, Symbolic c, SymbolicData a, BooleanOf h ~ Bool c, Eq h) => Eq (Hash h a)
 

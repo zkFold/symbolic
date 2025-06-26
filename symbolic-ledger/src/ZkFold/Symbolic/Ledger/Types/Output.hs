@@ -4,9 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.Output where
 
 import GHC.Generics (Generic)
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Conditional (Conditional)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
@@ -26,7 +24,5 @@ data Output context = Output
   deriving stock Generic
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (Output context)
-
-instance (KnownRegistersAssetQuantity context, Symbolic context) => Conditional (Bool context) (Output context)
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (Output context)

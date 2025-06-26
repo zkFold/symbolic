@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Examples.SmartWallet (
   PlonkupTs,
   expModSetupMock,
   expModProofMock,
+  expModProofDebug,
   ExpModCircuitGatesMock,
   ZKSetupBytes (..),
   ZKProofBytes (..),
@@ -23,7 +24,6 @@ module ZkFold.Symbolic.Examples.SmartWallet (
   ByteStringFromHex (..),
   mkProof,
   mkSetup,
-  identityFun,
 ) where
 
 import Data.Aeson (withText)
@@ -361,26 +361,10 @@ expModProof x ps ac ExpModProofInput {..} = proof
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 18
-
--- A meaningless function with range and polynomial constraints for debugging
--- The number of constraints depends on ExpModCircuitGatesMock
---
-identityFun :: forall c. Symbolic c => c Par1 -> c Par1
-identityFun cp = fromCircuitF cp $ \(Par1 i) -> do
-  o <- newAssigned $ \p -> p i + fromConstant @Natural 42
-  o' <- newAssigned $ \p -> p o * p i
-  let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
-  let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
-  rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
-  mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
-  a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
-  out' <- newAssigned $ \p -> p a + p i
-  out <- newAssigned $ \p -> p out' - p a
-  pure $ Par1 out
+type ExpModCircuitGatesMock = 2 ^ 10
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
-identityCircuit = AC.idCircuit -- C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) identityFun
+identityCircuit = AC.idCircuit
 
 expModSetupMock :: forall t. TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
 expModSetupMock x = setupV
@@ -418,9 +402,52 @@ expModProofMock x ps ExpModProofInput {..} = proof
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
   (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
+-- A meaningless function with range and polynomial constraints for debugging
+-- The number of constraints depends on ExpModCircuitGatesMock
+--
+debugFun :: forall c. Symbolic c => c Par1 -> c Par1
+debugFun cp = fromCircuitF cp $ \(Par1 i) -> do
+  o <- newAssigned $ \p -> p i + fromConstant @Natural 42
+  o' <- newAssigned $ \p -> p o * p i
+  let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+  let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+  rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
+  mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
+  a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
+  out' <- newAssigned $ \p -> p a + p i
+  out <- newAssigned $ \p -> p out' - p a
+  pure $ Par1 out
+
+debugCircuit :: ArithmeticCircuit Fr Par1 Par1
+debugCircuit = C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
+
+expModProofDebug
+  :: forall t
+   . TranscriptConstraints t
+  => Fr
+  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> ExpModProofInput
+  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+expModProofDebug x ps _ = proof
+ where
+  input :: Fr
+  input = toZp (-42)
+
+  witnessInputs :: Par1 Fr
+  witnessInputs = Par1 input
+
+  (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
+  (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
+  plonkup = Plonkup omega k1 k2 debugCircuit h1 gs
+  setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
+  witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
+  (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
 
 foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
+
+foreign export ccall mkProofBytesDebug :: CString -> CString -> CString -> IO CString
 
 mkProofBytesWasm :: CString -> CString -> CString -> IO CString
 mkProofBytesWasm xPtr psPtr proofInputPtr = do
@@ -433,6 +460,13 @@ mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
   (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
   let mockProofBytes = mkProof $ expModProofMock @ByteString x ps proofInput
+  let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
+  newArray (json <> [CChar 0])
+
+mkProofBytesDebug :: CString -> CString -> CString -> IO CString
+mkProofBytesDebug xPtr psPtr proofInputPtr = do
+  (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
+  let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
   let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
   newArray (json <> [CChar 0])
 

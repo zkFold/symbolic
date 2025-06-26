@@ -45,10 +45,9 @@ import qualified Prelude
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Conditional
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input
 
@@ -65,7 +64,6 @@ import ZkFold.Symbolic.Data.Input
 -- > point0 + point1 + point2 = zero
 class
   ( Field (BaseFieldOf point)
-  , Eq (BaseFieldOf point)
   , Planar (BaseFieldOf point) point
   , AdditiveGroup point
   ) =>
@@ -75,7 +73,7 @@ class
   type BaseFieldOf point :: Type
 
   -- | `isOnCurve` validates an equation for a plane algebraic curve
-  --   which has degree 3 up to some birational equivalence.
+  -- which has degree 3 up to some birational equivalence.
   isOnCurve :: point -> BooleanOf (BaseFieldOf point)
 
 -- | Both the ECDSA and ECDH algorithms make use of
@@ -102,7 +100,7 @@ class
 
   -- | generator of a cyclic subgroup
   --
-  --   prop> scale (order @(ScalarFieldOf g)) pointGen = zero
+  -- prop> scale (order @(ScalarFieldOf g)) pointGen = zero
   pointGen :: g
 
 -- |
@@ -202,9 +200,8 @@ instance
 
 instance
   ( Arbitrary (Weierstrass curve (Point field))
-  , Eq field
   , Field field
-  , Conditional (BooleanOf field) (BooleanOf field)
+  , Conditional (BooleanOf field) (JacobianPoint field)
   )
   => Arbitrary (Weierstrass curve (JacobianPoint field))
   where
@@ -226,9 +223,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => EllipticCurve (Weierstrass curve (Point field))
   where
@@ -243,10 +238,9 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
-  , EllipticCurve (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => EllipticCurve (Weierstrass curve (JacobianPoint field))
   where
@@ -279,10 +273,6 @@ instance
   isValid = isOnCurve
 
 deriving newtype instance
-  Conditional bool point
-  => Conditional bool (Weierstrass curve point)
-
-deriving newtype instance
   Eq point
   => Eq (Weierstrass curve point)
 
@@ -295,9 +285,7 @@ deriving newtype instance
   => Planar field (Weierstrass curve point)
 
 instance
-  ( Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
+  ( Conditional (BooleanOf field) (Weierstrass curve (Point field))
   , Field field
   )
   => AdditiveSemigroup (Weierstrass curve (Point field))
@@ -321,9 +309,7 @@ instance
                  in pointXY x2 y2
 
 instance
-  ( Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
+  ( Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   , Field field
   )
   => AdditiveSemigroup (Weierstrass curve (JacobianPoint field))
@@ -374,9 +360,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => AdditiveMonoid (Weierstrass curve (Point field))
   where
@@ -385,9 +369,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => AdditiveMonoid (Weierstrass curve (JacobianPoint field))
   where
@@ -396,9 +378,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => AdditiveGroup (Weierstrass curve (Point field))
   where
@@ -408,9 +388,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => AdditiveGroup (Weierstrass curve (JacobianPoint field))
   where
@@ -419,9 +397,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => Scale Natural (Weierstrass curve (Point field))
   where
@@ -430,9 +406,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => Scale Natural (Weierstrass curve (JacobianPoint field))
   where
@@ -441,9 +415,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => Scale Integer (Weierstrass curve (Point field))
   where
@@ -452,9 +424,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) field
-  , Eq field
-  , Field field
+  , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => Scale Integer (Weierstrass curve (JacobianPoint field))
   where
@@ -468,10 +438,7 @@ newtype TwistedEdwards curve point = TwistedEdwards {pointTwistedEdwards :: poin
 deriving anyclass instance NFData point => NFData (TwistedEdwards curve point)
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  , Eq field
-  )
+  TwistedEdwardsCurve curve field
   => EllipticCurve (TwistedEdwards curve (AffinePoint field))
   where
   type CurveOf (TwistedEdwards curve (AffinePoint field)) = curve
@@ -494,18 +461,12 @@ deriving newtype instance
   => SymbolicData (TwistedEdwards curve (AffinePoint field))
 
 instance
-  ( Context field ~ ctx
-  , Symbolic ctx
-  , TwistedEdwardsCurve curve field
+  ( TwistedEdwardsCurve curve field
   , SymbolicEq field
   )
   => SymbolicInput (TwistedEdwards curve (AffinePoint field))
   where
   isValid = isOnCurve
-
-deriving newtype instance
-  Conditional bool point
-  => Conditional bool (TwistedEdwards curve point)
 
 deriving newtype instance
   Eq point
@@ -520,9 +481,7 @@ deriving newtype instance
   => Planar field (TwistedEdwards curve point)
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  )
+  TwistedEdwardsCurve curve field
   => AdditiveSemigroup (TwistedEdwards curve (AffinePoint field))
   where
   TwistedEdwards (AffinePoint x0 y0) + TwistedEdwards (AffinePoint x1 y1) =
@@ -533,33 +492,25 @@ instance
      in pointXY x2 y2
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  )
+  TwistedEdwardsCurve curve field
   => AdditiveMonoid (TwistedEdwards curve (AffinePoint field))
   where
   zero = pointXY zero one
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  )
+  TwistedEdwardsCurve curve field
   => AdditiveGroup (TwistedEdwards curve (AffinePoint field))
   where
   negate (TwistedEdwards (AffinePoint x y)) = pointXY (negate x) y
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  )
+  TwistedEdwardsCurve curve field
   => Scale Natural (TwistedEdwards curve (AffinePoint field))
   where
   scale = natScale
 
 instance
-  ( TwistedEdwardsCurve curve field
-  , Field field
-  )
+  TwistedEdwardsCurve curve field
   => Scale Integer (TwistedEdwards curve (AffinePoint field))
   where
   scale = intScale
@@ -617,16 +568,7 @@ instance (Semiring field, Eq field) => HasPointInf (Point field) where
   pointInf = Point zero one true
 
 instance
-  ( Conditional bool bool
-  , Conditional bool field
-  , bool ~ BooleanOf field
-  )
-  => Conditional bool (Point field)
-
-instance
-  ( BooleanOf (BooleanOf field) ~ BooleanOf field
-  , Eq (BooleanOf field)
-  , Eq field
+  ( Conditional (BooleanOf field) (BooleanOf field)
   , Field field
   )
   => Eq (Point field)
@@ -663,7 +605,7 @@ instance
   )
   => SymbolicData (JacobianPoint field)
 
-instance (Eq field, Field field) => Planar field (JacobianPoint field) where
+instance Field field => Planar field (JacobianPoint field) where
   pointXY x y = JacobianPoint x y one
 
 instance (Semiring field, Eq field) => HasPointInf (JacobianPoint field) where
@@ -680,21 +622,7 @@ instance
         Prelude.mconcat
           ["(", Prelude.show x, ", ", Prelude.show y, ", ", Prelude.show z, ")"]
 
-instance
-  ( Conditional bool bool
-  , Conditional bool field
-  , bool ~ BooleanOf field
-  )
-  => Conditional bool (JacobianPoint field)
-
-instance
-  ( BooleanOf (BooleanOf field) ~ BooleanOf field
-  , Eq (BooleanOf field)
-  , Eq field
-  , Field field
-  )
-  => Eq (JacobianPoint field)
-  where
+instance Field field => Eq (JacobianPoint field) where
   -- If z0 /= 0 and z1 /= 0,
   -- x0 / z0^2 == x1 / z1^2 && y0 / z0^3 == y1 / z1^3
   JacobianPoint x0 y0 z0 == JacobianPoint x1 y1 z1 = x0 * z12 == x1 * z02 && y0 * z13 == y1 * z03
@@ -709,9 +637,8 @@ class Project a b where
   project :: a -> b
 
 instance
-  ( Eq field
-  , Field field
-  , Conditional (BooleanOf field) (BooleanOf field)
+  ( Field field
+  , Conditional (BooleanOf field) (JacobianPoint field)
   )
   => Project (Point field) (JacobianPoint field)
   where
@@ -719,9 +646,8 @@ instance
     if isInf then pointInf else pointXY x y
 
 instance
-  ( Eq field
-  , Field field
-  , Conditional (BooleanOf field) (BooleanOf field)
+  ( Field field
+  , Conditional (BooleanOf field) (Point field)
   )
   => Project (JacobianPoint field) (Point field)
   where
@@ -730,7 +656,7 @@ instance
       then pointInf
       else
         let zz = square z
-         in (pointXY (x // zz) (y // (z * zz)))
+         in pointXY (x // zz) (y // (z * zz))
 
 instance Project p1 p2 => Project (Weierstrass curve p1) (Weierstrass curve p2) where
   project (Weierstrass p1) = Weierstrass $ project p1
@@ -777,13 +703,7 @@ instance SymbolicData field => SymbolicData (AffinePoint field)
 
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 
-instance Conditional bool field => Conditional bool (AffinePoint field)
-
-instance
-  ( Eq field
-  , Field field
-  )
-  => Eq (AffinePoint field)
+instance Eq field => Eq (AffinePoint field)
 
 instance Prelude.Show field => Prelude.Show (AffinePoint field) where
   show (AffinePoint x y) =

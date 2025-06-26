@@ -18,7 +18,7 @@ import ZkFold.Algebra.Field (Zp)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Bool hiding (bool)
 import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Ord ((<=))

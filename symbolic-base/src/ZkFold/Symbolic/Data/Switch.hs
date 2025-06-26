@@ -1,11 +1,8 @@
 module ZkFold.Symbolic.Data.Switch where
 
-import Data.Function (($))
-
+import Data.Functor (fmap, (<$>))
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Conditional (Conditional (..))
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..))
 
 -- | A 'Switch' of a 'SymbolicData' @x@ to context @c@
@@ -25,10 +22,8 @@ instance (Symbolic c, SymbolicData x) => SymbolicData (Switch c x) where
   type Payload (Switch c x) = Payload x
   arithmetize = sLayout
   payload = sPayload
+  interpolate bs pt =
+    let (sLayout, Payloaded sPayload) =
+          interpolate (fmap (\(Switch l p) -> (l, Payloaded p)) <$> bs) pt
+     in Switch {..}
   restore (sLayout, sPayload) = Switch {..}
-
-instance (Symbolic c, SymbolicData x) => Conditional (Bool c) (Switch c x) where
-  bool (Switch fl fp) (Switch tl tp) b =
-    Switch (bool fl tl b) $
-      runPayloaded $
-        bool (Payloaded fp :: Payloaded (Payload x) c) (Payloaded tp) b

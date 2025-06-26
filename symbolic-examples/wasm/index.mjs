@@ -39,11 +39,9 @@ function mkProofBytesMock(instance, x, ps, empi) {
     const psOffset = xStr.length;
     const empiOffset = psOffset + psStr.length;
 
-    let buffer = instance.exports.memory.buffer;
-
-    const xBuf = new Uint8Array(buffer, xOffset, xStr.length).fill();
-    const psBuf = new Uint8Array(buffer, psOffset, psStr.length).fill();
-    const empiBuf = new Uint8Array(buffer, empiOffset, empiStr.length).fill();
+    const xBuf = new Uint8Array(instance.exports.memory.buffer, xOffset, xStr.length).fill();
+    const psBuf = new Uint8Array(instance.exports.memory.buffer, psOffset, psStr.length).fill();
+    const empiBuf = new Uint8Array(instance.exports.memory.buffer, empiOffset, empiStr.length).fill();
     
     const utf8Encode = new TextEncoder();
 
@@ -55,12 +53,10 @@ function mkProofBytesMock(instance, x, ps, empi) {
     psBuf.forEach((v,i,a) => a[i] = psBytes[i]);
     empiBuf.forEach((v,i,a) => a[i] = empiBytes[i]);
 
-    const address = instance.exports.mkProofBytesWasm(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
+    const address = instance.exports.mkProofBytesDebug(xBuf.byteOffset, psBuf.byteOffset, empiBuf.byteOffset);
 
-    buffer = instance.exports.memory.buffer; // Refresh the reference. The old buffer becomes "detached" when it grows.
-
-    const encodedStringLength = (new Uint8Array(buffer, address)).indexOf(0);
-    const encodedStringBuffer = new Uint8Array(buffer, address, encodedStringLength);
+    const encodedStringLength = (new Uint8Array(instance.exports.memory.buffer, address)).indexOf(0);
+    const encodedStringBuffer = new Uint8Array(instance.exports.memory.buffer, address, encodedStringLength);
     const result = (new TextDecoder()).decode(encodedStringBuffer);
     console.log(result);
     const json = JSON.parse(result);

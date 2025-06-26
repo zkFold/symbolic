@@ -101,7 +101,7 @@ library
         ghc-options: 
             -no-hs-main 
             -optl-mexec-model=reactor 
-            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm,-Llibs,-lrust_wrapper_wasm
+            -optl-Wl,--export=hs_init,--export=mkProofBytesWasm,--export=mkProofBytesMockWasm,--export=mkProofBytesDebug,-Llibs,-lrust_wrapper_wasm
     exposed-modules:
       ZkFold.Symbolic.Examples
       ZkFold.Symbolic.Examples.Blake2b

@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Class where
 
 import Control.DeepSeq (NFData)
 import Control.Monad
+import Data.Bool (Bool)
 import Data.Eq (Eq)
 import Data.Foldable (Foldable)
 import Data.Function ((.))
@@ -17,6 +18,7 @@ import Prelude (Enum, Integer)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
+import ZkFold.Data.Eq (BooleanOf)
 import ZkFold.Data.HFunctor.Classes (HNFData)
 import ZkFold.Data.Package (Package (pack))
 import ZkFold.Data.Product (uncurryP)
@@ -29,6 +31,7 @@ type Arithmetic a =
   , IntegralOf a ~ Integer
   , ToConstant a
   , Const a ~ Natural
+  , BooleanOf a ~ Bool
   , Eq a
   , Ord a
   , Enum a
@@ -59,6 +62,7 @@ class
   , HNFData c
   , Arithmetic (BaseField c)
   , ResidueField (WitnessField c)
+  , FromConstant (BaseField c) (WitnessField c)
   ) =>
   Symbolic c
   where
@@ -72,12 +76,12 @@ class
   witnessF :: Functor f => c f -> f (WitnessField c)
 
   -- | To perform computations in a generic context @c@ -- that is, to form a
-  --   mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
-  --   provide an algorithm for turning @f@ into @g@ inside a circuit.
+  -- mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
+  -- provide an algorithm for turning @f@ into @g@ inside a circuit.
   fromCircuitF :: c f -> CircuitFun '[f] g c -> c g
 
   -- | If there is a simpler implementation of a function in pure context,
-  --   you can provide it via 'sanityF' to use it in pure contexts.
+  -- you can provide it via 'sanityF' to use it in pure contexts.
   sanityF :: BaseField c ~ a => c f -> (f a -> g a) -> (c f -> c g) -> c g
   sanityF x _ f = f x
 

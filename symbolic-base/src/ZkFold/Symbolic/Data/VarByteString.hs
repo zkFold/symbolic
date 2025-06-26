@@ -42,15 +42,14 @@ import qualified Prelude as Haskell
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
+import ZkFold.Control.Conditional (bool, ifThenElse)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Vector (Vector, chunks, fromVector, unsafeToVector)
 import ZkFold.Prelude (drop, length, replicate, take)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators hiding (regSize)
-import ZkFold.Symbolic.Data.Conditional (Conditional, bool, ifThenElse)
 import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -80,8 +79,6 @@ deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ct
 deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
 
 deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
-
-deriving instance (Symbolic ctx, KnownNat n) => Conditional (Bool ctx) (VarByteString n ctx)
 
 instance (KnownNat maxLen, Symbolic ctx) => Arbitrary (VarByteString maxLen ctx) where
   arbitrary = do
@@ -267,8 +264,6 @@ deriving newtype instance HNFData ctx => NFData (Words n ctx)
 deriving newtype instance HShow ctx => Haskell.Show (Words n ctx)
 
 deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
-
-deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => Conditional (Bool ctx) (Words n ctx)
 
 instance
   ( Symbolic ctx

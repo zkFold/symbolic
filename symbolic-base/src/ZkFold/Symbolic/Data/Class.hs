@@ -14,16 +14,18 @@ module ZkFold.Symbolic.Data.Class (
   GSymbolicData (..),
 ) where
 
+import Control.Applicative (liftA2)
 import Control.DeepSeq (NFData (..), NFData1, liftRnf)
 import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Eq (Eq)
 import Data.Foldable (Foldable)
-import Data.Function (($))
-import Data.Functor (Functor, (<$>))
+import Data.Function (flip, ($), (.))
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Rep (Representable, mzipWithRep)
 import qualified Data.Functor.Rep as R
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Traversable (Traversable)
 import Data.Tuple (curry, fst)
 import Data.Type.Equality (type (~))
@@ -39,7 +41,8 @@ import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Class (Symbolic (WitnessField))
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
+import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField)
 
 type PayloadFunctor f = (Representable f, Binary (R.Rep f))
 
@@ -87,6 +90,19 @@ class
     -> Payload x (WitnessField (Context x))
   payload x = gpayload (G.from x)
 
+  -- | Interpolates branch values between given points.
+  interpolate :: Context x ~ c => NonEmpty (BaseField c, x) -> c G.Par1 -> x
+  default interpolate
+    :: ( Context x ~ c
+       , G.Generic x
+       , GSymbolicData (G.Rep x)
+       , Context x ~ GContext (G.Rep x)
+       )
+    => NonEmpty (BaseField c, x)
+    -> c G.Par1
+    -> x
+  interpolate = (G.to .) . ginterpolate . fmap (G.from <$>)
+
   -- | Restores `x` from the circuit's outputs.
   restore
     :: Context x ~ c
@@ -112,6 +128,7 @@ instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
   arithmetize x = x
   payload _ = U1
   restore = fst
+  interpolate = I.interpolate
 
 instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
   type Context (Proxy c) = c
@@ -120,6 +137,7 @@ instance Symbolic c => SymbolicData (Proxy (c :: (Type -> Type) -> Type)) where
 
   arithmetize _ = hpure U1
   payload _ = U1
+  interpolate _ _ = Proxy
   restore _ = Proxy
 
 instance
@@ -210,6 +228,9 @@ instance
 
   arithmetize (LayoutData xs) = pack (arithmetize <$> xs)
   payload (LayoutData xs) = Comp1 (payload <$> xs)
+  interpolate bs =
+    LayoutData . R.tabulate . flip \i ->
+      interpolate (fmap (flip R.index i . layoutData) <$> bs)
   restore (c, Comp1 ps) = LayoutData $ mzipWithRep (curry restore) (unpack c) ps
 
 deriving via
@@ -230,6 +251,8 @@ class
 
   garithmetize :: u x -> GContext u (GLayout u)
   gpayload :: u x -> GPayload u (WitnessField (GContext u))
+  ginterpolate
+    :: GContext u ~ c => NonEmpty (BaseField c, u x) -> c G.Par1 -> u x
   grestore
     :: GContext u ~ c
     => (c (GLayout u), GPayload u (WitnessField c))
@@ -248,6 +271,11 @@ instance
 
   garithmetize (a :*: b) = hliftA2 (:*:) (garithmetize a) (garithmetize b)
   gpayload (a :*: b) = gpayload a :*: gpayload b
+  ginterpolate bs =
+    liftA2
+      (:*:)
+      (ginterpolate (fmap fstP <$> bs))
+      (ginterpolate (fmap sndP <$> bs))
   grestore f =
     grestore (bimap (hmap fstP) fstP f)
       :*: grestore (bimap (hmap sndP) sndP f)
@@ -256,9 +284,10 @@ instance GSymbolicData f => GSymbolicData (G.M1 i c f) where
   type GContext (G.M1 i c f) = GContext f
   type GLayout (G.M1 i c f) = GLayout f
   type GPayload (G.M1 i c f) = GPayload f
-  garithmetize (G.M1 a) = garithmetize a
-  gpayload (G.M1 a) = gpayload a
-  grestore f = G.M1 (grestore f)
+  garithmetize = garithmetize . G.unM1
+  gpayload = gpayload . G.unM1
+  ginterpolate = (G.M1 .) . ginterpolate . fmap (G.unM1 <$>)
+  grestore = G.M1 . grestore
 
 instance SymbolicData x => GSymbolicData (G.Rec0 x) where
   type GContext (G.Rec0 x) = Context x
@@ -266,6 +295,7 @@ instance SymbolicData x => GSymbolicData (G.Rec0 x) where
   type GPayload (G.Rec0 x) = Payload x
   garithmetize (G.K1 x) = arithmetize x
   gpayload (G.K1 x) = payload x
+  ginterpolate = (G.K1 .) . interpolate . fmap (G.unK1 <$>)
   grestore f = G.K1 (restore f)
 
 type family Domain a where
