@@ -21,6 +21,7 @@ import Data.Void (Void, absurd)
 import GHC.Generics (Generic)
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
+
 import ZkFold.Algebra.Class
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
