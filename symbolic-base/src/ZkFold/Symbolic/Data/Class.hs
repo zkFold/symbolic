@@ -33,7 +33,6 @@ import Data.Typeable (Proxy (..))
 import GHC.Generics (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics as G
 import Text.Show (Show)
-
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.HApplicative (hliftA2, hpure)
 import ZkFold.Data.ByteString (Binary1)
@@ -54,6 +53,7 @@ class
   ( Symbolic (Context x)
   , LayoutFunctor (Layout x)
   , PayloadFunctor (Payload x)
+  , SymbolicFunction x
   , Range x ~ x
   , Domain x ~ Proxy (Context x)
   ) =>
@@ -311,7 +311,7 @@ class (LayoutFunctor (Layout (Range f)), Domain (Range f) ~ Proxy (Context (Rang
   -- | Converts a function to a symbolic context.
   apply :: f -> Domain f -> (Context (Range f)) (Layout (Range f))
 
-instance {-# INCOHERENT #-} SymbolicFunction y => SymbolicFunction (x -> y) where
+instance {-# OVERLAPPING #-} SymbolicFunction y => SymbolicFunction (x -> y) where
   apply f (x, y) = apply (f x) y
 
 instance {-# OVERLAPPABLE #-} (SymbolicData x, Range x ~ x, Domain x ~ Proxy (Context x)) => SymbolicFunction x where
