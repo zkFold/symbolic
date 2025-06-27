@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -5,16 +6,14 @@ import Data.ByteString qualified as B
 import Data.ByteString.Base16 qualified as B16
 import Data.Eq (Eq)
 import Data.Function (const, ($))
-import Data.Functor (Functor)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
-import GHC.Generics ((:*:) (..))
 import System.IO (IO)
 import Test.Hspec (describe, hspec)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck
 import Text.Show (Show)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.Compiler (compile)
@@ -30,22 +29,23 @@ import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Term
 
 areSame
-  :: ( SymbolicData f
-     , Context f ~ c
-     , Support f ~ s
-     , Layout f ~ l
-     , c ~ CircuitContext a
-     , Arbitrary (i a)
-     , Show (i a)
-     , SymbolicInput s
-     , Context s ~ c
-     , i ~ Payload s :*: Layout s
-     , Functor l
-     , Eq (l a)
-     , Show (l a)
-     , a ~ Zp BLS12_381_Base
+  :: forall a x y
+   . ( a ~ Zp BLS12_381_Scalar
+     , SymbolicInput x
+     , SymbolicData y
+     , Context x ~ CircuitContext a
+     , Context y ~ CircuitContext a
+     , Eq (Layout y a)
+     , Arbitrary (Payload x a)
+     , Arbitrary (Layout x a)
+     , Show (Layout y a)
+     , Show (Payload x a)
+     , Show (Layout x a)
      )
-  => (Term -> f) -> Term -> f -> Property
+  => (Term -> x -> y)
+  -> Term
+  -> (x -> y)
+  -> Property
 areSame v t f =
   let acT = compile (v t)
       acF = compile f

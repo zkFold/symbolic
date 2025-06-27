@@ -9,7 +9,7 @@ import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
@@ -26,7 +26,7 @@ import ZkFold.UPLC.BuiltinType
 class
   ( Typeable v
   , Context v ~ c
-  , SymbolicOutput v
+  , SymbolicData v
   , SymbolicFold c
   ) =>
   IsData (t :: BuiltinType) v c

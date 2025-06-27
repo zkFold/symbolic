@@ -24,7 +24,8 @@ type StepFunction a i p =
 predicate
   :: forall a i p
    . (Arithmetic a, Binary a, LayoutFunctor i, LayoutFunctor p)
-  => StepFunction a i p -> Predicate a i p
+  => StepFunction a i p
+  -> Predicate a i p
 predicate func =
   Predicate
     { predicateEval = \x u ->

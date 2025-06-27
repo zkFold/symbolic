@@ -1,8 +1,6 @@
 module ZkFold.Symbolic.Data.Switch where
 
-import Data.Function (const, (.))
 import Data.Functor (fmap, (<$>))
-import Data.Proxy (Proxy (..))
 
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -21,13 +19,12 @@ data Switch c x = Switch
 
 instance (Symbolic c, SymbolicData x) => SymbolicData (Switch c x) where
   type Context (Switch c x) = c
-  type Support (Switch c x) = Proxy c
   type Layout (Switch c x) = Layout x
   type Payload (Switch c x) = Payload x
-  arithmetize = const . sLayout
-  payload = const . sPayload
+  arithmetize = sLayout
+  payload = sPayload
   interpolate bs pt =
     let (sLayout, Payloaded sPayload) =
           interpolate (fmap (\(Switch l p) -> (l, Payloaded p)) <$> bs) pt
      in Switch {..}
-  restore f = let (sLayout, sPayload) = f Proxy in Switch {..}
+  restore (sLayout, sPayload) = Switch {..}

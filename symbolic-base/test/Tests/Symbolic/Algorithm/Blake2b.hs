@@ -52,7 +52,9 @@ blake2bExampleRfc =
 equalityBlake
   :: forall c
    . Symbolic c
-  => BI.ByteString -> ByteString 24 c -> Bool c
+  => BI.ByteString
+  -> ByteString 24 c
+  -> Bool c
 equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c input
 
 blake2bSymbolic :: Spec

@@ -18,7 +18,7 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Class (Domain, Range, SymbolicData (..), SymbolicFunction (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
@@ -49,21 +49,23 @@ data ExampleOutput where
   ExampleOutput
     :: forall a i o
      . (Representable i, Binary (Rep i), NFData1 o, Arithmetic a)
-    => (() -> C a i o) -> ExampleOutput
+    => (() -> C a i o)
+    -> ExampleOutput
 
 exampleOutput
   :: forall a i o c f
-   . ( SymbolicData f
+   . ( SymbolicFunction f
      , c ~ CircuitContext a
-     , Context f ~ c
-     , Layout f ~ o
-     , SymbolicInput (Support f)
-     , Context (Support f) ~ c
-     , i ~ Payload (Support f) :*: Layout (Support f)
+     , Context (Range f) ~ c
+     , Layout (Range f) ~ o
+     , SymbolicInput (Domain f)
+     , Context (Domain f) ~ c
+     , i ~ Payload (Domain f) :*: Layout (Domain f)
      , NFData1 o
      , Binary a
      )
-  => f -> ExampleOutput
+  => f
+  -> ExampleOutput
 exampleOutput = ExampleOutput @a @i @o . const . compile
 
 examples :: [(String, ExampleOutput)]
@@ -117,7 +119,7 @@ examples =
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
-  , ("Exp65537Mod", exampleOutput @A $ expModContract)
+  , ("Exp65537Mod", exampleOutput @A expModContract)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)

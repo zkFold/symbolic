@@ -41,7 +41,6 @@ type family Eithers ts where
 class
   ( SymbolicData (Product ts c)
   , Context (Product ts c) ~ c
-  , Support (Product ts c) ~ Proxy c
   ) =>
   Embed ts c
   where
@@ -54,14 +53,14 @@ instance Symbolic c => Embed '[] c where
   indexOf = absurd
   enum = const []
 
-instance (SymbolicOutput t, Context t ~ c, Embed ts c) => Embed (t ': ts) c where
+instance (SymbolicData t, Context t ~ c, Embed ts c) => Embed (t ': ts) c where
   embed = either (,zeroed) ((zeroed,) . embed @ts @c)
   indexOf = either zero ((+ one) . indexOf @ts @c)
   enum (h, t) = Left h : fmap Right (enum @ts @c t)
 
 -- | A helper for producing default values.
 zeroed :: SymbolicData a => a
-zeroed = restore $ const (runVec zero, tabulate zero)
+zeroed = restore (runVec zero, tabulate zero)
 
 --------------------------------- OneOf datatype -------------------------------
 
@@ -75,7 +74,6 @@ instance
   ( Symbolic c
   , SymbolicData (Product ts c)
   , Context (Product ts c) ~ c
-  , Support (Product ts c) ~ Proxy c
   )
   => SymbolicData (OneOf ts c)
 
@@ -85,7 +83,9 @@ embedOneOf = OneOf <$> fromConstant . indexOf @ts @c <*> embed @ts @c
 matchOneOf
   :: forall r ts
    . (SymbolicData r, Embed ts (Context r))
-  => OneOf ts (Context r) -> (Eithers ts -> r) -> r
+  => OneOf ts (Context r)
+  -> (Eithers ts -> r)
+  -> r
 matchOneOf OneOf {..} f =
   case zipWith
     (\c b -> (fromConstant c, f b))
@@ -96,7 +96,7 @@ matchOneOf OneOf {..} f =
 
 ------------------------------ Nested Product type family ----------------------
 
-class (SymbolicData (NP f c), Context (NP f c) ~ c, Support (NP f c) ~ Proxy c) => Produces f c where
+class (SymbolicData (NP f c), Context (NP f c) ~ c) => Produces f c where
   type NP f c :: Type
   produce :: f u -> NP f c
   utilize :: NP f c -> f u
@@ -111,7 +111,7 @@ instance Symbolic c => Produces G.U1 c where
   produce _ = Proxy
   utilize _ = G.U1
 
-instance (SymbolicData a, Context a ~ c, Support a ~ Proxy c) => Produces (G.M1 G.S u (G.K1 v a)) c where
+instance (SymbolicData a, Context a ~ c) => Produces (G.M1 G.S u (G.K1 v a)) c where
   type NP (G.M1 G.S u (G.K1 v a)) c = a
   produce (G.M1 (G.K1 a)) = a
   utilize a = G.M1 (G.K1 a)
@@ -171,7 +171,6 @@ deriving newtype instance
   ( Symbolic c
   , SymbolicData (Prod a c)
   , Context (Prod a c) ~ c
-  , Support (Prod a c) ~ Proxy c
   )
   => SymbolicData (Sum a c)
 

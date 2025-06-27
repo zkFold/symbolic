@@ -31,7 +31,9 @@ testFunction = (&&)
 
 witGen
   :: (Arithmetic a, Representable i, Binary (Rep i))
-  => ArithmeticCircuit a i o -> i a -> Map NewVar a
+  => ArithmeticCircuit a i o
+  -> i a
+  -> Map NewVar a
 witGen circuit input =
   let wg = witnessGenerator circuit input
    in fromList [(v, wg v) | v <- getAllVars (acContext circuit)]

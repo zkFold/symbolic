@@ -9,10 +9,9 @@ module ZkFold.Protocol.IVC.RecursiveFunction where
 
 import Data.Binary (Binary (..))
 import Data.Foldable (toList)
-import Data.Function (const, (.))
-import Data.Proxy (Proxy (..))
+import Data.Function ((.))
 import GHC.Generics (Generic, Par1, (:*:))
-import Prelude (($), (<$>), type (~))
+import Prelude ((<$>), type (~))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
@@ -28,7 +27,7 @@ import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (Bool, bool)
-import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..), SymbolicOutput)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
 
 -- | Public input to the recursive function
@@ -44,14 +43,11 @@ newtype DataSource c = DataSource {dataSource :: c}
     , SymbolicData
     )
 
-arithmetize0 :: SymbolicOutput x => x -> Context x (Layout x)
-arithmetize0 x = arithmetize x Proxy
-
 instance
-  (SymbolicOutput c, Context c ~ ctx)
+  (SymbolicData c, Context c ~ ctx)
   => OracleSource (FieldElement ctx) (DataSource c)
   where
-  source = toList . fieldElements . arithmetize0
+  source = toList . fieldElements . arithmetize
 
 -- | Payload to the recursive function
 data RecursivePayload d k i p c = RecursivePayload
@@ -69,7 +65,7 @@ data RecursivePayload d k i p c = RecursivePayload
   deriving Generic
 
 instance
-  ( SymbolicOutput c
+  ( SymbolicData c
   , LayoutFunctor p
   , LayoutFunctor i
   , KnownNat k
@@ -86,7 +82,7 @@ type RecursiveFunction d k a i p c =
 type FieldAssumptions a c =
   ( Arithmetic a
   , Binary a
-  , SymbolicOutput c
+  , SymbolicData c
   , Context c ~ CircuitContext a
   , Empty (Payload c)
   , Scale (FieldElement (Context c)) c
@@ -107,12 +103,14 @@ recursiveFunction
      , KnownNat k
      , FieldAssumptions a c
      )
-  => Hasher -> StepFunction a i p -> RecursiveFunction d k a i p c
+  => Hasher
+  -> StepFunction a i p
+  -> RecursiveFunction d k a i p c
 recursiveFunction hash func =
   let
     restore0
       :: (SymbolicData x, Empty (Payload x)) => Context x (Layout x) -> x
-    restore0 l = restore $ const (l, empty)
+    restore0 l = restore (l, empty)
 
     -- A helper function to derive the accumulator scheme
     func' :: RecursiveFunction d k a i p c
@@ -123,7 +121,7 @@ recursiveFunction hash func =
               :: RecursivePayload d k i p c
             )
         ) =
-        arithmetize0 (func x u, h)
+        arithmetize (func x u, h)
 
     -- A helper predicate to derive the accumulator scheme
     pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
@@ -139,7 +137,7 @@ recursiveFunction hash func =
             (x, _ :: FieldElement (Context c)) = restore0 i
             accX' = verifier (accumulatorScheme hash pRec) z piX accX pf
             h = bool zero (oracle hash accX') flag
-         in arithmetize0 (func x u, h :: FieldElement (CircuitContext a))
+         in arithmetize (func x u, h :: FieldElement (CircuitContext a))
 
 --------------------------------------------------------------------------------
 
@@ -152,7 +150,7 @@ recursivePredicate
      , Binary a
      , LayoutFunctor i
      , LayoutFunctor p
-     , SymbolicOutput c
+     , SymbolicData c
      )
   => RecursiveFunction d k a i p c
   -> Predicate a (RecursiveI i) (RecursiveP d k i p c)

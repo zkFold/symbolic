@@ -457,7 +457,7 @@ deriving newtype instance
   => Prelude.Show (TwistedEdwards curve point)
 
 deriving newtype instance
-  SymbolicOutput field
+  SymbolicData field
   => SymbolicData (TwistedEdwards curve (AffinePoint field))
 
 instance
@@ -555,8 +555,8 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
 instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
+  ( SymbolicData (BooleanOf field)
+  , SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (Point field)
@@ -600,7 +600,7 @@ instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) whe
   pt0 /= pt1 = not (pt0 Prelude.== pt1)
 
 instance
-  ( SymbolicOutput field
+  ( SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (JacobianPoint field)
@@ -679,8 +679,8 @@ deriving instance
   => Prelude.Eq (CompressedPoint field)
 
 instance
-  ( SymbolicOutput (BooleanOf field)
-  , SymbolicOutput field
+  ( SymbolicData (BooleanOf field)
+  , SymbolicData field
   , Context field ~ Context (BooleanOf field)
   )
   => SymbolicData (CompressedPoint field)

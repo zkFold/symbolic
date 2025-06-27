@@ -63,7 +63,7 @@ instance (Symbolic c, LayoutFunctor f) => Eq (c f) where
       any Bool (unpacked result)
 
 type SymbolicEq x =
-  ( SymbolicOutput x
+  ( SymbolicData x
   , Eq x
   , BooleanOf x ~ Bool (Context x)
   )

@@ -58,7 +58,6 @@ instance
   , SymbolicData c
   , SymbolicData f
   , Context f ~ Context c
-  , Support f ~ Support c
   )
   => SymbolicData (AccumulatorInstance k i c f)
 
@@ -85,7 +84,8 @@ emptyAccumulator
      , Binary (Rep i)
      , Binary (Rep p)
      )
-  => Predicate a i p -> Accumulator k i c f
+  => Predicate a i p
+  -> Accumulator k i c f
 emptyAccumulator phi =
   let accW = tabulate (const zero)
       aiC = fmap hcommit accW
@@ -108,5 +108,6 @@ emptyAccumulatorInstance
      , Binary (Rep i)
      , Binary (Rep p)
      )
-  => Predicate a i p -> AccumulatorInstance k i c f
+  => Predicate a i p
+  -> AccumulatorInstance k i c f
 emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x
