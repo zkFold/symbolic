@@ -44,11 +44,14 @@ rsSourceDir = "rust-wrapper"
 defaultRustOuputPath :: FilePath
 defaultRustOuputPath = rsSourceDir </> "target" </> "release"
 
-staticLibName :: String
-staticLibName = "librust_wrapper.a"
+originalStaticLibName :: String
+originalStaticLibName = "librust_wrapper.a"
 
 originalDynamicLibName :: String
 originalDynamicLibName = "librust_wrapper.so"
+
+staticLibName :: String
+staticLibName = "librust_wrapper_stat.a"
 
 dynamicLibName :: String
 dynamicLibName = "librust_wrapper_dyn.so"
@@ -74,7 +77,9 @@ main = defaultMainWithHooks hooks
 
           addExtraLibDir path <$> confHook simpleUserHooks args flags
       , preBuild = \args flags -> do
-          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper"]}, [])
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
+      , preReg = \args flags -> do
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preRepl = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }
@@ -106,6 +111,7 @@ execCargoBuild :: IO ()
 execCargoBuild = do
   runCargoOrThrow $ "build --release --manifest-path " <> rsSourceDir </> "Cargo.toml"
   renameFile (defaultRustOuputPath </> originalDynamicLibName) (defaultRustOuputPath </> dynamicLibName)
+  renameFile (defaultRustOuputPath </> originalStaticLibName) (defaultRustOuputPath </> staticLibName)
 
 #if MIN_VERSION_Cabal(3,14,0)
 mkSymbolicPath = UtilsPath.unsafeMakeSymbolicPath
