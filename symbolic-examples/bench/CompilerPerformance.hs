@@ -1,29 +1,38 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Main where
 
-import Control.DeepSeq (NFData1, force)
+import Control.DeepSeq (force)
 import Control.Monad (return)
 import Data.Binary (Binary)
 import Data.Function (const, ($))
 import Data.Functor.Rep (Representable (..))
 import Data.String (String)
+import Data.Tuple (uncurry)
+import Data.Type.Equality (type (~))
 import System.IO (IO)
 import Test.Tasty.Bench
 import ZkFold.Algebra.Class (zero)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, witnessGenerator)
+import ZkFold.Symbolic.Compiler (compile)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval)
+import ZkFold.Symbolic.Data.Class (SymbolicData, Context)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
 
 benchmark
-  :: (Arithmetic a, Representable i, Binary (Rep i), NFData1 o)
-  => String -> (() -> ArithmeticCircuit a i o) -> Benchmark
-benchmark name circuit =
+  :: forall a i o
+   . ( Arithmetic a, Binary a, SymbolicInput i, Context i ~ CircuitContext a
+     , SymbolicData o, Context o ~ CircuitContext a)
+  => String -> (i -> o) -> Benchmark
+benchmark name fun =
   bgroup
     name
-    [ bench "compilation" $ nf circuit ()
-    , env (return $ force $ circuit ()) $ \c ->
-        let input = tabulate (const zero)
-         in bench "evaluation" $ nf (witnessGenerator c) input
+    [ bench "compilation" $ nf (compile @_ @(ArithmeticCircuit a _ _)) fun
+    , env (return $ force $ compile fun) $ \c ->
+         bench "evaluation" $ nf (uncurry eval) (c, tabulate $ const zero)
     ]
 
 main :: IO ()

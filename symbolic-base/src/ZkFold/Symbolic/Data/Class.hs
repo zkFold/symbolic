@@ -310,10 +310,10 @@ type family Range a where
 
 class (LayoutFunctor (Layout (Range f)), Domain (Range f) ~ Proxy (Context (Range f))) => SymbolicFunction f where
   -- | Converts a function to a symbolic context.
-  apply :: f -> Domain f -> (Context (Range f)) (Layout (Range f))
+  apply :: f -> Domain f -> Range f
 
 instance {-# OVERLAPPING #-} SymbolicFunction y => SymbolicFunction (x -> y) where
   apply f (x, y) = apply (f x) y
 
 instance {-# OVERLAPPABLE #-} (SymbolicData x, Range x ~ x, Domain x ~ Proxy (Context x)) => SymbolicFunction x where
-  apply x _ = arithmetize x
+  apply x _ = x

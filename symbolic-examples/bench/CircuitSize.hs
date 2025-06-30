@@ -10,6 +10,7 @@ import System.IO (IO)
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.Golden as Golden
 import Text.Show (Show (..))
+import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit as Circuit
 
@@ -35,5 +36,5 @@ main =
       "Compiler golden tests"
       [ Golden.goldenVsString name ("stats/" <> name) $ pure (metrics name circuit)
       | (name, ExampleOutput cf) <- Examples.examples
-      , let circuit = cf ()
+      , let circuit = compile cf
       ]
