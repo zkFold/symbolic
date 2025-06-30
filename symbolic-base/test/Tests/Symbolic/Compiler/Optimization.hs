@@ -11,9 +11,9 @@ import Prelude (Show, return, ($))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
+import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.MonadCircuit
 

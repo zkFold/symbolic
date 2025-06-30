@@ -29,8 +29,6 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial)
 import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial (Mono (..), oneM)
-import ZkFold.Data.ByteString (fromByteString)
-import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -39,6 +37,8 @@ import ZkFold.ArithmeticCircuit.Context (
  )
 import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
+import ZkFold.Data.ByteString (fromByteString)
+import ZkFold.Symbolic.Class (Arithmetic)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@

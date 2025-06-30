@@ -49,6 +49,8 @@ import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Algebra.Number (KnownNat, Natural, type (^))
 import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
+import qualified ZkFold.ArithmeticCircuit as AC
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
@@ -69,8 +71,6 @@ import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Compiler as C
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
-import qualified ZkFold.ArithmeticCircuit as AC
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement

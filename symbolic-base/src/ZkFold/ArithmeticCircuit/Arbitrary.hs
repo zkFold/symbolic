@@ -16,10 +16,10 @@ import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Prelude (elementsRep, replicateA)
-import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), crown, getAllVars)
 import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, toVar)
+import ZkFold.Prelude (elementsRep, replicateA)
+import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.MonadCircuit
 
 ------------------------------------- Instances -------------------------------------

@@ -19,13 +19,13 @@ import GHC.Generics (Generic, Par1 (..))
 import Text.Show (Show (..))
 
 import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..))
 import ZkFold.Control.HApplicative
 import ZkFold.Data.HFunctor
 import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
 import ZkFold.Data.Package
 import ZkFold.Prelude (take)
 import ZkFold.Symbolic.Class
-import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..))
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
 

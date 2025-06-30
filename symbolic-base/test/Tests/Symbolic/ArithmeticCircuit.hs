@@ -15,10 +15,10 @@ import Tests.Common (it)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
+import ZkFold.ArithmeticCircuit
 import ZkFold.Data.Eq
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Class
-import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Data.Bool hiding (bool)
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Ord ((<=))

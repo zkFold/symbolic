@@ -18,6 +18,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Algebra.Polynomial.Univariate
+import ZkFold.ArithmeticCircuit (eval)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 import ZkFold.Protocol.Plonkup (
@@ -28,7 +29,6 @@ import ZkFold.Protocol.Plonkup (
 import ZkFold.Protocol.Plonkup.Prover (PlonkupProverSetup (..))
 import ZkFold.Protocol.Plonkup.Update (updateProverSetup, updateVerifierSetup)
 import ZkFold.Protocol.Plonkup.Witness (witnessInput)
-import ZkFold.ArithmeticCircuit (eval)
 
 type P i n =
   Plonkup

@@ -12,9 +12,6 @@ import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary (..), (===))
 import Text.Show (Show)
 
-import ZkFold.Data.Product (toPair)
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.ArithmeticCircuit (
   ArithmeticCircuit,
   acContext,
@@ -23,6 +20,9 @@ import ZkFold.ArithmeticCircuit (
  )
 import ZkFold.ArithmeticCircuit.Context (getAllVars)
 import ZkFold.ArithmeticCircuit.Var (NewVar)
+import ZkFold.Data.Product (toPair)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
+import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Data.Bool ((&&))
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 

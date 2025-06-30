@@ -26,10 +26,10 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)

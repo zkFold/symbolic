@@ -10,9 +10,9 @@ import System.IO (IO)
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.Golden as Golden
 import Text.Show (Show (..))
-import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.ArithmeticCircuit as Circuit
+import ZkFold.Symbolic.Compiler (compile)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..))
 import qualified ZkFold.Symbolic.Examples as Examples
