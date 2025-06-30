@@ -33,7 +33,7 @@ import ZkFold.Algebra.EllipticCurve.Pairing
 import ZkFold.Algebra.Field (Ext2 (..), Ext3 (..), IrreduciblePoly (..), Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (Poly, toPoly)
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 
 -------------------------- Scalar field & field towers -------------------------
 

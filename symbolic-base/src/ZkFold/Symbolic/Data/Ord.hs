@@ -21,13 +21,13 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Package
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion)
-import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 class Monoid ordering => IsOrdering ordering where

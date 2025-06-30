@@ -27,6 +27,7 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
@@ -42,7 +43,6 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Ord (Ord (..))

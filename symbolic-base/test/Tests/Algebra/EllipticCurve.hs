@@ -19,7 +19,7 @@ import ZkFold.Algebra.EllipticCurve.Jubjub
 import ZkFold.Algebra.EllipticCurve.Pasta
 import ZkFold.Algebra.EllipticCurve.PlutoEris
 import ZkFold.Algebra.EllipticCurve.Secp256k1
-import ZkFold.Symbolic.Data.Eq (BooleanOf)
+import ZkFold.Data.Eq (BooleanOf)
 
 specEllipticCurve :: Spec
 specEllipticCurve = do

@@ -1,9 +1,9 @@
 module ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector) where
 
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 exampleEq :: Symbolic c => FieldElement c -> FieldElement c -> Bool c

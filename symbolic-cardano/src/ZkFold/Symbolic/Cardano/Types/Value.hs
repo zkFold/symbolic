@@ -10,12 +10,12 @@ import qualified Data.Map as Map
 import GHC.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Data.Vector
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input
 import Prelude hiding (Bool, Eq, length, replicate, splitAt, (*), (+))
 import qualified Prelude as Haskell
