@@ -5,13 +5,13 @@ module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Log2)
+import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString as Symbolic
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Data.Eq
 import Prelude hiding (
   Bool,
   Eq (..),

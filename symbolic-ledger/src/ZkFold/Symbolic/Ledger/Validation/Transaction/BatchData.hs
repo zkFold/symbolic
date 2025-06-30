@@ -11,9 +11,9 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData (
 import Data.Function ((&))
 import GHC.Generics (Generic)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq (Eq, (==))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Data.Eq (Eq, (==))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List

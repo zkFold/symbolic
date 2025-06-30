@@ -13,11 +13,11 @@ import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
-import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.MonadCircuit
 

@@ -2,12 +2,12 @@ module ZkFold.Symbolic.Cardano.Contracts.BabelFees (babelFees) where
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Maybe
 import Prelude (($))
 

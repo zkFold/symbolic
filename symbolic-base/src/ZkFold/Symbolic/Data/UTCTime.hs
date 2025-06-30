@@ -12,11 +12,11 @@ import Prelude hiding (Bool, Eq, Ord)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class (FromConstant)
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
-import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
 

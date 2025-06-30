@@ -21,6 +21,7 @@ import Prelude (($))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Number
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
 import ZkFold.Symbolic.Class
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Data.Combinators (
   RegisterSize (..),
   Resize (..),
  )
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)

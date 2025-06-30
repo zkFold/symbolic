@@ -18,13 +18,13 @@ import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate
 import qualified ZkFold.Algebra.Polynomial.Multivariate as PM
 import ZkFold.Data.ByteString (Binary, fromByteString)
+import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext))
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acSystem, acWitness)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..))
-import ZkFold.Data.Eq
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.

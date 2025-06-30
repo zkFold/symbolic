@@ -6,13 +6,13 @@ import Data.Maybe (fromJust)
 import Data.Zip (zip)
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
+import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (StrictConv (..))

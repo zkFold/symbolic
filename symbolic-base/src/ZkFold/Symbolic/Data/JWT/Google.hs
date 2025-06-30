@@ -16,13 +16,13 @@ import Test.QuickCheck (Arbitrary (..))
 import Prelude (fmap, ($), (.), type (~))
 import qualified Prelude as P
 
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256

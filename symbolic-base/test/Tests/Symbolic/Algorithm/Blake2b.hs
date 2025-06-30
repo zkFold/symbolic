@@ -14,6 +14,7 @@ import Prelude (Eq (..), ($))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import ZkFold.Algebra.Field (Zp)
+import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_512)
@@ -22,7 +23,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval1)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec

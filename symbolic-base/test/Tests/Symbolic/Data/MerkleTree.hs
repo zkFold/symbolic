@@ -17,6 +17,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, value)
+import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (chooseNatural)
@@ -25,7 +26,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.List (emptyList, lSize)
 import qualified ZkFold.Symbolic.Data.List as L

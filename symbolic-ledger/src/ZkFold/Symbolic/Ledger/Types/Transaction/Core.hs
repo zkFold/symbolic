@@ -14,11 +14,11 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
 
 import GHC.Generics (Generic)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
-import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.List (List)
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List

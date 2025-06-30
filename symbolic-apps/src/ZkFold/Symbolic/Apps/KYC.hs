@@ -10,6 +10,7 @@ import GHC.Generics (Generic)
 import ZkFold.Algebra.Class (FromConstant (fromConstant))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.Data.Eq (Eq ((==)), elem)
 import ZkFold.Data.Vector (Vector, head, tail, toVector)
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (Bool, not, (&&))
@@ -22,7 +23,6 @@ import ZkFold.Symbolic.Data.Combinators (
   KnownRegisters,
   RegisterSize (..),
  )
-import ZkFold.Data.Eq (Eq ((==)), elem)
 import ZkFold.Symbolic.Data.Ord (Ord ((>=)))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)

@@ -1,7 +1,6 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Bool (
@@ -34,7 +33,7 @@ import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class (Context, SymbolicData, interpolate, LayoutFunctor)
+import ZkFold.Symbolic.Data.Class (Context, LayoutFunctor, SymbolicData, interpolate)
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
@@ -128,6 +127,6 @@ instance (Symbolic c, LayoutFunctor f) => Eq (c f) where
       any Bool (unpacked result)
 
 instance Symbolic c => Eq (Bool c) where
-    type BooleanOf (Bool c) = Bool c
-    b == b' = not (b /= b')
-    (/=) = xor
+  type BooleanOf (Bool c) = Bool c
+  b == b' = not (b /= b')
+  (/=) = xor

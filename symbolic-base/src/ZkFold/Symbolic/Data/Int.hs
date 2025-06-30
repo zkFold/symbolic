@@ -15,13 +15,13 @@ import qualified Prelude as Haskell hiding ((-))
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Vector (fromVector)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt

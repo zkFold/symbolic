@@ -43,6 +43,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (bool, ifThenElse)
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Vector (Vector, chunks, fromVector, unsafeToVector)
 import ZkFold.Prelude (drop, length, replicate, take)
@@ -50,7 +51,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators hiding (regSize)
-import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))
