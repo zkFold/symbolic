@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation where
+module ZkFold.ArithmeticCircuit.WitnessEstimation where
 
 import Control.Applicative (liftA2)
 import Data.Bool (Bool (..), otherwise)
@@ -15,7 +15,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
 import qualified ZkFold.Data.Eq as ZkFold
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
+import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor

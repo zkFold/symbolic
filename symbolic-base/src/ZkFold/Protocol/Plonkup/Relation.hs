@@ -42,10 +42,10 @@ import ZkFold.Protocol.Plonkup.LookupConstraint (LookupConstraint (LookupConstra
 import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkConstraint)
 import ZkFold.Protocol.Plonkup.PlonkupConstraint
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, witnessGenerator)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext (..), lookupFunction)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupTable (..), LookupType (LookupType))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (Var, evalVar, toVar)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, witnessGenerator)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), lookupFunction)
+import ZkFold.ArithmeticCircuit.Lookup (LookupTable (..), LookupType (LookupType))
+import ZkFold.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.

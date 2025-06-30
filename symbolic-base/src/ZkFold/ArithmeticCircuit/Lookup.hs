@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup where
+module ZkFold.ArithmeticCircuit.Lookup where
 
 import Control.DeepSeq (NFData (..))
 import Data.Aeson

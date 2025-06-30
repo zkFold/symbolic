@@ -15,14 +15,14 @@ import Text.Show (Show)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (
+import ZkFold.ArithmeticCircuit (
   ArithmeticCircuit,
   acContext,
   guessOutput,
   witnessGenerator,
  )
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
+import ZkFold.ArithmeticCircuit.Context (getAllVars)
+import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Symbolic.Data.Bool ((&&))
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 

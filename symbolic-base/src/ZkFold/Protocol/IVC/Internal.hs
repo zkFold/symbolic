@@ -34,7 +34,7 @@ import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocol,
   specialSoundProtocol',
  )
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))

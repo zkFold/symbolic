@@ -5,7 +5,7 @@ import GHC.Generics (Par1)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Maybe (isJust)
 

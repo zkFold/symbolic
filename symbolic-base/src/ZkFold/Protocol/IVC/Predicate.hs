@@ -9,8 +9,8 @@ import GHC.Generics (U1 (..), (:*:) (..))
 
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compileWith)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, guessOutput, solder)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec, guessOutput, solder)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 
 data Predicate a i p = Predicate

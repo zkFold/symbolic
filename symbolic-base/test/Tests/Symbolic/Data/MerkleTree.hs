@@ -23,7 +23,7 @@ import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (chooseNatural)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
+import ZkFold.ArithmeticCircuit (eval1)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))

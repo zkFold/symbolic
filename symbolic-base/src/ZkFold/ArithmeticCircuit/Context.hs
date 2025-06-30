@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context where
+module ZkFold.ArithmeticCircuit.Context where
 
 import Control.Applicative (liftA2, pure)
 import Control.DeepSeq (NFData, NFData1, liftRnf, rnf, rwhnf)
@@ -55,11 +55,11 @@ import ZkFold.Data.HFunctor.Classes
 import ZkFold.Data.Package (Package, packWith, unpackWith)
 import ZkFold.Prelude (take)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF (..))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation (UVar (..))
+import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
+import ZkFold.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
+import ZkFold.ArithmeticCircuit.Var
+import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
+import ZkFold.ArithmeticCircuit.WitnessEstimation (UVar (..))
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
 

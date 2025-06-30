@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization (optimize, isInputVar) where
+module ZkFold.ArithmeticCircuit.Optimization (optimize, isInputVar) where
 
 import Control.Applicative (pure)
 import Control.Monad (Monad, (>>=))
@@ -31,14 +31,14 @@ import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomia
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial (Mono (..), oneM)
 import ZkFold.Data.ByteString (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (
+import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
   Constraint,
   witToVar,
  )
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (LookupType, asRange)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..))
+import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
+import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@

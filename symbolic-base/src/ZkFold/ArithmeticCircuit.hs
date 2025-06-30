@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit (
+module ZkFold.ArithmeticCircuit (
   -- * Type and getters
   ArithmeticCircuit (..),
 
@@ -70,12 +70,12 @@ import ZkFold.Data.Package (Package (..))
 import ZkFold.Data.Product (fromPair)
 import ZkFold.Prelude (length)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..))
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary as Arbitrary
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext (..))
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context as Context
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring as Desugaring
-import qualified ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization as Optimization
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..), evalVar, toVar)
+import qualified ZkFold.ArithmeticCircuit.Arbitrary as Arbitrary
+import ZkFold.ArithmeticCircuit.Context (CircuitContext (..))
+import qualified ZkFold.ArithmeticCircuit.Context as Context
+import qualified ZkFold.ArithmeticCircuit.Desugaring as Desugaring
+import qualified ZkFold.ArithmeticCircuit.Optimization as Optimization
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), evalVar, toVar)
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 newtype ArithmeticCircuit a (i :: Type -> Type) o

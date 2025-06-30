@@ -17,8 +17,8 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Protocol.IVC.AlgebraicMap as AM
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (getAllVars)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
+import ZkFold.ArithmeticCircuit.Context (getAllVars)
 
 {-- | Section 3.1
 

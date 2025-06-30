@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash where
+module ZkFold.ArithmeticCircuit.MerkleHash where
 
 import Crypto.Hash.SHA256 (hash)
 import Data.Binary (Binary (..))

@@ -13,7 +13,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.MonadCircuit
 

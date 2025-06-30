@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary (arbitraryContext) where
+module ZkFold.ArithmeticCircuit.Arbitrary (arbitraryContext) where
 
 import Control.Monad (foldM, return)
 import Control.Monad.State (execState)
@@ -18,8 +18,8 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (elementsRep, replicateA)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext (..), crown, getAllVars)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, toVar)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), crown, getAllVars)
+import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, toVar)
 import ZkFold.Symbolic.MonadCircuit
 
 ------------------------------------- Instances -------------------------------------

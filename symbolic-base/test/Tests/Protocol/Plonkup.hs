@@ -38,7 +38,7 @@ import ZkFold.Protocol.Plonkup.Testing
 import ZkFold.Protocol.Plonkup.Utils (sortByList)
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
+import ZkFold.ArithmeticCircuit.Var
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a) Natural]

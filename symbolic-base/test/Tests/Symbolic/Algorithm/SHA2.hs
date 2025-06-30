@@ -29,7 +29,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)

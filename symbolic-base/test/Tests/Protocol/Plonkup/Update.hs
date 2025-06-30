@@ -28,7 +28,7 @@ import ZkFold.Protocol.Plonkup (
 import ZkFold.Protocol.Plonkup.Prover (PlonkupProverSetup (..))
 import ZkFold.Protocol.Plonkup.Update (updateProverSetup, updateVerifierSetup)
 import ZkFold.Protocol.Plonkup.Witness (witnessInput)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval)
+import ZkFold.ArithmeticCircuit (eval)
 
 type P i n =
   Plonkup

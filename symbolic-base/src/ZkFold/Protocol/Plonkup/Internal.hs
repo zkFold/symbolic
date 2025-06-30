@@ -28,8 +28,8 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.Protocol.Plonkup.Utils (getParams, getSecretParams)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit (acContext))
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (acOutput)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext))
+import ZkFold.ArithmeticCircuit.Context (acOutput)
 
 {-
     NOTE: we need to parametrize the type of transcripts because we use BuiltinByteString on-chain and ByteString off-chain.

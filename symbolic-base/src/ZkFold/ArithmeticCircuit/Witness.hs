@@ -1,4 +1,4 @@
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness where
+module ZkFold.ArithmeticCircuit.Witness where
 
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq (NFData (..), rwhnf)
