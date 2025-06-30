@@ -21,9 +21,9 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
-import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Bool hiding (Bool)
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Control.Conditional (Conditional, ifThenElse)
+import ZkFold.Data.Bool
+import ZkFold.Data.Eq
 
 -- Ate pairing implementation adapted from:
 -- https://github.com/sdiehl/pairing/blob/master/src/Data/Pairing/Ate.hs

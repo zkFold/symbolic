@@ -67,6 +67,7 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Control.HApplicative (HApplicative (..))
+import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor (HFunctor (..))
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Product (fstP, sndP)
@@ -79,7 +80,6 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord

@@ -16,6 +16,7 @@ import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
@@ -24,7 +25,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (BoolType (true))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
-import ZkFold.Symbolic.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))

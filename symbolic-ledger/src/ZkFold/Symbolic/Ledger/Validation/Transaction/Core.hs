@@ -7,8 +7,8 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
 ) where
 
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Eq ((==))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Data.Morph
 import Prelude (fst, undefined, ($), (.))

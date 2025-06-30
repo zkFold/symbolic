@@ -20,7 +20,7 @@ import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.ByteString
-import qualified ZkFold.Symbolic.Data.Eq as Symbolic
+import qualified ZkFold.Data.Eq as ZkFold
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -359,7 +359,7 @@ newtype BLS12_381_GT = BLS12_381_GT Fq12
     , MultiplicativeMonoid
     , MultiplicativeSemigroup
     , Show
-    , Symbolic.Eq
+    , ZkFold.Eq
     )
 
 instance Exponent BLS12_381_GT Natural where

@@ -4,8 +4,8 @@
 module ZkFold.Symbolic.Examples.MerkleTree (exampleMerkleTree) where
 
 import GHC.TypeNats
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (true))
-import ZkFold.Symbolic.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Maybe (fromJust)
 import ZkFold.Symbolic.Data.MerkleTree

@@ -46,9 +46,9 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Eq
 import ZkFold.Symbolic.Data.Input
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.

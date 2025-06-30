@@ -23,9 +23,9 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
+import ZkFold.Data.Bool
 import ZkFold.Data.ByteString
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 
 -------------------------------- Introducing Fields ----------------------------------
 
