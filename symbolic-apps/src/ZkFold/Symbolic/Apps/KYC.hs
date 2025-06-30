@@ -22,7 +22,7 @@ import ZkFold.Symbolic.Data.Combinators (
   KnownRegisters,
   RegisterSize (..),
  )
-import ZkFold.Symbolic.Data.Eq (Eq ((==)), elem)
+import ZkFold.Data.Eq (Eq ((==)), elem)
 import ZkFold.Symbolic.Data.Ord (Ord ((>=)))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)

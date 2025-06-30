@@ -21,7 +21,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt

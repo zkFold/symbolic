@@ -26,7 +26,7 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 
 data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
   deriving stock

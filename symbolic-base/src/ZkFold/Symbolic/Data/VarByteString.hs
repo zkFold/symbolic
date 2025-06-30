@@ -50,7 +50,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators hiding (regSize)
-import ZkFold.Symbolic.Data.Eq (Eq)
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))

@@ -19,7 +19,7 @@ import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Eq ((==))
+import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 

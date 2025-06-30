@@ -23,10 +23,10 @@ import ZkFold.Data.List.Infinite ()
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), SymbolicEq)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq (Eq (..), SymbolicEq)
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Morph (MorphFrom, MorphTo (..), (@))

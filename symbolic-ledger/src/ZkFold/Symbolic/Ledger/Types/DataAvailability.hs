@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Ledger.Types.DataAvailability (
 
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 -- | Index associated with a data availability source.

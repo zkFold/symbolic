@@ -11,7 +11,7 @@ import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import qualified ZkFold.Symbolic.Data.ByteString as Symbolic
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import Prelude hiding (
   Bool,
   Eq (..),

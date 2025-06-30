@@ -30,7 +30,7 @@ import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, truncate)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq qualified as Symbolic
+import ZkFold.Data.Eq qualified as Symbolic
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L

@@ -31,7 +31,7 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.Eq (Eq (..))
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List

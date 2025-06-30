@@ -16,7 +16,7 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Eq (Eq)
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
 

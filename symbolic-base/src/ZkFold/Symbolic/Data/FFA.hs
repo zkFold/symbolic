@@ -42,7 +42,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.Eq (Eq (..))
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Ord (Ord (..))

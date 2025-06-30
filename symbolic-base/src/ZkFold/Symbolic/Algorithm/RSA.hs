@@ -35,7 +35,7 @@ import ZkFold.Symbolic.Data.Combinators (
   RegisterSize (..),
   Resize (..),
  )
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)

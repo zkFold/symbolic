@@ -40,7 +40,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   RegisterSize (..),
  )
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))

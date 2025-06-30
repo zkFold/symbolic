@@ -16,7 +16,7 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Eq (Eq)
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell

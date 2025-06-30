@@ -4,7 +4,7 @@ import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.Google
 import ZkFold.Symbolic.Data.JWT.RS256

@@ -22,7 +22,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256

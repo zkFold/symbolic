@@ -25,7 +25,7 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (eval1)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.List (emptyList, lSize)
 import qualified ZkFold.Symbolic.Data.List as L

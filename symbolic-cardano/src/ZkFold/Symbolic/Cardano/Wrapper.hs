@@ -2,7 +2,7 @@ module ZkFold.Symbolic.Cardano.Wrapper where
 
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
-import ZkFold.Symbolic.Data.Eq (Eq ((==)))
+import ZkFold.Data.Eq (Eq ((==)))
 import Prelude hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
 
 import ZkFold.Symbolic.Cardano.Types

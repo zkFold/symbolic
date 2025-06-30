@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Ledger.Types.Output where
 import GHC.Generics (Generic)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Eq (Eq)
+import ZkFold.Data.Eq (Eq)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address)

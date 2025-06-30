@@ -236,7 +236,6 @@ library
       ZkFold.Symbolic.Data.EllipticCurve.Pasta
       ZkFold.Symbolic.Data.EllipticCurve.PlutoEris
       ZkFold.Symbolic.Data.EllipticCurve.Secp256k1
-      ZkFold.Symbolic.Data.Eq
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
       ZkFold.Symbolic.Data.Hash

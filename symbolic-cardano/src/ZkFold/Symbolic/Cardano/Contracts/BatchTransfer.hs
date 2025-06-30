@@ -12,7 +12,7 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Eq
+import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (StrictConv (..))

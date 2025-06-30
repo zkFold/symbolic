@@ -22,7 +22,7 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval1)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import qualified ZkFold.Symbolic.Data.Eq as Symbolic
+import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
@@ -55,7 +55,7 @@ equalityBlake
   => BI.ByteString
   -> ByteString 24 c
   -> Bool c
-equalityBlake target input = fromConstant target Symbolic.== blake2b_224 @3 @c input
+equalityBlake target input = fromConstant target ZkFold.== blake2b_224 @3 @c input
 
 blake2bSymbolic :: Spec
 blake2bSymbolic =
