@@ -16,23 +16,28 @@ import ZkFold.Algebra.Class (zero)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval)
-import ZkFold.Symbolic.Data.Class (SymbolicData, Context)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.Symbolic.Data.Class (Context, SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
 
 benchmark
   :: forall a i o
-   . ( Arithmetic a, Binary a, SymbolicInput i, Context i ~ CircuitContext a
-     , SymbolicData o, Context o ~ CircuitContext a)
+   . ( Arithmetic a
+     , Binary a
+     , SymbolicInput i
+     , Context i ~ CircuitContext a
+     , SymbolicData o
+     , Context o ~ CircuitContext a
+     )
   => String -> (i -> o) -> Benchmark
 benchmark name fun =
   bgroup
     name
     [ bench "compilation" $ nf (compile @_ @(ArithmeticCircuit a _ _)) fun
     , env (return $ force $ compile fun) $ \c ->
-         bench "evaluation" $ nf (uncurry eval) (c, tabulate $ const zero)
+        bench "evaluation" $ nf (uncurry eval) (c, tabulate $ const zero)
     ]
 
 main :: IO ()

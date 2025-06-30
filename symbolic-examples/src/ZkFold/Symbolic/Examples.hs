@@ -41,8 +41,11 @@ data ExampleOutput where
   ExampleOutput
     :: forall a i o
      . ( Binary a
-       , SymbolicInput i, Context i ~ CircuitContext a
-       , SymbolicData o, Context o ~ CircuitContext a)
+       , SymbolicInput i
+       , Context i ~ CircuitContext a
+       , SymbolicData o
+       , Context o ~ CircuitContext a
+       )
     => (i -> o)
     -> ExampleOutput
 
