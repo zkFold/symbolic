@@ -12,7 +12,7 @@ import Control.Applicative (Applicative, pure)
 import Control.DeepSeq (NFData, NFData1)
 import Control.Monad (Monad)
 import Control.Monad.State.Strict (runState, state)
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), ToJSON1)
 import Data.Bool (otherwise)
 import Data.Constraint.Nat (Max)
 import Data.Distributive (Distributive (..))
@@ -49,7 +49,7 @@ import ZkFold.Prelude (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
-  deriving newtype (FromJSON, ToJSON)
+  deriving newtype (FromJSON, ToJSON, ToJSON1)
 
 instance Eq x => Eq (Vector n x) where
   type BooleanOf (Vector n x) = BooleanOf x
