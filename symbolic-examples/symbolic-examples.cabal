@@ -151,6 +151,7 @@ benchmark bench-compiler-performance
       adjunctions,
       base,
       binary,
+      bytestring,
       deepseq,
       symbolic-base,
       symbolic-examples,

@@ -5,14 +5,16 @@ module Main where
 import Control.DeepSeq (force)
 import Control.Monad (return)
 import Data.Binary (Binary)
-import Data.Function (const, ($))
+import Data.ByteString (foldr)
+import Data.Function (($), (.))
 import Data.Functor.Rep (Representable (..))
 import Data.String (String)
-import Data.Tuple (uncurry)
 import Data.Type.Equality (type (~))
+import Prelude (toInteger)
 import System.IO (IO)
 import Test.Tasty.Bench
-import ZkFold.Algebra.Class (zero)
+import ZkFold.Algebra.Class (fromConstant, zero, (+), Ring)
+import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, eval)
@@ -21,6 +23,9 @@ import ZkFold.Symbolic.Data.Class (Context, SymbolicData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
+
+fromBinary :: (Binary a, Ring b) => a -> b
+fromBinary = foldr ((+) . fromConstant . toInteger) zero . toByteString
 
 benchmark
   :: forall a i o
@@ -37,7 +42,7 @@ benchmark name fun =
     name
     [ bench "compilation" $ nf (compile @_ @(ArithmeticCircuit a _ _)) fun
     , env (return $ force $ compile fun) $ \c ->
-        bench "evaluation" $ nf (uncurry eval) (c, tabulate $ const zero)
+        bench "evaluation" $ nf (`eval` tabulate fromBinary) c
     ]
 
 main :: IO ()
