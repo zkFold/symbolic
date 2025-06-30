@@ -1,8 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Data.Orphans where
@@ -11,7 +10,7 @@ import Control.Applicative ((<*>))
 import Control.DeepSeq (NFData, NFData1)
 import Control.Monad (return)
 import Data.Aeson (FromJSON, ToJSON, ToJSON1 (..))
-import Data.Aeson.TH (deriveToJSON1, defaultOptions)
+import Data.Aeson.TH (defaultOptions, deriveToJSON1)
 import Data.Binary (Binary)
 import Data.Functor (Functor, (<$>))
 import Data.Functor.Rep (Representable (..), WrappedRep (..))
