@@ -138,6 +138,16 @@ library
       ZkFold.Algorithm.ReedSolomon
       ZkFold.Algorithm.Hash.MiMC
       ZkFold.Algorithm.Hash.MiMC.Constants
+      ZkFold.ArithmeticCircuit
+      ZkFold.ArithmeticCircuit.Arbitrary
+      ZkFold.ArithmeticCircuit.Context
+      ZkFold.ArithmeticCircuit.Desugaring
+      ZkFold.ArithmeticCircuit.Lookup
+      ZkFold.ArithmeticCircuit.MerkleHash
+      ZkFold.ArithmeticCircuit.Optimization
+      ZkFold.ArithmeticCircuit.Var
+      ZkFold.ArithmeticCircuit.Witness
+      ZkFold.ArithmeticCircuit.WitnessEstimation
       ZkFold.Control.Conditional
       ZkFold.Control.HApplicative
       ZkFold.Data.Bool
@@ -215,16 +225,6 @@ library
       ZkFold.Symbolic.Algorithm.Interpolation
       ZkFold.Symbolic.Class
       ZkFold.Symbolic.Compiler
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Arbitrary
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.MerkleHash
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Optimization
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness
-      ZkFold.Symbolic.Compiler.ArithmeticCircuit.WitnessEstimation
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class

@@ -15,6 +15,7 @@ import Prelude ((<$>), type (~))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Empty (Empty, empty)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (unpacked)
@@ -25,7 +26,6 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (Bool, bool)
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)

@@ -23,10 +23,10 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (
   Iso (..),

@@ -21,9 +21,7 @@ import Prelude (String, return, (++), type (~))
 
 import Tests.Common (it)
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Compiler (compileWith)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (
+import ZkFold.ArithmeticCircuit (
   ArithmeticCircuit,
   checkCircuit,
   checkClosedCircuit,
@@ -31,7 +29,9 @@ import ZkFold.Symbolic.Compiler.ArithmeticCircuit (
   exec,
   solder,
  )
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
+import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))

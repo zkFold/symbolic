@@ -1,4 +1,4 @@
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Desugaring (desugarRanges) where
+module ZkFold.ArithmeticCircuit.Desugaring (desugarRanges) where
 
 import Control.Monad (foldM, return)
 import Control.Monad.State (execState)
@@ -16,11 +16,11 @@ import Data.Tuple (fst, uncurry)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit.Context (CircuitContext, acLookup)
+import ZkFold.ArithmeticCircuit.Lookup (asRange)
+import ZkFold.ArithmeticCircuit.Var (toVar)
 import ZkFold.Prelude (assert, length)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext, acLookup)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup (asRange)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (toVar)
 import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.MonadCircuit
 

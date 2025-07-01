@@ -27,6 +27,7 @@ import ZkFold.Algebra.Field (fromZp)
 import ZkFold.Algebra.Number (KnownNat, Natural)
 import ZkFold.Algebra.Polynomial.Multivariate as PM
 import ZkFold.Algebra.Polynomial.Univariate
+import ZkFold.ArithmeticCircuit.Var
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.NonInteractiveProof (setupProve)
 import ZkFold.Protocol.Plonkup hiding (omega)
@@ -38,7 +39,6 @@ import ZkFold.Protocol.Plonkup.Testing
 import ZkFold.Protocol.Plonkup.Utils (sortByList)
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var
 
 -- | Polynomial types and specific polynomials that were causing exceptions
 problematicPolynomials :: (Ord a, FiniteField a) => [PM.Poly a (Var a) Natural]

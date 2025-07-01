@@ -2,7 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var where
+module ZkFold.ArithmeticCircuit.Var where
 
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.DeepSeq (NFData)
@@ -19,7 +19,7 @@ import GHC.Show (Show)
 import Prelude (Eq, Ord)
 
 import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Witness (WitnessF)
+import ZkFold.ArithmeticCircuit.Witness (WitnessF)
 import ZkFold.Symbolic.MonadCircuit (Witness, at)
 
 data LinVar a v = LinVar a v a | ConstVar a

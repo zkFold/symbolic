@@ -18,6 +18,7 @@ import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector, singleton)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
@@ -34,7 +35,6 @@ import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocol,
   specialSoundProtocol',
  )
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))

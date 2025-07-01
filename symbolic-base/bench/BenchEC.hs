@@ -14,7 +14,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point)
 import ZkFold.Symbolic.Data.FFA

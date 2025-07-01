@@ -10,8 +10,8 @@ import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
 
 import ZkFold.Algebra.Class (Semiring)
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var, toVar)
 import ZkFold.Data.ByteString (toByteString)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar (..), Var, toVar)
 
 data LookupConstraint i a = LookupConstraint
   { lkVar1 :: Var a

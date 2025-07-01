@@ -19,12 +19,12 @@ import System.IO (FilePath, IO, putStrLn)
 import Text.Show (show)
 
 import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit.Context (CircuitContext, fool)
+import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Prelude (writeFileJSON)
 import ZkFold.Symbolic.Class (fromCircuit2F)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext, fool)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Symbolic.Data.Bool (Bool (Bool))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input

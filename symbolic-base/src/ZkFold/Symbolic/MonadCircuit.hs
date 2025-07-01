@@ -17,7 +17,7 @@ import Prelude (Integer)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Lookup
+import ZkFold.ArithmeticCircuit.Lookup
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
