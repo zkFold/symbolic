@@ -34,6 +34,7 @@ import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 -- for function of type @f@ to be compilable.
 type CompilesWith c s f =
   ( SymbolicFunction f
+  , SymbolicData (Range f)
   , Context (Range f) ~ c
   , Domain f ~ s
   , SymbolicInput s
@@ -62,7 +63,8 @@ compileWith
 compileWith opts support f = restore . (,U1) . optimize $ opts \x ->
   let input = restore . bimap fool (fmap pure) $ swap (support x)
       Bool b = isValid input
-   in fromCircuit2F (apply f input) b \r (Par1 i) -> do
+      output = apply f input
+   in fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
         constraint (one - ($ i))
         return r
 

@@ -93,9 +93,8 @@ jobs:
     - name: Benchmark circuit size
       run: cabal bench bench-circuit-size
 
-    # TODO: Uncomment when the benchmark is fixed
-    # - name: Benchmark compiler performance
-    #   run: cabal bench bench-compiler-performance
+    - name: Benchmark compiler performance
+      run: cabal bench bench-compiler-performance
 
     - name: Benchmark polynomial multiplication
       run: cabal bench bench-poly-mul

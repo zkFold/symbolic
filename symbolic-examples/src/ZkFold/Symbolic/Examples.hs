@@ -2,19 +2,13 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
-import Control.DeepSeq (NFData1)
-import Data.Function (const, ($), (.))
-import Data.Functor.Rep (Rep, Representable)
+import Data.Function (($))
 import Data.String (String)
 import Data.Type.Equality (type (~))
-import GHC.Generics (type (:*:))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Data.ByteString (Binary)
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Compiler.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Compiler.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
@@ -43,30 +37,30 @@ type A = Zp BLS12_381_Scalar
 
 type B = Zp FpModulus
 
-type C a = ArithmeticCircuit a
-
 data ExampleOutput where
   ExampleOutput
     :: forall a i o
-     . (Representable i, Binary (Rep i), NFData1 o, Arithmetic a)
-    => (() -> C a i o)
+     . ( Binary a
+       , SymbolicInput i
+       , Context i ~ CircuitContext a
+       , SymbolicData o
+       , Context o ~ CircuitContext a
+       )
+    => (i -> o)
     -> ExampleOutput
 
 exampleOutput
-  :: forall a i o c f
-   . ( SymbolicFunction f
-     , c ~ CircuitContext a
-     , Context (Range f) ~ c
-     , Layout (Range f) ~ o
+  :: forall a f
+   . ( Binary a
+     , SymbolicFunction f
      , SymbolicInput (Domain f)
-     , Context (Domain f) ~ c
-     , i ~ Payload (Domain f) :*: Layout (Domain f)
-     , NFData1 o
-     , Binary a
+     , Context (Domain f) ~ CircuitContext a
+     , SymbolicData (Range f)
+     , Context (Range f) ~ CircuitContext a
      )
   => f
   -> ExampleOutput
-exampleOutput = ExampleOutput @a @i @o . const . compile
+exampleOutput f = ExampleOutput (apply f)
 
 examples :: [(String, ExampleOutput)]
 examples =
