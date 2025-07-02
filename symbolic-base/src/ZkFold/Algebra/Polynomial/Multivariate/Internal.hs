@@ -29,70 +29,70 @@ import Prelude hiding (
  )
 
 -- | A class for polynomials.
--- `c` is the coefficient type,
--- `i` is the variable type,
--- `j` is the power type.
-type Polynomial c i j = (Eq c, Field c, Monomial i j)
+-- `coef` is the coefficient type,
+-- `var` is the variable type,
+-- `pow` is the power type.
+type Polynomial coef var pow = (Eq coef, Field coef, Monomial var pow)
 
 -- | Polynomial type
-newtype Poly c i j = P [(c, Mono i j)]
+newtype Poly coef var pow = P [(coef, Mono var pow)]
   deriving (FromJSON, Generic, NFData, ToJSON)
 
 ---------------------------------- List-based polynomials with map-based monomials ----------------------------------
 
 -- | Polynomial constructor
-polynomial :: Polynomial c i j => [(c, Mono i j)] -> Poly c i j
-polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
+polynomial :: Polynomial coef var pow => [(coef, Mono var pow)] -> Poly coef var pow
+polynomial = foldr (\(coef, m) x -> if coef == zero then x else P [(coef, m)] + x) zero
 
 evalPolynomial
-  :: forall c i j b
-   . AdditiveMonoid b
-  => Scale c b
-  => ((i -> b) -> Mono i j -> b)
-  -> (i -> b)
-  -> Poly c i j
-  -> b
-evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
+  :: forall coef var pow a
+   . AdditiveMonoid a
+  => Scale coef a
+  => ((var -> a) -> Mono var pow -> a)
+  -> (var -> a)
+  -> Poly coef var pow
+  -> a
+evalPolynomial e f (P p) = foldr (\(coef, m) x -> x + scale coef (e f m)) zero p
 
-variables :: forall c v. Ord v => Poly c v Natural -> Set v
+variables :: forall coef var pow. Variable var => Poly coef var pow -> Set var
 variables (P p) = foldMap (Mono.variables . snd) p
 
-mapVar :: Variable var' => (var -> var') -> Poly c var j -> Poly c var' j
+mapVar :: Variable var' => (var -> var') -> Poly coef var pow -> Poly coef var' pow
 mapVar f (P ms) = P $ second (Mono.mapVar f) <$> ms
 
 mapCoeffs
-  :: forall c c' i j
-   . (c -> c')
-  -> Poly c i j
-  -> Poly c' i j
+  :: forall coef coef' var pow
+   . (coef -> coef')
+  -> Poly coef var pow
+  -> Poly coef' var pow
 mapCoeffs f (P p) = P $ p <&> first f
 
-instance Polynomial c i j => IsList (Poly c i j) where
-  type Item (Poly c i j) = (c, Mono i j)
+instance Polynomial coef var pow => IsList (Poly coef var pow) where
+  type Item (Poly coef var pow) = (coef, Mono var pow)
   toList (P p) = p
   fromList = polynomial
 
-instance (Show c, Show i, Show j, Monomial i j) => Show (Poly c i j) where
+instance (Show coef, Show var, Show pow, Monomial var pow) => Show (Poly coef var pow) where
   show (P p) =
     intercalate " + " $
-      p <&> \(c, m) -> show c <> "∙" <> show (m :: Mono i j)
+      p <&> \(coef, m) -> show coef <> "∙" <> show (m :: Mono var pow)
 
-instance Polynomial c i j => Eq (Poly c i j) where
+instance Polynomial coef var pow => Eq (Poly coef var pow) where
   P l == P r = l == r
 
 -- TODO: this assumes sorted monomials! Needs fixing.
-instance Polynomial c i j => Ord (Poly c i j) where
+instance Polynomial coef var pow => Ord (Poly coef var pow) where
   compare (P l) (P r) =
     compare
       (snd <$> l)
       (snd <$> r)
 
-instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
+instance (Arbitrary coef, Arbitrary (Mono var pow)) => Arbitrary (Poly coef var pow) where
   arbitrary = P <$> arbitrary
 
-instance {-# OVERLAPPING #-} FromConstant (Poly c i j) (Poly c i j)
+instance {-# OVERLAPPING #-} FromConstant (Poly coef var pow) (Poly coef var pow)
 
-instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
+instance Polynomial coef var pow => AdditiveSemigroup (Poly coef var pow) where
   P l + P r = P $ filter ((/= zero) . fst) $ go l r
    where
     go [] [] = []
@@ -108,48 +108,48 @@ instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
       | ml > mr = (cl, ml) : go ls ((cr, mr) : rs)
       | otherwise = (cr, mr) : go ((cl, ml) : ls) rs
 
-instance Scale c' c => Scale c' (Poly c i j) where
-  scale c' (P p) = P $ map (first (scale c')) p
+instance Scale coef' coef => Scale coef' (Poly coef var pow) where
+  scale coef' (P p) = P $ map (first (scale coef')) p
 
-instance Polynomial c i j => AdditiveMonoid (Poly c i j) where
+instance Polynomial coef var pow => AdditiveMonoid (Poly coef var pow) where
   zero = P []
 
-instance Polynomial c i j => AdditiveGroup (Poly c i j) where
+instance Polynomial coef var pow => AdditiveGroup (Poly coef var pow) where
   negate (P p) = P $ map (first negate) p
 
-instance {-# OVERLAPPING #-} Polynomial c i j => Scale (Poly c i j) (Poly c i j)
+instance {-# OVERLAPPING #-} Polynomial coef var pow => Scale (Poly coef var pow) (Poly coef var pow)
 
-instance Polynomial c i j => MultiplicativeSemigroup (Poly c i j) where
+instance Polynomial coef var pow => MultiplicativeSemigroup (Poly coef var pow) where
   P l * r = foldl' (+) (P []) $ map (`scaleM` r) l
 
-instance Polynomial c i j => Exponent (Poly c i j) Natural where
+instance Polynomial coef var pow => Exponent (Poly coef var pow) Natural where
   (^) = natPow
 
-instance Polynomial c i j => MultiplicativeMonoid (Poly c i j) where
+instance Polynomial coef var pow => MultiplicativeMonoid (Poly coef var pow) where
   one = P [(one, one)]
 
-instance (Monomial i j, FromConstant c' c) => FromConstant c' (Poly c i j) where
+instance (Monomial var pow, FromConstant coef' coef) => FromConstant coef' (Poly coef var pow) where
   fromConstant x = P [(fromConstant x, one)]
 
-instance Polynomial c i j => Semiring (Poly c i j)
+instance Polynomial coef var pow => Semiring (Poly coef var pow)
 
-instance Polynomial c i j => Ring (Poly c i j)
+instance Polynomial coef var pow => Ring (Poly coef var pow)
 
--- | @'var' i@ is a polynomial \(p(x) = x_i\)
-var :: Polynomial c i j => i -> Poly c i j
+-- | @'var' x@ is a polynomial \(p(x) = x_{var}\)
+var :: Polynomial coef var pow => var -> Poly coef var pow
 var x = polynomial [(one, mono $ fromList [(x, one)])]
 
--- | @'constant' i@ is a polynomial \(p(x) = const\)
-constant :: Polynomial c i j => c -> Poly c i j
-constant c = polynomial [(c, one)]
+-- | @'constant' coef@ is a polynomial \(p(x) = const\)
+constant :: Polynomial coef var pow => coef -> Poly coef var pow
+constant coef = polynomial [(coef, one)]
 
-lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
+lt :: Polynomial coef var pow => Poly coef var pow -> (coef, Mono var pow)
 lt (P []) = (zero, one)
 lt (P (m : _)) = m
 
-zeroP :: Poly c i j -> Bool
+zeroP :: Poly coef var pow -> Bool
 zeroP (P []) = True
 zeroP _ = False
 
-scaleM :: Polynomial c i j => (c, Mono i j) -> Poly c i j -> Poly c i j
-scaleM (c, m) (P p) = P $ map (bimap (* c) (* m)) p
+scaleM :: Polynomial coef var pow => (coef, Mono var pow) -> Poly coef var pow -> Poly coef var pow
+scaleM (coef, m) (P p) = P $ map (bimap (* coef) (* m)) p
