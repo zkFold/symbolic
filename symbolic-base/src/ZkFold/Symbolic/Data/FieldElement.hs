@@ -22,16 +22,17 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (BoolType (true))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
+  deriving (SymbolicData, SymbolicInput) via (Vec Par1)
 
 fieldElements :: (Package c, Functor f) => c f -> f (FieldElement c)
 fieldElements = fmap FieldElement . unpacked
@@ -43,8 +44,6 @@ deriving stock instance HEq c => Haskell.Eq (FieldElement c)
 deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldElement c)
 
 deriving newtype instance HNFData c => NFData (FieldElement c)
-
-deriving newtype instance Symbolic c => SymbolicData (FieldElement c)
 
 deriving newtype instance Symbolic c => Eq (FieldElement c)
 
@@ -129,9 +128,6 @@ instance Symbolic c => BinaryExpansion (FieldElement c) where
     FieldElement $
       symbolicF bits (Par1 . foldr (\x y -> x + y + y) zero) $
         fmap Par1 . horner . fromVector
-
-instance Symbolic c => SymbolicInput (FieldElement c) where
-  isValid _ = true
 
 instance (Symbolic c, Arbitrary (BaseField c)) => Arbitrary (FieldElement c) where
   arbitrary = FieldElement . embed . Par1 <$> arbitrary
