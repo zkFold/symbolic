@@ -6,12 +6,15 @@ module ZkFold.Algebra.Polynomial.Multivariate.Monomial where
 
 import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.List (intercalate)
+import Data.Bool (Bool (..))
+import Data.Eq (Eq (..))
+import Data.Function (($), (.))
+import Data.Functor ((<$>))
+import Data.List (intercalate, map, (++))
 import Data.Map.Strict (
   Map,
   differenceWith,
   empty,
-  filter,
   foldrWithKey,
   fromListWith,
   intersectionWith,
@@ -21,15 +24,19 @@ import Data.Map.Strict (
   unionWith,
  )
 import qualified Data.Map.Strict as Map
+import Data.Maybe (Maybe (..))
+import Data.Ord (Ord (..), Ordering (..))
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import ZkFold.Algebra.Class
-import Prelude hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!), (/), (^))
+import Prelude (Integer, Show (..), String, error, otherwise)
+
+-- import Prelude hiding (Num (..), drop, filter, lcm, length, lookup, sum, take, (!!), (/), (^))
 
 -- | A class for variables.
-type Variable var = (Eq var, Ord var)
+type Variable var = (Ord var)
 
 -- | A class for monomials.
 type Monomial var pow = (Variable var, Ord pow, Semiring pow)
@@ -41,43 +48,43 @@ newtype Mono var pow = UnsafeMono (Map var pow)
 ------------------------------------ Map-based monomials ------------------------------------
 
 -- | Monomial constructor
-mono :: Monomial i j => Map i j -> Mono i j
-mono = UnsafeMono . filter (/= zero)
+mono :: Monomial var pow => Map var pow -> Mono var pow
+mono = UnsafeMono . Map.filter (/= zero)
 
 evalMonomial
-  :: forall i j b
-   . MultiplicativeMonoid b
-  => Exponent b j
-  => (i -> b)
-  -> Mono i j
-  -> b
+  :: forall var pow a
+   . MultiplicativeMonoid a
+  => Exponent a pow
+  => (var -> a)
+  -> Mono var pow
+  -> a
 evalMonomial f (UnsafeMono m) =
-  foldrWithKey (\i j x -> (f i ^ j) * x) (one @b) m
+  foldrWithKey (\var pow x -> (f var ^ pow) * x) (one @a) m
 
 -- | Maps a variable index using the provided `Map`
-mapVar :: Variable i => Map i i -> i -> i
+mapVar :: Variable var => Map var var -> var -> var
 mapVar m x = case x `lookup` m of
   Just y -> y
   _ -> error "mapVar: something went wrong"
 
-mapVarMonomial :: Variable i => Map i i -> Mono i j -> Mono i j
+mapVarMonomial :: Variable var => Map var var -> Mono var pow -> Mono var pow
 mapVarMonomial m (UnsafeMono as) = UnsafeMono $ mapKeys (mapVar m) as
 
-instance Monomial i j => IsList (Mono i j) where
-  type Item (Mono i j) = (i, j)
+instance Monomial var pow => IsList (Mono var pow) where
+  type Item (Mono var pow) = (var, pow)
   toList (UnsafeMono m) = toList m
   fromList m = UnsafeMono $ fromListWith (+) m
 
-instance (Show i, Show j, Monomial i j) => Show (Mono i j) where
+instance (Show var, Show pow, Monomial var pow) => Show (Mono var pow) where
   show (UnsafeMono m) = intercalate "∙" . map showVar $ toList m
    where
-    showVar :: (i, j) -> String
-    showVar (i, j) = "x" ++ show i ++ (if j == one then "" else "^" ++ show j)
+    showVar :: (var, pow) -> String
+    showVar (v, p) = "x" ++ show v ++ (if p == one then "" else "^" ++ show p)
 
-instance Monomial i j => Eq (Mono i j) where
+instance Monomial var pow => Eq (Mono var pow) where
   UnsafeMono asl == UnsafeMono asr = asl == asr
 
-instance Monomial i j => Ord (Mono i j) where
+instance Monomial var pow => Ord (Mono var pow) where
   compare (UnsafeMono asl) (UnsafeMono asr) = go (toList asl) (toList asr)
    where
     go [] [] = EQ
@@ -87,36 +94,36 @@ instance Monomial i j => Ord (Mono i j) where
       | k1 == k2 = if a1 == a2 then go xs ys else compare a1 a2
       | otherwise = compare k2 k1
 
-instance (Monomial i j, Arbitrary i, Arbitrary j) => Arbitrary (Mono i j) where
+instance (Monomial var pow, Arbitrary var, Arbitrary pow) => Arbitrary (Mono var pow) where
   arbitrary = UnsafeMono <$> arbitrary
 
-instance Monomial i j => MultiplicativeSemigroup (Mono i j) where
+instance Monomial var pow => MultiplicativeSemigroup (Mono var pow) where
   UnsafeMono l * UnsafeMono r = UnsafeMono $ Map.filter (/= zero) $ unionWith (+) l r
 
-instance Monomial i j => Exponent (Mono i j) Natural where
+instance Monomial var pow => Exponent (Mono var pow) Natural where
   (^) = natPow
 
-instance Monomial i j => MultiplicativeMonoid (Mono i j) where
+instance Monomial var pow => MultiplicativeMonoid (Mono var pow) where
   one = UnsafeMono empty
 
-instance (Monomial i j, Ring j) => Exponent (Mono i j) Integer where
+instance (Monomial var pow, Ring pow) => Exponent (Mono var pow) Integer where
   (^) = intPow
 
-instance (Monomial i j, Ring j) => MultiplicativeGroup (Mono i j) where
+instance (Monomial var pow, Ring pow) => MultiplicativeGroup (Mono var pow) where
   invert (UnsafeMono m) = UnsafeMono $ Map.map negate m
 
   UnsafeMono l / UnsafeMono r = UnsafeMono $ differenceWith f l r
    where
     f a b = if a == b then Nothing else Just (a - b)
 
-oneM :: Mono i j -> Bool
+oneM :: Mono var pow -> Bool
 oneM (UnsafeMono m) = Map.null m
 
-dividable :: forall i j. Monomial i j => Mono i j -> Mono i j -> Bool
+dividable :: forall var pow. Monomial var pow => Mono var pow -> Mono var pow -> Bool
 dividable (UnsafeMono l) (UnsafeMono r) = isSubmapOfBy (<=) r l
 
-lcmM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
+lcmM :: Monomial var pow => Mono var pow -> Mono var pow -> Mono var pow
 lcmM (UnsafeMono l) (UnsafeMono r) = UnsafeMono $ unionWith max l r
 
-gcdM :: Monomial i j => Mono i j -> Mono i j -> Mono i j
+gcdM :: Monomial var pow => Mono var pow -> Mono var pow -> Mono var pow
 gcdM (UnsafeMono l) (UnsafeMono r) = UnsafeMono (intersectionWith min l r)
