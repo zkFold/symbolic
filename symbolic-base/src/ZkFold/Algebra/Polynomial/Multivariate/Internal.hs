@@ -19,6 +19,8 @@ import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import Prelude hiding (
   Num (..),
   drop,
@@ -29,9 +31,6 @@ import Prelude hiding (
   (!!),
   (/),
  )
-
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 
 -- | A class for polynomials.
 -- `c` is the coefficient type,
@@ -60,10 +59,10 @@ evalPolynomial
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
 variables :: forall c v. Ord v => Poly c v Natural -> Set v
-variables (P p) = foldMap ((\(M m) -> keysSet m) . snd) p
+variables (P p) = foldMap ((\(UnsafeMono m) -> keysSet m) . snd) p
 
 mapVars :: Variable i2 => (i1 -> i2) -> Poly c i1 j -> Poly c i2 j
-mapVars f (P ms) = P $ (\(c, M m) -> (c, M $ M.mapKeys f m)) <$> ms
+mapVars f (P ms) = P $ (\(c, UnsafeMono m) -> (c, UnsafeMono $ M.mapKeys f m)) <$> ms
 
 mapVarPolynomial :: Variable i => Map i i -> Poly c i j -> Poly c i j
 mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
@@ -77,8 +76,8 @@ mapCoeffs f (P p) = P $ p <&> first f
 
 instance Polynomial c i j => IsList (Poly c i j) where
   type Item (Poly c i j) = (c, Map i j)
-  toList (P p) = second (\(M m) -> m) <$> p
-  fromList p = polynomial $ second monomial <$> p
+  toList (P p) = second (\(UnsafeMono m) -> m) <$> p
+  fromList p = polynomial $ second mono <$> p
 
 instance (Show c, Show i, Show j, Monomial i j) => Show (Poly c i j) where
   show (P p) =
@@ -134,10 +133,10 @@ instance Polynomial c i j => Exponent (Poly c i j) Natural where
   (^) = natPow
 
 instance Polynomial c i j => MultiplicativeMonoid (Poly c i j) where
-  one = P [(one, M empty)]
+  one = P [(one, UnsafeMono empty)]
 
 instance FromConstant c' c => FromConstant c' (Poly c i j) where
-  fromConstant x = P [(fromConstant x, M empty)]
+  fromConstant x = P [(fromConstant x, UnsafeMono empty)]
 
 instance Polynomial c i j => Semiring (Poly c i j)
 
@@ -145,14 +144,14 @@ instance Polynomial c i j => Ring (Poly c i j)
 
 -- | @'var' i@ is a polynomial \(p(x) = x_i\)
 var :: Polynomial c i j => i -> Poly c i j
-var x = polynomial [(one, monomial $ fromList [(x, one)])]
+var x = polynomial [(one, mono $ fromList [(x, one)])]
 
 -- | @'constant' i@ is a polynomial \(p(x) = const\)
 constant :: Polynomial c i j => c -> Poly c i j
-constant c = polynomial [(c, M M.empty)]
+constant c = polynomial [(c, UnsafeMono M.empty)]
 
 lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
-lt (P []) = (zero, M empty)
+lt (P []) = (zero, UnsafeMono empty)
 lt (P (m : _)) = m
 
 zeroP :: Poly c i j -> Bool

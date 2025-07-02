@@ -10,9 +10,6 @@ import Data.List (foldl')
 import Data.Map.Strict (Map, keys)
 import qualified Data.Map.Strict as M
 import Data.Maybe (Maybe (..))
-import Prelude (fmap, zip, ($), (.), (<$>))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate
@@ -25,6 +22,8 @@ import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
+import Prelude (fmap, zip, ($), (.), (<$>))
+import qualified Prelude as P
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.
@@ -77,7 +76,9 @@ padDecomposition
      , AdditiveMonoid f
      , KnownNat (d + 1)
      )
-  => f -> V.Vector (d + 1) [f] -> [f]
+  => f
+  -> V.Vector (d + 1) [f]
+  -> [f]
 padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j p -> ((pad ^ (d -! j)) *) <$> p)
  where
   d = value @(d + 1) -! 1
@@ -93,4 +94,4 @@ degreeDecomposition lmap = tabulate (degree_j . toConstant)
   leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
 
 deg :: PM.Mono v Natural -> Natural
-deg (PM.M m) = sum m
+deg (PM.UnsafeMono m) = sum m

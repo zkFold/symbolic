@@ -23,8 +23,6 @@ import Data.Semigroup ((<>))
 import Data.Set (Set)
 import qualified Data.Set as S
 import GHC.Generics ((:*:))
-import Prelude (error)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial)
 import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
@@ -39,6 +37,7 @@ import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.ByteString (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
+import Prelude (error)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@
@@ -49,7 +48,9 @@ import ZkFold.Symbolic.Class (Arithmetic)
 optimize
   :: forall a o
    . (Arithmetic a, Binary a, Functor o)
-  => (NewVar -> Bool) -> CircuitContext a o -> CircuitContext a o
+  => (NewVar -> Bool)
+  -> CircuitContext a o
+  -> CircuitContext a o
 optimize keep (CircuitContext s lf lc w f o) =
   let (newSystem, consts) = varsToReplace (s, M.empty)
       prune :: (Monad e, FromConstant a (e NewVar)) => e NewVar -> e NewVar
@@ -136,14 +137,14 @@ varsToReplace (s, l)
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
   toConstVar = \case
-    P [(_, M m1)] -> case M.toList m1 of
+    P [(_, UnsafeMono m1)] -> case M.toList m1 of
       [(m1var, 1)] -> Just (m1var, zero)
       _ -> Nothing
-    P [(c, M m1), (k, M m2)]
-      | oneM (M m1) -> case M.toList m2 of
+    P [(c, UnsafeMono m1), (k, UnsafeMono m2)]
+      | oneM (UnsafeMono m1) -> case M.toList m2 of
           [(m2var, 1)] -> Just (m2var, negate c // k)
           _ -> Nothing
-      | oneM (M m2) -> case M.toList m1 of
+      | oneM (UnsafeMono m2) -> case M.toList m1 of
           [(m1var, 1)] -> Just (m1var, negate k // c)
           _ -> Nothing
       | otherwise -> Nothing

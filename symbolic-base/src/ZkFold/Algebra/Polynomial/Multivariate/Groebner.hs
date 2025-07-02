@@ -3,6 +3,10 @@ module ZkFold.Algebra.Polynomial.Multivariate.Groebner where
 import Data.Bool (bool)
 import Data.List (sortBy)
 import GHC.Natural (Natural)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Polynomial.Multivariate.Internal
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial
+import ZkFold.Prelude (length, (!!))
 import Prelude hiding (
   Num (..),
   drop,
@@ -13,11 +17,6 @@ import Prelude hiding (
   (!!),
   (/),
  )
-
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate.Internal
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial
-import ZkFold.Prelude (length, (!!))
 
 reducable :: Polynomial c i j => Poly c i j -> Poly c i j -> Bool
 reducable l r = dividable (snd $ lt l) (snd $ lt r)
@@ -89,7 +88,7 @@ makeSPoly l r =
   let (cl, ml) = lt l
       (cr, mr) = lt r
 
-      M as = gcdM ml mr
+      UnsafeMono as = gcdM ml mr
       lcm = lcmM ml mr
 
       ra = lcm / ml
