@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Ord (
@@ -10,9 +10,9 @@ module ZkFold.Symbolic.Data.Ord (
 ) where
 
 import Control.DeepSeq (NFData)
-import Data.Foldable (fold, toList, Foldable)
-import Data.Functor.Rep (Representable)
+import Data.Foldable (Foldable, fold, toList)
 import Data.Function (on)
+import Data.Functor.Rep (Representable)
 import Data.List (concatMap, reverse, zipWith)
 import Data.Traversable (Traversable, traverse)
 import GHC.Generics

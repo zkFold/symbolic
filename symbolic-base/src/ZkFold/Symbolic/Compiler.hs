@@ -36,6 +36,7 @@ class SymbolicFunction f where
   type Context f :: Ctx
   type Domain f :: Ctx -> Type
   type Range f :: Type
+
   -- | Saturates a symbolic function.
   apply :: f -> Domain f (Context f) -> Range f
 

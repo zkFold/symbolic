@@ -1,8 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingVia #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Bool (
@@ -20,7 +19,7 @@ import Control.DeepSeq (NFData)
 import Control.Monad (return)
 import Data.Function (($), (.))
 import Data.Functor ((<$>))
-import Data.Functor.Rep (mzipRep, mzipWithRep, Representable)
+import Data.Functor.Rep (Representable, mzipRep, mzipWithRep)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Proxy (Proxy)
 import Data.Traversable (Traversable, for)
@@ -44,7 +43,7 @@ import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
-    deriving SymbolicData via (Vec Par1)
+  deriving SymbolicData via (Vec Par1)
 
 fromBool :: Bool (Interpreter a) -> a
 fromBool (Bool (Interpreter (Par1 b))) = b

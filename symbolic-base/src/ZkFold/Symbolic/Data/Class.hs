@@ -79,7 +79,8 @@ class SymbolicData x where
     => (c (Layout x n), Payload x n (WitnessField c))
     -> x c
   default restore
-    :: ( Symbolic c, Order (BaseField c) ~ n
+    :: ( Symbolic c
+       , Order (BaseField c) ~ n
        , G.Generic1 x
        , SymbolicData (G.Rep1 x)
        , Layout x n ~ Layout (G.Rep1 x) n
