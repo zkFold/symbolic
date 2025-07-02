@@ -132,7 +132,6 @@ library
       ZkFold.Algebra.Polynomial.Multivariate.Groebner
       ZkFold.Algebra.Polynomial.Multivariate.Monomial
       ZkFold.Algebra.Polynomial.Multivariate.Internal
-      ZkFold.Algebra.Polynomial.Multivariate.Substitution
       ZkFold.Algebra.Polynomial.Univariate
       ZkFold.Algebra.Polynomial.Univariate.Simple
       ZkFold.Algorithm.ReedSolomon
