@@ -30,6 +30,27 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 
+type Ctx = (Type -> Type) -> Type
+
+class SymbolicFunction f where
+  type Context f :: Ctx
+  type Domain f :: Ctx -> Type
+  type Range f :: Type
+  -- | Saturates a symbolic function.
+  apply :: f -> Domain f (Context f) -> Range f
+
+instance (SymbolicFunction y, Context y ~ c) => SymbolicFunction (x c -> y) where
+  type Context (x c -> y) = c
+  type Domain (x c -> y) = x G.:*: Domain y
+  type Range (x c -> y) = Range y
+  apply f (x G.:*: y) = apply (f x) y
+
+instance SymbolicFunction (x (c :: Ctx)) where
+  type Context (x c) = c
+  type Domain (x c) = Proxy
+  type Range (x c) = x c
+  apply x _ = x
+
 -- | A constraint defining what it means
 -- for function of type @f@ to be compilable.
 type CompilesWith c s f =
