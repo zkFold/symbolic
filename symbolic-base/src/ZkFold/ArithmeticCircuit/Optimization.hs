@@ -7,7 +7,7 @@ module ZkFold.ArithmeticCircuit.Optimization (optimize, isInputVar) where
 import Control.Applicative (pure)
 import Control.Monad (Monad, (>>=))
 import Data.Binary (Binary)
-import Data.Bool (Bool (..), bool, not, otherwise, (&&), (||))
+import Data.Bool (Bool (..), bool, otherwise, (&&))
 import Data.ByteString (ByteString)
 import Data.Eq ((/=), (==))
 import Data.Foldable (all, any)
@@ -25,7 +25,7 @@ import qualified Data.Set as S
 import GHC.Generics ((:*:))
 import GHC.IsList (toList)
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate (Poly (..), evalMonomial, evalPolynomial, oneM, var)
+import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, oneM, var)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -125,21 +125,17 @@ varsToReplace (s, l)
     :: Map NewVar a
     -> Map ByteString (Constraint a)
     -> Map ByteString (Constraint a)
-  optimizeSystems m as
-    | all checkZero ns = ns
-    | otherwise = error "unsatisfiable constraint"
+  optimizeSystems m as = ns
    where
     ns = evalPolynomial evalMonomial varF <$> as
     varF p = maybe (var p) fromConstant (M.lookup p m)
-    checkZero (P [(c, mx)]) = (c == zero) && oneM mx || not (oneM mx)
-    checkZero _ = True
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
-  toConstVar = \case
-    P [(_, m1)] -> case toList m1 of
+  toConstVar p = case toList p of
+    [(_, m1)] -> case toList m1 of
       [(m1var, 1)] -> Just (m1var, zero)
       _ -> Nothing
-    P [(c, m1), (k, m2)]
+    [(c, m1), (k, m2)]
       | oneM m1 -> case toList m2 of
           [(m2var, 1)] -> Just (m2var, negate c // k)
           _ -> Nothing

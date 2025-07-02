@@ -47,9 +47,9 @@ problematicPolynomials =
   , var (ConstVar $ one + one)
   , let v1 = toVar (EqVar "y\ETX^\246\226\195\154S\130M\tL\146y\248\201\162\220 \237n6p\bC\151\186\241\US\136\225\139")
         v2 = toVar (EqVar "~\180\185\222\SOH!\t\254\155\v\SI\187\&9\227\163|^\168Z\184Q\129\rN\218\SYN\GSp\189\139~^")
-     in polynomial [(one, fromList [(v1, 1), (v2, 1)])]
-  , polynomial [(one, fromList [(toVar (EqVar "v1"), 1), (toVar (EqVar "v2"), 1)])]
-  , polynomial [(one, fromList [(toVar (EqVar "v1"), 1), (ConstVar one, 1)])]
+     in poly [(one, fromList [(v1, 1), (v2, 1)])]
+  , poly [(one, fromList [(toVar (EqVar "v1"), 1), (toVar (EqVar "v2"), 1)])]
+  , poly [(one, fromList [(toVar (EqVar "v1"), 1), (ConstVar one, 1)])]
   ]
 
 propPlonkConstraintConversion :: (Ord a, FiniteField a) => PlonkConstraint (Vector 1) a -> Bool

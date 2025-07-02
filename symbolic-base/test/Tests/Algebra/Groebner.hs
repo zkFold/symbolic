@@ -26,7 +26,7 @@ specGroebner = do
     describe "Polynomial is 0 test" $ do
       it "should pass" $ do
         zeroP @Fr @Natural @Natural
-          ( polynomial
+          ( poly
               [ (zero, mono $ fromList [(1, 1), (2, 2), (3, 3)])
               , (zero, mono $ fromList [(1, 1), (2, 2), (3, 3)])
               ]
@@ -49,12 +49,12 @@ specGroebner = do
           (mono $ fromList [(1, 1), (2, 1), (3, 1)])
           `shouldBe` LT
         compare
-          ( polynomial @Fr
+          ( poly @Fr
               [ (1, mono @Natural @Natural $ fromList [(1, 1), (2, 1)])
               , (1, mono $ fromList [(1, 1), (2, 1), (3, 1)])
               ]
           )
-          ( polynomial
+          ( poly
               [ (1, mono $ fromList [(1, 1), (2, 1), (3, 1)])
               , (1, mono $ fromList [(1, 1), (3, 1)])
               ]
@@ -63,7 +63,7 @@ specGroebner = do
     describe "Polynomial multiplication test" $ do
       it "should pass" $ do
         head testPoly * (testPoly !! 1)
-          `shouldBe` polynomial
+          `shouldBe` poly
             [ (1, mono $ fromList [(1, 1), (2, 2), (3, 1)])
             , (1, mono $ fromList [(1, 1), (2, 2)])
             , (1, mono $ fromList [(1, 1), (3, 2), (2, 1)])
@@ -80,12 +80,12 @@ specGroebner = do
       it "should pass" $ do
         let s = makeSPoly (head testPoly) (testPoly !! 1)
         s
-          `shouldBe` polynomial
+          `shouldBe` poly
             [ (negate one, mono $ fromList [(1, 1), (2, 1)])
             , (1, mono $ fromList [(1, 1), (3, 2)])
             ]
         s `fullReduceMany` [testPoly !! 2]
-          `shouldBe` polynomial
+          `shouldBe` poly
             [ (negate one, mono $ fromList [(1, 1), (2, 1)])
             , (1, mono $ fromList [(1, 1)])
             ]

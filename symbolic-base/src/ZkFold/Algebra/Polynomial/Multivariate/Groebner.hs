@@ -59,9 +59,9 @@ fullReduceMany
   -> Poly c i j
 fullReduceMany h fs =
   let h' = reduceMany h fs
-   in case h' of
-        P [] -> h'
-        P ((c, m) : _) -> P [(c, m)] + fullReduceMany (h' - P [(c, m)]) fs
+   in if zeroP h'
+        then h'
+        else poly [lt h'] + fullReduceMany (h' - poly [lt h']) fs
 
 systemReduce
   :: forall c i j

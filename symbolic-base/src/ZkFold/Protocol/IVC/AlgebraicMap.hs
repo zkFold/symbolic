@@ -18,7 +18,6 @@ import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext))
 import ZkFold.ArithmeticCircuit.Context (acSystem, acWitness)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.ByteString (Binary, fromByteString)
-import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
@@ -84,14 +83,9 @@ padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j 
   d = value @(d + 1) -! 1
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @d@
-degreeDecomposition :: forall d f v. KnownNat (d + 1) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
+degreeDecomposition
+  :: forall d f v. (KnownNat (d + 1), Variable v) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
 degreeDecomposition lmap = tabulate (degree_j . toConstant)
  where
   degree_j :: Natural -> [Poly f v Natural]
-  degree_j j = P.fmap (leaveDeg j) lmap
-
-  leaveDeg :: Natural -> PM.Poly f v Natural -> PM.Poly f v Natural
-  leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
-
-deg :: PM.Mono v Natural -> Natural
-deg = degM
+  degree_j j = P.fmap (homogenous j) lmap
