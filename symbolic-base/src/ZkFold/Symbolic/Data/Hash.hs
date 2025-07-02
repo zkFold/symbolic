@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Data.Hash where
 
@@ -14,7 +14,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Algorithm.Interpolation (interpolateW)
-import ZkFold.Symbolic.Class (Symbolic, BaseField, fromCircuitF, witnessF, fromCircuit2F)
+import ZkFold.Symbolic.Class (BaseField, Symbolic, fromCircuit2F, fromCircuitF, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), SymbolicEq)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -32,8 +32,8 @@ class Hashable h a where
   hasher :: a -> h
 
 newtype PayloadedData x c = PayloadedData
-  { runPayloadedData ::
-        Payloaded (Layout x (Order (BaseField c)) G.:*: Payload x (Order (BaseField c))) c
+  { runPayloadedData
+      :: Payloaded (Layout x (Order (BaseField c)) G.:*: Payload x (Order (BaseField c))) c
   }
 
 instance SymbolicData x => SymbolicData (PayloadedData x) where
@@ -45,14 +45,14 @@ instance SymbolicData x => SymbolicData (PayloadedData x) where
     PayloadedData $ Payloaded $ interpolateW (bimap fromConstant (runPayloaded . runPayloadedData) <$> bs) c
   restore = _
 
-instance SymbolicData x => SymbolicInput (PayloadedData x) where
+instance SymbolicData x => SymbolicInput (PayloadedData x)
 
 -- | An invertible hash 'h' of a symbolic datatype 'a'.
 data Hash h a c = Hash
   { hHash :: h c
   , hValue :: PayloadedData a c
   }
-  deriving (G.Generic, G.Generic1, SymbolicData, SymbolicInput )
+  deriving (G.Generic, G.Generic1, SymbolicData, SymbolicInput)
 
 instance (Symbolic c, SymbolicData a, SymbolicEq h c) => Eq (Hash h a c)
 
@@ -60,7 +60,8 @@ instance (Symbolic c, SymbolicData a, SymbolicEq h c) => Eq (Hash h a c)
 hash :: (Hashable (h c) (a c), SymbolicData a, Symbolic c) => a c -> Hash h a c
 hash a =
   Hash (hasher a) $
-    PayloadedData $ Payloaded (witnessF (arithmetize a) G.:*: payload a)
+    PayloadedData $
+      Payloaded (witnessF (arithmetize a) G.:*: payload a)
 
 -- | Restore the data which were hashed.
 preimage

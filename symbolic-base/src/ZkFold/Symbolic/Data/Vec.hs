@@ -25,7 +25,7 @@ import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
-    deriving G.Generic
+  deriving G.Generic
 
 deriving instance (HNFData c, NFData1 f) => NFData (Vec f c)
 
