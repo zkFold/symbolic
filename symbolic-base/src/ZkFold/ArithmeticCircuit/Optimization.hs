@@ -23,10 +23,9 @@ import Data.Semigroup ((<>))
 import Data.Set (Set)
 import qualified Data.Set as S
 import GHC.Generics ((:*:))
+import GHC.IsList (toList)
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial)
-import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial (Mono (..), oneM)
+import ZkFold.Algebra.Polynomial.Multivariate (Poly (..), evalMonomial, evalPolynomial, oneM, var)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -137,14 +136,14 @@ varsToReplace (s, l)
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
   toConstVar = \case
-    P [(_, UnsafeMono m1)] -> case M.toList m1 of
+    P [(_, m1)] -> case toList m1 of
       [(m1var, 1)] -> Just (m1var, zero)
       _ -> Nothing
-    P [(c, UnsafeMono m1), (k, UnsafeMono m2)]
-      | oneM (UnsafeMono m1) -> case M.toList m2 of
+    P [(c, m1), (k, m2)]
+      | oneM m1 -> case toList m2 of
           [(m2var, 1)] -> Just (m2var, negate c // k)
           _ -> Nothing
-      | oneM (UnsafeMono m2) -> case M.toList m1 of
+      | oneM m2 -> case toList m1 of
           [(m1var, 1)] -> Just (m1var, negate k // c)
           _ -> Nothing
       | otherwise -> Nothing

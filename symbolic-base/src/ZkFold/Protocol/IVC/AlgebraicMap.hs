@@ -94,4 +94,4 @@ degreeDecomposition lmap = tabulate (degree_j . toConstant)
   leaveDeg j (PM.P monomials) = PM.P $ P.filter (\(_, m) -> deg m == j) monomials
 
 deg :: PM.Mono v Natural -> Natural
-deg (PM.UnsafeMono m) = sum m
+deg = degM

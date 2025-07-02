@@ -7,17 +7,15 @@ import Data.Eq (Eq (..))
 import Data.Function (($), (.))
 import Data.Functor ((<$>))
 import Data.List (find, head, map, permutations, sort, (!!), (++))
-import Data.Map (Map)
-import qualified Data.Map as Map
 import Data.Maybe (Maybe (..), fromMaybe, mapMaybe)
 import Data.Ord (Ord)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (
+  Mono,
   Poly,
   evalMonomial,
   evalPolynomial,
@@ -25,6 +23,7 @@ import ZkFold.Algebra.Polynomial.Multivariate (
   var,
   variables,
  )
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial (mapVar)
 import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Prelude (length, take)
@@ -62,8 +61,8 @@ toPlonkConstraint p =
         2 -> [Nothing] ++ xs ++ xs
         _ -> xs ++ xs
 
-      getCoef :: Map (Maybe (Var a)) Natural -> a
-      getCoef m = case find (\(_, as) -> m == Map.mapKeys Just as) (toList p) of
+      getCoef :: Mono (Maybe (Var a)) Natural -> a
+      getCoef m = case find (\(_, as) -> m == mapVar Just as) (toList p) of
         Just (c, _) -> c
         _ -> zero
 
@@ -74,11 +73,11 @@ toPlonkConstraint p =
             xc = [(c, 1)]
             xaxb = xa ++ xb
 
-            qm = getCoef $ Map.fromListWith (+) xaxb
+            qm = getCoef $ fromList xaxb
             ql = getCoef $ fromList xa
             qr = getCoef $ fromList xb
             qo = getCoef $ fromList xc
-            qc = getCoef Map.empty
+            qc = getCoef one
         guard $
           evalPolynomial evalMonomial (var . Just) p
             - polynomial [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)]

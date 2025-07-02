@@ -88,7 +88,7 @@ makeSPoly l r =
   let (cl, ml) = lt l
       (cr, mr) = lt r
 
-      UnsafeMono as = gcdM ml mr
+      m = gcdM ml mr
       lcm = lcmM ml mr
 
       ra = lcm / ml
@@ -96,7 +96,7 @@ makeSPoly l r =
 
       l' = (cr, ra) `scaleM` l
       r' = (cl, la) `scaleM` r
-   in if null as
+   in if oneM m
         then zero
         else r' - l'
 

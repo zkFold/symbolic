@@ -8,12 +8,7 @@ import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Bifunctor (Bifunctor (..))
 import Data.Functor ((<&>))
-import Data.List (intercalate)
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                             (foldl')
-#endif
-import Data.Map.Strict (Map, empty, keysSet)
-import qualified Data.Map.Strict as M
+import Data.List (foldl', intercalate)
 import Data.Set (Set)
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
@@ -21,6 +16,7 @@ import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial
+import qualified ZkFold.Algebra.Polynomial.Multivariate.Monomial as Mono
 import Prelude hiding (
   Num (..),
   drop,
@@ -59,13 +55,10 @@ evalPolynomial
 evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
 
 variables :: forall c v. Ord v => Poly c v Natural -> Set v
-variables (P p) = foldMap ((\(UnsafeMono m) -> keysSet m) . snd) p
+variables (P p) = foldMap (Mono.variables . snd) p
 
-mapVars :: Variable i2 => (i1 -> i2) -> Poly c i1 j -> Poly c i2 j
-mapVars f (P ms) = P $ (\(c, UnsafeMono m) -> (c, UnsafeMono $ M.mapKeys f m)) <$> ms
-
-mapVarPolynomial :: Variable i => Map i i -> Poly c i j -> Poly c i j
-mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
+mapVar :: Variable var' => (var -> var') -> Poly c var j -> Poly c var' j
+mapVar f (P ms) = P $ second (Mono.mapVar f) <$> ms
 
 mapCoeffs
   :: forall c c' i j
@@ -75,9 +68,9 @@ mapCoeffs
 mapCoeffs f (P p) = P $ p <&> first f
 
 instance Polynomial c i j => IsList (Poly c i j) where
-  type Item (Poly c i j) = (c, Map i j)
-  toList (P p) = second (\(UnsafeMono m) -> m) <$> p
-  fromList p = polynomial $ second mono <$> p
+  type Item (Poly c i j) = (c, Mono i j)
+  toList (P p) = p
+  fromList = polynomial
 
 instance (Show c, Show i, Show j, Monomial i j) => Show (Poly c i j) where
   show (P p) =
@@ -133,10 +126,10 @@ instance Polynomial c i j => Exponent (Poly c i j) Natural where
   (^) = natPow
 
 instance Polynomial c i j => MultiplicativeMonoid (Poly c i j) where
-  one = P [(one, UnsafeMono empty)]
+  one = P [(one, one)]
 
-instance FromConstant c' c => FromConstant c' (Poly c i j) where
-  fromConstant x = P [(fromConstant x, UnsafeMono empty)]
+instance (Monomial i j, FromConstant c' c) => FromConstant c' (Poly c i j) where
+  fromConstant x = P [(fromConstant x, one)]
 
 instance Polynomial c i j => Semiring (Poly c i j)
 
@@ -148,10 +141,10 @@ var x = polynomial [(one, mono $ fromList [(x, one)])]
 
 -- | @'constant' i@ is a polynomial \(p(x) = const\)
 constant :: Polynomial c i j => c -> Poly c i j
-constant c = polynomial [(c, UnsafeMono M.empty)]
+constant c = polynomial [(c, one)]
 
 lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
-lt (P []) = (zero, UnsafeMono empty)
+lt (P []) = (zero, one)
 lt (P (m : _)) = m
 
 zeroP :: Poly c i j -> Bool
