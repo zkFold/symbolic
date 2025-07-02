@@ -1,4 +1,4 @@
-module Tests.Algebra.GroebnerBasis (specGroebner) where
+module Tests.Algebra.Groebner (specGroebner) where
 
 import Data.Map (empty, fromList)
 import GHC.Natural (Natural)

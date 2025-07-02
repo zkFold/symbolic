@@ -367,7 +367,7 @@ test-suite symbolic-base-test
     other-modules:
       Tests.Algebra.EllipticCurve
       Tests.Algebra.Field
-      Tests.Algebra.GroebnerBasis
+      Tests.Algebra.Groebner
       Tests.Algebra.Group
       Tests.Algebra.Pairing
       Tests.Algebra.Permutation

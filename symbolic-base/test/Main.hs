@@ -2,20 +2,9 @@ module Main where
 
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
-import Prelude hiding (
-  Bool,
-  Fractional (..),
-  Num (..),
-  drop,
-  length,
-  replicate,
-  take,
-  (==),
- )
-
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
 import Tests.Algebra.Field (specField)
-import Tests.Algebra.GroebnerBasis (specGroebner)
+import Tests.Algebra.Groebner (specGroebner)
 import Tests.Algebra.Group (specGroup)
 import Tests.Algebra.Pairing (specPairing)
 import Tests.Algebra.Permutation (specPermutation)
@@ -40,6 +29,16 @@ import Tests.Symbolic.Data.List (specList)
 import Tests.Symbolic.Data.MerkleTree (specMerkleTree)
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
+import Prelude hiding (
+  Bool,
+  Fractional (..),
+  Num (..),
+  drop,
+  length,
+  replicate,
+  take,
+  (==),
+ )
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
