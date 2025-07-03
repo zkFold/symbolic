@@ -7,7 +7,7 @@ module ZkFold.ArithmeticCircuit.Optimization (optimize, isInputVar) where
 import Control.Applicative (pure)
 import Control.Monad (Monad, (>>=))
 import Data.Binary (Binary)
-import Data.Bool (Bool (..), bool, otherwise, (&&))
+import Data.Bool (Bool (..), bool, otherwise, (&&), (||))
 import Data.ByteString (ByteString)
 import Data.Eq ((/=), (==))
 import Data.Foldable (all, any)
@@ -18,14 +18,12 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..), isJust, maybe)
-import Data.Ord ((<=))
+import Data.Ord ((<=), (>))
 import Data.Semigroup ((<>))
 import Data.Set (Set, findMin)
 import qualified Data.Set as S
 import Data.Tuple (fst)
 import GHC.Generics ((:*:))
-import Prelude (error)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, lt, poly, var, variables)
 import ZkFold.ArithmeticCircuit.Context (
@@ -38,6 +36,7 @@ import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.ByteString (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
+import Prelude (error)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@
@@ -126,10 +125,13 @@ varsToReplace (s, l)
     :: Map NewVar a
     -> Map ByteString (Constraint a)
     -> Map ByteString (Constraint a)
-  optimizeSystems m as = ns
+  optimizeSystems m as
+    | all checkZero ns = ns
+    | otherwise = error "unsatisfiable constraint"
    where
     ns = evalPolynomial evalMonomial varF <$> as
     varF p = maybe (var p) fromConstant (M.lookup p m)
+    checkZero p = degP p > zero || fst (lt p) == zero
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
   toConstVar p =
