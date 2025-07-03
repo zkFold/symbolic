@@ -13,6 +13,8 @@ import Data.Type.Equality (type (~))
 import Data.Vector (iterateN)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
+import ZkFold.Symbolic.Data.Morph
+import ZkFold.Symbolic.Data.Switch
 import Prelude (pure, return, zip, ($), (.))
 import qualified Prelude as P
 
@@ -40,8 +42,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.List
 import qualified ZkFold.Symbolic.Data.List as L
 import ZkFold.Symbolic.Data.Maybe
-import ZkFold.Symbolic.Data.Morph
-import ZkFold.Symbolic.Data.Switch
 import ZkFold.Symbolic.Data.UInt (UInt (..), strictConv)
 import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.Fold (SymbolicFold)

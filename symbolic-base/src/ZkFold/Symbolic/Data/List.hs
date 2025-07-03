@@ -14,6 +14,8 @@ import Data.Traversable (traverse)
 import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
+import ZkFold.Symbolic.Data.Morph (MorphFrom, MorphTo (..), (@))
+import ZkFold.Symbolic.Data.Switch (Switch (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
@@ -29,9 +31,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import ZkFold.Symbolic.Data.Morph (MorphFrom, MorphTo (..), (@))
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (Payloaded, runPayloaded))
-import ZkFold.Symbolic.Data.Switch (Switch (..))
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit

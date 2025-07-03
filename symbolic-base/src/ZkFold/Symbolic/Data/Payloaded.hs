@@ -3,8 +3,9 @@
 module ZkFold.Symbolic.Data.Payloaded where
 
 import Data.Bifunctor (bimap)
-import Data.Function (const, ($), (.))
+import Data.Function (($), (.))
 import Data.Functor ((<$>))
+import Data.Functor.Rep (Representable)
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..))
 
@@ -19,10 +20,9 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 
 newtype Payloaded f c = Payloaded {runPayloaded :: f (WitnessField c)}
 
-instance (Symbolic c, PayloadFunctor f) => SymbolicData (Payloaded f c) where
-  type Context (Payloaded f c) = c
-  type Layout (Payloaded f c) = U1
-  type Payload (Payloaded f c) = f
+instance Representable f => SymbolicData (Payloaded f) where
+  type Layout (Payloaded f) _ = U1
+  type Payload (Payloaded f) _ = f
 
   arithmetize _ = hunit
   payload = runPayloaded
@@ -30,8 +30,8 @@ instance (Symbolic c, PayloadFunctor f) => SymbolicData (Payloaded f c) where
   interpolate bs (witnessF -> Par1 pt) =
     Payloaded $ interpolateW (bimap fromConstant runPayloaded <$> bs) pt
 
-instance (Symbolic c, PayloadFunctor f) => SymbolicInput (Payloaded f c) where
-  isValid = const true
+instance Representable f => SymbolicInput (Payloaded f) where
+  isValid _ = true
 
 instance Symbolic c => Eq (Payloaded f c) where
   type BooleanOf (Payloaded f c) = Bool c

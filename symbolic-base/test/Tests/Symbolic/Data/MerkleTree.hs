@@ -10,6 +10,7 @@ import GHC.Generics (Par1 (Par1), U1 (..), type (:*:) ((:*:)))
 import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary, Gen)
+import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import Prelude (return, ($), (.))
 import qualified Prelude as Haskell
 
@@ -30,7 +31,6 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.List (emptyList, lSize)
 import qualified ZkFold.Symbolic.Data.List as L
 import ZkFold.Symbolic.Data.MerkleTree
-import ZkFold.Symbolic.Data.Morph (MorphTo (..))
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 

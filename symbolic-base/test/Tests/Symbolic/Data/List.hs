@@ -11,6 +11,7 @@ import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary)
 import Text.Show (Show)
+import ZkFold.Symbolic.Data.Morph
 
 import ZkFold.Algebra.Class (one)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -23,7 +24,6 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.List (List, emptyList, foldr, head, lSize, tail, (.:))
-import ZkFold.Symbolic.Data.Morph
 import ZkFold.Symbolic.Fold (SymbolicFold)
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
