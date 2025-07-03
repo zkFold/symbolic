@@ -21,27 +21,24 @@ module ZkFold.Algebra.Polynomial.Multivariate.Internal (
 import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Bifunctor (Bifunctor (..))
-import Data.Functor ((<&>))
-import Data.List (foldl', intercalate)
+import Data.Bool (Bool (..), otherwise)
+import Data.Eq (Eq (..))
+import Data.Foldable (Foldable (..))
+import Data.Function (($), (.))
+import Data.Functor (fmap, (<$>), (<&>))
+import Data.List (filter, intercalate, map)
+import Data.Monoid ((<>))
+import Data.Ord (Ord (..))
 import Data.Set (Set)
+import Data.Tuple (fst, snd)
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude hiding (
-  Num (..),
-  drop,
-  lcm,
-  length,
-  sum,
-  take,
-  (!!),
-  (/),
- )
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import qualified ZkFold.Algebra.Polynomial.Multivariate.Monomial as Mono
+import Prelude (Show (..))
 
 -- | Polynomial type
 newtype Poly coef var pow = UnsafePoly [(coef, Mono var pow)]
@@ -82,7 +79,8 @@ instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => IsList (Poly coef v
 instance (Show coef, Show var, Show pow, Eq pow, MultiplicativeMonoid pow) => Show (Poly coef var pow) where
   show (UnsafePoly p) =
     intercalate " + " $
-      p <&> \(coef, m) -> show coef <> "∙" <> show (m :: Mono var pow)
+      p
+        <&> \(coef, m) -> show coef <> "∙" <> show (m :: Mono var pow)
 
 instance (Eq coef, Eq var, Eq pow) => Eq (Poly coef var pow) where
   UnsafePoly l == UnsafePoly r = l == r
