@@ -11,11 +11,10 @@ import Data.Function ((.))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
 import Data.Ord (Ord)
+import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (type (:.:) (unComp1))
 import Numeric.Natural (Natural)
-import Prelude (Enum, Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
 import ZkFold.Data.Eq (BooleanOf)
@@ -23,6 +22,7 @@ import ZkFold.Data.HFunctor.Classes (HNFData)
 import ZkFold.Data.Package (Package (pack))
 import ZkFold.Data.Product (uncurryP)
 import ZkFold.Symbolic.MonadCircuit
+import Prelude (Enum, Integer, Traversable)
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
@@ -89,6 +89,10 @@ class
 embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
+-- | Embeds the witness value(s) into generic context @c@.
+embedW :: (Symbolic c, Traversable f) => f (WitnessField c) -> c f
+embedW ws = fromCircuitF hunit (\_ -> traverse unconstrained ws)
+
 symbolicF
   :: (Symbolic c, BaseField c ~ a)
   => c f
@@ -143,7 +147,9 @@ symbolicVF xs f m = symbolicF (pack xs) (f . unComp1) (m . unComp1)
 
 fromCircuitVF
   :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w, Foldable f, Functor f)
-  => f (c g) -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
+  => f (c g)
+  -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i))
+  -> c h
 
 -- | Given a generic context @c@, runs the @'CircuitFun'@ from @f@ many @c g@'s into @c h@.
 fromCircuitVF xs m = fromCircuitF (pack xs) (m . unComp1)

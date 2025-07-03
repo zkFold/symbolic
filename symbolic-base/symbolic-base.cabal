@@ -179,6 +179,7 @@ library
       ZkFold.Protocol.IVC.FiatShamir
       ZkFold.Protocol.IVC.Internal
       ZkFold.Protocol.IVC.NARK
+      ZkFold.Protocol.IVC.OperationRecord
       ZkFold.Protocol.IVC.Oracle
       ZkFold.Protocol.IVC.Predicate
       ZkFold.Protocol.IVC.RecursiveFunction
