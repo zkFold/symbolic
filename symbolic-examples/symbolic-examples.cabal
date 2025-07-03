@@ -133,6 +133,7 @@ library
       base                          >= 4.9 && < 5,
       base16-bytestring                          ,
       bytestring                                 ,
+      deepseq                                    ,
       deriving-aeson                             ,
       symbolic-base                              ,
       text                                       ,

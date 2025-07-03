@@ -2,7 +2,7 @@
 
 module Main where
 
-import Control.DeepSeq (force)
+import Control.DeepSeq (force, NFData)
 import Control.Monad (return)
 import Data.Binary (Binary)
 import Data.ByteString (foldr)
@@ -18,7 +18,7 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Data.Class (Context, SymbolicData)
+import ZkFold.Symbolic.Data.Class (Context, SymbolicData, Layout)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import Prelude (toInteger)
 
@@ -35,6 +35,7 @@ benchmark
      , Context i ~ CircuitContext a
      , SymbolicData o
      , Context o ~ CircuitContext a
+     , NFData (Layout o a)
      )
   => String -> (i -> o) -> Benchmark
 benchmark name fun =
