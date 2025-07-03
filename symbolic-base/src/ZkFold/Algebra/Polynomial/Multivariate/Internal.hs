@@ -35,10 +35,11 @@ import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Show (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial
 import qualified ZkFold.Algebra.Polynomial.Multivariate.Monomial as Mono
-import Prelude (Show (..))
 
 -- | Polynomial type
 newtype Poly coef var pow = UnsafePoly [(coef, Mono var pow)]
