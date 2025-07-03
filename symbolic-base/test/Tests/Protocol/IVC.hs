@@ -4,26 +4,27 @@
 
 module Tests.Protocol.IVC (specIVC) where
 
-import Data.Bifunctor (first)
-import GHC.Generics (U1 (..))
+import Data.Bifunctor (bimap, first)
+import GHC.Generics (U1 (..), (:*:))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
-import Prelude hiding (Num (..), pi, replicate, sum, (+), (^))
-
-import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..))
+import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), one, zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Algebra.Polynomial.Univariate (evalPolyVec)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, acSizeN)
 import ZkFold.Data.Package (packed, unpacked)
-import ZkFold.Data.Vector (Vector (..), item, singleton)
+import ZkFold.Data.Vector (Vector (..), item, singleton, unsafeToVector)
+import ZkFold.Prelude (replicate)
 import ZkFold.Protocol.IVC.Accumulator (
   Accumulator (..),
   AccumulatorInstance (..),
   emptyAccumulator,
  )
 import ZkFold.Protocol.IVC.AccumulatorScheme as Acc
+import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir (FiatShamir, fiatShamir)
 import ZkFold.Protocol.IVC.NARK (
@@ -39,6 +40,7 @@ import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import Prelude hiding (Num (..), pi, replicate, sum, (+), (^))
 
 type A = Zp BLS12_381_Scalar
 
@@ -62,18 +64,23 @@ type PARDEG = 5
 
 type PAR = Vector PARDEG A
 
+type AC = ArithmeticCircuit A (I :*: P :*: I) U1
+
 testFunction
   :: forall ctx
    . (Symbolic ctx, FromConstant A (BaseField ctx))
-  => PAR -> ctx (Vector 1) -> ctx U1 -> ctx (Vector 1)
+  => PAR
+  -> ctx (Vector 1)
+  -> ctx U1
+  -> ctx (Vector 1)
 testFunction p i _ =
   let p' = fromVector $ fmap fromConstant p
       x = FieldElement <$> unpacked i
       y = singleton $ evalPolyVec p' $ item x
    in packed $ fromFieldElement <$> y
 
--- testPredicateCircuit :: PAR -> AC
--- testPredicateCircuit p = predicateCircuit @F @I @P $ testPredicate p
+testPredicateCircuit :: PAR -> AC
+testPredicateCircuit p = predicateCircuit @A @I @P $ testPredicate p
 
 testPredicate :: PAR -> PHI
 testPredicate p = predicate $ testFunction p
@@ -98,10 +105,10 @@ testPublicInput0 = singleton $ fromConstant @Natural 42
 testInstanceProofPair :: PHI -> NARKInstanceProof K I (DataSource C) F
 testInstanceProofPair phi = narkInstanceProof (testSPS phi) testPublicInput0 U1
 
--- testMessages :: PHI -> Vector K [F]
--- testMessages phi =
---     let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
---     in ms
+testMessages :: PHI -> Vector K [F]
+testMessages phi =
+  let NARKInstanceProof _ (NARKProof _ ms) = testInstanceProofPair phi
+   in ms
 
 testNarkProof :: PHI -> Vector K (DataSource C)
 testNarkProof phi =
@@ -131,10 +138,10 @@ testAccumulationProof phi =
   let s = testAccumulatorScheme phi
    in snd $ prover s (initAccumulator phi) $ testInstanceProofPair phi
 
--- testDeciderResult :: PHI -> (Vector K (C F), C F)
--- testDeciderResult phi =
---     let s = testAccumulatorScheme phi
---     in decider s $ testAccumulator phi
+testDeciderResult :: PHI -> (Vector K (DataSource C), DataSource C)
+testDeciderResult phi =
+  let s = testAccumulatorScheme phi
+   in decider s $ testAccumulator phi
 
 testVerifierResult :: PHI -> AccumulatorInstance K I C F
 testVerifierResult phi =
@@ -149,21 +156,31 @@ testVerifierResult phi =
 
 specAlgebraicMap :: Spec
 specAlgebraicMap = do
-  describe "Algebraic map specification" (return ())
-
--- \$ do
--- describe "Algebraic map" $ do
---     it "must output zeros on the public input and testMessages" $ do
---        withMaxSuccess 10 $ property $
---             \p -> algebraicMap @D (testPredicate p) (testPublicInput $ testPredicate p) (testMessages $ testPredicate p) (unsafeToVector []) one
---                 == replicate (acSizeN $ testPredicateCircuit p) zero
+  describe "Algebraic map specification" $ do
+    describe "Algebraic map" $ do
+      it "must output zeros on the public input and testMessages" $ do
+        withMaxSuccess 10 $
+          property $
+            \p ->
+              algebraicMap @D
+                (testPredicate p)
+                (testPublicInput $ testPredicate p)
+                (testMessages $ testPredicate p)
+                (unsafeToVector [])
+                one
+                == replicate (acSizeN $ testPredicateCircuit p) zero
 
 specAccumulatorScheme :: Spec
 specAccumulatorScheme = do
   describe "Accumulator scheme specification" $ do
-    -- describe "decider" $ do
-    --     it  "must output zeros" $ do
-    --         withMaxSuccess 10 $ property $ \p -> testDeciderResult (testPredicate p) == (singleton zero, zero)
+    describe "decider" $ do
+      it "must output zeros" $ do
+        withMaxSuccess 10 $ property $ \p ->
+          bimap
+            (fmap dataSource)
+            dataSource
+            (testDeciderResult (testPredicate p))
+            == (singleton zero, zero)
     describe "verifier" $ do
       it "must output zeros" $ do
         withMaxSuccess 10 $ property $ \p ->
