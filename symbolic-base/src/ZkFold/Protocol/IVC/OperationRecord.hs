@@ -14,7 +14,7 @@ newtype OperationRecord c s ctx = OperationRecord (List ctx (OneOf [(c, c, c), (
 
 addOp
   :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx, HomomorphicCommit [s] c, Scale s c)
-  => OneOf [c, s] ctx
+  => Either c s
   -> OperationRecord c s ctx
   -> OperationRecord c s ctx
 addOp op' (OperationRecord ops) =
@@ -27,11 +27,7 @@ addOp op' (OperationRecord ops) =
               Right (Right _) -> zeroed
           )
    in OperationRecord $
-        matchOneOf
-          op'
-          ( \case
-              Left c' -> embedOneOf $ Left (c, c', withoutConstraints $ c + c')
-              Right (Left s) -> embedOneOf $ Right $ Left (c, s, withoutConstraints $ scale s c)
-              Right (Right _) -> zeroed
-          )
+        case op' of
+          Left c' -> embedOneOf $ Left (c, c', withoutConstraints $ c + c')
+          Right s -> embedOneOf $ Right $ Left (c, s, withoutConstraints $ scale s c)
           .: ops
