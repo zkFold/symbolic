@@ -84,7 +84,7 @@ padDecomposition pad = foldl' (P.zipWith (+)) (P.repeat zero) . V.mapWithIx (\j 
 
 -- | Decomposes an algebraic map into homogenous degree-j maps for j from 0 to @d@
 degreeDecomposition
-  :: forall d f v. (KnownNat (d + 1), Variable v) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
+  :: forall d f v. KnownNat (d + 1) => [Poly f v Natural] -> V.Vector (d + 1) [Poly f v Natural]
 degreeDecomposition lmap = tabulate (degree_j . toConstant)
  where
   degree_j :: Natural -> [Poly f v Natural]

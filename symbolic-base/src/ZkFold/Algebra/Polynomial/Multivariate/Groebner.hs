@@ -18,14 +18,13 @@ import Prelude hiding (
   (/),
  )
 
-reducable :: Polynomial c i j => Poly c i j -> Poly c i j -> Bool
+reducable :: (Field c, Ord i, Ord j, Ring j) => Poly c i j -> Poly c i j -> Bool
 reducable l r = dividable (snd $ lt l) (snd $ lt r)
 
 -- TODO: refactor reduction methods so that they never applied to non-reducible polynomials
 
 reduce
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -35,8 +34,7 @@ reduce l r =
    in l - scaleM (cl // cr, ml / mr) r
 
 reduceMany
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -52,8 +50,7 @@ reduceMany h fs = if reduced then reduceMany h' fs else h'
   reduceStep p [] r = (p, r)
 
 fullReduceMany
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => Poly c i j
   -> [Poly c i j]
   -> Poly c i j
@@ -64,8 +61,7 @@ fullReduceMany h fs =
         else poly [lt h'] + fullReduceMany (h' - poly [lt h']) fs
 
 systemReduce
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => [Poly c i j]
   -> [Poly c i j]
 systemReduce = foldr f []
@@ -80,7 +76,7 @@ data GroebnerParams c i j = GroebnerParams
   }
 
 makeSPoly
-  :: (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => Poly c i j
   -> Poly c i j
   -> Poly c i j
@@ -101,7 +97,7 @@ makeSPoly l r =
         else r' - l'
 
 groebnerStep
-  :: (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -115,8 +111,7 @@ groebnerStep GroebnerParams {..} ps =
    in systemReduce ps'
 
 groebner
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> [Poly c i j]
@@ -127,8 +122,7 @@ groebner GroebnerParams {..} ps =
    in go groebnerMaxSteps ps
 
 verifyGroebner
-  :: forall c i j
-   . (Ring j, Polynomial c i j)
+  :: (Eq c, Field c, Ord i, Ord j, Ring j)
   => GroebnerParams c i j
   -> [Poly c i j]
   -> Poly c i j
