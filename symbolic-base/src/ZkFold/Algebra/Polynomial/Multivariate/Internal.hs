@@ -11,10 +11,11 @@ module ZkFold.Algebra.Polynomial.Multivariate.Internal (
   mapCoeffs,
   var,
   constant,
-  homogenous,
   lt,
   zeroP,
   scaleM,
+  degP,
+  homogenous,
 ) where
 
 import Control.DeepSeq (NFData)
@@ -184,6 +185,9 @@ scaleM
   -> Poly coef var pow
   -> Poly coef var pow
 scaleM (coef, m) (UnsafePoly p) = UnsafePoly $ map (bimap (* coef) (* m)) p
+
+degP :: (Ord pow, AdditiveMonoid pow) => Poly coef var pow -> pow
+degP (UnsafePoly ms) = maximum $ fmap (Mono.degM . snd) ms
 
 homogenous :: (Eq pow, AdditiveMonoid pow) => pow -> Poly coef var pow -> Poly coef var pow
 homogenous j (UnsafePoly p) = UnsafePoly $ filter (\(_, m) -> Mono.degM m == j) p
