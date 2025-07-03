@@ -19,6 +19,7 @@ import ZkFold.Algebra.Polynomial.Multivariate (
   Poly,
   evalMonomial,
   evalPolynomial,
+  mono,
   poly,
   var,
   variables,
@@ -73,14 +74,20 @@ toPlonkConstraint p =
             xc = [(c, 1)]
             xaxb = xa ++ xb
 
-            qm = getCoef $ fromList xaxb
-            ql = getCoef $ fromList xa
-            qr = getCoef $ fromList xb
-            qo = getCoef $ fromList xc
+            qm = getCoef $ mono $ fromList xaxb
+            ql = getCoef $ mono $ fromList xa
+            qr = getCoef $ mono $ fromList xb
+            qo = getCoef $ mono $ fromList xc
             qc = getCoef one
         guard $
           evalPolynomial evalMonomial (var . Just) p
-            - poly [(qm, fromList xaxb), (ql, fromList xa), (qr, fromList xb), (qo, fromList xc), (qc, one)]
+            - poly
+              [ (qm, mono $ fromList xaxb)
+              , (ql, mono $ fromList xa)
+              , (qr, mono $ fromList xb)
+              , (qo, mono $ fromList xc)
+              , (qc, one)
+              ]
             == zero
         let va = fromMaybe (ConstVar one) a
             vb = fromMaybe (ConstVar one) b

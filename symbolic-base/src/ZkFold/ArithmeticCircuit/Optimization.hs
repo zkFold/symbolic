@@ -20,12 +20,12 @@ import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Ord ((<=))
 import Data.Semigroup ((<>))
-import Data.Set (Set)
+import Data.Set (Set, findMin)
 import qualified Data.Set as S
+import Data.Tuple (fst)
 import GHC.Generics ((:*:))
-import GHC.IsList (toList)
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, oneM, var)
+import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, lt, poly, var, variables)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -67,10 +67,10 @@ optimize keep (CircuitContext s lf lc w f o) =
   inputConstraints :: Map NewVar a -> Map ByteString (Constraint a)
   inputConstraints vs =
     M.fromList
-      [ (polyId, poly)
+      [ (pId, p)
       | (inVar, v) <- M.assocs $ filterKeys keep vs
-      , let poly = var inVar - fromConstant v
-      , let polyId = witToVar @a (pure inVar - fromConstant v)
+      , let p = var inVar - fromConstant v
+      , let pId = witToVar @a (pure inVar - fromConstant v)
       ]
 
   optRanges
@@ -131,16 +131,9 @@ varsToReplace (s, l)
     varF p = maybe (var p) fromConstant (M.lookup p m)
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
-  toConstVar p = case toList p of
-    [(_, m1)] -> case toList m1 of
-      [(m1var, 1)] -> Just (m1var, zero)
-      _ -> Nothing
-    [(c, m1), (k, m2)]
-      | oneM m1 -> case toList m2 of
-          [(m2var, 1)] -> Just (m2var, negate c // k)
-          _ -> Nothing
-      | oneM m2 -> case toList m1 of
-          [(m1var, 1)] -> Just (m1var, negate k // c)
-          _ -> Nothing
-      | otherwise -> Nothing
-    _ -> Nothing
+  toConstVar p =
+    let (c, m) = lt p
+        p' = p - poly [lt p]
+     in if c /= zero && degM m == one && degP p' == zero
+          then Just (findMin $ variables p, negate $ fst (lt p') // c)
+          else Nothing

@@ -25,7 +25,6 @@ import Data.Map.Strict (
   differenceWith,
   empty,
   foldrWithKey,
-  fromListWith,
   intersectionWith,
   isSubmapOfBy,
   keysSet,
@@ -37,7 +36,6 @@ import Data.Maybe (Maybe (..))
 import Data.Ord (Ord (..), Ordering (..))
 import Data.Set (Set)
 import GHC.Generics (Generic)
-import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import ZkFold.Algebra.Class
@@ -66,11 +64,6 @@ variables (UnsafeMono m) = keysSet m
 
 mapVar :: Ord var' => (var -> var') -> Mono var pow -> Mono var' pow
 mapVar f (UnsafeMono as) = UnsafeMono $ mapKeys f as
-
-instance (Ord var, AdditiveSemigroup pow) => IsList (Mono var pow) where
-  type Item (Mono var pow) = (var, pow)
-  toList (UnsafeMono m) = Map.toList m
-  fromList m = UnsafeMono $ fromListWith (+) m
 
 instance (Show var, Show pow, Eq pow, MultiplicativeMonoid pow) => Show (Mono var pow) where
   show (UnsafeMono m) = intercalate "∙" . map showVar $ Map.toList m
