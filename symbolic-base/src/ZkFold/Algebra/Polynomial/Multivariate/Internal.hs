@@ -86,7 +86,6 @@ instance (Show coef, Show var, Show pow, Eq pow, MultiplicativeMonoid pow) => Sh
 instance (Eq coef, Eq var, Eq pow) => Eq (Poly coef var pow) where
   UnsafePoly l == UnsafePoly r = l == r
 
--- TODO: this assumes sorted monomials! Needs fixing.
 instance (Eq coef, Ord var, Ord pow) => Ord (Poly coef var pow) where
   compare (UnsafePoly l) (UnsafePoly r) =
     compare
