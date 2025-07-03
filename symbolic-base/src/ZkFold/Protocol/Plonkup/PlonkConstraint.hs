@@ -13,6 +13,7 @@ import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (
   Mono,

@@ -24,6 +24,8 @@ import Data.Set (Set, findMin)
 import qualified Data.Set as S
 import Data.Tuple (fst)
 import GHC.Generics ((:*:))
+import Prelude (error)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, lt, poly, var, variables)
 import ZkFold.ArithmeticCircuit.Context (
@@ -36,7 +38,6 @@ import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.ByteString (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
-import Prelude (error)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@
 -- by dropping such variables @x@ from the @ctx@

@@ -38,12 +38,13 @@ import Data.Set (Set)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
-import ZkFold.Algebra.Class
 import Prelude (Integer, Show (..), String, otherwise)
+
+import ZkFold.Algebra.Class
 
 -- | Monomial type
 newtype Mono var pow = UnsafeMono (Map var pow)
-  deriving (Generic, NFData, FromJSON, ToJSON)
+  deriving (FromJSON, Generic, NFData, ToJSON)
 
 -- | Monomial constructor
 mono :: (Eq pow, AdditiveMonoid pow) => Map var pow -> Mono var pow

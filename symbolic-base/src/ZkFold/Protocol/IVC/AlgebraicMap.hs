@@ -10,6 +10,9 @@ import Data.List (foldl')
 import Data.Map.Strict (Map, keys)
 import qualified Data.Map.Strict as M
 import Data.Maybe (Maybe (..))
+import Prelude (fmap, zip, ($), (.), (<$>))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate
@@ -21,8 +24,6 @@ import ZkFold.Data.ByteString (Binary, fromByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
-import Prelude (fmap, zip, ($), (.), (<$>))
-import qualified Prelude as P
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.
