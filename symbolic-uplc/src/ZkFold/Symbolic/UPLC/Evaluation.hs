@@ -1,14 +1,17 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
-import Control.Monad (return)
+import Control.Monad (return, (>>=))
 import Data.Either (Either (..))
-import Data.Function (($), (.))
-import Data.Functor ((<$>))
-import Data.List (map, null, (++))
-import Data.Maybe (Maybe (..), fromJust)
+import Data.Foldable (toList)
+import Data.Function (const, flip, ($), (.))
+import Data.List (concatMap, map, null, (++))
+import Data.Maybe (Maybe (..), fromJust, listToMaybe)
 import Data.Ord ((<))
 import Data.Proxy (Proxy (..))
 import Data.Text (unpack)
@@ -28,7 +31,7 @@ import ZkFold.Data.Eq qualified as Symbolic
 import ZkFold.Prelude (unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), bool)
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, truncate)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -38,9 +41,11 @@ import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 import ZkFold.Symbolic.Data.Ord qualified as Symbolic
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString
-import Prelude (error, foldr, fromIntegral)
+import Prelude (error, foldr, fromIntegral, toInteger)
 
 import ZkFold.Symbolic.UPLC.Class
+import ZkFold.Symbolic.UPLC.Constants
+import ZkFold.Symbolic.UPLC.Data qualified as Data
 import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
@@ -121,7 +126,7 @@ impl env (TApp f x) args = impl env f (aTerm x : args) -- prepend new arg for ev
 impl env (TDelay t) args = impl env t args -- we skip delays. Maybe wrong, but simpler
 impl env (TForce t) args = impl env t args -- we skip forcings. Maybe wrong, but simpler.
 impl env (TConstr t f) (ACase bs : args) = impl env (bs !! fromIntegral t) (map aTerm f ++ args) -- pattern-matching
-impl env (TConstr t f) [] = constr t <$> traverse (\fi -> impl env fi []) f -- embed constructor
+impl env (TConstr t f) [] = traverse (\fi -> impl env fi []) f >>= constr t -- embed constructor
 impl _ (TConstr _ _) (_ : _) = Nothing -- constructors are not functions!
 impl env (TCase s bs) args = impl env s (ACase bs : args) -- defer pattern-matching
 impl _ TError _ = Nothing -- errors are errors!
@@ -251,7 +256,20 @@ applyPoly ctx (BPFList NullList) [xs0] = do
   MaybeValue p <- evalArg ctx xs0 []
   ExList v <- asList (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p (L.null v))
-applyPoly _ ChooseData _ = error "FIXME: UPLC Data support"
+applyPoly ctx ChooseData (dt : c0 : m0 : l0 : i0 : b0 : args) = do
+  MaybeValue (cast -> Just (dv :: Symbolic.Maybe c (Data.Data c))) <- evalArg ctx dt []
+  let brs0 = map (\x -> evalArg ctx x args) [c0, m0, l0, i0, b0]
+  MaybeValue (_ :: Symbolic.Maybe c d) <- listToMaybe (concatMap toList brs0)
+  [cv, mv, lv, iv, bv :: Symbolic.Maybe c d] <- traverse (>>= \(MaybeValue v) -> cast v) brs0
+  return $
+    MaybeValue $
+      flip (Symbolic.maybe Symbolic.nothing) dv $
+        flip Data.unfoldData \case
+          Data.DConstrCell _ _ -> cv
+          Data.DMapCell _ -> mv
+          Data.DListCell _ -> lv
+          Data.DIntCell _ -> iv
+          Data.DBSCell _ -> bv
 applyPoly _ _ _ = Nothing
 
 -- | Correct error propagation for if-then-else
@@ -287,7 +305,7 @@ evalConstant (CInteger i) = withNumberOfRegisters @IntLength @Auto @(BaseField c
 evalConstant (CByteString b) = SymValue (fromConstant b)
 evalConstant (CString s) = SymValue (fromString $ unpack s)
 evalConstant (CUnit ()) = SymValue Proxy
-evalConstant (CData _) = error "FIXME: UPLC Data support"
+evalConstant (CData d) = SymValue (fromConstant d)
 evalConstant (CList []) = error "FIXME: UPLC List support"
 evalConstant (CList lst) =
   let (xs, x) = fromJust (unsnoc lst)
@@ -307,8 +325,15 @@ consList :: forall c u. Sym c => SymValue u c -> SymValue (BTList u) c -> SymVal
 consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJust . cast $ x L..: (fromJust $ cast xs))
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
-constr :: Sym c => ConstructorTag -> [MaybeValue c] -> MaybeValue c
-constr _ _ = error "FIXME: UPLC Data support"
+constr :: Sym c => ConstructorTag -> [MaybeValue c] -> SomeValue c
+constr (fromConstant . toInteger -> cTag) fields0 = do
+  let isJust = all (\(MaybeValue v) -> Symbolic.isJust v) fields0
+  fields1 <- traverse (\(MaybeValue v) -> asData $ Symbolic.fromJust v) fields0
+  return $
+    MaybeValue $
+      Symbolic.guard isJust $
+        Data.foldData $
+          Data.DConstrCell cTag (fromConstant fields1)
 
 -- | Given a monomorphic UPLC builtin, evaluate it
 -- as a corresponding Symbolic function.
@@ -343,7 +368,48 @@ evalMono (BMFString EncodeUtf8) = encodeUtf8Fun
 evalMono (BMFString DecodeUtf8) = decodeUtf8Fun
 evalMono (BMFAlgorithm SHA2_256) = sha2_256Fun
 evalMono (BMFAlgorithm _) = error "FIXME: UPLC Algorithms support"
-evalMono (BMFData _) = error "FIXME: UPLC Data support"
+evalMono (BMFData fun) = case fun of
+  ConstrData -> fromConstant \(resize . uint -> t) f ->
+    Symbolic.just @c $ Data.foldData (Data.DConstrCell t f)
+  MapData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DMapCell)
+  ListData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DListCell)
+  IData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DIntCell)
+  BData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DBSCell)
+  UnConstrData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t, f)
+          _ -> Symbolic.nothing
+      )
+  UnMapData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DMapCell es -> Symbolic.just @c es
+          _ -> Symbolic.nothing
+      )
+  UnListData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DListCell xs -> Symbolic.just @c xs
+          _ -> Symbolic.nothing
+      )
+  UnIData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DIntCell int -> Symbolic.just @c int
+          _ -> Symbolic.nothing
+      )
+  UnBData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DBSCell bs -> Symbolic.just @c bs
+          _ -> Symbolic.nothing
+      )
+  EqualsData -> fromConstant \d e -> Symbolic.just @c (d Symbolic.== e)
+  MkPairData -> fromConstant \d e -> Symbolic.just @c (d, e)
+  MkNilData -> fromConstant $ const (Symbolic.just @c L.emptyList)
+  MkNilPairData -> fromConstant $ const (Symbolic.just @c L.emptyList)
+  SerializeData -> fromConstant (Symbolic.just @c . Data.serialiseData)
 evalMono (BMFCurve _) = error "FIXME: UPLC Curve support"
 evalMono (BMFBitwise _) = error "FIXME: UPLC ByteString support"
 

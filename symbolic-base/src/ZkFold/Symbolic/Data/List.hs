@@ -9,9 +9,10 @@ import Data.Distributive (Distributive (..))
 import Data.Function (const, ($), (.))
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep, tabulate)
+import qualified Data.List as Haskell
 import Data.List.Infinite (Infinite (..))
 import Data.Traversable (traverse)
-import Data.Tuple (fst, snd)
+import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 
@@ -64,6 +65,12 @@ instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
 
 instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
+
+instance (FromConstant a b, SymbolicData b, Context b ~ c) => FromConstant [a] (List c b) where
+  fromConstant = Haskell.foldr ((.:) . fromConstant) emptyList
+
+size :: List c x -> FieldElement c
+size = FieldElement . lSize
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
@@ -183,14 +190,26 @@ foldl f y List {..} =
               )
      in (sLayout, sPayload)
 
+scanl
+  :: forall c x y
+   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
+  => MorphFrom c (y, x) y -> y -> List c x -> List c y
+scanl f s =
+  reverse
+    . uncurry (.:)
+    . foldl
+      ( Morph \((y :: Switch s y, ys), x :: Switch s x) ->
+          (f @ (y, x) :: Switch s y, y .: ys)
+      )
+      (s, emptyList)
+
+-- | revapp xs ys = reverse xs ++ ys
 revapp
   :: forall c x
    . (SymbolicData x, Context x ~ c, SymbolicFold c)
   => List c x
   -> List c x
   -> List c x
-
--- | revapp xs ys = reverse xs ++ ys
 revapp xs ys = foldl (Morph \(zs, x :: Switch s x) -> x .: zs) ys xs
 
 reverse
@@ -226,6 +245,25 @@ foldr f s xs =
     )
     s
     (reverse xs)
+
+mapWithCtx
+  :: forall c g x y
+   . ( SymbolicFold c
+     , SymbolicData g
+     , Context g ~ c
+     , SymbolicData x
+     , Context x ~ c
+     , SymbolicData y
+     , Context y ~ c
+     )
+  => g -> MorphFrom c (g, x) y -> List c x -> List c y
+mapWithCtx g f =
+  snd
+    . foldr
+      ( Morph \(x :: Switch s x, (g' :: Switch s g, ys)) ->
+          (g', (f @ (g', x) :: Switch s y) .: ys)
+      )
+      (g, emptyList)
 
 filter
   :: forall c x
@@ -297,14 +335,24 @@ xs !! n =
       (n, restore (embed $ pureRep zero, pureRep zero))
       xs
 
+concatMap
+  :: forall c x y
+   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
+  => MorphFrom c x (List c y) -> List c x -> List c y
+concatMap f =
+  reverse
+    . foldl
+      ( Morph
+          \(ys :: List s (Switch s y), x :: Switch s x) -> revapp (f @ x) ys
+      )
+      emptyList
+
 concat
   :: forall c x
    . (SymbolicData x, Context x ~ c, SymbolicFold c)
   => List c (List c x)
   -> List c x
-concat xs =
-  reverse $
-    foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
+concat = concatMap (Morph \(x :: List s (Switch s x)) -> x)
 
 findIndex
   :: forall x c n
@@ -339,5 +387,27 @@ insert xs n xi =
               (n' - one, xi', ifThenElse (n' == zero :: Bool s) (xi' .: l') (a .: l'))
           )
           (n, xi, emptyList)
+          xs
+   in res
+
+slice
+  :: forall c x
+   . (SymbolicFold c, SymbolicData x, Context x ~ c)
+  => FieldElement c -> FieldElement c -> List c x -> List c x
+slice f t xs =
+  let (_, _, res) =
+        foldr
+          ( Morph
+              \(x :: Switch s x, (skipCnt :: FieldElement s, lenCnt :: FieldElement s, l)) ->
+                ifThenElse
+                  (skipCnt == zero)
+                  ( ifThenElse
+                      (lenCnt == zero)
+                      (zero, zero, l)
+                      (zero, lenCnt - one, x .: l)
+                  )
+                  (skipCnt - one, lenCnt, l)
+          )
+          (f, t, emptyList)
           xs
    in res

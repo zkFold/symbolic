@@ -1,12 +1,17 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.UPLC.Term where
 
+import Control.Applicative ((<*>))
 import Data.Bool (Bool)
 import Data.ByteString (ByteString)
+import Data.Functor ((<$>))
 import Data.Text (Text)
 import Data.Word (Word64)
 import Numeric.Natural (Natural)
+import Test.QuickCheck (Arbitrary (..), oneof)
+import Text.Show (Show)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import Prelude (Integer)
 
@@ -33,6 +38,17 @@ data Data
   | DList [Data]
   | DI Integer
   | DB ByteString
+  deriving Show
+
+instance Arbitrary ByteString => Arbitrary Data where
+  arbitrary =
+    oneof
+      [ DConstr <$> arbitrary <*> arbitrary
+      , DMap <$> arbitrary
+      , DList <$> arbitrary
+      , DI <$> arbitrary
+      , DB <$> arbitrary
+      ]
 
 -- | Constants available in Plutus Core.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf).

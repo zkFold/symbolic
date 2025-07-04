@@ -5,6 +5,7 @@
 
 module ZkFold.Symbolic.Data.Maybe (
   Maybe,
+  guard,
   maybe,
   just,
   nothing,
@@ -51,6 +52,9 @@ nothing
   => Maybe c x
 nothing =
   Maybe false $ restore (embed (pureRep zero), pureRep zero)
+
+guard :: Bool c -> x -> Maybe c x
+guard = Maybe
 
 fromMaybe
   :: forall c x
