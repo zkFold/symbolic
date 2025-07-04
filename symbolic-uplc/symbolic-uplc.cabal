@@ -49,9 +49,10 @@ library
       adjunctions                                ,
       base                          >= 4.9 && < 5,
       bytestring                                 ,
+      constraints                                ,
       symbolic-base                              ,
       text                                       ,
-      constraints
+      QuickCheck
     hs-source-dirs:     src
 
 test-suite symbolic-uplc-test
@@ -59,13 +60,14 @@ test-suite symbolic-uplc-test
     type:               exitcode-stdio-1.0
     main-is:            Test.hs
     build-depends:
-      adjunctions  ,
-      base         ,
-      base16-bytestring,
-      bytestring   ,
-      hspec        ,
-      symbolic-base,
-      text,
-      QuickCheck   ,
+      adjunctions         ,
+      base                ,
+      base16-bytestring   ,
+      bytestring          ,
+      hspec               ,
+      symbolic-base       ,
+      text                ,
+      QuickCheck          ,
+      quickcheck-instances,
       symbolic-uplc
     hs-source-dirs:     test

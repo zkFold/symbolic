@@ -59,6 +59,16 @@ data DataCell a c
     | DBSCell (VarByteString BSLength c)
     deriving (G.Generic)
 
+instance (SymbolicFold c, KnownData c) => FromConstant Term.Data (DataCell (Data c) c) where
+    fromConstant = \case
+        Term.DConstr t f -> DConstrCell (fromConstant t) (fromConstant f)
+        Term.DMap es -> DMapCell $ fromConstant [
+            (fromConstant k :: Data c, fromConstant v :: Data c) | (k, v) <- es
+            ]
+        Term.DList xs -> DListCell (fromConstant xs)
+        Term.DI int -> DIntCell (fromConstant int)
+        Term.DB bs -> DBSCell (fromConstant bs)
+
 mapCell ::
     forall c g x y.
     ( SymbolicFold c, SymbolicData g, Context g ~ c
@@ -121,13 +131,7 @@ foldData cell = MkData (inject offset .: concatMapCell (Morph runData) cell)
       toPtrs = tail . scanl (Morph $ uncurry nextPtr) nullptr
 
 instance (SymbolicFold c, KnownData c) => FromConstant Term.Data (Data c) where
-    fromConstant = foldData . \case
-        Term.DConstr t f -> DConstrCell (fromConstant t) (fromConstant f)
-        Term.DMap es -> DMapCell $ fromConstant
-            [ (fromConstant k :: Data c, fromConstant v :: Data c) | (k, v) <- es ]
-        Term.DList xs -> DListCell (fromConstant xs)
-        Term.DI int -> DIntCell (fromConstant int)
-        Term.DB bs -> DBSCell (fromConstant bs)
+    fromConstant = foldData . fromConstant
 
 serialiseData :: SymbolicFold c => Data c -> VarByteString BSLength c
 serialiseData = error "TODO: serialiseData"
