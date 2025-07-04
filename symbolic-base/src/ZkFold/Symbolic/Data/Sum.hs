@@ -26,6 +26,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement, fromFieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Vec (runVec)
 
 ------------------------------ Product & Eithers -------------------------------
@@ -76,6 +77,13 @@ instance
   , Context (Product ts c) ~ c
   )
   => SymbolicData (OneOf ts c)
+
+instance
+  ( Symbolic c
+  , SymbolicInput (Product ts c)
+  , Context (Product ts c) ~ c
+  )
+  => SymbolicInput (OneOf ts c)
 
 embedOneOf :: forall ts c. Embed ts c => Eithers ts -> OneOf ts c
 embedOneOf = OneOf <$> fromConstant . indexOf @ts @c <*> embed @ts @c
@@ -173,6 +181,13 @@ deriving newtype instance
   , Context (Prod a c) ~ c
   )
   => SymbolicData (Sum a c)
+
+deriving newtype instance
+  ( Symbolic c
+  , SymbolicInput (Prod a c)
+  , Context (Prod a c) ~ c
+  )
+  => SymbolicInput (Sum a c)
 
 inject :: forall a c. (Generic a, Injects (G.Rep a) c) => a -> Sum a c
 inject = Sum . embedOneOf . sopify @c . G.from

@@ -227,6 +227,18 @@ foldr f s xs =
     s
     (reverse xs)
 
+mapWithCtx
+  :: forall c g x y
+   . ( SymbolicFold c
+     , SymbolicData g, Context g ~ c
+     , SymbolicData x, Context x ~ c
+     , SymbolicData y, Context y ~ c )
+  => g -> MorphFrom c (g, x) y -> List c x -> List c y
+mapWithCtx g f =
+    snd
+    . foldr (Morph \(x :: Switch s x, (g' :: Switch s g, ys)) ->
+        (g', (f @ (g', x) :: Switch s y) .: ys)) (g, emptyList)
+
 filter
   :: forall c x
    . (SymbolicData x, Context x ~ c, SymbolicFold c)
@@ -341,3 +353,18 @@ insert xs n xi =
           (n, xi, emptyList)
           xs
    in res
+
+slice ::
+    forall c x. (SymbolicFold c, SymbolicData x, Context x ~ c) =>
+    FieldElement c -> FieldElement c -> List c x -> List c x
+slice f t xs =
+    let (_, _, res) =
+            foldr (Morph
+                \(x :: Switch s x, (skipCnt :: FieldElement s, lenCnt :: FieldElement s, l)) ->
+                    ifThenElse (skipCnt == zero)
+                        (ifThenElse (lenCnt == zero)
+                            (zero, zero, l)
+                            (zero, lenCnt - one, x .: l))
+                        (skipCnt - one, lenCnt, l)
+            ) (f, t, emptyList) xs
+     in res
