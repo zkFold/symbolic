@@ -39,13 +39,12 @@ import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Test.QuickCheck (Arbitrary (..), chooseInt)
-import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
+import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import qualified Prelude as P
 
 infixl 7 .*., ./.
 
@@ -389,13 +388,15 @@ class
 poly2vec
   :: (UnivariateRingPolynomial c poly, UnivariateRingPolyVec c pv)
   => KnownNat size
-  => poly -> pv size
+  => poly
+  -> pv size
 poly2vec = toPolyVec . fromPoly
 
 vec2poly
   :: (UnivariateRingPolyVec c pv, UnivariateRingPolynomial c poly)
   => KnownNat size
-  => pv size -> poly
+  => pv size
+  -> poly
 vec2poly = toPoly . fromPolyVec
 
 -- | (polyVecConstant a0)(x) = a0

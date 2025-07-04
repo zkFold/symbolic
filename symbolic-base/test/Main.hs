@@ -1,5 +1,6 @@
 module Main where
 
+import GHC.Natural
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
