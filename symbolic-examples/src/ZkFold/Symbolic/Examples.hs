@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
+import Control.DeepSeq (NFData)
 import Data.Function (($))
 import Data.String (String)
 import Data.Type.Equality (type (~))
@@ -45,6 +46,7 @@ data ExampleOutput where
        , Context i ~ CircuitContext a
        , SymbolicData o
        , Context o ~ CircuitContext a
+       , NFData (Layout o a)
        )
     => (i -> o)
     -> ExampleOutput
@@ -57,6 +59,7 @@ exampleOutput
      , Context (Domain f) ~ CircuitContext a
      , SymbolicData (Range f)
      , Context (Range f) ~ CircuitContext a
+     , NFData (Layout (Range f) a)
      )
   => f
   -> ExampleOutput
