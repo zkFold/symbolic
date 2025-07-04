@@ -1,5 +1,8 @@
-use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
+use std::slice;
+
+use ark_bls12_381::{Fq12, Fr as ScalarField, G1Affine, G2Affine};
 use ark_ff::PrimeField;
+use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError};
 use cfg_if::cfg_if;
 use num_bigint::BigUint;
@@ -40,54 +43,200 @@ cfg_if! {
     }
 }
 
-pub struct Buffer<T>(pub Vec<T>);
+pub struct Wrapper<T>(pub T);
 
-pub fn deserialize_vector<T>(
+fn deserialize_vector<T>(
     vector: &[u8],
     object_size: usize,
-    deserialize: fn(&[u8]) -> Result<T, SerializationError>,
-) -> Buffer<T> {
-    Buffer(
-        vector
-            .chunks_exact(object_size)
-            .flat_map(deserialize)
-            .collect(),
-    )
+    deserialize: fn(&[u8]) -> T,
+) -> Wrapper<Vec<T>> {
+    Wrapper(vector.chunks_exact(object_size).map(deserialize).collect())
 }
 
-pub fn deserialize_vector_scalar_field(buffer: &[u8]) -> Vec<ScalarField> {
+fn deserialize_vector_scalar_field(buffer: &[u8]) -> Vec<ScalarField> {
     deserialize_vector(buffer, std::mem::size_of::<ScalarField>(), pack_scalar).0
 }
 
-pub fn deserialize_vector_points(buffer: &[u8]) -> Vec<GAffine> {
-    deserialize_vector(buffer, GAffine::identity().uncompressed_size(), pack_point).0
+fn deserialize_vector_points(buffer: &[u8]) -> Vec<G1Affine> {
+    deserialize_vector(buffer, G1Affine::identity().uncompressed_size(), pack_point).0
 }
 
-pub fn fix_point_vector(vector: &mut [u8]) {
+fn fix_point_vector(vector: &mut [u8]) {
     let len = vector.len();
     vector[0..len >> 1].reverse();
     vector[(len >> 1)..len].reverse();
 }
 
-pub fn pack_point(bytes: &[u8]) -> Result<GAffine, SerializationError> {
+fn pack_point(bytes: &[u8]) -> G1Affine {
     let mut bytes: Vec<u8> = bytes.to_vec();
     fix_point_vector(&mut bytes);
-    GAffine::deserialize_uncompressed_unchecked(&*bytes)
+    G1Affine::deserialize_uncompressed_unchecked(&*bytes).unwrap()
 }
 
-pub fn unpack_point(r: GAffine) -> Vec<u8> {
+fn unpack_point(r: &G1Affine) -> Vec<u8> {
     let mut res = Vec::new();
     r.serialize_uncompressed(&mut res).unwrap();
     fix_point_vector(&mut res);
     res
 }
 
-pub fn pack_scalar(bytes: &[u8]) -> Result<ScalarField, SerializationError> {
-    Ok(PrimeField::from_le_bytes_mod_order(bytes))
+fn pack_scalar(bytes: &[u8]) -> ScalarField {
+    PrimeField::from_le_bytes_mod_order(bytes)
 }
 
-pub fn unpack_scalar(scalar: ScalarField) -> Vec<u8> {
+fn unpack_scalar(scalar: &ScalarField) -> Vec<u8> {
     let mut v = BigUint::from(scalar.into_bigint()).to_bytes_le();
     v.resize(std::mem::size_of::<ScalarField>(), 0);
     v
+}
+
+unsafe fn h2r_ptr<T>(var: *const c_char, len: usize, pack: fn(&[u8]) -> T) -> *mut c_char {
+    let buffer: &[u8] = slice::from_raw_parts(var as *const u8, len);
+    let res: T = pack(buffer);
+    // println!("Rust  | HsPtrToRsPtr: {:?}", scalar);
+    Box::into_raw(Box::new(res)) as *mut c_char
+}
+
+unsafe fn r2h_ptr<T>(scalars_var: *const c_char, out_ptr: *mut c_char, unpack: fn(&T) -> Vec<u8>) {
+    let a = Box::from_raw(scalars_var as *mut T);
+    let res = unpack(a.as_ref());
+    let _ = Box::into_raw(a);
+    std::ptr::copy(res.as_ptr(), out_ptr as *mut u8, res.len());
+}
+
+// Scalar
+
+#[no_mangle]
+pub unsafe fn r_h2r_scalar(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<ScalarField>(var, len, pack_scalar)
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_scalar(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<ScalarField>(var, out_ptr, unpack_scalar);
+}
+
+// Point G1
+
+#[no_mangle]
+pub unsafe fn r_h2r_g1(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<G1Affine>(var, len, pack_point)
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_g1(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<G1Affine>(var, out_ptr, unpack_point);
+}
+
+// Point G2
+
+#[no_mangle]
+pub unsafe fn r_h2r_g2(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<G2Affine>(var, len, |bytes| {
+        G2Affine::deserialize_uncompressed_unchecked(bytes).unwrap()
+    })
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_g2(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<G2Affine>(var, out_ptr, |x| {
+        let mut res = Vec::new();
+        x.serialize_uncompressed(&mut res).unwrap();
+        res
+    });
+}
+
+// GT
+
+#[no_mangle]
+pub unsafe fn r_h2r_gt(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<Fq12>(var, len, |bytes| {
+        Fq12::deserialize_uncompressed_unchecked(bytes).unwrap()
+    })
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_gt(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<Fq12>(var, out_ptr, |x| {
+        let mut res = Vec::new();
+        x.serialize_uncompressed(&mut res).unwrap();
+        res
+    });
+}
+
+// Scalar vec
+
+#[no_mangle]
+pub unsafe fn r_h2r_scalar_vec(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<Vec<ScalarField>>(var, len, deserialize_vector_scalar_field)
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_scalar_vec(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<Vec<ScalarField>>(var, out_ptr, |x| x.iter().flat_map(unpack_scalar).collect());
+}
+
+// Scalar poly
+
+#[no_mangle]
+pub unsafe fn r_h2r_scalar_poly(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<DensePolynomial<ScalarField>>(var, len, |x| {
+        DenseUVPolynomial::from_coefficients_vec(deserialize_vector_scalar_field(x))
+    })
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_scalar_poly(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<DensePolynomial<ScalarField>>(var, out_ptr, |x| {
+        x.coeffs.iter().flat_map(unpack_scalar).collect()
+    });
+}
+
+// Point vec
+
+#[no_mangle]
+pub unsafe fn r_h2r_point_vec(var: *const c_char, len: usize) -> *mut c_char {
+    h2r_ptr::<Vec<G1Affine>>(var, len, deserialize_vector_points)
+}
+
+#[no_mangle]
+pub unsafe fn r_r2h_point_vec(var: *const c_char, out_ptr: *mut c_char) {
+    r2h_ptr::<Vec<G1Affine>>(var, out_ptr, |x| x.iter().flat_map(unpack_point).collect());
+}
+
+pub unsafe fn peek<T>(ptr: *mut c_char) -> &'static T {
+    &*(ptr as *mut T)
+}
+
+pub unsafe fn poke<T>(b: T) -> *mut c_char {
+    Box::into_raw(Box::new(b)) as *mut c_char
+}
+
+// pub unsafe fn drop<T>(b: Box<T>) {
+//     let _ = Box::into_raw(b);
+// }
+
+pub unsafe fn constant<R>(a: R) -> *mut c_char {
+    poke(a)
+}
+
+pub unsafe fn unary<T1: 'static, R>(a_ptr: *mut c_char, f: fn(a: &T1) -> R) -> *mut c_char {
+    let a = peek(a_ptr);
+
+    let res = f(a);
+
+    poke(res)
+}
+
+pub unsafe fn binary<T1: 'static, T2: 'static, R>(
+    a_ptr: *mut c_char,
+    b_ptr: *mut c_char,
+    f: fn(a: &T1, b: &T2) -> R,
+) -> *mut c_char {
+    let a = peek(a_ptr);
+    let b = peek(b_ptr);
+
+    let res = f(&a, &b);
+
+    poke(res)
 }

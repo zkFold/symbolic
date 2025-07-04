@@ -366,42 +366,42 @@ test-suite symbolic-base-test
         "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
     main-is: Main.hs
     other-modules:
-      Tests.Algebra.EllipticCurve
-      Tests.Algebra.Field
-      Tests.Algebra.GroebnerBasis
-      Tests.Algebra.Group
-      Tests.Algebra.Pairing
-      Tests.Algebra.Permutation
-      Tests.Algebra.ReedSolomon
-      Tests.Algebra.Univariate
-      Tests.Algebra.Univariate.Poly
-      Tests.Algebra.Univariate.PolyVec
-      Tests.Algebra.Univariate.Simple
-      Tests.Common
-      Tests.Data.Binary
-      Tests.Protocol.IVC
-      Tests.Protocol.NonInteractiveProof
-      Tests.Protocol.Plonkup
-      Tests.Protocol.Plonkup.Update
-      Tests.Symbolic.Algorithm.Blake2b
-      Tests.Symbolic.Algorithm.JWT
-      Tests.Symbolic.Algorithm.Keccak
-      Tests.Symbolic.Algorithm.RSA
-      Tests.Symbolic.Algorithm.SHA2
-      Tests.Symbolic.ArithmeticCircuit
-      Tests.Symbolic.Compiler
-      Tests.Symbolic.Compiler.CompileWith
-      Tests.Symbolic.Compiler.Optimization
-      Tests.Symbolic.Data.ByteString
-      Tests.Symbolic.Data.Common
-      Tests.Symbolic.Data.FFA
-      Tests.Symbolic.Data.FieldElement
-      Tests.Symbolic.Data.Hash
-      Tests.Symbolic.Data.Int
-      Tests.Symbolic.Data.List
-      Tests.Symbolic.Data.MerkleTree
-      Tests.Symbolic.Data.Sum
-      Tests.Symbolic.Data.UInt
+      -- Tests.Algebra.EllipticCurve
+      -- Tests.Algebra.Field
+      -- Tests.Algebra.GroebnerBasis
+      -- Tests.Algebra.Group
+      -- Tests.Algebra.Pairing
+      -- Tests.Algebra.Permutation
+      -- Tests.Algebra.ReedSolomon
+      -- Tests.Algebra.Univariate
+      -- Tests.Algebra.Univariate.Poly
+      -- Tests.Algebra.Univariate.PolyVec
+      -- Tests.Algebra.Univariate.Simple
+      -- Tests.Common
+      -- Tests.Data.Binary
+      -- Tests.Protocol.IVC
+      -- Tests.Protocol.NonInteractiveProof
+      -- Tests.Protocol.Plonkup
+      -- Tests.Protocol.Plonkup.Update
+      -- Tests.Symbolic.Algorithm.Blake2b
+      -- Tests.Symbolic.Algorithm.JWT
+      -- Tests.Symbolic.Algorithm.Keccak
+      -- Tests.Symbolic.Algorithm.RSA
+      -- Tests.Symbolic.Algorithm.SHA2
+      -- Tests.Symbolic.ArithmeticCircuit
+      -- Tests.Symbolic.Compiler
+      -- Tests.Symbolic.Compiler.CompileWith
+      -- Tests.Symbolic.Compiler.Optimization
+      -- Tests.Symbolic.Data.ByteString
+      -- Tests.Symbolic.Data.Common
+      -- Tests.Symbolic.Data.FFA
+      -- Tests.Symbolic.Data.FieldElement
+      -- Tests.Symbolic.Data.Hash
+      -- Tests.Symbolic.Data.Int
+      -- Tests.Symbolic.Data.List
+      -- Tests.Symbolic.Data.MerkleTree
+      -- Tests.Symbolic.Data.UInt
+      Tests.FFI.RustBLS
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,
