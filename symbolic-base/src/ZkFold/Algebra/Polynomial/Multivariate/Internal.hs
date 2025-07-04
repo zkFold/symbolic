@@ -2,106 +2,103 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 
-module ZkFold.Algebra.Polynomial.Multivariate.Internal where
+module ZkFold.Algebra.Polynomial.Multivariate.Internal (
+  Poly,
+  poly,
+  evalPolynomial,
+  ZkFold.Algebra.Polynomial.Multivariate.Internal.variables,
+  ZkFold.Algebra.Polynomial.Multivariate.Internal.mapVar,
+  mapCoeffs,
+  var,
+  constant,
+  lt,
+  zeroP,
+  scaleM,
+  degP,
+  homogenous,
+) where
 
 import Control.DeepSeq (NFData)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Bifunctor (Bifunctor (..))
-import Data.Functor ((<&>))
-import Data.List (intercalate)
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                             (foldl')
-#endif
-import Data.Map.Strict (Map, empty, keysSet)
-import qualified Data.Map.Strict as M
+import Data.Bool (Bool (..), otherwise)
+import Data.Eq (Eq (..))
+import Data.Foldable (Foldable (..))
+import Data.Function (($), (.))
+import Data.Functor (fmap, (<$>), (<&>))
+import Data.List (filter, intercalate, map)
+import Data.Monoid ((<>))
+import Data.Ord (Ord (..))
 import Data.Set (Set)
+import Data.Tuple (fst, snd)
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude hiding (
-  Num (..),
-  drop,
-  lcm,
-  length,
-  sum,
-  take,
-  (!!),
-  (/),
- )
+import Prelude (Show (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial
-
--- | A class for polynomials.
--- `c` is the coefficient type,
--- `i` is the variable type,
--- `j` is the power type.
-type Polynomial c i j = (Eq c, Field c, Monomial i j)
+import qualified ZkFold.Algebra.Polynomial.Multivariate.Monomial as Mono
 
 -- | Polynomial type
-newtype Poly c i j = P [(c, Mono i j)]
+newtype Poly coef var pow = UnsafePoly [(coef, Mono var pow)]
   deriving (FromJSON, Generic, NFData, ToJSON)
 
 ---------------------------------- List-based polynomials with map-based monomials ----------------------------------
 
 -- | Polynomial constructor
-polynomial :: Polynomial c i j => [(c, Mono i j)] -> Poly c i j
-polynomial = foldr (\(c, m) x -> if c == zero then x else P [(c, m)] + x) zero
+poly :: (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => [(coef, Mono var pow)] -> Poly coef var pow
+poly = foldr (\(coef, m) x -> if coef == zero then x else UnsafePoly [(coef, m)] + x) zero
 
 evalPolynomial
-  :: forall c i j b
-   . AdditiveMonoid b
-  => Scale c b
-  => ((i -> b) -> Mono i j -> b)
-  -> (i -> b)
-  -> Poly c i j
-  -> b
-evalPolynomial e f (P p) = foldr (\(c, m) x -> x + scale c (e f m)) zero p
+  :: AdditiveMonoid a
+  => Scale coef a
+  => ((var -> a) -> Mono var pow -> a)
+  -> (var -> a)
+  -> Poly coef var pow
+  -> a
+evalPolynomial e f (UnsafePoly p) = foldr (\(coef, m) x -> x + scale coef (e f m)) zero p
 
-variables :: forall c v. Ord v => Poly c v Natural -> Set v
-variables (P p) = foldMap ((\(M m) -> keysSet m) . snd) p
+variables :: Ord var => Poly coef var pow -> Set var
+variables (UnsafePoly p) = foldMap (Mono.variables . snd) p
 
-mapVars :: Variable i2 => (i1 -> i2) -> Poly c i1 j -> Poly c i2 j
-mapVars f (P ms) = P $ (\(c, M m) -> (c, M $ M.mapKeys f m)) <$> ms
-
-mapVarPolynomial :: Variable i => Map i i -> Poly c i j -> Poly c i j
-mapVarPolynomial m (P ms) = P $ second (mapVarMonomial m) <$> ms
+mapVar :: Ord var' => (var -> var') -> Poly coef var pow -> Poly coef var' pow
+mapVar f (UnsafePoly ms) = UnsafePoly $ second (Mono.mapVar f) <$> ms
 
 mapCoeffs
-  :: forall c c' i j
-   . (c -> c')
-  -> Poly c i j
-  -> Poly c' i j
-mapCoeffs f (P p) = P $ p <&> first f
+  :: (coef -> coef')
+  -> Poly coef var pow
+  -> Poly coef' var pow
+mapCoeffs f (UnsafePoly p) = UnsafePoly $ p <&> first f
 
-instance Polynomial c i j => IsList (Poly c i j) where
-  type Item (Poly c i j) = (c, Map i j)
-  toList (P p) = second (\(M m) -> m) <$> p
-  fromList p = polynomial $ second monomial <$> p
+instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => IsList (Poly coef var pow) where
+  type Item (Poly coef var pow) = (coef, Mono var pow)
+  toList (UnsafePoly p) = p
+  fromList = poly
 
-instance (Show c, Show i, Show j, Monomial i j) => Show (Poly c i j) where
-  show (P p) =
+instance (Show coef, Show var, Show pow, Eq pow, MultiplicativeMonoid pow) => Show (Poly coef var pow) where
+  show (UnsafePoly p) =
     intercalate " + " $
-      p <&> \(c, m) -> show c <> "∙" <> show (m :: Mono i j)
+      p
+        <&> \(coef, m) -> show coef <> "∙" <> show (m :: Mono var pow)
 
-instance Polynomial c i j => Eq (Poly c i j) where
-  P l == P r = l == r
+instance (Eq coef, Eq var, Eq pow) => Eq (Poly coef var pow) where
+  UnsafePoly l == UnsafePoly r = l == r
 
--- TODO: this assumes sorted monomials! Needs fixing.
-instance Polynomial c i j => Ord (Poly c i j) where
-  compare (P l) (P r) =
+instance (Eq coef, Ord var, Ord pow) => Ord (Poly coef var pow) where
+  compare (UnsafePoly l) (UnsafePoly r) =
     compare
       (snd <$> l)
       (snd <$> r)
 
-instance (Arbitrary c, Arbitrary (Mono i j)) => Arbitrary (Poly c i j) where
-  arbitrary = P <$> arbitrary
+instance (Arbitrary coef, Ord var, Arbitrary var, Arbitrary pow) => Arbitrary (Poly coef var pow) where
+  arbitrary = UnsafePoly <$> arbitrary
 
-instance {-# OVERLAPPING #-} FromConstant (Poly c i j) (Poly c i j)
+instance {-# OVERLAPPING #-} FromConstant (Poly coef var pow) (Poly coef var pow)
 
-instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
-  P l + P r = P $ filter ((/= zero) . fst) $ go l r
+instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => AdditiveSemigroup (Poly coef var pow) where
+  UnsafePoly l + UnsafePoly r = UnsafePoly $ filter ((/= zero) . fst) $ go l r
    where
     go [] [] = []
     go ls [] = ls
@@ -116,48 +113,80 @@ instance Polynomial c i j => AdditiveSemigroup (Poly c i j) where
       | ml > mr = (cl, ml) : go ls ((cr, mr) : rs)
       | otherwise = (cr, mr) : go ((cl, ml) : ls) rs
 
-instance Scale c' c => Scale c' (Poly c i j) where
-  scale c' (P p) = P $ map (first (scale c')) p
+instance Scale coef' coef => Scale coef' (Poly coef var pow) where
+  scale coef' (UnsafePoly p) = UnsafePoly $ map (first (scale coef')) p
 
-instance Polynomial c i j => AdditiveMonoid (Poly c i j) where
-  zero = P []
+instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => AdditiveMonoid (Poly coef var pow) where
+  zero = UnsafePoly []
 
-instance Polynomial c i j => AdditiveGroup (Poly c i j) where
-  negate (P p) = P $ map (first negate) p
+instance (Eq coef, AdditiveGroup coef, Ord var, Ord pow) => AdditiveGroup (Poly coef var pow) where
+  negate (UnsafePoly p) = UnsafePoly $ map (first negate) p
 
-instance {-# OVERLAPPING #-} Polynomial c i j => Scale (Poly c i j) (Poly c i j)
+instance
+  {-# OVERLAPPING #-}
+  (Eq coef, AdditiveMonoid coef, MultiplicativeSemigroup coef, Ord var, Ord pow, AdditiveMonoid pow)
+  => Scale (Poly coef var pow) (Poly coef var pow)
 
-instance Polynomial c i j => MultiplicativeSemigroup (Poly c i j) where
-  P l * r = foldl' (+) (P []) $ map (`scaleM` r) l
+instance
+  (Eq coef, AdditiveMonoid coef, MultiplicativeSemigroup coef, Ord var, Ord pow, AdditiveMonoid pow)
+  => MultiplicativeSemigroup (Poly coef var pow)
+  where
+  UnsafePoly l * r = foldl' (+) (UnsafePoly []) $ map (`scaleM` r) l
 
-instance Polynomial c i j => Exponent (Poly c i j) Natural where
+instance
+  (Eq coef, AdditiveMonoid coef, MultiplicativeMonoid coef, Ord var, Ord pow, AdditiveMonoid pow)
+  => Exponent (Poly coef var pow) Natural
+  where
   (^) = natPow
 
-instance Polynomial c i j => MultiplicativeMonoid (Poly c i j) where
-  one = P [(one, M empty)]
+instance
+  (Eq coef, AdditiveMonoid coef, MultiplicativeMonoid coef, Ord var, Ord pow, AdditiveMonoid pow)
+  => MultiplicativeMonoid (Poly coef var pow)
+  where
+  one = UnsafePoly [(one, one)]
 
-instance FromConstant c' c => FromConstant c' (Poly c i j) where
-  fromConstant x = P [(fromConstant x, M empty)]
+instance (FromConstant coef' coef, Ord var, Eq pow, AdditiveMonoid pow) => FromConstant coef' (Poly coef var pow) where
+  fromConstant x = UnsafePoly [(fromConstant x, one)]
 
-instance Polynomial c i j => Semiring (Poly c i j)
+instance (Eq coef, Semiring coef, Ord var, Ord pow, AdditiveMonoid pow) => Semiring (Poly coef var pow)
 
-instance Polynomial c i j => Ring (Poly c i j)
+instance (Eq coef, Ring coef, Ord var, Ord pow, AdditiveMonoid pow) => Ring (Poly coef var pow)
 
--- | @'var' i@ is a polynomial \(p(x) = x_i\)
-var :: Polynomial c i j => i -> Poly c i j
-var x = polynomial [(one, monomial $ fromList [(x, one)])]
+-- | @'var' x@ is a polynomial \(p(x) = x_{var}\)
+var
+  :: ( Eq coef
+     , AdditiveMonoid coef
+     , MultiplicativeMonoid coef
+     , Ord var
+     , Ord pow
+     , AdditiveMonoid pow
+     , MultiplicativeMonoid pow
+     )
+  => var
+  -> Poly coef var pow
+var x = poly [(one, mono $ fromList [(x, one)])]
 
--- | @'constant' i@ is a polynomial \(p(x) = const\)
-constant :: Polynomial c i j => c -> Poly c i j
-constant c = polynomial [(c, M M.empty)]
+-- | @'constant' coef@ is a polynomial \(p(x) = const\)
+constant :: (Eq coef, AdditiveMonoid coef, Ord var, Ord pow, AdditiveMonoid pow) => coef -> Poly coef var pow
+constant coef = poly [(coef, one)]
 
-lt :: Polynomial c i j => Poly c i j -> (c, Mono i j)
-lt (P []) = (zero, M empty)
-lt (P (m : _)) = m
+lt :: (AdditiveMonoid coef, Ord var, Eq pow, AdditiveMonoid pow) => Poly coef var pow -> (coef, Mono var pow)
+lt (UnsafePoly []) = (zero, one)
+lt (UnsafePoly (m : _)) = m
 
-zeroP :: Poly c i j -> Bool
-zeroP (P []) = True
+zeroP :: Poly coef var pow -> Bool
+zeroP (UnsafePoly []) = True
 zeroP _ = False
 
-scaleM :: Polynomial c i j => (c, Mono i j) -> Poly c i j -> Poly c i j
-scaleM (c, m) (P p) = P $ map (bimap (* c) (* m)) p
+scaleM
+  :: (MultiplicativeSemigroup coef, Ord var, Eq pow, AdditiveMonoid pow)
+  => (coef, Mono var pow)
+  -> Poly coef var pow
+  -> Poly coef var pow
+scaleM (coef, m) (UnsafePoly p) = UnsafePoly $ map (bimap (* coef) (* m)) p
+
+degP :: (Ord pow, AdditiveMonoid pow) => Poly coef var pow -> pow
+degP (UnsafePoly ms) = foldl' max zero $ fmap (Mono.degM . snd) ms
+
+homogenous :: (Eq pow, AdditiveMonoid pow) => pow -> Poly coef var pow -> Poly coef var pow
+homogenous j (UnsafePoly p) = UnsafePoly $ filter (\(_, m) -> Mono.degM m == j) p

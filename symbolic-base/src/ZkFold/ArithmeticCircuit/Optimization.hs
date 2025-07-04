@@ -7,7 +7,7 @@ module ZkFold.ArithmeticCircuit.Optimization (optimize, isInputVar) where
 import Control.Applicative (pure)
 import Control.Monad (Monad, (>>=))
 import Data.Binary (Binary)
-import Data.Bool (Bool (..), bool, not, otherwise, (&&), (||))
+import Data.Bool (Bool (..), bool, otherwise, (&&), (||))
 import Data.ByteString (ByteString)
 import Data.Eq ((/=), (==))
 import Data.Foldable (all, any)
@@ -18,17 +18,16 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..), isJust, maybe)
-import Data.Ord ((<=))
+import Data.Ord ((<=), (>))
 import Data.Semigroup ((<>))
-import Data.Set (Set)
+import Data.Set (Set, findMin)
 import qualified Data.Set as S
+import Data.Tuple (fst)
 import GHC.Generics ((:*:))
 import Prelude (error)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial)
-import ZkFold.Algebra.Polynomial.Multivariate.Internal (Poly (..), evalPolynomial, var)
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial (Mono (..), oneM)
+import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, lt, poly, var, variables)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -49,7 +48,9 @@ import ZkFold.Symbolic.Class (Arithmetic)
 optimize
   :: forall a o
    . (Arithmetic a, Binary a, Functor o)
-  => (NewVar -> Bool) -> CircuitContext a o -> CircuitContext a o
+  => (NewVar -> Bool)
+  -> CircuitContext a o
+  -> CircuitContext a o
 optimize keep (CircuitContext s lf lc w f o) =
   let (newSystem, consts) = varsToReplace (s, M.empty)
       prune :: (Monad e, FromConstant a (e NewVar)) => e NewVar -> e NewVar
@@ -67,10 +68,10 @@ optimize keep (CircuitContext s lf lc w f o) =
   inputConstraints :: Map NewVar a -> Map ByteString (Constraint a)
   inputConstraints vs =
     M.fromList
-      [ (polyId, poly)
+      [ (pId, p)
       | (inVar, v) <- M.assocs $ filterKeys keep vs
-      , let poly = var inVar - fromConstant v
-      , let polyId = witToVar @a (pure inVar - fromConstant v)
+      , let p = var inVar - fromConstant v
+      , let pId = witToVar @a (pure inVar - fromConstant v)
       ]
 
   optRanges
@@ -131,20 +132,12 @@ varsToReplace (s, l)
    where
     ns = evalPolynomial evalMonomial varF <$> as
     varF p = maybe (var p) fromConstant (M.lookup p m)
-    checkZero (P [(c, mx)]) = (c == zero) && oneM mx || not (oneM mx)
-    checkZero _ = True
+    checkZero p = degP p > zero || fst (lt p) == zero
 
   toConstVar :: Constraint a -> Maybe (NewVar, a)
-  toConstVar = \case
-    P [(_, M m1)] -> case M.toList m1 of
-      [(m1var, 1)] -> Just (m1var, zero)
-      _ -> Nothing
-    P [(c, M m1), (k, M m2)]
-      | oneM (M m1) -> case M.toList m2 of
-          [(m2var, 1)] -> Just (m2var, negate c // k)
-          _ -> Nothing
-      | oneM (M m2) -> case M.toList m1 of
-          [(m1var, 1)] -> Just (m1var, negate k // c)
-          _ -> Nothing
-      | otherwise -> Nothing
-    _ -> Nothing
+  toConstVar p =
+    let (c, m) = lt p
+        p' = p - poly [lt p]
+     in if c /= zero && degM m == one && degP p' == zero
+          then Just (findMin $ variables p, negate $ fst (lt p') // c)
+          else Nothing

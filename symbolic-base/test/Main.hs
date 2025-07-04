@@ -15,7 +15,7 @@ import Prelude hiding (
 
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
 import Tests.Algebra.Field (specField)
-import Tests.Algebra.GroebnerBasis (specGroebner)
+import Tests.Algebra.Groebner (specGroebner)
 import Tests.Algebra.Group (specGroup)
 import Tests.Algebra.Pairing (specPairing)
 import Tests.Algebra.Permutation (specPermutation)

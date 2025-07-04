@@ -132,7 +132,6 @@ library
       ZkFold.Algebra.Polynomial.Multivariate.Groebner
       ZkFold.Algebra.Polynomial.Multivariate.Monomial
       ZkFold.Algebra.Polynomial.Multivariate.Internal
-      ZkFold.Algebra.Polynomial.Multivariate.Substitution
       ZkFold.Algebra.Polynomial.Univariate
       ZkFold.Algebra.Polynomial.Univariate.Simple
       ZkFold.Algorithm.ReedSolomon
@@ -368,7 +367,7 @@ test-suite symbolic-base-test
     other-modules:
       Tests.Algebra.EllipticCurve
       Tests.Algebra.Field
-      Tests.Algebra.GroebnerBasis
+      Tests.Algebra.Groebner
       Tests.Algebra.Group
       Tests.Algebra.Pairing
       Tests.Algebra.Permutation
