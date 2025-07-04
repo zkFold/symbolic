@@ -5,16 +5,19 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 
-module ZkFold.Symbolic.UPLC.Data (DataCell (..), Data, KnownData, unfoldData, foldData) where
+module ZkFold.Symbolic.UPLC.Data
+    (DataCell (..), Data, KnownData, unfoldData, foldData, serialiseData) where
 
 import Data.Function ((.), ($))
 import Data.Tuple (uncurry)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
+import Prelude (error)
 import ZkFold.Algebra.Class
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class (SymbolicData, Context)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -25,9 +28,11 @@ import ZkFold.Symbolic.Data.Sum (Sum, inject, match)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Morph (MorphFrom, (@), MorphTo (Morph))
 import ZkFold.Symbolic.Data.Switch (Switch)
+import ZkFold.Symbolic.Data.VarByteString (VarByteString)
 import ZkFold.Symbolic.Fold (SymbolicFold)
 
 import ZkFold.Symbolic.UPLC.Constants
+import ZkFold.UPLC.Term qualified as Term
 
 data DataPtr c = MkDataPtr
     { ptrOffset :: FieldElement c
@@ -42,6 +47,8 @@ instance Symbolic c => SymbolicData (DataPtr c)
 
 instance Symbolic c => SymbolicInput (DataPtr c)
 
+instance Symbolic c => Eq (DataPtr c)
+
 type ConstrTag = UInt 64 (Fixed 16)
 
 data DataCell a c
@@ -49,7 +56,7 @@ data DataCell a c
     | DMapCell (List c (a, a))
     | DListCell (List c a)
     | DIntCell (Int IntLength IntRegSize c)
-    | DBSCell (ByteString BSLength c)
+    | DBSCell (VarByteString BSLength c)
     deriving (G.Generic)
 
 mapCell ::
@@ -85,6 +92,8 @@ deriving newtype instance (Symbolic c, KnownData c) => SymbolicData (Data c)
 
 deriving newtype instance (Symbolic c, KnownData c) => SymbolicInput (Data c)
 
+deriving newtype instance (Symbolic c, KnownData c) => Eq (Data c)
+
 indexData :: forall c. (SymbolicFold c, KnownData c) => Data c -> DataPtr c -> Data c
 indexData MkData {..} MkDataPtr {..} = MkData { runData = slice ptrOffset ptrLength runData }
 
@@ -110,3 +119,15 @@ foldData cell = MkData (inject offset .: concatMapCell (Morph runData) cell)
 
       toPtrs :: List c (Data c) -> List c (DataPtr c)
       toPtrs = tail . scanl (Morph $ uncurry nextPtr) nullptr
+
+instance (SymbolicFold c, KnownData c) => FromConstant Term.Data (Data c) where
+    fromConstant = foldData . \case
+        Term.DConstr t f -> DConstrCell (fromConstant t) (fromConstant f)
+        Term.DMap es -> DMapCell $ fromConstant
+            [ (fromConstant k :: Data c, fromConstant v :: Data c) | (k, v) <- es ]
+        Term.DList xs -> DListCell (fromConstant xs)
+        Term.DI int -> DIntCell (fromConstant int)
+        Term.DB bs -> DBSCell (fromConstant bs)
+
+serialiseData :: SymbolicFold c => Data c -> VarByteString BSLength c
+serialiseData = error "TODO: serialiseData"

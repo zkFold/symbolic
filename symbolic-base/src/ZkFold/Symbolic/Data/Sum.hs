@@ -23,7 +23,9 @@ import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
+import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (SymbolicEq)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -84,6 +86,12 @@ instance
   , Context (Product ts c) ~ c
   )
   => SymbolicInput (OneOf ts c)
+
+instance
+  ( Symbolic c
+  , SymbolicEq (Product ts c)
+  , Context (Product ts c) ~ c
+  ) => Eq (OneOf ts c)
 
 embedOneOf :: forall ts c. Embed ts c => Eithers ts -> OneOf ts c
 embedOneOf = OneOf <$> fromConstant . indexOf @ts @c <*> embed @ts @c
@@ -188,6 +196,12 @@ deriving newtype instance
   , Context (Prod a c) ~ c
   )
   => SymbolicInput (Sum a c)
+
+deriving newtype instance
+  ( Symbolic c
+  , SymbolicEq (Prod a c)
+  , Context (Prod a c) ~ c
+  ) => Eq (Sum a c)
 
 inject :: forall a c. (Generic a, Injects (G.Rep a) c) => a -> Sum a c
 inject = Sum . embedOneOf . sopify @c . G.from

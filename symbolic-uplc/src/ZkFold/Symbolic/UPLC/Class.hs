@@ -3,7 +3,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..), BSLength, StrLength, IntLength) where
+module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..)) where
 
 import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
@@ -36,7 +36,11 @@ class
     , v -> c
   where
   asPair :: v -> Maybe (ExValue c, ExValue c)
+  asPair _ = Nothing
   asList :: v -> Maybe (ExList c)
+  asList _ = Nothing
+  asData :: v -> Maybe (Symbolic.Data c)
+  asData _ = Nothing
 
 -- | Existential wrapper around list of 'IsData' Symbolic types.
 data ExList c = forall t v. IsData t v c => ExList (L.List c v)
@@ -46,39 +50,28 @@ data ExValue c = forall t v. IsData t v c => ExValue v
 
 -- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
 -- it is also 'Typeable'.
-type Sym c = (SymbolicFold c, Typeable c, Symbolic.KnownData c)
+type Sym c =
+    ( SymbolicFold c, Typeable c, Symbolic.KnownData c
+    , KnownRegisters c IntLength IntRegSize)
 
-instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+instance Sym c => IsData BTInteger (Int IntLength Auto c) c
 
-instance Sym c => IsData BTByteString (VarByteString BSLength c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+instance Sym c => IsData BTByteString (VarByteString BSLength c) c
 
-instance Sym c => IsData BTString (VarByteString StrLength c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+instance Sym c => IsData BTString (VarByteString StrLength c) c
 
-instance Sym c => IsData BTBool (Bool c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+instance Sym c => IsData BTBool (Bool c) c
 
-instance Sym c => IsData BTUnit (Proxy c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+instance Sym c => IsData BTUnit (Proxy c) c
 
 instance Sym c => IsData BTData (Symbolic.Data c) c where
-  asPair _ = Nothing
-  asList _ = Nothing
+  asData = Just
 
 instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
-  asPair _ = Nothing
   asList l = Just (ExList l)
 
 instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
-  asList _ = Nothing
 
 -- Uncomment these lines as more types are available in Converter:
 -- instance Sym c => IsData BTBLSG1 ??? c where asPair _ = Nothing

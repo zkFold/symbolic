@@ -9,6 +9,7 @@ import Data.Distributive (Distributive (..))
 import Data.Function (const, ($), (.))
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep, tabulate)
+import qualified Data.List as Haskell
 import Data.List.Infinite (Infinite (..))
 import Data.Traversable (traverse)
 import Data.Tuple (fst, snd, uncurry)
@@ -64,6 +65,9 @@ instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
 
 instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
+
+instance (FromConstant a b, SymbolicData b, Context b ~ c) => FromConstant [a] (List c b) where
+  fromConstant = Haskell.foldr ((.:) . fromConstant) emptyList
 
 size :: List c x -> FieldElement c
 size = FieldElement . lSize
