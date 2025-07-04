@@ -17,6 +17,7 @@ import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude (type (~))
 
+import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
 
@@ -45,21 +46,15 @@ data ExValue c = forall t v. IsData t v c => ExValue v
 
 -- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
 -- it is also 'Typeable'.
-type Sym c = (SymbolicFold c, Typeable c)
-
-type IntLength = 64
+type Sym c = (SymbolicFold c, Typeable c, Symbolic.KnownData c)
 
 instance (Sym c, KnownRegisters c IntLength Auto) => IsData BTInteger (Int IntLength Auto c) c where
   asPair _ = Nothing
   asList _ = Nothing
 
-type BSLength = 4000
-
 instance Sym c => IsData BTByteString (VarByteString BSLength c) c where
   asPair _ = Nothing
   asList _ = Nothing
-
-type StrLength = 40000
 
 instance Sym c => IsData BTString (VarByteString StrLength c) c where
   asPair _ = Nothing

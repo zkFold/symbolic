@@ -11,7 +11,7 @@ import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep, tabulate)
 import Data.List.Infinite (Infinite (..))
 import Data.Traversable (traverse)
-import Data.Tuple (fst, snd)
+import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
 
@@ -64,6 +64,9 @@ instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
 instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
 
 instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
+
+size :: List c x -> FieldElement c
+size = FieldElement . lSize
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
@@ -183,14 +186,19 @@ foldl f y List {..} =
               )
      in (sLayout, sPayload)
 
+scanl ::
+    forall c x y. (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c) =>
+    MorphFrom c (y, x) y -> y -> List c x -> List c y
+scanl f s = reverse . uncurry (.:) . foldl (Morph \((y :: Switch s y, ys), x :: Switch s x) ->
+    (f @ (y, x) :: Switch s y, y .: ys)) (s, emptyList)
+
+-- | revapp xs ys = reverse xs ++ ys
 revapp
   :: forall c x
    . (SymbolicData x, Context x ~ c, SymbolicFold c)
   => List c x
   -> List c x
   -> List c x
-
--- | revapp xs ys = reverse xs ++ ys
 revapp xs ys = foldl (Morph \(zs, x :: Switch s x) -> x .: zs) ys xs
 
 reverse
@@ -309,14 +317,19 @@ xs !! n =
       (n, restore (embed $ pureRep zero, pureRep zero))
       xs
 
+concatMap ::
+    forall c x y.
+    (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c) =>
+    MorphFrom c x (List c y) -> List c x -> List c y
+concatMap f = reverse . foldl (Morph
+    \(ys :: List s (Switch s y), x :: Switch s x) -> revapp (f @ x) ys) emptyList
+
 concat
   :: forall c x
    . (SymbolicData x, Context x ~ c, SymbolicFold c)
   => List c (List c x)
   -> List c x
-concat xs =
-  reverse $
-    foldl (Morph \(ys, x :: List s (Switch s x)) -> revapp x ys) emptyList xs
+concat = concatMap (Morph \(x :: List s (Switch s x)) -> x)
 
 findIndex
   :: forall x c n

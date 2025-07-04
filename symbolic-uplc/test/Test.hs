@@ -6,13 +6,16 @@ import Data.ByteString qualified as B
 import Data.ByteString.Base16 qualified as B16
 import Data.Eq (Eq)
 import Data.Function (const, ($))
+import Data.Functor.Rep (tabulate)
 import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
+import GHC.Generics ((:*:) (..))
 import System.IO (IO)
 import Test.Hspec (describe, hspec)
 import Test.Hspec.QuickCheck (prop)
-import Test.QuickCheck
+import Test.QuickCheck (Arbitrary, Property, (===), property)
 import Text.Show (Show)
+import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (eval)
@@ -36,10 +39,8 @@ areSame
      , Context x ~ CircuitContext a
      , Context y ~ CircuitContext a
      , Eq (Layout y a)
-     , Arbitrary (Payload x a)
      , Arbitrary (Layout x a)
      , Show (Layout y a)
-     , Show (Payload x a)
      , Show (Layout x a)
      )
   => (Term -> x -> y)
@@ -49,7 +50,8 @@ areSame
 areSame v t f =
   let acT = compile (v t)
       acF = compile f
-   in property $ \i -> eval acT i === eval acF i
+      p   = tabulate (const zero)
+   in property $ \i -> eval acT (p :*: i) === eval acF (p :*: i)
 
 tFalse, tTrue, tUnit :: Term
 tFalse = TConstant (CBool false)
