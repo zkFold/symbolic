@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Build Rust part
+cargo build --release --target=wasm32-unknown-unknown --manifest-path ../symbolic-base/rust-wrapper/Cargo.toml
+
+cp ../symbolic-base/rust-wrapper/target/wasm32-unknown-unknown/release/librust_wrapper.a libs/librust_wrapper_wasm.a
 
 if [ -z "$1" ]
 then

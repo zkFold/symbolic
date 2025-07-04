@@ -1,237 +1,231 @@
+use ark_bls12_381::Fq12;
 use ark_bls12_381::Fr as ScalarField;
+use ark_ff::{FftField, Field, One, PrimeField, Zero};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
+use num_bigint::BigUint;
+use num_traits::{pow, ConstZero, ToPrimitive};
+use std::{
+    ops::{Mul, Neg},
+    process::Output,
+    slice,
+};
 
-use crate::utils::{c_char, binary};
+use crate::utils::Wrapper;
+use crate::{
+    poly,
+    utils::{binary, c_char, constant, peek, unary},
+};
 
-// pub fn mul_fft(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let l = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(l));
-//     let r = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(r));
-
-//     l.mul(&r)
-//         .to_vec()
-//         .iter()
-//         .flat_map(|x| unpack_scalar(x))
-//         .collect()
-// }
-
-// pub fn poly_add(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let l = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(l));
-//     let r = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(r));
-
-//     let s = &l + &r;
-
-//     s.to_vec()
-//         .iter()
-//         .flat_map(|x| unpack_scalar(x))
-//         .collect()
-// }
-
-///
-/// # Safety
-/// The caller must ensure that valid pointers and sizes are passed.
-/// .
 #[no_mangle]
 pub unsafe fn r_poly_add(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
     binary(
         a_ptr,
         b_ptr,
-        |a: &Vec<ScalarField>, b:   &Vec<ScalarField>| -> Vec<ScalarField> { 
-            let l = DensePolynomial::from_coefficients_vec(a.to_vec());
-            let r = DensePolynomial::from_coefficients_vec(b.to_vec());
-
-            (l + r).to_vec()
-        },
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> { a + b },
     )
 }
 
-///
-/// # Safety
-/// The caller must ensure that valid pointers and sizes are passed.
-/// .
+#[no_mangle]
+pub unsafe fn r_poly_sub(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> { a - b },
+    )
+}
+
 #[no_mangle]
 pub unsafe fn r_poly_mul(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
     binary(
         a_ptr,
         b_ptr,
-        |a: &Vec<ScalarField>, b:   &Vec<ScalarField>| -> Vec<ScalarField> { 
-            let l = DensePolynomial::from_coefficients_vec(a.to_vec());
-            let r = DensePolynomial::from_coefficients_vec(b.to_vec());
-
-            (l * r).to_vec()
-        },
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> { a * b },
     )
-    // let a: Box<Vec<ScalarField>> = peek(a_ptr);
-    // let b: Box<Vec<ScalarField>> = peek(b_ptr);
-
-    // let a1 = DensePolynomial::from_coefficients_vec(*Box::clone(&a));
-    // let a2 = DensePolynomial::from_coefficients_vec(*Box::clone(&b));
-    
-    // let res = a1 * a2;
-
-    // Box::into_raw_with_allocator(b)
-    // drop(a);
-    // drop(b);
-
-    // poke(res)
 }
 
+#[no_mangle]
+pub unsafe fn r_poly_div(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> { a / b },
+    )
+}
 
+#[no_mangle]
+pub unsafe fn r_poly_hmul(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> {
+            DensePolynomial::from_coefficients_vec(
+                a.coeffs
+                    .iter()
+                    .zip(&b.coeffs)
+                    .map(|(ax, bx)| ax * bx)
+                    .collect(),
+            )
+        },
+    )
+}
 
-// pub fn div_fft(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let l = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(l));
-//     let r = DensePolynomial::from_coefficients_vec(deserialize_vector_scalar_field(r));
+#[no_mangle]
+pub unsafe fn r_poly_hdiv(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |a: &DensePolynomial<ScalarField>,
+         b: &DensePolynomial<ScalarField>|
+         -> DensePolynomial<ScalarField> {
+            DensePolynomial::from_coefficients_vec(
+                a.coeffs
+                    .iter()
+                    .zip(&b.coeffs)
+                    .map(|(ax, bx)| ax / bx)
+                    .collect(),
+            )
+        },
+    )
+}
 
-//     l.div(&r)
-//         .to_vec()
-//         .iter()
-//         .flat_map(|x| unpack_scalar(x))
-//         .collect()
-// }
+#[no_mangle]
+pub unsafe fn r_poly_mul_scalar(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |s: &ScalarField, p: &DensePolynomial<ScalarField>| -> DensePolynomial<ScalarField> {
+            DensePolynomial::from_coefficients_vec(p.coeffs.iter().map(|i| s * i).collect())
+        },
+    )
+}
 
-// pub fn hmul(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let l = deserialize_vector_scalar_field(l);
-//     let r = deserialize_vector_scalar_field(r);
+#[no_mangle]
+pub unsafe fn r_poly_add_scalar(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |s: &ScalarField, p: &DensePolynomial<ScalarField>| -> DensePolynomial<ScalarField> {
+            DensePolynomial::from_coefficients_vec(p.coeffs.iter().map(|i| s + i).collect())
+        },
+    )
+}
 
-//     l.iter()
-//         .zip(r)
-//         .map(|(x, y)| x.mul(&y))
-//         .flat_map(|x| unpack_scalar(&x))
-//         .collect()
-// }
+pub fn poly_one() -> DensePolynomial<ScalarField> {
+    DensePolynomial {
+        coeffs: vec![ScalarField::ONE],
+    }
+}
 
-// pub fn scalar_mul(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let a = pack_scalar(l);
-//     let pv = deserialize_vector_scalar_field(r);
+#[no_mangle]
+pub unsafe fn r_poly_one() -> *mut c_char {
+    constant(poly_one())
+}
 
-//     pv.iter().map(|x| *x * a).flat_map(|x| unpack_scalar(&x)).collect()
-// }
+// struct DensePolynomialWrapper<T: ark_ff::Field>(pub DensePolynomial<T>);
 
-// pub fn scalar_add(l: &[u8], r: &[u8]) -> Vec<u8> {
-//     let a = pack_scalar(l);
-//     let pv = deserialize_vector_scalar_field(r);
+impl<T> Mul for Wrapper<DensePolynomial<T>>
+where
+    T: ark_ff::Field,
+    DensePolynomial<T>: Mul<DensePolynomial<T>, Output = DensePolynomial<T>>,
+{
+    type Output = Wrapper<DensePolynomial<T>>;
 
-//     pv.iter().map(|x| *x + a).flat_map(|x| unpack_scalar(&x)).collect()
-// }
+    fn mul(self, rhs: Self) -> Self::Output {
+        Wrapper(self.0 * rhs.0)
+    }
+}
 
-// ///
-// /// # Safety
-// /// The caller must ensure that valid pointers and sizes are passed.
-// /// .
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_scalar_add(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
+impl<T: FftField> One for Wrapper<DensePolynomial<T>> {
+    fn one() -> Self {
+        Wrapper(DensePolynomial {
+            coeffs: vec![T::ONE],
+        })
+    }
+}
 
-//     let res = scalar_add(l, r);
+impl<T: FftField> Clone for Wrapper<DensePolynomial<T>> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
+#[no_mangle]
+pub unsafe fn r_poly_exp(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |base: &DensePolynomial<ScalarField>,
+         exp_bytes: &[u8; 32]|
+         -> DensePolynomial<ScalarField> {
+            let exp = BigUint::from_bytes_le(exp_bytes);
+            #[cfg(target_pointer_width = "64")]
+            let digits = exp
+                .to_u64_digits()
+                .iter()
+                .map(|x| *x as usize)
+                .collect::<Vec<_>>();
+            #[cfg(target_pointer_width = "32")]
+            let digits = exp
+                .to_u32_digits()
+                .iter()
+                .map(|x| *x as usize)
+                .collect::<Vec<_>>();
+            match digits.len() {
+                0 => poly_one(),
+                1 => pow(Wrapper { 0: base.clone() }, digits[0]).0,
+                _ => digits
+                    .into_iter()
+                    .map(|i| pow(Wrapper { 0: base.clone() }, i).0)
+                    .fold(poly_one(), |acc, e| {
+                        pow(Wrapper { 0: acc.clone() }, usize::MAX).0 * acc * e
+                    }),
+            }
+        },
+    )
+}
 
-// ///
-// /// # Safety
-// /// The caller must ensure that valid pointers and sizes are passed.
-// /// .
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_scalar_mul(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
+#[no_mangle]
+pub unsafe fn r_poly_negate(a_ptr: *mut c_char) -> *mut c_char {
+    unary(
+        a_ptr,
+        |p: &DensePolynomial<ScalarField>| -> DensePolynomial<ScalarField> { p.clone().neg() },
+    )
+}
 
-//     let res = scalar_mul(l, r);
+#[no_mangle]
+pub unsafe fn r_poly_zero() -> *mut c_char {
+    constant(DensePolynomial::<ScalarField>::zero())
+}
 
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
+#[no_mangle]
+pub unsafe fn r_poly_scale_natural(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        a_ptr,
+        b_ptr,
+        |a: &DensePolynomial<ScalarField>, b_bytes: &[u8; 32]| -> DensePolynomial<ScalarField> {
+            let c = ScalarField::from_le_bytes_mod_order(b_bytes);
 
-// ///
-// /// # Safety
-// /// The caller must ensure that valid pointers and sizes are passed.
-// /// .
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_hmul(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
+            a.mul(c)
+        },
+    )
+}
 
-//     let res = hmul(l, r);
-
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
-
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_poly_add(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
-
-//     let res = poly_add(l, r);
-
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
-
-// ///
-// /// # Safety
-// /// The caller must ensure that valid pointers and sizes are passed.
-// /// .
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_div_fft(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
-
-//     let res = div_fft(l, r);
-
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
-
-// ///
-// /// # Safety
-// /// The caller must ensure that valid pointers and sizes are passed.
-// /// .
-// #[no_mangle]
-// pub unsafe extern "C" fn rust_wrapper_mul_fft(
-//     l_var: *const c_char,
-//     l_len: usize,
-//     r_var: *const c_char,
-//     r_len: usize,
-//     _out_len: usize,
-//     out: *mut c_char,
-// ) {
-//     let l = slice::from_raw_parts(l_var as *const u8, l_len);
-//     let r = slice::from_raw_parts(r_var as *const u8, r_len);
-
-//     let res = mul_fft(l, r);
-
-//     std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
-// }
+#[no_mangle]
+pub unsafe fn r_poly_from_natural(a_ptr: *mut c_char) -> *mut c_char {
+    unary(a_ptr, |a: &[u8; 32]| -> DensePolynomial<ScalarField> {
+        DensePolynomial {
+            coeffs: vec![ScalarField::from_le_bytes_mod_order(a)],
+        }
+    })
+}

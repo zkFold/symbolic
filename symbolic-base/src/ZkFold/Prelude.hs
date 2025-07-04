@@ -161,8 +161,8 @@ foreign import javascript unsafe "console.log($1)"
 -- | traces from Debug.Trace do not work in wasm. For pure debug logs in wasm, these functions must me used.
 --
 traceWith :: (a -> P.String) -> P.String -> a -> a
-traceWith f string expr = unsafePerformIO $ do
-    js_print $ toJSString (string P.<> f expr)
+traceWith f string expr = unsafePerformIO P.$ do
+    js_print P.$ toJSString (string P.<> f expr)
     return expr
 #else
 traceWith :: (a -> P.String) -> P.String -> a -> a
