@@ -414,6 +414,7 @@ test-suite symbolic-base-test
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
+      lens                                       ,
       QuickCheck                                 ,
       quickcheck-instances                       ,
       regex-tdfa                       <= 1.3.2.2,
