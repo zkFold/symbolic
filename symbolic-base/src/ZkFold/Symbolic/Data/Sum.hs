@@ -91,7 +91,8 @@ instance
   ( Symbolic c
   , SymbolicEq (Product ts c)
   , Context (Product ts c) ~ c
-  ) => Eq (OneOf ts c)
+  )
+  => Eq (OneOf ts c)
 
 embedOneOf :: forall ts c. Embed ts c => Eithers ts -> OneOf ts c
 embedOneOf = OneOf <$> fromConstant . indexOf @ts @c <*> embed @ts @c
@@ -201,7 +202,8 @@ deriving newtype instance
   ( Symbolic c
   , SymbolicEq (Prod a c)
   , Context (Prod a c) ~ c
-  ) => Eq (Sum a c)
+  )
+  => Eq (Sum a c)
 
 inject :: forall a c. (Generic a, Injects (G.Rep a) c) => a -> Sum a c
 inject = Sum . embedOneOf . sopify @c . G.from

@@ -51,8 +51,11 @@ data ExValue c = forall t v. IsData t v c => ExValue v
 -- | We can evaluate UPLC terms in arbitrary 'Symbolic' context as long as
 -- it is also 'Typeable'.
 type Sym c =
-    ( SymbolicFold c, Typeable c, Symbolic.KnownData c
-    , KnownRegisters c IntLength IntRegSize)
+  ( SymbolicFold c
+  , Typeable c
+  , Symbolic.KnownData c
+  , KnownRegisters c IntLength IntRegSize
+  )
 
 instance Sym c => IsData BTInteger (Int IntLength Auto c) c
 

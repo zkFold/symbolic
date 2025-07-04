@@ -1,16 +1,16 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
 import Control.Monad (return, (>>=))
 import Data.Either (Either (..))
 import Data.Foldable (toList)
-import Data.Function (($), (.), flip, const)
-import Data.List (map, null, (++), concatMap)
+import Data.Function (const, flip, ($), (.))
+import Data.List (concatMap, map, null, (++))
 import Data.Maybe (Maybe (..), fromJust, listToMaybe)
 import Data.Ord ((<))
 import Data.Proxy (Proxy (..))
@@ -31,7 +31,7 @@ import ZkFold.Data.Eq qualified as Symbolic
 import ZkFold.Prelude (unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), bool, all)
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, truncate)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -261,13 +261,15 @@ applyPoly ctx ChooseData (dt : c0 : m0 : l0 : i0 : b0 : args) = do
   let brs0 = map (\x -> evalArg ctx x args) [c0, m0, l0, i0, b0]
   MaybeValue (_ :: Symbolic.Maybe c d) <- listToMaybe (concatMap toList brs0)
   [cv, mv, lv, iv, bv :: Symbolic.Maybe c d] <- traverse (>>= \(MaybeValue v) -> cast v) brs0
-  return $ MaybeValue $ flip (Symbolic.maybe Symbolic.nothing) dv $
-    flip Data.unfoldData \case
-        Data.DConstrCell _ _ -> cv
-        Data.DMapCell _ -> mv
-        Data.DListCell _ -> lv
-        Data.DIntCell _ -> iv
-        Data.DBSCell _ -> bv
+  return $
+    MaybeValue $
+      flip (Symbolic.maybe Symbolic.nothing) dv $
+        flip Data.unfoldData \case
+          Data.DConstrCell _ _ -> cv
+          Data.DMapCell _ -> mv
+          Data.DListCell _ -> lv
+          Data.DIntCell _ -> iv
+          Data.DBSCell _ -> bv
 applyPoly _ _ _ = Nothing
 
 -- | Correct error propagation for if-then-else
@@ -325,10 +327,13 @@ consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJus
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
 constr :: Sym c => ConstructorTag -> [MaybeValue c] -> SomeValue c
 constr (fromConstant . toInteger -> cTag) fields0 = do
-    let isJust = all (\(MaybeValue v) -> Symbolic.isJust v) fields0
-    fields1 <- traverse (\(MaybeValue v) -> asData $ Symbolic.fromJust v) fields0
-    return $ MaybeValue $ Symbolic.guard isJust $
-        Data.foldData $ Data.DConstrCell cTag (fromConstant fields1)
+  let isJust = all (\(MaybeValue v) -> Symbolic.isJust v) fields0
+  fields1 <- traverse (\(MaybeValue v) -> asData $ Symbolic.fromJust v) fields0
+  return $
+    MaybeValue $
+      Symbolic.guard isJust $
+        Data.foldData $
+          Data.DConstrCell cTag (fromConstant fields1)
 
 -- | Given a monomorphic UPLC builtin, evaluate it
 -- as a corresponding Symbolic function.
@@ -370,21 +375,36 @@ evalMono (BMFData fun) = case fun of
   ListData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DListCell)
   IData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DIntCell)
   BData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DBSCell)
-  UnConstrData -> fromConstant (flip Data.unfoldData \case
-    Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t, f)
-    _ -> Symbolic.nothing)
-  UnMapData -> fromConstant (flip Data.unfoldData \case
-    Data.DMapCell es -> Symbolic.just @c es
-    _ -> Symbolic.nothing)
-  UnListData -> fromConstant (flip Data.unfoldData \case
-    Data.DListCell xs -> Symbolic.just @c xs
-    _ -> Symbolic.nothing)
-  UnIData -> fromConstant (flip Data.unfoldData \case
-    Data.DIntCell int -> Symbolic.just @c int
-    _ -> Symbolic.nothing)
-  UnBData -> fromConstant (flip Data.unfoldData \case
-    Data.DBSCell bs -> Symbolic.just @c bs
-    _ -> Symbolic.nothing)
+  UnConstrData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t, f)
+          _ -> Symbolic.nothing
+      )
+  UnMapData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DMapCell es -> Symbolic.just @c es
+          _ -> Symbolic.nothing
+      )
+  UnListData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DListCell xs -> Symbolic.just @c xs
+          _ -> Symbolic.nothing
+      )
+  UnIData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DIntCell int -> Symbolic.just @c int
+          _ -> Symbolic.nothing
+      )
+  UnBData ->
+    fromConstant
+      ( flip Data.unfoldData \case
+          Data.DBSCell bs -> Symbolic.just @c bs
+          _ -> Symbolic.nothing
+      )
   EqualsData -> fromConstant \d e -> Symbolic.just @c (d Symbolic.== e)
   MkPairData -> fromConstant \d e -> Symbolic.just @c (d, e)
   MkNilData -> fromConstant $ const (Symbolic.just @c L.emptyList)

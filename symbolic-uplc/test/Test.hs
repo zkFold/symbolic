@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ViewPatterns #-}
 
 import Control.Monad (return)
@@ -16,7 +16,7 @@ import GHC.Generics ((:*:) (..))
 import System.IO (IO)
 import Test.Hspec (describe, hspec)
 import Test.Hspec.QuickCheck (prop)
-import Test.QuickCheck (Arbitrary, Property, (===), property)
+import Test.QuickCheck (Arbitrary, Property, property, (===))
 import Test.QuickCheck.Instances ()
 import Text.Show (Show)
 import ZkFold.Algebra.Class (zero)
@@ -54,7 +54,7 @@ areSame
 areSame v t f =
   let acT = compile (v t)
       acF = compile f
-      p   = tabulate (const zero)
+      p = tabulate (const zero)
    in property $ \i -> eval acT (p :*: i) === eval acF (p :*: i)
 
 tFalse, tTrue, tUnit :: Term
@@ -87,12 +87,12 @@ main :: IO ()
 main = hspec do
   describe "Data tests" do
     return ()
-    -- FIXME These tests do not pass yet
-    --prop "fold/unfold" \(fromConstant @Data @(Symbolic.Data C) -> d) ->
-    --  toProp (Symbolic.unfoldData d Symbolic.foldData == d)
-    --prop "unfold/fold" \(fromConstant @Data
-    --                    @(Symbolic.DataCell (Symbolic.Data C) C) -> d) ->
-    --  toProp (Symbolic.unfoldData (Symbolic.foldData d) inject == inject d)
+  -- FIXME These tests do not pass yet
+  -- prop "fold/unfold" \(fromConstant @Data @(Symbolic.Data C) -> d) ->
+  --  toProp (Symbolic.unfoldData d Symbolic.foldData == d)
+  -- prop "unfold/fold" \(fromConstant @Data
+  --                    @(Symbolic.DataCell (Symbolic.Data C) C) -> d) ->
+  --  toProp (Symbolic.unfoldData (Symbolic.foldData d) inject == inject d)
   describe "UPLC tests" do
     prop "false is ok" $ areSame contractV3 (TLam tFalse) (const true)
     prop "error is not ok" $ areSame contractV3 (TLam TError) (const false)

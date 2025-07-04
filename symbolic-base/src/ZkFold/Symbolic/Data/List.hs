@@ -190,11 +190,18 @@ foldl f y List {..} =
               )
      in (sLayout, sPayload)
 
-scanl ::
-    forall c x y. (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c) =>
-    MorphFrom c (y, x) y -> y -> List c x -> List c y
-scanl f s = reverse . uncurry (.:) . foldl (Morph \((y :: Switch s y, ys), x :: Switch s x) ->
-    (f @ (y, x) :: Switch s y, y .: ys)) (s, emptyList)
+scanl
+  :: forall c x y
+   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
+  => MorphFrom c (y, x) y -> y -> List c x -> List c y
+scanl f s =
+  reverse
+    . uncurry (.:)
+    . foldl
+      ( Morph \((y :: Switch s y, ys), x :: Switch s x) ->
+          (f @ (y, x) :: Switch s y, y .: ys)
+      )
+      (s, emptyList)
 
 -- | revapp xs ys = reverse xs ++ ys
 revapp
@@ -242,14 +249,21 @@ foldr f s xs =
 mapWithCtx
   :: forall c g x y
    . ( SymbolicFold c
-     , SymbolicData g, Context g ~ c
-     , SymbolicData x, Context x ~ c
-     , SymbolicData y, Context y ~ c )
+     , SymbolicData g
+     , Context g ~ c
+     , SymbolicData x
+     , Context x ~ c
+     , SymbolicData y
+     , Context y ~ c
+     )
   => g -> MorphFrom c (g, x) y -> List c x -> List c y
 mapWithCtx g f =
-    snd
-    . foldr (Morph \(x :: Switch s x, (g' :: Switch s g, ys)) ->
-        (g', (f @ (g', x) :: Switch s y) .: ys)) (g, emptyList)
+  snd
+    . foldr
+      ( Morph \(x :: Switch s x, (g' :: Switch s g, ys)) ->
+          (g', (f @ (g', x) :: Switch s y) .: ys)
+      )
+      (g, emptyList)
 
 filter
   :: forall c x
@@ -321,12 +335,17 @@ xs !! n =
       (n, restore (embed $ pureRep zero, pureRep zero))
       xs
 
-concatMap ::
-    forall c x y.
-    (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c) =>
-    MorphFrom c x (List c y) -> List c x -> List c y
-concatMap f = reverse . foldl (Morph
-    \(ys :: List s (Switch s y), x :: Switch s x) -> revapp (f @ x) ys) emptyList
+concatMap
+  :: forall c x y
+   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
+  => MorphFrom c x (List c y) -> List c x -> List c y
+concatMap f =
+  reverse
+    . foldl
+      ( Morph
+          \(ys :: List s (Switch s y), x :: Switch s x) -> revapp (f @ x) ys
+      )
+      emptyList
 
 concat
   :: forall c x
@@ -371,17 +390,24 @@ insert xs n xi =
           xs
    in res
 
-slice ::
-    forall c x. (SymbolicFold c, SymbolicData x, Context x ~ c) =>
-    FieldElement c -> FieldElement c -> List c x -> List c x
+slice
+  :: forall c x
+   . (SymbolicFold c, SymbolicData x, Context x ~ c)
+  => FieldElement c -> FieldElement c -> List c x -> List c x
 slice f t xs =
-    let (_, _, res) =
-            foldr (Morph
-                \(x :: Switch s x, (skipCnt :: FieldElement s, lenCnt :: FieldElement s, l)) ->
-                    ifThenElse (skipCnt == zero)
-                        (ifThenElse (lenCnt == zero)
-                            (zero, zero, l)
-                            (zero, lenCnt - one, x .: l))
-                        (skipCnt - one, lenCnt, l)
-            ) (f, t, emptyList) xs
-     in res
+  let (_, _, res) =
+        foldr
+          ( Morph
+              \(x :: Switch s x, (skipCnt :: FieldElement s, lenCnt :: FieldElement s, l)) ->
+                ifThenElse
+                  (skipCnt == zero)
+                  ( ifThenElse
+                      (lenCnt == zero)
+                      (zero, zero, l)
+                      (zero, lenCnt - one, x .: l)
+                  )
+                  (skipCnt - one, lenCnt, l)
+          )
+          (f, t, emptyList)
+          xs
+   in res
