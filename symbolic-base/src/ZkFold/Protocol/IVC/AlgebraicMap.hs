@@ -5,14 +5,12 @@ module ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap) where
 
 import Data.ByteString (ByteString)
 import Data.Either (Either (..))
+import Data.Foldable (Foldable, toList)
 import Data.Functor.Rep (Representable (..))
-import Data.List (foldl')
-import Data.Map.Strict (Map, keys)
+import Data.List (foldl', (++))
+import Data.Map.Strict (Map, keys, union)
 import qualified Data.Map.Strict as M
-import Data.Maybe (Maybe (..))
-import Prelude (fmap, zip, ($), (.), (<$>))
-import qualified Prelude as P
-
+import GHC.Generics ((:*:))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate
@@ -20,10 +18,12 @@ import qualified ZkFold.Algebra.Polynomial.Multivariate as PM
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext))
 import ZkFold.ArithmeticCircuit.Context (acSystem, acWitness)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
-import ZkFold.Data.ByteString (Binary, fromByteString)
+import ZkFold.Data.ByteString (Binary, toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
+import Prelude (fmap, zip, ($), (.), (<$>))
+import qualified Prelude as P
 
 -- | Algebraic map of @a@.
 -- It calculates a system of equations defining @a@ in some way.
@@ -33,6 +33,9 @@ algebraicMap
   :: forall d k a i p f
    . ( KnownNat (d + 1)
      , Representable i
+     , Foldable i
+     , Representable p
+     , Foldable p
      , Binary (Rep i)
      , Binary (Rep p)
      , Ring f
@@ -50,17 +53,21 @@ algebraicMap Predicate {..} pi pm _ pad = padDecomposition pad f_sps_uni
   sys = M.elems (acSystem $ acContext predicateCircuit)
 
   witness :: Map ByteString f
-  witness = M.fromList $ zip (keys $ acWitness $ acContext predicateCircuit) (V.head pm)
+  witness =
+    M.fromList $
+      zip
+        ( toList (tabulate @(i :*: p :*: i) toByteString)
+            ++ keys (acWitness $ acContext predicateCircuit)
+        )
+        (V.head pm)
 
-  asInput :: ByteString -> f
-  asInput v = case fromByteString v :: Maybe (Either (Rep i) (Either (Rep p) (Rep i))) of
-    Just (Left inV) -> index pi inV
-    Just (Right (Left _)) -> P.error "constraints should not depend on payload"
-    Just (Right (Right _)) -> zero
-    Nothing -> P.error "unknown variable"
+  pubInput :: Map ByteString f
+  pubInput =
+    M.fromList $
+      zip (toList (tabulate @i $ toByteString @(Either (Rep i) (Either (Rep p) (Rep i))) . Right . Right)) (toList pi)
 
   varMap :: NewVar -> f
-  varMap (EqVar newV) = M.findWithDefault (asInput newV) newV witness
+  varMap (EqVar newV) = M.findWithDefault (P.error "unknown variable") newV $ pubInput `union` witness
   varMap (FoldLVar _ _) = P.error "unexpected FOLD constraint"
   varMap (FoldPVar _ _) = P.error "unexpected FOLD constraint"
 

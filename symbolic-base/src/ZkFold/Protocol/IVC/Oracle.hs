@@ -7,7 +7,6 @@ import Data.Foldable (Foldable, foldMap)
 import Data.Function ((.))
 import Data.List ((++))
 import GHC.Generics
-
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC (mimcConstants, mimcHashN)
 import ZkFold.Data.Vector (Vector)
@@ -24,6 +23,9 @@ class OracleSource a b where
   -- ^ Extracts random seed from the source.
   default source :: (Generic b, GOracleSource a (Rep b)) => b -> [a]
   source = gsource . from
+
+instance {-# INCOHERENT #-} OracleSource a a where
+  source a = [a]
 
 instance
   (OracleSource a b, OracleSource a c)

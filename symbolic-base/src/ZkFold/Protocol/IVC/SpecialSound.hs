@@ -4,13 +4,12 @@
 module ZkFold.Protocol.IVC.SpecialSound where
 
 import Data.Binary (Binary)
-import Data.Function (($), (.))
-import Data.Functor ((<$>))
+import Data.Foldable (Foldable, toList)
+import Data.Function ((.))
+import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Representable (..))
-import Data.List (map)
+import Data.List (map, (++))
 import GHC.Generics ((:*:) (..))
-import Prelude (undefined)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
@@ -19,6 +18,7 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Protocol.IVC.AlgebraicMap as AM
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
+import Prelude (undefined)
 
 {-- | Section 3.1
 
@@ -69,7 +69,9 @@ specialSoundProtocol
      , Binary (Rep i)
      , Binary (Rep p)
      , Representable i
+     , Foldable i
      , Representable p
+     , Foldable p
      )
   => (a -> f)
   -> (f -> a)
@@ -79,8 +81,10 @@ specialSoundProtocol af fa phi@Predicate {..} =
   let
     prover pi0 w _ _ =
       let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
-       in map (af . witnessGenerator predicateCircuit circuitInput) $
-            getAllVars (acContext predicateCircuit)
+       in toList (fmap af pi0)
+            ++ toList (fmap af w)
+            ++ toList (fmap af (predicateEval pi0 w))
+            ++ map (af . witnessGenerator predicateCircuit circuitInput) (getAllVars (acContext predicateCircuit))
     verifier pi pm ts = AM.algebraicMap @d phi pi (map fa <$> pm) ts one
    in
     SpecialSoundProtocol predicateEval prover verifier
@@ -89,12 +93,16 @@ specialSoundProtocol'
   :: forall d a i p f
    . ( KnownNat (d + 1)
      , Representable i
+     , Foldable i
+     , Representable p
+     , Foldable p
      , Binary (Rep i)
      , Binary (Rep p)
      , Ring f
      , Scale a f
      )
-  => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p [f] [f] f
 specialSoundProtocol' phi =
   let
     verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
