@@ -3,6 +3,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 
 module ZkFold.Symbolic.UPLC.Evaluation (Sym, ExValue (..), MaybeValue (..), eval) where
 
@@ -26,20 +28,21 @@ import ZkFold.Algebra.Class (
   (+),
   (-),
  )
-import ZkFold.Algebra.Number (Natural, value)
+import ZkFold.Algebra.Number (Natural, value, type (*))
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq qualified as Symbolic
 import ZkFold.Prelude (unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
-import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, truncate)
+import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, truncate, reverseEndianness)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 import ZkFold.Symbolic.Data.Ord qualified as Symbolic
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
+import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.VarByteString
 import Prelude (error, foldr, fromIntegral, toInteger)
 
@@ -50,6 +53,8 @@ import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Term
+import ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_256)
+import ZkFold.Symbolic.Algorithm.Hash.Keccak (keccakVar)
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -306,10 +311,10 @@ evalConstant (CByteString b) = SymValue (fromConstant b)
 evalConstant (CString s) = SymValue (fromString $ unpack s)
 evalConstant (CUnit ()) = SymValue Proxy
 evalConstant (CData d) = SymValue (fromConstant d)
-evalConstant (CList []) = error "FIXME: UPLC List support"
+evalConstant (CList []) = error "TODO: handle empty list constants"
 evalConstant (CList lst) =
   let (xs, x) = fromJust (unsnoc lst)
-   in foldr (\l r -> consList l r) (makeSingleton (evalConstant x)) (map evalConstant xs)
+   in foldr (consList . evalConstant) (makeSingleton (evalConstant x)) xs
 evalConstant (CPair p q) = pair (evalConstant p) (evalConstant q)
 evalConstant (CG1 _) = error "FIXME: UPLC BLS support"
 evalConstant (CG2 _) = error "FIXME: UPLC BLS support"
@@ -322,7 +327,8 @@ makeSingleton :: Sym c => SymValue u c -> SymValue (BTList u) c
 makeSingleton (SymValue xs) = SymValue $ L.singleton xs
 
 consList :: forall c u. Sym c => SymValue u c -> SymValue (BTList u) c -> SymValue (BTList u) c
-consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJust . cast $ x L..: (fromJust $ cast xs))
+consList (SymValue (x :: v)) (SymValue (xs :: vs)) =
+  SymValue @_ @_ @vs . fromJust . cast $ x L..: fromJust (cast xs)
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
 constr :: forall c. Sym c => ConstructorTag -> [MaybeValue c] -> SomeValue c
@@ -343,31 +349,83 @@ constr (fromConstant . toInteger -> cTag) fields0 = do
 -- Note that you can use 'FromConstant' instances defined above
 -- to get rid of the 'FSat'/'FLam' boilerplate.
 evalMono :: forall c s t. Sym c => BuiltinMonoFunction s t -> Fun s t c
-evalMono (BMFInteger AddInteger) = addIntegerFun
-evalMono (BMFInteger SubtractInteger) = subtractIntegerFun
-evalMono (BMFInteger MultiplyInteger) = multiplyIntegerFun
-evalMono (BMFInteger DivideInteger) = divideIntegerFun
-evalMono (BMFInteger ModInteger) = modIntegerFun
-evalMono (BMFInteger QuotientInteger) = quotientIntegerFun
-evalMono (BMFInteger RemainderInteger) = remainderIntegerFun
-evalMono (BMFInteger EqualsInteger) = equalsIntegerFun
-evalMono (BMFInteger LessThanInteger) = lessThanIntegerFun
-evalMono (BMFInteger LessThanEqualsInteger) = lessThanEqualsIntegerFun
-evalMono (BMFInteger _) = error "FIXME: UPLC Integer support"
-evalMono (BMFByteString AppendByteString) = appendByteStringFun
-evalMono (BMFByteString ConsByteString) = consByteStringFun
-evalMono (BMFByteString SliceByteString) = sliceByteStringFun
-evalMono (BMFByteString LengthOfByteString) = lengthOfByteStringFun
-evalMono (BMFByteString IndexByteString) = indexByteStringFun
-evalMono (BMFByteString EqualsByteString) = equalsByteStringFun
-evalMono (BMFByteString LessThanByteString) = lessThanByteStringFun
-evalMono (BMFByteString LessThanEqualsByteString) = lessThanEqualsByteStringFun
-evalMono (BMFString AppendString) = appendStringFun
-evalMono (BMFString EqualsString) = equalsStringFun
-evalMono (BMFString EncodeUtf8) = encodeUtf8Fun
-evalMono (BMFString DecodeUtf8) = decodeUtf8Fun
-evalMono (BMFAlgorithm SHA2_256) = sha2_256Fun
-evalMono (BMFAlgorithm _) = error "FIXME: UPLC Algorithms support"
+evalMono (BMFInteger fun) = case fun of
+  AddInteger -> fromConstant \v w -> Symbolic.just @c (v + w)
+  SubtractInteger -> fromConstant \v w -> Symbolic.just @c (v - w)
+  MultiplyInteger -> fromConstant \v w -> Symbolic.just @c (v * w)
+  DivideInteger -> fromConstant \v w -> Symbolic.just @c (div v w)
+  ModInteger -> fromConstant \v w -> Symbolic.just @c (mod v w)
+  QuotientInteger -> fromConstant \v w -> Symbolic.just @c (quot v w)
+  RemainderInteger -> fromConstant \v w -> Symbolic.just @c (rem v w)
+  EqualsInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.== w)
+  LessThanInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.< w)
+  LessThanEqualsInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.<= w)
+  IntegerToByteString -> fromConstant \b w (Int i) -> Symbolic.guard
+    (isNotNegative w)
+    VarByteString {
+      bsLength = from @(UInt (NumberOfBits (BaseField c)) IntRegSize c) $
+        resize (uint w),
+      bsBuffer = resize $ let res = from i :: ByteString IntLength c
+                           in ifThenElse b res (reverseEndianness @8 res) }
+  ByteStringToInteger -> fromConstant \b (VarByteString _ bs) ->
+    Symbolic.just @c . Int . from @(ByteString IntLength c) . resize $
+        ifThenElse b bs (reverseEndianness @8 bs)
+evalMono (BMFByteString fun) = case fun of
+  AppendByteString -> fromConstant \v w -> Symbolic.just @c $ dropZeros (append v w)
+  ConsByteString -> fromConstant \v w ->
+    let bu :: ByteString 8 c = dropN @8 @IntLength (from $ uint v)
+     in Symbolic.just @c $ dropZeros @BSLength (append w $ fromByteString bu)
+  SliceByteString -> fromConstant \(Int f) (Int t) (VarByteString l b) ->
+    let f' = from (resize f :: UInt (NumberOfBits (BaseField c)) Auto c)
+        t' = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
+        (fr, to) = (Symbolic.max f' zero, Symbolic.min (f' + t' - one) (l - one))
+        fe8 = fromConstant (8 :: Natural) :: FieldElement c
+        newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr * fe8))
+                      (fromConstant (value @BSLength) - to * fe8)
+     in Symbolic.just @c (VarByteString to newB)
+  LengthOfByteString -> fromConstant \(VarByteString l _) ->
+    let l' = resize (from l :: UInt (NumberOfBits (BaseField c)) Auto c)
+     in Symbolic.just @c $ div (Int l') (fromConstant (8 :: Natural))
+  IndexByteString -> fromConstant \(VarByteString l b) i@(Int t) ->
+    let indexIn = (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
+        fr = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
+        fe8 = fromConstant (8 :: Natural) :: FieldElement c
+        newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr * fe8))
+                      (fromConstant (value @BSLength) - fe8)
+     in bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn
+  EqualsByteString -> fromConstant \v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w
+  LessThanByteString -> fromConstant \v w ->
+    Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.< from (bsBuffer w)
+  LessThanEqualsByteString -> fromConstant \v w ->
+    Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w)
+evalMono (BMFString fun) = case fun of
+  AppendString -> fromConstant \v w -> Symbolic.just @c $ dropZeros @StrLength (append v w)
+  EqualsString -> fromConstant \v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w
+  EncodeUtf8 -> fromConstant (Symbolic.just @c . dropZeros @BSLength)
+  DecodeUtf8 -> fromConstant \(VarByteString l b) -> Symbolic.just @c $ VarByteString l (resize b)
+evalMono (BMFAlgorithm fun) = case fun of
+  SHA2_256 -> fromConstant \v -> Symbolic.just @c VarByteString {
+      bsLength = fromConstant (256 :: Natural),
+      bsBuffer = resize (sha2Var @"SHA256" v) }
+  SHA3_256 -> fromConstant \v -> Symbolic.just @c VarByteString {
+      bsLength = fromConstant (256 :: Natural),
+      bsBuffer = resize (keccakVar @"SHA3-256" v) }
+  Blake2b_224 -> fromConstant \v -> Symbolic.just @c VarByteString {
+      bsLength = fromConstant (224 :: Natural),
+      bsBuffer = resize $ blake2b_224 (bsBuffer v) }
+  Blake2b_256 -> fromConstant \v -> Symbolic.just @c VarByteString {
+      bsLength = fromConstant (256 :: Natural),
+      bsBuffer = resize $ blake2b_256 (bsBuffer v) }
+  VerifyEd25519Signature -> fromConstant \vk m s -> Symbolic.guard
+    (bsLength vk Symbolic.== fromConstant (32 * 8 :: Natural)
+      && bsLength s Symbolic.== fromConstant (64 * 8 :: Natural))
+    (ecdsaVerifyVar (resize $ bsBuffer vk) m (resize $ bsBuffer s))
+  VerifyEcdsaSecp256k1Signature -> error "TODO: verify ECDSA secp256k1 signature"
+  VerifySchnorrSecp256k1Signature -> error "TODO: verify Schnorr secp256k1 signature"
+  Keccak_256 -> fromConstant \v -> Symbolic.just @c VarByteString {
+      bsLength = fromConstant (256 :: Natural),
+      bsBuffer = resize $ keccakVar @"Keccak256" v }
+  Ripemd_160 -> error "TODO: RIPEMD-160"
 evalMono (BMFData fun) = case fun of
   ConstrData -> fromConstant \(resize . uint -> t) f ->
     Symbolic.just @c $ Data.foldData (Data.DConstrCell t f)
@@ -377,34 +435,29 @@ evalMono (BMFData fun) = case fun of
   BData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DBSCell)
   UnConstrData ->
     fromConstant
-      ( flip Data.unfoldData \case
+      (`Data.unfoldData` \case
           Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t, f)
-          _ -> Symbolic.nothing
-      )
+          _ -> Symbolic.nothing)
   UnMapData ->
     fromConstant
-      ( flip Data.unfoldData \case
+      (`Data.unfoldData` \case
           Data.DMapCell es -> Symbolic.just @c es
-          _ -> Symbolic.nothing
-      )
+          _ -> Symbolic.nothing)
   UnListData ->
     fromConstant
-      ( flip Data.unfoldData \case
+      (`Data.unfoldData` \case
           Data.DListCell xs -> Symbolic.just @c xs
-          _ -> Symbolic.nothing
-      )
+          _ -> Symbolic.nothing)
   UnIData ->
     fromConstant
-      ( flip Data.unfoldData \case
+      (`Data.unfoldData` \case
           Data.DIntCell int -> Symbolic.just @c int
-          _ -> Symbolic.nothing
-      )
+          _ -> Symbolic.nothing)
   UnBData ->
     fromConstant
-      ( flip Data.unfoldData \case
+      (`Data.unfoldData` \case
           Data.DBSCell bs -> Symbolic.just @c bs
-          _ -> Symbolic.nothing
-      )
+          _ -> Symbolic.nothing)
   EqualsData -> fromConstant \d e -> Symbolic.just @c (d Symbolic.== e)
   MkPairData -> fromConstant \d e -> Symbolic.just @c (d, e)
   MkNilData -> fromConstant $ const (Symbolic.just @c L.emptyList)
@@ -413,142 +466,10 @@ evalMono (BMFData fun) = case fun of
 evalMono (BMFCurve _) = error "FIXME: UPLC Curve support"
 evalMono (BMFBitwise _) = error "FIXME: UPLC ByteString support"
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
-addIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-addIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v + w))
-
-subtractIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-subtractIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v - w))
-
-multiplyIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-multiplyIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v * w))
-
-divideIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-divideIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (div v w))
-
-modIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-modIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (mod v w))
-
-quotientIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-quotientIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (quot v w))
-
-remainderIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTInteger c
-remainderIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (rem v w))
-
-equalsIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTBool c
-equalsIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v Symbolic.== w))
-
-lessThanIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTBool c
-lessThanIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v Symbolic.< w))
-
-lessThanEqualsIntegerFun :: forall c. Sym c => Fun [BTInteger, BTInteger] BTBool c
-lessThanEqualsIntegerFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant (\v w -> Symbolic.just @c (v Symbolic.<= w))
-
---------------------------------------------------------------------------------
-
-appendByteStringFun :: forall c. Sym c => Fun [BTByteString, BTByteString] BTByteString c
-appendByteStringFun = fromConstant (\v w -> Symbolic.just @c $ dropZeros @BSLength (append v w))
-
-consByteStringFun :: forall c. Sym c => Fun [BTInteger, BTByteString] BTByteString c
-consByteStringFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant
-      ( \v w ->
-          let bu :: ByteString 8 c = dropN @8 @IntLength (from $ uint v)
-           in Symbolic.just @c $ dropZeros @BSLength (append w $ fromByteString bu)
-      )
-
-sliceByteStringFun :: forall c. Sym c => Fun [BTInteger, BTInteger, BTByteString] BTByteString c
-sliceByteStringFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant
-      ( \(Int f :: Int IntLength Auto c) (Int t :: Int IntLength Auto c) (VarByteString l b) ->
-          let f' = from (resize f :: UInt (NumberOfBits (BaseField c)) Auto c)
-              t' = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
-              (fr, to) = (Symbolic.max f' zero, Symbolic.min (f' + t' - one) (l - one))
-              fe8 = fromConstant (8 :: Natural) :: FieldElement c
-              newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr * fe8)) (fromConstant (value @BSLength) - to * fe8)
-           in fromConstant $ Symbolic.just @c (VarByteString to newB) :: (Fun '[] BTByteString c)
-      )
-
-lengthOfByteStringFun :: forall c. Sym c => Fun '[BTByteString] BTInteger c
-lengthOfByteStringFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    fromConstant
-      ( \(VarByteString l _) ->
-          let l' = resize (from l :: UInt (NumberOfBits (BaseField c)) Auto c)
-           in Symbolic.just @c $ div (Int l') (fromConstant (8 :: Natural))
-      )
-
-indexByteStringFun :: forall c. Sym c => Fun [BTByteString, BTInteger] BTInteger c
-indexByteStringFun =
-  withNumberOfRegisters @IntLength @Auto @(BaseField c) $
-    withGetRegisterSize @IntLength @Auto @(BaseField c) $
-      withCeilRegSize @(GetRegisterSize (BaseField c) IntLength Auto) @OrdWord $
-        fromConstant
-          ( \(VarByteString l b) i@(Int t) ->
-              let
-                indexIn = (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
-                fr = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
-                fe8 = fromConstant (8 :: Natural) :: FieldElement c
-                newB = shiftR (shiftL b (fromConstant (value @BSLength) - l + fr * fe8)) (fromConstant (value @BSLength) - fe8)
-               in
-                bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn
-          )
-
-equalsByteStringFun :: forall c. Sym c => Fun '[BTByteString, BTByteString] BTBool c
-equalsByteStringFun = fromConstant (\v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w)
-
-lessThanByteStringFun :: forall c. Sym c => Fun '[BTByteString, BTByteString] BTBool c
-lessThanByteStringFun =
-  withNumberOfRegisters @BSLength @Auto @(BaseField c) $
-    withGetRegisterSize @BSLength @Auto @(BaseField c) $
-      withCeilRegSize @(GetRegisterSize (BaseField c) BSLength Auto) @OrdWord $
-        fromConstant (\v w -> Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.< from (bsBuffer w))
-
-lessThanEqualsByteStringFun :: forall c. Sym c => Fun '[BTByteString, BTByteString] BTBool c
-lessThanEqualsByteStringFun =
-  withNumberOfRegisters @BSLength @Auto @(BaseField c) $
-    withGetRegisterSize @BSLength @Auto @(BaseField c) $
-      withCeilRegSize @(GetRegisterSize (BaseField c) BSLength Auto) @OrdWord $
-        fromConstant (\v w -> Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w))
-
---------------------------------------------------------------------------------
-appendStringFun :: forall c. Sym c => Fun [BTString, BTString] BTString c
-appendStringFun = fromConstant (\v w -> Symbolic.just @c $ dropZeros @StrLength (append v w))
-
-equalsStringFun :: forall c. Sym c => Fun '[BTString, BTString] BTBool c
-equalsStringFun = fromConstant (\v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w)
-
-encodeUtf8Fun :: forall c. Sym c => Fun '[BTString] BTByteString c
-encodeUtf8Fun = fromConstant (\w -> Symbolic.just @c $ dropZeros @BSLength w)
-
-decodeUtf8Fun :: forall c. Sym c => Fun '[BTByteString] BTString c
-decodeUtf8Fun = fromConstant (\(VarByteString l b) -> Symbolic.just @c $ VarByteString l (resize b))
-
---------------------------------------------------------------------------------
-
-sha2_256Fun :: forall c. Sym c => Fun '[BTByteString] BTByteString c
-sha2_256Fun = fromConstant (\v -> Symbolic.just @c $ VarByteString (fromConstant (256 :: Natural)) (resize $ sha2Var @"SHA256" v))
+ecdsaVerifyVar ::
+    Sym c =>
+    ByteString (32 * 8) c ->
+    VarByteString BSLength c ->
+    ByteString (64 * 8) c ->
+    Bool c
+ecdsaVerifyVar = error "TODO: ECDSA Ed25519 verify"
