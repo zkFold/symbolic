@@ -8,11 +8,15 @@ module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..)) 
 import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
+import ZkFold.Algebra.Class (NumberOfBits)
+import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
+import ZkFold.Symbolic.Data.UInt (OrdWord)
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude (type (~))
@@ -20,10 +24,6 @@ import Prelude (type (~))
 import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
-import ZkFold.Symbolic.Class (Symbolic(BaseField))
-import ZkFold.Algebra.Class (NumberOfBits)
-import ZkFold.Symbolic.Data.UInt (OrdWord)
-import ZkFold.Algebra.Number (KnownNat)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
