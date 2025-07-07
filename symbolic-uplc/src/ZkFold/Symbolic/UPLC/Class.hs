@@ -20,6 +20,10 @@ import Prelude (type (~))
 import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
+import ZkFold.Symbolic.Class (Symbolic(BaseField))
+import ZkFold.Algebra.Class (NumberOfBits)
+import ZkFold.Symbolic.Data.UInt (OrdWord)
+import ZkFold.Algebra.Number (KnownNat)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
@@ -55,6 +59,11 @@ type Sym c =
   , Typeable c
   , Symbolic.KnownData c
   , KnownRegisters c IntLength IntRegSize
+  , KnownRegisters c BSLength Auto
+  , KnownRegisters c (NumberOfBits (BaseField c)) Auto
+  , KnownNat (GetRegisterSize (BaseField c) IntLength IntRegSize `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) BSLength Auto `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) Auto `Ceil` OrdWord)
   )
 
 instance Sym c => IsData BTInteger (Int IntLength Auto c) c
