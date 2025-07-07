@@ -177,6 +177,7 @@ library
       ZkFold.Protocol.IVC.CommitOpen
       ZkFold.Protocol.IVC.Commit
       ZkFold.Protocol.IVC.FiatShamir
+      ZkFold.Protocol.IVC.ForeignField
       ZkFold.Protocol.IVC.Internal
       ZkFold.Protocol.IVC.NARK
       ZkFold.Protocol.IVC.OperationRecord
@@ -185,6 +186,7 @@ library
       ZkFold.Protocol.IVC.RecursiveFunction
       ZkFold.Protocol.IVC.SpecialSound
       ZkFold.Protocol.IVC.VerifierCircuit
+      ZkFold.Protocol.IVC.WeierstrassWitness
       ZkFold.Protocol.KZG
       ZkFold.Protocol.Plonkup
       ZkFold.Protocol.Plonkup.LookupConstraint

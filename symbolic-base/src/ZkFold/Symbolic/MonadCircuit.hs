@@ -13,15 +13,15 @@ import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
-import Prelude (Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
+import ZkFold.Data.Eq (Eq)
+import Prelude (Integer)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
-class (FiniteField a, Euclidean (IntegralOf a)) => ResidueField a where
+class (FiniteField a, Euclidean (IntegralOf a), Eq (IntegralOf a)) => ResidueField a where
   type IntegralOf a :: Type
   fromIntegral :: IntegralOf a -> a
   toIntegral :: a -> IntegralOf a
@@ -106,7 +106,8 @@ class
   --   (see 'lookupConstraint').
   registerFunction
     :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
-    => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
+    => (forall x. ResidueField x => f x -> g x)
+    -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.
   --   For examples of lookup constraints, see 'rangeConstraint'.

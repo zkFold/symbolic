@@ -15,7 +15,6 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)

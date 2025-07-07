@@ -6,13 +6,12 @@ import Control.Monad (Monad (..), ap)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
 import Numeric.Natural (Natural)
-import Prelude (Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import Prelude (Integer)
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 
@@ -99,6 +98,11 @@ instance FromConstant Natural (EuclideanF a v) where fromConstant x = EuclideanF
 
 instance FromConstant Integer (EuclideanF a v) where fromConstant x = EuclideanF (fromConstant x)
 
+instance Eq (EuclideanF a v) where
+  type BooleanOf (EuclideanF a v) = BooleanE a v
+  EuclideanF f == EuclideanF g = BooleanE (\x -> f x == g x)
+  EuclideanF f /= EuclideanF g = BooleanE (\x -> f x /= g x)
+
 instance Scale Natural (EuclideanF a v) where scale k (EuclideanF f) = EuclideanF (scale k f)
 
 instance Scale Integer (EuclideanF a v) where scale k (EuclideanF f) = EuclideanF (scale k f)
@@ -129,3 +133,13 @@ instance Euclidean (EuclideanF a v) where
   EuclideanF f `gcd` EuclideanF g = EuclideanF (\x -> f x `gcd` g x)
   EuclideanF f `bezoutL` EuclideanF g = EuclideanF (\x -> f x `bezoutL` g x)
   EuclideanF f `bezoutR` EuclideanF g = EuclideanF (\x -> f x `bezoutR` g x)
+
+newtype BooleanE a v = BooleanE {booleanE :: forall w. IsWitness a w => (v -> w) -> BooleanOf (IntegralOf w)}
+
+instance BoolType (BooleanE a v) where
+  true = BooleanE (const true)
+  false = BooleanE (const false)
+  not (BooleanE f) = BooleanE (not . f)
+  BooleanE f && BooleanE g = BooleanE (\x -> f x && g x)
+  BooleanE f || BooleanE g = BooleanE (\x -> f x || g x)
+  BooleanE f `xor` BooleanE g = BooleanE (\x -> f x `xor` g x)
