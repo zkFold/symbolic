@@ -8,11 +8,15 @@ module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..)) 
 import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
+import ZkFold.Algebra.Class (NumberOfBits)
+import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
+import ZkFold.Symbolic.Data.UInt (OrdWord)
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude (type (~))
@@ -55,6 +59,11 @@ type Sym c =
   , Typeable c
   , Symbolic.KnownData c
   , KnownRegisters c IntLength IntRegSize
+  , KnownRegisters c BSLength Auto
+  , KnownRegisters c (NumberOfBits (BaseField c)) Auto
+  , KnownNat (GetRegisterSize (BaseField c) IntLength IntRegSize `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) BSLength Auto `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) Auto `Ceil` OrdWord)
   )
 
 instance Sym c => IsData BTInteger (Int IntLength Auto c) c
