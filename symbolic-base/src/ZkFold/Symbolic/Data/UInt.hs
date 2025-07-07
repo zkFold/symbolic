@@ -42,6 +42,7 @@ import Data.Map (fromList, (!))
 import Data.Maybe (fromJust)
 import Data.Traversable (for, traverse)
 import Data.Tuple (swap)
+import Data.Word (Word64)
 import qualified Data.Zip as Z
 import GHC.Generics (Generic, Par1 (..), (:*:) (..))
 import GHC.Natural (naturalFromInteger)
@@ -119,6 +120,9 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (UInt n r c) where
   fromConstant = fromConstant . naturalFromInteger . (`Haskell.mod` (2 ^ getNatural @n))
+
+instance (Symbolic c, KnownRegisterSize r) => FromConstant Word64 (UInt 64 r c) where
+  fromConstant = fromConstant . Haskell.toInteger
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Natural (UInt n r c)
 
@@ -373,8 +377,9 @@ instance
   , KnownNat n
   , KnownNat k
   , KnownRegisterSize r
+  , KnownRegisterSize s
   )
-  => Resize (UInt n r c) (UInt k r c)
+  => Resize (UInt n r c) (UInt k s c)
   where
   resize (UInt bits)
     | value @n == 0 = zero
@@ -383,11 +388,11 @@ instance
         UInt $
           symbolicF
             bits
-            (\l -> naturalToVector @c @k @r (vectorToNatural l (registerSize @(BaseField c) @n @r)))
+            (\l -> naturalToVector @c @k @s (vectorToNatural l (registerSize @(BaseField c) @n @r)))
             ( \v -> do
                 let regs = V.fromVector v
                     ns = replicate (numberOfRegisters @(BaseField c) @n @r -! 1) n ++ [highRegisterSize @(BaseField c) @n @r]
-                    ks = replicate (numberOfRegisters @(BaseField c) @k @r -! 1) k ++ [highRegisterSize @(BaseField c) @k @r]
+                    ks = replicate (numberOfRegisters @(BaseField c) @k @s -! 1) k ++ [highRegisterSize @(BaseField c) @k @s]
                     zs = zip ns regs
 
                 resZ <- helper zs ks
@@ -396,7 +401,7 @@ instance
             )
    where
     n = registerSize @(BaseField c) @n @r
-    k = registerSize @(BaseField c) @k @r
+    k = registerSize @(BaseField c) @k @s
 
     helper :: MonadCircuit i (BaseField c) w m => [(Natural, i)] -> [Natural] -> m [(Natural, i)]
     helper _ [] = return []

@@ -20,6 +20,7 @@ import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Functor.Rep (mzipRep, mzipWithRep)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Proxy (Proxy)
 import Data.Traversable (for)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..))
@@ -90,6 +91,11 @@ type SymbolicEq x =
   , Eq x
   , BooleanOf x ~ Bool (Context x)
   )
+
+instance Symbolic c => Eq (Proxy c) where
+  type BooleanOf (Proxy c) = Bool c
+  _ == _ = true
+  _ /= _ = false
 
 instance (Symbolic c, LayoutFunctor f) => Eq (c f) where
   type BooleanOf (c f) = Bool c
