@@ -24,6 +24,10 @@ import Prelude (type (~))
 import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
+import ZkFold.Symbolic.Class (Symbolic(BaseField))
+import ZkFold.Algebra.Class (NumberOfBits)
+import ZkFold.Symbolic.Data.UInt (OrdWord)
+import ZkFold.Algebra.Number (KnownNat)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
