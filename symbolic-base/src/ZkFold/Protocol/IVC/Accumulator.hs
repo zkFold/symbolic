@@ -12,6 +12,7 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Representable (..))
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Class (Ring, Scale, zero)
+import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
@@ -80,17 +81,18 @@ emptyAccumulator
      , Foldable i
      , Representable p
      , Foldable p
-     , HomomorphicCommit [f] c
+     , HomomorphicCommit c
      , Ring f
      , Scale a f
      , Binary (Rep i)
      , Binary (Rep p)
+     , f ~ ScalarFieldOf c
      )
   => Predicate a i p
   -> Accumulator k i c f
 emptyAccumulator phi =
   let accW = tabulate (const zero)
-      aiC = fmap hcommit accW
+      aiC = tabulate (const zero)
       aiR = tabulate (const zero)
       aiMu = zero
       aiPI = tabulate (const zero)
@@ -107,11 +109,12 @@ emptyAccumulatorInstance
      , Foldable i
      , Representable p
      , Foldable p
-     , HomomorphicCommit [f] c
+     , HomomorphicCommit c
      , Ring f
      , Scale a f
      , Binary (Rep i)
      , Binary (Rep p)
+     , f ~ ScalarFieldOf c
      )
   => Predicate a i p
   -> AccumulatorInstance k i c f

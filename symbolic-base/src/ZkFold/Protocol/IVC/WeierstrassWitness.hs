@@ -94,6 +94,7 @@ instance
     WeierstrassWitness (negate p)
 
 instance
+  {-# OVERLAPPING #-}
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
   , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
@@ -106,6 +107,7 @@ instance
     WeierstrassWitness (scale n p)
 
 instance
+  {-# OVERLAPPING #-}
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
   , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
@@ -162,7 +164,7 @@ instance
   where
   scale w p =
     if n == zero
-      then p
+      then zero
       else
         scale (fromIntegral @w $ n `div` two) (p + p)
           + if n `mod` two == zero

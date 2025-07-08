@@ -5,11 +5,11 @@
 module ZkFold.Protocol.IVC.OperationRecord where
 
 import Data.Either (Either (..))
-import Data.List (foldr, map, zipWith)
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (Natural)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..), PedersonSetup (groupElements))
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), withoutConstraints)
 import ZkFold.Symbolic.Data.List (List, emptyList, head, (.:))
 import ZkFold.Symbolic.Data.Sum (OneOf, embedOneOf, matchOneOf, zeroed)
@@ -29,7 +29,7 @@ newRec
 newRec c = OperationRecord $ embedOneOf (Left (c, c, c)) .: emptyList
 
 addOp
-  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx, HomomorphicCommit [s] c, Scale s c)
+  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx, HomomorphicCommit c, Scale s c)
   => Either c s
   -> OperationRecord c s ctx
   -> OperationRecord c s ctx
@@ -49,7 +49,7 @@ addOp op' (OperationRecord ops) =
           .: ops
 
 instance
-  (HomomorphicCommit [s] c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx)
+  (HomomorphicCommit c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx)
   => AdditiveSemigroup (OperationRecord c s ctx)
   where
   OperationRecord ops + record =
@@ -64,7 +64,7 @@ instance
      in addOp (Left c) record
 
 instance
-  ( HomomorphicCommit [s] c
+  ( HomomorphicCommit c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -77,7 +77,7 @@ instance
   zero = newRec zero
 
 instance
-  ( HomomorphicCommit [s] c
+  ( HomomorphicCommit c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -91,13 +91,13 @@ instance
   negate = scale (-1 :: Integer)
 
 instance
-  (HomomorphicCommit [s] c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx)
+  (HomomorphicCommit c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx, s ~ ScalarFieldOf c)
   => Scale s (OperationRecord c s ctx)
   where
   scale s = addOp (Right s)
 
 instance
-  ( HomomorphicCommit [s] c
+  ( HomomorphicCommit c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -110,7 +110,7 @@ instance
   scale n = addOp (Right $ fromConstant n)
 
 instance
-  ( HomomorphicCommit [s] c
+  ( HomomorphicCommit c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -123,8 +123,7 @@ instance
   scale n = addOp (Right $ fromConstant n)
 
 instance
-  ( PedersonSetup [] (OperationRecord c s ctx)
-  , HomomorphicCommit [s] c
+  ( HomomorphicCommit c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -132,7 +131,9 @@ instance
   , Context s ~ ctx
   , FromConstant Natural s
   , FromConstant Integer s
+  , Scale (ScalarFieldOf c) (OperationRecord c s ctx)
   )
-  => HomomorphicCommit [s] (OperationRecord c s ctx)
+  => CyclicGroup (OperationRecord c s ctx)
   where
-  hcommit ops = foldr (+) zero $ zipWith scale ops $ map withoutConstraints $ groupElements @[] @(OperationRecord c s ctx)
+  type ScalarFieldOf (OperationRecord c s ctx) = ScalarFieldOf c
+  pointGen = newRec pointGen

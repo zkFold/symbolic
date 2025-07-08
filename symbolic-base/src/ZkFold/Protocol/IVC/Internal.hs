@@ -16,6 +16,7 @@ import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector, singleton)
@@ -77,7 +78,8 @@ ivcSetup
      , LayoutFunctor i
      , LayoutFunctor p
      , FieldAssumptions a cc
-     , HomomorphicCommit [a] c
+     , HomomorphicCommit c
+     , a ~ ScalarFieldOf c
      )
   => Hasher
   -> StepFunction a i p
@@ -111,7 +113,8 @@ ivcProve
      , Layout c ~ f
      , fe ~ FieldElement (Interpreter a)
      , Scale fe c
-     , HomomorphicCommit [fe] c
+     , HomomorphicCommit c
+     , fe ~ ScalarFieldOf c
      )
   => Hasher
   -> StepFunction a i p

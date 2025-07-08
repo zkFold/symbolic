@@ -12,6 +12,7 @@ import Data.Foldable (Foldable)
 import Data.Functor.Rep (Representable (..), mzipWithRep)
 import Data.Zip (Zip (..))
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (polyVecLinear)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (SimplePoly, toVector)
@@ -24,7 +25,7 @@ import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (LayoutData), layoutData)
-import Prelude (fmap, ($), (<$>))
+import Prelude (fmap, ($), (<$>), type (~))
 import qualified Prelude as P
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
@@ -54,13 +55,14 @@ accumulatorScheme
      , Foldable p
      , OracleSource f f
      , OracleSource f c
-     , HomomorphicCommit [f] c
+     , HomomorphicCommit c
      , Field f
      , Scale a f
      , Scale a (SimplePoly f (d + 1))
      , Scale f c
      , Binary (Rep i)
      , Binary (Rep p)
+     , f ~ ScalarFieldOf c
      )
   => Hasher
   -> Predicate a i p

@@ -8,13 +8,14 @@ import Data.Foldable (toList)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
-import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), one, zero)
+import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), one, zero, (+))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class (Point (..), Weierstrass (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Natural, value)
 import ZkFold.Algebra.Polynomial.Univariate (evalPolyVec)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
+import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Package (packed, unpacked)
 import ZkFold.Data.Vector (Vector (..), item, singleton, unsafeToVector, zip)
 import ZkFold.Protocol.IVC.Accumulator (
@@ -23,6 +24,7 @@ import ZkFold.Protocol.IVC.Accumulator (
   x,
  )
 import ZkFold.Protocol.IVC.AccumulatorScheme as Acc
+import ZkFold.Protocol.IVC.Commit (hcommit)
 import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir (FiatShamir, fiatShamir)
 import ZkFold.Protocol.IVC.NARK (
@@ -35,8 +37,10 @@ import ZkFold.Protocol.IVC.Predicate (Predicate (..), predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction (DataSource (..))
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProtocol)
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
+import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
 
 instance OracleSource A (DataSource C) where
@@ -134,12 +138,17 @@ specIVC = do
       verifierResult p = first dataSource $ verifier (scheme p) (pi p) (cs p) (acc0 p ^. x) (pf p)
       deciderResult p = bimap (fmap dataSource) dataSource $ decider (scheme p) $ acc p
 
+  describe "WeierstrassWitness" $ do
+    it "is a homomorphic commitment" $ do
+      withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer @Integer -> q) ->
+        hcommit @(WeierstrassWitness (Interpreter A)) [p] ZkFold.== zero
+  -- hcommit @(WeierstrassWitness (Interpreter A)) [p + q] ZkFold.== hcommit [p] + hcommit [q]
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
           all (== zero) $ SPS.verifier (sps0 p) (pi' p) (singleton $ ms' p) (unsafeToVector [])
-  describe "Fiat-Shamir Commit-Open protocol specificaation" $ do
+  describe "Fiat-Shamir Commit-Open protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
