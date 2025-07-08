@@ -1,21 +1,14 @@
-use ark_bls12_381::Fq12;
 use ark_bls12_381::Fr as ScalarField;
 use ark_ff::{FftField, Field, One, PrimeField, Zero};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use num_bigint::BigUint;
-use num_traits::{pow, ConstZero, ToPrimitive};
-use std::{
-    ops::{Mul, Neg},
-    process::Output,
-    slice,
-};
+use num_traits::pow;
+use std::ops::{Div, Mul, Neg};
 
+use crate::utils::ternary;
 use crate::utils::Wrapper;
-use crate::{
-    poly,
-    utils::{binary, c_char, constant, peek, unary},
-};
+use crate::utils::{binary, c_char, constant, unary};
 
 #[no_mangle]
 pub unsafe fn r_poly_add(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char {
@@ -57,7 +50,7 @@ pub unsafe fn r_poly_div(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *mut c_char 
         b_ptr,
         |a: &DensePolynomial<ScalarField>,
          b: &DensePolynomial<ScalarField>|
-         -> DensePolynomial<ScalarField> { a / b },
+         -> DensePolynomial<ScalarField> { a.div(b) },
     )
 }
 
@@ -228,4 +221,54 @@ pub unsafe fn r_poly_from_natural(a_ptr: *mut c_char) -> *mut c_char {
             coeffs: vec![ScalarField::from_le_bytes_mod_order(a)],
         }
     })
+}
+
+#[no_mangle]
+pub unsafe fn r_poly_div_shifted_mono(
+    a_ptr: *mut c_char,
+    b_ptr: *mut c_char,
+    c_ptr: *mut c_char,
+) -> *mut c_char {
+    ternary(
+        a_ptr,
+        b_ptr,
+        c_ptr,
+        |cs: &DensePolynomial<ScalarField>,
+         m_bytes: &[u8; 32],
+         b: &ScalarField|
+         -> DensePolynomial<ScalarField> {
+            let m = BigUint::from_bytes_le(m_bytes);
+            // let exp = (exp_bytes);
+            #[cfg(target_pointer_width = "64")]
+            let digits = m
+                .to_u64_digits()
+                .iter()
+                .map(|x| *x as usize)
+                .collect::<Vec<_>>();
+            #[cfg(target_pointer_width = "32")]
+            let digits = m
+                .to_u32_digits()
+                .iter()
+                .map(|x| *x as usize)
+                .collect::<Vec<_>>();
+            match digits.len() {
+                0 => cs * (ScalarField::ONE / (ScalarField::ONE + b)),
+                1 => {
+                    let int_len = cs.coeffs.len();
+                    let int_m = digits[0];
+
+                    let mut c = cs.coeffs.clone();
+                    let mut res = vec![ScalarField::zero(); int_len];
+
+                    for ix in (int_len - 1)..=int_m {
+                        let ci = c[ix];
+                        res[ix - int_m] = ci;
+                        c[ix - int_m] -= ci * b;
+                    }
+                    return DensePolynomial { coeffs: res };
+                }
+                _ => panic!(),
+            }
+        },
+    )
 }

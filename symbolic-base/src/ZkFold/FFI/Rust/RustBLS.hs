@@ -399,6 +399,9 @@ instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
   polyVecDiv :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
   polyVecDiv l r = RPolyVec $ runRustBinary r_poly_div (rawPolyVec l) (rawPolyVec r)
 
+  divShiftedMono :: forall size. KnownNat size => RustPolyVec Fr size -> Natural -> Fr -> RustPolyVec Fr size
+  divShiftedMono a b c = RPolyVec $ runRustTernary r_poly_div_shifted_mono (rawPolyVec a) (rawNatural $ h2r b) (rawScalar c)
+
   castPolyVec :: forall size size'. (KnownNat size, KnownNat size') => RustPolyVec Fr size -> RustPolyVec Fr size'
   castPolyVec pv = h2r $ castPolyVec (r2h pv)
 

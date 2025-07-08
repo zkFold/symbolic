@@ -30,9 +30,9 @@ runRustUnary f a = unsafePerformIO $ do
     RData <$> (toForeignPtr =<< f ptr)
 
 type RustBinary =
-  CString -- first argument
-  -> CString -- second argument
-  -> IO CString -- output
+  CString
+  -> CString
+  -> IO CString
 
 runRustBinary
   :: RustBinary
@@ -43,6 +43,30 @@ runRustBinary f a b = unsafePerformIO $ do
   withForeignPtr (rawData a) $ \ptr1 -> do
     withForeignPtr (rawData b) $ \ptr2 -> do
       RData <$> (toForeignPtr =<< f ptr1 ptr2)
+
+type RustTernary =
+  CString
+  -> CString
+  -> CString
+  -> IO CString
+
+runRustTernary
+  :: RustTernary
+  -> RustData
+  -> RustData
+  -> RustData
+  -> RustData
+runRustTernary f a b c = unsafePerformIO $ do
+  withForeignPtr (rawData a) $ \ptr1 -> do
+    withForeignPtr (rawData b) $ \ptr2 -> do
+      withForeignPtr (rawData c) $ \ptr3 -> do
+        RData <$> (toForeignPtr =<< f ptr1 ptr2 ptr3)
+
+foreign import ccall unsafe "&r_free_ptr"
+  rustFinalizer :: FunPtr (CString -> IO ())
+
+-- rustFinalizer ::  CChar
+-- rustFinalizer = r_free_ptr
 
 -------------------- Conversion --------------------
 
@@ -252,6 +276,11 @@ foreign import ccall unsafe "r_poly_exp"
 
 foreign import ccall unsafe "r_poly_scale_natural"
   r_poly_scale_natural :: RustBinary
+
+-- Ternary
+
+foreign import ccall unsafe "r_poly_div_shifted_mono"
+  r_poly_div_shifted_mono :: RustTernary
 
 -------------------- GT --------------------
 

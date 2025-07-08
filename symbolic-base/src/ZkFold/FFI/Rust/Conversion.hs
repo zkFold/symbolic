@@ -76,7 +76,7 @@ o2nScalar :: Fr -> Fr
 o2nScalar old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
     ptrNew <- r_h2r_scalar ptr scalarSize
-    RScalar . RData <$> (newForeignPtr finalizerFree ptrNew)
+    RScalar . RData <$> (newForeignPtr rustFinalizer ptrNew)
 
 n2oScalar :: Fr -> Fr
 n2oScalar new = unsafePerformIO $ do
@@ -90,7 +90,7 @@ o2nG1 :: Rust_BLS12_381_G1_Point -> Rust_BLS12_381_G1_Point
 o2nG1 old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPoint old) $ \ptr -> do
     ptrNew <- r_h2r_g1 ptr pointG1Size
-    RPoint . RData <$> newForeignPtr finalizerFree ptrNew
+    RPoint . RData <$> newForeignPtr rustFinalizer ptrNew
 
 n2oG1 :: Rust_BLS12_381_G1_Point -> Rust_BLS12_381_G1_Point
 n2oG1 new = unsafePerformIO $ do
@@ -253,7 +253,7 @@ o2nG2 :: Rust_BLS12_381_G2_Point -> Rust_BLS12_381_G2_Point
 o2nG2 old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPoint old) $ \ptr -> do
     ptrNew <- r_h2r_g2 ptr pointG2Size
-    RPoint . RData <$> newForeignPtr finalizerFree ptrNew
+    RPoint . RData <$> newForeignPtr rustFinalizer ptrNew
 
 n2oG2 :: Rust_BLS12_381_G2_Point -> Rust_BLS12_381_G2_Point
 n2oG2 new = unsafePerformIO $ do
@@ -308,7 +308,7 @@ o2nGT :: Fq12 -> Fq12
 o2nGT old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
     ptrNew <- r_h2r_gt ptr pointGTSize
-    RScalar . RData <$> newForeignPtr finalizerFree ptrNew
+    RScalar . RData <$> newForeignPtr rustFinalizer ptrNew
 
 n2oGT :: Fq12 -> Fq12
 n2oGT new = unsafePerformIO $ do
