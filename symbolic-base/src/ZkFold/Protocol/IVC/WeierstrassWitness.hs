@@ -162,14 +162,14 @@ instance
   )
   => Scale w (WeierstrassWitness ctx)
   where
-  scale w p =
+  scale w x =
     if n == zero
       then zero
       else
-        scale (fromIntegral @w $ n `div` two) (p + p)
+        scale (fromIntegral @w $ n `div` two) (x + x)
           + if n `mod` two == zero
             then zero
-            else p
+            else x
    where
     n = toIntegral w
     two = one + one

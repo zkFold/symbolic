@@ -2,14 +2,13 @@
 
 module ZkFold.Protocol.IVC.ForeignField where
 
-import Data.Bool (otherwise)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
-import Prelude (Integer, Num (fromInteger), (<))
+import Prelude (Integer, Num (fromInteger))
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
 
@@ -33,7 +32,7 @@ instance (KnownNat q, Euclidean i) => Scale Integer (ForeignField q i) where
   scale k (ForeignField f) = ForeignField (scale k f `mod` fromConstant (value @q))
 
 instance (KnownNat q, Euclidean i) => Exponent (ForeignField q i) Natural where
-  ForeignField f ^ p = ForeignField ((f ^ p) `mod` fromConstant (value @q))
+  (^) = natPow
 
 instance (KnownNat q, Euclidean i) => AdditiveSemigroup (ForeignField q i) where
   ForeignField f + ForeignField g = ForeignField ((f + g) `mod` fromConstant (value @q))
@@ -64,13 +63,11 @@ instance (KnownNat q, Euclidean i) => Euclidean (ForeignField q i) where
   ForeignField f `bezoutL` ForeignField g = ForeignField ((f `bezoutL` g) `mod` fromConstant (value @q))
   ForeignField f `bezoutR` ForeignField g = ForeignField ((f `bezoutR` g) `mod` fromConstant (value @q))
 
-instance (Prime q, Eq i, Euclidean i, Conditional (BooleanOf i) i) => Exponent (ForeignField q i) Integer where
-  ForeignField f ^ p
-    | p < 0 = finv (ForeignField f ^ (-p))
-    | otherwise = ForeignField ((f ^ (fromInteger p :: Natural)) `mod` fromConstant (value @q))
+instance (Prime q, Euclidean i) => Exponent (ForeignField q i) Integer where
+  f ^ p = f ^ fromInteger @Natural (p `mod` (fromConstant (value @q) - 1))
 
 instance (Prime q, Eq i, Euclidean i, Conditional (BooleanOf i) i) => Field (ForeignField q i) where
-  finv (ForeignField f) = ForeignField (f ^ (value @q -! 2) `mod` fromConstant (value @q))
+  finv f = f ^ (value @q -! 2)
 
 instance (KnownNat q, KnownNat (NumberOfBits (Zp q))) => Finite (ForeignField q i) where
   type Order (ForeignField q i) = q

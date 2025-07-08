@@ -140,9 +140,8 @@ specIVC = do
 
   describe "WeierstrassWitness" $ do
     it "is a homomorphic commitment" $ do
-      withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer @Integer -> q) ->
-        hcommit @(WeierstrassWitness (Interpreter A)) [p] ZkFold.== zero
-  -- hcommit @(WeierstrassWitness (Interpreter A)) [p + q] ZkFold.== hcommit [p] + hcommit [q]
+      withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer -> q) ->
+        hcommit @(WeierstrassWitness (Interpreter A)) [p + q] ZkFold.== hcommit [p] + hcommit [q]
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
