@@ -63,7 +63,7 @@ o2nScalarVec :: forall size. KnownNat size => (RustPolyVec Fr size) -> (RustPoly
 o2nScalarVec old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
     ptrNew <- r_h2r_scalar_vec ptr ((sizeOf (undefined :: Fr)) * valueSize)
-    RPolyVec . RData <$> newForeignPtr finalizerFree ptrNew
+    RPolyVec . RData <$> newForeignPtr rustFinalizer ptrNew
  where
   valueSize = fromIntegral $ value @size
 
@@ -81,7 +81,7 @@ o2nScalarPoly :: forall size. KnownNat size => (RustPolyVec Fr size) -> (RustPol
 o2nScalarPoly old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
     ptrNew <- r_h2r_scalar_poly ptr ((sizeOf (undefined :: Fr)) * valueSize)
-    RPolyVec . RData <$> newForeignPtr finalizerFree ptrNew
+    RPolyVec . RData <$> newForeignPtr rustFinalizer ptrNew
  where
   valueSize = fromIntegral $ value @size
 
@@ -99,7 +99,7 @@ o2nPointVec :: RustVector Rust_BLS12_381_G1_Point -> RustVector Rust_BLS12_381_G
 o2nPointVec old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawVector old) $ \ptr -> do
     ptrNew <- r_h2r_point_vec ptr ((sizeOf (undefined :: Rust_BLS12_381_G1_Point)) * valueSize)
-    RVector valueSize . RData <$> newForeignPtr finalizerFree ptrNew
+    RVector valueSize . RData <$> newForeignPtr rustFinalizer ptrNew
  where
   valueSize = length old
 

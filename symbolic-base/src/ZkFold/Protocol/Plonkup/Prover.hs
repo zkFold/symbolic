@@ -288,7 +288,7 @@ plonkupProve
           + qXs8
       )
 
-    !qX = r2h qXNumerator `polyVecDiv` zhX
+    !qX = r2h (divShiftedMono qXNumerator (value @n) (negate one))
 
     !qlowX = toPolyVec $ V.take (fromIntegral (n + 2)) $ fromPolyVec qX
     !qmidX = toPolyVec $ V.take (fromIntegral (n + 2)) $ V.drop (fromIntegral (n + 2)) $ fromPolyVec qX
