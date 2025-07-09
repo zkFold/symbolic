@@ -17,7 +17,6 @@ import ZkFold.Data.Eq
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 
-
 -- Defining instances for 'SymbolicData':
 
 newtype SymbolicPoint point = SymbolicPoint point
@@ -49,7 +48,6 @@ deriving newtype instance
 deriving newtype instance
   SymbolicData field
   => SymbolicData (TwistedEdwards curve (SymbolicPoint (AffinePoint field)))
-
 
 {-
 
