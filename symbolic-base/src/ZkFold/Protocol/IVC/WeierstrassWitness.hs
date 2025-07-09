@@ -6,7 +6,8 @@
 module ZkFold.Protocol.IVC.WeierstrassWitness where
 
 import Data.Function (($))
-import GHC.Generics (Generic)
+import Data.String (fromString)
+import GHC.Generics (Generic, U1 (..))
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveMonoid (..),
@@ -15,21 +16,60 @@ import ZkFold.Algebra.Class (
   Scale (..),
   SemiEuclidean (..),
   fromConstant,
+  (*),
  )
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Planar, Point, Weierstrass, pointXY)
-import ZkFold.Algebra.Number (Natural)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Planar, Point (..), Weierstrass (..), pointXY)
+import ZkFold.Algebra.Number (Natural, value)
 import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
+import ZkFold.Control.HApplicative (hpure)
 import ZkFold.Data.Bool (BoolType)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Vector (Vector, unsafeToVector, (!!))
 import ZkFold.Protocol.IVC.ForeignField (ForeignField)
 import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField (..))
-import Prelude (Integer, fromInteger, type (~))
+import Prelude (Integer, error, fromInteger, type (~))
 
 newtype WeierstrassWitness ctx
   = WeierstrassWitness (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
   deriving Generic
+
+instance
+  ( Symbolic ctx
+  , Conditional b (IntegralOf (WitnessField ctx))
+  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b b
+  , b ~ BooleanOf (IntegralOf (WitnessField ctx))
+  , Scale Natural (WeierstrassWitness ctx)
+  )
+  => SymbolicData (WeierstrassWitness ctx)
+  where
+  type Context (WeierstrassWitness ctx) = ctx
+  type Layout (WeierstrassWitness ctx) = U1
+  type Payload (WeierstrassWitness ctx) = Vector 5
+  arithmetize _ = hpure U1
+  payload (WeierstrassWitness (Weierstrass (Point a b isInf))) =
+    let a1 = fromIntegral $ toIntegral a `mod` fromConstant (value @BLS12_381_Scalar)
+        a2 = fromIntegral $ toIntegral a `div` fromConstant (value @BLS12_381_Scalar)
+        b1 = fromIntegral $ toIntegral b `mod` fromConstant (value @BLS12_381_Scalar)
+        b2 = fromIntegral $ toIntegral b `div` fromConstant (value @BLS12_381_Scalar)
+        isInf1 = fromIntegral $ bool zero one isInf
+     in unsafeToVector [a1, a2, b1, b2, isInf1]
+
+  restore (_, v) =
+    WeierstrassWitness
+      ( Weierstrass
+          ( Point
+              ( fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar)
+              )
+              ( fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar)
+              )
+              (fromIntegral @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
+          )
+      )
+  interpolate _ _ = error "Interpolation is not defined for WeierstrassWitness"
 
 instance
   ( Symbolic ctx
