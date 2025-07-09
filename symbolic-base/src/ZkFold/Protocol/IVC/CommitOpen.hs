@@ -14,21 +14,19 @@ type CommitOpen k i p c m o f =
   SpecialSoundProtocol k i p (m, c) (Vector k c, o) f
 
 commitOpen
-  :: (Functor i, Functor p, HomomorphicCommit c, m ~ [ScalarFieldOf c])
-  => (a -> f)
-  -> (f -> a)
-  -> SpecialSoundProtocol k i p m o a
-  -> CommitOpen k i p c m o f
-commitOpen af fa SpecialSoundProtocol {..} =
+  :: (HomomorphicCommit c, m ~ [ScalarFieldOf c])
+  => SpecialSoundProtocol k i p m o a
+  -> CommitOpen k i p c m o a
+commitOpen SpecialSoundProtocol {..} =
   SpecialSoundProtocol
-    { input = \i p -> af <$> input (fa <$> i) (fa <$> p)
+    { input = input
     , prover = \pi0 w r i ->
-        let m = prover (fmap fa pi0) (fmap fa w) (fa r) i
+        let m = prover pi0 w r i
          in (m, hcommit m)
     , verifier = \pi pms rs ->
         let ms = fmap fst pms
             cs = fmap snd pms
          in ( zipWith (-) (fmap hcommit ms) cs
-            , verifier (fmap fa pi) ms (fmap fa rs)
+            , verifier pi ms rs
             )
     }

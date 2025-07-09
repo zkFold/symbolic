@@ -10,7 +10,7 @@ module ZkFold.Protocol.IVC.Internal where
 import Control.Lens ((^.))
 import Control.Lens.Combinators (makeLenses)
 import Data.Bifunctor (bimap, first)
-import Data.Function (id, ($), (.))
+import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
@@ -100,7 +100,7 @@ ivcSetup hash f z0 witness =
     IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
 ivcProve
-  :: forall d cc k a i p c f fe
+  :: forall d cc k a i p c f
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
@@ -111,10 +111,10 @@ ivcProve
      , SymbolicData c
      , Context c ~ Interpreter a
      , Layout c ~ f
-     , fe ~ FieldElement (Interpreter a)
-     , Scale fe c
+     , Scale a c
+     , OracleSource a (DataSource c)
      , HomomorphicCommit c
-     , fe ~ ScalarFieldOf c
+     , a ~ ScalarFieldOf c
      )
   => Hasher
   -> StepFunction a i p
@@ -136,26 +136,26 @@ ivcProve hash f res witness =
       :: (SymbolicData x, Context x ~ Interpreter a) => x -> Layout x a
     value = runInterpreter . arithmetize
 
-    input :: RecursiveI i fe
+    input :: RecursiveI i a
     input =
       fmap fromConstant (res ^. z)
-        :*: Par1 (oracle hash $ bimap DataSource (fromConstant :: a -> fe) $ res ^. acc ^. x)
+        :*: Par1 (oracle hash $ res ^. acc ^. x)
 
-    messages :: Vector k [fe]
+    messages :: Vector k [a]
     messages = fmap fromConstant <$> res ^. proof ^. proofW
 
     commits :: Vector k (DataSource c)
     commits = res ^. proof ^. proofX
 
-    narkIP :: NARKInstanceProof k (RecursiveI i) (DataSource c) fe
+    narkIP :: NARKInstanceProof k (RecursiveI i) (DataSource c) a
     narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) fe
+    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) a
     accScheme = accumulatorScheme hash pRec
 
     (acc', pf) = Acc.prover accScheme (fromConstant <$> res ^. acc) narkIP
 
-    payload :: RecursiveP d k i p cc fe
+    payload :: RecursiveP d k i p cc a
     payload =
       fmap fromConstant $
         value $
@@ -166,18 +166,18 @@ ivcProve hash f res witness =
             true
             (DataSource <$> pf)
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [fe] [a] fe
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [a] [a] a
     protocol =
       fiatShamir hash $
-        commitOpen fromConstant toConstant $
-          specialSoundProtocol @d fromConstant toConstant pRec
+        commitOpen $
+          specialSoundProtocol @d pRec
 
     (messages', commits') = unzip $ prover protocol input payload zero 0
 
     ivcProof :: IVCProof k c a
-    ivcProof = IVCProof commits' (fmap toConstant <$> messages')
+    ivcProof = IVCProof commits' messages'
    in
-    IVCResult z' (toConstant <$> acc') ivcProof
+    IVCResult z' acc' ivcProof
 
 ivcVerify
   :: forall d k a i p c f
@@ -211,7 +211,7 @@ ivcVerify hash f res =
     accScheme = accumulatorScheme @d hash pRec
 
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [f] [f] f
-    protocol = fiatShamir hash $ commitOpen id id $ specialSoundProtocol' @d pRec
+    protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol' @d pRec
    in
     ( first (fmap dataSource) $ verifier protocol input (singleton $ zip messages commits) zero
     , bimap (fmap dataSource) dataSource $ Acc.decider accScheme (res ^. acc)

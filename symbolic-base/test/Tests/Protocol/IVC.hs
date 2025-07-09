@@ -55,10 +55,9 @@ instance OracleSource A (DataSource C) where
 type A = Zp BLS12_381_Scalar
 
 -- type F = FieldElement (Interpreter A)
-
 type F = A
 
--- type C = BLS12_381_G1_Point (Interpreter A)
+-- type C = WeierstrassWitness (Interpreter A)
 type C = BLS12_381_G1_Point
 
 type I = Vector 1
@@ -110,10 +109,10 @@ specIVC = do
       phi = predicate . testFunction
 
       sps0 :: PAR -> SPS0
-      sps0 = specialSoundProtocol @D fromConstant id . phi
+      sps0 = specialSoundProtocol @D . phi
 
       sps :: PAR -> SPS
-      sps = fiatShamir mimcHash . commitOpen fromConstant id . sps0
+      sps = fiatShamir mimcHash . commitOpen . sps0
 
       pi0 :: I F
       pi0 = singleton $ fromConstant @ZkFold.Algebra.Number.Natural 42

@@ -5,8 +5,6 @@ module ZkFold.Protocol.IVC.SpecialSound where
 
 import Data.Binary (Binary)
 import Data.Foldable (Foldable, toList)
-import Data.Function ((.))
-import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.List (map, (++))
 import GHC.Generics ((:*:) (..))
@@ -63,7 +61,7 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
   }
 
 specialSoundProtocol
-  :: forall d a i p f
+  :: forall d a i p
    . ( KnownNat (d + 1)
      , Arithmetic a
      , Binary (Rep i)
@@ -73,19 +71,17 @@ specialSoundProtocol
      , Representable p
      , Foldable p
      )
-  => (a -> f)
-  -> (f -> a)
-  -> Predicate a i p
-  -> SpecialSoundProtocol 1 i p [f] [a] a
-specialSoundProtocol af fa phi@Predicate {..} =
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p [a] [a] a
+specialSoundProtocol phi@Predicate {..} =
   let
     prover pi0 w _ _ =
       let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
-       in toList (fmap af pi0)
-            ++ toList (fmap af w)
-            ++ toList (fmap af (predicateEval pi0 w))
-            ++ map (af . witnessGenerator predicateCircuit circuitInput) (getAllVars (acContext predicateCircuit))
-    verifier pi pm ts = AM.algebraicMap @d phi pi (map fa <$> pm) ts one
+       in toList pi0
+            ++ toList w
+            ++ toList (predicateEval pi0 w)
+            ++ map (witnessGenerator predicateCircuit circuitInput) (getAllVars (acContext predicateCircuit))
+    verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
    in
     SpecialSoundProtocol predicateEval prover verifier
 
