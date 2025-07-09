@@ -12,10 +12,7 @@ import ZkFold.Protocol.IVC.CommitOpen
 import ZkFold.Protocol.IVC.Oracle
 import Prelude hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
--- type FiatShamir k i p c m o f =
---   SpecialSoundProtocol 1 i p (Vector k (m, c)) (Vector k c, o) f
-
-data FiatShamir k i p c m o f = FiatShamir
+data FiatShamir k i p c f = FiatShamir
   { input
       :: i f
       -- \^ previous public input
@@ -32,16 +29,16 @@ data FiatShamir k i p c m o f = FiatShamir
       -- \^ current random challenge
       -> Natural
       -- \^ round number (starting from 1)
-      -> Vector k (m, c)
+      -> Vector k ([f], c)
   -- ^ prover message
   , verifier
       :: i f
       -- \^ public input
-      -> Vector k (m, c)
+      -> Vector k ([f], c)
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> (Vector k c, o)
+      -> (Vector k c, [f])
   -- ^ verifier output
   }
 
@@ -60,11 +57,11 @@ transcript hash r0 cs =
         scanl (curry (oracle hash)) r0 cs
 
 fiatShamir
-  :: forall k i p c m o f
+  :: forall k i p c f
    . (KnownNat k, Ring f, OracleSource f f, OracleSource f c, Foldable i)
   => Hasher
-  -> CommitOpen k i p c m o f
-  -> FiatShamir k i p c m o f
+  -> CommitOpen k i p c f
+  -> FiatShamir k i p c f
 fiatShamir hash CommitOpen {..} =
   let
     prover' pi0 w _ _ =

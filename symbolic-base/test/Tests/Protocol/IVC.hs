@@ -71,9 +71,9 @@ type K = 1
 
 type PHI = Predicate A I P
 
-type SPS0 = SpecialSoundProtocol 1 I P [F] [A] A
+type SPS0 = SpecialSoundProtocol 1 I P F
 
-type SPS = FiatShamir 1 I P (DataSource C) [F] [A] F
+type SPS = FiatShamir 1 I P (DataSource C) F
 
 type D = 2
 

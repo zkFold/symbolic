@@ -19,7 +19,7 @@ data NARKProof k c f = NARKProof
 
 narkProof
   :: Ring f
-  => FiatShamir k i p c [f] o f
+  => FiatShamir k i p c f
   -> i f
   -> p f
   -> NARKProof k c f
@@ -32,7 +32,7 @@ data NARKInstanceProof k i c f = NARKInstanceProof (i f) (NARKProof k c f)
 
 narkInstanceProof
   :: Ring f
-  => FiatShamir k i p c [f] o f
+  => FiatShamir k i p c f
   -> i f
   -> p f
   -> NARKInstanceProof k i c f

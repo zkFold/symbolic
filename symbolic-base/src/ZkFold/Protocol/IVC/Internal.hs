@@ -165,7 +165,7 @@ ivcProve hash f res witness =
             true
             (DataSource <$> pf)
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [a] [a] a
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) a
     protocol =
       fiatShamir hash $
         commitOpen $
@@ -209,7 +209,7 @@ ivcVerify hash f res =
     accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) f
     accScheme = accumulatorScheme @d hash pRec
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [f] [f] f
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) f
     protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol' @d pRec
    in
     ( first (fmap dataSource) $ verifier protocol input (zip messages commits) zero

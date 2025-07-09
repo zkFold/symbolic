@@ -30,7 +30,7 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
+data SpecialSoundProtocol k i p f = SpecialSoundProtocol
   { input
       :: i f
       -- \^ previous public input
@@ -47,16 +47,16 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
       -- \^ current random challenge
       -> Natural
       -- \^ round number (starting from 1)
-      -> m
+      -> [f]
   -- ^ prover message
   , verifier
       :: i f
       -- \^ public input
-      -> Vector k m
+      -> Vector k [f]
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> o
+      -> [f]
   -- ^ verifier output
   }
 
@@ -72,7 +72,7 @@ specialSoundProtocol
      , Foldable p
      )
   => Predicate a i p
-  -> SpecialSoundProtocol 1 i p [a] [a] a
+  -> SpecialSoundProtocol 1 i p a
 specialSoundProtocol phi@Predicate {..} =
   let
     prover pi0 w _ _ =
@@ -98,7 +98,7 @@ specialSoundProtocol'
      , Scale a f
      )
   => Predicate a i p
-  -> SpecialSoundProtocol 1 i p [f] [f] f
+  -> SpecialSoundProtocol 1 i p f
 specialSoundProtocol' phi =
   let
     verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one

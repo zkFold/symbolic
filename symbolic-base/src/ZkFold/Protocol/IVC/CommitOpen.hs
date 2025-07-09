@@ -11,10 +11,7 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (hcommit))
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
--- type CommitOpen k i p c m o f =
---   SpecialSoundProtocol k i p (m, c) (Vector k c, o) f
-
-data CommitOpen k i p c m o f = CommitOpen
+data CommitOpen k i p c f = CommitOpen
   { input
       :: i f
       -- \^ previous public input
@@ -31,23 +28,23 @@ data CommitOpen k i p c m o f = CommitOpen
       -- \^ current random challenge
       -> Natural
       -- \^ round number (starting from 1)
-      -> (m, c)
+      -> ([f], c)
   -- ^ prover message
   , verifier
       :: i f
       -- \^ public input
-      -> Vector k (m, c)
+      -> Vector k ([f], c)
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> (Vector k c, o)
+      -> (Vector k c, [f])
   -- ^ verifier output
   }
 
 commitOpen
-  :: (HomomorphicCommit c, m ~ [ScalarFieldOf c])
-  => SpecialSoundProtocol k i p m o a
-  -> CommitOpen k i p c m o a
+  :: (HomomorphicCommit c, f ~ ScalarFieldOf c)
+  => SpecialSoundProtocol k i p f
+  -> CommitOpen k i p c f
 commitOpen SpecialSoundProtocol {..} =
   CommitOpen
     { input = input
