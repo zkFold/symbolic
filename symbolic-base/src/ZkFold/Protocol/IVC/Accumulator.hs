@@ -9,18 +9,27 @@ import Control.Lens ((^.))
 import Control.Lens.Combinators (makeLenses)
 import Data.Bifunctor (Bifunctor (..))
 import Data.Binary (Binary)
-import Data.Functor.Rep (Representable (..))
+import qualified Data.Eq as Haskell
+import Data.Foldable (Foldable)
+import Data.Function (const, ($))
+import Data.Functor (Functor (..))
+import Data.Functor.Rep (Representable (..), mzipWithRep)
 import GHC.Generics (Generic)
 import ZkFold.Algebra.Class (Ring, Scale, zero)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
+import ZkFold.Data.Bool (BoolType (..), and)
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
-import Prelude hiding (length, pi)
+import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import Prelude (type (~))
+
+-- import Prelude hiding (length, pi)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f = AccumulatorInstance
@@ -30,9 +39,24 @@ data AccumulatorInstance k i c f = AccumulatorInstance
   , _e :: c -- E ∈ C in the paper
   , _mu :: f -- μ ∈ F in the paper
   }
-  deriving (Eq, Functor, Generic)
+  deriving (Haskell.Eq, Functor, Generic)
 
 makeLenses ''AccumulatorInstance
+
+instance (ResidueField f, LayoutFunctor i, Eq c, BooleanOf (IntegralOf f) ~ BooleanOf c) => Eq (AccumulatorInstance k i c f) where
+  type BooleanOf (AccumulatorInstance k i c f) = BooleanOf (IntegralOf f)
+  acc1 == acc2 =
+    and (mzipWithRep (==) (fmap toIntegral $ layoutData $ _pi acc1) (fmap toIntegral $ layoutData $ _pi acc2))
+      && _c acc1
+      == _c acc2
+      && fmap toIntegral (_r acc1)
+      == fmap toIntegral (_r acc2)
+      && _e acc1
+      == _e acc2
+      && toIntegral (_mu acc1)
+      == toIntegral (_mu acc2)
+  acc1 /= acc2 =
+    not (acc1 == acc2)
 
 instance Functor i => Bifunctor (AccumulatorInstance k i) where
   bimap f g AccumulatorInstance {..} =

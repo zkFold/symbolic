@@ -5,7 +5,8 @@
 
 module ZkFold.Protocol.IVC.WeierstrassWitness where
 
-import Data.Function (($))
+import Data.Foldable (toList)
+import Data.Function (($), (.))
 import Data.String (fromString)
 import GHC.Generics (Generic, U1 (..))
 import ZkFold.Algebra.Class (
@@ -27,6 +28,7 @@ import ZkFold.Data.Bool (BoolType)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector, unsafeToVector, (!!))
 import ZkFold.Protocol.IVC.ForeignField (ForeignField)
+import ZkFold.Protocol.IVC.Oracle (OracleSource (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField (..))
@@ -70,6 +72,9 @@ instance
           )
       )
   interpolate _ _ = error "Interpolation is not defined for WeierstrassWitness"
+
+instance (SymbolicData (WeierstrassWitness ctx), w ~ WitnessField ctx) => OracleSource w (WeierstrassWitness ctx) where
+  source = toList . payload
 
 instance
   ( Symbolic ctx

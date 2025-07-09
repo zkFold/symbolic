@@ -8,11 +8,11 @@ import Data.Foldable (toList)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
-import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), one, zero, (+))
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_Scalar)
-import ZkFold.Algebra.EllipticCurve.Class (Point (..), Weierstrass (..))
+import ZkFold.Algebra.Class (FromConstant (..), zero, (+))
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.EllipticCurve.Class (Weierstrass (..))
 import ZkFold.Algebra.Field (Zp)
-import ZkFold.Algebra.Number (Natural, value)
+import ZkFold.Algebra.Number (Natural)
 import ZkFold.Algebra.Polynomial.Univariate (evalPolyVec)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
 import qualified ZkFold.Data.Eq as ZkFold
@@ -39,29 +39,20 @@ import ZkFold.Protocol.IVC.RecursiveFunction (DataSource (..))
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProtocol)
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
 import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
-import ZkFold.Symbolic.Class (BaseField, Symbolic)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
 
-instance OracleSource A (DataSource C) where
-  source (DataSource (Weierstrass (Point a b isInf))) =
-    let a1 = fromConstant $ toConstant a `mod` (value @BLS12_381_Scalar)
-        a2 = fromConstant $ toConstant a `div` (value @BLS12_381_Scalar)
-        b1 = fromConstant $ toConstant b `mod` (value @BLS12_381_Scalar)
-        b2 = fromConstant $ toConstant b `div` (value @BLS12_381_Scalar)
-        isInf1 = if isInf then one else zero
-     in [a1, a2, b1, b2, isInf1]
+deriving instance OracleSource w C => OracleSource w (DataSource C)
 
 type A = Zp BLS12_381_Scalar
 
--- type F = FieldElement (Interpreter A)
+type F = WitnessField (Interpreter A)
 
-type F = A
+type C = WeierstrassWitness (Interpreter A)
 
--- type C = WeierstrassWitness (Interpreter A)
-
-type C = BLS12_381_G1_Point
+-- type C = BLS12_381_G1_Point
 
 type I = Vector 1
 
@@ -153,14 +144,14 @@ specIVC = do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
-          (\(a, b) -> all ((== zero) . dataSource) (toList a) && all (== zero) b) $
+          (\(a, b) -> all ((ZkFold.== zero) . dataSource) (toList a) && all (== zero) b) $
             FS.verifier (sps p) (pi p) (zip (ms p) (cs p)) (unsafeToVector [])
   describe "Accumulator scheme specification" $ do
     describe "decider" $ do
       it "must output zeros" $ do
         withMaxSuccess 10 $ property $ \p ->
-          deciderResult p == (zero, zero)
+          deciderResult p ZkFold.== (zero, zero)
     describe "verifier" $ do
       it "must output zeros" $ do
         withMaxSuccess 10 $ property $ \p ->
-          verifierResult p == first dataSource (acc p ^. x)
+          verifierResult p ZkFold.== first dataSource (acc p ^. x)
