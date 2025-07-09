@@ -5,12 +5,10 @@ module ZkFold.Protocol.IVC.NARK where
 import Control.DeepSeq (NFData (..))
 import Data.Zip (unzip)
 import GHC.Generics
-import Prelude hiding (head, length, pi, unzip)
-
 import ZkFold.Algebra.Class (Ring, zero)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Protocol.IVC.FiatShamir (FiatShamir)
-import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
+import ZkFold.Protocol.IVC.FiatShamir (FiatShamir (..))
+import Prelude hiding (head, length, pi, unzip)
 
 -- Page 18, section 3.4, The accumulation predicate
 data NARKProof k c f = NARKProof

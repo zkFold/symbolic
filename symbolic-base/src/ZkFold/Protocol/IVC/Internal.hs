@@ -19,19 +19,18 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Data.Vector (Vector, singleton)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme as Acc
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
-import ZkFold.Protocol.IVC.CommitOpen
+import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction
 import ZkFold.Protocol.IVC.SpecialSound (
-  SpecialSoundProtocol (..),
   specialSoundProtocol,
   specialSoundProtocol',
  )
@@ -213,6 +212,6 @@ ivcVerify hash f res =
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [f] [f] f
     protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol' @d pRec
    in
-    ( first (fmap dataSource) $ verifier protocol input (singleton $ zip messages commits) zero
+    ( first (fmap dataSource) $ verifier protocol input (zip messages commits) zero
     , bimap (fmap dataSource) dataSource $ Acc.decider accScheme (res ^. acc)
     )

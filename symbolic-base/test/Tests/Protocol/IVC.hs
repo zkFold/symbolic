@@ -27,6 +27,7 @@ import ZkFold.Protocol.IVC.AccumulatorScheme as Acc
 import ZkFold.Protocol.IVC.Commit (hcommit)
 import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir (FiatShamir, fiatShamir)
+import qualified ZkFold.Protocol.IVC.FiatShamir as FS
 import ZkFold.Protocol.IVC.NARK (
   NARKInstanceProof (..),
   NARKProof (..),
@@ -55,9 +56,11 @@ instance OracleSource A (DataSource C) where
 type A = Zp BLS12_381_Scalar
 
 -- type F = FieldElement (Interpreter A)
+
 type F = A
 
 -- type C = WeierstrassWitness (Interpreter A)
+
 type C = BLS12_381_G1_Point
 
 type I = Vector 1
@@ -151,7 +154,7 @@ specIVC = do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
           (\(a, b) -> all ((== zero) . dataSource) (toList a) && all (== zero) b) $
-            SPS.verifier (sps p) (pi p) (singleton $ zip (ms p) (cs p)) (unsafeToVector [])
+            FS.verifier (sps p) (pi p) (zip (ms p) (cs p)) (unsafeToVector [])
   describe "Accumulator scheme specification" $ do
     describe "decider" $ do
       it "must output zeros" $ do
