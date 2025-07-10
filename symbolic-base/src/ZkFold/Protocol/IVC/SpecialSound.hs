@@ -5,6 +5,8 @@ module ZkFold.Protocol.IVC.SpecialSound where
 
 import Data.Binary (Binary)
 import Data.Foldable (Foldable, toList)
+import Data.Function (($))
+import Data.Functor (fmap)
 import Data.Functor.Rep (Representable (..))
 import Data.List (map, (++))
 import GHC.Generics ((:*:) (..))
@@ -16,6 +18,8 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Protocol.IVC.AlgebraicMap as AM
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude (undefined)
 
 {-- | Section 3.1
@@ -60,7 +64,7 @@ data SpecialSoundProtocol k i p f = SpecialSoundProtocol
   -- ^ verifier output
   }
 
-specialSoundProtocol
+specialSoundProtocolA
   :: forall d a i p
    . ( KnownNat (d + 1)
      , Arithmetic a
@@ -73,7 +77,7 @@ specialSoundProtocol
      )
   => Predicate a i p
   -> SpecialSoundProtocol 1 i p a
-specialSoundProtocol phi@Predicate {..} =
+specialSoundProtocolA phi@Predicate {..} =
   let
     prover pi0 w _ _ =
       let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
@@ -85,7 +89,32 @@ specialSoundProtocol phi@Predicate {..} =
    in
     SpecialSoundProtocol predicateEval prover verifier
 
-specialSoundProtocol'
+specialSoundProtocolI
+  :: forall d a i p
+   . ( KnownNat (d + 1)
+     , Arithmetic a
+     , Binary (Rep i)
+     , Binary (Rep p)
+     , Representable i
+     , Foldable i
+     , Representable p
+     , Foldable p
+     )
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p (FieldElement (Interpreter a))
+specialSoundProtocolI phi =
+  let
+    sps = specialSoundProtocolA @d phi
+    input' (fmap toConstant -> pi0) (fmap toConstant -> w) =
+      fmap fromConstant $ input sps pi0 w
+    prover' (fmap toConstant -> pi0) (fmap toConstant -> w) (toConstant -> r) i =
+      fmap fromConstant $ prover sps pi0 w r i
+    verifier' (fmap toConstant -> pi0) (fmap (fmap toConstant) -> pm) (fmap toConstant -> ts) =
+      fmap fromConstant $ verifier sps pi0 pm ts
+   in
+    SpecialSoundProtocol input' prover' verifier'
+
+specialSoundProtocolC
   :: forall d a i p f
    . ( KnownNat (d + 1)
      , Representable i
@@ -99,7 +128,7 @@ specialSoundProtocol'
      )
   => Predicate a i p
   -> SpecialSoundProtocol 1 i p f
-specialSoundProtocol' phi =
+specialSoundProtocolC phi =
   let
     verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
    in

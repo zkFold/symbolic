@@ -2,6 +2,7 @@
 
 module ZkFold.Protocol.IVC.ForeignField where
 
+import qualified Data.Eq as Haskell
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
@@ -11,6 +12,7 @@ import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toI
 import Prelude (Integer, Num (fromInteger))
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
+  deriving Haskell.Eq
 
 instance (KnownNat q, Euclidean i) => FromConstant Natural (ForeignField q i) where
   fromConstant x = ForeignField (fromConstant x `mod` fromConstant (value @q))

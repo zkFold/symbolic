@@ -5,10 +5,12 @@
 
 module ZkFold.Protocol.IVC.WeierstrassWitness where
 
+import qualified Data.Bool as Haskell
+import qualified Data.Eq as Haskell
 import Data.Foldable (toList)
 import Data.Function (($), (.))
 import Data.String (fromString)
-import GHC.Generics (Generic, U1 (..))
+import GHC.Generics (Generic, Par1 (..), U1 (..), unPar1)
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveMonoid (..),
@@ -29,14 +31,22 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector, unsafeToVector, (!!))
 import ZkFold.Protocol.IVC.ForeignField (ForeignField)
 import ZkFold.Protocol.IVC.Oracle (OracleSource (..))
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField (..))
 import Prelude (Integer, error, fromInteger, type (~))
 
 newtype WeierstrassWitness ctx
   = WeierstrassWitness (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
   deriving Generic
+
+instance
+  (BooleanOf (IntegralOf (WitnessField ctx)) ~ Haskell.Bool, Haskell.Eq (IntegralOf (WitnessField ctx)))
+  => Haskell.Eq (WeierstrassWitness ctx)
+  where
+  WeierstrassWitness p1 == WeierstrassWitness p2 = p1 Haskell.== p2
+  WeierstrassWitness p1 /= WeierstrassWitness p2 = p1 Haskell./= p2
 
 instance
   ( Symbolic ctx
@@ -181,13 +191,12 @@ instance
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , Scale Natural (WeierstrassWitness ctx)
   , Scale Integer (WeierstrassWitness ctx)
-  , Scale (WitnessField ctx) (WeierstrassWitness ctx)
   )
   => CyclicGroup (WeierstrassWitness ctx)
   where
   type
     ScalarFieldOf (WeierstrassWitness ctx) =
-      WitnessField ctx
+      FieldElement ctx
   pointGen =
     pointXY @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))
       ( fromConstant @Natural 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
@@ -201,20 +210,22 @@ instance
   , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
-  , w ~ WitnessField ctx
+  , w ~ FieldElement ctx
   , n ~ IntegralOf w
   , Scale Natural (WeierstrassWitness ctx)
   )
   => Scale w (WeierstrassWitness ctx)
   where
-  scale w x =
+  scale f x =
     if n == zero
       then zero
       else
-        scale (fromIntegral @w $ n `div` two) (x + x)
+        scale f' (x + x)
           + if n `mod` two == zero
             then zero
             else x
    where
-    n = toIntegral w
     two = one + one
+    n = toIntegral $ unPar1 $ witnessF $ fromFieldElement f
+    n' = n `div` two
+    f' = FieldElement $ embedW $ Par1 $ fromIntegral n'

@@ -31,8 +31,8 @@ import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction
 import ZkFold.Protocol.IVC.SpecialSound (
-  specialSoundProtocol,
-  specialSoundProtocol',
+  specialSoundProtocolA,
+  specialSoundProtocolC,
  )
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
@@ -169,7 +169,7 @@ ivcProve hash f res witness =
     protocol =
       fiatShamir hash $
         commitOpen $
-          specialSoundProtocol @d pRec
+          specialSoundProtocolA @d pRec
 
     (messages', commits') = unzip $ prover protocol input payload zero 0
 
@@ -210,7 +210,7 @@ ivcVerify hash f res =
     accScheme = accumulatorScheme @d hash pRec
 
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) f
-    protocol = fiatShamir hash $ commitOpen $ specialSoundProtocol' @d pRec
+    protocol = fiatShamir hash $ commitOpen $ specialSoundProtocolC @d pRec
    in
     ( first (fmap dataSource) $ verifier protocol input (zip messages commits) zero
     , bimap (fmap dataSource) dataSource $ Acc.decider accScheme (res ^. acc)

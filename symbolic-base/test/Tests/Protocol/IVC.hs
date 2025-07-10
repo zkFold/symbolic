@@ -10,12 +10,11 @@ import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
 import ZkFold.Algebra.Class (FromConstant (..), zero, (+))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Algebra.EllipticCurve.Class (Weierstrass (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Algebra.Polynomial.Univariate (evalPolyVec)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
-import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Package (packed, unpacked)
 import ZkFold.Data.Vector (Vector (..), item, singleton, unsafeToVector, zip)
 import ZkFold.Protocol.IVC.Accumulator (
@@ -33,10 +32,14 @@ import ZkFold.Protocol.IVC.NARK (
   NARKProof (..),
   narkInstanceProof,
  )
-import ZkFold.Protocol.IVC.Oracle (OracleSource (..), mimcHash)
+import ZkFold.Protocol.IVC.Oracle (mimcHash)
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), predicate)
-import ZkFold.Protocol.IVC.RecursiveFunction (DataSource (..))
-import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProtocol)
+import ZkFold.Protocol.IVC.RecursiveFunction (
+  DataSource (..),
+  RecursiveI,
+  RecursiveP,
+ )
+import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProtocolI)
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
 import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
@@ -44,15 +47,13 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
 
-deriving instance OracleSource w C => OracleSource w (DataSource C)
-
 type A = Zp BLS12_381_Scalar
 
-type F = WitnessField (Interpreter A)
+type F = FieldElement (Interpreter A)
 
 type C = WeierstrassWitness (Interpreter A)
 
--- type C = BLS12_381_G1_Point
+type C' = WeierstrassWitness (CircuitContext A)
 
 type I = Vector 1
 
@@ -61,6 +62,8 @@ type P = U1
 type K = 1
 
 type PHI = Predicate A I P
+
+type PHIREC = Predicate A (RecursiveI I) (RecursiveP D K I P C')
 
 type SPS0 = SpecialSoundProtocol 1 I P F
 
@@ -87,23 +90,16 @@ testFunction p i _ =
       y = singleton $ evalPolyVec p' $ item z
    in packed $ fromFieldElement <$> y
 
--- testFunction :: PAR -> I F -> P F -> I F
--- testFunction p i _ =
---   let p' = fromVector $ fmap fromConstant p
---       z = fromConstant <$> unpacked i
---       y = singleton $ evalPolyVec p' $ item z
---    in packed $ fromConstant <$> y
-
--- testPredicateCircuit :: PAR -> AC
--- testPredicateCircuit p = predicateCircuit @A @I @P $ testPredicate p
-
 specIVC :: Spec
 specIVC = do
   let phi :: PAR -> PHI
       phi = predicate . testFunction
 
+      -- phiRecFunc :: PAR -> RecursiveFunction D K A I P C'
+      -- phiRecFunc = recursiveFunction @C' mimcHash . testFunction
+
       sps0 :: PAR -> SPS0
-      sps0 = specialSoundProtocol @D . phi
+      sps0 = specialSoundProtocolI @D . phi
 
       sps :: PAR -> SPS
       sps = fiatShamir mimcHash . commitOpen . sps0
@@ -134,7 +130,7 @@ specIVC = do
   describe "WeierstrassWitness" $ do
     it "is a homomorphic commitment" $ do
       withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer -> q) ->
-        hcommit @(WeierstrassWitness (Interpreter A)) [p + q] ZkFold.== hcommit [p] + hcommit [q]
+        hcommit @(WeierstrassWitness (Interpreter A)) [p + q] == hcommit [p] + hcommit [q]
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
@@ -144,14 +140,14 @@ specIVC = do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
-          (\(a, b) -> all ((ZkFold.== zero) . dataSource) (toList a) && all (== zero) b) $
+          (\(a, b) -> all ((== zero) . dataSource) (toList a) && all (== zero) b) $
             FS.verifier (sps p) (pi p) (zip (ms p) (cs p)) (unsafeToVector [])
   describe "Accumulator scheme specification" $ do
     describe "decider" $ do
       it "must output zeros" $ do
         withMaxSuccess 10 $ property $ \p ->
-          deciderResult p ZkFold.== (zero, zero)
+          deciderResult p == (zero, zero)
     describe "verifier" $ do
       it "must output zeros" $ do
         withMaxSuccess 10 $ property $ \p ->
-          verifierResult p ZkFold.== first dataSource (acc p ^. x)
+          verifierResult p == first dataSource (acc p ^. x)
