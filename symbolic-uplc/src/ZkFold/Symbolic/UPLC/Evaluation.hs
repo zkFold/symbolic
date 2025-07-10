@@ -308,8 +308,8 @@ evalConstant (CList lst) =
   let (xs, x) = fromJust (unsnoc lst)
    in foldr (consList . evalConstant) (makeSingleton (evalConstant x)) xs
 evalConstant (CPair p q) = pair (evalConstant p) (evalConstant q)
-evalConstant (CG1 _) = error "FIXME: UPLC BLS support"
-evalConstant (CG2 _) = error "FIXME: UPLC BLS support"
+evalConstant (CG1 p) = SymValue (fromConstant p)
+evalConstant (CG2 _) = error "TODO: add proper G2 support"
 
 -- | Useful helper function.
 pair :: Sym c => SymValue t c -> SymValue u c -> SymValue (BTPair t u) c
@@ -493,7 +493,16 @@ evalMono (BMFData fun) = case fun of
   MkNilData -> fromConstant $ const (Symbolic.just @c L.emptyList)
   MkNilPairData -> fromConstant $ const (Symbolic.just @c L.emptyList)
   SerializeData -> fromConstant (Symbolic.just @c . Data.serialiseData)
-evalMono (BMFCurve _) = error "FIXME: UPLC Curve support"
+evalMono (BMFCurve fun) = case fun of
+  BLS_G1 fn -> case fn of
+    Bls12_381_G1_add -> fromConstant \p q -> Symbolic.just @c (p + q)
+    Bls12_381_G1_neg -> fromConstant (Symbolic.just @c . negate)
+    Bls12_381_G1_scalarMul -> fromConstant \i p -> Symbolic.just @c (i `scale` p)
+    Bls12_381_G1_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
+    Bls12_381_G1_hashToGroup -> _
+    Bls12_381_G1_compress -> _
+    Bls12_381_G1_uncompress -> _
+  BLS_G2 fn -> case fn of
 evalMono (BMFBitwise fun) = case fun of
   AndByteString -> fromConstant \ext a b ->
     Symbolic.just @c $

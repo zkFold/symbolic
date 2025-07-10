@@ -35,7 +35,7 @@ import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
 import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
 import ZkFold.Symbolic.Data.FFA (KnownFFA)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
@@ -77,6 +77,7 @@ type Sym c =
   , KnownNat (GetRegisterSize (BaseField c) BSLength Auto `Ceil` OrdWord)
   , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) Auto `Ceil` OrdWord)
   , KnownFFA BLS12_381_Base Auto c
+  , KnownFFA BLS12_381_Scalar Auto c
   )
 
 instance Sym c => IsData BTInteger (Int IntLength Auto c) c
