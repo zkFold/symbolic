@@ -3,6 +3,7 @@
 module ZkFold.Protocol.IVC.ForeignField where
 
 import qualified Data.Eq as Haskell
+import GHC.Generics (Generic)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
@@ -12,7 +13,7 @@ import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toI
 import Prelude (Integer, Num (fromInteger))
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
-  deriving Haskell.Eq
+  deriving (Generic, Haskell.Eq)
 
 instance (KnownNat q, Euclidean i) => FromConstant Natural (ForeignField q i) where
   fromConstant x = ForeignField (fromConstant x `mod` fromConstant (value @q))
@@ -75,7 +76,13 @@ instance (KnownNat q, KnownNat (NumberOfBits (Zp q))) => Finite (ForeignField q 
   type Order (ForeignField q i) = q
 
 instance
-  (Prime q, KnownNat (NumberOfBits (Zp q)), Eq i, Euclidean i, Conditional (BooleanOf i) i)
+  ( Prime q
+  , KnownNat (NumberOfBits (Zp q))
+  , Eq i
+  , Euclidean i
+  , Conditional (BooleanOf i) (BooleanOf i)
+  , Conditional (BooleanOf i) i
+  )
   => ResidueField (ForeignField q i)
   where
   type IntegralOf (ForeignField q i) = i

@@ -16,12 +16,21 @@ import GHC.Generics (Par1 (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
-import ZkFold.Data.Eq (Eq)
+import ZkFold.Control.Conditional (Conditional)
+import ZkFold.Data.Eq (BooleanOf, Eq)
 import Prelude (Integer)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
-class (FiniteField a, Euclidean (IntegralOf a), Eq (IntegralOf a)) => ResidueField a where
+class
+  ( FiniteField a
+  , Euclidean (IntegralOf a)
+  , Eq (IntegralOf a)
+  , Conditional (BooleanOf (IntegralOf a)) (BooleanOf (IntegralOf a))
+  , Conditional (BooleanOf (IntegralOf a)) (IntegralOf a)
+  ) =>
+  ResidueField a
+  where
   type IntegralOf a :: Type
   fromIntegral :: IntegralOf a -> a
   toIntegral :: a -> IntegralOf a

@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module ZkFold.ArithmeticCircuit.Witness where
 
 import Control.Applicative (Applicative (..))
@@ -5,6 +8,7 @@ import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (Monad (..), ap)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
+import GHC.Generics (Generic (..), K1 (..), M1 (..), (:*:) (..))
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
@@ -98,6 +102,15 @@ instance FromConstant Natural (EuclideanF a v) where fromConstant x = EuclideanF
 
 instance FromConstant Integer (EuclideanF a v) where fromConstant x = EuclideanF (fromConstant x)
 
+instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (BooleanE a v) where
+  bool (BooleanE f) (BooleanE g) (BooleanE b) = BooleanE (\x -> bool (f x) (g x) (b x))
+
+instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (EuclideanF a v) where
+  bool (EuclideanF f) (EuclideanF g) (BooleanE b) = EuclideanF (\x -> bool (f x) (g x) (b x))
+
+instance (Generic x, GConditional (BooleanE a v) (Rep x)) => Conditional (BooleanE a v) x where
+  bool f g b = to (gbool (from f) (from g) b)
+
 instance Eq (EuclideanF a v) where
   type BooleanOf (EuclideanF a v) = BooleanE a v
   EuclideanF f == EuclideanF g = BooleanE (\x -> f x == g x)
@@ -143,3 +156,16 @@ instance BoolType (BooleanE a v) where
   BooleanE f && BooleanE g = BooleanE (\x -> f x && g x)
   BooleanE f || BooleanE g = BooleanE (\x -> f x || g x)
   BooleanE f `xor` BooleanE g = BooleanE (\x -> f x `xor` g x)
+
+class GConditional b f where
+  gbool :: f x -> f x -> b -> f x
+
+instance Conditional (BooleanE a v) x => GConditional (BooleanE a v) (K1 i x) where
+  gbool (K1 f) (K1 g) b = K1 (bool f g b)
+
+instance GConditional b f => GConditional b (M1 i c f) where
+  gbool (M1 f) (M1 g) b = M1 (gbool f g b)
+
+instance (GConditional b f, GConditional b g) => GConditional b (f :*: g) where
+  gbool (f1 :*: f2) (g1 :*: g2) b =
+    gbool f1 g1 b :*: gbool f2 g2 b

@@ -26,8 +26,6 @@ import GHC.Generics (Par1 (..), (:*:) (..))
 import GHC.IsList (fromList)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show (..))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Permutation (Permutation, fromCycles, mkIndexPartition)
@@ -47,6 +45,7 @@ import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkCon
 import ZkFold.Protocol.Plonkup.PlonkupConstraint
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import qualified Prelude as P
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
@@ -152,7 +151,10 @@ instance Euclidean a => Euclidean (Vector a) where
 instance Finite a => Finite (Vector a) where
   type Order (Vector a) = Order a
 
-instance (ResidueField a, Conditional (BooleanOf a) (Vector a)) => ResidueField (Vector a) where
+instance
+  (ResidueField a, Conditional (BooleanOf a) (Vector a), Conditional (BooleanOf (IntegralOf a)) (Vector (IntegralOf a)))
+  => ResidueField (Vector a)
+  where
   type IntegralOf (Vector a) = Vector (IntegralOf a)
   fromIntegral = fmap fromIntegral
   toIntegral = fmap toIntegral
@@ -175,7 +177,8 @@ toPlonkupRelation
      , Representable o
      , Foldable o
      )
-  => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
+  => ArithmeticCircuit a i o
+  -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation !ac =
   let !n = value @n
 

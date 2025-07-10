@@ -44,7 +44,7 @@ import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
 import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
 
 type A = Zp BLS12_381_Scalar
@@ -63,19 +63,21 @@ type K = 1
 
 type PHI = Predicate A I P
 
-type PHIREC = Predicate A (RecursiveI I) (RecursiveP D K I P C')
+type PHIREC = Predicate A (RecursiveI I) (RecursiveP D K I P C)
 
 type SPS0 = SpecialSoundProtocol 1 I P F
 
+type SPS0Rec = SpecialSoundProtocol 1 (RecursiveI I) (RecursiveP D K I P C) F
+
 type SPS = FiatShamir 1 I P (DataSource C) F
+
+type SPSRec = FiatShamir 1 (RecursiveI I) (RecursiveP D K I P C) (DataSource C) F
 
 type D = 2
 
 type PARDEG = 5
 
 type PAR = Vector PARDEG A
-
--- type AC = ArithmeticCircuit A (I :*: P :*: I) U1
 
 testFunction
   :: forall ctx
@@ -95,20 +97,39 @@ specIVC = do
   let phi :: PAR -> PHI
       phi = predicate . testFunction
 
-      -- phiRecFunc :: PAR -> RecursiveFunction D K A I P C'
+      -- phiRecFunc :: PAR -> RecursiveFunction D K A I P C
       -- phiRecFunc = recursiveFunction @C' mimcHash . testFunction
+
+      -- phiRec :: PAR -> PHIREC
+      -- phiRec = predicate . phiRecFunc
 
       sps0 :: PAR -> SPS0
       sps0 = specialSoundProtocolI @D . phi
 
+      -- sps0Rec :: PAR -> SPS0Rec
+      -- sps0Rec = specialSoundProtocolI @D . phiRec
+
       sps :: PAR -> SPS
       sps = fiatShamir mimcHash . commitOpen . sps0
+
+      -- spsRec :: PAR -> SPSRec
+      -- spsRec = fiatShamir mimcHash . commitOpen . sps0Rec
 
       pi0 :: I F
       pi0 = singleton $ fromConstant @ZkFold.Algebra.Number.Natural 42
 
+      -- pi0Rec :: RecursiveI I F
+      -- pi0Rec = singleton (fromConstant @ZkFold.Algebra.Number.Natural 42) :*: Par1 zero
+
       pi' p = SPS.input (sps0 p) pi0 U1
       ms' p = SPS.prover (sps0 p) pi0 U1 zero 1
+
+      -- payloadRec :: PAR -> RecursiveP D K I P C F
+      -- payloadRec p =
+      --   fmap fromConstant . runInterpreter . arithmetize $
+      --     RecursivePayload (hpure U1) (singleton zero) (acc0Rec p ^. x) false (singleton zero)
+      -- pi'Rec p = SPS.input (sps0Rec p) pi0Rec (payloadRec p)
+      -- ms'Rec p = SPS.prover (sps0Rec p) pi0Rec (payloadRec p) zero 1
 
       narkIP p = narkInstanceProof (sps p) pi0 U1
       pi p = let NARKInstanceProof z _ = narkIP p in z
@@ -120,6 +141,9 @@ specIVC = do
 
       acc0 :: PAR -> Accumulator K I (DataSource C) F
       acc0 = emptyAccumulator @D . phi
+
+      -- acc0Rec :: PAR -> Accumulator K (RecursiveI I) (DataSource C) F
+      -- acc0Rec = emptyAccumulator @D . phiRec
 
       acc p = fst $ prover (scheme p) (acc0 p) $ NARKInstanceProof (pi p) (NARKProof (cs p) (ms p))
       pf p = snd $ prover (scheme p) (acc0 p) $ NARKInstanceProof (pi p) (NARKProof (cs p) (ms p))
@@ -136,6 +160,11 @@ specIVC = do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
           all (== zero) $ SPS.verifier (sps0 p) (pi' p) (singleton $ ms' p) (unsafeToVector [])
+  -- describe "Recursive special sound protocol specification" $ do
+  --   describe "verifier" $ do
+  --     it "must output zeros on the public input and message" $ do
+  --       withMaxSuccess 10 $ property $ \p ->
+  --         all (== zero) $ SPS.verifier (sps0Rec p) (pi'Rec p) (singleton $ ms'Rec p) (unsafeToVector [])
   describe "Fiat-Shamir Commit-Open protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do

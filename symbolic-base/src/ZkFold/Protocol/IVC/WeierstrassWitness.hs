@@ -25,7 +25,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Planar, Point (..), Weierstrass (..), pointXY)
 import ZkFold.Algebra.Number (Natural, value)
 import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
-import ZkFold.Control.HApplicative (hpure)
+import ZkFold.Control.HApplicative (HApplicative (hunit))
 import ZkFold.Data.Bool (BoolType)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector, unsafeToVector, (!!))
@@ -34,8 +34,8 @@ import ZkFold.Protocol.IVC.Oracle (OracleSource (..))
 import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField (..))
-import Prelude (Integer, error, fromInteger, type (~))
+import ZkFold.Symbolic.MonadCircuit (IntegralOf, MonadCircuit (unconstrained), ResidueField (..))
+import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
 
 newtype WeierstrassWitness ctx
   = WeierstrassWitness (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
@@ -59,28 +59,30 @@ instance
   => SymbolicData (WeierstrassWitness ctx)
   where
   type Context (WeierstrassWitness ctx) = ctx
-  type Layout (WeierstrassWitness ctx) = U1
-  type Payload (WeierstrassWitness ctx) = Vector 5
-  arithmetize _ = hpure U1
-  payload (WeierstrassWitness (Weierstrass (Point a b isInf))) =
+  type Layout (WeierstrassWitness ctx) = Vector 5
+  type Payload (WeierstrassWitness ctx) = U1
+  arithmetize (WeierstrassWitness (Weierstrass (Point a b isInf))) =
     let a1 = fromIntegral $ toIntegral a `mod` fromConstant (value @BLS12_381_Scalar)
         a2 = fromIntegral $ toIntegral a `div` fromConstant (value @BLS12_381_Scalar)
         b1 = fromIntegral $ toIntegral b `mod` fromConstant (value @BLS12_381_Scalar)
         b2 = fromIntegral $ toIntegral b `div` fromConstant (value @BLS12_381_Scalar)
         isInf1 = fromIntegral $ bool zero one isInf
-     in unsafeToVector [a1, a2, b1, b2, isInf1]
+     in fromCircuitF hunit $ \_ -> traverse unconstrained (unsafeToVector @5 [a1, a2, b1, b2, isInf1])
 
-  restore (_, v) =
-    WeierstrassWitness
-      ( Weierstrass
-          ( Point
-              ( fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar)
+  payload _ = U1
+
+  restore (l, _) =
+    let v = witnessF l
+     in WeierstrassWitness
+          ( Weierstrass
+              ( Point
+                  ( fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar)
+                  )
+                  ( fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar)
+                  )
+                  (fromIntegral @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
               )
-              ( fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar)
-              )
-              (fromIntegral @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
           )
-      )
   interpolate _ _ = error "Interpolation is not defined for WeierstrassWitness"
 
 instance (SymbolicData (WeierstrassWitness ctx), w ~ WitnessField ctx) => OracleSource w (WeierstrassWitness ctx) where
