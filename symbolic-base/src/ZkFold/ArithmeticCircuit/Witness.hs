@@ -10,12 +10,13 @@ import Data.Function (const, (.))
 import Data.Functor (Functor)
 import GHC.Generics (Generic (..), K1 (..), M1 (..), (:*:) (..))
 import Numeric.Natural (Natural)
+import Prelude (Integer)
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import Prelude (Integer)
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 

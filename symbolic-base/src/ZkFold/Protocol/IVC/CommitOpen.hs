@@ -3,13 +3,14 @@
 module ZkFold.Protocol.IVC.CommitOpen where
 
 import Data.Zip (zipWith)
+import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
+
 import ZkFold.Algebra.Class (AdditiveGroup (..))
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (hcommit))
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
 data CommitOpen k i p c f = CommitOpen
   { input

@@ -11,6 +11,8 @@ import Data.Foldable (toList)
 import Data.Function (($), (.))
 import Data.String (fromString)
 import GHC.Generics (Generic, Par1 (..), U1 (..), unPar1)
+import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
+
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveMonoid (..),
@@ -35,7 +37,6 @@ import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, MonadCircuit (unconstrained), ResidueField (..))
-import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
 
 newtype WeierstrassWitness ctx
   = WeierstrassWitness (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
@@ -76,10 +77,8 @@ instance
      in WeierstrassWitness
           ( Weierstrass
               ( Point
-                  ( fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar)
-                  )
-                  ( fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar)
-                  )
+                  (fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar))
+                  (fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar))
                   (fromIntegral @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
               )
           )
@@ -201,10 +200,8 @@ instance
       FieldElement ctx
   pointGen =
     pointXY @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))
-      ( fromConstant @Natural 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb
-      )
-      ( fromConstant @Natural 0x8b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1
-      )
+      (fromConstant @Natural 0x17f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb)
+      (fromConstant @Natural 0x8b3f481e3aaa0f1a09e30ed741d8ae4fcf5e095d5d00af600db18cb2c04b3edd03cc744a2888ae40caa232946c5e7e1)
 
 instance
   ( Symbolic ctx

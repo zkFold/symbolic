@@ -10,12 +10,13 @@ module ZkFold.Protocol.IVC.Commit (
 import Crypto.Hash.SHA256 (hash)
 import Data.Maybe (fromJust)
 import Data.Zip (Zip (..))
+import Prelude hiding (Num (..), sum, take, zipWith, (^))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.ByteString (LittleEndian (..), fromByteString)
 import ZkFold.Protocol.IVC.Oracle
-import Prelude hiding (Num (..), sum, take, zipWith, (^))
 
 -- | Commit to the object @a@ with results of type @f@
 type Commit a f = a -> f

@@ -5,12 +5,13 @@ module ZkFold.Protocol.IVC.FiatShamir where
 
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (plusMinusInverse1)
+import Prelude hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
+
 import ZkFold.Algebra.Class (Ring)
 import ZkFold.Algebra.Number (KnownNat, Natural, type (-))
 import ZkFold.Data.Vector (Vector, init, scanl, unfold)
 import ZkFold.Protocol.IVC.CommitOpen
 import ZkFold.Protocol.IVC.Oracle
-import Prelude hiding (Bool (..), Eq (..), init, length, pi, scanl, unzip)
 
 data FiatShamir k i p c f = FiatShamir
   { input

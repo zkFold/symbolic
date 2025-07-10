@@ -11,6 +11,8 @@ import Data.Binary (Binary (..))
 import Data.Foldable (toList)
 import Data.Function ((.))
 import GHC.Generics (Generic, Par1, (:*:))
+import Prelude ((<$>), type (~))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
@@ -28,7 +30,6 @@ import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool (Bool, bool)
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
-import Prelude ((<$>), type (~))
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1
@@ -56,10 +57,10 @@ data RecursivePayload d k i p c = RecursivePayload
   , recProof :: Vector k (DataSource c)
   , recAccInst
       :: AccumulatorInstance
-          k
-          (RecursiveI i)
-          (DataSource c)
-          (FieldElement (Context c))
+           k
+           (RecursiveI i)
+           (DataSource c)
+           (FieldElement (Context c))
   , recFlag :: Bool (Context c)
   , recCommits :: Vector (d - 1) (DataSource c)
   }
@@ -131,10 +132,10 @@ recursiveFunction hash func =
    in
     \i
      ( restore0 ->
-        ( RecursivePayload u piX accX flag pf
-            :: RecursivePayload d k i p c
-          )
-      ) ->
+         ( RecursivePayload u piX accX flag pf
+             :: RecursivePayload d k i p c
+           )
+       ) ->
         let z = FieldElement <$> unpacked i
             (x, _ :: FieldElement (Context c)) = restore0 i
             accX' = verifier (accumulatorScheme hash pRec) z piX accX pf

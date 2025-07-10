@@ -8,6 +8,8 @@ import Data.Foldable (toList)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
+import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
+
 import ZkFold.Algebra.Class (FromConstant (..), zero, (+))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -45,7 +47,6 @@ import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Prelude hiding (Num (..), pi, replicate, sum, zip, (+), (^))
 
 type A = Zp BLS12_381_Scalar
 

@@ -34,6 +34,7 @@ import Data.Typeable (Proxy (..))
 import GHC.Generics (U1 (..), (:*:) (..), (:.:) (..))
 import qualified GHC.Generics as G
 import Text.Show (Show)
+
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.HApplicative (hliftA2, hpure)
 import ZkFold.Data.ByteString (Binary1)

@@ -6,6 +6,8 @@ module ZkFold.Protocol.IVC.OperationRecord where
 
 import Data.Either (Either (..))
 import GHC.Generics (Generic)
+import Prelude (Integer, ($), type (~))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (Natural)
@@ -13,7 +15,6 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), withoutConstraints)
 import ZkFold.Symbolic.Data.List (List, emptyList, head, (.:))
 import ZkFold.Symbolic.Data.Sum (OneOf, embedOneOf, matchOneOf, zeroed)
-import Prelude (Integer, ($), type (~))
 
 newtype OperationRecord c s ctx = OperationRecord (List ctx (OneOf [(c, c, c), (c, s, c)] ctx))
   deriving Generic

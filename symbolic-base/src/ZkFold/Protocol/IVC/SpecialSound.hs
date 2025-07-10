@@ -10,6 +10,8 @@ import Data.Functor (fmap)
 import Data.Functor.Rep (Representable (..))
 import Data.List (map, (++))
 import GHC.Generics ((:*:) (..))
+import Prelude (undefined)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext), witnessGenerator)
@@ -20,7 +22,6 @@ import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import Prelude (undefined)
 
 {-- | Section 3.1
 
