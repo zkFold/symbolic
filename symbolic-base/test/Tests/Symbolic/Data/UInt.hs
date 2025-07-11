@@ -41,10 +41,10 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   RegisterSize (..),
  )
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 type AC a = ArithmeticCircuit a U1
 
