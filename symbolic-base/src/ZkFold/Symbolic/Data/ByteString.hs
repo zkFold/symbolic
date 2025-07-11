@@ -412,10 +412,10 @@ bitwiseOperation (ByteString bits1) (ByteString bits2) cons =
       That j -> pure j
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (FieldElement c) (ByteString n c) where
-  from = ByteString . binaryExpansion
+  from = ByteString . hmap V.reverse . binaryExpansion
 
 instance (Symbolic c, NumberOfBits (BaseField c) ~ n) => Iso (ByteString n c) (FieldElement c) where
-  from (ByteString a) = fromBinary a
+  from (ByteString a) = fromBinary (hmap V.reverse a)
 
 instance
   (Symbolic c, KnownNat n)
