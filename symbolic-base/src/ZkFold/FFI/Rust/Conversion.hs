@@ -10,8 +10,10 @@ import Data.Binary
 import Data.Bits
 import qualified Data.ByteString as BS
 import Foreign (
+  ForeignPtr,
   Ptr,
   Storable (alignment, peek, poke, sizeOf),
+  callocBytes,
   castPtr,
   copyArray,
   finalizerFree,
@@ -35,6 +37,9 @@ import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
 import Prelude hiding (Eq, Num (..), sum, (*), (/), (^))
 import qualified Prelude as P
+
+callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
+callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
 
 -- import Control.Monad ((<$))
 class RustHaskell r h | r -> h, h -> r where
@@ -76,7 +81,7 @@ o2nScalar :: Fr -> Fr
 o2nScalar old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
     ptrNew <- r_h2r_scalar ptr scalarSize
-    RScalar . RData <$> (newForeignPtr rustFinalizer ptrNew)
+    RScalar . RData <$> (newForeignPtr r_scalar_free ptrNew)
 
 n2oScalar :: Fr -> Fr
 n2oScalar new = unsafePerformIO $ do
@@ -90,7 +95,7 @@ o2nG1 :: Rust_BLS12_381_G1_Point -> Rust_BLS12_381_G1_Point
 o2nG1 old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPoint old) $ \ptr -> do
     ptrNew <- r_h2r_g1 ptr pointG1Size
-    RPoint . RData <$> newForeignPtr rustFinalizer ptrNew
+    RPoint . RData <$> newForeignPtr r_g1_free ptrNew
 
 n2oG1 :: Rust_BLS12_381_G1_Point -> Rust_BLS12_381_G1_Point
 n2oG1 new = unsafePerformIO $ do
@@ -253,7 +258,7 @@ o2nG2 :: Rust_BLS12_381_G2_Point -> Rust_BLS12_381_G2_Point
 o2nG2 old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPoint old) $ \ptr -> do
     ptrNew <- r_h2r_g2 ptr pointG2Size
-    RPoint . RData <$> newForeignPtr rustFinalizer ptrNew
+    RPoint . RData <$> newForeignPtr r_g2_free ptrNew
 
 n2oG2 :: Rust_BLS12_381_G2_Point -> Rust_BLS12_381_G2_Point
 n2oG2 new = unsafePerformIO $ do
@@ -308,7 +313,7 @@ o2nGT :: Fq12 -> Fq12
 o2nGT old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
     ptrNew <- r_h2r_gt ptr pointGTSize
-    RScalar . RData <$> newForeignPtr rustFinalizer ptrNew
+    RScalar . RData <$> newForeignPtr r_gt_free ptrNew
 
 n2oGT :: Fq12 -> Fq12
 n2oGT new = unsafePerformIO $ do

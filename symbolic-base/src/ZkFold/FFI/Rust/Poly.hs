@@ -39,15 +39,6 @@ import Prelude hiding (
   (^),
  )
 
-newtype RustPolyVec a (size :: Natural) = RPolyVec {rawPolyVec :: RustData}
-  deriving Generic
-
-data RustVector a = RVector {length :: Int, rawVector :: RustData}
-  deriving Generic
-
-instance NFData (RustPolyVec a size) where
-  rnf _ = ()
-
 peekArrayV :: Storable a => Int -> Ptr a -> IO (V.Vector a)
 {-# INLINEABLE peekArrayV #-}
 peekArrayV size ptr = V.generateM size (peekElemOff ptr)
@@ -63,7 +54,7 @@ o2nScalarVec :: forall size. KnownNat size => (RustPolyVec Fr size) -> (RustPoly
 o2nScalarVec old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
     ptrNew <- r_h2r_scalar_vec ptr ((sizeOf (undefined :: Fr)) * valueSize)
-    RPolyVec . RData <$> newForeignPtr rustFinalizer ptrNew
+    RPolyVec . RData <$> newForeignPtr r_scalar_vec_free ptrNew
  where
   valueSize = fromIntegral $ value @size
 
@@ -81,7 +72,7 @@ o2nScalarPoly :: forall size. KnownNat size => (RustPolyVec Fr size) -> (RustPol
 o2nScalarPoly old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
     ptrNew <- r_h2r_scalar_poly ptr ((sizeOf (undefined :: Fr)) * valueSize)
-    RPolyVec . RData <$> newForeignPtr rustFinalizer ptrNew
+    RPolyVec . RData <$> newForeignPtr r_scalar_poly_free ptrNew
  where
   valueSize = fromIntegral $ value @size
 
@@ -99,7 +90,7 @@ o2nPointVec :: RustVector Rust_BLS12_381_G1_Point -> RustVector Rust_BLS12_381_G
 o2nPointVec old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawVector old) $ \ptr -> do
     ptrNew <- r_h2r_point_vec ptr ((sizeOf (undefined :: Rust_BLS12_381_G1_Point)) * valueSize)
-    RVector valueSize . RData <$> newForeignPtr rustFinalizer ptrNew
+    RVector valueSize . RData <$> newForeignPtr r_point_vec_free ptrNew
  where
   valueSize = length old
 

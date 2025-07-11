@@ -6,67 +6,25 @@ module ZkFold.FFI.Rust.RustFunctions where
 
 import Foreign
 import Foreign.C.String
-import GHC.IO (unsafePerformIO)
-import ZkFold.FFI.Rust.Types
 import Prelude
 
-type RustConst =
+type RustFun0 =
   IO CString
 
-runRustConst
-  :: RustConst
-  -> RustData
-runRustConst f = unsafePerformIO $ do
-  RData <$> (toForeignPtr =<< f)
-
-type RustUnary =
+type RustFun1 =
   CString
   -> IO CString
 
-runRustUnary
-  :: RustUnary -> RustData -> RustData
-runRustUnary f a = unsafePerformIO $ do
-  withForeignPtr (rawData a) $ \ptr -> do
-    RData <$> (toForeignPtr =<< f ptr)
-
-type RustBinary =
+type RustFun2 =
   CString
   -> CString
   -> IO CString
 
-runRustBinary
-  :: RustBinary
-  -> RustData
-  -> RustData
-  -> RustData
-runRustBinary f a b = unsafePerformIO $ do
-  withForeignPtr (rawData a) $ \ptr1 -> do
-    withForeignPtr (rawData b) $ \ptr2 -> do
-      RData <$> (toForeignPtr =<< f ptr1 ptr2)
-
-type RustTernary =
+type RustFun3 =
   CString
   -> CString
   -> CString
   -> IO CString
-
-runRustTernary
-  :: RustTernary
-  -> RustData
-  -> RustData
-  -> RustData
-  -> RustData
-runRustTernary f a b c = unsafePerformIO $ do
-  withForeignPtr (rawData a) $ \ptr1 -> do
-    withForeignPtr (rawData b) $ \ptr2 -> do
-      withForeignPtr (rawData c) $ \ptr3 -> do
-        RData <$> (toForeignPtr =<< f ptr1 ptr2 ptr3)
-
-foreign import ccall unsafe "&r_free_ptr"
-  rustFinalizer :: FunPtr (CString -> IO ())
-
--- rustFinalizer ::  CChar
--- rustFinalizer = r_free_ptr
 
 -------------------- Conversion --------------------
 
@@ -126,188 +84,188 @@ foreign import ccall unsafe "r_r2h_gt"
 -------------------- MSM --------------------
 
 foreign import ccall unsafe "r_msm"
-  r_msm :: RustBinary
+  r_msm :: RustFun2
 
 -------------------- Scalar --------------------
 
 -- Const
 
 foreign import ccall unsafe "r_scalar_zero"
-  r_scalar_zero :: RustConst
+  r_scalar_zero :: RustFun0
 
 foreign import ccall unsafe "r_scalar_one"
-  r_scalar_one :: RustConst
+  r_scalar_one :: RustFun0
 
 -- Unary
 
 foreign import ccall unsafe "r_scalar_invert"
-  r_scalar_invert :: RustUnary
+  r_scalar_invert :: RustFun1
 
 foreign import ccall unsafe "r_scalar_negate"
-  r_scalar_negate :: RustUnary
+  r_scalar_negate :: RustFun1
 
 foreign import ccall unsafe "r_scalar_from_natural"
-  r_scalar_from_natural :: RustUnary
+  r_scalar_from_natural :: RustFun1
 
 -- Binary
 
 foreign import ccall unsafe "r_scalar_add"
-  r_scalar_add :: RustBinary
+  r_scalar_add :: RustFun2
 
 foreign import ccall unsafe "r_scalar_mul"
-  r_scalar_mul :: RustBinary
+  r_scalar_mul :: RustFun2
 
 foreign import ccall unsafe "r_scalar_scale_natural"
-  r_scalar_scale_natural :: RustBinary
+  r_scalar_scale_natural :: RustFun2
 
 foreign import ccall unsafe "r_scalar_sub"
-  r_scalar_sub :: RustBinary
+  r_scalar_sub :: RustFun2
 
 foreign import ccall unsafe "r_scalar_exp_natural"
-  r_scalar_exp_natural :: RustBinary
+  r_scalar_exp_natural :: RustFun2
 
 foreign import ccall unsafe "r_scalar_div"
-  r_scalar_div :: RustBinary
+  r_scalar_div :: RustFun2
 
 -------------------- Point G1 --------------------
 
 -- Const
 
 foreign import ccall unsafe "r_g1_zero"
-  r_g1_zero :: RustConst
+  r_g1_zero :: RustFun0
 
 foreign import ccall unsafe "r_g1_gen"
-  r_g1_gen :: RustConst
+  r_g1_gen :: RustFun0
 
 -- Unary
 
 foreign import ccall unsafe "r_g1_negate"
-  r_g1_negate :: RustUnary
+  r_g1_negate :: RustFun1
 
 -- Binary
 
 foreign import ccall unsafe "r_g1_add"
-  r_g1_add :: RustBinary
+  r_g1_add :: RustFun2
 
 foreign import ccall unsafe "r_g1_scale"
-  r_g1_scale :: RustBinary
+  r_g1_scale :: RustFun2
 
 foreign import ccall unsafe "r_g1_scale_natural"
-  r_g1_scale_natural :: RustBinary
+  r_g1_scale_natural :: RustFun2
 
 foreign import ccall unsafe "r_g1_sub"
-  r_g1_sub :: RustBinary
+  r_g1_sub :: RustFun2
 
 -------------------- Point G2 --------------------
 
 -- Const
 
 foreign import ccall unsafe "r_g2_zero"
-  r_g2_zero :: RustConst
+  r_g2_zero :: RustFun0
 
 foreign import ccall unsafe "r_g2_gen"
-  r_g2_gen :: RustConst
+  r_g2_gen :: RustFun0
 
 -- Unary
 
 foreign import ccall unsafe "r_g2_negate"
-  r_g2_negate :: RustUnary
+  r_g2_negate :: RustFun1
 
 -- Binary
 
 foreign import ccall unsafe "r_g2_add"
-  r_g2_add :: RustBinary
+  r_g2_add :: RustFun2
 
 foreign import ccall unsafe "r_g2_scale_natural"
-  r_g2_scale_natural :: RustBinary
+  r_g2_scale_natural :: RustFun2
 
 foreign import ccall unsafe "r_g2_sub"
-  r_g2_sub :: RustBinary
+  r_g2_sub :: RustFun2
 
 foreign import ccall unsafe "r_g2_scale"
-  r_g2_scale :: RustBinary
+  r_g2_scale :: RustFun2
 
 -------------------- Scalar Polynomial --------------------
 
 -- Const
 
 foreign import ccall unsafe "r_poly_zero"
-  r_poly_zero :: RustConst
+  r_poly_zero :: RustFun0
 
 foreign import ccall unsafe "r_poly_one"
-  r_poly_one :: RustConst
+  r_poly_one :: RustFun0
 
 -- Unary
 
 foreign import ccall unsafe "r_poly_negate"
-  r_poly_negate :: RustUnary
+  r_poly_negate :: RustFun1
 
 foreign import ccall unsafe "r_poly_from_natural"
-  r_poly_from_natural :: RustUnary
+  r_poly_from_natural :: RustFun1
 
 -- Binary
 
 foreign import ccall unsafe "r_poly_add"
-  r_poly_add :: RustBinary
+  r_poly_add :: RustFun2
 
 foreign import ccall unsafe "r_poly_sub"
-  r_poly_sub :: RustBinary
+  r_poly_sub :: RustFun2
 
 foreign import ccall unsafe "r_poly_mul"
-  r_poly_mul :: RustBinary
+  r_poly_mul :: RustFun2
 
 foreign import ccall unsafe "r_poly_div"
-  r_poly_div :: RustBinary
+  r_poly_div :: RustFun2
 
 foreign import ccall unsafe "r_poly_hmul"
-  r_poly_hmul :: RustBinary
+  r_poly_hmul :: RustFun2
 
 foreign import ccall unsafe "r_poly_hdiv"
-  r_poly_hdiv :: RustBinary
+  r_poly_hdiv :: RustFun2
 
 foreign import ccall unsafe "r_poly_mul_scalar"
-  r_poly_mul_scalar :: RustBinary
+  r_poly_mul_scalar :: RustFun2
 
 foreign import ccall unsafe "r_poly_add_scalar"
-  r_poly_add_scalar :: RustBinary
+  r_poly_add_scalar :: RustFun2
 
 foreign import ccall unsafe "r_poly_exp"
-  r_poly_exp :: RustBinary
+  r_poly_exp :: RustFun2
 
 foreign import ccall unsafe "r_poly_scale_natural"
-  r_poly_scale_natural :: RustBinary
+  r_poly_scale_natural :: RustFun2
 
 -- Ternary
 
 foreign import ccall unsafe "r_poly_div_shifted_mono"
-  r_poly_div_shifted_mono :: RustTernary
+  r_poly_div_shifted_mono :: RustFun3
 
 -------------------- GT --------------------
 
 -- Const
 
 foreign import ccall unsafe "r_gt_one"
-  r_gt_one :: RustConst
+  r_gt_one :: RustFun0
 
 -- Binary
 
 foreign import ccall unsafe "r_pairing"
-  r_pairing :: RustBinary
+  r_pairing :: RustFun2
 
 foreign import ccall unsafe "r_gt_exp"
-  r_gt_exp :: RustBinary
+  r_gt_exp :: RustFun2
 
 foreign import ccall unsafe "r_gt_exp_natural"
-  r_gt_exp_natural :: RustBinary
+  r_gt_exp_natural :: RustFun2
 
 foreign import ccall unsafe "r_gt_mul"
-  r_gt_mul :: RustBinary
+  r_gt_mul :: RustFun2
 
 foreign import ccall unsafe "r_gt_div"
-  r_gt_div :: RustBinary
+  r_gt_div :: RustFun2
 
 foreign import ccall unsafe "r_gt_invert"
-  r_gt_invert :: RustUnary
+  r_gt_invert :: RustFun1
 
 foreign import ccall unsafe "rust_wrapper_plonkup_prove"
   rsPlonkupProve

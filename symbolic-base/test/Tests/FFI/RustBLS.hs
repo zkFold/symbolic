@@ -14,7 +14,7 @@ import ZkFold.Algebra.Number (Natural)
 import ZkFold.Algebra.Polynomial.Univariate
 import qualified ZkFold.Data.Vector as V
 import ZkFold.FFI.Rust.Conversion
-import ZkFold.FFI.Rust.Poly (RustPolyVec)
+import ZkFold.FFI.Rust.Types (RustPolyVec)
 import qualified ZkFold.FFI.Rust.Types as Rust
 import ZkFold.Protocol.NonInteractiveProof.Class ()
 import Prelude (Eq (..), Integer, Show (..), String, abs, fromInteger, id, return, ($), (.), (<$>), (<>))

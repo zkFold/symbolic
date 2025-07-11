@@ -5,48 +5,112 @@ module ZkFold.FFI.Rust.Types where
 import Control.DeepSeq
 import Data.Bool as B
 import Foreign
+import Foreign.C (CString)
 import Foreign.C.Types
 import GHC.Generics
+import GHC.IO (unsafePerformIO)
+import GHC.Natural (Natural)
 import ZkFold.Control.Conditional
 import Prelude
 
-toForeignPtr :: Ptr a -> IO (ForeignPtr a)
-toForeignPtr = newForeignPtr finalizerFree
+type FCString = ForeignPtr CChar
 
-callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
-callocForeignPtrBytes n = do p <- callocBytes n; toForeignPtr p
+type RustFinalizer = FunPtr (CString -> IO ())
+
+newtype RustData = RData {rawData :: FCString}
+  deriving Generic
+
+instance NFData RustData where
+  rnf _ = ()
+
+class IsRustType r where
+  rawType :: r -> RustData
+
+  toRustType :: CString -> r
 
 newtype Scalar curve s = RScalar {rawScalar :: s}
   deriving (Generic, NFData)
 
 newtype Point curve s = RPoint {rawPoint :: s}
-  deriving (Generic, NFData)
-
-type FCString = ForeignPtr CChar
-
-instance NFData FCString where
-  rnf _ = ()
-
-newtype RustData = RData {rawData :: FCString}
-  deriving (Generic, NFData)
-
-instance Conditional Bool RustData where bool = B.bool
+  deriving Generic
 
 newtype RustNatural = RNatural {rawNatural :: RustData}
+
+instance IsRustType RustNatural where
+  rawType = rawNatural
+  toRustType = RNatural . toForeignPtr finalizerFree
+
+newtype RustPolyVec a (size :: Natural) = RPolyVec {rawPolyVec :: RustData}
+  deriving Generic
+
+foreign import ccall unsafe "&r_scalar_poly_free"
+  r_scalar_poly_free :: RustFinalizer
+
+instance IsRustType (RustPolyVec Fr size) where
+  rawType = rawPolyVec
+  toRustType = RPolyVec . toForeignPtr r_scalar_poly_free
+
+data RustVector a = RVector {length :: Int, rawVector :: RustData}
+  deriving Generic
+
+foreign import ccall unsafe "&r_point_vec_free"
+  r_point_vec_free :: RustFinalizer
+
+instance IsRustType (RustVector Rust_BLS12_381_G1_Point) where
+  rawType = rawVector
+  toRustType = error "do not return point vector"
+
+foreign import ccall unsafe "&r_scalar_vec_free"
+  r_scalar_vec_free :: RustFinalizer
+
+instance IsRustType (RustVector Fr) where
+  rawType = rawVector
+  toRustType = error "do not return scalar vector"
+
+toForeignPtr :: RustFinalizer -> CString -> RustData
+toForeignPtr finalizer = RData . unsafePerformIO . newForeignPtr finalizer
+
+---------- BLS types ----------
 
 -- Scalar BLS
 
 type Fr = Scalar "Rust BLS12-381-G1" RustData
 
--- type Fq = Scalar "Rust BLS12-381-G1 Fq" RustData
+foreign import ccall unsafe "&r_scalar_free"
+  r_scalar_free :: RustFinalizer
+
+instance IsRustType Fr where
+  rawType = rawScalar
+  toRustType = RScalar . toForeignPtr r_scalar_free
 
 -- Point BLS
 
 type Rust_BLS12_381_G1_Point = Point "Rust BLS12-381-G1" RustData
 
+foreign import ccall unsafe "&r_g1_free"
+  r_g1_free :: RustFinalizer
+
+instance IsRustType Rust_BLS12_381_G1_Point where
+  rawType = rawPoint
+  toRustType = RPoint . toForeignPtr r_g1_free
+
 type Rust_BLS12_381_G2_Point = Point "Rust BLS12-381-G2" RustData
 
+foreign import ccall unsafe "&r_g2_free"
+  r_g2_free :: RustFinalizer
+
+instance IsRustType Rust_BLS12_381_G2_Point where
+  rawType = rawPoint
+  toRustType = RPoint . toForeignPtr r_g2_free
+
 type Fq12 = Scalar "Rust BLS12-381-G1 Fq12" RustData
+
+foreign import ccall unsafe "&r_gt_free"
+  r_gt_free :: RustFinalizer
+
+instance IsRustType Fq12 where
+  rawType = rawScalar
+  toRustType = RScalar . toForeignPtr r_gt_free
 
 -- JacobianPoint BLS
 
@@ -59,3 +123,5 @@ newtype Rust_BLS12_381_G2_JacobianPoint = G2_Jacobian Rust_BLS12_381_G2_Point
 type Rust_BLS12_381_G1_CompressedPoint = Point "Rust BLS12-381-G1 Compressed" RustData
 
 type Rust_BLS12_381_G2_CompressedPoint = Point "Rust BLS12-381-G2 Compressed" RustData
+
+instance Conditional Bool RustData where bool = B.bool

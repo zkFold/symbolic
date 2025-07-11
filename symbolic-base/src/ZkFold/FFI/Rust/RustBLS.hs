@@ -34,31 +34,12 @@ import ZkFold.Data.Binary
 import qualified ZkFold.Data.Eq
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly
+import ZkFold.FFI.Rust.Runner (runRustFun0, runRustFun1, runRustFun2, runRustFun3)
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
 import ZkFold.Symbolic.MonadCircuit
 import Prelude hiding (fromIntegral, negate, sum, (*), (+), (-), (^))
 import qualified Prelude as P
-
--- import ZkFold.FFI.Rust.RustBLS
-
--- pointSize :: Int
--- pointSize = sizeOf (undefined :: Rust_BLS12_381_G1_Point)
-
--- scalarSize :: Int
--- scalarSize = sizeOf (undefined :: ScalarFieldOf Rust_BLS12_381_G1_Point)
-
--- passPoint :: Rust_BLS12_381_G1_Point -> (RustData, Int)
--- passPoint p = (rawPoint p, pointSize)
-
--- passScalar :: ScalarFieldOf Rust_BLS12_381_G1_Point -> (RustData, Int)
--- passScalar s = (rawScalar s, scalarSize)
-
--- passPolyVec
---   :: forall size. KnownNat size => RustPolyVec (ScalarFieldOf Rust_BLS12_381_G1_Point) size -> (RustData, Int)
--- passPolyVec p = (rawPolyVec p, len P.* scalarSize)
---  where
---   len = fromInteger $ naturalToInteger $ value @size
 
 deriveIntegerFromNatural :: (a -> a) -> Integer -> (Natural -> a) -> a
 deriveIntegerFromNatural neg i f
@@ -85,8 +66,8 @@ instance Eq Fr where
 
 instance ZkFold.Data.Eq.Eq Fr where
   type BooleanOf Fr = Bool
-  (==) = (P.==)
-  (/=) = (P./=)
+  (==) a b = (==) (r2h a) (r2h b)
+  (/=) a b = (/=) (r2h a) (r2h b)
 
 instance P.Enum Fr where
   succ = h2r . P.succ . r2h
@@ -98,38 +79,58 @@ instance Ord Fr where
   a <= b = (<=) (r2h a) (r2h b)
 
 instance Exponent Fr Natural where
-  (^) a n = RScalar $ runRustBinary r_scalar_exp_natural (rawScalar a) (rawNatural $ h2r n)
+  -- (^) a n = h2r $ (^) (r2h a) n
+
+-- (^) a n = RScalar $ runRustBinary r_scalar_exp_natural (rawScalar a) (rawNatural $ h2r n)
+  (^) a n = runRustFun2 r_scalar_exp_natural a (h2r n)
 
 -- (^) a b = h2r $ (^) (r2h a) b
 
 instance Exponent Fr Integer where
   -- (^) a b = h2r $ (^) (r2h a) b
+
   (^) s i = deriveIntegerFromNatural finv i $ (^) s
 
 instance AdditiveSemigroup Fr where
-  (+) a b = RScalar $ runRustBinary r_scalar_add (rawScalar a) (rawScalar b)
+  -- (+) a b = h2r $ (+) (r2h a) (r2h b)
+
+-- (+) a b = RScalar $ runRustBinary r_scalar_add (rawScalar a) (rawScalar b)
+  (+) = runRustFun2 r_scalar_add
 
 instance AdditiveMonoid Fr where
   -- zero = h2r zero
-  zero = RScalar $ runRustConst r_scalar_zero
+
+-- zero = RScalar $ runRustConst r_scalar_zero
+  zero = runRustFun0 r_scalar_zero
 
 instance AdditiveGroup Fr where
   -- (-) a b = h2r $ (-) (r2h a) (r2h b)
-  (-) a b = RScalar $ runRustBinary r_scalar_sub (rawScalar a) (rawScalar b)
+
+  -- (-) a b = RScalar $ runRustBinary r_scalar_sub (rawScalar a) (rawScalar b)
+  (-) = runRustFun2 r_scalar_sub
 
   -- negate a = h2r $ negate (r2h a)
-  negate a = RScalar $ runRustUnary r_scalar_negate (rawScalar a)
+
+-- negate a = RScalar $ runRustUnary r_scalar_negate (rawScalar a)
+  negate = runRustFun1 r_scalar_negate
 
 instance MultiplicativeSemigroup Fr where
-  (*) a b = RScalar $ runRustBinary r_scalar_mul (rawScalar a) (rawScalar b)
+  -- (*) a b = h2r $ (*) (r2h a) (r2h b)
+
+-- (*) a b = RScalar $ runRustBinary r_scalar_mul (rawScalar a) (rawScalar b)
+  (*) = runRustFun2 r_scalar_mul
 
 instance MultiplicativeMonoid Fr where
   -- one = h2r one
-  one = RScalar $ runRustConst r_scalar_one
+
+-- one = RScalar $ runRustConst r_scalar_one
+  one = runRustFun0 r_scalar_one
 
 instance FromConstant Natural Fr where
   -- fromConstant = h2r . fromConstant
-  fromConstant n = RScalar $ runRustUnary r_scalar_from_natural (rawNatural $ h2r n)
+
+-- fromConstant n = RScalar $ runRustUnary r_scalar_from_natural (rawNatural $ h2r n)
+  fromConstant = runRustFun1 r_scalar_from_natural . h2r
 
 instance FromConstant Integer Fr where
   -- fromConstant = h2r . fromConstant
@@ -137,7 +138,9 @@ instance FromConstant Integer Fr where
 
 instance Scale Natural Fr where
   -- scale a b = h2r $ scale a (r2h b)
-  scale a b = RScalar $ runRustBinary r_scalar_scale_natural (rawNatural $ h2r a) (rawScalar b)
+
+-- scale a b = RScalar $ runRustBinary r_scalar_scale_natural (rawNatural $ h2r a) (rawScalar b)
+  scale a = runRustFun2 r_scalar_scale_natural (h2r a)
 
 instance Scale Integer Fr where
   -- scale a b = h2r $ scale a (r2h b)
@@ -148,9 +151,15 @@ instance Semiring Fr
 instance Ring Fr
 
 instance Field Fr where
-  (//) a b = RScalar $ runRustBinary r_scalar_div (rawScalar a) (rawScalar b)
+  -- (//) a b = h2r $ (//) (r2h a) (r2h b)
 
-  finv x = RScalar $ runRustUnary r_scalar_invert (rawScalar x)
+  -- (//) a b = RScalar $ runRustBinary r_scalar_div (rawScalar a) (rawScalar b)
+  (//) = runRustFun2 r_scalar_div
+
+  -- finv x = RScalar $ runRustUnary r_scalar_invert (rawScalar x)
+  finv = runRustFun1 r_scalar_invert
+
+  -- finv x = h2r $ finv $ r2h x
   rootOfUnity n = do
     !a <- rootOfUnity n :: Maybe EC.Fr
     return $ h2r a
@@ -197,7 +206,9 @@ deriving newtype instance Scale Natural Rust_BLS12_381_G1_JacobianPoint
 
 instance Scale Natural Rust_BLS12_381_G1_Point where
   -- scale a b = h2r $ scale a (r2h b)
-  scale a b = RPoint $ runRustBinary r_g1_scale_natural (rawNatural $ h2r a) (rawPoint b)
+
+-- scale a b = RPoint $ runRustBinary r_g1_scale_natural (rawNatural $ h2r a) (rawPoint b)
+  scale a = runRustFun2 r_g1_scale_natural (h2r a)
 
 deriving newtype instance Scale Integer Rust_BLS12_381_G1_JacobianPoint
 
@@ -209,22 +220,30 @@ deriving newtype instance AdditiveSemigroup Rust_BLS12_381_G1_JacobianPoint
 
 instance AdditiveSemigroup Rust_BLS12_381_G1_Point where
   -- a + b = h2r $ (+) (r2h a) (r2h b)
-  (+) a b = RPoint $ runRustBinary r_g1_add (rawPoint a) (rawPoint b)
+
+-- (+) a b = RPoint $ runRustBinary r_g1_add (rawPoint a) (rawPoint b)
+  (+) = runRustFun2 r_g1_add
 
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G1_JacobianPoint
 
 instance AdditiveMonoid Rust_BLS12_381_G1_Point where
   -- zero = h2r zero
-  zero = RPoint $ runRustConst r_g1_zero
+
+-- zero = RPoint $ runRustConst r_g1_zero
+  zero = runRustFun0 r_g1_zero
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G1_JacobianPoint
 
 instance AdditiveGroup Rust_BLS12_381_G1_Point where
   -- (-) a b = h2r $ (-) (r2h a) (r2h b)
-  (-) a b = RPoint $ runRustBinary r_g1_sub (rawPoint a) (rawPoint b)
+
+  -- (-) a b = RPoint $ runRustBinary r_g1_sub (rawPoint a) (rawPoint b)
+  (-) = runRustFun2 r_g1_sub
 
   -- negate x = h2r $ negate (r2h x)
-  negate x = RPoint $ runRustUnary r_g1_negate (rawPoint x)
+
+-- negate x = RPoint $ runRustUnary r_g1_negate (rawPoint x)
+  negate = runRustFun1 r_g1_negate
 
 instance Finite Fr where
   type Order Fr = BLS12_381_Scalar
@@ -232,7 +251,10 @@ instance Finite Fr where
 deriving newtype instance Scale Fr Rust_BLS12_381_G1_JacobianPoint
 
 instance Scale Fr Rust_BLS12_381_G1_Point where
-  scale scalar point = RPoint $ runRustBinary r_g1_scale (rawScalar scalar) (rawPoint point)
+  -- scale scalar point = h2r $ scale (r2h scalar) (r2h point)
+
+-- scale scalar point = RPoint $ runRustBinary r_g1_scale (rawScalar scalar) (rawPoint point)
+  scale = runRustFun2 r_g1_scale
 
 deriving newtype instance CyclicGroup Rust_BLS12_381_G1_JacobianPoint
 
@@ -240,7 +262,9 @@ instance CyclicGroup Rust_BLS12_381_G1_Point where
   type ScalarFieldOf Rust_BLS12_381_G1_Point = Fr
 
   -- pointGen = h2r pointGen
-  pointGen = RPoint $ runRustConst r_g1_gen
+
+-- pointGen = RPoint $ runRustConst r_g1_gen
+  pointGen = runRustFun0 r_g1_gen
 
 deriving newtype instance Eq Rust_BLS12_381_G1_JacobianPoint
 
@@ -257,47 +281,63 @@ deriving newtype instance Scale Natural Rust_BLS12_381_G2_JacobianPoint
 
 instance Scale Natural Rust_BLS12_381_G2_Point where
   -- scale a b = h2r $ scale a (r2h b)
-  scale a b = RPoint $ runRustBinary r_g2_scale_natural (rawNatural $ h2r a) (rawPoint b)
+
+-- scale a b = RPoint $ runRustBinary r_g2_scale_natural (rawNatural $ h2r a) (rawPoint b)
+  scale a = runRustFun2 r_g2_scale_natural (h2r a)
 
 deriving newtype instance Scale Integer Rust_BLS12_381_G2_JacobianPoint
 
 instance Scale Integer Rust_BLS12_381_G2_Point where
   -- scale a b = h2r $ scale a (r2h b)
+
   scale a b = deriveIntegerFromNatural negate a $ \x -> scale x b
 
 deriving newtype instance AdditiveSemigroup Rust_BLS12_381_G2_JacobianPoint
 
 instance AdditiveSemigroup Rust_BLS12_381_G2_Point where
   -- (+) a b = h2r $ (+) (r2h a) (r2h b)
-  (+) a b = RPoint $ runRustBinary r_g2_add (rawPoint a) (rawPoint b)
+
+-- (+) a b = RPoint $ runRustBinary r_g2_add (rawPoint a) (rawPoint b)
+  (+) = runRustFun2 r_g2_add
 
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G2_JacobianPoint
 
 instance AdditiveMonoid Rust_BLS12_381_G2_Point where
   -- zero = h2r zero
-  zero = RPoint $ runRustConst r_g2_zero
+
+-- zero = RPoint $ runRustConst r_g2_zero
+  zero = runRustFun0 r_g2_zero
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G2_JacobianPoint
 
 instance AdditiveGroup Rust_BLS12_381_G2_Point where
   -- (-) a b = h2r $ (-) (r2h a) (r2h b)
-  (-) a b = RPoint $ runRustBinary r_g2_sub (rawPoint a) (rawPoint b)
+
+  -- (-) a b = RPoint $ runRustBinary r_g2_sub (rawPoint a) (rawPoint b)
+  (-) = runRustFun2 r_g2_sub
 
   -- negate x = h2r $ negate (r2h x)
-  negate x = RPoint $ runRustUnary r_g2_negate (rawPoint x)
+
+-- negate x = RPoint $ runRustUnary r_g2_negate (rawPoint x)
+  negate = runRustFun1 r_g2_negate
 
 deriving newtype instance Scale Fr Rust_BLS12_381_G2_JacobianPoint
 
 instance Scale Fr Rust_BLS12_381_G2_Point where
   -- scale s p = h2r $ scale (r2h s) (r2h p)
-  scale s p = RPoint $ runRustBinary r_g2_scale (rawScalar s) (rawPoint p)
+
+-- scale s p = RPoint $ runRustBinary r_g2_scale (rawScalar s) (rawPoint p)
+  scale = runRustFun2 r_g2_scale
 
 deriving newtype instance CyclicGroup Rust_BLS12_381_G2_JacobianPoint
 
 instance CyclicGroup Rust_BLS12_381_G2_Point where
   type ScalarFieldOf Rust_BLS12_381_G2_Point = Fr
 
-  pointGen = RPoint $ runRustConst r_g2_gen
+  -- pointGen = RPoint $ runRustConst r_g2_gen
+  pointGen = runRustFun0 r_g2_gen
+
+  -- pointGen = h2r pointGen
 
 deriving newtype instance Eq Rust_BLS12_381_G2_JacobianPoint
 
@@ -343,28 +383,45 @@ instance Pairing Rust_BLS12_381_G1_JacobianPoint Rust_BLS12_381_G2_JacobianPoint
 -- PolyVec
 
 instance KnownNat size => Scale Fr (RustPolyVec Fr size) where
-  scale a pv = RPolyVec $ runRustBinary r_poly_mul_scalar (rawScalar a) (rawPolyVec pv)
+  -- scale a pv = RPolyVec $ runRustBinary r_poly_mul_scalar (rawScalar a) (rawPolyVec pv)
+  scale = runRustFun2 r_poly_mul_scalar
+
+-- scale a pv = h2r $ scale (r2h a) (r2h pv)
 
 instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
   (.*.) :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
-  (.*.) a b = RPolyVec $ runRustBinary r_poly_hmul (rawPolyVec a) (rawPolyVec b)
+  -- (.*.) a b = RPolyVec $ runRustBinary r_poly_hmul (rawPolyVec a) (rawPolyVec b)
+  (.*.) = runRustFun2 r_poly_hmul
+
+  -- (.*.) a b = h2r $ (.*.) (r2h a) (r2h b)
 
   (+.) :: forall size. KnownNat size => Fr -> RustPolyVec Fr size -> RustPolyVec Fr size
-  (+.) a b = RPolyVec $ runRustBinary r_poly_add_scalar (rawScalar a) (rawPolyVec b)
+  -- (+.) a b = RPolyVec $ runRustBinary r_poly_add_scalar (rawScalar a) (rawPolyVec b)
+  (+.) = runRustFun2 r_poly_add_scalar
+
+  -- (+.) a b = h2r $ (+.) (r2h a) (r2h b)
 
   toPolyVec :: forall size. KnownNat size => V.Vector Fr -> RustPolyVec Fr size
   toPolyVec a = h2r $ toPolyVec (r2h <$> a)
 
   fromPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> V.Vector Fr
-  fromPolyVec a = h2r <$> (fromPolyVec $ r2h a)
+  fromPolyVec a = unsafePerformIO $ do
+    let a_h = r2h a
+    -- print $ "Rust: "
+    -- print $ a
+    -- print "Haskell: "
+    -- print a_h
+    return $ h2r <$> fromPolyVec a_h
 
   evalPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> Fr -> Fr
   evalPolyVec pv x = h2r $ evalPolyVec (r2h pv) (r2h x)
 
 instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
-  -- (./.) :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
+  (./.) :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
   -- l ./. r = h2r $ ((./.) (r2h l) (r2h r) :: PolyVec EC.Fr size)
-  (./.) l r = RPolyVec $ runRustBinary r_poly_hdiv (rawPolyVec l) (rawPolyVec r)
+
+  -- (./.) l r = RPolyVec $ runRustBinary r_poly_hdiv (rawPolyVec l) (rawPolyVec r)
+  (./.) = runRustFun2 r_poly_hdiv
 
   polyVecZero :: forall size. KnownNat size => Natural -> RustPolyVec Fr size
   polyVecZero n = h2r $ polyVecZero n
@@ -397,17 +454,21 @@ instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
   polyVecGrandProduct a b sigma beta gamma = h2r $ polyVecGrandProduct (r2h a) (r2h b) (r2h sigma) (r2h beta) (r2h gamma)
 
   polyVecDiv :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
-  polyVecDiv l r = RPolyVec $ runRustBinary r_poly_div (rawPolyVec l) (rawPolyVec r)
+  -- polyVecDiv l r = RPolyVec $ runRustBinary r_poly_div (rawPolyVec l) (rawPolyVec r)
+  polyVecDiv = runRustFun2 r_poly_div
 
   divShiftedMono :: forall size. KnownNat size => RustPolyVec Fr size -> Natural -> Fr -> RustPolyVec Fr size
-  divShiftedMono a b c = RPolyVec $ runRustTernary r_poly_div_shifted_mono (rawPolyVec a) (rawNatural $ h2r b) (rawScalar c)
+  -- divShiftedMono a b c = RPolyVec $ runRustTernary r_poly_div_shifted_mono (rawPolyVec a) (rawNatural $ h2r b) (rawScalar c)
+  divShiftedMono a b = runRustFun3 r_poly_div_shifted_mono a (h2r b)
 
   castPolyVec :: forall size size'. (KnownNat size, KnownNat size') => RustPolyVec Fr size -> RustPolyVec Fr size'
-  castPolyVec pv = h2r $ castPolyVec (r2h pv)
+  castPolyVec = RPolyVec . rawPolyVec
 
 instance KnownNat size => Scale Natural (RustPolyVec Fr size) where
   -- scale c pv = h2r $ (scale c (r2h pv) :: PolyVec EC.Fr size)
-  scale c pv = RPolyVec $ runRustBinary r_poly_scale_natural (rawPolyVec $ pv) (rawNatural $ h2r c)
+
+-- scale c pv = RPolyVec $ runRustBinary r_poly_scale_natural (rawPolyVec $ pv) (rawNatural $ h2r c)
+  scale c = runRustFun2 r_poly_scale_natural (h2r c)
 
 instance KnownNat size => Scale Integer (RustPolyVec Fr size) where
   -- scale c pv = h2r $ (scale c (r2h pv) :: PolyVec EC.Fr size)
@@ -415,40 +476,55 @@ instance KnownNat size => Scale Integer (RustPolyVec Fr size) where
   scale c pv = deriveIntegerFromNatural negate c $ \x -> scale x pv
 
 instance KnownNat size => FromConstant Natural (RustPolyVec Fr size) where
-  fromConstant n = RPolyVec $ runRustUnary r_poly_from_natural (rawNatural $ h2r n)
+  -- fromConstant n = RPolyVec $ runRustUnary r_poly_from_natural (rawNatural $ h2r n)
+  fromConstant = runRustFun1 r_poly_from_natural . h2r
 
--- fromConstant n = h2r $ fromConstant n
+  -- fromConstant n = h2r $ fromConstant n
 
 instance KnownNat size => FromConstant Integer (RustPolyVec Fr size) where
   -- fromConstant n = h2r $ fromConstant n
   fromConstant n = deriveIntegerFromNatural negate n fromConstant
 
 instance KnownNat size => AdditiveSemigroup (RustPolyVec Fr size) where
-  (+) l r = RPolyVec $ runRustBinary r_poly_add (rawPolyVec l) (rawPolyVec r)
+  -- (+) l r = RPolyVec $ runRustBinary r_poly_add (rawPolyVec l) (rawPolyVec r)
+  (+) = runRustFun2 r_poly_add
+  -- (+) a b = h2r $ (+) (r2h a) (r2h b)
 
 instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size) where
   -- zero = h2r $ (zero :: PolyVec EC.Fr size)
-  zero = RPolyVec $ runRustConst r_poly_zero
+
+-- zero = RPolyVec $ runRustConst r_poly_zero
+  zero = runRustFun0 r_poly_zero
 
 instance KnownNat size => AdditiveGroup (RustPolyVec Fr size) where
   -- negate pv = h2r $ negate (r2h pv)
 
-  (-) a b = RPolyVec $ runRustBinary r_poly_sub (rawPolyVec a) (rawPolyVec b)
+  -- (-) a b = RPolyVec $ runRustBinary r_poly_sub (rawPolyVec a) (rawPolyVec b)
+  (-) = runRustFun2 r_poly_sub
+
   -- (-) a b = h2r $ (-) (r2h a) (r2h b)
-  negate = RPolyVec . runRustUnary r_poly_negate . rawPolyVec
+
+-- negate = RPolyVec . runRustUnary r_poly_negate . rawPolyVec
+  negate = runRustFun1 r_poly_negate
 
 instance KnownNat size => Exponent (RustPolyVec Fr size) Natural where
   -- pv ^ n = h2r $ (^) (r2h pv) n
-  pv ^ n = RPolyVec $ runRustBinary r_poly_exp (rawPolyVec pv) (rawNatural $ h2r n)
+
+-- pv ^ n = RPolyVec $ runRustBinary r_poly_exp (rawPolyVec pv) (rawNatural $ h2r n)
+  (^) pv = runRustFun2 r_poly_exp pv . h2r
 
 instance {-# OVERLAPPING #-} KnownNat size => Scale (RustPolyVec Fr size) (RustPolyVec Fr size)
 
 -- TODO (Issue #18): check for overflow
 instance KnownNat size => MultiplicativeSemigroup (RustPolyVec Fr size) where
-  (*) l r = RPolyVec $ runRustBinary r_poly_mul (rawPolyVec l) (rawPolyVec r)
+  -- (*) l r = RPolyVec $ runRustBinary r_poly_mul (rawPolyVec l) (rawPolyVec r)
+  (*) = runRustFun2 r_poly_mul
+
+-- (*) a b = h2r $ (*) (r2h a) (r2h b)
 
 instance KnownNat size => MultiplicativeMonoid (RustPolyVec Fr size) where
-  one = RPolyVec $ runRustConst r_poly_one
+  -- one = RPolyVec $ runRustConst r_poly_one
+  one = runRustFun0 r_poly_one
 
 instance KnownNat size => Semiring (RustPolyVec Fr size)
 
@@ -462,7 +538,8 @@ instance
       (RustPolyVec Fr size)
       Rust_BLS12_381_G1_Point
   where
-  bilinear points scalars = RPoint $ runRustBinary r_msm (rawPolyVec scalars) (rawVector points)
+  -- bilinear points scalars = RPoint $ runRustBinary r_msm (rawPolyVec scalars) (rawVector points)
+  bilinear = runRustFun2 r_msm
 
 instance
   KnownNat size
