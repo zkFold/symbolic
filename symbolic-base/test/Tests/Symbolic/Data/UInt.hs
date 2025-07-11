@@ -44,11 +44,15 @@ import ZkFold.Symbolic.Data.Combinators (
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 type AC a = ArithmeticCircuit a U1
 
 evalBool :: Arithmetic a => Bool (AC a) -> a
 evalBool (Bool ac) = exec1 ac
+
+evalFE :: Arithmetic a => FieldElement (AC a) -> a
+evalFE (FieldElement x) = exec1 x
 
 evalBoolVec :: Bool (Interpreter a) -> a
 evalBoolVec (Bool (Interpreter (Par1 v))) = v
@@ -89,6 +93,8 @@ isHom f g h x y =
 
 with2n :: forall n {r}. KnownNat n => (KnownNat (2 * n) => r) -> r
 with2n = withDict (timesNat @2 @n)
+
+type BitsOf p = NumberOfBits (Zp p)
 
 specUInt'
   :: forall p n r r2n rs
@@ -132,9 +138,14 @@ specUInt' = do
       return $ execAcUint (from bx :: UInt n rs (AC (Zp p))) === execAcUint ux
     it "iso bytestring correctly" $ do
       x <- toss m
-      let ux = fromConstant x :: UInt n Auto (AC (Zp p))
+      let ux = fromConstant x :: UInt n rs (AC (Zp p))
           bx = fromConstant x :: ByteString n (AC (Zp p))
       return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
+    when (n == value @(BitsOf p)) $ it "iso fieldelement correctly" $ do
+      x <- toss m
+      let ux = fromConstant x :: UInt (BitsOf p) rs (AC (Zp p))
+          fx = fromConstant x :: FieldElement (AC (Zp p))
+      return $ evalFE (from ux) === evalFE fx
 
     when (m > 1) $ it "performs divMod correctly" $ do
       num <- toss m
@@ -251,8 +262,10 @@ specUInt :: Spec
 specUInt = do
   specUInt' @BLS12_381_Scalar @0 @_ @_ @Auto
   specUInt' @BLS12_381_Scalar @32 @_ @_ @Auto
+  specUInt' @BLS12_381_Scalar @(BitsOf BLS12_381_Scalar) @_ @_ @Auto
   specUInt' @BLS12_381_Scalar @500 @_ @_ @Auto
 
   specUInt' @BLS12_381_Scalar @0 @_ @_ @(Fixed 10)
   specUInt' @BLS12_381_Scalar @32 @_ @_ @(Fixed 10)
   specUInt' @BLS12_381_Scalar @500 @_ @_ @(Fixed 10)
+  specUInt' @BLS12_381_Scalar @(BitsOf BLS12_381_Scalar) @_ @_ @(Fixed 10)
