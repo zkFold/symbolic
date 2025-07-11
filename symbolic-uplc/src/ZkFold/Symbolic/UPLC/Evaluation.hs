@@ -325,10 +325,10 @@ consList :: forall c u. Sym c => SymValue u c -> SymValue (BTList u) c -> SymVal
 consList (SymValue (x :: v)) (SymValue (xs :: vs)) = SymValue @_ @_ @vs (fromJust . cast $ x L..: (fromJust $ cast xs))
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
-constr :: Sym c => ConstructorTag -> [MaybeValue c] -> SomeValue c
+constr :: forall c. Sym c => ConstructorTag -> [MaybeValue c] -> SomeValue c
 constr (fromConstant . toInteger -> cTag) fields0 = do
   let isJust = all (\(MaybeValue v) -> Symbolic.isJust v) fields0
-  fields1 <- traverse (\(MaybeValue v) -> asData $ Symbolic.fromJust v) fields0
+  fields1 :: [Data.Data c] <- traverse (\(MaybeValue v) -> asData $ Symbolic.fromJust v) fields0
   return $
     MaybeValue $
       Symbolic.guard isJust $
