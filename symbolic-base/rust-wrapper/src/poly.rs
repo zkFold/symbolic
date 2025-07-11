@@ -206,10 +206,10 @@ pub unsafe fn r_poly_scale_natural(a_ptr: *mut c_char, b_ptr: *mut c_char) -> *m
     binary(
         a_ptr,
         b_ptr,
-        |a: &DensePolynomial<ScalarField>, b_bytes: &[u8; 32]| -> DensePolynomial<ScalarField> {
-            let c = ScalarField::from_le_bytes_mod_order(b_bytes);
+        |a_bytes: &[u8; 32], b: &DensePolynomial<ScalarField>| -> DensePolynomial<ScalarField> {
+            let c = ScalarField::from_le_bytes_mod_order(a_bytes);
 
-            a.mul(c)
+            b.mul(c)
         },
     )
 }
