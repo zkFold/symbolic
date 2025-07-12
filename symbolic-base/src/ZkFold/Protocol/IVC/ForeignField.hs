@@ -4,14 +4,13 @@ module ZkFold.Protocol.IVC.ForeignField where
 
 import qualified Data.Eq as Haskell
 import GHC.Generics (Generic)
-import Prelude (Integer, Num (fromInteger))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
+import Prelude (Integer, Num (fromInteger))
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
   deriving (Generic, Haskell.Eq)

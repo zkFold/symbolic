@@ -15,8 +15,6 @@ import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (type (:.:) (unComp1))
 import Numeric.Natural (Natural)
-import Prelude (Enum, Integer, Traversable)
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
 import ZkFold.Data.Eq (BooleanOf)
@@ -24,6 +22,7 @@ import ZkFold.Data.HFunctor.Classes (HNFData)
 import ZkFold.Data.Package (Package (pack))
 import ZkFold.Data.Product (uncurryP)
 import ZkFold.Symbolic.MonadCircuit
+import Prelude (Enum, Integer, Traversable)
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
@@ -90,7 +89,7 @@ class
 embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
--- | Embeds the witness value(s) into generic context @c@.
+-- | Embeds unconstrained witness value(s) into generic context @c@.
 embedW :: (Symbolic c, Traversable f) => f (WitnessField c) -> c f
 embedW ws = fromCircuitF hunit (\_ -> traverse unconstrained ws)
 

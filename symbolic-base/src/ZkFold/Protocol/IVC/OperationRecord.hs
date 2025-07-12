@@ -6,17 +6,16 @@ module ZkFold.Protocol.IVC.OperationRecord where
 
 import Data.Either (Either (..))
 import GHC.Generics (Generic)
-import Prelude (Integer, ($), type (~))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), withoutConstraints)
 import ZkFold.Symbolic.Data.List (List, emptyList, head, (.:))
-import ZkFold.Symbolic.Data.Sum (OneOf, embedOneOf, matchOneOf, zeroed)
+import ZkFold.Symbolic.Data.Sum (Sum, inject, match)
+import Prelude (Integer, ($), type (~))
 
-newtype OperationRecord c s ctx = OperationRecord (List ctx (OneOf [(c, c, c), (c, s, c)] ctx))
+newtype OperationRecord c s ctx = OperationRecord (List ctx (Sum (Either (c, c, c) (c, s, c)) ctx))
   deriving Generic
 
 instance
@@ -27,7 +26,7 @@ newRec
   :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx)
   => c
   -> OperationRecord c s ctx
-newRec c = OperationRecord $ embedOneOf (Left (c, c, c)) .: emptyList
+newRec c = OperationRecord $ inject (Left (c, c, c)) .: emptyList
 
 addOp
   :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx, HomomorphicCommit c, Scale s c)
@@ -36,17 +35,16 @@ addOp
   -> OperationRecord c s ctx
 addOp op' (OperationRecord ops) =
   let c =
-        matchOneOf
+        match
           (head ops)
           ( \case
               Left (_, _, x) -> x
-              Right (Left (_, _, x)) -> x
-              Right (Right _) -> zeroed
+              Right (_, _, x) -> x
           )
    in OperationRecord $
         case op' of
-          Left c' -> embedOneOf $ Left (c, c', withoutConstraints $ c + c')
-          Right s -> embedOneOf $ Right $ Left (c, s, withoutConstraints $ scale s c)
+          Left c' -> inject $ Left (c, c', withoutConstraints $ c + c')
+          Right s -> inject $ Right (c, s, withoutConstraints $ scale s c)
           .: ops
 
 instance
@@ -55,12 +53,11 @@ instance
   where
   OperationRecord ops + record =
     let c =
-          matchOneOf
+          match
             (head ops)
             ( \case
                 Left (_, _, x) -> x
-                Right (Left (_, _, x)) -> x
-                Right (Right _) -> zeroed
+                Right (_, _, x) -> x
             )
      in addOp (Left c) record
 

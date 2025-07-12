@@ -15,8 +15,6 @@ import Data.Function (const, ($))
 import Data.Functor (Functor (..))
 import Data.Functor.Rep (Representable (..), mzipWithRep)
 import GHC.Generics (Generic)
-import Prelude (type (~))
-
 import ZkFold.Algebra.Class (Ring, Scale, zero)
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
@@ -29,6 +27,7 @@ import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import Prelude (type (~))
 
 -- import Prelude hiding (length, pi)
 
