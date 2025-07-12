@@ -15,6 +15,8 @@ import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (type (:.:) (unComp1))
 import Numeric.Natural (Natural)
+import Prelude (Enum, Integer, Traversable)
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
 import ZkFold.Data.Eq (BooleanOf)
@@ -22,7 +24,6 @@ import ZkFold.Data.HFunctor.Classes (HNFData)
 import ZkFold.Data.Package (Package (pack))
 import ZkFold.Data.Product (uncurryP)
 import ZkFold.Symbolic.MonadCircuit
-import Prelude (Enum, Integer, Traversable)
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
