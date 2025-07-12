@@ -14,6 +14,7 @@ import GHC.Generics (Generic, Par1, (:*:))
 import Prelude ((<$>), type (~))
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Empty (Empty, empty)
@@ -38,10 +39,11 @@ newtype DataSource c = DataSource {dataSource :: c}
     ( AdditiveGroup
     , AdditiveMonoid
     , AdditiveSemigroup
-    , HomomorphicCommit h
-    , Scale a
+    , CyclicGroup
     , SymbolicData
     )
+
+deriving instance {-# INCOHERENT #-} Scale a c => Scale a (DataSource c)
 
 instance
   (SymbolicData c, Context c ~ ctx)
@@ -86,7 +88,8 @@ type FieldAssumptions a c =
   , Context c ~ CircuitContext a
   , Empty (Payload c)
   , Scale (FieldElement (Context c)) c
-  , HomomorphicCommit [FieldElement (Context c)] c
+  , HomomorphicCommit c
+  , FieldElement (Context c) ~ ScalarFieldOf c
   )
 
 instance OracleSource (FieldElement ctx) (FieldElement ctx) where

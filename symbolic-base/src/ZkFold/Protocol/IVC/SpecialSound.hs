@@ -4,10 +4,11 @@
 module ZkFold.Protocol.IVC.SpecialSound where
 
 import Data.Binary (Binary)
-import Data.Function (($), (.))
-import Data.Functor ((<$>))
+import Data.Foldable (Foldable, toList)
+import Data.Function (($))
+import Data.Functor (fmap)
 import Data.Functor.Rep (Representable (..))
-import Data.List (map)
+import Data.List (map, (++))
 import GHC.Generics ((:*:) (..))
 import Prelude (undefined)
 
@@ -19,6 +20,8 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Protocol.IVC.AlgebraicMap as AM
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))
 import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Interpreter (Interpreter)
 
 {-- | Section 3.1
 
@@ -32,7 +35,7 @@ and checks that the output is a zero vector of length l.
 
 --}
 
-data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
+data SpecialSoundProtocol k i p f = SpecialSoundProtocol
   { input
       :: i f
       -- \^ previous public input
@@ -49,53 +52,84 @@ data SpecialSoundProtocol k i p m o f = SpecialSoundProtocol
       -- \^ current random challenge
       -> Natural
       -- \^ round number (starting from 1)
-      -> m
+      -> [f]
   -- ^ prover message
   , verifier
       :: i f
       -- \^ public input
-      -> Vector k m
+      -> Vector k [f]
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> o
+      -> [f]
   -- ^ verifier output
   }
 
-specialSoundProtocol
-  :: forall d a i p f
+specialSoundProtocolA
+  :: forall d a i p
    . ( KnownNat (d + 1)
      , Arithmetic a
      , Binary (Rep i)
      , Binary (Rep p)
      , Representable i
+     , Foldable i
      , Representable p
+     , Foldable p
      )
-  => (a -> f)
-  -> (f -> a)
-  -> Predicate a i p
-  -> SpecialSoundProtocol 1 i p [f] [a] a
-specialSoundProtocol af fa phi@Predicate {..} =
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p a
+specialSoundProtocolA phi@Predicate {..} =
   let
     prover pi0 w _ _ =
       let circuitInput = (pi0 :*: w :*: predicateEval pi0 w)
-       in map (af . witnessGenerator predicateCircuit circuitInput) $
-            getAllVars (acContext predicateCircuit)
-    verifier pi pm ts = AM.algebraicMap @d phi pi (map fa <$> pm) ts one
+       in toList pi0
+            ++ toList w
+            ++ toList (predicateEval pi0 w)
+            ++ map (witnessGenerator predicateCircuit circuitInput) (getAllVars (acContext predicateCircuit))
+    verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
    in
     SpecialSoundProtocol predicateEval prover verifier
 
-specialSoundProtocol'
+specialSoundProtocolI
+  :: forall d a i p
+   . ( KnownNat (d + 1)
+     , Arithmetic a
+     , Binary (Rep i)
+     , Binary (Rep p)
+     , Representable i
+     , Foldable i
+     , Representable p
+     , Foldable p
+     )
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p (FieldElement (Interpreter a))
+specialSoundProtocolI phi =
+  let
+    sps = specialSoundProtocolA @d phi
+    input' (fmap toConstant -> pi0) (fmap toConstant -> w) =
+      fmap fromConstant $ input sps pi0 w
+    prover' (fmap toConstant -> pi0) (fmap toConstant -> w) (toConstant -> r) i =
+      fmap fromConstant $ prover sps pi0 w r i
+    verifier' (fmap toConstant -> pi0) (fmap (fmap toConstant) -> pm) (fmap toConstant -> ts) =
+      fmap fromConstant $ verifier sps pi0 pm ts
+   in
+    SpecialSoundProtocol input' prover' verifier'
+
+specialSoundProtocolC
   :: forall d a i p f
    . ( KnownNat (d + 1)
      , Representable i
+     , Foldable i
+     , Representable p
+     , Foldable p
      , Binary (Rep i)
      , Binary (Rep p)
      , Ring f
      , Scale a f
      )
-  => Predicate a i p -> SpecialSoundProtocol 1 i p [f] [f] f
-specialSoundProtocol' phi =
+  => Predicate a i p
+  -> SpecialSoundProtocol 1 i p f
+specialSoundProtocolC phi =
   let
     verifier pi pm ts = AM.algebraicMap @d phi pi pm ts one
    in

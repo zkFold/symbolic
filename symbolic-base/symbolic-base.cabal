@@ -177,13 +177,16 @@ library
       ZkFold.Protocol.IVC.CommitOpen
       ZkFold.Protocol.IVC.Commit
       ZkFold.Protocol.IVC.FiatShamir
+      ZkFold.Protocol.IVC.ForeignField
       ZkFold.Protocol.IVC.Internal
       ZkFold.Protocol.IVC.NARK
+      ZkFold.Protocol.IVC.OperationRecord
       ZkFold.Protocol.IVC.Oracle
       ZkFold.Protocol.IVC.Predicate
       ZkFold.Protocol.IVC.RecursiveFunction
       ZkFold.Protocol.IVC.SpecialSound
       ZkFold.Protocol.IVC.VerifierCircuit
+      ZkFold.Protocol.IVC.WeierstrassWitness
       ZkFold.Protocol.KZG
       ZkFold.Protocol.Plonkup
       ZkFold.Protocol.Plonkup.LookupConstraint
@@ -413,6 +416,7 @@ test-suite symbolic-base-test
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,
       hspec                                < 2.12,
+      lens                                       ,
       QuickCheck                                 ,
       quickcheck-instances                       ,
       regex-tdfa                       <= 1.3.2.2,
