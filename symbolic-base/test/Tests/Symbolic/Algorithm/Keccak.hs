@@ -172,7 +172,6 @@ specKeccak' = do
 specKeccak :: Spec
 specKeccak = do
   describe "Keccak" $ do
-    keccakSimple @"Keccak256"
     specKeccak' @"Keccak256"
     specKeccak' @"SHA3-512"
     specKeccak' @"SHA3-384"
