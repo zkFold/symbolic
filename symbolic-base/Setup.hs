@@ -28,6 +28,7 @@ import qualified Distribution.Verbosity as Verbosity
 import System.Directory
 import System.Exit
 import System.FilePath
+import System.Info (os)
 import System.Process (system)
 
 #if MIN_VERSION_Cabal(3,14,0)
@@ -48,13 +49,13 @@ originalStaticLibName :: String
 originalStaticLibName = "librust_wrapper.a"
 
 originalDynamicLibName :: String
-originalDynamicLibName = "librust_wrapper.so"
+originalDynamicLibName = "librust_wrapper"
 
 staticLibName :: String
 staticLibName = "librust_wrapper_stat.a"
 
 dynamicLibName :: String
-dynamicLibName = "librust_wrapper_dyn.so"
+dynamicLibName = "librust_wrapper_dyn"
 
 main :: IO ()
 main = defaultMainWithHooks hooks
@@ -110,7 +111,17 @@ runCargoOrThrow cargoArgs = do
 execCargoBuild :: IO ()
 execCargoBuild = do
   runCargoOrThrow $ "build --release --manifest-path " <> rsSourceDir </> "Cargo.toml"
-  renameFile (defaultRustOuputPath </> originalDynamicLibName) (defaultRustOuputPath </> dynamicLibName)
+  let dynExt = case os of
+        "darwin" -> "dylib"
+        "linux" -> "so"
+        _anyOther ->
+          error $
+            "Unsupported operating system: "
+              ++ os
+              ++ ". Please raise an issue at https://github.com/zkFold/symbolic to request support for this platform."
+  renameFile
+    (defaultRustOuputPath </> originalDynamicLibName <.> dynExt)
+    (defaultRustOuputPath </> dynamicLibName <.> dynExt)
   renameFile (defaultRustOuputPath </> originalStaticLibName) (defaultRustOuputPath </> staticLibName)
 
 #if MIN_VERSION_Cabal(3,14,0)
