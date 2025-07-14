@@ -22,17 +22,17 @@ import System.FilePath.Posix
 import System.IO (IO)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe)
 import Text.Regex.TDFA
-import Prelude (String, pure, read, (<>), (==))
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, keccak)
+import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, keccak, keccakVar)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
+import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import Prelude (String, pure, read, (<>), (==))
+import qualified Prelude as Haskell
 
 -- | Adds following obvious constraints.
 withConstraints
@@ -151,11 +151,10 @@ testAlgorithm file = do
           it bitMsgN $
             ( withConstraints @bytes $
                 let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
-                 in -- inBSVar :: VarByteString 1000 Context = fromByteString $ resize inBS
-                    -- TODO: Add tests for VarByteString, https://github.com/zkFold/symbolic/issues/598.
-                    (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS) -- , toConstant $ keccakVar @algorithm @Context @(1000) inBSVar)
+                    inBSVar :: VarByteString 500_000 Context = fromNatural (value @(bytes * 8)) input
+                 in (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS, toConstant $ keccakVar @algorithm @Context @500_000 inBSVar)
             )
-              `shouldBe` hash -- , hash)
+              `shouldBe` (hash, hash)
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
@@ -172,6 +171,7 @@ specKeccak' = do
 specKeccak :: Spec
 specKeccak = do
   describe "Keccak" $ do
+    keccakSimple @"Keccak256"
     specKeccak' @"Keccak256"
     specKeccak' @"SHA3-512"
     specKeccak' @"SHA3-384"
