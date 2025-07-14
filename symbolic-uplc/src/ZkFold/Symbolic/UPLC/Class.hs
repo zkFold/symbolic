@@ -1,28 +1,31 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MonoLocalBinds #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.UPLC.Class
-    ( IsData (..)
-    , Sym
-    , ExValue (..)
-    , ExList (..)
-    , BLS12_381_G2_Point (..)
-    , BLS12_381_GT (..)
-    ) where
+module ZkFold.Symbolic.UPLC.Class (
+  IsData (..),
+  Sym,
+  ExValue (..),
+  ExList (..),
+  BLS12_381_G2_Point (..),
+  BLS12_381_GT (..),
+) where
 
 import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import ZkFold.Algebra.Class (NumberOfBits)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
+import ZkFold.Symbolic.Data.FFA (KnownFFA)
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.UInt (OrdWord)
@@ -33,9 +36,6 @@ import Prelude (type (~))
 import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
-import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
-import ZkFold.Symbolic.Data.FFA (KnownFFA)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'
@@ -101,14 +101,14 @@ instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c
 
 instance Sym c => IsData BTBLSG1 (BLS12_381_G1_Point c) c
 
-newtype BLS12_381_G2_Point c = MkG2 { runG2 :: BLS12_381_G1_Point c }
+newtype BLS12_381_G2_Point c = MkG2 {runG2 :: BLS12_381_G1_Point c}
 -- ^ TODO: Replace with proper G2 impl once it's done
 
 deriving newtype instance Sym c => SymbolicData (BLS12_381_G2_Point c)
 
 instance Sym c => IsData BTBLSG2 (BLS12_381_G2_Point c) c
 
-newtype BLS12_381_GT c = MkGT { runGT :: BLS12_381_G1_Point c }
+newtype BLS12_381_GT c = MkGT {runGT :: BLS12_381_G1_Point c}
 -- ^ TODO: Replace with proper GT impl once it's done
 
 deriving newtype instance Sym c => SymbolicData (BLS12_381_GT c)

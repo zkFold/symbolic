@@ -502,7 +502,7 @@ evalMono (BMFCurve fun) = case fun of
     Bls12_381_G1_hashToGroup -> _
     Bls12_381_G1_compress -> _
     Bls12_381_G1_uncompress -> _
-  BLS_G2 fn -> case fn of
+  BLS_G2 fn -> case fn of {}
 evalMono (BMFBitwise fun) = case fun of
   AndByteString -> fromConstant \ext a b ->
     Symbolic.just @c $

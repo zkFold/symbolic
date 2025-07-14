@@ -58,7 +58,7 @@ instance {-# OVERLAPPING #-} (Haskell.Eq a, MultiplicativeMonoid a) => Show (Boo
   show (fromBool -> x) = if x Haskell.== one then "True" else "False"
 
 instance Symbolic c => FromConstant Haskell.Bool (Bool c) where
-    fromConstant b = ifThenElse b true false
+  fromConstant b = ifThenElse b true false
 
 instance Symbolic c => BoolType (Bool c) where
   true = Bool $ embed (Par1 one)
