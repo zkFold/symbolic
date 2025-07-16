@@ -20,6 +20,7 @@ import Data.Text (unpack)
 import Data.Traversable (traverse)
 import Data.Typeable (cast)
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq qualified as Symbolic
@@ -31,8 +32,8 @@ import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, reverseEndianness, truncate)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.FFA (fromInt)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int (Int (..), isNegative, isNotNegative, quot, rem)
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
@@ -48,7 +49,6 @@ import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Term
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -500,7 +500,7 @@ evalMono (BMFCurve fun) = case fun of
     Bls12_381_G1_add -> fromConstant \p q -> Symbolic.just @c (p + q)
     Bls12_381_G1_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G1_scalarMul -> fromConstant \i p ->
-        Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
+      Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
     Bls12_381_G1_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
     Bls12_381_G1_hashToGroup -> error "TODO: hash to G1"
     Bls12_381_G1_compress -> error "TODO: compress G1"
@@ -509,7 +509,7 @@ evalMono (BMFCurve fun) = case fun of
     Bls12_381_G2_add -> fromConstant \p q -> Symbolic.just @c (p + q)
     Bls12_381_G2_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G2_scalarMul -> fromConstant \i p ->
-        Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
+      Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
     Bls12_381_G2_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
     Bls12_381_G2_hashToGroup -> error "TODO: hash to G2"
     Bls12_381_G2_compress -> error "TODO: compress G2"
