@@ -32,6 +32,7 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, reverseEndianness, truncate)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.FFA (fromInt)
 import ZkFold.Symbolic.Data.Int (Int (..), isNegative, isNotNegative, quot, rem)
 import ZkFold.Symbolic.Data.List qualified as L
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
@@ -47,6 +48,7 @@ import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Term
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -497,12 +499,24 @@ evalMono (BMFCurve fun) = case fun of
   BLS_G1 fn -> case fn of
     Bls12_381_G1_add -> fromConstant \p q -> Symbolic.just @c (p + q)
     Bls12_381_G1_neg -> fromConstant (Symbolic.just @c . negate)
-    Bls12_381_G1_scalarMul -> fromConstant \i p -> Symbolic.just @c (i `scale` p)
+    Bls12_381_G1_scalarMul -> fromConstant \i p ->
+        Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
     Bls12_381_G1_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
-    Bls12_381_G1_hashToGroup -> _
-    Bls12_381_G1_compress -> _
-    Bls12_381_G1_uncompress -> _
-  BLS_G2 fn -> case fn of {}
+    Bls12_381_G1_hashToGroup -> error "TODO: hash to G1"
+    Bls12_381_G1_compress -> error "TODO: compress G1"
+    Bls12_381_G1_uncompress -> error "TODO: uncompress G1"
+  BLS_G2 fn -> case fn of
+    Bls12_381_G2_add -> fromConstant \p q -> Symbolic.just @c (p + q)
+    Bls12_381_G2_neg -> fromConstant (Symbolic.just @c . negate)
+    Bls12_381_G2_scalarMul -> fromConstant \i p ->
+        Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
+    Bls12_381_G2_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
+    Bls12_381_G2_hashToGroup -> error "TODO: hash to G2"
+    Bls12_381_G2_compress -> error "TODO: compress G2"
+    Bls12_381_G2_uncompress -> error "TODO: uncompress G2"
+  Bls12_381_millerLoop -> error "TODO: miller loop"
+  Bls12_381_mulMlResult -> fromConstant \r s -> Symbolic.just @c (r + s)
+  Bls12_381_finalVerify -> error "TODO: final verify"
 evalMono (BMFBitwise fun) = case fun of
   AndByteString -> fromConstant \ext a b ->
     Symbolic.just @c $
@@ -547,15 +561,15 @@ evalMono (BMFBitwise fun) = case fun of
       wipeUnassigned bs {bsBuffer = not (bsBuffer bs)}
   ShiftByteString -> fromConstant \_bs i ->
     Symbolic.just @c $
-      ifThenElse (isNegative i) (error "FIXME: shiftL") (error "FIXME: shiftR")
+      ifThenElse (isNegative i) (error "TODO: shiftL") (error "TODO: shiftR")
   RotateByteString -> fromConstant \_bs i ->
     Symbolic.just @c $
-      ifThenElse (isNegative i) (error "FIXME: rotL") (error "FIXME: rotR")
-  CountSetBits -> fromConstant \_bs -> Symbolic.just @c (error "FIXME: countBits")
-  FindFirstSetBit -> fromConstant \_bs -> Symbolic.just @c (error "FIXME: findSet")
-  ReadBit -> fromConstant \_bs _i -> Symbolic.just @c (error "FIXME: readBit")
-  WriteBits -> fromConstant \_bs _ps _b -> Symbolic.just @c (error "FIXME: writeBits")
-  ReplicateByte -> fromConstant \_l _b -> Symbolic.just @c (error "FIXME: replicateByte")
+      ifThenElse (isNegative i) (error "TODO: rotL") (error "TODO: rotR")
+  CountSetBits -> error "TODO: countBits"
+  FindFirstSetBit -> error "TODO: findSet"
+  ReadBit -> error "TODO: readBit"
+  WriteBits -> error "TODO: writeBits"
+  ReplicateByte -> error "TODO: replicateByte"
 
 app
   :: (Sym c, KnownNat n, KnownNat (n + n), KnownNat ((n + n) - n), n <= n + n)
