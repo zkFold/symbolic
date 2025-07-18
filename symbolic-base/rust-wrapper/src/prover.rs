@@ -1,14 +1,14 @@
 use crate::scale::get_opt_window_size;
+use crate::utils::unpack_scalar;
 use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
-use ark_ff::Field;
-use ark_ff::One;
-use ark_ff::PrimeField;
+use ark_ff::{Field, One, PrimeField};
 use ark_msm::msm::VariableBaseMSM;
 use ark_poly::domain::Radix2EvaluationDomain;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::EvaluationDomain;
 use ark_poly::Polynomial;
+use ark_serialize::CanonicalSerialize;
 use ark_std::log2;
 use ark_std::Zero;
 use core::slice;
@@ -275,11 +275,14 @@ fn com(gs: &Vec<GAffine>, p: &DensePolynomial<ScalarField>) -> GAffine {
 }
 
 fn compress(pt: &GAffine) -> Vec<u8> {
-    todo!()
+    let mut buf = Vec::new();
+    pt.serialize_compressed(&mut buf)
+        .expect("Serialization failed");
+    buf
 }
 
 fn bytes(pt: &ScalarField) -> Vec<u8> {
-    todo!()
+    unpack_scalar(*pt)
 }
 
 fn challenge(transcript: &Vec<u8>) -> ScalarField {
