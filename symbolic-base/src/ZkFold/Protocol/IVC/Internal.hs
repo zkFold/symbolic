@@ -10,30 +10,30 @@ module ZkFold.Protocol.IVC.Internal where
 import Control.Lens ((^.))
 import Control.Lens.Combinators (makeLenses)
 import Data.Bifunctor (bimap, first)
-import Data.Function (id, ($), (.))
+import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Data.Vector (Vector, singleton)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme as Acc
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
-import ZkFold.Protocol.IVC.CommitOpen
+import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction
 import ZkFold.Protocol.IVC.SpecialSound (
-  SpecialSoundProtocol (..),
-  specialSoundProtocol,
-  specialSoundProtocol',
+  specialSoundProtocolA,
+  specialSoundProtocolC,
  )
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
@@ -78,7 +78,8 @@ ivcSetup
      , LayoutFunctor i
      , LayoutFunctor p
      , FieldAssumptions a cc
-     , HomomorphicCommit [a] c
+     , HomomorphicCommit c
+     , a ~ ScalarFieldOf c
      )
   => Hasher
   -> StepFunction a i p
@@ -99,7 +100,7 @@ ivcSetup hash f z0 witness =
     IVCResult z1 (emptyAccumulator @d pRec) noIVCProof
 
 ivcProve
-  :: forall d cc k a i p c f fe
+  :: forall d cc k a i p c f
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
@@ -110,9 +111,10 @@ ivcProve
      , SymbolicData c
      , Context c ~ Interpreter a
      , Layout c ~ f
-     , fe ~ FieldElement (Interpreter a)
-     , Scale fe c
-     , HomomorphicCommit [fe] c
+     , Scale a c
+     , OracleSource a (DataSource c)
+     , HomomorphicCommit c
+     , a ~ ScalarFieldOf c
      )
   => Hasher
   -> StepFunction a i p
@@ -134,26 +136,26 @@ ivcProve hash f res witness =
       :: (SymbolicData x, Context x ~ Interpreter a) => x -> Layout x a
     value = runInterpreter . arithmetize
 
-    input :: RecursiveI i fe
+    input :: RecursiveI i a
     input =
       fmap fromConstant (res ^. z)
-        :*: Par1 (oracle hash $ bimap DataSource (fromConstant :: a -> fe) $ res ^. acc ^. x)
+        :*: Par1 (oracle hash $ res ^. acc ^. x)
 
-    messages :: Vector k [fe]
+    messages :: Vector k [a]
     messages = fmap fromConstant <$> res ^. proof ^. proofW
 
     commits :: Vector k (DataSource c)
     commits = res ^. proof ^. proofX
 
-    narkIP :: NARKInstanceProof k (RecursiveI i) (DataSource c) fe
+    narkIP :: NARKInstanceProof k (RecursiveI i) (DataSource c) a
     narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) fe
+    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) a
     accScheme = accumulatorScheme hash pRec
 
     (acc', pf) = Acc.prover accScheme (fromConstant <$> res ^. acc) narkIP
 
-    payload :: RecursiveP d k i p cc fe
+    payload :: RecursiveP d k i p cc a
     payload =
       fmap fromConstant $
         value $
@@ -164,18 +166,18 @@ ivcProve hash f res witness =
             true
             (DataSource <$> pf)
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [fe] [a] fe
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) a
     protocol =
       fiatShamir hash $
-        commitOpen fromConstant toConstant $
-          specialSoundProtocol @d fromConstant toConstant pRec
+        commitOpen $
+          specialSoundProtocolA @d pRec
 
     (messages', commits') = unzip $ prover protocol input payload zero 0
 
     ivcProof :: IVCProof k c a
-    ivcProof = IVCProof commits' (fmap toConstant <$> messages')
+    ivcProof = IVCProof commits' messages'
    in
-    IVCResult z' (toConstant <$> acc') ivcProof
+    IVCResult z' acc' ivcProof
 
 ivcVerify
   :: forall d k a i p c f
@@ -208,9 +210,9 @@ ivcVerify hash f res =
     accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) f
     accScheme = accumulatorScheme @d hash pRec
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) [f] [f] f
-    protocol = fiatShamir hash $ commitOpen id id $ specialSoundProtocol' @d pRec
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) f
+    protocol = fiatShamir hash $ commitOpen $ specialSoundProtocolC @d pRec
    in
-    ( first (fmap dataSource) $ verifier protocol input (singleton $ zip messages commits) zero
+    ( first (fmap dataSource) $ verifier protocol input (zip messages commits) zero
     , bimap (fmap dataSource) dataSource $ Acc.decider accScheme (res ^. acc)
     )

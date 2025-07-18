@@ -152,7 +152,10 @@ instance Euclidean a => Euclidean (Vector a) where
 instance Finite a => Finite (Vector a) where
   type Order (Vector a) = Order a
 
-instance (ResidueField a, Conditional (BooleanOf a) (Vector a)) => ResidueField (Vector a) where
+instance
+  (ResidueField a, Conditional (BooleanOf a) (Vector a), Conditional (BooleanOf (IntegralOf a)) (Vector (IntegralOf a)))
+  => ResidueField (Vector a)
+  where
   type IntegralOf (Vector a) = Vector (IntegralOf a)
   fromIntegral = fmap fromIntegral
   toIntegral = fmap toIntegral
@@ -175,7 +178,8 @@ toPlonkupRelation
      , Representable o
      , Foldable o
      )
-  => ArithmeticCircuit a i o -> Maybe (PlonkupRelation i o n a pv)
+  => ArithmeticCircuit a i o
+  -> Maybe (PlonkupRelation i o n a pv)
 toPlonkupRelation !ac =
   let !n = value @n
 

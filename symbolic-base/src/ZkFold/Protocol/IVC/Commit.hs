@@ -1,6 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.IVC.Commit (
@@ -8,18 +5,17 @@ module ZkFold.Protocol.IVC.Commit (
   oracleCommitment,
   HomomorphicCommit (..),
   PedersonSetup (..),
-  PedersonCommit (..),
 ) where
 
+import Crypto.Hash.SHA256 (hash)
+import Data.Maybe (fromJust)
 import Data.Zip (Zip (..))
-import System.Random (Uniform, mkStdGen, uniform)
-import Prelude hiding (Num (..), sum, take, zipWith)
+import Prelude hiding (Num (..), sum, take, zipWith, (^))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
-import ZkFold.Data.Vector (Vector, unsafeToVector)
-import ZkFold.Prelude (take)
+import ZkFold.Data.ByteString (LittleEndian (..), fromByteString)
 import ZkFold.Protocol.IVC.Oracle
 
 -- | Commit to the object @a@ with results of type @f@
@@ -28,60 +24,24 @@ type Commit a f = a -> f
 oracleCommitment :: (OracleSource a b, Ring a) => Hasher -> Commit b a
 oracleCommitment = oracle
 
+class PedersonSetup g where
+  groupElements :: [g]
+
+instance
+  CyclicGroup g
+  => PedersonSetup g
+  where
+  groupElements =
+    -- TODO: This is just for testing purposes! Not to be used in production
+    let x = fromConstant @Natural $ unLittleEndian $ fromJust $ fromByteString $ hash "42" :: ScalarFieldOf g
+     in iterate (scale x) pointGen
+
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
-class AdditiveGroup c => HomomorphicCommit a c where
-  hcommit :: a -> c
-
-class PedersonSetup s c where
-  groupElements :: s c
-
-type PedersonSetupMaxSize = 100
+class CyclicGroup g => HomomorphicCommit g where
+  hcommit :: [ScalarFieldOf g] -> g
 
 instance
-  ( CyclicGroup (Weierstrass curve (Point field))
-  , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
-  )
-  => PedersonSetup [] (Weierstrass curve (Point field))
+  CyclicGroup g
+  => HomomorphicCommit g
   where
-  groupElements =
-    -- TODO: This is just for testing purposes! Not to be used in production
-    let x = fst $ uniform $ mkStdGen 0 :: ScalarFieldOf (Weierstrass curve (Point field))
-     in take (value @PedersonSetupMaxSize) $ iterate (scale x) pointGen
-
-instance
-  ( KnownNat n
-  , CyclicGroup (Weierstrass curve (Point field))
-  , Uniform (ScalarFieldOf (Weierstrass curve (Point field)))
-  , n <= PedersonSetupMaxSize
-  )
-  => PedersonSetup (Vector n) (Weierstrass curve (Point field))
-  where
-  groupElements =
-    -- TODO: This is just for testing purposes! Not to be used in production
-    unsafeToVector $ take (value @n) $ groupElements @[]
-
-newtype PedersonCommit g = PedersonCommit {pedersonCommit :: g}
-  deriving newtype (AdditiveGroup, AdditiveMonoid, AdditiveSemigroup, Scale f)
-
-instance (Functor s, PedersonSetup s g) => PedersonSetup s (PedersonCommit g) where
-  groupElements = PedersonCommit <$> groupElements
-
-instance
-  ( PedersonSetup s g
-  , Zip s
-  , Foldable s
-  , Scale f g
-  , AdditiveGroup g
-  )
-  => HomomorphicCommit (s f) (PedersonCommit g)
-  where
-  hcommit v = sum $ zipWith scale v groupElements
-
-deriving via
-  (PedersonCommit (Weierstrass c (Point f)))
-  instance
-    ( CyclicGroup (Weierstrass c (Point f))
-    , Uniform (ScalarFieldOf (Weierstrass c (Point f)))
-    , Scale s (Weierstrass c (Point f))
-    )
-    => HomomorphicCommit [s] (Weierstrass c (Point f))
+  hcommit v = sum $ zipWith (scale @(ScalarFieldOf g)) v groupElements

@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Data.Class (
   Range,
   LayoutData (..),
   GSymbolicData (..),
+  withoutConstraints,
 ) where
 
 import Control.Applicative (liftA2)
@@ -43,7 +44,7 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
-import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField)
+import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF)
 
 type PayloadFunctor f = (Representable f, Binary (R.Rep f))
 
@@ -121,6 +122,12 @@ class
     => (c (Layout x), Payload x (WitnessField c))
     -> x
   restore f = G.to (grestore f)
+
+withoutConstraints
+  :: SymbolicData x
+  => x
+  -> x
+withoutConstraints x = restore (embedW $ witnessF $ arithmetize x, payload x)
 
 instance (Symbolic c, LayoutFunctor f) => SymbolicData (c f) where
   type Context (c f) = c
