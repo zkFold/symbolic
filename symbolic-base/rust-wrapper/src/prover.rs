@@ -8,6 +8,7 @@ use ark_poly::Polynomial;
 use core::slice;
 use std::ops::Div;
 use std::ops::Mul;
+use std::ops::Neg;
 use std::ops::Sub;
 
 struct PlonkupCircuitPolynomials {
@@ -309,6 +310,10 @@ impl<T: Clone + ark_ff::Field> ZipWith<T> for DensePolynomial<T> {
     }
 }
 
+fn vn(v: &ScalarField, n: u64) -> ScalarField {
+    v.pow([n])
+}
+
 pub fn plonkupProve(
     n: usize,
     ps: &PlonkupProverSetup,
@@ -349,6 +354,12 @@ pub fn plonkupProve(
     let wPub = relation.wPub;
     let prvNum = relation.prvNum;
 
+    let w1 = witness.w1;
+    let w2 = witness.w2;
+    let w3 = witness.w3;
+
+    let one = ScalarField::one();
+
     let zhX = polyVecZero(n);
 
     let w1X = polyVecInLagrangeBasis(n, &omega, &witness.w1);
@@ -379,7 +390,7 @@ pub fn plonkupProve(
         &qK.coeffs,
         &t_zeta.coeffs,
         &f_zeta_tick.coeffs,
-        |lk, ti, ai| if lk == &ScalarField::one() { *ai } else { *ti },
+        |lk, ti, ai| if lk == &one { *ai } else { *ti },
     ));
 
     let fX = polyVecLinear(&secret.get(7), &secret.get(8)).mul(&zhX)
@@ -421,7 +432,7 @@ pub fn plonkupProve(
     let epsilon = challenge(&ts24);
 
     let omegas = toPolyVec(&iterate_n(n, |x| x * &omega, omega));
-    let omegas_tick = toPolyVec(&iterate_n((4 * n + 6), |x| x * &omega, ScalarField::one()));
+    let omegas_tick = toPolyVec(&iterate_n((4 * n + 6), |x| x * &omega, one));
 
     let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(|x| x + &gamma);
     let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(|x| x + &gamma);
@@ -442,10 +453,8 @@ pub fn plonkupProve(
     let z1X = polyVecQuadratic(&secret.get(14), &secret.get(15), &secret.get(16)).mul(&zhX)
         + polyVecInLagrangeBasis(n, &omega, &grandProduct1);
 
-    let eps_del = epsilon * (delta + ScalarField::one());
-    let gp2_1 = f_zeta
-        .elementwise(|x| x + &epsilon)
-        .mul(delta + ScalarField::one());
+    let eps_del = epsilon * (delta + one);
+    let gp2_1 = f_zeta.elementwise(|x| x + &epsilon).mul(delta + one);
     let gp2_2 = t_zeta.elementwise(|x| x + &eps_del) + rotL(&t_zeta).mul(delta);
     let gp2_3 = h1.elementwise(|x| x + &eps_del) + h2.mul(delta);
     let gp2_4 = h2.elementwise(|x| x + &eps_del) + rotL(&h1).mul(delta);
@@ -490,7 +499,7 @@ pub fn plonkupProve(
             .mul(&(cX + s3X.mul(beta) + gammaX))
             .mul(&(z1X.zip_with(&omegas_tick, |a, b| a * b).mul(alpha)));
 
-        let qXs4 = (z1X.sub(&polyVecConstant(&ScalarField::one())))
+        let qXs4 = (z1X.sub(&polyVecConstant(&one)))
             .mul(&polyVecLagrange(n, 1, &omega))
             .mul(alpha2);
 
@@ -499,9 +508,9 @@ pub fn plonkupProve(
             .mul(alpha3);
 
         let qXs6 = z2X
-            .mul(&(polyVecConstant(&ScalarField::one()) + deltaX))
+            .mul(&(polyVecConstant(&one) + deltaX))
             .mul(&(epsilonX + fX))
-            .mul(&(epsilonX.mul(&(polyVecConstant(&ScalarField::one()) + deltaX))))
+            .mul(&(epsilonX.mul(&(polyVecConstant(&one) + deltaX))))
             + tX
             + deltaX
                 .mul(&(tX.zip_with(&omegas_tick, |a, b| a * b)))
@@ -509,19 +518,15 @@ pub fn plonkupProve(
 
         let qXs7 = z2X
             .zip_with(&omegas_tick, |a, b| a * b)
+            .mul(&((epsilonX.mul(&(polyVecConstant(&one) + deltaX))) + h1X + deltaX.mul(&h2X)))
             .mul(
-                &((epsilonX.mul(&(polyVecConstant(&ScalarField::one()) + deltaX)))
-                    + h1X
-                    + deltaX.mul(&h2X)),
-            )
-            .mul(
-                &((epsilonX.mul(&(polyVecConstant(&ScalarField::one()) + deltaX)))
+                &((epsilonX.mul(&(polyVecConstant(&one) + deltaX)))
                     + h2X
                     + deltaX.mul(&(h1X.zip_with(&omegas_tick, |a, b| a * b)))),
             )
             .mul(alpha4);
 
-        let qXs8 = (z2X.sub(&polyVecConstant(&ScalarField::one())))
+        let qXs8 = (z2X.sub(&polyVecConstant(&one)))
             .mul(&polyVecLagrange(n, 1, &omega))
             .mul(alpha5);
 
@@ -565,7 +570,11 @@ pub fn plonkupProve(
     let l_range: Vec<usize> = (prvNum + 1..=wPub.len()).collect();
     let l_xi = l_range
         .iter()
-        .map(|i| ((xi - omega.pow([*i as u64])) * ScalarField::from(n as i32)).inverse())
+        .map(|i| {
+            ((xi - omega.pow([*i as u64])) * ScalarField::from(n as i32))
+                .inverse()
+                .unwrap()
+        })
         .collect();
 
     let mut ts5 = ts4.clone();
@@ -583,10 +592,156 @@ pub fn plonkupProve(
     ts5.append(&mut bytes(h2_xi));
     let v = challenge(&ts5);
 
-    let pi_xi  = piX.evaluate(&xi);
+    let pi_xi = piX.evaluate(&xi);
     let zhX_xi = zhX.evaluate(&xi);
 
+    let rX = {
+        let rX1 = qmX.mul(a_xi * b_xi)
+            + qlX.mul(a_xi)
+            + qrX.mul(b_xi)
+            + qoX.mul(c_xi)
+            + polyVecConstant(&pi_xi)
+            + qcX;
 
+        let rX21 = z1X.mul(
+            (a_xi + beta * xi + gamma)
+                * (b_xi + beta * k1 * xi + gamma)
+                * (c_xi + beta * k2 * xi + gamma),
+        );
+        let rX22 = (polyVecConstant(&c_xi) + s3X.mul(beta) + polyVecConstant(&gamma))
+            .mul((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi_tick);
+        let rX2 = rX21.sub(&rX22).mul(alpha);
 
-    todo!()
+        let rX3 = z1X.sub(&polyVecConstant(&one)).mul(alpha2 * lag1_xi);
+        let rX4 = qkX.mul(alpha3 * (a_xi + zeta * (b_xi + zeta * c_xi) - f_xi));
+
+        let rX51 = z2X.mul(
+            (one + delta)
+                * (epsilon + f_xi)
+                * ((epsilon * (one + delta)) + t_xi + delta * t_xi_tick),
+        );
+        let rX52 =
+            (polyVecConstant(&(epsilon * (one + delta))) + h1X + polyVecConstant(&(delta * h2_xi)))
+                .mul(z2_xi_tick * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi_tick));
+        let rX5 = rX51.sub(&rX52).mul(alpha4);
+
+        let rX6 = (z2X.sub(&polyVecConstant(&one))).mul(alpha5 * lag1_xi);
+        let rX7 = (qlowX
+            + qmidX.mul(xi.pow([(n + 2) as u64]))
+            + qhighX.mul(xi.pow([(2 * n + 4) as u64])))
+        .mul(zhX_xi);
+
+        rX1 + rX2 + rX3 + rX4 + rX5 + rX6.sub(&rX7)
+    };
+
+    let proofX1 = {
+        let pf1 = aX.sub(&polyVecConstant(&a_xi)).mul(vn(&v, 1));
+        let pf2 = bX.sub(&polyVecConstant(&b_xi)).mul(vn(&v, 2));
+        let pf3 = cX.sub(&polyVecConstant(&c_xi)).mul(vn(&v, 3));
+        let pf4 = s1X.sub(&polyVecConstant(&s1_xi)).mul(vn(&v, 4));
+        let pf5 = s2X.sub(&polyVecConstant(&s2_xi)).mul(vn(&v, 5));
+        let pf6 = fX.sub(&polyVecConstant(&f_xi)).mul(vn(&v, 6));
+        let pf7 = tX.sub(&polyVecConstant(&t_xi)).mul(vn(&v, 7));
+        let pf8 = h2X.sub(&polyVecConstant(&h2_xi)).mul(vn(&v, 8));
+
+        let pfNumerator = rX + pf1 + pf2 + pf3 + pf4 + pf5 + pf6 + pf7 + pf8;
+
+        pfNumerator.div(&polyVecLinear(&one, &xi.neg()))
+    };
+
+    let proofX2 = {
+        let pf1 = z1X.sub(&polyVecConstant(&z1_xi_tick));
+        let pf2 = tX.sub(&polyVecConstant(&t_xi_tick)).mul(vn(&v, 1));
+        let pf3 = z2X.sub(&polyVecConstant(&z2_xi_tick)).mul(vn(&v, 2));
+        let pf4 = h1X.sub(&polyVecConstant(&h1_xi_tick)).mul(vn(&v, 3));
+
+        let pfNumerator = pf1 + pf2 + pf3 + pf4;
+
+        pfNumerator.div(&polyVecLinear(&one, &((xi * omega).neg())))
+    };
+
+    let proof1 = com(&gs, &proofX1);
+    let proof2 = com(&gs, &proofX2);
+
+    let plonkupProof = PlonkupProof {
+        cmA: cmA,
+        cmB: cmB,
+        cmC: cmC,
+        cmF: cmF,
+        cmH1: cmH1,
+        cmH2: cmH2,
+        cmZ1: cmZ1,
+        cmZ2: cmZ2,
+        cmQlow: cmQlow,
+        cmQmid: cmQmid,
+        cmQhigh: cmQhigh,
+        proof1: proof1,
+        proof2: proof2,
+        a_xi: a_xi,
+        b_xi: b_xi,
+        c_xi: c_xi,
+        s1_xi: s1_xi,
+        s2_xi: s2_xi,
+        f_xi: f_xi,
+        t_xi: t_xi,
+        t_xi_tick: t_xi_tick,
+        z1_xi_tick: z1_xi_tick,
+        z2_xi_tick: z2_xi_tick,
+        h1_xi_tick: h1_xi_tick,
+        h2_xi: h2_xi,
+        l1_xi: l1_xi,
+        l_xi: l_xi,
+    };
+
+    let testInfo = PlonkupProverTestInfo {
+        omega: omega,
+        k1: k1,
+        k2: k2,
+        qlX: qlX,
+        qrX: qrX,
+        qoX: qoX,
+        qmX: qmX,
+        qcX: qcX,
+        qkX: qkX,
+        t1X: t1X,
+        t2X: t2X,
+        t3X: t3X,
+        s1X: s1X,
+        s2X: s2X,
+        s3X: s3X,
+        aX: aX,
+        bX: bX,
+        cX: cX,
+        piX: piX,
+        tX: tX,
+        z1X: z1X,
+        z2X: z2X,
+        fX: fX,
+        h1X: h1X,
+        h2X: h2X,
+        zhX: zhX,
+        qX: qX,
+        qlowX: qlowX,
+        qmidX: qmidX,
+        qhighX: qhighX,
+        rX: rX,
+        alpha: alpha,
+        beta: beta,
+        gamma: gamma,
+        delta: delta,
+        epsilon: epsilon,
+        xi: xi,
+        zeta: zeta,
+        f_zeta: f_zeta,
+        t_zeta: t_zeta,
+        omegas: omegas,
+        omegas_tick: omegas_tick,
+        grandProduct1: grandProduct1,
+        grandProduct2: grandProduct2,
+        w1: w1,
+        w2: w2,
+        w3: w3,
+    };
+
+    (plonkupProof, testInfo)
 }
