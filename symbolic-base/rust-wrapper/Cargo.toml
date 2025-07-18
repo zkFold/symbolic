@@ -20,6 +20,7 @@ num-traits = "0.2.19"
 ark-poly = "0.4.2"
 ark-test-curves = "0.4.2"
 cfg-if = "0.1"
+blake2 = "0.10.6"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
