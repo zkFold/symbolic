@@ -4,15 +4,15 @@ use ark_ff::Field;
 use ark_ff::One;
 use ark_ff::PrimeField;
 use ark_msm::msm::VariableBaseMSM;
+use ark_poly::domain::Radix2EvaluationDomain;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
-use ark_poly::domain::Radix2EvaluationDomain;
 use ark_poly::EvaluationDomain;
 use ark_poly::Polynomial;
 use ark_std::log2;
 use ark_std::Zero;
 use core::slice;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
 
 pub struct PlonkupCircuitPolynomials {
     qlX: DensePolynomial<ScalarField>,
@@ -186,10 +186,56 @@ fn polyVecLagrange(n: usize, i: usize, omega: &ScalarField) -> DensePolynomial<S
     v.push(v0);
 
     for i in 1..n {
-        let prev = v[i-1];
+        let prev = v[i - 1];
         v.push(prev * wInv);
     }
     DensePolynomial::from_coefficients_vec(v)
+}
+
+// taken from https://github.com/dusk-network/plonk/blob/master/src/fft/domain.rs
+//
+fn bitreverse(mut n: u32, l: u32) -> u32 {
+    let mut r = 0;
+    for _ in 0..l {
+        r = (r << 1) | (n & 1);
+        n >>= 1;
+    }
+    r
+}
+
+fn serial_fft(a: &mut [ScalarField], omega: ScalarField, log_n: u32) {
+    let n = a.len() as u32;
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in 0..log_n {
+        let w_m = omega.pow(&[(n / (2 * m)) as u64, 0, 0, 0]);
+
+        let mut k = 0;
+        while k < n {
+            let mut w = ScalarField::one();
+            for j in 0..m {
+                let mut t = a[(k + j + m) as usize];
+                t *= &w;
+                let mut tmp = a[(k + j) as usize];
+                tmp -= &t;
+                a[(k + j + m) as usize] = tmp;
+                a[(k + j) as usize] += &t;
+                w.mul_assign(&w_m);
+            }
+
+            k += 2 * m;
+        }
+
+        m *= 2;
+    }
 }
 
 fn polyVecInLagrangeBasis(
@@ -205,12 +251,20 @@ fn polyVecInLagrangeBasis(
         v.resize(next_pow2, ScalarField::zero());
     }
 
-    let domain = Radix2EvaluationDomain::<ScalarField>::new(next_pow2)
-        .expect("Length must be a power of two!");
+    let norm = ScalarField::from(n as i32).inverse().unwrap();
 
+    let mut norms = Vec::with_capacity(n);
+    for i in 0..n {
+        norms.push(omega.pow([i as u64]) * norm);
+    }
+    v.rotate_right(1);
 
+    let mut result = zip_with(&v, &norms, |a, b| a * b);
 
-    todo!()
+    serial_fft(&mut result, *omega, log2(n));
+    result.reverse();
+
+    DensePolynomial::from_coefficients_vec(result)
 }
 
 fn com(gs: &Vec<GAffine>, p: &DensePolynomial<ScalarField>) -> GAffine {
