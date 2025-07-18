@@ -1,17 +1,16 @@
+use crate::scale::get_opt_window_size;
 use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
 use ark_ff::Field;
 use ark_ff::One;
+use ark_ff::PrimeField;
 use ark_msm::msm::VariableBaseMSM;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::Polynomial;
+use ark_std::log2;
 use ark_std::Zero;
 use core::slice;
-use std::ops::Add;
-use std::ops::Div;
-use std::ops::Mul;
-use std::ops::Neg;
-use std::ops::Sub;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 struct PlonkupCircuitPolynomials {
     qlX: DensePolynomial<ScalarField>,
@@ -144,19 +143,23 @@ struct PlonkupProverTestInfo {
 }
 
 fn toPolyVec(v: &[ScalarField]) -> DensePolynomial<ScalarField> {
-    todo!()
+    DensePolynomial::from_coefficients_vec((*v).to_vec())
 }
 
 fn polyVecZero(n: usize) -> DensePolynomial<ScalarField> {
-    todo!()
+    let coeffs = std::iter::once(ScalarField::one().neg())
+        .chain(std::iter::repeat(ScalarField::zero()).take(n - 1))
+        .chain(std::iter::once(ScalarField::one()))
+        .collect();
+    DensePolynomial::from_coefficients_vec(coeffs)
 }
 
 fn polyVecConstant(a0: &ScalarField) -> DensePolynomial<ScalarField> {
-    todo!()
+    toPolyVec(&[*a0])
 }
 
-fn polyVecLinear(a0: &ScalarField, a1: &ScalarField) -> DensePolynomial<ScalarField> {
-    todo!()
+fn polyVecLinear(a1: &ScalarField, a0: &ScalarField) -> DensePolynomial<ScalarField> {
+    toPolyVec(&[*a0, *a1])
 }
 
 fn polyVecQuadratic(
@@ -164,7 +167,7 @@ fn polyVecQuadratic(
     a1: &ScalarField,
     a2: &ScalarField,
 ) -> DensePolynomial<ScalarField> {
-    todo!()
+    toPolyVec(&[*a0, *a1, *a2])
 }
 
 fn polyVecLagrange(n: usize, pow: usize, omega: &ScalarField) -> DensePolynomial<ScalarField> {
@@ -180,7 +183,9 @@ fn polyVecInLagrangeBasis(
 }
 
 fn com(gs: &Vec<GAffine>, p: &DensePolynomial<ScalarField>) -> GAffine {
-    todo!()
+    let scalars: Vec<_> = p.coeffs.iter().map(|i| i.into_bigint()).collect();
+    let opt_window_size = get_opt_window_size(log2(gs.len()));
+    VariableBaseMSM::multi_scalar_mul_custom(gs, &scalars, opt_window_size, 2048, 256, false).into()
 }
 
 fn compress(pt: &GAffine) -> Vec<u8> {

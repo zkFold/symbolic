@@ -14,7 +14,7 @@ use crate::utils::{
 
 // This is inner function from arkmsm crate, derived from benchmark results. May not be optimal for all configurations
 // https://github.com/snarkify/arkmsm/blob/main/src/msm.rs
-const fn get_opt_window_size(k: u32) -> u32 {
+pub const fn get_opt_window_size(k: u32) -> u32 {
     match k {
         0..=9 => 8,
         10..=12 => 10,
