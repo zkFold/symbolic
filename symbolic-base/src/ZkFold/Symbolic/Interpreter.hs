@@ -9,8 +9,8 @@ import Control.DeepSeq (NFData (..), NFData1 (..))
 import Control.Monad (Monad, return)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Eq (Eq (..))
-import Data.Function (id, on, ($), (.))
-import Data.Functor (Functor, (<$>))
+import Data.Function (on, ($), (.))
+import Data.Functor (Functor, (<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.List (foldl')
 import Data.List.Infinite (toList)
@@ -60,7 +60,8 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   type BaseField (Interpreter a) = a
   type WitnessField (Interpreter a) = a
   witnessF (Interpreter x) = x
-  fromCircuitF (Interpreter x) c = Interpreter $ runWitnesses @a (c x)
+  fromCircuitF (Interpreter x) c =
+    Interpreter $ runIdentity <$> runWitnesses @a (c $ fmap Identity x)
   sanityF (Interpreter x) f _ = Interpreter (f x)
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
@@ -74,11 +75,14 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
 newtype Witnesses a x = Witnesses {runWitnesses :: x}
   deriving (Applicative, Functor, Monad) via Identity
 
-instance Arithmetic a => Witness a a where
-  at = id
+instance Arithmetic a => Witness (Identity a) a where
+  at = runIdentity
 
-instance Arithmetic a => MonadCircuit a a a (Witnesses a) where
-  unconstrained = return
+instance FromConstant a (Identity a) where
+  fromConstant = Identity
+
+instance Arithmetic a => MonadCircuit (Identity a) a a (Witnesses a) where
+  unconstrained = return . Identity
   constraint _ = return ()
   lookupConstraint _ _ = return ()
   registerFunction _ = return (FunctionId "")

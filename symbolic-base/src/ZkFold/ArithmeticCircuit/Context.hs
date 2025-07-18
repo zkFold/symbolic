@@ -92,7 +92,7 @@ instance NFData a => NFData (CircuitFold a) where
 
 data LookupFunction a
   = forall f g.
-    (Representable f, Traversable g, Typeable f, Typeable g) =>
+    (Representable f, Traversable g, Typeable f, Typeable g, Binary (Rep f)) =>
     LookupFunction (forall x. ResidueField x => f x -> g x)
 
 instance NFData (LookupFunction a) where

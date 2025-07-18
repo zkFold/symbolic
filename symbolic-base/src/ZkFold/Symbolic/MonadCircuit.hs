@@ -22,6 +22,7 @@ import ZkFold.ArithmeticCircuit.Lookup
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq)
 import ZkFold.Data.Orphans ()
+import Data.Functor (Functor)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
@@ -47,7 +48,7 @@ instance PrimeField (Zp p) => ResidueField (Zp p) where
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ResidueField w => Witness i w | w -> i where
+class ResidueField w => Witness i w | i -> w where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 
@@ -126,7 +127,8 @@ class
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   lookupConstraint
-    :: (NFData1 f, Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
+    :: (NFData1 f, Foldable f, Functor f, Typeable f)
+    => f var -> LookupTable a f -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.

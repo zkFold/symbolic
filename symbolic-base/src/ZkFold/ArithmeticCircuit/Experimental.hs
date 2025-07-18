@@ -1,37 +1,56 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE BlockArguments       #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE DerivingVia          #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (pure)
-import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
-import Control.Monad.State (State, modify', runState, state)
-import Data.Binary (Binary)
-import Data.ByteString (ByteString)
-import Data.Function (flip, ($), (.))
-import Data.Functor (Functor, fmap)
-import Data.Map (Map)
-import Data.Monoid (Monoid, mempty)
-import Data.Semigroup (Semigroup, (<>))
-import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
-import Data.Tuple (swap, uncurry)
-import GHC.Generics (Generic)
-import Prelude (seq)
+import Control.Applicative              (pure)
+import Control.DeepSeq                  (NFData (..), NFData1, liftRnf, rwhnf)
+import Control.Monad.State              (State, modify', runState, state, gets)
+import Data.Binary                      (Binary)
+import Data.ByteString                  (ByteString)
+import Data.Function                    (flip, ($), (.), on)
+import Data.Functor                     (Functor, fmap)
+import Data.Map                         (Map)
+import Data.Monoid                      (Monoid, mempty)
+import Data.Semigroup                   (Semigroup, (<>))
+import Data.Semigroup.Generic           (GenericSemigroupMonoid (..))
+import Data.Tuple                       (swap, uncurry)
+import GHC.Generics                     (Generic, Par1 (..), (:*:) (..), U1)
+import Prelude                          (seq, error)
 
+import Data.Traversable                 (traverse)
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Context (LookupFunction, appendFunction, witToVar)
-import ZkFold.ArithmeticCircuit.Lookup (LookupTable)
-import ZkFold.ArithmeticCircuit.Var (NewVar (..))
-import ZkFold.ArithmeticCircuit.Witness (WitnessF)
-import ZkFold.Control.HApplicative (HApplicative (..))
-import ZkFold.Data.HFunctor (HFunctor (..))
-import ZkFold.Data.HFunctor.Classes (HNFData (..))
-import ZkFold.Data.Package (Package (..))
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import ZkFold.ArithmeticCircuit         (ArithmeticCircuit, optimize, solder)
+import ZkFold.ArithmeticCircuit.Context (LookupFunction (LookupFunction), appendFunction, crown,
+                                         emptyContext, witToVar, CircuitContext, acWitness, acSystem, acLookup)
+import ZkFold.ArithmeticCircuit.Lookup  (LookupTable, LookupType (..))
+import ZkFold.ArithmeticCircuit.Var     (NewVar (..), Var)
+import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
+import ZkFold.Control.HApplicative      (HApplicative (..))
+import ZkFold.Data.HFunctor             (HFunctor (..))
+import ZkFold.Data.HFunctor.Classes     (HNFData (..))
+import ZkFold.Data.Package              (Package (..))
+import ZkFold.Symbolic.Class            (Arithmetic, Symbolic (..),
+                                         fromCircuit2F)
+import ZkFold.Symbolic.Compiler         (CompilesWith)
+import ZkFold.Symbolic.Data.Bool        (Bool (..))
+import ZkFold.Symbolic.Data.Class       (Layout, Payload, Range, apply,
+                                         arithmetize, restore)
+import ZkFold.Symbolic.Data.Input       (isValid)
+import ZkFold.Symbolic.MonadCircuit     (MonadCircuit (..), Witness (..))
+import qualified Data.Map as M
+import Control.Monad (unless)
+import Data.Foldable (Foldable (..), for_, any)
+import Data.Typeable (Typeable)
+import qualified Data.Map.Monoidal as MM
+import qualified Data.Set as S
+import ZkFold.ArithmeticCircuit.Children (children)
+import Data.Ord (Ord (..))
+import Data.Eq (Eq (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -49,6 +68,9 @@ instance Semigroup (AppList a) where
 instance Monoid (AppList a) where
   mempty = AList \_ s -> s
 
+instance Foldable AppList where
+  foldr f s (AList a) = a f s
+
 ----------------- Compact polynomial constraint representation -----------------
 
 newtype Polynomial a v = MkPolynomial
@@ -60,7 +82,8 @@ instance NFData (Polynomial a v) where
 --------------- Type-preserving lookup constraint representation ---------------
 
 data LookupEntry a v
-  = forall f. NFData1 f => LEntry (f v) (LookupTable a f)
+  = forall f. (Functor f, Foldable f, NFData1 f, Typeable f)
+  => LEntry (f v) (LookupTable a f)
 
 instance (NFData a, NFData v) => NFData (LookupEntry a v) where
   rnf (LEntry v t) = liftRnf rnf v `seq` rnf t
@@ -80,22 +103,28 @@ data ConstraintBox a v = MkCBox
 
 ------------------- Experimental single-output circuit type --------------------
 
--- If this approach works out, we can simplify Symbolic interface down to:
-
+-- | If this approach works out, we can simplify Symbolic interface down to:
 -- * a mysterious "field" type (here: Elem a);
-
 -- * a way to constrain elements of this field via generic 'constrain' function.
-
 data Elem a = MkElem
-  { elHash :: ByteString
-  , elWitness :: WitnessF a (Elem a)
+  { elHash        :: NewVar
+  , elWitness     :: WitnessF a (Elem a)
   , elConstraints :: ConstraintBox a (Elem a)
   }
   deriving (Generic, NFData)
 
+fromVar :: NewVar -> Elem a
+fromVar v = let r = MkElem v (pure r) mempty in r
+
 -- A 'constrain' function applies constraints to the "field element".
 constrain :: ConstraintBox a (Elem a) -> Elem a -> Elem a
 constrain cb el = el {elConstraints = cb <> elConstraints el}
+
+instance Eq (Elem a) where
+  (==) = (==) `on` elHash
+
+instance Ord (Elem a) where
+  compare = compare `on` elHash
 
 instance
   (Arithmetic a, Binary a, FromConstant c (WitnessF a (Elem a)))
@@ -103,7 +132,7 @@ instance
   where
   fromConstant (fromConstant -> (elWitness :: WitnessF a (Elem a))) =
     MkElem
-      { elHash = witToVar $ fmap (EqVar . elHash) elWitness
+      { elHash = EqVar $ witToVar (fmap elHash elWitness)
       , elConstraints = mempty
       , ..
       }
@@ -151,3 +180,49 @@ instance
     let (i, r') = appendFunction f (cbLkpFuns cb)
      in (i, cb {cbLkpFuns = r'})
   lookupConstraint c t = modify' \cb -> cb {cbLookups = LEntry c t `app` cbLookups cb}
+
+------------------------- Optimized compilation function -----------------------
+
+compile ::
+    forall a s f.
+    (CompilesWith (AC a) s f, Binary a) =>
+    f -> ArithmeticCircuit a (Payload s :*: Layout s) (Layout (Range f))
+compile = optimize . solder . \f (p :*: l) ->
+  let input = restore (MkAC (fmap fromVar l), fmap (fmap fromVar . pure) p)
+      Bool b = isValid input
+      output = apply f input
+      MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
+        constraint (one - ($ i))
+        pure r
+      (vars, circuit) = runState (traverse work constrained) emptyContext
+   in crown circuit vars
+  where
+    work :: Elem a -> State (CircuitContext a U1) (Var a)
+    work el = case elHash el of
+      FoldPVar _ _ -> error "TODO: fold constraints"
+      FoldLVar _ _ -> error "TODO: fold constraints"
+      EqVar bs -> do
+        isDone <- gets (M.member bs . acWitness)
+        unless isDone do
+          _ <- unconstrained (fmap elHash (elWitness el))
+          let MkCBox {..} = elConstraints el
+          for_ cbPolyCon \c -> do
+            let asWitness = WitnessF (runPolynomial c)
+                cId = witToVar @a (fmap elHash asWitness)
+            isDone' <- gets (M.member cId . acSystem)
+            unless isDone' do
+              constraint (\x -> runPolynomial c (x . pure . elHash))
+              for_ (children asWitness) work
+          for_ cbLkpFuns \(LookupFunction f) -> do
+            _ <- registerFunction f
+            pure ()
+          for_ cbLookups \(LEntry l t) -> do
+            isDone' <- gets (
+                any (S.member $ toList $ fmap elHash l)
+                . (MM.!? LookupType t)
+                . acLookup )
+            unless isDone' do
+              lookupConstraint (fmap (pure . elHash) l) t
+              for_ l work
+          for_ (children $ elWitness el) work
+        pure $ pure (elHash el)

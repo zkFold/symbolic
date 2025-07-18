@@ -139,6 +139,7 @@ library
       ZkFold.Algorithm.Hash.MiMC.Constants
       ZkFold.ArithmeticCircuit
       ZkFold.ArithmeticCircuit.Arbitrary
+      ZkFold.ArithmeticCircuit.Children
       ZkFold.ArithmeticCircuit.Context
       ZkFold.ArithmeticCircuit.Desugaring
       ZkFold.ArithmeticCircuit.Experimental
