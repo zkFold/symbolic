@@ -11,10 +11,11 @@ import Data.Function ((.))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
 import Data.Ord (Ord)
+import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (type (:.:) (unComp1))
 import Numeric.Natural (Natural)
-import Prelude (Enum, Integer)
+import Prelude (Enum, Integer, Traversable)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
@@ -88,6 +89,10 @@ class
 -- | Embeds the pure value(s) into generic context @c@.
 embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
+
+-- | Embeds unconstrained witness value(s) into generic context @c@.
+embedW :: (Symbolic c, Traversable f) => f (WitnessField c) -> c f
+embedW ws = fromCircuitF hunit (\_ -> traverse unconstrained ws)
 
 symbolicF
   :: (Symbolic c, BaseField c ~ a, Functor g)

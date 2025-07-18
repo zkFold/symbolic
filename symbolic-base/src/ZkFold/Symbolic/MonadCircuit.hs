@@ -20,10 +20,20 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
 import ZkFold.Data.Orphans ()
 import Control.DeepSeq (NFData1)
+import ZkFold.Control.Conditional (Conditional)
+import ZkFold.Data.Eq (BooleanOf, Eq)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
-class (FiniteField a, Euclidean (IntegralOf a)) => ResidueField a where
+class
+  ( FiniteField a
+  , Euclidean (IntegralOf a)
+  , Eq (IntegralOf a)
+  , Conditional (BooleanOf (IntegralOf a)) (BooleanOf (IntegralOf a))
+  , Conditional (BooleanOf (IntegralOf a)) (IntegralOf a)
+  ) =>
+  ResidueField a
+  where
   type IntegralOf a :: Type
   fromIntegral :: IntegralOf a -> a
   toIntegral :: a -> IntegralOf a
@@ -108,7 +118,8 @@ class
   --   (see 'lookupConstraint').
   registerFunction
     :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
-    => (forall x. ResidueField x => f x -> g x) -> m (FunctionId (f a -> g a))
+    => (forall x. ResidueField x => f x -> g x)
+    -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.
   --   For examples of lookup constraints, see 'rangeConstraint'.
