@@ -6,13 +6,15 @@ use ark_ff::PrimeField;
 use ark_msm::msm::VariableBaseMSM;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
+use ark_poly::domain::Radix2EvaluationDomain;
+use ark_poly::EvaluationDomain;
 use ark_poly::Polynomial;
 use ark_std::log2;
 use ark_std::Zero;
 use core::slice;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-struct PlonkupCircuitPolynomials {
+pub struct PlonkupCircuitPolynomials {
     qlX: DensePolynomial<ScalarField>,
     qrX: DensePolynomial<ScalarField>,
     qoX: DensePolynomial<ScalarField>,
@@ -27,7 +29,7 @@ struct PlonkupCircuitPolynomials {
     s3X: DensePolynomial<ScalarField>,
 }
 
-struct PlonkupProverSetup {
+pub struct PlonkupProverSetup {
     omega: ScalarField,
     k1: ScalarField,
     k2: ScalarField,
@@ -38,17 +40,17 @@ struct PlonkupProverSetup {
     polynomials: PlonkupCircuitPolynomials,
 }
 
-struct PlonkupProverSecret {
+pub struct PlonkupProverSecret {
     secret: Vec<ScalarField>,
 }
 
-struct PlonkupWitness {
+pub struct PlonkupWitness {
     w1: DensePolynomial<ScalarField>,
     w2: DensePolynomial<ScalarField>,
     w3: DensePolynomial<ScalarField>,
 }
 
-struct Relation {
+pub struct Relation {
     qM: DensePolynomial<ScalarField>,
     qL: DensePolynomial<ScalarField>,
     qR: DensePolynomial<ScalarField>,
@@ -62,7 +64,7 @@ struct Relation {
     prvNum: usize,
 }
 
-struct PlonkupProof {
+pub struct PlonkupProof {
     cmA: GAffine,
     cmB: GAffine,
     cmC: GAffine,
@@ -92,7 +94,7 @@ struct PlonkupProof {
     l_xi: Vec<ScalarField>,
 }
 
-struct PlonkupProverTestInfo {
+pub struct PlonkupProverTestInfo {
     omega: ScalarField,
     k1: ScalarField,
     k2: ScalarField,
@@ -170,8 +172,24 @@ fn polyVecQuadratic(
     toPolyVec(&[*a0, *a1, *a2])
 }
 
-fn polyVecLagrange(n: usize, pow: usize, omega: &ScalarField) -> DensePolynomial<ScalarField> {
-    todo!()
+fn polyVecLagrange(n: usize, i: usize, omega: &ScalarField) -> DensePolynomial<ScalarField> {
+    let wi = omega.pow([i as u64]);
+
+    let wInv = wi.inverse().unwrap();
+
+    let norm = wi * ScalarField::from(n as i32).inverse().unwrap();
+
+    let mut v = Vec::with_capacity(n);
+
+    let v0 = norm * wi.pow([(n - 1) as u64]);
+
+    v.push(v0);
+
+    for i in 1..n {
+        let prev = v[i-1];
+        v.push(prev * wInv);
+    }
+    DensePolynomial::from_coefficients_vec(v)
 }
 
 fn polyVecInLagrangeBasis(
@@ -179,6 +197,19 @@ fn polyVecInLagrangeBasis(
     omega: &ScalarField,
     p: &DensePolynomial<ScalarField>,
 ) -> DensePolynomial<ScalarField> {
+    let v = &mut p.coeffs.clone();
+
+    let next_pow2 = v.len().next_power_of_two();
+
+    if next_pow2 > v.len() {
+        v.resize(next_pow2, ScalarField::zero());
+    }
+
+    let domain = Radix2EvaluationDomain::<ScalarField>::new(next_pow2)
+        .expect("Length must be a power of two!");
+
+
+
     todo!()
 }
 
