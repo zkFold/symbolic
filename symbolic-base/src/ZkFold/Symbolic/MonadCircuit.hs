@@ -18,6 +18,8 @@ import Prelude (Integer)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
+import ZkFold.Data.Orphans ()
+import Control.DeepSeq (NFData1)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
@@ -113,7 +115,7 @@ class
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   lookupConstraint
-    :: (Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
+    :: (NFData1 f, Foldable f, Typeable f) => f var -> LookupTable a f -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.

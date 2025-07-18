@@ -1,28 +1,23 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE BlockArguments #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (Applicative, pure)
-import Control.DeepSeq (NFData (..), NFData1, rwhnf)
-import Control.Monad (Monad)
+import Control.Applicative (pure)
+import Control.DeepSeq (NFData (..), NFData1, rwhnf, liftRnf)
 import Data.ByteString (ByteString)
-import Data.Function (($), (.))
-import Data.Functor (Functor, fmap)
-import Data.Functor.Identity (Identity (..))
+import Data.Function (($), (.), flip)
+import Data.Functor (fmap, Functor)
 import Data.Map (Map)
-import Data.Map qualified as M
-import Data.Map.Monoidal (MonoidalMap)
-import Data.Map.Monoidal qualified as MM
-import Data.Set (Set)
 import GHC.Generics (Generic)
-import Prelude (error)
+import Prelude (seq)
 
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Context (LookupFunction)
-import ZkFold.ArithmeticCircuit.Lookup (LookupType)
+import ZkFold.ArithmeticCircuit.Context (LookupFunction, appendFunction, witToVar)
+import ZkFold.ArithmeticCircuit.Lookup (LookupTable)
 import ZkFold.ArithmeticCircuit.Witness (WitnessF)
 import ZkFold.Control.HApplicative (HApplicative (..))
 import ZkFold.Data.HFunctor (HFunctor (..))
@@ -30,44 +25,91 @@ import ZkFold.Data.HFunctor.Classes (HNFData (..))
 import ZkFold.Data.Package (Package (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import Control.Monad.State (State, modify', state, runState)
+import Data.Semigroup (Semigroup, (<>))
+import Data.Monoid (Monoid, mempty)
+import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
+import Data.Tuple (swap, uncurry)
+import ZkFold.ArithmeticCircuit.Var (NewVar(..))
+import Data.Binary (Binary)
 
-newtype Polynomial a = MkPolynomial
-  {runPolynomial :: forall b. Algebra a b => (ByteString -> b) -> b}
+---------------------- Efficient "list" concatenation --------------------------
 
-instance NFData (Polynomial a) where
+newtype AppList a = AList { aList :: forall b. (a -> b -> b) -> b -> b }
+
+app :: a -> AppList a -> AppList a
+app x (AList a) = AList \f s -> f x (a f s)
+
+instance NFData (AppList a) where
   rnf = rwhnf
 
-data Elem a = MkElem
-  { elChildren :: Set (Elem a)
-  , elHash :: ByteString
-  , elPolyCon :: Map ByteString (Polynomial a)
-  , elLkpFuns :: Map ByteString (LookupFunction a)
-  , elLookups :: MonoidalMap (LookupType a) (Set [ByteString])
-  , elWitness :: WitnessF a ByteString
+instance Semigroup (AppList a) where
+  AList a <> AList b = AList \f s -> a f (b f s)
+
+instance Monoid (AppList a) where
+  mempty = AList \_ s -> s
+
+----------------- Compact polynomial constraint representation -----------------
+
+newtype Polynomial a v = MkPolynomial
+  {runPolynomial :: forall b. Algebra a b => (v -> b) -> b}
+
+instance NFData (Polynomial a v) where
+  rnf = rwhnf
+
+--------------- Type-preserving lookup constraint representation ---------------
+
+data LookupEntry a v =
+  forall f. NFData1 f => LEntry (f v) (LookupTable a f)
+
+instance (NFData a, NFData v) => NFData (LookupEntry a v) where
+  rnf (LEntry v t) = liftRnf rnf v `seq` rnf t
+
+------------- Box of constraints supporting efficient concatenation ------------
+
+-- After #573, can be made even more declarative
+-- by getting rid of 'cbLkpFuns' field.
+-- Can then be used for new public Symbolic API (see 'constrain' below)!
+data ConstraintBox a v = MkCBox
+  { cbPolyCon :: AppList (Polynomial a v)
+  , cbLkpFuns :: Map ByteString (LookupFunction a)
+  , cbLookups :: AppList (LookupEntry a v)
   }
-  deriving Generic
+  deriving (Generic, NFData)
+  deriving (Semigroup, Monoid) via (GenericSemigroupMonoid (ConstraintBox a v))
 
-instance NFData a => NFData (Elem a)
+------------------- Experimental single-output circuit type --------------------
 
-instance FromConstant c (WitnessF a (Elem a)) => FromConstant c (Elem a) where
-  fromConstant (fromConstant -> (witness :: WitnessF a (Elem a))) =
-    MkElem
-      { elChildren = error "TODO: find children"
-      , elHash = error "TODO: find hash"
-      , elPolyCon = M.empty
-      , elLkpFuns = M.empty
-      , elLookups = MM.empty
-      , ..
-      }
-   where
-    elWitness = fmap elHash witness
+-- If this approach works out, we can simplify Symbolic interface down to:
+-- * a mysterious "field" type (here: Elem a);
+-- * a way to constrain elements of this field via generic 'constrain' function.
+data Elem a = MkElem
+  { elHash :: ByteString
+  , elWitness :: WitnessF a (Elem a)
+  , elConstraints :: ConstraintBox a (Elem a)
+  }
+  deriving (Generic, NFData)
+
+-- A 'constrain' function applies constraints to the "field element".
+constrain :: ConstraintBox a (Elem a) -> Elem a -> Elem a
+constrain cb el = el { elConstraints = cb <> elConstraints el }
+
+instance (Arithmetic a, Binary a, FromConstant c (WitnessF a (Elem a))) =>
+    FromConstant c (Elem a) where
+  fromConstant (fromConstant -> (elWitness :: WitnessF a (Elem a))) = MkElem
+    { elHash = witToVar $ fmap (EqVar . elHash) elWitness
+    , elConstraints = mempty
+    , ..
+    }
+
+--------------------- Adapters into current Symbolic API -----------------------
 
 newtype AC a f = MkAC {runAC :: f (Elem a)}
 
-deriving instance (NFData a, NFData1 f) => NFData (AC a f)
+deriving newtype instance NFData1 f => NFData (AC a f)
 
-instance NFData a => HNFData (AC a) where
-  hliftRnf liftRnf = liftRnf rnf . runAC
+instance HNFData (AC a) where
+  hliftRnf lift = lift rnf . runAC
 
 instance HFunctor (AC a) where
   hmap f = MkAC . f . runAC
@@ -80,23 +122,24 @@ instance Package (AC a) where
   unpackWith f = fmap MkAC . f . runAC
   packWith f = MkAC . f . fmap runAC
 
-instance Arithmetic a => Symbolic (AC a) where
+instance (Arithmetic a, Binary a) => Symbolic (AC a) where
   type BaseField (AC a) = a
   type WitnessField (AC a) = WitnessF a (Elem a)
   witnessF = fmap at . runAC
   fromCircuitF (MkAC es) cf = MkAC $ commit (cf es)
 
-newtype ACM a b = MkACM {runACM :: b}
-  deriving (Applicative, Functor, Monad) via Identity
-
-commit :: ACM a (f (Elem a)) -> f (Elem a)
-commit = error "TODO: write constraints into elems"
+commit
+    :: Functor f => State (ConstraintBox a (Elem a)) (f (Elem a)) -> f (Elem a)
+commit = uncurry (fmap . constrain) . swap . flip runState mempty
 
 instance Arithmetic a => Witness (Elem a) (WitnessF a (Elem a)) where
   at = pure
 
-instance Arithmetic a => MonadCircuit (Elem a) a (WitnessF a (Elem a)) (ACM a) where
-  unconstrained = MkACM . fromConstant
-  constraint _ = error "TODO: write down constraint"
-  registerFunction _ = error "TODO: write down function"
-  lookupConstraint _ = error "TODO: write down lookup constraint"
+instance (Arithmetic a, Binary a) =>
+    MonadCircuit (Elem a) a (WitnessF a (Elem a)) (State (ConstraintBox a (Elem a))) where
+  unconstrained = pure . fromConstant
+  constraint c = modify' \cb -> cb { cbPolyCon = MkPolynomial c `app` cbPolyCon cb }
+  registerFunction f = state \(!cb) ->
+    let (i, r') = appendFunction f (cbLkpFuns cb)
+     in (i, cb { cbLkpFuns = r' })
+  lookupConstraint c t = modify' \cb -> cb { cbLookups = LEntry c t `app` cbLookups cb }

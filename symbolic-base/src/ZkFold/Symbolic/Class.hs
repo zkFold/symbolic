@@ -78,7 +78,7 @@ class
   -- | To perform computations in a generic context @c@ -- that is, to form a
   -- mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
   -- provide an algorithm for turning @f@ into @g@ inside a circuit.
-  fromCircuitF :: c f -> CircuitFun '[f] g c -> c g
+  fromCircuitF :: Functor g => c f -> CircuitFun '[f] g c -> c g
 
   -- | If there is a simpler implementation of a function in pure context,
   -- you can provide it via 'sanityF' to use it in pure contexts.
@@ -90,60 +90,58 @@ embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
 symbolicF
-  :: (Symbolic c, BaseField c ~ a)
+  :: (Symbolic c, BaseField c ~ a, Functor g)
   => c f
   -> (f a -> g a)
   -> CircuitFun '[f] g c
   -> c g
 symbolicF x f c = sanityF x f (`fromCircuitF` c)
 
+-- | Runs the binary function from @f@ and @g@ into @h@ in a generic context @c@.
 symbolic2F
-  :: (Symbolic c, BaseField c ~ a)
+  :: (Symbolic c, BaseField c ~ a, Functor h)
   => c f
   -> c g
   -> (f a -> g a -> h a)
   -> CircuitFun '[f, g] h c
   -> c h
-
--- | Runs the binary function from @f@ and @g@ into @h@ in a generic context @c@.
 symbolic2F x y f m = symbolicF (hpair x y) (uncurryP f) (uncurryP m)
 
-fromCircuit2F :: Symbolic c => c f -> c g -> CircuitFun '[f, g] h c -> c h
-
 -- | Runs the binary @'CircuitFun'@ in a generic context.
+fromCircuit2F
+    :: (Symbolic c, Functor h) => c f -> c g -> CircuitFun '[f, g] h c -> c h
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
 
+-- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
 symbolic3F
-  :: (Symbolic c, BaseField c ~ a)
+  :: (Symbolic c, BaseField c ~ a, Functor k)
   => c f
   -> c g
   -> c h
   -> (f a -> g a -> h a -> k a)
   -> CircuitFun '[f, g, h] k c
   -> c k
-
--- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
 symbolic3F x y z f m = symbolic2F (hpair x y) z (uncurryP f) (uncurryP m)
 
-fromCircuit3F
-  :: Symbolic c => c f -> c g -> c h -> CircuitFun '[f, g, h] k c -> c k
-
 -- | Runs the ternary @'CircuitFun'@ in a generic context.
+fromCircuit3F
+  :: (Symbolic c, Functor k)
+  => c f -> c g -> c h -> CircuitFun '[f, g, h] k c -> c k
 fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
 
+-- | Given a generic context @c@, runs the function from @f@ many @c g@'s into @c h@.
 symbolicVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w, Foldable f, Functor f)
+  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w)
+  => (Foldable f, Functor f, Functor h)
   => f (c g)
   -> (f (g a) -> h a)
   -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i))
   -> c h
-
--- | Given a generic context @c@, runs the function from @f@ many @c g@'s into @c h@.
 symbolicVF xs f m = symbolicF (pack xs) (f . unComp1) (m . unComp1)
 
-fromCircuitVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w, Foldable f, Functor f)
-  => f (c g) -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
-
 -- | Given a generic context @c@, runs the @'CircuitFun'@ from @f@ many @c g@'s into @c h@.
+fromCircuitVF
+  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w)
+  => (Foldable f, Functor f, Functor h)
+  => f (c g) -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
 fromCircuitVF xs m = fromCircuitF (pack xs) (m . unComp1)
