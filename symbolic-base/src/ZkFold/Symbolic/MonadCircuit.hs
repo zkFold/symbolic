@@ -8,6 +8,7 @@ import Control.Monad (Monad (return))
 import Data.Binary (Binary)
 import Data.Foldable (Foldable)
 import Data.Function (($), (.))
+import Data.Functor (Functor)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Kind (Type)
 import Data.Set (singleton)
@@ -22,7 +23,6 @@ import ZkFold.ArithmeticCircuit.Lookup
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq)
 import ZkFold.Data.Orphans ()
-import Data.Functor (Functor)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.

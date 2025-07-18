@@ -2,23 +2,24 @@
 
 module ZkFold.ArithmeticCircuit.Children where
 
-import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
-import Data.Set (Set)
-import Data.Function ((.), flip, const, id)
-import Data.Monoid (mempty, Monoid)
-import Data.Semigroup (Semigroup, (<>))
+import Data.Function (const, flip, id, (.))
+import Data.Monoid (Monoid, mempty)
 import Data.Ord (Ord)
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import Data.Semigroup (Semigroup, (<>))
+import Data.Set (Set)
+
 import ZkFold.Algebra.Class
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 children :: forall a v. (Finite a, Ord v) => WitnessF a v -> Set v
 children = runC @a . flip runWitnessF mempty
 
-newtype Children a v = C { runC :: Set v }
-  deriving newtype (Semigroup, Monoid)
+newtype Children a v = C {runC :: Set v}
+  deriving newtype (Monoid, Semigroup)
 
 instance {-# OVERLAPPABLE #-} Ord v => FromConstant c (Children a v) where
   fromConstant = const mempty
