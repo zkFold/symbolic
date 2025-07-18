@@ -8,6 +8,7 @@ import qualified Prelude
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
+import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class (Symbolic (..))
@@ -17,6 +18,13 @@ import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FFA
 
 type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_Base 'Auto ctx))
+
+instance
+  (Symbolic ctx, KnownFFA BLS12_381_Base Auto ctx)
+  => FromConstant Haskell.BLS12_381_G1_Point (BLS12_381_G1_Point ctx)
+  where
+  fromConstant (Weierstrass (Point x y b)) =
+    Weierstrass (Point (fromConstant x) (fromConstant y) (fromConstant b))
 
 instance
   ( Symbolic ctx
