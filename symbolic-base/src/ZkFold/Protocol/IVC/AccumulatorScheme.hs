@@ -11,10 +11,11 @@ import Data.Constraint.Nat (plusMinusInverse1)
 import Data.Foldable (Foldable)
 import Data.Functor.Rep (Representable (..), mzipWithRep)
 import Data.Zip (Zip (..))
-import Prelude (fmap, ($), (<$>))
+import Prelude (fmap, ($), (<$>), type (~))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (polyVecLinear)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (SimplePoly, toVector)
@@ -51,17 +52,22 @@ accumulatorScheme
      , KnownNat (d + 1)
      , Representable i
      , Foldable i
+     , Representable p
+     , Foldable p
      , OracleSource f f
      , OracleSource f c
-     , HomomorphicCommit [f] c
+     , HomomorphicCommit c
      , Field f
      , Scale a f
      , Scale a (SimplePoly f (d + 1))
      , Scale f c
      , Binary (Rep i)
      , Binary (Rep p)
+     , f ~ ScalarFieldOf c
      )
-  => Hasher -> Predicate a i p -> AccumulatorScheme d k i c f
+  => Hasher
+  -> Predicate a i p
+  -> AccumulatorScheme d k i c f
 accumulatorScheme hash phi =
   let
     prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
