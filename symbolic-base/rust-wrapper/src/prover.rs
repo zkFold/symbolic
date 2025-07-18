@@ -12,6 +12,7 @@ use ark_poly::Polynomial;
 use ark_std::log2;
 use ark_std::Zero;
 use core::slice;
+use std::collections::HashMap;
 use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
 
 pub struct PlonkupCircuitPolynomials {
@@ -332,7 +333,10 @@ where
 }
 
 fn sortByList(f: &Vec<ScalarField>, t: &Vec<ScalarField>) -> Vec<ScalarField> {
-    todo!()
+    let order: HashMap<&ScalarField, usize> = t.iter().enumerate().map(|(i, v)| (v, i)).collect();
+    let mut f_copy = f.clone();
+    f_copy.sort_by_key(|x| order.get(x).cloned().unwrap());
+    f_copy
 }
 
 fn concat_vecs<T: Clone>(a: &[T], b: &[T]) -> Vec<T> {
@@ -343,15 +347,27 @@ fn concat_vecs<T: Clone>(a: &[T], b: &[T]) -> Vec<T> {
 }
 
 fn cumprod(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
-    todo!()
+    let v = &pv.coeffs;
+    let mut result = Vec::with_capacity(v.len());
+
+    result[0] = v[0].clone();
+    for i in 1..v.len() {
+        result[i] = &result[i - 1] * &v[i];
+    }
+
+    DensePolynomial::from_coefficients_vec(result)
 }
 
 fn rotR(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
-    todo!()
+    let mut v = pv.coeffs.clone();
+    v.rotate_right(1);
+    DensePolynomial::from_coefficients_vec(v)
 }
 
 fn rotL(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
-    todo!()
+    let mut v = pv.coeffs.clone();
+    v.rotate_left(1);
+    DensePolynomial::from_coefficients_vec(v)
 }
 
 trait Secret {
