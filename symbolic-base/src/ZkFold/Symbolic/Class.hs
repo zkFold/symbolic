@@ -114,7 +114,7 @@ symbolic2F x y f m = symbolicF (hpair x y) (uncurryP f) (uncurryP m)
 
 -- | Runs the binary @'CircuitFun'@ in a generic context.
 fromCircuit2F
-    :: (Symbolic c, Functor h) => c f -> c g -> CircuitFun '[f, g] h c -> c h
+  :: (Symbolic c, Functor h) => c f -> c g -> CircuitFun '[f, g] h c -> c h
 fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
 
 -- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.

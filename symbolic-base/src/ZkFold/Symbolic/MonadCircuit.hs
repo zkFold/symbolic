@@ -3,6 +3,7 @@
 
 module ZkFold.Symbolic.MonadCircuit where
 
+import Control.DeepSeq (NFData1)
 import Control.Monad (Monad (return))
 import Data.Binary (Binary)
 import Data.Foldable (Foldable)
@@ -18,10 +19,9 @@ import Prelude (Integer)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
-import ZkFold.Data.Orphans ()
-import Control.DeepSeq (NFData1)
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq)
+import ZkFold.Data.Orphans ()
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.

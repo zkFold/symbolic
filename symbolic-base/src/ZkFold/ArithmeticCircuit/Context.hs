@@ -105,7 +105,8 @@ appendFunction
    . (Representable f, Typeable f, Binary (Rep f))
   => (Traversable g, Typeable g, Arithmetic a)
   => (forall x. ResidueField x => f x -> g x)
-  -> FunctionRegistry a -> (FunctionId (f a -> g a), FunctionRegistry a)
+  -> FunctionRegistry a
+  -> (FunctionId (f a -> g a), FunctionRegistry a)
 appendFunction f r =
   let functionId = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
    in (FunctionId functionId, M.insert functionId (LookupFunction f) r)
