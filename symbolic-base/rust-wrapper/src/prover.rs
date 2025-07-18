@@ -11,6 +11,8 @@ use ark_poly::Polynomial;
 use ark_serialize::CanonicalSerialize;
 use ark_std::log2;
 use ark_std::Zero;
+use blake2::digest::{Update, VariableOutput};
+use blake2::Blake2bVar;
 use core::slice;
 use std::collections::HashMap;
 use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
@@ -143,6 +145,18 @@ pub struct PlonkupProverTestInfo {
     w1: DensePolynomial<ScalarField>,
     w2: DensePolynomial<ScalarField>,
     w3: DensePolynomial<ScalarField>,
+}
+
+fn blake2b_224(data: &[u8]) -> Vec<u8> {
+    // Create hasher configured for a 28-byte (224-bit) digest
+    let mut hasher = Blake2bVar::new(28).expect("Invalid output size");
+    hasher.update(data);
+
+    let mut output = vec![0u8; 28];
+    hasher
+        .finalize_variable(&mut output)
+        .expect("Hashing failed");
+    output
 }
 
 fn toPolyVec(v: &[ScalarField]) -> DensePolynomial<ScalarField> {
@@ -286,7 +300,8 @@ fn bytes(pt: &ScalarField) -> Vec<u8> {
 }
 
 fn challenge(transcript: &Vec<u8>) -> ScalarField {
-    todo!()
+    let digest = blake2b_224(transcript);
+    ScalarField::from_le_bytes_mod_order(&digest)
 }
 
 fn zip_with<A, B, C, F>(a: &[A], b: &[B], mut f: F) -> Vec<C>
