@@ -185,6 +185,7 @@ benchmark experimental-backend
       deepseq,
       symbolic-base,
       symbolic-examples,
+      tasty,
       tasty-bench,
       tasty-golden
 
