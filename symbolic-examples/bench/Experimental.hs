@@ -3,25 +3,26 @@
 
 module Main where
 
-import Control.DeepSeq                        (force)
-import Control.Monad                          (return)
-import Data.ByteString.Lazy                   (ByteString)
-import Data.Function                          (($), (.))
-import Data.Functor.Rep                       (tabulate)
-import Data.Semigroup                         ((<>))
-import Data.String                            (String)
-import Data.String                            qualified as String
-import System.IO                              (IO)
+import Control.DeepSeq (force)
+import Control.Monad (return)
+import Data.ByteString.Lazy (ByteString)
+import Data.Function (($), (.))
+import Data.Functor.Rep (tabulate)
+import Data.Semigroup ((<>))
+import Data.String (String)
+import Data.String qualified as String
+import System.IO (IO)
 import Test.Tasty.Bench
-import Test.Tasty.Golden                      (goldenVsString)
-import Text.Show                              (show)
-import ZkFold.Algebra.Class                   (zero)
+import Test.Tasty.Golden (goldenVsString)
+import Text.Show (show)
+import ZkFold.Algebra.Class (zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
-import ZkFold.Algebra.Field                   (Zp)
-import ZkFold.ArithmeticCircuit               qualified as Circuit
-import ZkFold.ArithmeticCircuit               (ArithmeticCircuit, eval)
-import ZkFold.ArithmeticCircuit.Experimental  (compile)
-import ZkFold.Symbolic.Examples.MiMCHash      (exampleMiMC)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
+import ZkFold.ArithmeticCircuit qualified as Circuit
+import ZkFold.ArithmeticCircuit.Experimental (compile)
+
+import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
@@ -38,7 +39,8 @@ metrics name circuit =
 type A = Zp BLS12_381_Scalar
 
 main :: IO ()
-main = defaultMain
+main =
+  defaultMain
     [ bench "MiMC compilation" $ nf (compile @A) exampleMiMC
     , env (return $ force $ compile @A exampleMiMC) $
         bench "MiMC evaluation" . nf (`eval` tabulate zero)

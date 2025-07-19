@@ -20,6 +20,7 @@ import Data.Functor (Functor, fmap)
 import Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
+import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid, mempty)
 import Data.Ord (Ord (..))
 import Data.Semigroup (Semigroup, (<>))
@@ -29,6 +30,7 @@ import Data.Traversable (traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
+import Optics (zoom)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
@@ -69,8 +71,6 @@ import ZkFold.Symbolic.Data.Class (
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
-import Optics (zoom)
-import Data.Maybe (Maybe (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
