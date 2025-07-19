@@ -172,6 +172,22 @@ benchmark bench-circuit-size
       tasty,
       tasty-golden
 
+benchmark experimental-backend
+    import:         options-exe
+    main-is:        Experimental.hs
+    hs-source-dirs: bench
+    type:           exitcode-stdio-1.0
+    ghc-options:    -O3
+    build-depends:
+      adjunctions,
+      base,
+      bytestring,
+      deepseq,
+      symbolic-base,
+      symbolic-examples,
+      tasty-bench,
+      tasty-golden
+
 executable smart-wallet-creator
   import:           options 
   import:           options-exe

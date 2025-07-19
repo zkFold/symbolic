@@ -8,7 +8,7 @@
 module ZkFold.ArithmeticCircuit.Experimental where
 
 import Control.Applicative (pure)
-import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
+import Control.DeepSeq (NFData (..), NFData1, rwhnf)
 import Control.Monad (unless)
 import Control.Monad.State (State, gets, modify', runState, state)
 import Data.Binary (Binary)
@@ -29,7 +29,7 @@ import Data.Traversable (traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
-import Prelude (error, seq)
+import Prelude (error)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
@@ -69,6 +69,8 @@ import ZkFold.Symbolic.Data.Class (
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import Optics (zoom)
+import Data.Maybe (Maybe (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -94,18 +96,12 @@ instance Foldable AppList where
 newtype Polynomial a v = MkPolynomial
   {runPolynomial :: forall b. Algebra a b => (v -> b) -> b}
 
-instance NFData (Polynomial a v) where
-  rnf = rwhnf
-
 --------------- Type-preserving lookup constraint representation ---------------
 
 data LookupEntry a v
   = forall f.
     (Functor f, Foldable f, NFData1 f, Typeable f) =>
     LEntry (f v) (LookupTable a f)
-
-instance (NFData a, NFData v) => NFData (LookupEntry a v) where
-  rnf (LEntry v t) = liftRnf rnf v `seq` rnf t
 
 ------------- Box of constraints supporting efficient concatenation ------------
 
@@ -127,13 +123,13 @@ data ConstraintBox a v = MkCBox
 -- * a way to constrain elements of this field via generic 'constrain' function.
 data Elem a = MkElem
   { elHash :: NewVar
-  , elWitness :: WitnessF a (Elem a)
+  , elWitness :: Maybe (WitnessF a (Elem a))
   , elConstraints :: ConstraintBox a (Elem a)
   }
   deriving (Generic, NFData)
 
 fromVar :: NewVar -> Elem a
-fromVar v = let r = MkElem v (pure r) mempty in r
+fromVar v = MkElem v Nothing mempty
 
 -- A 'constrain' function applies constraints to the "field element".
 constrain :: ConstraintBox a (Elem a) -> Elem a -> Elem a
@@ -149,11 +145,11 @@ instance
   (Arithmetic a, Binary a, FromConstant c (WitnessF a (Elem a)))
   => FromConstant c (Elem a)
   where
-  fromConstant (fromConstant -> (elWitness :: WitnessF a (Elem a))) =
+  fromConstant (fromConstant -> witness) =
     MkElem
-      { elHash = EqVar $ witToVar (fmap elHash elWitness)
+      { elHash = EqVar $ witToVar @a (fmap elHash witness)
       , elConstraints = mempty
-      , ..
+      , elWitness = Just witness
       }
 
 --------------------- Adapters into current Symbolic API -----------------------
@@ -208,7 +204,7 @@ compile
   => f -> ArithmeticCircuit a (Payload s :*: Layout s) (Layout (Range f))
 compile =
   optimize . solder . \f (p :*: l) ->
-    let input = restore (MkAC (fmap fromVar l), fmap (fmap fromVar . pure) p)
+    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
         Bool b = isValid input
         output = apply f input
         MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
@@ -218,17 +214,18 @@ compile =
      in crown circuit vars
  where
   work :: Elem a -> State (CircuitContext a U1) (Var a)
-  work el = case elHash el of
-    FoldPVar _ _ -> error "TODO: fold constraints"
-    FoldLVar _ _ -> error "TODO: fold constraints"
-    EqVar bs -> do
+  work el = case (elWitness el, elHash el) of
+    (Nothing, v) -> pure (pure v) -- input variable
+    (_, FoldPVar _ _) -> error "TODO: fold constraints"
+    (_, FoldLVar _ _) -> error "TODO: fold constraints"
+    (Just w, EqVar bs) -> do
       isDone <- gets (M.member bs . acWitness)
       unless isDone do
-        _ <- unconstrained (fmap elHash (elWitness el))
+        zoom #acWitness $ modify' $ M.insert bs (fmap elHash w)
         let MkCBox {..} = elConstraints el
         for_ cbPolyCon \c -> do
-          let asWitness = WitnessF (runPolynomial c)
-              cId = witToVar @a (fmap elHash asWitness)
+          let asWitness = WitnessF @a (runPolynomial c)
+              cId = witToVar (fmap elHash asWitness)
           isDone' <- gets (M.member cId . acSystem)
           unless isDone' do
             constraint (\x -> runPolynomial c (x . pure . elHash))
@@ -246,5 +243,5 @@ compile =
           unless isDone' do
             lookupConstraint (fmap (pure . elHash) l) t
             for_ l work
-        for_ (children $ elWitness el) work
+        for_ (children w) work
       pure $ pure (elHash el)
