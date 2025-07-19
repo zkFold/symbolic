@@ -7,7 +7,7 @@ module ZkFold.ArithmeticCircuit.Context where
 
 import Control.Applicative (liftA2, pure)
 import Control.DeepSeq (NFData, NFData1, liftRnf, rnf, rwhnf)
-import Control.Monad.State (State, modify, runState)
+import Control.Monad.State (State, modify, runState, state)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.Types as Aeson
 import Data.Binary (Binary)
@@ -92,13 +92,24 @@ instance NFData a => NFData (CircuitFold a) where
 
 data LookupFunction a
   = forall f g.
-    (Representable f, Traversable g, Typeable f, Typeable g) =>
+    (Representable f, Traversable g, Typeable f, Typeable g, Binary (Rep f)) =>
     LookupFunction (forall x. ResidueField x => f x -> g x)
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
 
 type FunctionRegistry a = Map ByteString (LookupFunction a)
+
+appendFunction
+  :: forall f g a
+   . (Representable f, Typeable f, Binary (Rep f))
+  => (Traversable g, Typeable g, Arithmetic a)
+  => (forall x. ResidueField x => f x -> g x)
+  -> FunctionRegistry a
+  -> (FunctionId (f a -> g a), FunctionRegistry a)
+appendFunction f r =
+  let functionId = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
+   in (FunctionId functionId, M.insert functionId (LookupFunction f) r)
 
 lookupFunction
   :: forall f g (a :: Type)
@@ -356,11 +367,7 @@ instance
       constraint (($ toVar v) - ($ src))
       pure v
 
-  registerFunction f = do
-    let functionId =
-          runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
-    zoom #acLookupFunction $ modify (M.insert functionId $ LookupFunction f)
-    pure (FunctionId functionId)
+  registerFunction f = zoom #acLookupFunction $ state (appendFunction f)
 
 -- | Generates new variable index given a witness for it.
 --

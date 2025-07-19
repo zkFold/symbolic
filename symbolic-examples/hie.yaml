@@ -9,5 +9,8 @@ cradle:
     - path: "bench/CircuitSize.hs"
       component: "symbolic-examples:bench:bench-circuit-size"
 
+    - path: "bench/Experimental.hs"
+      component: "symbolic-examples:bench:experimental-backend"
+
     - path: "smart-wallet-creator/Main.hs"
       component: "symbolic-examples:exe:smart-wallet-creator"
