@@ -1,18 +1,35 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.UPLC.Class (IsData (..), Sym, ExValue (..), ExList (..)) where
+module ZkFold.Symbolic.UPLC.Class (
+  IsData (..),
+  Sym,
+  ExValue (..),
+  ExList (..),
+  BLS12_381_G2_Point (..),
+  BLS12_381_GT (..),
+) where
 
 import Data.Maybe (Maybe (..))
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
+import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Data.Eq (Eq)
+import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
+import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.List qualified as L
+import ZkFold.Symbolic.Data.UInt (OrdWord)
 import ZkFold.Symbolic.Data.VarByteString
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude (type (~))
@@ -55,6 +72,14 @@ type Sym c =
   , Typeable c
   , Symbolic.KnownData c
   , KnownRegisters c IntLength IntRegSize
+  , KnownRegisters c BSLength Auto
+  , KnownRegisters c (NumberOfBits (BaseField c)) Auto
+  , KnownNat (GetRegisterSize (BaseField c) IntLength IntRegSize)
+  , KnownNat (GetRegisterSize (BaseField c) IntLength IntRegSize `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) BSLength Auto `Ceil` OrdWord)
+  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) Auto `Ceil` OrdWord)
+  , KnownFFA BLS12_381_Base Auto c
+  , KnownFFA BLS12_381_Scalar Auto c
   )
 
 instance Sym c => IsData BTInteger (Int IntLength Auto c) c
@@ -76,7 +101,30 @@ instance (Sym c, IsData t v c) => IsData (BTList t) (L.List c v) c where
 instance (Sym c, IsData t v c, IsData t' v' c) => IsData (BTPair t t') (v, v') c where
   asPair (p, q) = Just (ExValue p, ExValue q)
 
--- Uncomment these lines as more types are available in Converter:
--- instance Sym c => IsData BTBLSG1 ??? c where asPair _ = Nothing
--- instance Sym c => IsData BTBLSG2 ??? c where asPair _ = Nothing
--- instance Sym c => IsData BTBLSMLResult ??? c where asPair _ = Nothing
+instance Sym c => IsData BTBLSG1 (BLS12_381_G1_Point c) c
+
+newtype BLS12_381_G2_Point c = MkG2 {runG2 :: BLS12_381_G1_Point c}
+-- ^ TODO: Replace with proper G2 impl once it's done
+
+deriving newtype instance Sym c => SymbolicData (BLS12_381_G2_Point c)
+
+deriving newtype instance Sym c => Eq (BLS12_381_G2_Point c)
+
+deriving newtype instance (Sym c, FromConstant k (FFA BLS12_381_Scalar Auto c)) => Scale k (BLS12_381_G2_Point c)
+
+deriving newtype instance Sym c => AdditiveSemigroup (BLS12_381_G2_Point c)
+
+deriving newtype instance Sym c => AdditiveMonoid (BLS12_381_G2_Point c)
+
+deriving newtype instance Sym c => AdditiveGroup (BLS12_381_G2_Point c)
+
+instance Sym c => IsData BTBLSG2 (BLS12_381_G2_Point c) c
+
+newtype BLS12_381_GT c = MkGT {runGT :: BLS12_381_G1_Point c}
+-- ^ TODO: Replace with proper GT impl once it's done
+
+deriving newtype instance Sym c => SymbolicData (BLS12_381_GT c)
+
+deriving newtype instance Sym c => AdditiveSemigroup (BLS12_381_GT c)
+
+instance Sym c => IsData BTBLSMLResult (BLS12_381_GT c) c

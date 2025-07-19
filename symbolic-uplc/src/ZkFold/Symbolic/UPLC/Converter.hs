@@ -1,3 +1,5 @@
+{-# LANGUAGE MonoLocalBinds #-}
+
 module ZkFold.Symbolic.UPLC.Converter where
 
 import Data.Function (($))

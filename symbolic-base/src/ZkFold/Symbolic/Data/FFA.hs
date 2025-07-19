@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAMaxBits, toUInt) where
+module ZkFold.Symbolic.Data.FFA (FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -27,6 +27,7 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Vector (Vector)
@@ -45,6 +46,7 @@ import ZkFold.Symbolic.Data.Combinators (
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
@@ -375,6 +377,12 @@ fromUInt
   => UInt n r c
   -> FFA p r c
 fromUInt ux = FFA (toNative ux) (resize ux)
+
+fromInt
+  :: (Symbolic c, KnownFFA p r c)
+  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
+  => Int n r c -> FFA p r c
+fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
 
 toUInt
   :: forall n p r c
