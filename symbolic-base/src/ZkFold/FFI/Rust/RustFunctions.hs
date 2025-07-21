@@ -66,3 +66,20 @@ foreign import ccall unsafe "rust_wrapper_hmul"
 
 foreign import ccall unsafe "rust_wrapper_scalar_mul"
   rsScalarMul :: RustFunctionBinary
+
+
+foreign import ccall unsafe "rust_wrapper_setup"
+  rsSetup :: Int -> CString -> IO ()
+
+foreign import ccall unsafe "rust_wrapper_plonkup_prove"
+  rsPlonkupProve
+    :: Int
+    -> CString
+    -> Int
+    -> CString
+    -> Int
+    -> CString
+    -> Int
+    -> CString
+    -> Int
+    -> IO CString

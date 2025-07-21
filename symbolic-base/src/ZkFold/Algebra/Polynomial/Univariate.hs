@@ -9,7 +9,7 @@
 module ZkFold.Algebra.Polynomial.Univariate (
   Poly,
   removeZeros,
-  PolyVec,
+  PolyVec(..),
   rewrapPolyVec,
   mulVector,
   mulDft,
@@ -44,7 +44,7 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
-
+import Data.Binary (Binary(..))
 infixl 7 .*., ./.
 
 infixl 6 .+, +.
@@ -347,6 +347,10 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
   deriving (Eq, Generic, NFData, Show)
+
+instance (Binary c) => Binary (PolyVec c size) where
+  put (PV v) = put $ V.toList v
+  get = PV . V.fromList <$> get
 
 class
   ( Ring c

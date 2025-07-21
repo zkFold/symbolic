@@ -80,6 +80,7 @@ import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
+import ZkFold.FFI.Rust.PlonkupTypes (rustPlonkupProve)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -361,7 +362,7 @@ expModProof x ps ac ExpModProofInput {..} = proof
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 10
+type ExpModCircuitGatesMock = 2 ^ 18
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
@@ -441,7 +442,7 @@ expModProofDebug x ps _ = proof
   plonkup = Plonkup omega k1 k2 debugCircuit h1 gs
   setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
-  (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+  (proof, _) = rustPlonkupProve setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
 

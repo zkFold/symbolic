@@ -1,22 +1,24 @@
-use crate::scale::get_opt_window_size;
 use crate::utils::unpack_scalar;
+use ark_bls12_381::G1Projective;
 use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
+use ark_ec::{CurveGroup, VariableBaseMSM};
 use ark_ff::{Field, One, PrimeField};
-use ark_msm::msm::VariableBaseMSM;
-use ark_poly::domain::Radix2EvaluationDomain;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
-use ark_poly::EvaluationDomain;
-use ark_poly::Polynomial;
+use ark_serialize::CanonicalDeserialize;
 use ark_serialize::CanonicalSerialize;
+use num_bigint::BigUint;
+use ark_poly::Polynomial;
 use ark_std::log2;
 use ark_std::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use core::slice;
 use std::collections::HashMap;
-use std::ops::{Add, Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{Div, Mul, MulAssign, Neg, Sub};
 
+use crate::utils::c_char;
+#[derive(Debug)]
 pub struct PlonkupCircuitPolynomials {
     qlX: DensePolynomial<ScalarField>,
     qrX: DensePolynomial<ScalarField>,
@@ -32,6 +34,7 @@ pub struct PlonkupCircuitPolynomials {
     s3X: DensePolynomial<ScalarField>,
 }
 
+#[derive(Debug)]
 pub struct PlonkupProverSetup {
     omega: ScalarField,
     k1: ScalarField,
@@ -43,16 +46,19 @@ pub struct PlonkupProverSetup {
     polynomials: PlonkupCircuitPolynomials,
 }
 
+#[derive(Debug)]
 pub struct PlonkupProverSecret {
     secret: Vec<ScalarField>,
 }
 
+#[derive(Debug)]
 pub struct PlonkupWitness {
     w1: DensePolynomial<ScalarField>,
     w2: DensePolynomial<ScalarField>,
     w3: DensePolynomial<ScalarField>,
 }
 
+#[derive(Debug)]
 pub struct Relation {
     qM: DensePolynomial<ScalarField>,
     qL: DensePolynomial<ScalarField>,
@@ -63,10 +69,11 @@ pub struct Relation {
     t1: DensePolynomial<ScalarField>,
     t2: DensePolynomial<ScalarField>,
     t3: DensePolynomial<ScalarField>,
-    wPub: Vec<ScalarField>,
     prvNum: usize,
+    wPub: Vec<ScalarField>,
 }
 
+#[derive(Debug)]
 pub struct PlonkupProof {
     cmA: GAffine,
     cmB: GAffine,
@@ -97,6 +104,7 @@ pub struct PlonkupProof {
     l_xi: Vec<ScalarField>,
 }
 
+#[derive(Debug)]
 pub struct PlonkupProverTestInfo {
     omega: ScalarField,
     k1: ScalarField,
@@ -275,17 +283,16 @@ fn polyVecInLagrangeBasis(
     v.rotate_right(1);
 
     let mut result = zip_with(&v, &norms, |a, b| a * b);
+    let res_len = result.len();
 
-    serial_fft(&mut result, *omega, log2(n));
+    serial_fft(&mut result, *omega, log2(res_len));
     result.reverse();
 
     DensePolynomial::from_coefficients_vec(result)
 }
 
 fn com(gs: &Vec<GAffine>, p: &DensePolynomial<ScalarField>) -> GAffine {
-    let scalars: Vec<_> = p.coeffs.iter().map(|i| i.into_bigint()).collect();
-    let opt_window_size = get_opt_window_size(log2(gs.len()));
-    VariableBaseMSM::multi_scalar_mul_custom(gs, &scalars, opt_window_size, 2048, 256, false).into()
+    G1Projective::msm_unchecked(&gs, &p).into_affine()
 }
 
 fn compress(pt: &GAffine) -> Vec<u8> {
@@ -367,10 +374,12 @@ fn concat_vecs<T: Clone>(a: &[T], b: &[T]) -> Vec<T> {
 fn cumprod(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let v = &pv.coeffs;
     let mut result = Vec::with_capacity(v.len());
-
-    result[0] = v[0].clone();
+    if v.is_empty() {
+        return DensePolynomial::zero()
+    }
+    result.push(v[0].clone());
     for i in 1..v.len() {
-        result[i] = &result[i - 1] * &v[i];
+        result.push(&result[i - 1] * &v[i]);
     }
 
     DensePolynomial::from_coefficients_vec(result)
@@ -885,4 +894,277 @@ pub fn plonkupProve(
     };
 
     (plonkupProof, testInfo)
+}
+
+
+fn deserialize_scalar(buffer: &[u8]) -> (ScalarField, &[u8]) {
+    let (left, right) = buffer.split_at(32);
+    (PrimeField::from_le_bytes_mod_order(left), right)
+}
+
+fn serialize_scalar(scalar: ScalarField) -> Vec<u8> {
+    let mut v = BigUint::from(scalar.into_bigint()).to_bytes_le();
+    v.resize(std::mem::size_of::<ScalarField>(), 0);
+    v
+}
+
+fn deserialize_point(buffer: &[u8]) -> (GAffine, &[u8]) {
+    let (left, right) = buffer.split_at(96);
+    (GAffine::deserialize_uncompressed_unchecked(left).unwrap(), right)
+}
+
+fn serialize_point(point: GAffine) -> Vec<u8> {
+    let mut res = Vec::new();
+    point.serialize_uncompressed(&mut res).unwrap();
+    // fix_point_vector(&mut res);
+    res
+}
+
+fn deserialize_scalar_vec(buffer: &[u8]) -> (Vec<ScalarField>, &[u8]) {
+    let (len_bytes, buffer) = buffer.split_at(8);
+    let mut v = Vec::new();
+    let len = u64::from_be_bytes(len_bytes.try_into().unwrap());
+    if len < usize::MAX as u64 {
+        v.reserve(len as usize);
+    }
+    let mut mut_buffer = buffer;
+    for _ in 0..len {
+        let (scalar, res1) = deserialize_scalar(mut_buffer);
+        mut_buffer = res1;
+        v.push(scalar);
+    }
+    (v, mut_buffer)
+}
+
+fn deserialize_point_vec(buffer: &[u8]) -> (Vec<GAffine>, &[u8]) {
+    let (len_bytes, buffer) = buffer.split_at(8);
+    let mut v = Vec::new();
+    let len = u64::from_be_bytes(len_bytes.try_into().unwrap());
+    if len < usize::MAX as u64 {
+        v.reserve(len as usize);
+    }
+    let mut mut_buffer = buffer;
+    for _ in 0..len {
+        let (point, res1) = deserialize_point(mut_buffer);
+        mut_buffer = res1;
+        v.push(point);
+    }
+    (v, mut_buffer)
+}
+
+fn deserialize_scalar_poly(buffer: &[u8]) -> (DensePolynomial<ScalarField>, &[u8]) {
+    let (coeffs, bytes) = deserialize_scalar_vec(buffer);
+    (DensePolynomial::from_coefficients_vec(coeffs), bytes)
+}
+
+fn serialize_scalar_vec(vector: Vec<ScalarField>) -> Vec<u8> {
+    let mut res = Vec::new();
+    let len = vector.len() as u64;
+    res.extend_from_slice(&u64::to_be_bytes(len));
+    for scalar in vector {
+        res.extend_from_slice(&serialize_scalar(scalar));
+    }
+    res
+}
+
+fn serialize_scalar_poly(poly: DensePolynomial<ScalarField>) -> Vec<u8> {
+    serialize_scalar_vec(poly.coeffs)
+}
+
+fn deserialize_PlonkupCircuitPolynomials(buffer: &[u8]) -> (PlonkupCircuitPolynomials, &[u8]) {
+    let (qlX, buffer) = deserialize_scalar_poly(buffer);
+    let (qrX, buffer) = deserialize_scalar_poly(buffer);
+    let (qoX, buffer) = deserialize_scalar_poly(buffer);
+    let (qmX, buffer) = deserialize_scalar_poly(buffer);
+    let (qcX, buffer) = deserialize_scalar_poly(buffer);
+    let (qkX, buffer) = deserialize_scalar_poly(buffer);
+    let (t1X, buffer) = deserialize_scalar_poly(buffer);
+    let (t2X, buffer) = deserialize_scalar_poly(buffer);
+    let (t3X, buffer) = deserialize_scalar_poly(buffer);
+    let (s1X, buffer) = deserialize_scalar_poly(buffer);
+    let (s2X, buffer) = deserialize_scalar_poly(buffer);
+    let (s3X, buffer) = deserialize_scalar_poly(buffer);
+    (PlonkupCircuitPolynomials{
+          qlX
+        , qrX
+        , qoX
+        , qmX
+        , qcX
+        , qkX
+        , t1X
+        , t2X
+        , t3X
+        , s1X
+        , s2X
+        , s3X
+}, buffer)
+} 
+
+
+fn deserialize_PlonkupProverSetup(buffer: &[u8]) -> (PlonkupProverSetup, &[u8]) {
+    let (omega, buffer) = deserialize_scalar(buffer);
+    let (k1, buffer) = deserialize_scalar(buffer);
+    let (k2, buffer) = deserialize_scalar(buffer);
+    let (gs, buffer) = deserialize_point_vec(buffer);
+    let (sigma1s, buffer) = deserialize_scalar_poly(buffer);
+    let (sigma2s, buffer) = deserialize_scalar_poly(buffer);
+    let (sigma3s, buffer) = deserialize_scalar_poly(buffer);
+    let (polynomials, buffer) = deserialize_PlonkupCircuitPolynomials(buffer);
+
+    (PlonkupProverSetup{
+          omega
+        , k1
+        , k2
+        , gs
+        , sigma1s
+        , sigma2s
+        , sigma3s
+        , polynomials
+    }, buffer)
+} 
+
+fn deserialize_relation(buffer: &[u8]) -> (Relation, &[u8]) {
+    let (qM, buffer) = deserialize_scalar_poly(buffer);
+    let (qL, buffer) = deserialize_scalar_poly(buffer);
+    let (qR, buffer) = deserialize_scalar_poly(buffer);
+    let (qO, buffer) = deserialize_scalar_poly(buffer);
+    let (qC, buffer) = deserialize_scalar_poly(buffer);
+    let (qK, buffer) = deserialize_scalar_poly(buffer);
+    let (t1, buffer) = deserialize_scalar_poly(buffer);
+    let (t2, buffer) = deserialize_scalar_poly(buffer);
+    let (t3, buffer) = deserialize_scalar_poly(buffer);
+    let (prv_number_bytes, buffer) = buffer.split_at(8);
+    let prvNum = u64::from_be_bytes(prv_number_bytes.try_into().unwrap()) as usize;
+    let (wPub, buffer) = deserialize_scalar_vec(buffer);
+    return (Relation{
+        qM,
+        qL,
+        qR,
+        qO,
+        qC,
+        qK,
+        t1,
+        t2,
+        t3,
+        prvNum,
+        wPub,
+    }, buffer)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
+    n: u64,
+
+    setup_ptr: *const c_char,
+    setup_len: usize,
+
+    secret_ptr: *const c_char,
+    secret_len: usize,
+
+    relation_ptr: *const c_char,
+    relation_len: usize,
+    
+    witness_ptr: *const c_char,
+    witness_len: usize
+) -> *const c_char {
+    let setup_buffer = slice::from_raw_parts(setup_ptr as *const u8, setup_len);
+    let secret_buffer = slice::from_raw_parts(secret_ptr as *const u8, secret_len);
+    let relation_buffer = slice::from_raw_parts(relation_ptr as *const u8, relation_len);
+    let witness_buffer = slice::from_raw_parts(witness_ptr as *const u8, witness_len);
+
+    let (prover_setup, _) = deserialize_PlonkupProverSetup(setup_buffer);
+    let (prover_secret,_) = deserialize_scalar_vec(secret_buffer);
+    let (relation, _) = deserialize_relation(relation_buffer);
+    let (w1, witness_buffer) = deserialize_scalar_poly(witness_buffer);
+    let (w2, witness_buffer) = deserialize_scalar_poly(witness_buffer);
+    let (w3, _) = deserialize_scalar_poly(witness_buffer);
+
+    println!("Start proving");
+    let (proof, test_info) = plonkupProve(n as usize, &prover_setup, &PlonkupProverSecret{secret: prover_secret}, &relation, &PlonkupWitness { w1, w2, w3 });
+    println!("Finish proving");
+
+    let mut byte_result = vec![
+        serialize_point(proof.cmA)
+        , serialize_point(proof.cmB)
+        , serialize_point(proof.cmC)
+        , serialize_point(proof.cmF)
+        , serialize_point(proof.cmH1)
+        , serialize_point(proof.cmH2)
+        , serialize_point(proof.cmZ1)
+        , serialize_point(proof.cmZ2)
+        , serialize_point(proof.cmQlow)
+        , serialize_point(proof.cmQmid)
+        , serialize_point(proof.cmQhigh)
+        , serialize_point(proof.proof1)
+        , serialize_point(proof.proof2)
+        , serialize_scalar(proof.a_xi)
+        , serialize_scalar(proof.b_xi)
+        , serialize_scalar(proof.c_xi)
+        , serialize_scalar(proof.s1_xi)
+        , serialize_scalar(proof.s2_xi)
+        , serialize_scalar(proof.f_xi)
+        , serialize_scalar(proof.t_xi)
+        , serialize_scalar(proof.t_xi_tick)
+        , serialize_scalar(proof.z1_xi_tick)
+        , serialize_scalar(proof.z2_xi_tick)
+        , serialize_scalar(proof.h1_xi_tick)
+        , serialize_scalar(proof.h2_xi)
+        , serialize_scalar(proof.l1_xi)
+        , serialize_scalar_vec(proof.l_xi)
+
+        , serialize_scalar(test_info.omega)                   
+        , serialize_scalar(test_info.k1)                  
+        , serialize_scalar(test_info.k2)                  
+        , serialize_scalar_poly(test_info.qlX)                     
+        , serialize_scalar_poly(test_info.qrX)                     
+        , serialize_scalar_poly(test_info.qoX)                     
+        , serialize_scalar_poly(test_info.qmX)                     
+        , serialize_scalar_poly(test_info.qcX)                     
+        , serialize_scalar_poly(test_info.qkX)                     
+        , serialize_scalar_poly(test_info.t1X)                     
+        , serialize_scalar_poly(test_info.t2X)                     
+        , serialize_scalar_poly(test_info.t3X)                     
+        , serialize_scalar_poly(test_info.s1X)                     
+        , serialize_scalar_poly(test_info.s2X)                     
+        , serialize_scalar_poly(test_info.s3X)                     
+        , serialize_scalar_poly(test_info.aX)                  
+        , serialize_scalar_poly(test_info.bX)                  
+        , serialize_scalar_poly(test_info.cX)                  
+        , serialize_scalar_poly(test_info.piX)                     
+        , serialize_scalar_poly(test_info.tX)                  
+        , serialize_scalar_poly(test_info.z1X)                     
+        , serialize_scalar_poly(test_info.z2X)                     
+        , serialize_scalar_poly(test_info.fX)                  
+        , serialize_scalar_poly(test_info.h1X)                     
+        , serialize_scalar_poly(test_info.h2X)                     
+        , serialize_scalar_poly(test_info.zhX)                     
+        , serialize_scalar_poly(test_info.qX)                  
+        , serialize_scalar_poly(test_info.qlowX)                   
+        , serialize_scalar_poly(test_info.qmidX)                   
+        , serialize_scalar_poly(test_info.qhighX)                  
+        , serialize_scalar_poly(test_info.rX)                  
+        , serialize_scalar(test_info.alpha)                   
+        , serialize_scalar(test_info.beta)                    
+        , serialize_scalar(test_info.gamma)                   
+        , serialize_scalar(test_info.delta)                   
+        , serialize_scalar(test_info.epsilon)                     
+        , serialize_scalar(test_info.xi)                  
+        , serialize_scalar(test_info.zeta)                    
+        , serialize_scalar_poly(test_info.f_zeta)                  
+        , serialize_scalar_poly(test_info.t_zeta)                  
+        , serialize_scalar_poly(test_info.omegas)                  
+        , serialize_scalar_poly(test_info.omegas_tick)                     
+        , serialize_scalar_poly(test_info.grandProduct1)                   
+        , serialize_scalar_poly(test_info.grandProduct2)                   
+        , serialize_scalar_poly(test_info.w1)                  
+        , serialize_scalar_poly(test_info.w2)                  
+        , serialize_scalar_poly(test_info.w3)                  
+    ].concat();
+
+    let result_len = byte_result.len();
+    let ptr = libc::malloc(result_len + 8) as *mut u8;
+    let mut res = result_len.to_le_bytes().to_vec();
+    res.append(&mut byte_result);
+    std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
+    ptr as *const i8
 }
