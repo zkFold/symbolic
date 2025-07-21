@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use crate::utils::unpack_scalar;
 use ark_bls12_381::G1Projective;
 use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
@@ -318,7 +319,7 @@ where
     a.iter().zip(b.iter()).map(|(x, y)| f(x, y)).collect()
 }
 
-fn zip_with3<'a, A, B, C, D, F>(v1: &'a [A], v2: &'a [B], v3: &'a [C], f: F) -> Vec<D>
+fn zip_with3<A, B, C, D, F>(v1: &[A], v2: &[B], v3: &[C], f: F) -> Vec<D>
 where
     F: Fn(&A, &B, &C) -> D,
 {
@@ -404,6 +405,53 @@ trait Secret {
 impl Secret for PlonkupProverSecret {
     fn get(&self, ix: usize) -> ScalarField {
         self.secret[ix - 1]
+    }
+}
+
+trait DivMono {
+    fn div_mono(&self, other: &Self) -> Self;
+}
+
+fn is_shifted_mono(p: &DensePolynomial<ScalarField>) -> Option<(usize, ScalarField)> {
+    let coeffs = &p.coeffs;
+    if (coeffs.len() < 2) {
+        return None;
+    }
+    if (coeffs[0] == ScalarField::zero()) {
+        return None;
+    }
+    let mut count: usize = 0;
+    let mut c: ScalarField = ScalarField::zero();
+    let mut cix: usize = 0;
+    for i in 1..coeffs.len() {
+        if (coeffs[i] != ScalarField::zero()) {
+            count += 1;
+            c = coeffs[i];
+            cix = i;
+        }
+    }
+    if (count == 1) {
+        return Some((cix, c));
+    }
+    None
+}
+
+impl DivMono for DensePolynomial<ScalarField> {
+    fn div_mono(&self, other: &Self) -> Self {
+        let mono_coeff = is_shifted_mono(other);
+        match mono_coeff {
+            None => return self.div(other),
+            Some((m, b)) => {
+                let mut coeffs_mut = self.coeffs.clone();
+                let mut result = vec![ScalarField::zero(); self.coeffs.len()];
+                for i in (m..self.coeffs.len()).rev() {
+                    let ci = coeffs_mut[i];
+                    result[i - m] = ci;
+                    coeffs_mut[i - m] -= ci * b;
+                }
+                return DensePolynomial::from_coefficients_vec(result);
+            }
+        }
     }
 }
 
@@ -682,7 +730,7 @@ pub fn plonkupProve(
 
         let qXNumerator = qXs1 + qXs2.sub(&qXs3) + qXs4 + qXs5 + qXs6.sub(&qXs7) + qXs8;
 
-        &qXNumerator.div(zhX)
+        &qXNumerator.div_mono(zhX)
     };
 
     let qlowX = &toPolyVec(&qX.coeffs[..n + 2]);
@@ -796,7 +844,7 @@ pub fn plonkupProve(
 
         let pfNumerator = rX + &(pf1 + pf2 + pf3 + pf4 + pf5 + pf6 + pf7 + pf8);
 
-        pfNumerator.div(&polyVecLinear(&one, &xi.neg()))
+        pfNumerator.div_mono(&polyVecLinear(&one, &xi.neg()))
     };
 
     let proofX2 = {
@@ -807,7 +855,7 @@ pub fn plonkupProve(
 
         let pfNumerator = pf1 + pf2 + pf3 + pf4;
 
-        pfNumerator.div(&polyVecLinear(&one, &((xi * omega).neg())))
+        pfNumerator.div_mono(&polyVecLinear(&one, &((xi * omega).neg())))
     };
 
     let proof1 = com(&gs, &proofX1);
