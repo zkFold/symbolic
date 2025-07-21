@@ -288,4 +288,4 @@ rustPlonkupProve
             bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
             free ptr
             let !p = decode (BS.fromStrict bs)
-            pure $ (p, undefined) 
+            pure $ (p, undefined)
