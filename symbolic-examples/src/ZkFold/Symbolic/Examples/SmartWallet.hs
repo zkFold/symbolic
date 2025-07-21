@@ -54,6 +54,7 @@ import qualified ZkFold.ArithmeticCircuit as AC
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
+import ZkFold.FFI.Rust.PlonkupTypes (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
 import ZkFold.Protocol.NonInteractiveProof as NP (
   FromTranscript (..),
@@ -80,7 +81,6 @@ import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
-import ZkFold.FFI.Rust.PlonkupTypes (rustPlonkupProve)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --

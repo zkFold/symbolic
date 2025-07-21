@@ -9,7 +9,7 @@
 module ZkFold.Algebra.Polynomial.Univariate (
   Poly,
   removeZeros,
-  PolyVec(..),
+  PolyVec (..),
   rewrapPolyVec,
   mulVector,
   mulDft,
@@ -32,6 +32,7 @@ module ZkFold.Algebra.Polynomial.Univariate (
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad (forM_)
+import Data.Binary (Binary (..))
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
@@ -44,7 +45,7 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
-import Data.Binary (Binary(..))
+
 infixl 7 .*., ./.
 
 infixl 6 .+, +.
@@ -348,7 +349,7 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
   deriving (Eq, Generic, NFData, Show)
 
-instance (Binary c) => Binary (PolyVec c size) where
+instance Binary c => Binary (PolyVec c size) where
   put (PV v) = put $ V.toList v
   get = PV . V.fromList <$> get
 
