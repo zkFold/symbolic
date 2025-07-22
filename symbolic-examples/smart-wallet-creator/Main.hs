@@ -21,5 +21,6 @@ main :: IO ()
 main = do
   let proofBytes = expModProofDebug @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
   print proofBytes
-  -- let a = expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
-  -- print a
+
+-- let a = expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
+-- print a

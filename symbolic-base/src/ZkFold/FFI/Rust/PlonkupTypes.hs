@@ -286,9 +286,10 @@ rustPlonkupProve
           BS.useAsCStringLen (BS.toStrict (mconcat $ encode <$> [w1, w2, w3])) $ \(ptr4, len4) -> do
             !x <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
             print x
-            -- ptr <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
-            -- len <- peek (castPtr ptr) :: IO Int
-            -- bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
-            -- free ptr
-            -- let !p = decode (BS.fromStrict bs)
-            -- pure $ (p, undefined)
+
+-- ptr <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
+-- len <- peek (castPtr ptr) :: IO Int
+-- bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
+-- free ptr
+-- let !p = decode (BS.fromStrict bs)
+-- pure $ (p, undefined)

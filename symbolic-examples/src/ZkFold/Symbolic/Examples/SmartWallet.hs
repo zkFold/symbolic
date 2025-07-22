@@ -360,6 +360,7 @@ expModProof x ps ac ExpModProofInput {..} = proof
   -- (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
   -- (proof, _) = rustPlonkupProve setupP witness
   !proof = rustPlonkupProve setupP witness
+
 -------------------------------------------------------------------------------------------------------------------
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
@@ -458,9 +459,10 @@ mkProofBytesWasm :: CString -> CString -> CString -> IO ()
 mkProofBytesWasm xPtr psPtr proofInputPtr = do
   (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
   pure $ expModProof @ByteString x ps expModCircuit proofInput
-  -- let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
-  -- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
-  -- newArray (json <> [CChar 0])
+
+-- let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
+-- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
+-- newArray (json <> [CChar 0])
 
 mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
@@ -474,9 +476,10 @@ mkProofBytesDebug :: CString -> CString -> CString -> IO ()
 mkProofBytesDebug xPtr psPtr proofInputPtr = do
   (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
   pure $ expModProofDebug @ByteString x ps proofInput
-  -- let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
-  -- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
-  -- newArray (json <> [CChar 0])
+
+-- let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
+-- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
+-- newArray (json <> [CChar 0])
 
 readPointers
   :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_JacobianPoint, ExpModProofInput)
