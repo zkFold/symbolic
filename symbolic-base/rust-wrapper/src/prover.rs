@@ -7,17 +7,22 @@ use ark_ff::{Field, One, PrimeField};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::Polynomial;
-use ark_serialize::CanonicalDeserialize;
+use ark_serialize::{serialize_to_vec, CanonicalDeserialize};
 use ark_serialize::CanonicalSerialize;
 use ark_std::log2;
 use ark_std::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
-use core::slice;
 use num_bigint::BigUint;
+// use serde::{Deserialize, Serialize};
+use core::slice;
+use std::alloc::Layout;
+// use num_bigint::{BigInt, BigUint};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 use std::ops::{Div, Mul, MulAssign, Neg, Sub};
-
+use ark_ff::BigInt;
 use crate::utils::c_char;
 #[derive(Debug)]
 pub struct PlonkupCircuitPolynomials {
@@ -74,7 +79,7 @@ pub struct Relation {
     wPub: Vec<ScalarField>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct PlonkupProof {
     cmA: GAffine,
     cmB: GAffine,
@@ -1111,9 +1116,32 @@ fn deserialize_relation(buffer: &[u8]) -> (Relation, &[u8]) {
     );
 }
 
+// #[wasm_bindgen]
+// extern "C" {
+//     // Use `js_namespace` here to bind `console.log(..)` instead of just
+//     // `log(..)`
+//     #[wasm_bindgen(js_namespace = console)]
+//     fn log(s: &str);
+
+//     // The `console.log` is quite polymorphic, so we can bind it with multiple
+//     // signatures. Note that we need to use `js_name` to ensure we always call
+//     // `log` in JS.
+//     #[wasm_bindgen(js_namespace = console, js_name = log)]
+//     fn log_u32(a: u32);
+
+//     // Multiple arguments too!
+//     #[wasm_bindgen(js_namespace = console, js_name = log)]
+//     fn log_many(a: &str, b: &str);
+// }
+
+// macro_rules! console_log {
+//     // Note that this is using the `log` function imported above during
+//     // `bare_bones`
+//     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+// }
 #[no_mangle]
 pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
-    n: u64,
+    n: usize,
 
     setup_ptr: *const c_char,
     setup_len: usize,
@@ -1126,7 +1154,8 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
 
     witness_ptr: *const c_char,
     witness_len: usize,
-) -> *const c_char {
+) {
+    println!("N is : {:?}", n);
     let setup_buffer = slice::from_raw_parts(setup_ptr as *const u8, setup_len);
     let secret_buffer = slice::from_raw_parts(secret_ptr as *const u8, secret_len);
     let relation_buffer = slice::from_raw_parts(relation_ptr as *const u8, relation_len);
@@ -1150,90 +1179,95 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
         &relation,
         &PlonkupWitness { w1, w2, w3 },
     );
+    let mut buf = Vec::new();
+    proof.serialize_uncompressed(&mut buf).unwrap();
     println!("Finish proving");
+    println!("Proof: {:?}", buf);
+    
+//     let mut byte_result = vec![
+//         serialize_point(proof.cmA),
+//         serialize_point(proof.cmB),
+//         serialize_point(proof.cmC),
+//         serialize_point(proof.cmF),
+//         serialize_point(proof.cmH1),
+//         serialize_point(proof.cmH2),
+//         serialize_point(proof.cmZ1),
+//         serialize_point(proof.cmZ2),
+//         serialize_point(proof.cmQlow),
+//         serialize_point(proof.cmQmid),
+//         serialize_point(proof.cmQhigh),
+//         serialize_point(proof.proof1),
+//         serialize_point(proof.proof2),
+//         serialize_scalar(proof.a_xi),
+//         serialize_scalar(proof.b_xi),
+//         serialize_scalar(proof.c_xi),
+//         serialize_scalar(proof.s1_xi),
+//         serialize_scalar(proof.s2_xi),
+//         serialize_scalar(proof.f_xi),
+//         serialize_scalar(proof.t_xi),
+//         serialize_scalar(proof.t_xi_tick),
+//         serialize_scalar(proof.z1_xi_tick),
+//         serialize_scalar(proof.z2_xi_tick),
+//         serialize_scalar(proof.h1_xi_tick),
+//         serialize_scalar(proof.h2_xi),
+//         serialize_scalar(proof.l1_xi),
+//         serialize_scalar_vec(proof.l_xi),
+// //        serialize_scalar(test_info.omega),
+// //        serialize_scalar(test_info.k1),
+// //        serialize_scalar(test_info.k2),
+// //        serialize_scalar_poly(test_info.qlX),
+// //        serialize_scalar_poly(test_info.qrX),
+// //        serialize_scalar_poly(test_info.qoX),
+// //        serialize_scalar_poly(test_info.qmX),
+// //        serialize_scalar_poly(test_info.qcX),
+// //        serialize_scalar_poly(test_info.qkX),
+// //        serialize_scalar_poly(test_info.t1X),
+// //        serialize_scalar_poly(test_info.t2X),
+// //        serialize_scalar_poly(test_info.t3X),
+// //        serialize_scalar_poly(test_info.s1X),
+// //        serialize_scalar_poly(test_info.s2X),
+// //        serialize_scalar_poly(test_info.s3X),
+// //        serialize_scalar_poly(test_info.aX),
+// //        serialize_scalar_poly(test_info.bX),
+// //        serialize_scalar_poly(test_info.cX),
+// //        serialize_scalar_poly(test_info.piX),
+// //        serialize_scalar_poly(test_info.tX),
+// //        serialize_scalar_poly(test_info.z1X),
+// //        serialize_scalar_poly(test_info.z2X),
+// //        serialize_scalar_poly(test_info.fX),
+// //        serialize_scalar_poly(test_info.h1X),
+// //        serialize_scalar_poly(test_info.h2X),
+// //        serialize_scalar_poly(test_info.zhX),
+// //        serialize_scalar_poly(test_info.qX),
+// //        serialize_scalar_poly(test_info.qlowX),
+// //        serialize_scalar_poly(test_info.qmidX),
+// //        serialize_scalar_poly(test_info.qhighX),
+// //        serialize_scalar_poly(test_info.rX),
+// //        serialize_scalar(test_info.alpha),
+// //        serialize_scalar(test_info.beta),
+// //        serialize_scalar(test_info.gamma),
+// //        serialize_scalar(test_info.delta),
+// //        serialize_scalar(test_info.epsilon),
+// //        serialize_scalar(test_info.xi),
+// //        serialize_scalar(test_info.zeta),
+// //        serialize_scalar_poly(test_info.f_zeta),
+// //        serialize_scalar_poly(test_info.t_zeta),
+// //        serialize_scalar_poly(test_info.omegas),
+// //        serialize_scalar_poly(test_info.omegas_tick),
+// //        serialize_scalar_poly(test_info.grandProduct1),
+// //        serialize_scalar_poly(test_info.grandProduct2),
+// //        serialize_scalar_poly(test_info.w1),
+// //        serialize_scalar_poly(test_info.w2),
+// //        serialize_scalar_poly(test_info.w3),
+//     ]
+//     .concat();
 
-    let mut byte_result = vec![
-        serialize_point(proof.cmA),
-        serialize_point(proof.cmB),
-        serialize_point(proof.cmC),
-        serialize_point(proof.cmF),
-        serialize_point(proof.cmH1),
-        serialize_point(proof.cmH2),
-        serialize_point(proof.cmZ1),
-        serialize_point(proof.cmZ2),
-        serialize_point(proof.cmQlow),
-        serialize_point(proof.cmQmid),
-        serialize_point(proof.cmQhigh),
-        serialize_point(proof.proof1),
-        serialize_point(proof.proof2),
-        serialize_scalar(proof.a_xi),
-        serialize_scalar(proof.b_xi),
-        serialize_scalar(proof.c_xi),
-        serialize_scalar(proof.s1_xi),
-        serialize_scalar(proof.s2_xi),
-        serialize_scalar(proof.f_xi),
-        serialize_scalar(proof.t_xi),
-        serialize_scalar(proof.t_xi_tick),
-        serialize_scalar(proof.z1_xi_tick),
-        serialize_scalar(proof.z2_xi_tick),
-        serialize_scalar(proof.h1_xi_tick),
-        serialize_scalar(proof.h2_xi),
-        serialize_scalar(proof.l1_xi),
-        serialize_scalar_vec(proof.l_xi),
-//        serialize_scalar(test_info.omega),
-//        serialize_scalar(test_info.k1),
-//        serialize_scalar(test_info.k2),
-//        serialize_scalar_poly(test_info.qlX),
-//        serialize_scalar_poly(test_info.qrX),
-//        serialize_scalar_poly(test_info.qoX),
-//        serialize_scalar_poly(test_info.qmX),
-//        serialize_scalar_poly(test_info.qcX),
-//        serialize_scalar_poly(test_info.qkX),
-//        serialize_scalar_poly(test_info.t1X),
-//        serialize_scalar_poly(test_info.t2X),
-//        serialize_scalar_poly(test_info.t3X),
-//        serialize_scalar_poly(test_info.s1X),
-//        serialize_scalar_poly(test_info.s2X),
-//        serialize_scalar_poly(test_info.s3X),
-//        serialize_scalar_poly(test_info.aX),
-//        serialize_scalar_poly(test_info.bX),
-//        serialize_scalar_poly(test_info.cX),
-//        serialize_scalar_poly(test_info.piX),
-//        serialize_scalar_poly(test_info.tX),
-//        serialize_scalar_poly(test_info.z1X),
-//        serialize_scalar_poly(test_info.z2X),
-//        serialize_scalar_poly(test_info.fX),
-//        serialize_scalar_poly(test_info.h1X),
-//        serialize_scalar_poly(test_info.h2X),
-//        serialize_scalar_poly(test_info.zhX),
-//        serialize_scalar_poly(test_info.qX),
-//        serialize_scalar_poly(test_info.qlowX),
-//        serialize_scalar_poly(test_info.qmidX),
-//        serialize_scalar_poly(test_info.qhighX),
-//        serialize_scalar_poly(test_info.rX),
-//        serialize_scalar(test_info.alpha),
-//        serialize_scalar(test_info.beta),
-//        serialize_scalar(test_info.gamma),
-//        serialize_scalar(test_info.delta),
-//        serialize_scalar(test_info.epsilon),
-//        serialize_scalar(test_info.xi),
-//        serialize_scalar(test_info.zeta),
-//        serialize_scalar_poly(test_info.f_zeta),
-//        serialize_scalar_poly(test_info.t_zeta),
-//        serialize_scalar_poly(test_info.omegas),
-//        serialize_scalar_poly(test_info.omegas_tick),
-//        serialize_scalar_poly(test_info.grandProduct1),
-//        serialize_scalar_poly(test_info.grandProduct2),
-//        serialize_scalar_poly(test_info.w1),
-//        serialize_scalar_poly(test_info.w2),
-//        serialize_scalar_poly(test_info.w3),
-    ]
-    .concat();
+//     let result_len = byte_result.len();
+//     // let ptr = libc::malloc(result_len + 8) as *mut u8;
+//     let ptr = std::alloc::alloc(Layout::from_size_align_unchecked(result_len + 8, 8));
 
-    let result_len = byte_result.len();
-    let ptr = libc::malloc(result_len + 8) as *mut u8;
-    let mut res = result_len.to_le_bytes().to_vec();
-    res.append(&mut byte_result);
-    std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
-    ptr as *const i8
+//     let mut res = result_len.to_le_bytes().to_vec();
+//     res.append(&mut byte_result);
+//     std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
+//     ptr as *const i8
 }
