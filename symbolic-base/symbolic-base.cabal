@@ -172,6 +172,7 @@ library
       ZkFold.FFI.Rust.RustBLS
       ZkFold.FFI.Rust.RustFunctions
       ZkFold.FFI.Rust.Types
+      ZkFold.FFI.Rust.PlonkupTypes
       ZkFold.Protocol.IVC
       ZkFold.Protocol.IVC.Accumulator
       ZkFold.Protocol.IVC.AccumulatorScheme

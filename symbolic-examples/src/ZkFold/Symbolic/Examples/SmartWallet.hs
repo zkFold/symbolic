@@ -54,6 +54,7 @@ import qualified ZkFold.ArithmeticCircuit as AC
 import ZkFold.Data.ByteString (toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
+import ZkFold.FFI.Rust.PlonkupTypes (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
 import ZkFold.Protocol.NonInteractiveProof as NP (
   FromTranscript (..),
@@ -331,7 +332,8 @@ expModProof
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModCircuit
   -> ExpModProofInput
-  -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+  -- -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+  -> ()
 expModProof x ps ac ExpModProofInput {..} = proof
  where
   input :: ExpModInput (Interpreter Fr)
@@ -355,13 +357,15 @@ expModProof x ps ac ExpModProofInput {..} = proof
   plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
   witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
-  (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
+  -- (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
+  -- (proof, _) = rustPlonkupProve setupP witness
+  !proof = rustPlonkupProve setupP witness
 
 -------------------------------------------------------------------------------------------------------------------
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 10
+type ExpModCircuitGatesMock = 2 ^ 12
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
@@ -427,7 +431,8 @@ expModProofDebug
   => Fr
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
-  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+  -- -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+  -> ()
 expModProofDebug x ps _ = proof
  where
   input :: Fr
@@ -441,20 +446,23 @@ expModProofDebug x ps _ = proof
   plonkup = Plonkup omega k1 k2 debugCircuit h1 gs
   setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
-  (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+  -- (proof, _) = rustPlonkupProve setupP witness
+  !proof = rustPlonkupProve setupP witness
 
-foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO ()
 
 foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 
-foreign export ccall mkProofBytesDebug :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesDebug :: CString -> CString -> CString -> IO ()
 
-mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+mkProofBytesWasm :: CString -> CString -> CString -> IO ()
 mkProofBytesWasm xPtr psPtr proofInputPtr = do
   (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
-  let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
-  let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
-  newArray (json <> [CChar 0])
+  pure $ expModProof @ByteString x ps expModCircuit proofInput
+
+-- let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
+-- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
+-- newArray (json <> [CChar 0])
 
 mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
 mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
@@ -463,12 +471,15 @@ mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
   let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
   newArray (json <> [CChar 0])
 
-mkProofBytesDebug :: CString -> CString -> CString -> IO CString
+-- mkProofBytesDebug :: CString -> CString -> CString -> IO CString
+mkProofBytesDebug :: CString -> CString -> CString -> IO ()
 mkProofBytesDebug xPtr psPtr proofInputPtr = do
   (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
-  let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
-  let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
-  newArray (json <> [CChar 0])
+  pure $ expModProofDebug @ByteString x ps proofInput
+
+-- let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
+-- let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
+-- newArray (json <> [CChar 0])
 
 readPointers
   :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_JacobianPoint, ExpModProofInput)

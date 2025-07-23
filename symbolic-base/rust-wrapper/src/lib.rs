@@ -1,3 +1,4 @@
+pub mod prover;
 pub mod point;
 pub mod poly;
 pub mod scalar;

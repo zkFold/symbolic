@@ -25,7 +25,7 @@ import GHC.Stack (HasCallStack)
 import System.IO (FilePath, IO)
 import Test.QuickCheck (Gen, chooseInteger, elements)
 import Text.Show (Show, show)
-import Prelude (Double, Integral)
+import Prelude (Double, Integral, ($))
 import qualified Prelude as P
 
 #if defined(wasm32_HOST_ARCH)
