@@ -1,0 +1,114 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  copilot-setup:
+    name: Setup Environment for Copilot
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cabal: [3.14.2.0]
+        ghc: [9.12.2]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Haskell
+      uses: haskell-actions/setup@v2.6.2
+      id: setup
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: ${{ matrix.cabal }}
+        cabal-update: true
+
+    - name: Configure Cabal
+      run: |
+        cabal update
+        cabal configure --enable-tests --enable-benchmarks
+
+    - name: Generate cache key
+      # Creates plan.json file
+      run: |
+        cabal build all --dry-run
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v4
+      id: cache
+      env:
+        key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ env.key }}
+
+    - name: Install dependencies
+      # If we had an exact cache hit, the dependencies will be up to date.
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cabal build all --only-dependencies
+
+    # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+    - name: Save cached dependencies
+      uses: actions/cache/save@v4
+      # If we had an exact cache hit, trying to save the cache would error because of key clash.
+      if: steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup.outputs.cabal-store }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Build all packages
+      run: |
+        cabal build all -f Pedantic
+
+    - name: Setup development tools
+      run: |
+        # Install Haskell Language Server (HLS)
+        cabal install haskell-language-server --overwrite-policy=always
+        
+        # Install fourmolu for formatting
+        curl -L https://github.com/fourmolu/fourmolu/releases/download/v0.18.0.0/fourmolu-0.18.0.0-linux-x86_64 -o fourmolu
+        chmod +x fourmolu
+        sudo mv fourmolu /usr/local/bin/
+        
+        # Install hlint for linting
+        cabal install hlint --overwrite-policy=always
+
+    - name: Verify project structure
+      run: |
+        echo "=== Project Structure ==="
+        find . -name "*.cabal" -type f | head -10
+        echo
+        echo "=== Available executables ==="
+        cabal list-bins all 2>/dev/null || echo "No executables found"
+        echo
+        echo "=== Available benchmarks ==="
+        cabal bench --list all 2>/dev/null || echo "No benchmarks found"
+        echo
+        echo "=== Available tests ==="
+        cabal test --list all 2>/dev/null || echo "No tests found"
+
+    - name: Environment summary
+      run: |
+        echo "=== Environment Setup Complete ==="
+        echo "GHC version: $(ghc --version)"
+        echo "Cabal version: $(cabal --version)"
+        echo
+        echo "=== Available commands ==="
+        echo "Build: cabal build all"
+        echo "Test: cabal test all"
+        echo "Benchmark: cabal bench all"
+        echo "Profile: cabal run --enable-profiling exe:bench-mimc -- +RTS -p -RTS"
+        echo "Format: fourmolu --mode inplace \$(find . -name '*.hs')"
+        echo "Lint: hlint ."
+        echo "Documentation: cabal haddock all"
+        echo
+        echo "Setup completed successfully!"
