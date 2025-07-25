@@ -31,7 +31,7 @@ import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude (error)
 
 import ZkFold.Symbolic.UPLC.Constants
-import ZkFold.UPLC.Term qualified as Term
+import ZkFold.UPLC.Data qualified as Data
 
 data DataPtr c = MkDataPtr
   { ptrOffset :: FieldElement c
@@ -58,17 +58,17 @@ data DataCell a c
   | DBSCell (VarByteString BSLength c)
   deriving G.Generic
 
-instance (SymbolicFold c, KnownData c) => FromConstant Term.Data (DataCell (Data c) c) where
+instance (SymbolicFold c, KnownData c) => FromConstant Data.Data (DataCell (Data c) c) where
   fromConstant = \case
-    Term.DConstr t f -> DConstrCell (fromConstant t) (fromConstant f)
-    Term.DMap es ->
+    Data.DConstr t f -> DConstrCell (fromConstant t) (fromConstant f)
+    Data.DMap es ->
       DMapCell $
         fromConstant
           [ (fromConstant k :: Data c, fromConstant v :: Data c) | (k, v) <- es
           ]
-    Term.DList xs -> DListCell (fromConstant xs)
-    Term.DI int -> DIntCell (fromConstant int)
-    Term.DB bs -> DBSCell (fromConstant bs)
+    Data.DList xs -> DListCell (fromConstant xs)
+    Data.DI int -> DIntCell (fromConstant int)
+    Data.DB bs -> DBSCell (fromConstant bs)
 
 mapCell
   :: forall c g x y
@@ -155,7 +155,7 @@ foldData cell = MkData (inject offset .: concatMapCell (Morph runData) cell)
   toPtrs :: List c (Data c) -> List c (DataPtr c)
   toPtrs = tail . scanl (Morph $ uncurry nextPtr) nullptr
 
-instance (SymbolicFold c, KnownData c) => FromConstant Term.Data (Data c) where
+instance (SymbolicFold c, KnownData c) => FromConstant Data.Data (Data c) where
   fromConstant = foldData . fromConstant
 
 serialiseData :: SymbolicFold c => Data c -> VarByteString BSLength c

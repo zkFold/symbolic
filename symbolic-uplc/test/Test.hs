@@ -33,6 +33,7 @@ import Prelude (either, error, id, (.), type (~))
 
 import ZkFold.Symbolic.UPLC.Converter (contractV3)
 import ZkFold.UPLC.BuiltinFunction
+import ZkFold.UPLC.Constant
 import ZkFold.UPLC.Term
 
 areSame

@@ -48,6 +48,8 @@ import ZkFold.Symbolic.UPLC.Data qualified as Data
 import ZkFold.Symbolic.UPLC.Fun
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.BuiltinType
+import ZkFold.UPLC.Constant
+import ZkFold.UPLC.Data
 import ZkFold.UPLC.Term
 
 ------------------------------- MAIN ALGORITHM ---------------------------------

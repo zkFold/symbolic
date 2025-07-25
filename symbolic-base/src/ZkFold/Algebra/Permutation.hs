@@ -12,6 +12,7 @@ module ZkFold.Algebra.Permutation (
 
 import Control.DeepSeq (NFData)
 import Control.Monad (forM_)
+import Data.Aeson (ToJSON)
 import Data.Functor.Rep (Representable (index))
 import Data.Map.Strict (Map, elems, empty, insertWith)
 import qualified Data.Vector as V
@@ -43,7 +44,7 @@ mkIndexPartition vs =
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Eq, Generic, NFData, Show, ToJSON)
 
 instance KnownNat n => Arbitrary (Permutation n) where
   arbitrary =

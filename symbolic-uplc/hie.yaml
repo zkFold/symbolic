@@ -3,5 +3,8 @@ cradle:
     - path: "src"
       component: "lib:symbolic-uplc"
 
+    - path: "app/Main.hs"
+      component: "symbolic-uplc:exe:symbolic-uplc"
+
     - path: "test"
       component: "symbolic-uplc:test:symbolic-uplc-test"
