@@ -25,6 +25,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector (..), unsafeToVector)
 import ZkFold.Prelude (chooseNatural, drop, length, (!!))
+import Data.Aeson (ToJSON)
 
 -- TODO (Issue #18): make the code safer
 
@@ -43,7 +44,7 @@ mkIndexPartition vs =
 ------------------------------------- Permutations -------------------------------------------
 
 newtype Permutation n = Permutation (Vector n Natural)
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Eq, Generic, NFData, Show, ToJSON)
 
 instance KnownNat n => Arbitrary (Permutation n) where
   arbitrary =

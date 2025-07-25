@@ -1,4 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 module ZkFold.Protocol.Plonkup.Prover.Setup where
 
@@ -9,6 +10,8 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPolyExtendedLength)
 import ZkFold.Protocol.Plonkup.Prover.Polynomials
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
+import Data.Aeson (ToJSON)
+import GHC.Generics (Generic)
 
 data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
   { omega :: !(ScalarFieldOf g1)
@@ -21,6 +24,9 @@ data PlonkupProverSetup i o n g1 g2 pv = PlonkupProverSetup
   , relation :: !(PlonkupRelation i o n (ScalarFieldOf g1) pv)
   , polynomials :: !(PlonkupCircuitPolynomials n g1 pv)
   }
+  deriving (Generic)
+
+instance (ToJSON g1, ToJSON (ScalarFieldOf g1), forall m. ToJSON (pv m)) => ToJSON (PlonkupProverSetup i o n g1 g2 pv)
 
 instance
   ( CyclicGroup g1

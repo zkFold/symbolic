@@ -44,6 +44,7 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
+import Data.Aeson (ToJSON)
 
 infixl 7 .*., ./.
 
@@ -346,7 +347,7 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Eq, Generic, NFData, Show, ToJSON)
 
 class
   ( Ring c
