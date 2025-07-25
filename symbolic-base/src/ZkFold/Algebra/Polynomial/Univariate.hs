@@ -32,6 +32,7 @@ module ZkFold.Algebra.Polynomial.Univariate (
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad (forM_)
+import Data.Aeson (ToJSON)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
@@ -44,7 +45,6 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
-import Data.Aeson (ToJSON)
 
 infixl 7 .*., ./.
 

@@ -5,6 +5,8 @@
 
 module ZkFold.Protocol.Plonkup.Relation where
 
+import Data.Aeson ((.=))
+import qualified Data.Aeson as Aeson
 import Data.Binary (Binary)
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (timesNat)
@@ -47,8 +49,6 @@ import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkCon
 import ZkFold.Protocol.Plonkup.PlonkupConstraint
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import qualified Data.Aeson as Aeson
-import Data.Aeson ((.=))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
@@ -69,20 +69,21 @@ data PlonkupRelation i o n a pv = PlonkupRelation
   }
 
 instance Aeson.ToJSON (pv n) => Aeson.ToJSON (PlonkupRelation i o n a pv) where
-  toJSON PlonkupRelation {..} = Aeson.object
-    [ "qM" .= qM
-    , "qL" .= qL
-    , "qR" .= qR
-    , "qO" .= qO
-    , "qC" .= qC
-    , "qK" .= qK
-    , "t1" .= t1
-    , "t2" .= t2
-    , "t3" .= t3
-    , "sigma" .= sigma
-    -- TODO serialize witness & pub input as well
-    , "prvNum" .= prvNum
-    ]
+  toJSON PlonkupRelation {..} =
+    Aeson.object
+      [ "qM" .= qM
+      , "qL" .= qL
+      , "qR" .= qR
+      , "qO" .= qO
+      , "qC" .= qC
+      , "qK" .= qK
+      , "t1" .= t1
+      , "t2" .= t2
+      , "t3" .= t3
+      , "sigma" .= sigma
+      , -- TODO serialize witness & pub input as well
+        "prvNum" .= prvNum
+      ]
 
 instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
   show PlonkupRelation {..} =

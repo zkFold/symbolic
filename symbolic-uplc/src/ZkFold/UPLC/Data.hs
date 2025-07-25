@@ -2,14 +2,14 @@
 
 module ZkFold.UPLC.Data where
 
-import Data.Word (Word64)
-import Prelude (Integer, error)
-import Data.ByteString (ByteString)
-import Text.Show (Show)
-import qualified Flat.Decoder as Flat
-import Test.QuickCheck (Arbitrary (..), oneof)
-import Data.Functor ((<$>))
 import Control.Applicative ((<*>))
+import Data.ByteString (ByteString)
+import Data.Functor ((<$>))
+import Data.Word (Word64)
+import Flat.Decoder qualified as Flat
+import Test.QuickCheck (Arbitrary (..), oneof)
+import Text.Show (Show)
+import Prelude (Integer, error)
 
 -- | Constructor tags used on Cardano.
 --

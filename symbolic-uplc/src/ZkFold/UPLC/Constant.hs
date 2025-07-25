@@ -4,18 +4,19 @@
 
 module ZkFold.UPLC.Constant where
 
-import ZkFold.UPLC.BuiltinType (BuiltinType (..), DemotedType (..))
-import Prelude (Integer)
-import Data.ByteString (ByteString)
-import Data.Text (Text)
-import Data.Bool (Bool)
-import ZkFold.UPLC.Data (Data, getData)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
-import qualified Flat.Decoder as Flat
-import Data.Functor ((<$>))
 import Control.Applicative ((<*>))
 import Control.Monad (fail)
-import qualified Flat
+import Data.Bool (Bool)
+import Data.ByteString (ByteString)
+import Data.Functor ((<$>))
+import Data.Text (Text)
+import Flat qualified
+import Flat.Decoder qualified as Flat
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
+import Prelude (Integer)
+
+import ZkFold.UPLC.BuiltinType (BuiltinType (..), DemotedType (..))
+import ZkFold.UPLC.Data (Data, getData)
 
 -- | Constants available in Plutus Core.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf).

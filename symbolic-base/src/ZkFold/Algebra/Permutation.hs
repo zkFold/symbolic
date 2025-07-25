@@ -12,6 +12,7 @@ module ZkFold.Algebra.Permutation (
 
 import Control.DeepSeq (NFData)
 import Control.Monad (forM_)
+import Data.Aeson (ToJSON)
 import Data.Functor.Rep (Representable (index))
 import Data.Map.Strict (Map, elems, empty, insertWith)
 import qualified Data.Vector as V
@@ -25,7 +26,6 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector (..), unsafeToVector)
 import ZkFold.Prelude (chooseNatural, drop, length, (!!))
-import Data.Aeson (ToJSON)
 
 -- TODO (Issue #18): make the code safer
 
