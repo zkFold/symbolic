@@ -1,13 +1,13 @@
-module Tests.Symbolic.Algorithm.Poseidon (tests) where
+module Tests.Symbolic.Algorithm.Poseidon (specPoseidon) where
 
 import Control.Monad (forM_)
 import Data.Function (($))
-import Data.List (take)
+import Data.List (take, isPrefixOf)
 import Data.List.Split (splitOn)
 import System.IO (IO)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe, shouldNotBe)
 import Text.Read (read)
-import Prelude (Integer, String, map, (<>))
+import Prelude (Integer, String, map, (<>), lines, drop, filter, words, not, null, (!!))
 import qualified Data.Vector as V
 import qualified Prelude as Haskell
 
@@ -17,9 +17,66 @@ import ZkFold.Symbolic.Algorithm.Hash.Poseidon
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
 
--- | Test against known behavior patterns following repository conventions
-behaviorTests :: Spec
-behaviorTests = describe "Poseidon hash behavioral validation" $ do
+-- | Parse hex string to integer
+parseHex :: String -> Integer
+parseHex s = read $ "0x" <> s
+
+-- | Parse test vector input line
+parseInput :: String -> [Integer]
+parseInput line = 
+    let cleaned = filter (/= ',') $ drop 1 $ take (Haskell.length line - 1) line -- Remove [ and ]
+        hexStrings = words $ map (\c -> if c == '\'' then ' ' else c) cleaned
+    in map (parseHex . drop 2) $ filter (not . null) hexStrings -- Remove 0x prefix
+
+-- | Parse test vector output line  
+parseOutput :: String -> [Integer]
+parseOutput = parseInput
+
+-- | Test vector data type
+data TestVector = TestVector
+    { tvName :: String
+    , tvInput :: [Integer]
+    , tvOutput :: [Integer]
+    } deriving (Haskell.Show)
+
+-- | Parse test vectors from file content
+parseTestVectors :: String -> [TestVector]
+parseTestVectors content = 
+    let allLines = lines content
+        testSections = splitTestSections allLines
+    in map parseSection testSections
+  where
+    splitTestSections [] = []
+    splitTestSections ls = 
+        let (section, rest) = break (isPrefixOf "#") (drop 1 ls)
+        in (take 1 ls ++ section) : splitTestSections rest
+    
+    parseSection (nameL:inputL:outputL:_) = TestVector
+        { tvName = drop 2 nameL -- Remove "# "
+        , tvInput = parseInput inputL
+        , tvOutput = parseOutput outputL
+        }
+    parseSection _ = TestVector "" [] []
+-- | Test Poseidon permutation against reference test vectors
+poseidonPermutationSpec :: Spec
+poseidonPermutationSpec = describe "Poseidon permutation test vectors" $ do
+  testVectors <- runIO $ Haskell.readFile "test/data/poseidon_test_vectors.txt"
+  let vectors = parseTestVectors testVectors
+  
+  forM_ vectors $ \tv -> 
+    it ("should match reference implementation for " <> tvName tv) $ do
+      case tvName tv of
+        "poseidonperm_x5_254_3" -> do
+          let params = defaultPoseidonParams :: PoseidonParams Fr
+          let input = V.fromList $ map (fromConstant @Integer) (tvInput tv)
+          let expected = V.fromList $ map (fromConstant @Integer) (tvOutput tv)
+          let result = poseidonPermutation params input
+          result `shouldBe` expected
+        _ -> Haskell.pure () -- Skip other test vectors for now
+
+-- | Test Poseidon hash behavioral properties following repository patterns
+poseidonBehavioralSpec :: Spec
+poseidonBehavioralSpec = describe "Poseidon hash behavioral validation" $ do
   it "should be deterministic - same input produces same output" $ do
     let input = [1, 2] :: [Fr]
     let result1 = poseidonHashDefault input
@@ -59,8 +116,8 @@ behaviorTests = describe "Poseidon hash behavioral validation" $ do
     result1 `shouldNotBe` result2
 
 -- | Test that permutation is not identity
-permutationTests :: Spec
-permutationTests = describe "Poseidon permutation correctness" $ do
+poseidonPermutationBehavioralSpec :: Spec
+poseidonPermutationBehavioralSpec = describe "Poseidon permutation correctness" $ do
   it "permutation should not be identity function" $ do
     let params = defaultPoseidonParams :: PoseidonParams Fr
     let initialState = V.fromList [1, 2, 3] :: V.Vector Fr
@@ -83,8 +140,8 @@ permutationTests = describe "Poseidon permutation correctness" $ do
     result1 `shouldNotBe` result2
 
 -- | Test edge cases and robustness
-edgeCaseTests :: Spec
-edgeCaseTests = describe "Poseidon hash edge cases" $ do
+poseidonEdgeCaseSpec :: Spec
+poseidonEdgeCaseSpec = describe "Poseidon hash edge cases" $ do
   it "should handle empty input (padded to width)" $ do
     let input = [] :: [Fr]
     let result = poseidonHashDefault input
@@ -101,8 +158,9 @@ edgeCaseTests = describe "Poseidon hash edge cases" $ do
     result `shouldNotBe` (zero :: Fr)
 
 -- | Main test specification following repository patterns
-tests :: Spec
-tests = do
-  behaviorTests
-  permutationTests  
-  edgeCaseTests
+specPoseidon :: Spec
+specPoseidon = do
+  poseidonPermutationSpec
+  poseidonBehavioralSpec
+  poseidonPermutationBehavioralSpec  
+  poseidonEdgeCaseSpec

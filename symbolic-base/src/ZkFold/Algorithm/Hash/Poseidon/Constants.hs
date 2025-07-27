@@ -15,6 +15,8 @@ import ZkFold.Algebra.Class (AdditiveMonoid, FromConstant (..), Field, zero)
 -- | Poseidon parameters data type defined here to avoid circular imports
 data PoseidonParams a = PoseidonParams
     { width :: Natural               -- ^ State width (rate + capacity)
+    , rate :: Natural                -- ^ Rate (number of elements absorbed per operation)
+    , capacity :: Natural            -- ^ Capacity (security parameter)
     , fullRounds :: Natural          -- ^ Number of full rounds (R_F)
     , partialRounds :: Natural       -- ^ Number of partial rounds (R_P)
     , roundConstants :: V.Vector a   -- ^ Round constants
@@ -31,6 +33,8 @@ defaultPoseidonParams = poseidonBN254Params
 poseidonBN254Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a  
 poseidonBN254Params = PoseidonParams
     { width = 3
+    , rate = 2
+    , capacity = 1
     , fullRounds = 8
     , partialRounds = 57
     , roundConstants = roundConstantsBN254
@@ -69,9 +73,6 @@ roundConstantsBN254 = V.fromList $ map (fromConstant @Integer) [
     0x089189570593679da35b668bd5b3542489bab1022dd790ca6a99c09ed0a79aca,
     0x06608970a49c0ea65f21a544c215ebd89b4023c387e8339ec7c9cb80b6b87ae4
     ] ++ replicate 195 zero -- Fill remaining with zeros for now (need 219 total constants)
-  where
-    replicate 0 _ = []
-    replicate n x = x : replicate (n P.- 1) x
   where
     replicate 0 _ = []
     replicate n x = x : replicate (n P.- 1) x

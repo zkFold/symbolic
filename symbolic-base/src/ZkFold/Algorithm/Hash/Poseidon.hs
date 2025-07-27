@@ -90,9 +90,9 @@ chunkVector chunkSize vec =
 -- | Sponge construction for arbitrary-length input
 poseidonHash :: (Field a) => PoseidonParams a -> [a] -> a
 poseidonHash params input = 
-    let rate = width params P.- 1  -- capacity is 1
-        paddedInput = padInput rate input
-        blocks = chunkInput rate paddedInput
+    let r = rate params
+        paddedInput = padInput r input
+        blocks = chunkInput r paddedInput
         finalState = absorb params blocks
     in squeeze finalState
   where
@@ -114,13 +114,13 @@ poseidonHash params input =
     absorb prms [] = V.replicate (fromIntegral (width prms)) zero
     absorb prms (block:blocks) = 
         let initialState = V.replicate (fromIntegral (width prms)) zero
-            stateWithBlock = V.zipWith (+) initialState (V.fromList (block ++ [zero]))
+            stateWithBlock = V.zipWith (+) initialState (V.fromList (block ++ replicate (fromIntegral (capacity prms)) zero))
             newState = poseidonPermutation prms stateWithBlock
         in absorbLoop prms newState blocks
     
     absorbLoop _ state [] = state
     absorbLoop prms state (block:blocks) = 
-        let stateWithBlock = V.zipWith (+) state (V.fromList (block ++ replicate (fromIntegral (width prms) P.- length block) zero))
+        let stateWithBlock = V.zipWith (+) state (V.fromList (block ++ replicate (fromIntegral (capacity prms)) zero))
             newState = poseidonPermutation prms stateWithBlock
         in absorbLoop prms newState blocks
     
