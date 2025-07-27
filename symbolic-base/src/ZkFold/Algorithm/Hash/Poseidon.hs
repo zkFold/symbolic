@@ -53,26 +53,35 @@ poseidonRound params state constants isFull =
 -- | Poseidon permutation
 poseidonPermutation :: (Field a) => PoseidonParams a -> V.Vector a -> V.Vector a
 poseidonPermutation params initialState = 
-    let totalConstantsNeeded = (fullRounds params + partialRounds params + fullRounds params) * width params
+    let totalConstantsNeeded = (fullRounds params * 2 + partialRounds params) * width params
         allConstants = roundConstants params
-    in if V.length allConstants < fromIntegral totalConstantsNeeded
-        then error "Not enough round constants"
-        else go initialState allConstants (fullRounds params) (partialRounds params) (fullRounds params)
+    in if V.length allConstants == 0
+        then error "No round constants available"
+        else go initialState allConstants (fullRounds params) (partialRounds params) (fullRounds params) 0
   where    
-    go state constants remainingFirstFull remainingPartial remainingLastFull
+    go state constants remainingFirstFull remainingPartial remainingLastFull constantIndex
       | remainingFirstFull > 0 = 
-          let (roundConstants, rest) = V.splitAt (fromIntegral (width params)) constants
+          let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex
               newState = poseidonRound params state roundConstants True
-          in go newState rest (remainingFirstFull P.- 1) remainingPartial remainingLastFull
+              nextIndex = constantIndex + fromIntegral (width params)
+          in go newState constants (remainingFirstFull P.- 1) remainingPartial remainingLastFull nextIndex
       | remainingPartial > 0 = 
-          let (roundConstants, rest) = V.splitAt (fromIntegral (width params)) constants
+          let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex  
               newState = poseidonRound params state roundConstants False
-          in go newState rest 0 (remainingPartial P.- 1) remainingLastFull
+              nextIndex = constantIndex + fromIntegral (width params)
+          in go newState constants 0 (remainingPartial P.- 1) remainingLastFull nextIndex
       | remainingLastFull > 0 = 
-          let (roundConstants, rest) = V.splitAt (fromIntegral (width params)) constants
+          let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex
               newState = poseidonRound params state roundConstants True
-          in go newState rest 0 0 (remainingLastFull P.- 1)
+              nextIndex = constantIndex + fromIntegral (width params)
+          in go newState constants 0 0 (remainingLastFull P.- 1) nextIndex
       | otherwise = state
+    
+    getNextConstants count startIndex = 
+        let availableConstants = V.length (roundConstants params)
+        in V.generate count $ \i -> 
+            let idx = (startIndex + i) `mod` availableConstants
+            in (roundConstants params) V.! idx
 
 -- | Helper function to chunk a vector into smaller vectors
 chunkVector :: Natural -> V.Vector a -> V.Vector (V.Vector a)
