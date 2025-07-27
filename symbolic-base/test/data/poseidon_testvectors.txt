@@ -1,0 +1,9 @@
+# Poseidon Hash Test Vectors (Basic functionality tests)
+# These are for our fixed width=3 implementation
+# Format: description:input1,input2:expected_result
+
+# Basic deterministic tests
+deterministic_test:[1,2]:should_be_deterministic
+different_inputs_1:[1,2]:different_from_below
+different_inputs_2:[2,1]:different_from_above  
+single_element:[42,0]:should_not_be_zero
