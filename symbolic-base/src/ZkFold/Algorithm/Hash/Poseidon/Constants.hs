@@ -97,7 +97,7 @@ roundConstantsBN254 = V.fromList $ map (fromConstant @Integer) [
 -- Placeholder constants for width=5 configuration
 roundConstantsBN254Width5 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
 roundConstantsBN254Width5 = V.fromList $ map (fromConstant @Integer) $ 
-    replicate 340 1 -- Placeholder: (8+60+8)*5 = 380 constants needed
+    replicate 380 1 -- Placeholder: (8+60+8)*5 = 380 constants needed
   where
     replicate 0 _ = []
     replicate n x = x : replicate (n P.- 1) x

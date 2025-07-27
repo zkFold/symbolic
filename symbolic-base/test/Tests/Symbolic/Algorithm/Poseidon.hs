@@ -19,14 +19,14 @@ import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
 
 -- | Parse hex string to integer
 parseHex :: String -> Integer
-parseHex s = read $ "0x" <> s
+parseHex s = read s -- The string already includes 0x prefix
 
 -- | Parse test vector input line
 parseInput :: String -> [Integer]
 parseInput line = 
     let cleaned = filter (/= ',') $ drop 1 $ take (length line - 1) line -- Remove [ and ]
         hexStrings = words $ map (\c -> if c == '\'' then ' ' else c) cleaned
-    in map (parseHex . drop 2) $ filter (not . null) hexStrings -- Remove 0x prefix
+    in map parseHex $ filter (not . null) hexStrings -- Don't drop 0x prefix
 
 -- | Parse test vector output line  
 parseOutput :: String -> [Integer]
