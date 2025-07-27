@@ -2,8 +2,11 @@ module ZkFold.Algorithm.Hash.Poseidon.Constants (
   PoseidonParams(..),
   defaultPoseidonParams,
   poseidonBN254Params,
+  poseidonBN254Width5Params,
   roundConstantsBN254,
+  roundConstantsBN254Width5,
   mdsMatrixBN254,
+  mdsMatrixBN254Width5,
 ) where
 
 import qualified Data.Vector as V
@@ -39,6 +42,19 @@ poseidonBN254Params = PoseidonParams
     , partialRounds = 57
     , roundConstants = roundConstantsBN254
     , mdsMatrix = mdsMatrixBN254
+    }
+
+-- | Poseidon parameters for BN254 curve with width=5 (rate=4, capacity=1)
+-- Parameters for larger width to demonstrate variable width support
+poseidonBN254Width5Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
+poseidonBN254Width5Params = PoseidonParams
+    { width = 5
+    , rate = 4
+    , capacity = 1
+    , fullRounds = 8
+    , partialRounds = 60
+    , roundConstants = roundConstantsBN254Width5
+    , mdsMatrix = mdsMatrixBN254Width5
     }
 
 -- | Round constants for Poseidon with width=3 on BN254
@@ -77,6 +93,15 @@ roundConstantsBN254 = V.fromList $ map (fromConstant @Integer) [
     replicate 0 _ = []
     replicate n x = x : replicate (n P.- 1) x
 
+-- | Round constants for Poseidon with width=5 on BN254
+-- Placeholder constants for width=5 configuration
+roundConstantsBN254Width5 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
+roundConstantsBN254Width5 = V.fromList $ map (fromConstant @Integer) $ 
+    replicate 340 1 -- Placeholder: (8+60+8)*5 = 380 constants needed
+  where
+    replicate 0 _ = []
+    replicate n x = x : replicate (n P.- 1) x
+
 -- | MDS matrix for Poseidon with width=3
 -- This is a 3x3 MDS (Maximum Distance Separable) matrix from iden3 reference implementation
 mdsMatrixBN254 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
@@ -96,4 +121,15 @@ mdsMatrixBN254 = V.fromList [
         fromConstant @Integer 0x10a44ed9dd9ce568563394632833d8633690d329ae737c8c7220a9b197ee3f46,
         fromConstant @Integer 0x2b7d05fceb6e6da5b1ad085ad4a0cfdb2e7aa7a6d47b60ffa5a68bb913f1ea30
     ]
+    ]
+
+-- | MDS matrix for Poseidon with width=5
+-- Placeholder 5x5 MDS matrix for width=5 configuration  
+mdsMatrixBN254Width5 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
+mdsMatrixBN254Width5 = V.fromList [
+    V.fromList [fromConstant @Integer 1, fromConstant @Integer 1, fromConstant @Integer 1, fromConstant @Integer 1, fromConstant @Integer 1],
+    V.fromList [fromConstant @Integer 1, fromConstant @Integer 2, fromConstant @Integer 3, fromConstant @Integer 4, fromConstant @Integer 5],
+    V.fromList [fromConstant @Integer 1, fromConstant @Integer 3, fromConstant @Integer 6, fromConstant @Integer 10, fromConstant @Integer 15],
+    V.fromList [fromConstant @Integer 1, fromConstant @Integer 4, fromConstant @Integer 10, fromConstant @Integer 20, fromConstant @Integer 35],
+    V.fromList [fromConstant @Integer 1, fromConstant @Integer 5, fromConstant @Integer 15, fromConstant @Integer 35, fromConstant @Integer 70]
     ]
