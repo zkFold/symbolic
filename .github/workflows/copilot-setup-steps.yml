@@ -70,7 +70,7 @@ jobs:
 
     - name: Build all packages
       run: |
-        cabal build all -f Pedantic
+        cabal build all
 
     - name: Setup development tools
       run: |
