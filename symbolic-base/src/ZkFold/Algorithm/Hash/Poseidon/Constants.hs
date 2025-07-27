@@ -33,6 +33,7 @@ defaultPoseidonParams = poseidonBN254Params
 
 -- | Poseidon parameters for the reference implementation from Hades paper (width=3, rate=2, capacity=1)
 -- Based on the official Sage reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
+-- Paper: "Poseidon: A New Hash Function for Zero-Knowledge Proof Systems" by Grassi et al. (ePrint 2019/458)
 -- Parameters: R_F = 8, R_P = 57, field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 poseidonBN254Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a  
 poseidonBN254Params = PoseidonParams
@@ -41,8 +42,8 @@ poseidonBN254Params = PoseidonParams
     , capacity = 1
     , fullRounds = 8
     , partialRounds = 57  -- Official reference uses 57 partial rounds
-    , roundConstants = roundConstantsReference
-    , mdsMatrix = mdsMatrixReference
+    , roundConstants = roundConstantsBN254
+    , mdsMatrix = mdsMatrixBN254
     }
 
 -- | Poseidon parameters for BN254 curve with width=5 (rate=4, capacity=1)
@@ -61,8 +62,8 @@ poseidonBN254Width5Params = PoseidonParams
 -- | Round constants from the official Hades paper reference implementation
 -- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
 -- For width=3, R_F=8, R_P=57, total rounds = 8+57+8 = 73, total constants = 73*3 = 219
-roundConstantsReference :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
-roundConstantsReference = V.fromList $ map (fromConstant @Integer) [
+roundConstantsBN254 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
+roundConstantsBN254 = V.fromList $ map (fromConstant @Integer) [
     0x6c4ffa723eaf1a7bf74905cc7dae4ca9ff4a2c3bc81d42e09540d1f250910880,
     0x54dd837eccf180c92c2f53a3476e45a156ab69a403b6b9fdfd8dd970fddcdd9a,
     0x64f56d735286c35f0e7d0a29680d49d54fb924adccf8962eeee225bf9423a85e,
@@ -156,23 +157,23 @@ roundConstantsBN254Width5 = V.fromList $ map (fromConstant @Integer) $
     replicate n x = x : replicate (n P.- 1) x
 
 -- | MDS matrix for Poseidon with width=3
--- From the official circomlib constants: https://github.com/iden3/circomlib
+-- From the official Hades paper reference implementation: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
 mdsMatrixBN254 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
 mdsMatrixBN254 = V.fromList [
     V.fromList [
-        fromConstant @Integer 0x109b7f411ba0e4c9b2b70caf5c36a7b194be7c11ad24378bfedb68592ba8118b,
-        fromConstant @Integer 0x2969f27eed31a480b9c36c764379dbca2cc8fdd1415c3dded62940bcde0bd771,
-        fromConstant @Integer 0x143021ec686a3f330d5f9e654638065ce6cd79e28c5b3753326244ee65a1b1a7
+        fromConstant @Integer 0x3d955d6c02fe4d7cb500e12f2b55eff668a7b4386bd27413766713c93f2acfcd,
+        fromConstant @Integer 0x3798866f4e6058035dcf8addb2cf1771fac234bcc8fc05d6676e77e797f224bf,
+        fromConstant @Integer 0x2c51456a7bf2467eac813649f3f25ea896eac27c5da020dae54a6e640278fda2
     ],
     V.fromList [
-        fromConstant @Integer 0x16ed41e13bb9c0c66ae119424fddbcbc9314dc9fdbdeea55d6c64543dc4903e0,
-        fromConstant @Integer 0x2e2419f9ec02ec394c9871c832963dc1b89d743c8c7b964029b2311687b1fe23,
-        fromConstant @Integer 0x176cc029695ad02582a70eff08a6fd99d057e12e58e7d7b6b16cdfabc8ee2911
+        fromConstant @Integer 0x20088ca07bbcd7490a0218ebc0ecb31d0ea34840e2dc2d33a1a5adfecff83b43,
+        fromConstant @Integer 0x1d04ba0915e7807c968ea4b1cb2d610c7f9a16b4033f02ebacbb948c86a988c3,
+        fromConstant @Integer 0x5387ccd5729d7acbd09d96714d1d18bbd0eeaefb2ddee3d2ef573c9c7f953307
     ],
     V.fromList [
-        fromConstant @Integer 0x2b90bba00fca0589f617e7dcbfe82e0df706ab640ceb247b791a93b74e36736d,
-        fromConstant @Integer 0x101071f0032379b697315876690f053d148d4e109f5fb065c8aacc55a0f89bfa,
-        fromConstant @Integer 0x19a3fc0a56702bf417ba7fee3802593fa644470307043f7773279cd71d25d5e0
+        fromConstant @Integer 0x1e208f585a72558534281562cad89659b428ec61433293a8d7f0f0e38a6726ac,
+        fromConstant @Integer 0x0455ebf862f0b60f69698e97d36e8aafd4d107cae2b61be1858b23a3363642e0,
+        fromConstant @Integer 0x569e2c206119e89455852059f707370e2c1fc9721f6c50991cedbbf782daef54
     ]
     ]
 

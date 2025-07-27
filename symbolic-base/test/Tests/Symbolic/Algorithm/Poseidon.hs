@@ -57,10 +57,11 @@ parseTestVectors content =
         , tvOutput = parseOutput outputL
         }
     parseSection _ = TestVector "" [] []
--- | Test Poseidon permutation against reference test vectors
+-- | Test Poseidon permutation against official reference test vectors from Hades paper
+-- Reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt
 poseidonPermutationSpec :: Spec
 poseidonPermutationSpec = describe "Poseidon permutation test vectors" $ do
-  testVectors <- runIO $ Haskell.readFile "test/data/poseidon_test_vectors.txt"
+  testVectors <- runIO $ Haskell.readFile "test/data/poseidon_reference_test_vectors.txt"
   let vectors = parseTestVectors testVectors
   
   forM_ vectors $ \tv -> 

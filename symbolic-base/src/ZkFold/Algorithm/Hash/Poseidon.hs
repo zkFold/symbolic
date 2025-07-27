@@ -11,6 +11,18 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.Poseidon.Constants
 
+-- | Poseidon hash function implementation following the Hades design.
+-- This implementation follows the official Sage reference implementation from the Hades paper:
+-- Paper: "Poseidon: A New Hash Function for Zero-Knowledge Proof Systems" by Grassi et al. (ePrint 2019/458)
+-- Reference implementation: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
+--
+-- The Poseidon permutation uses:
+-- - S-box: x^5 (α = 5) for efficient implementation in arithmetic circuits
+-- - Full rounds: R_F = 8 (4 at beginning + 4 at end)  
+-- - Partial rounds: R_P = 57 (middle rounds with S-box applied only to first element)
+-- - MDS matrix: 3x3 matrix for optimal diffusion
+-- - Field: BN254 scalar field (prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001)
+
 -- | Apply S-box (x^α) to a single element
 sbox :: (Field a) => a -> a
 sbox x = x ^ (5 :: Natural)
