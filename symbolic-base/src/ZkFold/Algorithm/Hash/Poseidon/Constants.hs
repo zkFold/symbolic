@@ -31,17 +31,18 @@ data PoseidonParams a = PoseidonParams
 defaultPoseidonParams :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
 defaultPoseidonParams = poseidonBN254Params
 
--- | Poseidon parameters for BN254 curve with width=3 (rate=2, capacity=1)
--- Based on circomlib parameters: 8 full + 56 partial + 8 full = 72 rounds total
+-- | Poseidon parameters for the reference implementation from Hades paper (width=3, rate=2, capacity=1)
+-- Based on the official Sage reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
+-- Parameters: R_F = 8, R_P = 57, field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 poseidonBN254Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a  
 poseidonBN254Params = PoseidonParams
     { width = 3
     , rate = 2
     , capacity = 1
     , fullRounds = 8
-    , partialRounds = 56  -- Updated from 57 to 56 to match circomlib
-    , roundConstants = roundConstantsBN254
-    , mdsMatrix = mdsMatrixBN254
+    , partialRounds = 57  -- Official reference uses 57 partial rounds
+    , roundConstants = roundConstantsReference
+    , mdsMatrix = mdsMatrixReference
     }
 
 -- | Poseidon parameters for BN254 curve with width=5 (rate=4, capacity=1)
@@ -57,35 +58,35 @@ poseidonBN254Width5Params = PoseidonParams
     , mdsMatrix = mdsMatrixBN254Width5
     }
 
--- | Round constants for Poseidon with width=3 on BN254
--- From the official circomlib constants: https://github.com/iden3/circomlib
--- Parameters: sage generate_parameters_grain.sage 1 0 254 2 8 56 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
-roundConstantsBN254 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
-roundConstantsBN254 = V.fromList $ map (fromConstant @Integer) [
-    0xee9a592ba9a9518d05986d656f40c2114c4993c11bb29938d21d47304cd8e6e,
-    0xf1445235f2148c5986587169fc1bcd887b08d4d00868df5696fff40956e864,
-    0x8dff3487e8ac99e1f29a058d0fa80b930c728730b7ab36ce879f3890ecf73f5,
-    0x84d520e4e5bb469e1f9075cb7c490efa59565eedae2d00ca8ef88ceea2b0197,
-    0x2d15d982d99577fa33da56722416fd734b3e667a2f9f15d8eb3e767ae0fd811e,
-    0xed2538844aba161cf1578a43cf0364e91601f6536a5996d0efbe65632c41b6d,
-    0x2600c27d879fbca186e739e6363c71cf804c877d829b735dcc3e3af02955e60a,
-    0x28f8bd44a583cbaa475bd15396430e7ccb99a5517440dfd970058558282bf2c5,
-    0x9cd7d4c380dc5488781aad012e7eaef1ed314d7f697a5572d030c55df153221,
-    0x11bb6ee1291aabb206120ecaace460d24b6713febe82234951e2bee7d0f855f5,
-    0x2d74e8fa0637d9853310f3c0e3fae1d06f171580f5b8fd05349cadeecfceb230,
-    0x2735e4ec9d39bdffac9bef31bacba338b1a09559a511a18be4b4d316ed889033,
-    0xf03c1e9e0895db1a5da6312faa78e971106c33f826e08dcf617e24213132dfd,
-    0x17094cd297bf827caf92920205b719c18741090b8f777811848a7e9ead6778c4,
-    0xdb8f419c21f92461fc2b3219465798348df90d4178042c81ba7d4b4d559e2b8,
-    0x243443613f64ffa417427ed5933fcfbc66809db60b9ca1724a22709ceceeece2,
-    0x22af49fbfd5d7e9fcd256c25c07d3dd8ecbbae6deecd03aa04bb191fada75411,
-    0x14fbd37fa8ad6e4e0c78a20d93c7230c4677f797b4327323f7f7c097c19420e0,
-    0x15a9298bbb882534d4b2c9fbc6e4ef4189420c4eb3f3e1ea22faa7e18b5ae625,
-    0x2f7de75f23ddaaa5221323ebceb2f2ac83eef92e854e75434c2f1d90562232bc,
-    0x36a4432a868283b78a315e84c4ae5aeca216f2ff9e9b2e623584f7479cd5c27,
-    0x2180d7786a8cf810e277218ab14a11e5e39f3c962f11e860ae1c5682c797de5c,
-    0xa268ef870736eebd0cb55be640d73ee3778990484cc03ce53572377eefff8e4,
-    0x1eefefe11c0be4664f2999031f15994829e982e8c90e09069df9bae16809a5b2,
+-- | Round constants from the official Hades paper reference implementation
+-- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
+-- For width=3, R_F=8, R_P=57, total rounds = 8+57+8 = 73, total constants = 73*3 = 219
+roundConstantsReference :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
+roundConstantsReference = V.fromList $ map (fromConstant @Integer) [
+    0x6c4ffa723eaf1a7bf74905cc7dae4ca9ff4a2c3bc81d42e09540d1f250910880,
+    0x54dd837eccf180c92c2f53a3476e45a156ab69a403b6b9fdfd8dd970fddcdd9a,
+    0x64f56d735286c35f0e7d0a29680d49d54fb924adccf8962eeee225bf9423a85e,
+    0x670d5b6efe620f987d967fb13d2045ee3ac8e9cbf7d30e8594e733c7497910dc,
+    0x2ef5299e2077b2392ca874b015120d7e7530f277e06f78ee0b28f33550c68937,
+    0x0c0981889405b59c384e7dfa49cd4236e2f45ed024488f67c73f51c7c22d8095,
+    0x0d88548e6296171b26c61ea458288e5a0d048e2fdf5659de62cfca43f1649c82,
+    0x3371c00f3715d44abce4140202abaaa44995f6f1df12384222f61123faa6b638,
+    0x4ce428fec6d178d10348f4857f0006a652911085c8d86baa706f6d7975b0fe1b,
+    0x1a3c26d755bf65326b03521c94582d91a3ae2c0d8dfb2a345847aece52070ab0,
+    0x02dbb4709583838c35a118742bf482d257ed4dfb212014c083a6b059adda82b5,
+    0x41f2dd64b9a0dcea721b0035259f45f2a9066690de8f13b9a48ead411d8ff5a7,
+    0x5f154892782617b26993eea6431580c0a82c0a4dd0efdb24688726b4108c46a8,
+    0x0db98520f9b97cbcdb557872f4b7f81567a1be374f60fc4281a6e04079e00c0c,
+    0x71564ed66b41e872ca76aaf9b2fa0ca0695f2162705ca6a1f7ef043fd957f12d,
+    0x69191b1fe6acbf888d0c723f754c89e8bd29cb34b1e43ab27be105ea6b38d8b8,
+    0x04e9919eb06ff327152cfed30028c5edc667809ce1512e5963329c7040d29350,
+    0x573bc78e3ed162e5edd38595feead65481c991b856178f6182a0c7090ff71288,
+    0x102800af87fd92eb1dec942469e076602695a1996a4db968bb7f38ddd455db0b,
+    0x593d1894c17e5b626f8779acc32d8f188d619c02902ef775ebe81ef1c0fb7a8f,
+    0x66850b1b1d5d4e07b03bac49c9feadd051e374908196a806bd296957fa2fe2b7,
+    0x46aaa1206232ceb480d6aa16cc03465d8e96a807b28c1e494a81c43e0faffc57,
+    0x2102aab97ce5bd94ffd5db908bf28b7f8c36671191d4ee9ac1c5f2fae4780579,
+    0x14387b24d1c0c712bbe720164c4093185fcb546a2a7d481abc94e5b8fb5178b7,
     0x27e87f033bd1e0a89ca596e8cb77fe3a4b8fb93d9a1129946571a3c3cf244c52,
     0x1498a3e6599fe243321f57d6c5435889979c4f9d2a3e184d21451809178ee39,
     0x27c0a41f4cb9fe67e9dd4d7ce33707f74d5d6bcc235bef108dea1bbebde507aa,
