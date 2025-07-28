@@ -5,7 +5,7 @@ module ZkFold.Algorithm.Hash.Poseidon (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, splitAt, ($), (++), (<), (==), (>))
+import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, show, splitAt, ($), (++), (<), (==), (>))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
@@ -97,9 +97,12 @@ poseidonPermutation params initialState =
 
   getNextConstants count startIndex =
     let availableConstants = V.length (roundConstants params)
-     in V.generate count $ \i ->
-          let idx = (startIndex P.+ i) `P.mod` availableConstants
-           in (roundConstants params) V.! idx
+     in if startIndex P.+ count P.> availableConstants
+        then error $ "Insufficient round constants: need " ++ show (startIndex P.+ count) ++ 
+                    " but only have " ++ show availableConstants
+        else V.generate count $ \i ->
+               let idx = startIndex P.+ i
+                in (roundConstants params) V.! idx
 
 -- | Helper function to chunk a vector into smaller vectors
 chunkVector :: Natural -> V.Vector a -> V.Vector (V.Vector a)

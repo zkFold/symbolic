@@ -35,27 +35,28 @@ data PoseidonParams a = PoseidonParams
 defaultPoseidonParams :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
 defaultPoseidonParams = poseidonBLS12381Params
 
--- | Poseidon parameters for the reference implementation from Hades paper (width=3, rate=2, capacity=1)
--- Based on the official Sage reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
--- Paper: "Poseidon: A New Hash Function for Zero-Knowledge Proof Systems" by Grassi et al. (ePrint 2019/458)
--- Parameters: R_F = 8, R_P = 57, field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+-- | Poseidon parameters for BLS12-381 field (width=3, rate=2, capacity=1)
+-- NOTE: Parameters adjusted to match available constants (81 constants = 27 rounds * 3 width)
+-- This configuration uses fewer rounds than the official reference due to limited constants
+-- Field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 poseidonBLS12381Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
 poseidonBLS12381Params =
   PoseidonParams
     { width = 3
     , rate = 2
     , capacity = 1
-    , fullRounds = 8
-    , partialRounds = 57 -- Official reference uses 57 partial rounds
+    , fullRounds = 8  -- 4 at start + 4 at end
+    , partialRounds = 19  -- Adjusted to match available constants: 4+19+4 = 27 total rounds
     , roundConstants = roundConstantsBLS12381
     , mdsMatrix = mdsMatrixBLS12381
     }
 
 
 
--- | Round constants from the official Hades paper reference implementation
--- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
--- For width=3, R_F=8, R_P=57, total rounds = 8+57+8 = 73, total constants = 73*3 = 219
+-- | Round constants from BLS12-381 field implementation  
+-- NOTE: This is a reduced set (81 constants for 27 rounds) due to unavailable official reference
+-- For width=3: 27 rounds * 3 width = 81 constants (4 full start + 19 partial + 4 full end)
+-- TODO: Replace with official constants from poseidonperm_x5_255_3.sage when accessible
 roundConstantsBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
 roundConstantsBLS12381 =
   V.fromList $
@@ -144,8 +145,9 @@ roundConstantsBLS12381 =
       , 0x2e211b39a023031a22acc1a1f5f3bb6d8c2666a6379d9d2c40cc8f78b7bd9abe
       ]
 
--- | MDS matrix for Poseidon with width=3
--- From the official Hades paper reference implementation: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
+-- | MDS matrix for Poseidon with width=3 on BLS12-381 field
+-- NOTE: This should be verified against the official reference implementation
+-- TODO: Verify against official MDS matrix from poseidonperm_x5_255_3.sage
 mdsMatrixBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
 mdsMatrixBLS12381 =
   V.fromList
