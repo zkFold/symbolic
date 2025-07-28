@@ -37,7 +37,7 @@ data PlonkupProof g = PlonkupProof
   , l_xi :: !([ScalarFieldOf g])
   -- ^ The denominator in the L_i polynomial evaluation
   }
-  
+
 deriving instance (Eq g, Eq (ScalarFieldOf g)) => Eq (PlonkupProof g)
 
 instance (Show (ScalarFieldOf g), Show g) => Show (PlonkupProof g) where

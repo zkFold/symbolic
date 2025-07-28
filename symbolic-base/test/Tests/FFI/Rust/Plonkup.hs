@@ -8,6 +8,13 @@ import GHC.Generics (
  )
 import Test.Hspec
 import Test.QuickCheck hiding (scale, witness)
+import Prelude hiding (
+  Fractional (..),
+  Num (..),
+  length,
+  (^),
+ )
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Number (
@@ -27,12 +34,6 @@ import ZkFold.Protocol.Plonkup.Utils (
   getSecretParams,
  )
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
-import Prelude hiding (
-  Fractional (..),
-  Num (..),
-  length,
-  (^),
- )
 
 type TestCircuitSize = 2 ^ 6
 
