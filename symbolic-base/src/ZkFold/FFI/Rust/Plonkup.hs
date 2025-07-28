@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.FFI.Rust.PlonkupTypes where
+module ZkFold.FFI.Rust.Plonkup where
 
 import Data.Binary
 import qualified Data.ByteString as BS
@@ -267,29 +267,24 @@ rustPlonkupProve
        BLS12_381_G2_JacobianPoint
        (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
   -> (PlonkupWitnessInput i BLS12_381_G1_JacobianPoint, PlonkupProverSecret BLS12_381_G1_JacobianPoint)
-  -- -> ( PlonkupProof BLS12_381_G1_JacobianPoint
-  --    , PlonkupProverTestInfo n BLS12_381_G1_JacobianPoint (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
-  --    )
-  -> ()
+  -> ( PlonkupProof BLS12_381_G1_JacobianPoint
+     , PlonkupProverTestInfo n BLS12_381_G1_JacobianPoint (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
+     )
 rustPlonkupProve
-  !proverSetup
+  proverSetup
   (PlonkupWitnessInput wInput, proverSecret) = unsafePerformIO $ do
-    let !proverSetup' = BS.toStrict $ encode proverSetup
-        !proverSecret' = BS.toStrict $ encode proverSecret
-        !proverRelation = BS.toStrict $ encode (relation proverSetup)
+    let proverSetup' = encode proverSetup
+        proverSecret' = encode proverSecret
+        proverRelation = encode (relation proverSetup)
         (!w1, !w2, !w3) = witness (relation proverSetup) wInput
-        !wPub = BS.toStrict $ encode (pubInput (relation proverSetup) wInput)
+        !wPub = encode (pubInput (relation proverSetup) wInput)
         !n = fromInteger $ naturalToInteger $ value @n
-    BS.useAsCStringLen proverSetup' $ \(ptr1, len1) -> do
-      BS.useAsCStringLen proverSecret' $ \(ptr2, len2) -> do
-        BS.useAsCStringLen (proverRelation <> wPub) $ \(ptr3, len3) -> do
+    BS.useAsCStringLen (BS.toStrict proverSetup') $ \(ptr1, len1) -> do
+      BS.useAsCStringLen (BS.toStrict proverSecret') $ \(ptr2, len2) -> do
+        BS.useAsCStringLen (BS.toStrict (proverRelation <> wPub)) $ \(ptr3, len3) -> do
           BS.useAsCStringLen (BS.toStrict (mconcat $ encode <$> [w1, w2, w3])) $ \(ptr4, len4) -> do
-            !x <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
-            print x
-
--- ptr <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
--- len <- peek (castPtr ptr) :: IO Int
--- bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
--- free ptr
--- let !p = decode (BS.fromStrict bs)
--- pure $ (p, undefined)
+            ptr <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
+            len <- peek (castPtr ptr) :: IO Int
+            bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
+            free ptr
+            pure $ decode (BS.fromStrict bs)

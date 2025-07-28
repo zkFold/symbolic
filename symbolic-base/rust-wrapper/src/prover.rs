@@ -3,26 +3,22 @@ use crate::utils::unpack_scalar;
 use ark_bls12_381::G1Projective;
 use ark_bls12_381::{Fr as ScalarField, G1Affine as GAffine};
 use ark_ec::{CurveGroup, VariableBaseMSM};
-use ark_ff::{Field, One, PrimeField};
+use ark_ff::{AdditiveGroup, Field, One, PrimeField};
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::DenseUVPolynomial;
 use ark_poly::Polynomial;
-use ark_serialize::{serialize_to_vec, CanonicalDeserialize};
+use ark_serialize::CanonicalDeserialize;
 use ark_serialize::CanonicalSerialize;
 use ark_std::log2;
 use ark_std::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
-use num_bigint::BigUint;
-// use serde::{Deserialize, Serialize};
 use core::slice;
-use std::alloc::Layout;
-// use num_bigint::{BigInt, BigUint};
+use itertools::Itertools;
+use num_bigint::BigUint;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
 use std::ops::{Div, Mul, MulAssign, Neg, Sub};
-use ark_ff::BigInt;
+
 use crate::utils::c_char;
 #[derive(Debug)]
 pub struct PlonkupCircuitPolynomials {
@@ -79,7 +75,7 @@ pub struct Relation {
     wPub: Vec<ScalarField>,
 }
 
-#[derive(Debug, CanonicalSerialize, CanonicalDeserialize)]
+#[derive(Debug)]
 pub struct PlonkupProof {
     cmA: GAffine,
     cmB: GAffine,
@@ -194,9 +190,9 @@ fn polyVecLinear(a1: &ScalarField, a0: &ScalarField) -> DensePolynomial<ScalarFi
 }
 
 fn polyVecQuadratic(
-    a0: &ScalarField,
-    a1: &ScalarField,
     a2: &ScalarField,
+    a1: &ScalarField,
+    a0: &ScalarField,
 ) -> DensePolynomial<ScalarField> {
     toPolyVec(&[*a0, *a1, *a2])
 }
@@ -273,6 +269,7 @@ fn polyVecInLagrangeBasis(
     p: &DensePolynomial<ScalarField>,
 ) -> DensePolynomial<ScalarField> {
     let v = &mut p.coeffs.clone();
+    v.resize(n, ScalarField::ZERO);
 
     let next_pow2 = v.len().next_power_of_two();
 
@@ -288,9 +285,8 @@ fn polyVecInLagrangeBasis(
     }
     v.rotate_right(1);
 
-    let mut result = zip_with(&v, &norms, |a, b| a * b);
+    let mut result = zip_with_longest(&v, &norms, |a, b| a * b);
     let res_len = result.len();
-
     serial_fft(&mut result, *omega, log2(res_len));
     result.reverse();
 
@@ -317,21 +313,43 @@ fn challenge(transcript: &Vec<u8>) -> ScalarField {
     ScalarField::from_le_bytes_mod_order(&digest)
 }
 
-fn zip_with<A, B, C, F>(a: &[A], b: &[B], mut f: F) -> Vec<C>
+fn zip_with_longest<A: Default, B: Default, C, F>(a: &[A], b: &[B], mut f: F) -> Vec<C>
 where
     F: FnMut(&A, &B) -> C,
 {
-    a.iter().zip(b.iter()).map(|(x, y)| f(x, y)).collect()
+    let a_default = A::default();
+    let b_default = B::default();
+    a.iter()
+        .zip_longest(b.iter())
+        .map(|pair| {
+            let (a, b) = pair.or(&a_default, &b_default);
+            f(a, b)
+        })
+        .collect()
 }
 
-fn zip_with3<A, B, C, D, F>(v1: &[A], v2: &[B], v3: &[C], f: F) -> Vec<D>
+fn zip_with3_longest<A: Default, B: Default, C: Default, D, F>(
+    v1: &[A],
+    v2: &[B],
+    v3: &[C],
+    f: F,
+) -> Vec<D>
 where
     F: Fn(&A, &B, &C) -> D,
 {
+    let a_default = A::default();
+    let b_default = B::default();
+    let c_default = C::default();
+
     v1.iter()
-        .zip(v2)
-        .zip(v3)
-        .map(|((a, b), c)| f(a, b, c))
+        .zip_longest(v2)
+        .zip_longest(v3)
+        .map(|triplet| {
+            let ((a, b), c) = triplet
+                .map_left(|x| x.or(&a_default, &b_default))
+                .or((&a_default, &b_default), &c_default);
+            f(&a, &b, &c)
+        })
         .collect()
 }
 
@@ -377,8 +395,9 @@ fn concat_vecs<T: Clone>(a: &[T], b: &[T]) -> Vec<T> {
     result
 }
 
-fn cumprod(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
-    let v = &pv.coeffs;
+fn cumprod(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+    let mut v = pv.coeffs.clone();
+    v.resize(n, ScalarField::ZERO);
     let mut result = Vec::with_capacity(v.len());
     if v.is_empty() {
         return DensePolynomial::zero();
@@ -391,14 +410,16 @@ fn cumprod(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     DensePolynomial::from_coefficients_vec(result)
 }
 
-fn rotR(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+fn rotR(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let mut v = pv.coeffs.clone();
+    v.resize(n, ScalarField::ZERO);
     v.rotate_right(1);
     DensePolynomial::from_coefficients_vec(v)
 }
 
-fn rotL(pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+fn rotL(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let mut v = pv.coeffs.clone();
+    v.resize(n, ScalarField::ZERO);
     v.rotate_left(1);
     DensePolynomial::from_coefficients_vec(v)
 }
@@ -417,62 +438,67 @@ trait DivMono {
     fn div_mono(&self, other: &Self) -> Self;
 }
 
-fn is_shifted_mono(p: &DensePolynomial<ScalarField>) -> Option<(usize, ScalarField)> {
+fn is_shifted_mono(p: &DensePolynomial<ScalarField>) -> Option<(usize, ScalarField, ScalarField)> {
     let coeffs = &p.coeffs;
-    if (coeffs.len() < 2) {
+    if coeffs.len() < 2 {
         return None;
     }
-    if (coeffs[0] == ScalarField::zero()) {
+    if coeffs[0] == ScalarField::zero() {
         return None;
     }
     let mut count: usize = 0;
     let mut c: ScalarField = ScalarField::zero();
     let mut cix: usize = 0;
     for i in 1..coeffs.len() {
-        if (coeffs[i] != ScalarField::zero()) {
+        if coeffs[i] != ScalarField::zero() {
             count += 1;
             c = coeffs[i];
             cix = i;
         }
     }
-    if (count == 1) {
-        return Some((cix, c));
+    if count == 1 {
+        return Some((cix, c, coeffs[0]));
     }
     None
 }
 
 impl DivMono for DensePolynomial<ScalarField> {
     fn div_mono(&self, other: &Self) -> Self {
+        if self.is_zero() {
+            return DensePolynomial::zero();
+        }
         let mono_coeff = is_shifted_mono(other);
         match mono_coeff {
             None => return self.div(other),
-            Some((m, b)) => {
+            Some((m, cm, c0)) => {
                 let mut coeffs_mut = self.coeffs.clone();
                 let mut result = vec![ScalarField::zero(); self.coeffs.len()];
                 for i in (m..self.coeffs.len()).rev() {
                     let ci = coeffs_mut[i];
                     result[i - m] = ci;
-                    coeffs_mut[i - m] -= ci * b;
+                    coeffs_mut[i - m] -= ci * c0;
                 }
-                return DensePolynomial::from_coefficients_vec(result);
+                return DensePolynomial::from_coefficients_vec(result) * cm.inverse().unwrap();
             }
         }
     }
 }
 
 trait Elementwise<T> {
-    fn elementwise<F>(&self, f: F) -> Self
+    fn elementwise<F>(&self, n:usize, f: F) -> Self
     where
         F: FnMut(&T) -> T;
 }
 
 impl<T: Clone + ark_ff::Field> Elementwise<T> for DensePolynomial<T> {
-    fn elementwise<F>(&self, mut f: F) -> Self
+    fn elementwise<F>(&self, n: usize, mut f: F) -> Self
     where
         F: FnMut(&T) -> T,
     {
-        let new_coeffs = self.coeffs.iter().map(|c| f(c)).collect();
-        DensePolynomial::from_coefficients_vec(new_coeffs)
+        let mut new_coeffs = self.coeffs.clone();
+        new_coeffs.resize(n, T::ZERO);
+        let result_coeffs = new_coeffs.iter().map(|c| f(c)).collect();
+        DensePolynomial::from_coefficients_vec(result_coeffs)
     }
 }
 
@@ -483,23 +509,29 @@ pub trait ZipWith<T> {
 }
 
 impl<T: Clone + ark_ff::Field> ZipWith<T> for DensePolynomial<T> {
-    fn zip_with<F>(&self, other: &Self, mut f: F) -> Self
+    fn zip_with<F>(&self, other: &Self, f: F) -> Self
     where
         F: FnMut(&T, &T) -> T,
     {
-        let min_len = self.coeffs.len().min(other.coeffs.len());
-        let coeffs = self.coeffs[..min_len]
-            .iter()
-            .zip(&other.coeffs[..min_len])
-            .map(|(a, b)| f(a, b))
-            .collect();
-
-        DensePolynomial::from_coefficients_vec(coeffs)
+        DensePolynomial {
+            coeffs: zip_with_longest(&self.coeffs, &other.coeffs, f),
+        }
     }
 }
 
 fn vn(v: &ScalarField, n: u64) -> ScalarField {
     v.pow([n])
+}
+
+fn div_or_zero<T: AdditiveGroup>(a: &T, b: &T) -> T
+where
+    for<'a, 'b> &'a T: Div<&'b T, Output = T>,
+{
+    if b == &T::ZERO {
+        T::ZERO
+    } else {
+        a / b
+    }
 }
 
 pub fn plonkupProve(
@@ -508,8 +540,7 @@ pub fn plonkupProve(
     secret: &PlonkupProverSecret,
     relation: &Relation,
     witness: &PlonkupWitness,
-//) -> (PlonkupProof, PlonkupProverTestInfo) {
-) -> PlonkupProof {
+) -> (PlonkupProof, PlonkupProverTestInfo) {
     let omega = ps.omega;
     let k1 = ps.k1;
     let k2 = ps.k2;
@@ -531,11 +562,11 @@ pub fn plonkupProve(
     let s2X = &ps.polynomials.s2X;
     let s3X = &ps.polynomials.s3X;
 
-    let qM = &relation.qM;
-    let qL = &relation.qL;
-    let qR = &relation.qR;
-    let qO = &relation.qO;
-    let qC = &relation.qC;
+    let _qM = &relation.qM;
+    let _qL = &relation.qL;
+    let _qR = &relation.qR;
+    let _qO = &relation.qO;
+    let _qC = &relation.qC;
     let qK = &relation.qK;
     let t1 = &relation.t1;
     let t2 = &relation.t2;
@@ -585,7 +616,7 @@ pub fn plonkupProve(
 
     let f_zeta_tick = &(w1 + &(w2 + &w3.mul(zeta)).mul(zeta));
     let t_zeta = &(t1 + &(t2 + &t3.mul(zeta)).mul(zeta));
-    let f_zeta = &toPolyVec(&zip_with3(
+    let f_zeta = &toPolyVec(&zip_with3_longest(
         &qK.coeffs,
         &t_zeta.coeffs,
         &f_zeta_tick.coeffs,
@@ -596,7 +627,12 @@ pub fn plonkupProve(
         + polyVecInLagrangeBasis(n, &omega, f_zeta));
     let tX = &(t1X + &(t2X + &t3X.mul(zeta)).mul(zeta));
 
-    let s = &sortByList(&concat_vecs(&f_zeta.coeffs, &t_zeta.coeffs), &t_zeta.coeffs);
+    let mut f_zeta_coeffs = f_zeta.coeffs.clone();
+    f_zeta_coeffs.resize(n, ScalarField::ZERO);
+    let mut t_zeta_coeffs = t_zeta.coeffs.clone();
+    t_zeta_coeffs.resize(n, ScalarField::ZERO);
+
+    let s = &sortByList(&concat_vecs(&f_zeta_coeffs, &t_zeta_coeffs), &t_zeta_coeffs);
 
     let h1 = &toPolyVec(&ifilter(s, |i, _| i % 2 == 0));
     let h2 = &toPolyVec(&ifilter(s, |i, _| i % 2 == 1));
@@ -631,23 +667,23 @@ pub fn plonkupProve(
     let epsilon = challenge(&ts24);
 
     let omegas = &toPolyVec(&iterate_n(n, |x| *x * &omega, omega));
-    let omegas_tick = &toPolyVec(&iterate_n((4 * n + 6), |x| *x * &omega, *one));
+    let omegas_tick = &toPolyVec(&iterate_n(4 * n + 6, |x| *x * &omega, *one));
 
     let grandProduct1 = {
-        let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(|x| x + &gamma);
-        let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(|x| x + &gamma);
-        let gp1_3 = (&witness.w3 + &(omegas.mul(beta * k2))).elementwise(|x| x + &gamma);
-        let gp1_4 = (&witness.w1 + &(sigma1s.mul(beta))).elementwise(|x| x + &gamma);
-        let gp1_5 = (&witness.w2 + &(sigma2s.mul(beta))).elementwise(|x| x + &gamma);
-        let gp1_6 = (&witness.w3 + &(sigma3s.mul(beta))).elementwise(|x| x + &gamma);
+        let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(n,|x| x + &gamma);
+        let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(n,|x| x + &gamma);
+        let gp1_3 = (&witness.w3 + &(omegas.mul(beta * k2))).elementwise(n,|x| x + &gamma);
+        let gp1_4 = (&witness.w1 + &(sigma1s.mul(beta))).elementwise(n,|x| x + &gamma);
+        let gp1_5 = (&witness.w2 + &(sigma2s.mul(beta))).elementwise(n,|x| x + &gamma);
+        let gp1_6 = (&witness.w3 + &(sigma3s.mul(beta))).elementwise(n,|x| x + &gamma);
 
-        &rotR(&cumprod(
+        &rotR(n, &cumprod(n,
             &gp1_1
                 .zip_with(&gp1_2, |a, b| a * b)
                 .zip_with(&gp1_3, |a, b| a * b)
-                .zip_with(&gp1_4, |a, b| a / b)
-                .zip_with(&gp1_5, |a, b| a / b)
-                .zip_with(&gp1_6, |a, b| a / b),
+                .zip_with(&gp1_4, div_or_zero)
+                .zip_with(&gp1_5, div_or_zero)
+                .zip_with(&gp1_6, div_or_zero),
         ))
     };
 
@@ -656,16 +692,16 @@ pub fn plonkupProve(
 
     let grandProduct2 = {
         let eps_del = epsilon * (delta + one);
-        let gp2_1 = f_zeta.elementwise(|x| x + &epsilon).mul(delta + one);
-        let gp2_2 = t_zeta.elementwise(|x| x + &eps_del) + rotL(t_zeta).mul(delta);
-        let gp2_3 = h1.elementwise(|x| x + &eps_del) + h2.mul(delta);
-        let gp2_4 = h2.elementwise(|x| x + &eps_del) + rotL(h1).mul(delta);
+        let gp2_1 = f_zeta.elementwise(n,|x| x + &epsilon).mul(delta + one);
+        let gp2_2 = t_zeta.elementwise(n,|x| x + &eps_del) + rotL(n, t_zeta).mul(delta);
+        let gp2_3 = h1.elementwise(n,|x| x + &eps_del) + h2.mul(delta);
+        let gp2_4 = h2.elementwise(n,|x| x + &eps_del) + rotL(n, h1).mul(delta);
 
-        &rotR(&cumprod(
+        &rotR(n, &cumprod(n,
             &gp2_1
                 .zip_with(&gp2_2, |a, b| a * b)
-                .zip_with(&gp2_3, |a, b| a / b)
-                .zip_with(&gp2_4, |a, b| a / b),
+                .zip_with(&gp2_3, div_or_zero)
+                .zip_with(&gp2_4, div_or_zero),
         ))
     };
 
@@ -701,7 +737,8 @@ pub fn plonkupProve(
         let qXs3 = (&(aX + &s1X.mul(beta)) + gammaX)
             .mul(&(&(bX + &s2X.mul(beta)) + gammaX))
             .mul(&(&(cX + &s3X.mul(beta)) + gammaX))
-            .mul(&(z1X.zip_with(&omegas_tick, |a, b| a * b).mul(alpha)));
+            .mul(&(z1X.zip_with(&omegas_tick, |a, b| a * b)))
+            .mul(alpha);
 
         let qXs4 = (z1X.sub(&polyVecConstant(one)))
             .mul(&polyVecLagrange(n, 1, &omega))
@@ -714,11 +751,12 @@ pub fn plonkupProve(
         let qXs6 = &z2X
             .mul(&(&polyVecConstant(one) + deltaX))
             .mul(&(epsilonX + fX))
-            .mul(&(epsilonX.mul(&(&polyVecConstant(one) + deltaX))))
-            + tX
-            + deltaX
-                .mul(&(tX.zip_with(&omegas_tick, |a, b| a * b)))
-                .mul(alpha4);
+            .mul(
+                &(epsilonX.mul(&(&polyVecConstant(one) + deltaX)))
+                    + tX
+                    + deltaX.mul(&(tX.zip_with(&omegas_tick, |a, b| a * b))),
+            )
+            .mul(alpha4);
 
         let qXs7 = z2X
             .zip_with(&omegas_tick, |a, b| a * b)
@@ -897,58 +935,57 @@ pub fn plonkupProve(
         l_xi: l_xi,
     };
 
-//    let testInfo = PlonkupProverTestInfo {
-//        omega: omega,
-//        k1: k1,
-//        k2: k2,
-//        qlX: qlX.clone(),
-//        qrX: qrX.clone(),
-//        qoX: qoX.clone(),
-//        qmX: qmX.clone(),
-//        qcX: qcX.clone(),
-//        qkX: qkX.clone(),
-//        t1X: t1X.clone(),
-//        t2X: t2X.clone(),
-//        t3X: t3X.clone(),
-//        s1X: s1X.clone(),
-//        s2X: s2X.clone(),
-//        s3X: s3X.clone(),
-//        aX: aX.clone(),
-//        bX: bX.clone(),
-//        cX: cX.clone(),
-//        piX: piX.clone(),
-//        tX: tX.clone(),
-//        z1X: z1X.clone(),
-//        z2X: z2X.clone(),
-//        fX: fX.clone(),
-//        h1X: h1X.clone(),
-//        h2X: h2X.clone(),
-//        zhX: zhX.clone(),
-//        qX: qX.clone(),
-//        qlowX: qlowX.clone(),
-//        qmidX: qmidX.clone(),
-//        qhighX: qhighX.clone(),
-//        rX: rX.clone(),
-//        alpha: alpha,
-//        beta: beta,
-//        gamma: gamma,
-//        delta: delta,
-//        epsilon: epsilon,
-//        xi: xi,
-//        zeta: zeta,
-//        f_zeta: f_zeta.clone(),
-//        t_zeta: t_zeta.clone(),
-//        omegas: omegas.clone(),
-//        omegas_tick: omegas_tick.clone(),
-//        grandProduct1: grandProduct1.clone(),
-//        grandProduct2: grandProduct2.clone(),
-//        w1: w1.clone(),
-//        w2: w2.clone(),
-//        w3: w3.clone(),
-//    };
-//
-//    (plonkupProof, testInfo)
-    plonkupProof
+    let testInfo = PlonkupProverTestInfo {
+        omega: omega,
+        k1: k1,
+        k2: k2,
+        qlX: qlX.clone(),
+        qrX: qrX.clone(),
+        qoX: qoX.clone(),
+        qmX: qmX.clone(),
+        qcX: qcX.clone(),
+        qkX: qkX.clone(),
+        t1X: t1X.clone(),
+        t2X: t2X.clone(),
+        t3X: t3X.clone(),
+        s1X: s1X.clone(),
+        s2X: s2X.clone(),
+        s3X: s3X.clone(),
+        aX: aX.clone(),
+        bX: bX.clone(),
+        cX: cX.clone(),
+        piX: piX.clone(),
+        tX: tX.clone(),
+        z1X: z1X.clone(),
+        z2X: z2X.clone(),
+        fX: fX.clone(),
+        h1X: h1X.clone(),
+        h2X: h2X.clone(),
+        zhX: zhX.clone(),
+        qX: qX.clone(),
+        qlowX: qlowX.clone(),
+        qmidX: qmidX.clone(),
+        qhighX: qhighX.clone(),
+        rX: rX.clone(),
+        alpha: alpha,
+        beta: beta,
+        gamma: gamma,
+        delta: delta,
+        epsilon: epsilon,
+        xi: xi,
+        zeta: zeta,
+        f_zeta: f_zeta.clone(),
+        t_zeta: t_zeta.clone(),
+        omegas: omegas.clone(),
+        omegas_tick: omegas_tick.clone(),
+        grandProduct1: grandProduct1.clone(),
+        grandProduct2: grandProduct2.clone(),
+        w1: w1.clone(),
+        w2: w2.clone(),
+        w3: w3.clone(),
+    };
+
+    (plonkupProof, testInfo)
 }
 
 fn deserialize_scalar(buffer: &[u8]) -> (ScalarField, &[u8]) {
@@ -973,7 +1010,6 @@ fn deserialize_point(buffer: &[u8]) -> (GAffine, &[u8]) {
 fn serialize_point(point: GAffine) -> Vec<u8> {
     let mut res = Vec::new();
     point.serialize_uncompressed(&mut res).unwrap();
-    // fix_point_vector(&mut res);
     res
 }
 
@@ -1116,32 +1152,9 @@ fn deserialize_relation(buffer: &[u8]) -> (Relation, &[u8]) {
     );
 }
 
-// #[wasm_bindgen]
-// extern "C" {
-//     // Use `js_namespace` here to bind `console.log(..)` instead of just
-//     // `log(..)`
-//     #[wasm_bindgen(js_namespace = console)]
-//     fn log(s: &str);
-
-//     // The `console.log` is quite polymorphic, so we can bind it with multiple
-//     // signatures. Note that we need to use `js_name` to ensure we always call
-//     // `log` in JS.
-//     #[wasm_bindgen(js_namespace = console, js_name = log)]
-//     fn log_u32(a: u32);
-
-//     // Multiple arguments too!
-//     #[wasm_bindgen(js_namespace = console, js_name = log)]
-//     fn log_many(a: &str, b: &str);
-// }
-
-// macro_rules! console_log {
-//     // Note that this is using the `log` function imported above during
-//     // `bare_bones`
-//     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
-// }
 #[no_mangle]
 pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
-    n: usize,
+    n: u64,
 
     setup_ptr: *const c_char,
     setup_len: usize,
@@ -1154,8 +1167,7 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
 
     witness_ptr: *const c_char,
     witness_len: usize,
-) {
-    println!("N is : {:?}", n);
+) -> *const c_char {
     let setup_buffer = slice::from_raw_parts(setup_ptr as *const u8, setup_len);
     let secret_buffer = slice::from_raw_parts(secret_ptr as *const u8, secret_len);
     let relation_buffer = slice::from_raw_parts(relation_ptr as *const u8, relation_len);
@@ -1168,9 +1180,7 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
     let (w2, witness_buffer) = deserialize_scalar_poly(witness_buffer);
     let (w3, _) = deserialize_scalar_poly(witness_buffer);
 
-    println!("Start proving");
-//    let (proof, test_info) = plonkupProve(
-    let proof = plonkupProve(
+    let (proof, test_info) = plonkupProve(
         n as usize,
         &prover_setup,
         &PlonkupProverSecret {
@@ -1179,95 +1189,89 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
         &relation,
         &PlonkupWitness { w1, w2, w3 },
     );
-    let mut buf = Vec::new();
-    proof.serialize_uncompressed(&mut buf).unwrap();
-    println!("Finish proving");
-    println!("Proof: {:?}", buf);
-    
-//     let mut byte_result = vec![
-//         serialize_point(proof.cmA),
-//         serialize_point(proof.cmB),
-//         serialize_point(proof.cmC),
-//         serialize_point(proof.cmF),
-//         serialize_point(proof.cmH1),
-//         serialize_point(proof.cmH2),
-//         serialize_point(proof.cmZ1),
-//         serialize_point(proof.cmZ2),
-//         serialize_point(proof.cmQlow),
-//         serialize_point(proof.cmQmid),
-//         serialize_point(proof.cmQhigh),
-//         serialize_point(proof.proof1),
-//         serialize_point(proof.proof2),
-//         serialize_scalar(proof.a_xi),
-//         serialize_scalar(proof.b_xi),
-//         serialize_scalar(proof.c_xi),
-//         serialize_scalar(proof.s1_xi),
-//         serialize_scalar(proof.s2_xi),
-//         serialize_scalar(proof.f_xi),
-//         serialize_scalar(proof.t_xi),
-//         serialize_scalar(proof.t_xi_tick),
-//         serialize_scalar(proof.z1_xi_tick),
-//         serialize_scalar(proof.z2_xi_tick),
-//         serialize_scalar(proof.h1_xi_tick),
-//         serialize_scalar(proof.h2_xi),
-//         serialize_scalar(proof.l1_xi),
-//         serialize_scalar_vec(proof.l_xi),
-// //        serialize_scalar(test_info.omega),
-// //        serialize_scalar(test_info.k1),
-// //        serialize_scalar(test_info.k2),
-// //        serialize_scalar_poly(test_info.qlX),
-// //        serialize_scalar_poly(test_info.qrX),
-// //        serialize_scalar_poly(test_info.qoX),
-// //        serialize_scalar_poly(test_info.qmX),
-// //        serialize_scalar_poly(test_info.qcX),
-// //        serialize_scalar_poly(test_info.qkX),
-// //        serialize_scalar_poly(test_info.t1X),
-// //        serialize_scalar_poly(test_info.t2X),
-// //        serialize_scalar_poly(test_info.t3X),
-// //        serialize_scalar_poly(test_info.s1X),
-// //        serialize_scalar_poly(test_info.s2X),
-// //        serialize_scalar_poly(test_info.s3X),
-// //        serialize_scalar_poly(test_info.aX),
-// //        serialize_scalar_poly(test_info.bX),
-// //        serialize_scalar_poly(test_info.cX),
-// //        serialize_scalar_poly(test_info.piX),
-// //        serialize_scalar_poly(test_info.tX),
-// //        serialize_scalar_poly(test_info.z1X),
-// //        serialize_scalar_poly(test_info.z2X),
-// //        serialize_scalar_poly(test_info.fX),
-// //        serialize_scalar_poly(test_info.h1X),
-// //        serialize_scalar_poly(test_info.h2X),
-// //        serialize_scalar_poly(test_info.zhX),
-// //        serialize_scalar_poly(test_info.qX),
-// //        serialize_scalar_poly(test_info.qlowX),
-// //        serialize_scalar_poly(test_info.qmidX),
-// //        serialize_scalar_poly(test_info.qhighX),
-// //        serialize_scalar_poly(test_info.rX),
-// //        serialize_scalar(test_info.alpha),
-// //        serialize_scalar(test_info.beta),
-// //        serialize_scalar(test_info.gamma),
-// //        serialize_scalar(test_info.delta),
-// //        serialize_scalar(test_info.epsilon),
-// //        serialize_scalar(test_info.xi),
-// //        serialize_scalar(test_info.zeta),
-// //        serialize_scalar_poly(test_info.f_zeta),
-// //        serialize_scalar_poly(test_info.t_zeta),
-// //        serialize_scalar_poly(test_info.omegas),
-// //        serialize_scalar_poly(test_info.omegas_tick),
-// //        serialize_scalar_poly(test_info.grandProduct1),
-// //        serialize_scalar_poly(test_info.grandProduct2),
-// //        serialize_scalar_poly(test_info.w1),
-// //        serialize_scalar_poly(test_info.w2),
-// //        serialize_scalar_poly(test_info.w3),
-//     ]
-//     .concat();
 
-//     let result_len = byte_result.len();
-//     // let ptr = libc::malloc(result_len + 8) as *mut u8;
-//     let ptr = std::alloc::alloc(Layout::from_size_align_unchecked(result_len + 8, 8));
+    let mut byte_result = vec![
+        serialize_point(proof.cmA),
+        serialize_point(proof.cmB),
+        serialize_point(proof.cmC),
+        serialize_point(proof.cmF),
+        serialize_point(proof.cmH1),
+        serialize_point(proof.cmH2),
+        serialize_point(proof.cmZ1),
+        serialize_point(proof.cmZ2),
+        serialize_point(proof.cmQlow),
+        serialize_point(proof.cmQmid),
+        serialize_point(proof.cmQhigh),
+        serialize_point(proof.proof1),
+        serialize_point(proof.proof2),
+        serialize_scalar(proof.a_xi),
+        serialize_scalar(proof.b_xi),
+        serialize_scalar(proof.c_xi),
+        serialize_scalar(proof.s1_xi),
+        serialize_scalar(proof.s2_xi),
+        serialize_scalar(proof.f_xi),
+        serialize_scalar(proof.t_xi),
+        serialize_scalar(proof.t_xi_tick),
+        serialize_scalar(proof.z1_xi_tick),
+        serialize_scalar(proof.z2_xi_tick),
+        serialize_scalar(proof.h1_xi_tick),
+        serialize_scalar(proof.h2_xi),
+        serialize_scalar(proof.l1_xi),
+        serialize_scalar_vec(proof.l_xi),
+        serialize_scalar(test_info.omega),
+        serialize_scalar(test_info.k1),
+        serialize_scalar(test_info.k2),
+        serialize_scalar_poly(test_info.qlX),
+        serialize_scalar_poly(test_info.qrX),
+        serialize_scalar_poly(test_info.qoX),
+        serialize_scalar_poly(test_info.qmX),
+        serialize_scalar_poly(test_info.qcX),
+        serialize_scalar_poly(test_info.qkX),
+        serialize_scalar_poly(test_info.t1X),
+        serialize_scalar_poly(test_info.t2X),
+        serialize_scalar_poly(test_info.t3X),
+        serialize_scalar_poly(test_info.s1X),
+        serialize_scalar_poly(test_info.s2X),
+        serialize_scalar_poly(test_info.s3X),
+        serialize_scalar_poly(test_info.aX),
+        serialize_scalar_poly(test_info.bX),
+        serialize_scalar_poly(test_info.cX),
+        serialize_scalar_poly(test_info.piX),
+        serialize_scalar_poly(test_info.tX),
+        serialize_scalar_poly(test_info.z1X),
+        serialize_scalar_poly(test_info.z2X),
+        serialize_scalar_poly(test_info.fX),
+        serialize_scalar_poly(test_info.h1X),
+        serialize_scalar_poly(test_info.h2X),
+        serialize_scalar_poly(test_info.zhX),
+        serialize_scalar_poly(test_info.qX),
+        serialize_scalar_poly(test_info.qlowX),
+        serialize_scalar_poly(test_info.qmidX),
+        serialize_scalar_poly(test_info.qhighX),
+        serialize_scalar_poly(test_info.rX),
+        serialize_scalar(test_info.alpha),
+        serialize_scalar(test_info.beta),
+        serialize_scalar(test_info.gamma),
+        serialize_scalar(test_info.delta),
+        serialize_scalar(test_info.epsilon),
+        serialize_scalar(test_info.xi),
+        serialize_scalar(test_info.zeta),
+        serialize_scalar_poly(test_info.f_zeta),
+        serialize_scalar_poly(test_info.t_zeta),
+        serialize_scalar_poly(test_info.omegas),
+        serialize_scalar_poly(test_info.omegas_tick),
+        serialize_scalar_poly(test_info.grandProduct1),
+        serialize_scalar_poly(test_info.grandProduct2),
+        serialize_scalar_poly(test_info.w1),
+        serialize_scalar_poly(test_info.w2),
+        serialize_scalar_poly(test_info.w3),
+    ]
+    .concat();
 
-//     let mut res = result_len.to_le_bytes().to_vec();
-//     res.append(&mut byte_result);
-//     std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
-//     ptr as *const i8
+    let result_len = byte_result.len();
+    let ptr = libc::malloc(result_len + 8) as *mut u8;
+    let mut res = result_len.to_le_bytes().to_vec();
+    res.append(&mut byte_result);
+    std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
+    ptr as *const i8
 }
