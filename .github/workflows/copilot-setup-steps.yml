@@ -13,13 +13,7 @@ jobs:
   copilot-setup-steps:
     name: Setup Environment for Copilot
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        cabal: [3.14.2.0]
-        ghc: [9.12.2]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
@@ -29,8 +23,8 @@ jobs:
       uses: haskell-actions/setup@v2.6.2
       id: setup
       with:
-        ghc-version: ${{ matrix.ghc }}
-        cabal-version: ${{ matrix.cabal }}
+        ghc-version: 9.12.2
+        cabal-version: 3.14.2.0
         cabal-update: true
 
     - name: Configure Cabal
@@ -47,7 +41,7 @@ jobs:
       uses: actions/cache/restore@v4
       id: cache
       env:
-        key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-cabal-${{ matrix.cabal }}
+        key: copilot
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
         key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
