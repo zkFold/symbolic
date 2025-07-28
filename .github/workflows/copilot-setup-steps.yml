@@ -1,5 +1,18 @@
 name: Copilot Setup Steps
 
+# This workflow sets up a complete Haskell development environment for Copilot
+# with improved caching strategy to minimize build times:
+# 
+# Cache Layers:
+# 1. Dependencies Cache (~2GB): Cabal store with all package dependencies
+# 2. Build Cache (~678MB): Compiled modules, libraries, executables in dist-newstyle  
+# 3. Dev Tools Cache (~66MB): HLS, hlint, and fourmolu binaries
+#
+# Cache Invalidation:
+# - Dependencies: When plan.json changes (new/updated dependencies)
+# - Build artifacts: When source files (*.hs, *.cabal, cabal.project*) change
+# - Dev tools: When tool versions or GHC version change
+
 on:
   workflow_dispatch:
   pull_request:
