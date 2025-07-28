@@ -1,5 +1,18 @@
 name: Copilot Setup Steps
 
+# This workflow sets up a complete Haskell development environment for Copilot
+# with improved caching strategy to minimize build times:
+# 
+# Cache Layers:
+# 1. Dependencies Cache (~2GB): Cabal store with all package dependencies
+# 2. Build Cache (~678MB): Compiled modules, libraries, executables in dist-newstyle  
+# 3. Dev Tools Cache (~66MB): HLS, hlint, and fourmolu binaries
+#
+# Cache Invalidation:
+# - Dependencies: When plan.json changes (new/updated dependencies)
+# - Build artifacts: When source files (*.hs, *.cabal, cabal.project*) change
+# - Dev tools: When tool versions or GHC version change
+
 on:
   workflow_dispatch:
   pull_request:
@@ -39,45 +52,95 @@ jobs:
 
     - name: Restore cached dependencies
       uses: actions/cache/restore@v4
-      id: cache
+      id: cache-deps
       env:
-        key: copilot
+        key: copilot-deps
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
         key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
         restore-keys: ${{ env.key }}
 
+    - name: Restore cached build artifacts
+      uses: actions/cache/restore@v4
+      id: cache-build
+      env:
+        key: >-
+          copilot-build-${{ hashFiles('**/*.hs', '**/*.cabal', 'cabal.project*') }}
+      with:
+        path: dist-newstyle
+        key: ${{ env.key }}-${{ hashFiles('**/plan.json') }}
+        restore-keys: copilot-build
+
+    - name: Restore cached development tools
+      uses: actions/cache/restore@v4
+      id: cache-devtools
+      env:
+        key: >-
+          copilot-devtools-ghc-9.12.2-hls-2.11.0.0-hlint-3.10-fourmolu-0.18.0.0
+      with:
+        path: |
+          ~/.cabal/bin
+          /usr/local/bin/fourmolu
+        key: ${{ env.key }}
+        restore-keys: copilot-devtools
+
     - name: Install dependencies
       # If we had an exact cache hit, the dependencies will be up to date.
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: |
         cabal build all --only-dependencies
 
-    # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+    # Cache dependencies already here, so that we do not have to rebuild them
+    # should the subsequent steps fail.
     - name: Save cached dependencies
       uses: actions/cache/save@v4
-      # If we had an exact cache hit, trying to save the cache would error because of key clash.
-      if: steps.cache.outputs.cache-hit != 'true'
+      # If we had an exact cache hit, trying to save the cache would error
+      # because of key clash.
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
-        key: ${{ steps.cache.outputs.cache-primary-key }}
+        key: ${{ steps.cache-deps.outputs.cache-primary-key }}
 
     - name: Build all packages
+      # Only build if we don't have cached build artifacts
+      if: steps.cache-build.outputs.cache-hit != 'true'
       run: |
         cabal build all
 
+    - name: Save cached build artifacts
+      uses: actions/cache/save@v4
+      # Only save if we built the packages
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      with:
+        path: dist-newstyle
+        key: ${{ steps.cache-build.outputs.cache-primary-key }}
+
     - name: Setup development tools
+      # Only install tools if we don't have them cached
+      if: steps.cache-devtools.outputs.cache-hit != 'true'
       run: |
         # Install Haskell Language Server (HLS)
         cabal install haskell-language-server --overwrite-policy=always
-        
+
         # Install fourmolu for formatting
-        curl -L https://github.com/fourmolu/fourmolu/releases/download/v0.18.0.0/fourmolu-0.18.0.0-linux-x86_64 -o fourmolu
+        curl -L \
+          https://github.com/fourmolu/fourmolu/releases/download/v0.18.0.0/fourmolu-0.18.0.0-linux-x86_64 \
+          -o fourmolu
         chmod +x fourmolu
         sudo mv fourmolu /usr/local/bin/
-        
+
         # Install hlint for linting
         cabal install hlint --overwrite-policy=always
+
+    - name: Save cached development tools
+      uses: actions/cache/save@v4
+      # Only save if we installed the tools
+      if: steps.cache-devtools.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ~/.cabal/bin
+          /usr/local/bin/fourmolu
+        key: ${{ steps.cache-devtools.outputs.cache-primary-key }}
 
     - name: Verify project structure
       run: |
@@ -103,7 +166,8 @@ jobs:
         echo "Build: cabal build all"
         echo "Test: cabal test all"
         echo "Benchmark: cabal bench all"
-        echo "Profile: cabal run --enable-profiling exe:bench-mimc -- +RTS -p -RTS"
+        echo "Profile: cabal run --enable-profiling exe:bench-mimc \
+          -- +RTS -p -RTS"
         echo "Format: fourmolu --mode inplace \$(find . -name '*.hs')"
         echo "Lint: hlint ."
         echo "Documentation: cabal haddock all"
