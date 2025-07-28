@@ -2,20 +2,20 @@ module Tests.Symbolic.Algorithm.Poseidon (specPoseidon) where
 
 import Control.Monad (forM_)
 import Data.Function (($), (.))
-import Data.List (take, isPrefixOf, drop, filter, words, break, (++))
+import Data.List (break, drop, filter, isPrefixOf, take, words, (++))
 import Data.List.Split (splitOn)
+import qualified Data.Vector as V
 import System.IO (IO)
 import Test.Hspec (Spec, describe, it, runIO, shouldBe, shouldNotBe)
 import Text.Read (read)
-import Prelude (Integer, String, map, (<>), lines, not, null, (!!), (/=), (-), (==), length)
-import qualified Data.Vector as V
+import Prelude (Integer, String, length, lines, map, not, null, (!!), (-), (/=), (<>), (==))
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class (FromConstant(..), zero)
+import ZkFold.Algebra.Class (FromConstant (..), zero)
+import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
 import ZkFold.Symbolic.Algorithm.Hash.Poseidon
 import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
 
 -- | Parse hex string to integer
 parseHex :: String -> Integer
@@ -23,48 +23,51 @@ parseHex s = read s -- The string already includes 0x prefix
 
 -- | Parse test vector input line
 parseInput :: String -> [Integer]
-parseInput line = 
-    let cleaned = filter (/= ',') $ drop 1 $ take (length line - 1) line -- Remove [ and ]
-        hexStrings = words $ map (\c -> if c == '\'' then ' ' else c) cleaned
-    in map parseHex $ filter (not . null) hexStrings -- Don't drop 0x prefix
+parseInput line =
+  let cleaned = filter (/= ',') $ drop 1 $ take (length line - 1) line -- Remove [ and ]
+      hexStrings = words $ map (\c -> if c == '\'' then ' ' else c) cleaned
+   in map parseHex $ filter (not . null) hexStrings -- Don't drop 0x prefix
 
--- | Parse test vector output line  
+-- | Parse test vector output line
 parseOutput :: String -> [Integer]
 parseOutput = parseInput
 
 -- | Test vector data type
 data TestVector = TestVector
-    { tvName :: String
-    , tvInput :: [Integer]
-    , tvOutput :: [Integer]
-    } deriving (Haskell.Show)
+  { tvName :: String
+  , tvInput :: [Integer]
+  , tvOutput :: [Integer]
+  }
+  deriving Haskell.Show
 
 -- | Parse test vectors from file content
 parseTestVectors :: String -> [TestVector]
-parseTestVectors content = 
-    let allLines = lines content
-        testSections = splitTestSections allLines
-    in map parseSection testSections
-  where
-    splitTestSections [] = []
-    splitTestSections ls = 
-        let (section, rest) = break (isPrefixOf "#") (drop 1 ls)
-        in (take 1 ls ++ section) : splitTestSections rest
-    
-    parseSection (nameL:inputL:outputL:_) = TestVector
-        { tvName = drop 2 nameL -- Remove "# "
-        , tvInput = parseInput inputL
-        , tvOutput = parseOutput outputL
-        }
-    parseSection _ = TestVector "" [] []
+parseTestVectors content =
+  let allLines = lines content
+      testSections = splitTestSections allLines
+   in map parseSection testSections
+ where
+  splitTestSections [] = []
+  splitTestSections ls =
+    let (section, rest) = break (isPrefixOf "#") (drop 1 ls)
+     in (take 1 ls ++ section) : splitTestSections rest
+
+  parseSection (nameL : inputL : outputL : _) =
+    TestVector
+      { tvName = drop 2 nameL -- Remove "# "
+      , tvInput = parseInput inputL
+      , tvOutput = parseOutput outputL
+      }
+  parseSection _ = TestVector "" [] []
+
 -- | Test Poseidon permutation against official reference test vectors from Hades paper
 -- Reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt
 poseidonPermutationSpec :: Spec
 poseidonPermutationSpec = describe "Poseidon permutation test vectors" $ do
   testVectors <- runIO $ Haskell.readFile "test/data/poseidon_reference_test_vectors.txt"
   let vectors = parseTestVectors testVectors
-  
-  forM_ vectors $ \tv -> 
+
+  forM_ vectors $ \tv ->
     it ("should match reference implementation for " <> tvName tv) $ do
       case tvName tv of
         "poseidonperm_x5_254_3" -> do
@@ -208,5 +211,5 @@ specPoseidon = do
   poseidonPermutationSpec
   poseidonBehavioralSpec
   poseidonPermutationBehavioralSpec
-  poseidonVariableWidthSpec  
+  poseidonVariableWidthSpec
   poseidonEdgeCaseSpec
