@@ -36,17 +36,17 @@ defaultPoseidonParams :: (Field a, AdditiveMonoid a, FromConstant Integer a) => 
 defaultPoseidonParams = poseidonBLS12381Params
 
 -- | Poseidon parameters for BLS12-381 field (width=3, rate=2, capacity=1)
--- NOTE: Parameters adjusted to match available constants (81 constants = 27 rounds * 3 width)
--- This configuration uses fewer rounds than the official reference due to limited constants
+-- Official parameters from poseidonperm_x5_255_3.sage reference implementation
 -- Field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+-- Total rounds: R_F=8, R_P=57, total=65 rounds, requiring 195 constants (65*3)
 poseidonBLS12381Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
 poseidonBLS12381Params =
   PoseidonParams
     { width = 3
     , rate = 2
     , capacity = 1
-    , fullRounds = 8  -- 4 at start + 4 at end
-    , partialRounds = 19  -- Adjusted to match available constants: 4+19+4 = 27 total rounds
+    , fullRounds = 8  -- 4 at start + 4 at end (R_F = 8)
+    , partialRounds = 57  -- Official value from reference (R_P = 57)
     , roundConstants = roundConstantsBLS12381
     , mdsMatrix = mdsMatrixBLS12381
     }
