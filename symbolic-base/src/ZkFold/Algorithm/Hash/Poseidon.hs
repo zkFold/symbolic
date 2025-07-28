@@ -5,7 +5,7 @@ module ZkFold.Algorithm.Hash.Poseidon (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, splitAt, ($), (++), (<), (>))
+import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, splitAt, ($), (++), (<), (>), (==))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
@@ -71,7 +71,7 @@ poseidonRound params state constants isFull =
 -- | Poseidon permutation
 poseidonPermutation :: Field a => PoseidonParams a -> V.Vector a -> V.Vector a
 poseidonPermutation params initialState =
-  let totalConstantsNeeded = (fullRounds params * 2 + partialRounds params) * width params
+  let totalConstantsNeeded = (fullRounds params P.* 2 P.+ partialRounds params) P.* width params
       allConstants = roundConstants params
    in if V.length allConstants == 0
         then error "No round constants available"
@@ -81,24 +81,24 @@ poseidonPermutation params initialState =
     | remainingFirstFull > 0 =
         let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex
             newState = poseidonRound params state roundConstants True
-            nextIndex = constantIndex + fromIntegral (width params)
+            nextIndex = constantIndex P.+ fromIntegral (width params)
          in go newState constants (remainingFirstFull P.- 1) remainingPartial remainingLastFull nextIndex
     | remainingPartial > 0 =
         let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex
             newState = poseidonRound params state roundConstants False
-            nextIndex = constantIndex + fromIntegral (width params)
+            nextIndex = constantIndex P.+ fromIntegral (width params)
          in go newState constants 0 (remainingPartial P.- 1) remainingLastFull nextIndex
     | remainingLastFull > 0 =
         let roundConstants = getNextConstants (fromIntegral (width params)) constantIndex
             newState = poseidonRound params state roundConstants True
-            nextIndex = constantIndex + fromIntegral (width params)
+            nextIndex = constantIndex P.+ fromIntegral (width params)
          in go newState constants 0 0 (remainingLastFull P.- 1) nextIndex
     | otherwise = state
 
   getNextConstants count startIndex =
     let availableConstants = V.length (roundConstants params)
      in V.generate count $ \i ->
-          let idx = (startIndex + i) `mod` availableConstants
+          let idx = (startIndex P.+ i) `P.mod` availableConstants
            in (roundConstants params) V.! idx
 
 -- | Helper function to chunk a vector into smaller vectors
@@ -107,12 +107,10 @@ chunkVector chunkSize vec =
   let chunks = go (V.toList vec) []
    in V.fromList chunks
  where
-  go [] acc = reverseList acc
+  go [] acc = P.reverse acc
   go xs acc =
     let (chunk, rest) = splitAt (fromIntegral chunkSize) xs
      in go rest (V.fromList chunk : acc)
-  reverseList [] = []
-  reverseList (x : xs) = reverseList xs ++ [x]
 
 -- | Sponge construction for arbitrary-length input
 poseidonHash :: Field a => PoseidonParams a -> [a] -> a
