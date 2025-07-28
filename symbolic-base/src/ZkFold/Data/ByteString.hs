@@ -21,32 +21,16 @@ module ZkFold.Data.ByteString (
 import           Data.List              (foldl')
 #endif
 import Control.Applicative (many)
-import qualified Data.Aeson as Aeson
+import ByteString.Aeson.Orphans () -- Import orphan instances for ByteString Aeson
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString as Strict
-import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.Text.Encoding as Text
 import GHC.Generics (Par1, U1, (:*:), (:.:))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Prelude
-
-instance Aeson.FromJSON Strict.ByteString where
-  parseJSON o =
-    either fail return
-      . Base64.decode
-      . Text.encodeUtf8
-      =<< Aeson.parseJSON o
-
-instance Aeson.ToJSON Strict.ByteString where
-  toJSON = Aeson.toJSON . Text.decodeUtf8 . Base64.encode
-
-instance Aeson.FromJSONKey Strict.ByteString
-
-instance Aeson.ToJSONKey Strict.ByteString
 
 class (forall a. Binary a => Binary (f a)) => Binary1 f
 
