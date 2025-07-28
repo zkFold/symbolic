@@ -21,7 +21,7 @@ import ZkFold.Algorithm.Hash.Poseidon.Constants
 -- - Full rounds: R_F = 8 (4 at beginning + 4 at end)
 -- - Partial rounds: R_P = 57 (middle rounds with S-box applied only to first element)
 -- - MDS matrix: 3x3 matrix for optimal diffusion
--- - Field: BN254 scalar field (prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001)
+-- - Field: BLS12-381 scalar field (prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001)
 
 -- | Apply S-box (x^α) to a single element
 sbox :: Field a => a -> a

@@ -7,7 +7,7 @@ import Prelude (Integer, String, map, (<>))
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class (FromConstant (..))
-import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
 
 -- | Test vector data type
@@ -18,15 +18,15 @@ data TestVector = TestVector
   }
   deriving Haskell.Show
 
--- | Official BN254 test vector from Hades paper reference implementation
+-- | Official BLS12-381 test vector from Hades paper reference implementation
 -- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt
--- Test case: poseidonperm_x5_254_3 - Poseidon permutation for BN254 field with width=3
+-- Test case: poseidonperm_x5_255_3 - Poseidon permutation for BLS12-381 field with width=3
 -- Input: [0, 1, 2] (as field elements)
 -- Expected output from reference Sage implementation
 officialTestVector :: TestVector
 officialTestVector =
   TestVector
-    { tvName = "poseidonperm_x5_254_3"
+    { tvName = "poseidonperm_x5_255_3"
     , tvInput =
         [ 0x0000000000000000000000000000000000000000000000000000000000000000
         , 0x0000000000000000000000000000000000000000000000000000000000000001
@@ -54,32 +54,32 @@ poseidonPermutationSpec = describe "Poseidon permutation test vectors" $ do
 poseidonVariableWidthSpec :: Spec
 poseidonVariableWidthSpec = describe "Poseidon variable width support" $ do
   it "should support width=3 configuration" $ do
-    let params = poseidonBN254Params :: PoseidonParams Fr
+    let params = poseidonBLS12381Params :: PoseidonParams Fr
     width params `shouldBe` 3
     rate params `shouldBe` 2
     capacity params `shouldBe` 1
 
   it "should support width=5 configuration" $ do
-    let params = poseidonBN254Width5Params :: PoseidonParams Fr
+    let params = poseidonBLS12381Width5Params :: PoseidonParams Fr
     width params `shouldBe` 5
     rate params `shouldBe` 4
     capacity params `shouldBe` 1
 
   it "width=3 permutation should produce correct length output" $ do
-    let params = poseidonBN254Params :: PoseidonParams Fr
+    let params = poseidonBLS12381Params :: PoseidonParams Fr
     let input = V.fromList [1, 2, 3] :: V.Vector Fr
     let result = poseidonPermutation params input
     V.length result `shouldBe` 3
 
   it "width=5 permutation should produce correct length output" $ do
-    let params = poseidonBN254Width5Params :: PoseidonParams Fr
+    let params = poseidonBLS12381Width5Params :: PoseidonParams Fr
     let input = V.fromList [1, 2, 3, 4, 5] :: V.Vector Fr
     let result = poseidonPermutation params input
     V.length result `shouldBe` 5
 
   it "different widths should give different results for comparable inputs" $ do
-    let params3 = poseidonBN254Params :: PoseidonParams Fr
-    let params5 = poseidonBN254Width5Params :: PoseidonParams Fr
+    let params3 = poseidonBLS12381Params :: PoseidonParams Fr
+    let params5 = poseidonBLS12381Width5Params :: PoseidonParams Fr
     let input3 = V.fromList [1, 2, 3] :: V.Vector Fr
     let input5 = V.fromList [1, 2, 3, 4, 5] :: V.Vector Fr
     let result3 = poseidonPermutation params3 input3
