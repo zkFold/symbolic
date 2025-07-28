@@ -2,19 +2,15 @@ module ZkFold.Algorithm.Hash.Poseidon.Constants (
   PoseidonParams (..),
   defaultPoseidonParams,
   poseidonBLS12381Params,
-  poseidonBLS12381Width5Params,
   roundConstantsBLS12381,
-  roundConstantsBLS12381Width5,
   mdsMatrixBLS12381,
-  mdsMatrixBLS12381Width5,
 ) where
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
 import Prelude
-import qualified Prelude as P
 
-import ZkFold.Algebra.Class (AdditiveMonoid, Field, FromConstant (..), zero)
+import ZkFold.Algebra.Class (AdditiveMonoid, Field, FromConstant (..))
 
 -- | Poseidon parameters data type defined here to avoid circular imports
 data PoseidonParams a = PoseidonParams
@@ -55,19 +51,7 @@ poseidonBLS12381Params =
     , mdsMatrix = mdsMatrixBLS12381
     }
 
--- | Poseidon parameters for BLS12-381 curve with width=5 (rate=4, capacity=1)
--- Parameters for larger width to demonstrate variable width support
-poseidonBLS12381Width5Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
-poseidonBLS12381Width5Params =
-  PoseidonParams
-    { width = 5
-    , rate = 4
-    , capacity = 1
-    , fullRounds = 8
-    , partialRounds = 60
-    , roundConstants = roundConstantsBLS12381Width5
-    , mdsMatrix = mdsMatrixBLS12381Width5
-    }
+
 
 -- | Round constants from the official Hades paper reference implementation
 -- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
@@ -160,17 +144,6 @@ roundConstantsBLS12381 =
       , 0x2e211b39a023031a22acc1a1f5f3bb6d8c2666a6379d9d2c40cc8f78b7bd9abe
       ]
 
--- | Round constants for Poseidon with width=5 on BLS12-381
--- Placeholder constants for width=5 configuration
-roundConstantsBLS12381Width5 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
-roundConstantsBLS12381Width5 =
-  V.fromList $
-    map (fromConstant @Integer) $
-      replicate 380 1 -- Placeholder: (8+60+8)*5 = 380 constants needed
- where
-  replicate 0 _ = []
-  replicate n x = x : replicate (n P.- 1) x
-
 -- | MDS matrix for Poseidon with width=3
 -- From the official Hades paper reference implementation: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
 mdsMatrixBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
@@ -190,47 +163,5 @@ mdsMatrixBLS12381 =
         [ fromConstant @Integer 0x1e208f585a72558534281562cad89659b428ec61433293a8d7f0f0e38a6726ac
         , fromConstant @Integer 0x0455ebf862f0b60f69698e97d36e8aafd4d107cae2b61be1858b23a3363642e0
         , fromConstant @Integer 0x569e2c206119e89455852059f707370e2c1fc9721f6c50991cedbbf782daef54
-        ]
-    ]
-
--- | MDS matrix for Poseidon with width=5
--- Placeholder 5x5 MDS matrix for width=5 configuration
-mdsMatrixBLS12381Width5 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
-mdsMatrixBLS12381Width5 =
-  V.fromList
-    [ V.fromList
-        [ fromConstant @Integer 1
-        , fromConstant @Integer 1
-        , fromConstant @Integer 1
-        , fromConstant @Integer 1
-        , fromConstant @Integer 1
-        ]
-    , V.fromList
-        [ fromConstant @Integer 1
-        , fromConstant @Integer 2
-        , fromConstant @Integer 3
-        , fromConstant @Integer 4
-        , fromConstant @Integer 5
-        ]
-    , V.fromList
-        [ fromConstant @Integer 1
-        , fromConstant @Integer 3
-        , fromConstant @Integer 6
-        , fromConstant @Integer 10
-        , fromConstant @Integer 15
-        ]
-    , V.fromList
-        [ fromConstant @Integer 1
-        , fromConstant @Integer 4
-        , fromConstant @Integer 10
-        , fromConstant @Integer 20
-        , fromConstant @Integer 35
-        ]
-    , V.fromList
-        [ fromConstant @Integer 1
-        , fromConstant @Integer 5
-        , fromConstant @Integer 15
-        , fromConstant @Integer 35
-        , fromConstant @Integer 70
         ]
     ]

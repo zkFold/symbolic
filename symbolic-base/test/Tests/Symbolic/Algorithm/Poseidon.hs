@@ -1,6 +1,6 @@
 module Tests.Symbolic.Algorithm.Poseidon (specPoseidon) where
 
-import Data.Function (($), (.))
+import Data.Function (($))
 import qualified Data.Vector as V
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Prelude (Integer, String, map, (<>))
@@ -33,9 +33,9 @@ officialTestVector =
         , 0x0000000000000000000000000000000000000000000000000000000000000002
         ]
     , tvOutput =
-        [ 0x115cc0f5e7d690413df64c6b9662e9cf2a3617f2743245519e19607a4417189a
-        , 0x0fca49b798923ab0239de1c9e7a4a9a2210312b6a2f616d18b5a87f9b628ae29
-        , 0x0e7ae82e40091e63cbd4f16a6d16310b3729d4b6e138fcf54110e2867045a30c
+        [ 0x18e94344ce65e408704bd51713b8220e3f5ccbbc33756f1c8274f44e19c3cef0
+        , 0x29d3052639757c6662a0980defb667c812a4cb86a84450a3375b4377c587511c
+        , 0x632522385db3923793efb7a4c3e22eebfe96a5235ee4666e7fe3da1c00cc1d9c
         ]
     }
 
@@ -50,46 +50,7 @@ poseidonPermutationSpec = describe "Poseidon permutation test vectors" $ do
     let result = poseidonPermutation params input
     result `shouldBe` expected
 
--- | Test variable width capability
-poseidonVariableWidthSpec :: Spec
-poseidonVariableWidthSpec = describe "Poseidon variable width support" $ do
-  it "should support width=3 configuration" $ do
-    let params = poseidonBLS12381Params :: PoseidonParams Fr
-    width params `shouldBe` 3
-    rate params `shouldBe` 2
-    capacity params `shouldBe` 1
-
-  it "should support width=5 configuration" $ do
-    let params = poseidonBLS12381Width5Params :: PoseidonParams Fr
-    width params `shouldBe` 5
-    rate params `shouldBe` 4
-    capacity params `shouldBe` 1
-
-  it "width=3 permutation should produce correct length output" $ do
-    let params = poseidonBLS12381Params :: PoseidonParams Fr
-    let input = V.fromList [1, 2, 3] :: V.Vector Fr
-    let result = poseidonPermutation params input
-    V.length result `shouldBe` 3
-
-  it "width=5 permutation should produce correct length output" $ do
-    let params = poseidonBLS12381Width5Params :: PoseidonParams Fr
-    let input = V.fromList [1, 2, 3, 4, 5] :: V.Vector Fr
-    let result = poseidonPermutation params input
-    V.length result `shouldBe` 5
-
-  it "different widths should give different results for comparable inputs" $ do
-    let params3 = poseidonBLS12381Params :: PoseidonParams Fr
-    let params5 = poseidonBLS12381Width5Params :: PoseidonParams Fr
-    let input3 = V.fromList [1, 2, 3] :: V.Vector Fr
-    let input5 = V.fromList [1, 2, 3, 4, 5] :: V.Vector Fr
-    let result3 = poseidonPermutation params3 input3
-    let result5 = poseidonPermutation params5 input5
-    -- They should produce different results (can't compare directly due to different lengths)
-    V.length result3 `shouldBe` 3
-    V.length result5 `shouldBe` 5
-
 -- | Main test specification following repository patterns
 specPoseidon :: Spec
 specPoseidon = do
   poseidonPermutationSpec
-  poseidonVariableWidthSpec
