@@ -10,7 +10,7 @@ import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BN254 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
 
--- | Test vector data type  
+-- | Test vector data type
 data TestVector = TestVector
   { tvName :: String
   , tvInput :: [Integer]
@@ -24,15 +24,20 @@ data TestVector = TestVector
 -- Input: [0, 1, 2] (as field elements)
 -- Expected output from reference Sage implementation
 officialTestVector :: TestVector
-officialTestVector = TestVector
-  { tvName = "poseidonperm_x5_254_3"
-  , tvInput = [0x0000000000000000000000000000000000000000000000000000000000000000, 
-               0x0000000000000000000000000000000000000000000000000000000000000001, 
-               0x0000000000000000000000000000000000000000000000000000000000000002]
-  , tvOutput = [0x115cc0f5e7d690413df64c6b9662e9cf2a3617f2743245519e19607a4417189a,
-                0x0fca49b798923ab0239de1c9e7a4a9a2210312b6a2f616d18b5a87f9b628ae29,
-                0x0e7ae82e40091e63cbd4f16a6d16310b3729d4b6e138fcf54110e2867045a30c]
-  }
+officialTestVector =
+  TestVector
+    { tvName = "poseidonperm_x5_254_3"
+    , tvInput =
+        [ 0x0000000000000000000000000000000000000000000000000000000000000000
+        , 0x0000000000000000000000000000000000000000000000000000000000000001
+        , 0x0000000000000000000000000000000000000000000000000000000000000002
+        ]
+    , tvOutput =
+        [ 0x115cc0f5e7d690413df64c6b9662e9cf2a3617f2743245519e19607a4417189a
+        , 0x0fca49b798923ab0239de1c9e7a4a9a2210312b6a2f616d18b5a87f9b628ae29
+        , 0x0e7ae82e40091e63cbd4f16a6d16310b3729d4b6e138fcf54110e2867045a30c
+        ]
+    }
 
 -- | Test Poseidon permutation against official reference test vectors from Hades paper
 -- Reference: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt

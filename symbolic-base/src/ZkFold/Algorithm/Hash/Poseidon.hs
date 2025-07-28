@@ -5,7 +5,7 @@ module ZkFold.Algorithm.Hash.Poseidon (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, splitAt, ($), (++), (<), (>), (==))
+import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, splitAt, ($), (++), (<), (==), (>))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
