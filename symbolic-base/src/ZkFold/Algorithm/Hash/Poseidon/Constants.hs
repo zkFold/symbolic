@@ -54,10 +54,10 @@ poseidonBLS12381Params =
 
 
 
--- | Round constants from BLS12-381 field implementation  
--- NOTE: This is a reduced set (81 constants for 27 rounds) due to unavailable official reference
--- For width=3: 27 rounds * 3 width = 81 constants (4 full start + 19 partial + 4 full end)
--- TODO: Replace with official constants from poseidonperm_x5_255_3.sage when accessible
+-- | Round constants from official BLS12-381 field implementation  
+-- Complete set of 195 constants from poseidonperm_x5_255_3.sage reference
+-- For width=3: 65 rounds * 3 width = 195 constants (R_F=8, R_P=57 total rounds)
+-- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
 roundConstantsBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
 roundConstantsBLS12381 =
   V.fromList $
