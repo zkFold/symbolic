@@ -104,12 +104,24 @@ jobs:
     - name: Build all packages
       # Only build if we don't have cached build artifacts
       if: steps.cache-build.outputs.cache-hit != 'true'
+      continue-on-error: true
+      id: build-step
       run: |
         cabal build all
 
+    - name: Report build status
+      if: steps.cache-build.outputs.cache-hit != 'true'
+      run: |
+        if [ "${{ steps.build-step.outcome }}" = "success" ]; then
+          echo "✅ Build completed successfully!"
+        else
+          echo "⚠️  Build failed, but continuing with setup..."
+          echo "You may need to fix compilation errors before the project is fully functional."
+        fi
+
     - name: Save cached build artifacts
       uses: actions/cache/save@v4
-      # Only save if we built the packages
+      # Only save if we attempted to build the packages (regardless of success)
       if: steps.cache-build.outputs.cache-hit != 'true'
       with:
         path: dist-newstyle
