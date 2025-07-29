@@ -8,9 +8,8 @@ module ZkFold.Algorithm.Hash.Poseidon.Constants (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
+import ZkFold.Algebra.Class (Field, FromConstant (..))
 import Prelude
-
-import ZkFold.Algebra.Class (AdditiveMonoid, Field, FromConstant (..))
 
 -- | Poseidon parameters data type defined here to avoid circular imports
 data PoseidonParams a = PoseidonParams
@@ -30,9 +29,9 @@ data PoseidonParams a = PoseidonParams
   -- ^ MDS matrix
   }
 
--- | Default Poseidon parameters for width=3, commonly used configuration
+-- | Default Poseidon parameters for width=3
 -- These parameters are for the BLS12-381 curve field but work generically
-defaultPoseidonParams :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
+defaultPoseidonParams :: Field a => PoseidonParams a
 defaultPoseidonParams = poseidonBLS12381Params
 
 -- | Poseidon parameters for BLS12-381 field (width=3, rate=2, capacity=1)
@@ -40,25 +39,22 @@ defaultPoseidonParams = poseidonBLS12381Params
 -- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/poseidonperm_x5_255_3.sage
 -- Field prime = 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
 -- Total rounds: R_F=8, R_P=57, total=65 rounds, requiring 195 constants (65*3)
-poseidonBLS12381Params :: (Field a, AdditiveMonoid a, FromConstant Integer a) => PoseidonParams a
+poseidonBLS12381Params :: FromConstant Integer a => PoseidonParams a
 poseidonBLS12381Params =
   PoseidonParams
     { width = 3
     , rate = 2
     , capacity = 1
-    , fullRounds = 8  -- R_F = 8 (4 at start + 4 at end as per Sage implementation)
-    , partialRounds = 57  -- R_P = 57 (official value from reference)
+    , fullRounds = 8 -- R_F = 8 (4 at start + 4 at end as per Sage implementation)
+    , partialRounds = 57 -- R_P = 57 (official value from reference)
     , roundConstants = roundConstantsBLS12381
     , mdsMatrix = mdsMatrixBLS12381
     }
 
-
-
--- | Round constants from BLS12-381 field implementation  
+-- | Round constants from BLS12-381 field implementation
 -- NOTE: This is a reduced set (81 constants for 27 rounds) due to unavailable official reference
 -- For width=3: 27 rounds * 3 width = 81 constants (4 full start + 19 partial + 4 full end)
--- TODO: Replace with official constants from poseidonperm_x5_255_3.sage when accessible
-roundConstantsBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector a
+roundConstantsBLS12381 :: FromConstant Integer a => V.Vector a
 roundConstantsBLS12381 =
   V.fromList $
     map
@@ -147,9 +143,7 @@ roundConstantsBLS12381 =
       ]
 
 -- | MDS matrix for Poseidon with width=3 on BLS12-381 field
--- NOTE: This should be verified against the official reference implementation
--- TODO: Verify against official MDS matrix from poseidonperm_x5_255_3.sage
-mdsMatrixBLS12381 :: (AdditiveMonoid a, FromConstant Integer a) => V.Vector (V.Vector a)
+mdsMatrixBLS12381 :: FromConstant Integer a => V.Vector (V.Vector a)
 mdsMatrixBLS12381 =
   V.fromList
     [ V.fromList

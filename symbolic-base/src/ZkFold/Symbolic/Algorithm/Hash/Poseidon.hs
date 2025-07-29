@@ -6,8 +6,6 @@ module ZkFold.Symbolic.Algorithm.Hash.Poseidon (
 import Data.Foldable (toList)
 import Data.Function ((.))
 import Data.Functor (fmap)
-
-import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.Poseidon
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)

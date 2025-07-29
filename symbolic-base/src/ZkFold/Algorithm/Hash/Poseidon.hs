@@ -5,11 +5,25 @@ module ZkFold.Algorithm.Hash.Poseidon (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import Prelude (Bool (..), Maybe (..), error, fromIntegral, length, map, otherwise, show, splitAt, ($), (++), (<), (==), (>))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.Poseidon.Constants
+import ZkFold.Prelude (replicate)
+import Prelude (
+  Bool (..),
+  Maybe (..),
+  error,
+  fromIntegral,
+  length,
+  map,
+  otherwise,
+  show,
+  splitAt,
+  ($),
+  (++),
+  (==),
+  (>),
+ )
+import qualified Prelude as P
 
 -- | Poseidon hash function implementation following the Hades design.
 -- This implementation follows the official Sage reference implementation from the Hades paper:
@@ -40,7 +54,7 @@ partialSboxLayer state =
 
 -- | Add round constants to state
 addRoundConstants :: AdditiveGroup a => V.Vector a -> V.Vector a -> V.Vector a
-addRoundConstants state constants = V.zipWith (+) state constants
+addRoundConstants = V.zipWith (+)
 
 -- | Matrix multiplication for MDS layer
 mdsLayer :: Ring a => V.Vector (V.Vector a) -> V.Vector a -> V.Vector a
@@ -71,8 +85,7 @@ poseidonRound params state constants isFull =
 -- | Poseidon permutation
 poseidonPermutation :: Field a => PoseidonParams a -> V.Vector a -> V.Vector a
 poseidonPermutation params initialState =
-  let totalConstantsNeeded = (fullRounds params P.* 2 P.+ partialRounds params) P.* width params
-      allConstants = roundConstants params
+  let allConstants = roundConstants params
    in if V.length allConstants == 0
         then error "No round constants available"
         else go initialState allConstants (fullRounds params) (partialRounds params) (fullRounds params) 0
@@ -98,22 +111,15 @@ poseidonPermutation params initialState =
   getNextConstants count startIndex =
     let availableConstants = V.length (roundConstants params)
      in if startIndex P.+ count P.> availableConstants
-        then error $ "Insufficient round constants: need " ++ show (startIndex P.+ count) ++ 
-                    " but only have " ++ show availableConstants
-        else V.generate count $ \i ->
-               let idx = startIndex P.+ i
-                in (roundConstants params) V.! idx
-
--- | Helper function to chunk a vector into smaller vectors
-chunkVector :: Natural -> V.Vector a -> V.Vector (V.Vector a)
-chunkVector chunkSize vec =
-  let chunks = go (V.toList vec) []
-   in V.fromList chunks
- where
-  go [] acc = P.reverse acc
-  go xs acc =
-    let (chunk, rest) = splitAt (fromIntegral chunkSize) xs
-     in go rest (V.fromList chunk : acc)
+          then
+            error $
+              "Insufficient round constants: need "
+                ++ show (startIndex P.+ count)
+                ++ " but only have "
+                ++ show availableConstants
+          else V.generate count $ \i ->
+            let idx = startIndex P.+ i
+             in roundConstants params V.! idx
 
 -- | Sponge construction for arbitrary-length input
 poseidonHash :: Field a => PoseidonParams a -> [a] -> a
@@ -122,37 +128,32 @@ poseidonHash params input =
       paddedInput = padInput r input
       blocks = chunkInput r paddedInput
       finalState = absorb params blocks
-   in squeeze finalState
+   in V.head finalState
  where
   padInput r inp =
     let inputLen = fromIntegral (length inp)
         paddingLen = r P.- (inputLen `P.mod` r)
      in inp ++ replicate (fromIntegral paddingLen) zero
 
-  chunkInput r inp = chunkList (fromIntegral r) inp
-
   chunkList _ [] = []
   chunkList n xs =
     let (chunk, rest) = splitAt n xs
      in chunk : chunkList n rest
 
-  replicate 0 _ = []
-  replicate n x = x : replicate (n P.- 1) x
-
   absorb prms [] = V.replicate (fromIntegral (width prms)) zero
   absorb prms (block : blocks) =
     let initialState = V.replicate (fromIntegral (width prms)) zero
-        stateWithBlock = V.zipWith (+) initialState (V.fromList (block ++ replicate (fromIntegral (capacity prms)) zero))
+        stateWithBlock = V.zipWith (+) initialState (V.fromList (block ++ replicate (capacity prms) zero))
         newState = poseidonPermutation prms stateWithBlock
      in absorbLoop prms newState blocks
 
   absorbLoop _ state [] = state
   absorbLoop prms state (block : blocks) =
-    let stateWithBlock = V.zipWith (+) state (V.fromList (block ++ replicate (fromIntegral (capacity prms)) zero))
+    let stateWithBlock = V.zipWith (+) state (V.fromList (block ++ replicate (capacity prms) zero))
         newState = poseidonPermutation prms stateWithBlock
      in absorbLoop prms newState blocks
 
-  squeeze state = V.head state
+  chunkInput r = chunkList (fromIntegral r)
 
 -- | Poseidon hash with default parameters
 poseidonHashDefault :: Field a => [a] -> a
