@@ -72,8 +72,8 @@ main = defaultMainWithHooks hooks
             if null pathToDistNewstyle
               then return absoluteRustOutputPath
               else do
-                copyFile (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
-                copyFile (absoluteRustOutputPath </> dynamicLibName) (pathToDistNewstyle </> dynamicLibName)
+                copyVerbose (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
+                copyVerbose (absoluteRustOutputPath </> dynamicLibName) (pathToDistNewstyle </> dynamicLibName)
                 return pathToDistNewstyle
 
           addExtraLibDir path <$> confHook simpleUserHooks args flags
@@ -84,6 +84,11 @@ main = defaultMainWithHooks hooks
       , preRepl = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }
+
+copyVerbose :: FilePath -> FilePath -> IO ()
+copyVerbose origin destination = do
+    putStrLn $ unlines ["Copying", origin, "to", destination]
+    copyFile origin destination
 
 addExtraLibDir :: FilePath -> LocalBuildInfo -> LocalBuildInfo
 addExtraLibDir extraLibDir lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
