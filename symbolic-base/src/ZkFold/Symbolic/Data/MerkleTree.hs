@@ -46,7 +46,7 @@ import ZkFold.Symbolic.MonadCircuit
 
 data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: (Context h) (Layout h)
-  , mLeaves :: Vector (2^(d-1)) h
+  , mLeaves :: Vector (2 ^ (d - 1)) h
   }
   deriving Generic
 
@@ -60,16 +60,16 @@ computeNextLevel
   => Vector n x
   -> [x]
 computeNextLevel xs = go (fromVector xs)
-  where
-    go [] = []
-    go [_] = [] -- odd number, ignore the last element  
-    go (a:b:rest) = restore (newVer (makeSwitch a) (makeSwitch b)) : go rest
-    
-    makeSwitch :: x -> Switch c x
-    makeSwitch x = Switch (arithmetize x) (payload x)
-    
-    restore :: Switch c x -> x
-    restore (Switch layout payload) = ZkFold.Symbolic.Data.Class.restore (layout, payload)
+ where
+  go [] = []
+  go [_] = [] -- odd number, ignore the last element
+  go (a : b : rest) = restore (newVer (makeSwitch a) (makeSwitch b)) : go rest
+
+  makeSwitch :: x -> Switch c x
+  makeSwitch x = Switch (arithmetize x) (payload x)
+
+  restore :: Switch c x -> x
+  restore (Switch layout payload) = ZkFold.Symbolic.Data.Class.restore (layout, payload)
 
 -- | Computes all levels of the merkle tree from leaves to root
 computeAllLevels
@@ -81,10 +81,10 @@ computeAllLevels
   => Vector n x
   -> [[x]]
 computeAllLevels leaves = go (fromVector leaves)
-  where
-    go [] = []
-    go [single] = [[single]]
-    go current = current : go (computeNextLevel (V.unsafeToVector current))
+ where
+  go [] = []
+  go [single] = [[single]]
+  go current = current : go (computeNextLevel (V.unsafeToVector current))
 
 newVer
   :: forall s y
@@ -177,10 +177,10 @@ find p MerkleTree {..} =
       matches = P.filter (\x -> evalBool (p @ x)) leaves
    in case matches of
         [] -> nothing
-        (x:_) -> just x
-  where
-    evalBool :: Bool c -> P.Bool
-    evalBool _ = P.True -- Simplified for now
+        (x : _) -> just x
+ where
+  evalBool :: Bool c -> P.Bool
+  evalBool _ = P.True -- Simplified for now
 
 newtype MerkleTreePath (d :: Natural) c = MerkleTreePath {mPath :: Vector (d - 1) (Bool c)}
   deriving Generic
@@ -199,13 +199,14 @@ findPath
   => MorphFrom c x (Bool c)
   -> MerkleTree d x
   -> Maybe c (MerkleTreePath d c)
-findPath p mt@(MerkleTree _ leaves) = withDict (minusNat @d @1) $ 
+findPath p mt@(MerkleTree _ leaves) = withDict (minusNat @d @1) $
   case P.findIndex (\x -> evalBool (p @ x)) (fromVector leaves) of
     P.Nothing -> nothing
-    P.Just idx -> just $ MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . fromConstant $ fromConstant (P.fromIntegral idx)
-  where
-    evalBool :: Bool c -> P.Bool
-    evalBool _ = P.True -- Simplified for now
+    P.Just idx ->
+      just $ MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . fromConstant $ fromConstant (P.fromIntegral idx)
+ where
+  evalBool :: Bool c -> P.Bool
+  evalBool _ = P.True -- Simplified for now
 
 indToPath :: forall c d. (Symbolic c, KnownNat d) => c Par1 -> Vector (d - 1) (c Par1)
 indToPath e = unpack $ fromCircuitF e $ \(Par1 i) -> do
@@ -223,7 +224,7 @@ lookup
   => MerkleTree d x
   -> MerkleTreePath d c
   -> x
-lookup (MerkleTree root leaves) (MerkleTreePath p) = 
+lookup (MerkleTree root leaves) (MerkleTreePath p) =
   let allLevels = computeAllLevels leaves
       idx = ind path
       leafIdx = P.fromIntegral (value @d -! 1) -- Simplified index calculation
@@ -239,7 +240,7 @@ leaf
      , Context x ~ c
      , KnownNat d
      )
-  => Vector (2^(d-1)) x
+  => Vector (2 ^ (d - 1)) x
   -> c Par1
   -> x
 leaf leaves i = fromVector leaves V.!! 0 -- Simplified for now
@@ -264,7 +265,7 @@ insertLeaf
   -> MerkleTreePath d c
   -> x
   -> MerkleTree d x
-insertLeaf (MerkleTree _ leaves) (MerkleTreePath p) xI = 
+insertLeaf (MerkleTree _ leaves) (MerkleTreePath p) xI =
   let path = P.fmap (\(Bool b) -> b) p
       idx = 0 -- Simplified index calculation
       newLeaves = leaves -- Simplified - should update at index
