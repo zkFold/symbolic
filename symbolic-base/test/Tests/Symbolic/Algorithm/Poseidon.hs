@@ -18,25 +18,24 @@ data TestVector = TestVector
   }
   deriving Haskell.Show
 
--- | Official BLS12-381 test vector (PLACEHOLDER - needs official reference)
--- NOTE: This test vector needs to be replaced with official values once reference is accessible
--- Current values are adjusted for our reduced parameter set (R_F=8, R_P=19)
--- TODO: Replace with official test vector from extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt
+-- | Official BLS12-381 test vector from poseidonperm_x5_255_3
+-- Source: https://extgit.isec.tugraz.at/krypto/hadeshash/-/blob/master/code/test_vectors.txt
+-- Field: BLS12-381 scalar field (0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001)
+-- Parameters: width=3, R_F=8, R_P=57, S-box=x^5
 officialTestVector :: TestVector
 officialTestVector =
   TestVector
-    { tvName = "poseidon_bls12381_width3_reduced"
+    { tvName = "poseidon_bls12381_width3_official"
     , tvInput =
         [ 0x0000000000000000000000000000000000000000000000000000000000000000
         , 0x0000000000000000000000000000000000000000000000000000000000000001
         , 0x0000000000000000000000000000000000000000000000000000000000000002
         ]
     , tvOutput =
-        -- NOTE: These expected outputs need to be computed from official reference
-        -- Current values are placeholders that need verification
-        [ 0x18e94344ce65e408704bd51713b8220e3f5ccbbc33756f1c8274f44e19c3cef0
-        , 0x29d3052639757c6662a0980defb667c812a4cb86a84450a3375b4377c587511c
-        , 0x632522385db3923793efb7a4c3e22eebfe96a5235ee4666e7fe3da1c00cc1d9c
+        -- Official expected output from reference implementation
+        [ 0x28ce19420fc246a05553ad1e8c98f5c9d67166be2c18e9e4cb4b4e317dd2a78a
+        , 0x51f3e312c95343a896cfd8945ea82ba956c1118ce9b9859b6ea56637b4b1ddc4
+        , 0x3b2b69139b235626a0bfb56c9527ae66a7bf486ad8c11c14d1da0c69bbe0f79a
         ]
     }
 
