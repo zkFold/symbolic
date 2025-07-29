@@ -3,11 +3,7 @@
 
 module ZkFold.UPLC.BuiltinType where
 
-import Control.Applicative ((<*>))
-import Control.Monad (fail, return, (>>=))
 import Data.Function ((.))
-import Data.Functor ((<$>))
-import Flat.Decoder qualified as Flat
 
 -- | Builtin types available on Cardano network.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
@@ -27,33 +23,6 @@ data BuiltinType
     BTBLSG2
   | -- | Batch 4
     BTBLSMLResult
-
--- | A decoder of a 'BuiltinType', according to
--- [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
--- (accessed in Jul 2025).
-getType :: Flat.Get BuiltinType
-getType =
-  tag >>= \case
-    0b0000 -> return BTInteger
-    0b0001 -> return BTByteString
-    0b0010 -> return BTString
-    0b0011 -> return BTUnit
-    0b0100 -> return BTBool
-    0b1000 -> return BTData
-    0b1001 -> return BTBLSG1
-    0b1010 -> return BTBLSG2
-    0b1011 -> return BTBLSMLResult
-    0b0111 ->
-      tag >>= \case
-        0b0101 -> BTList <$> getType
-        0b0111 ->
-          tag >>= \case
-            0b0110 -> BTPair <$> getType <*> getType
-            _ -> fail "unknown binary type constructor"
-        _ -> fail "unknown unary type constructor"
-    _ -> fail "unknown UPLC type"
- where
-  tag = Flat.dBEBits8 4
 
 -- | Reflection of type-level 'BuiltinType' onto term-level.
 data DemotedType t where

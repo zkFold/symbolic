@@ -1,22 +1,15 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MonoLocalBinds #-}
 
 module ZkFold.UPLC.Constant where
 
-import Control.Applicative ((<*>))
-import Control.Monad (fail)
 import Data.Bool (Bool)
 import Data.ByteString (ByteString)
-import Data.Functor ((<$>))
 import Data.Text (Text)
-import Flat qualified
-import Flat.Decoder qualified as Flat
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_Point)
 import Prelude (Integer)
 
-import ZkFold.UPLC.BuiltinType (BuiltinType (..), DemotedType (..))
-import ZkFold.UPLC.Data (Data, getData)
+import ZkFold.UPLC.BuiltinType (BuiltinType (..))
+import ZkFold.UPLC.Data (Data)
 
 -- | Constants available in Plutus Core.
 -- According to [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf).
@@ -34,20 +27,3 @@ data Constant (t :: BuiltinType) where
   CPair :: Constant t -> Constant u -> Constant (BTPair t u)
   CG1 :: BLS12_381_G1_Point -> Constant BTBLSG1
   CG2 :: BLS12_381_G2_Point -> Constant BTBLSG2
-
--- | A decoder of a 'Constant', according to
--- [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
--- (accessed in Jul 2025).
-getConstant :: DemotedType t -> Flat.Get (Constant t)
-getConstant = \case
-  DInteger -> CInteger <$> Flat.decode
-  DByteString -> CByteString <$> Flat.decode
-  DString -> CString <$> Flat.decode
-  DBool -> CBool <$> Flat.decode
-  DUnit -> CUnit <$> Flat.decode
-  DData -> CData <$> getData
-  DemList t -> CList <$> Flat.decodeListWith (getConstant t)
-  DPair t u -> CPair <$> getConstant t <*> getConstant u
-  DG1 -> fail "BLS deserialization not supported"
-  DG2 -> fail "BLS deserialization not supported"
-  DGR -> fail "BLS deserialization not supported"

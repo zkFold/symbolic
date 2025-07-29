@@ -53,28 +53,10 @@ library
       binary                                     ,
       bytestring                                 ,
       constraints                                ,
-      flat                                       ,
       symbolic-base                              ,
       text                                       ,
       QuickCheck
     hs-source-dirs:     src
-
-executable symbolic-uplc
-    import:             options
-    main-is:            Main.hs
-    hs-source-dirs:     app
-    build-depends:
-      aeson               ,
-      base                ,
-      bytestring          ,
-      cborg               ,
-      filepath            ,
-      flat                ,
-      optparse-applicative,
-      process             ,
-      symbolic-base       ,
-      symbolic-uplc       ,
-      temporary           ,
 
 test-suite symbolic-uplc-test
     import:             options

@@ -6,10 +6,9 @@ import Control.Applicative ((<*>))
 import Data.ByteString (ByteString)
 import Data.Functor ((<$>))
 import Data.Word (Word64)
-import Flat.Decoder qualified as Flat
 import Test.QuickCheck (Arbitrary (..), oneof)
 import Text.Show (Show)
-import Prelude (Integer, error)
+import Prelude (Integer)
 
 -- | Constructor tags used on Cardano.
 --
@@ -25,12 +24,6 @@ data Data
   | DI Integer
   | DB ByteString
   deriving Show
-
--- | A flat decoder of 'Data', according to
--- [Plutus Core Spec](https://plutus.cardano.intersectmbo.org/resources/plutus-core-spec.pdf)
--- (accessed in Jul 2025).
-getData :: Flat.Get Data
-getData = error "TODO"
 
 instance Arbitrary ByteString => Arbitrary Data where
   arbitrary =
