@@ -57,6 +57,16 @@ staticLibName = "librust_wrapper_stat.a"
 dynamicLibName :: String
 dynamicLibName = "librust_wrapper_dyn"
 
+dynExt :: String
+dynExt = case os of
+  "darwin" -> "dylib"
+  "linux" -> "so"
+  _anyOther ->
+    error $
+      "Unsupported operating system: "
+        ++ os
+        ++ ". Please raise an issue at https://github.com/zkFold/symbolic to request support for this platform."
+
 main :: IO ()
 main = defaultMainWithHooks hooks
  where
@@ -73,7 +83,7 @@ main = defaultMainWithHooks hooks
               then return absoluteRustOutputPath
               else do
                 copyVerbose (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
-                copyVerbose (absoluteRustOutputPath </> dynamicLibName) (pathToDistNewstyle </> dynamicLibName)
+                copyVerbose (absoluteRustOutputPath </> dynamicLibName <.> dynExt) (pathToDistNewstyle </> dynamicLibName <.> dynExt)
                 return pathToDistNewstyle
 
           addExtraLibDir path <$> confHook simpleUserHooks args flags
@@ -89,6 +99,11 @@ copyVerbose :: FilePath -> FilePath -> IO ()
 copyVerbose origin destination = do
     putStrLn $ unlines ["Copying", origin, "to", destination]
     copyFile origin destination
+
+renameVerbose :: FilePath -> FilePath -> IO ()
+renameVerbose origin destination = do
+    putStrLn $ unlines ["Renaming", origin, "to", destination]
+    renameFile origin destination
 
 addExtraLibDir :: FilePath -> LocalBuildInfo -> LocalBuildInfo
 addExtraLibDir extraLibDir lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
@@ -116,18 +131,10 @@ runCargoOrThrow cargoArgs = do
 execCargoBuild :: IO ()
 execCargoBuild = do
   runCargoOrThrow $ "build --release --manifest-path " <> rsSourceDir </> "Cargo.toml"
-  let dynExt = case os of
-        "darwin" -> "dylib"
-        "linux" -> "so"
-        _anyOther ->
-          error $
-            "Unsupported operating system: "
-              ++ os
-              ++ ". Please raise an issue at https://github.com/zkFold/symbolic to request support for this platform."
-  renameFile
+  renameVerbose
     (defaultRustOuputPath </> originalDynamicLibName <.> dynExt)
     (defaultRustOuputPath </> dynamicLibName <.> dynExt)
-  renameFile (defaultRustOuputPath </> originalStaticLibName) (defaultRustOuputPath </> staticLibName)
+  renameVerbose (defaultRustOuputPath </> originalStaticLibName) (defaultRustOuputPath </> staticLibName)
 
 #if MIN_VERSION_Cabal(3,14,0)
 mkSymbolicPath = UtilsPath.unsafeMakeSymbolicPath
