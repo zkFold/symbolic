@@ -325,7 +325,11 @@ data ExpModProofInput
   , piSignature :: Natural
   , piTokenName :: Natural
   }
-  deriving P.Show
+  deriving (Generic, P.Show)
+
+deriving instance ToJSON ExpModProofInput
+
+deriving instance FromJSON ExpModProofInput
 
 expModProof
   :: forall t
