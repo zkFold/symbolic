@@ -13,7 +13,7 @@ import Data.Type.Equality (type (~))
 import Data.Vector (iterateN)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
-import Prelude (pure, return, zip, ($), (.))
+import Prelude (pure, return, zip, error, ($), (.))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
@@ -43,6 +43,7 @@ import ZkFold.Symbolic.Data.Switch
 import ZkFold.Symbolic.Data.UInt (UInt (..), strictConv)
 import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Fold (SymbolicFold)
 
 data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: (Context h) (Layout h)
@@ -84,7 +85,20 @@ computeAllLevels leaves = go (fromVector leaves)
  where
   go [] = []
   go [single] = [[single]]
-  go current = current : go (computeNextLevel (V.unsafeToVector current))
+  go current = 
+    let nextLevel = computeNextLevel' current
+    in current : go nextLevel
+  
+  computeNextLevel' :: [x] -> [x]
+  computeNextLevel' [] = []
+  computeNextLevel' [_] = [] -- odd number, ignore the last element
+  computeNextLevel' (a : b : rest) = restore (newVer (makeSwitch a) (makeSwitch b)) : computeNextLevel' rest
+
+  makeSwitch :: x -> Switch c x
+  makeSwitch x = Switch (arithmetize x) (payload x)
+
+  restore :: Switch c x -> x
+  restore (Switch layout payload) = ZkFold.Symbolic.Data.Class.restore (layout, payload)
 
 newVer
   :: forall s y
@@ -117,6 +131,7 @@ instance
    . ( SymbolicData x
      , Context x ~ c
      , KnownNat d
+     , KnownNat n
      , 2 ^ (d - 1) ~ n
      , 1 <= d
      )
@@ -134,6 +149,7 @@ instance
    . ( SymbolicData x
      , Context x ~ c
      , KnownNat d
+     , KnownNat n
      , 2 ^ (d - 1) ~ n
      , 1 <= d
      )
@@ -159,15 +175,16 @@ hashAux b h g =
   merkleHasher :: [Vec (Layout x) c] -> Vec (Layout x) c
   merkleHasher = mimcHashN mimcConstants zero
 
-instance (SymbolicData h, KnownNat d) => SymbolicData (MerkleTree d h)
+instance (SymbolicData h, KnownNat d, KnownNat (2 ^ (d - 1))) => SymbolicData (MerkleTree d h)
 
-instance (SymbolicInput h, KnownNat d) => SymbolicInput (MerkleTree d h)
+instance (SymbolicInput h, KnownNat d, KnownNat (2 ^ (d - 1))) => SymbolicInput (MerkleTree d h)
 
 -- | Finds an element satisfying the constraint
 find
   :: forall c h d
    . ( SymbolicInput h
      , Context h ~ c
+     , SymbolicFold c
      )
   => MorphFrom c h (Bool c)
   -> MerkleTree d h
@@ -192,6 +209,7 @@ findPath
   :: forall x c d n
    . ( SymbolicData x
      , Context x ~ c
+     , SymbolicFold c
      , KnownNat d
      , 1 <= d
      , NumberOfBits (BaseField c) ~ n
@@ -200,10 +218,10 @@ findPath
   -> MerkleTree d x
   -> Maybe c (MerkleTreePath d c)
 findPath p mt@(MerkleTree _ leaves) = withDict (minusNat @d @1) $
-  case P.findIndex (\x -> evalBool (p @ x)) (fromVector leaves) of
+  case LL.findIndex (\x -> evalBool (p @ x)) (fromVector leaves) of
     P.Nothing -> nothing
     P.Just idx ->
-      just $ MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . fromConstant $ fromConstant (P.fromIntegral idx)
+      just $ MerkleTreePath . P.fmap Bool . indToPath @c . fromFieldElement . fromConstant $ (P.fromIntegral idx :: Natural)
  where
   evalBool :: Bool c -> P.Bool
   evalBool _ = P.True -- Simplified for now
@@ -219,6 +237,7 @@ lookup
    . ( SymbolicData x
      , Context x ~ c
      , KnownNat d
+     , KnownNat (2 ^ (d - 1))
      , 1 <= d
      )
   => MerkleTree d x
@@ -228,7 +247,7 @@ lookup (MerkleTree root leaves) (MerkleTreePath p) =
   let allLevels = computeAllLevels leaves
       idx = ind path
       leafIdx = P.fromIntegral (value @d -! 1) -- Simplified index calculation
-   in fromVector leaves V.!! leafIdx
+   in leaves V.!! leafIdx
  where
   path :: Vector (d - 1) (c Par1)
   path = P.fmap (\(Bool b) -> b) p
@@ -239,11 +258,12 @@ leaf
    . ( SymbolicData x
      , Context x ~ c
      , KnownNat d
+     , KnownNat (2 ^ (d - 1))
      )
   => Vector (2 ^ (d - 1)) x
   -> c Par1
   -> x
-leaf leaves i = fromVector leaves V.!! 0 -- Simplified for now
+leaf leaves i = leaves V.!! 0 -- Simplified for now
 
 -- index of element in path to element
 ind :: forall d c. Symbolic c => Vector d (c Par1) -> c Par1
@@ -258,6 +278,7 @@ insertLeaf
    . ( SymbolicData x
      , Context x ~ c
      , KnownNat d
+     , KnownNat (2 ^ (d - 1))
      , 1 <= d
      , KnownRegisters c d Auto
      )
@@ -282,6 +303,7 @@ replace
      , Context x ~ c
      , SymbolicFold c
      , KnownNat d
+     , KnownNat (2 ^ (d - 1))
      , 1 <= d
      , KnownRegisters c d Auto
      , NumberOfBits (BaseField c) ~ n
