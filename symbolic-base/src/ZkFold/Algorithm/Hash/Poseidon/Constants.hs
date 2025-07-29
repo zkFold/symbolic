@@ -8,8 +8,9 @@ module ZkFold.Algorithm.Hash.Poseidon.Constants (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import ZkFold.Algebra.Class (Field, FromConstant (..))
 import Prelude
+
+import ZkFold.Algebra.Class (Field, FromConstant (..))
 
 -- | Poseidon parameters data type defined here to avoid circular imports
 data PoseidonParams a = PoseidonParams

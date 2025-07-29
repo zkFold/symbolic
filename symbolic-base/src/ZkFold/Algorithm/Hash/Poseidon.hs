@@ -5,9 +5,6 @@ module ZkFold.Algorithm.Hash.Poseidon (
 
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.Poseidon.Constants
-import ZkFold.Prelude (replicate)
 import Prelude (
   Bool (..),
   Maybe (..),
@@ -24,6 +21,10 @@ import Prelude (
   (>),
  )
 import qualified Prelude as P
+
+import ZkFold.Algebra.Class
+import ZkFold.Algorithm.Hash.Poseidon.Constants
+import ZkFold.Prelude (replicate)
 
 -- | Poseidon hash function implementation following the Hades design.
 -- This implementation follows the official Sage reference implementation from the Hades paper:
