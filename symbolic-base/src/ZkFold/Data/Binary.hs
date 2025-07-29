@@ -20,8 +20,9 @@ module ZkFold.Data.Binary (
 #if __GLASGOW_HASKELL__ < 912
 import           Data.List              (foldl')
 #endif
+import ByteString.Aeson.Orphans ()
 import Control.Applicative (many)
-import ByteString.Aeson.Orphans () -- Import orphan instances for ByteString Aeson
+-- Import orphan instances for ByteString Aeson
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
