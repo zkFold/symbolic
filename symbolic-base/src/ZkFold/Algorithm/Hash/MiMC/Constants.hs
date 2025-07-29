@@ -5,7 +5,7 @@ import Data.Maybe (fromJust)
 import Prelude
 
 import ZkFold.Algebra.Class (FromConstant (..))
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 
 mimcSeed :: LittleEndian
 mimcSeed = 42

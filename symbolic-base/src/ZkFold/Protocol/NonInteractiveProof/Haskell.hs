@@ -11,7 +11,7 @@ import Data.ByteString (ByteString)
 import Data.Maybe (fromJust)
 import Prelude hiding (Num ((*)), sum)
 
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.Protocol.NonInteractiveProof.Class
 
 instance Binary a => FromTranscript ByteString a where

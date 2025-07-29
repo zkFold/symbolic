@@ -15,7 +15,7 @@ import Test.Tasty.Bench
 import ZkFold.Algebra.Class (Ring, fromConstant, zero, (+))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
-import ZkFold.Data.ByteString (toByteString)
+import ZkFold.Data.Binary (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Class (Context, Layout, SymbolicData)

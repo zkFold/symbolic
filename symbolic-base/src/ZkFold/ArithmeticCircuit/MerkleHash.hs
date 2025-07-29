@@ -15,7 +15,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
-import ZkFold.Data.ByteString (toByteString)
+import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 

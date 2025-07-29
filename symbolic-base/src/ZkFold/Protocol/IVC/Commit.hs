@@ -15,7 +15,7 @@ import Prelude hiding (Num (..), sum, take, zipWith, (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
-import ZkFold.Data.ByteString (LittleEndian (..), fromByteString)
+import ZkFold.Data.Binary (LittleEndian (..), fromByteString)
 import ZkFold.Protocol.IVC.Oracle
 
 -- | Commit to the object @a@ with results of type @f@

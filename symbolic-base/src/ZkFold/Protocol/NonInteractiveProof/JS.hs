@@ -23,7 +23,7 @@ import ZkFold.Algebra.Class (Bilinear (..), Scale (..), sum)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..), fromPolyVec)
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.Protocol.NonInteractiveProof.Class
 
 foreign import javascript unsafe "blake2b"

@@ -20,7 +20,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Data.ByteString (Binary)
+import ZkFold.Data.Binary (Binary)
 import ZkFold.Protocol.NonInteractiveProof
 
 -- | `d` is the degree of polynomials in the protocol

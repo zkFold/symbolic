@@ -43,7 +43,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Data.Bool
-import ZkFold.Data.ByteString (Binary (..))
+import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Eq
 import ZkFold.Prelude (length)
 

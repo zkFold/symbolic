@@ -9,7 +9,7 @@ import Prelude hiding (Num (..), filter, length, map, sum, zip, zipWith, (/))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
-import ZkFold.Data.ByteString (Binary (..))
+import ZkFold.Data.Binary (Binary (..))
 
 newtype SVector size a = SVector {fromSVector :: Map (Zp size) a}
   deriving (Eq, Show)

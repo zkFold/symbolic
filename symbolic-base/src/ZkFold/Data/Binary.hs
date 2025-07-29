@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Data.ByteString (
+module ZkFold.Data.Binary (
   Binary (..),
   Binary1,
   toByteString,

@@ -37,7 +37,7 @@ import Text.Show (Show)
 
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.HApplicative (hliftA2, hpure)
-import ZkFold.Data.ByteString (Binary1)
+import ZkFold.Data.Binary (Binary1)
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)

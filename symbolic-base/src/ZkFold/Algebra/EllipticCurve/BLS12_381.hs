@@ -19,7 +19,7 @@ import ZkFold.Algebra.EllipticCurve.Pairing
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import qualified ZkFold.Data.Eq as ZkFold
 
 -------------------------------- Introducing Fields ----------------------------------

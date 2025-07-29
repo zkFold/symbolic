@@ -54,7 +54,7 @@ import ZkFold.ArithmeticCircuit.Var
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.ArithmeticCircuit.WitnessEstimation (UVar (..))
 import ZkFold.Control.HApplicative (HApplicative, hliftA2, hpure)
-import ZkFold.Data.ByteString (fromByteString, toByteString)
+import ZkFold.Data.Binary (fromByteString, toByteString)
 import ZkFold.Data.HFunctor (HFunctor, hmap)
 import ZkFold.Data.HFunctor.Classes
 import ZkFold.Data.Package (Package, packWith, unpackWith)

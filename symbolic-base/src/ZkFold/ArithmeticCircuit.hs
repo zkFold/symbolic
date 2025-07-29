@@ -69,7 +69,7 @@ import qualified ZkFold.ArithmeticCircuit.Desugaring as Desugaring
 import qualified ZkFold.ArithmeticCircuit.Optimization as Optimization
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), evalVar, toVar)
 import ZkFold.Control.HApplicative (HApplicative)
-import ZkFold.Data.ByteString (fromByteString, toByteString)
+import ZkFold.Data.Binary (fromByteString, toByteString)
 import ZkFold.Data.HFunctor (HFunctor)
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Package (Package (..))
