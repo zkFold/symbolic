@@ -97,13 +97,13 @@ main = defaultMainWithHooks hooks
 
 copyVerbose :: FilePath -> FilePath -> IO ()
 copyVerbose origin destination = do
-    putStrLn $ unlines ["Copying", origin, "to", destination]
-    copyFile origin destination
+  putStrLn $ unlines ["Copying", origin, "to", destination]
+  copyFile origin destination
 
 renameVerbose :: FilePath -> FilePath -> IO ()
 renameVerbose origin destination = do
-    putStrLn $ unlines ["Renaming", origin, "to", destination]
-    renameFile origin destination
+  putStrLn $ unlines ["Renaming", origin, "to", destination]
+  renameFile origin destination
 
 addExtraLibDir :: FilePath -> LocalBuildInfo -> LocalBuildInfo
 addExtraLibDir extraLibDir lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
