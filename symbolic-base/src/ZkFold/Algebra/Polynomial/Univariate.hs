@@ -32,8 +32,8 @@ module ZkFold.Algebra.Polynomial.Univariate (
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad (forM_)
-import Data.Binary (Binary (..))
 import Data.Aeson (ToJSON)
+import Data.Binary (Binary (..))
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
