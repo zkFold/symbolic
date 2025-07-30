@@ -22,7 +22,6 @@ import           Data.List              (foldl')
 #endif
 import ByteString.Aeson.Orphans ()
 import Control.Applicative (many)
--- Import orphan instances for ByteString Aeson
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
