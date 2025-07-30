@@ -78,4 +78,4 @@ foreign import ccall unsafe "rust_wrapper_plonkup_prove"
     -> Int
     -> CString
     -> Int
-    -> IO ()
+    -> IO CString

@@ -53,6 +53,12 @@ pub struct PlonkupProverSecret {
     secret: Vec<ScalarField>,
 }
 
+impl PlonkupProverSecret {
+    fn get(self: &Self, ix: usize) -> ScalarField {
+        self.secret[ix - 1]
+    }
+}
+
 #[derive(Debug)]
 pub struct PlonkupWitness {
     w1: DensePolynomial<ScalarField>,
@@ -268,7 +274,7 @@ fn polyVecInLagrangeBasis(
     omega: &ScalarField,
     p: &DensePolynomial<ScalarField>,
 ) -> DensePolynomial<ScalarField> {
-    let v = &mut p.coeffs.clone();
+    let mut v = p.coeffs.clone();
     v.resize(n, ScalarField::ZERO);
 
     let next_pow2 = v.len().next_power_of_two();
@@ -285,7 +291,7 @@ fn polyVecInLagrangeBasis(
     }
     v.rotate_right(1);
 
-    let mut result = zip_with_longest(&v, &norms, |a, b| a * b);
+    let mut result = zip_with_longest(v.iter(), norms.iter(), |a, b| a * b);
     let res_len = result.len();
     serial_fft(&mut result, *omega, log2(res_len));
     result.reverse();
@@ -313,14 +319,18 @@ fn challenge(transcript: &Vec<u8>) -> ScalarField {
     ScalarField::from_le_bytes_mod_order(&digest)
 }
 
-fn zip_with_longest<A: Default, B: Default, C, F>(a: &[A], b: &[B], mut f: F) -> Vec<C>
+fn zip_with_longest<'a, 'b, A, B, C, F, IterA, IterB>(a: IterA, b: IterB, mut f: F) -> Vec<C>
 where
     F: FnMut(&A, &B) -> C,
+    A: Default + 'a,
+    B: Default + 'b,
+    IterA: Iterator<Item = &'a A>,
+    IterB: Iterator<Item = &'b B>,
 {
     let a_default = A::default();
     let b_default = B::default();
-    a.iter()
-        .zip_longest(b.iter())
+
+    a.zip_longest(b)
         .map(|pair| {
             let (a, b) = pair.or(&a_default, &b_default);
             f(a, b)
@@ -328,22 +338,28 @@ where
         .collect()
 }
 
-fn zip_with3_longest<A: Default, B: Default, C: Default, D, F>(
-    v1: &[A],
-    v2: &[B],
-    v3: &[C],
+fn zip_with3_longest<'a, 'b, 'c, A, B, C, D, F, IterA, IterB, IterC>(
+    v1: IterA,
+    v2: IterB,
+    v3: IterC,
     f: F,
 ) -> Vec<D>
 where
     F: Fn(&A, &B, &C) -> D,
+    A: Default + 'a,
+    B: Default + 'b,
+    C: Default + 'c,
+    IterA: IntoIterator<Item = &'a A>,
+    IterB: IntoIterator<Item = &'b B>,
+    IterC: IntoIterator<Item = &'c C>,
 {
     let a_default = A::default();
     let b_default = B::default();
     let c_default = C::default();
 
-    v1.iter()
-        .zip_longest(v2)
-        .zip_longest(v3)
+    v1.into_iter()
+        .zip_longest(v2.into_iter())
+        .zip_longest(v3.into_iter())
         .map(|triplet| {
             let ((a, b), c) = triplet
                 .map_left(|x| x.or(&a_default, &b_default))
@@ -395,7 +411,7 @@ fn concat_vecs<T: Clone>(a: &[T], b: &[T]) -> Vec<T> {
     result
 }
 
-fn cumprod(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+fn cumprod(n: usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let mut v = pv.coeffs.clone();
     v.resize(n, ScalarField::ZERO);
     let mut result = Vec::with_capacity(v.len());
@@ -410,28 +426,18 @@ fn cumprod(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<Scalar
     DensePolynomial::from_coefficients_vec(result)
 }
 
-fn rotR(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+fn rotR(n: usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let mut v = pv.coeffs.clone();
     v.resize(n, ScalarField::ZERO);
     v.rotate_right(1);
     DensePolynomial::from_coefficients_vec(v)
 }
 
-fn rotL(n:usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
+fn rotL(n: usize, pv: &DensePolynomial<ScalarField>) -> DensePolynomial<ScalarField> {
     let mut v = pv.coeffs.clone();
     v.resize(n, ScalarField::ZERO);
     v.rotate_left(1);
     DensePolynomial::from_coefficients_vec(v)
-}
-
-trait Secret {
-    fn get(&self, ix: usize) -> ScalarField;
-}
-
-impl Secret for PlonkupProverSecret {
-    fn get(&self, ix: usize) -> ScalarField {
-        self.secret[ix - 1]
-    }
 }
 
 trait DivMono {
@@ -484,13 +490,17 @@ impl DivMono for DensePolynomial<ScalarField> {
     }
 }
 
-trait Elementwise<T> {
-    fn elementwise<F>(&self, n:usize, f: F) -> Self
+trait Elementwise {
+    type Element;
+
+    fn elementwise<F>(&self, n: usize, f: F) -> Self
     where
-        F: FnMut(&T) -> T;
+        F: FnMut(&Self::Element) -> Self::Element;
 }
 
-impl<T: Clone + ark_ff::Field> Elementwise<T> for DensePolynomial<T> {
+impl<T: Clone + ark_ff::Field> Elementwise for DensePolynomial<T> {
+    type Element = T;
+
     fn elementwise<F>(&self, n: usize, mut f: F) -> Self
     where
         F: FnMut(&T) -> T,
@@ -502,20 +512,17 @@ impl<T: Clone + ark_ff::Field> Elementwise<T> for DensePolynomial<T> {
     }
 }
 
-pub trait ZipWith<T> {
-    fn zip_with<F>(&self, other: &Self, f: F) -> Self
-    where
-        F: FnMut(&T, &T) -> T;
-}
-
-impl<T: Clone + ark_ff::Field> ZipWith<T> for DensePolynomial<T> {
-    fn zip_with<F>(&self, other: &Self, f: F) -> Self
-    where
-        F: FnMut(&T, &T) -> T,
-    {
-        DensePolynomial {
-            coeffs: zip_with_longest(&self.coeffs, &other.coeffs, f),
-        }
+fn zip_with<T, F>(
+    first: &DensePolynomial<T>,
+    second: &DensePolynomial<T>,
+    f: F,
+) -> DensePolynomial<T>
+where
+    T: ark_ff::Field,
+    F: FnMut(&T, &T) -> T,
+{
+    DensePolynomial {
+        coeffs: zip_with_longest(first.coeffs.iter(), second.coeffs.iter(), f),
     }
 }
 
@@ -670,21 +677,24 @@ pub fn plonkupProve(
     let omegas_tick = &toPolyVec(&iterate_n(4 * n + 6, |x| *x * &omega, *one));
 
     let grandProduct1 = {
-        let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(n,|x| x + &gamma);
-        let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(n,|x| x + &gamma);
-        let gp1_3 = (&witness.w3 + &(omegas.mul(beta * k2))).elementwise(n,|x| x + &gamma);
-        let gp1_4 = (&witness.w1 + &(sigma1s.mul(beta))).elementwise(n,|x| x + &gamma);
-        let gp1_5 = (&witness.w2 + &(sigma2s.mul(beta))).elementwise(n,|x| x + &gamma);
-        let gp1_6 = (&witness.w3 + &(sigma3s.mul(beta))).elementwise(n,|x| x + &gamma);
+        let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(n, |x| x + &gamma);
+        let gp1_3 = (&witness.w3 + &(omegas.mul(beta * k2))).elementwise(n, |x| x + &gamma);
+        let gp1_4 = (&witness.w1 + &(sigma1s.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_5 = (&witness.w2 + &(sigma2s.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_6 = (&witness.w3 + &(sigma3s.mul(beta))).elementwise(n, |x| x + &gamma);
 
-        &rotR(n, &cumprod(n,
-            &gp1_1
-                .zip_with(&gp1_2, |a, b| a * b)
-                .zip_with(&gp1_3, |a, b| a * b)
-                .zip_with(&gp1_4, div_or_zero)
-                .zip_with(&gp1_5, div_or_zero)
-                .zip_with(&gp1_6, div_or_zero),
-        ))
+        &rotR(
+            n,
+            &cumprod(n, &{
+                let it = zip_with(&gp1_1, &gp1_2, |a, b| a * b);
+                let it = zip_with(&it, &gp1_3, |a, b| a * b);
+                let it = zip_with(&it, &gp1_4, div_or_zero);
+                let it = zip_with(&it, &gp1_5, div_or_zero);
+                let it = zip_with(&it, &gp1_6, div_or_zero);
+                it
+            }),
+        )
     };
 
     let z1X = &(polyVecQuadratic(&secret.get(14), &secret.get(15), &secret.get(16)).mul(zhX)
@@ -692,17 +702,20 @@ pub fn plonkupProve(
 
     let grandProduct2 = {
         let eps_del = epsilon * (delta + one);
-        let gp2_1 = f_zeta.elementwise(n,|x| x + &epsilon).mul(delta + one);
-        let gp2_2 = t_zeta.elementwise(n,|x| x + &eps_del) + rotL(n, t_zeta).mul(delta);
-        let gp2_3 = h1.elementwise(n,|x| x + &eps_del) + h2.mul(delta);
-        let gp2_4 = h2.elementwise(n,|x| x + &eps_del) + rotL(n, h1).mul(delta);
+        let gp2_1 = f_zeta.elementwise(n, |x| x + &epsilon).mul(delta + one);
+        let gp2_2 = t_zeta.elementwise(n, |x| x + &eps_del) + rotL(n, t_zeta).mul(delta);
+        let gp2_3 = h1.elementwise(n, |x| x + &eps_del) + h2.mul(delta);
+        let gp2_4 = h2.elementwise(n, |x| x + &eps_del) + rotL(n, h1).mul(delta);
 
-        &rotR(n, &cumprod(n,
-            &gp2_1
-                .zip_with(&gp2_2, |a, b| a * b)
-                .zip_with(&gp2_3, div_or_zero)
-                .zip_with(&gp2_4, div_or_zero),
-        ))
+        &rotR(
+            n,
+            &cumprod(n, &{
+                let it = zip_with(&gp2_1, &gp2_2, |a, b| a * b);
+                let it = zip_with(&it, &gp2_3, div_or_zero);
+                let it = zip_with(&it, &gp2_4, div_or_zero);
+                it
+            }),
+        )
     };
 
     let z2X = &(polyVecQuadratic(&secret.get(17), &secret.get(18), &secret.get(19)).mul(zhX)
@@ -737,7 +750,7 @@ pub fn plonkupProve(
         let qXs3 = (&(aX + &s1X.mul(beta)) + gammaX)
             .mul(&(&(bX + &s2X.mul(beta)) + gammaX))
             .mul(&(&(cX + &s3X.mul(beta)) + gammaX))
-            .mul(&(z1X.zip_with(&omegas_tick, |a, b| a * b)))
+            .mul(&(zip_with(z1X, &omegas_tick, |a, b| a * b)))
             .mul(alpha);
 
         let qXs4 = (z1X.sub(&polyVecConstant(one)))
@@ -754,17 +767,16 @@ pub fn plonkupProve(
             .mul(
                 &(epsilonX.mul(&(&polyVecConstant(one) + deltaX)))
                     + tX
-                    + deltaX.mul(&(tX.zip_with(&omegas_tick, |a, b| a * b))),
+                    + deltaX.mul(&(zip_with(tX, &omegas_tick, |a, b| a * b))),
             )
             .mul(alpha4);
 
-        let qXs7 = z2X
-            .zip_with(&omegas_tick, |a, b| a * b)
+        let qXs7 = zip_with(z2X, &omegas_tick, |a, b| a * b)
             .mul(&(&(epsilonX.mul(&(&polyVecConstant(one) + deltaX))) + h1X + deltaX.mul(h2X)))
             .mul(
                 &(&(epsilonX.mul(&(&polyVecConstant(one) + deltaX)))
                     + h2X
-                    + deltaX.mul(&(h1X.zip_with(&omegas_tick, |a, b| a * b)))),
+                    + deltaX.mul(&(zip_with(h1X, &omegas_tick, |a, b| a * b)))),
             )
             .mul(alpha4);
 
@@ -936,9 +948,9 @@ pub fn plonkupProve(
     };
 
     let testInfo = PlonkupProverTestInfo {
-        omega: omega,
-        k1: k1,
-        k2: k2,
+        omega,
+        k1,
+        k2,
         qlX: qlX.clone(),
         qrX: qrX.clone(),
         qoX: qoX.clone(),
@@ -967,13 +979,13 @@ pub fn plonkupProve(
         qmidX: qmidX.clone(),
         qhighX: qhighX.clone(),
         rX: rX.clone(),
-        alpha: alpha,
-        beta: beta,
-        gamma: gamma,
-        delta: delta,
-        epsilon: epsilon,
-        xi: xi,
-        zeta: zeta,
+        alpha,
+        beta,
+        gamma,
+        delta,
+        epsilon,
+        xi,
+        zeta,
         f_zeta: f_zeta.clone(),
         t_zeta: t_zeta.clone(),
         omegas: omegas.clone(),
