@@ -137,6 +137,8 @@ library
       ZkFold.Algorithm.ReedSolomon
       ZkFold.Algorithm.Hash.MiMC
       ZkFold.Algorithm.Hash.MiMC.Constants
+      ZkFold.Algorithm.Hash.Poseidon
+      ZkFold.Algorithm.Hash.Poseidon.Constants
       ZkFold.ArithmeticCircuit
       ZkFold.ArithmeticCircuit.Arbitrary
       ZkFold.ArithmeticCircuit.Children
@@ -222,6 +224,7 @@ library
       ZkFold.Symbolic.Algorithm.Hash.Keccak
       ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
       ZkFold.Symbolic.Algorithm.Hash.MiMC
+      ZkFold.Symbolic.Algorithm.Hash.Poseidon
       ZkFold.Symbolic.Algorithm.Hash.SHA2
       ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithm.Mithril
@@ -392,6 +395,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Algorithm.Blake2b
       Tests.Symbolic.Algorithm.JWT
       Tests.Symbolic.Algorithm.Keccak
+      Tests.Symbolic.Algorithm.Poseidon
       Tests.Symbolic.Algorithm.RSA
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit
