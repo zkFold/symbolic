@@ -39,6 +39,3 @@ harness = false
 name = "mul_fft_bench"
 path = "benches/mul_fft_bench.rs"
 harness = false
-
-[features]
-capi = []
