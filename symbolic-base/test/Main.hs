@@ -28,6 +28,7 @@ import Tests.Protocol.Plonkup (specPlonkup)
 import Tests.Symbolic.Algorithm.Blake2b (specBlake2b)
 import Tests.Symbolic.Algorithm.JWT (specJWT)
 import Tests.Symbolic.Algorithm.Keccak (specKeccak)
+import Tests.Symbolic.Algorithm.Poseidon (specPoseidon)
 import Tests.Symbolic.Algorithm.RSA (specRSA)
 import Tests.Symbolic.Algorithm.SHA2 (specSHA2, specSHA2Natural)
 import Tests.Symbolic.ArithmeticCircuit (specArithmeticCircuit)
@@ -78,6 +79,7 @@ spec gen = do
   describe "symbolic-base-test (Symbolic cryptography)" $ do
     specBlake2b
     specJWT
+    specPoseidon
     specRSA gen
     specSHA2Natural
     specSHA2
