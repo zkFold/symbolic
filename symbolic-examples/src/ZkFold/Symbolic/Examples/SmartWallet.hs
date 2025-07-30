@@ -289,15 +289,18 @@ expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * t
   msgHash :: UInt 2048 Auto c
   msgHash = exp65537Mod @c @2048 @2048 sig pubN
 
+  unpadded :: UInt 256 Auto c
+  unpadded = resize msgHash
+
   rsize :: Natural
-  rsize = registerSize @(BaseField c) @2048 @Auto
+  rsize = 2 ^ registerSize @(BaseField c) @256 @Auto
 
   -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
   --
   hashAsFE :: FieldElement c
-  hashAsFE = FieldElement $ fromCircuitF (let UInt regs = msgHash in regs) $ \v -> do
+  hashAsFE = FieldElement $ fromCircuitF (let UInt regs = unpadded in regs) $ \v -> do
     z <- newAssigned (const zero)
-    ans <- foldrM (\a i -> newAssigned $ \p -> scale rsize (p a) + p i) z v
+    ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
     pure $ Par1 ans
 
 expModCircuit :: ExpModCircuit
@@ -323,7 +326,11 @@ data ExpModProofInput
   , piSignature :: Natural
   , piTokenName :: Natural
   }
-  deriving P.Show
+  deriving (Generic, P.Show)
+
+deriving instance ToJSON ExpModProofInput
+
+deriving instance FromJSON ExpModProofInput
 
 expModProof
   :: forall t
@@ -375,14 +382,8 @@ expModSetupMock x = setupV
   plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
   setupV = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
-expModProofMock
-  :: forall t
-   . TranscriptConstraints t
-  => Fr
-  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
-  -> ExpModProofInput
-  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps ExpModProofInput {..} = proof
+nativeSolution :: ExpModProofInput -> Fr
+nativeSolution ExpModProofInput {..} = input
  where
   expm :: Natural
   expm = (piSignature P.^ piPubE) `P.mod` piPubN
@@ -392,6 +393,18 @@ expModProofMock x ps ExpModProofInput {..} = proof
 
   input :: Fr
   input = toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
+
+expModProofMock
+  :: forall t
+   . TranscriptConstraints t
+  => Fr
+  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> ExpModProofInput
+  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+expModProofMock x ps empi = proof
+ where
+  input :: Fr
+  input = nativeSolution empi
 
   witnessInputs :: Par1 Fr
   witnessInputs = Par1 input
