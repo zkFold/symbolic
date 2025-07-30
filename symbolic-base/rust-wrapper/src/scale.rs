@@ -11,18 +11,6 @@ use crate::utils::{
     unpack_point,
 };
 
-// This is inner function from arkmsm crate, derived from benchmark results. May not be optimal for all configurations
-// https://github.com/snarkify/arkmsm/blob/main/src/msm.rs
-pub const fn get_opt_window_size(k: u32) -> u32 {
-    match k {
-        0..=9 => 8,
-        10..=12 => 10,
-        13..=14 => 12,
-        15..=19 => 13,
-        20.. => 16,
-    }
-}
-
 pub fn msm(scalar_buffer: &[u8], point_buffer: &[u8]) -> Vec<u8> {
     let scalars: Vec<_> = deserialize_vector_scalar_field(scalar_buffer);
     let points = deserialize_vector_points(point_buffer);
