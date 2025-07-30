@@ -2,7 +2,9 @@
 
 module ZkFold.Symbolic.UPLC.Converter where
 
+import Data.Binary (Binary)
 import Data.Function (($))
+import Data.Functor.Rep (Rep, Representable)
 import GHC.Generics (Par1)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
@@ -28,7 +30,10 @@ data ScriptType
 -- 1. with arbitrary input;
 -- 2. with a single success/fail output;
 -- 3. over BLS base field.
-data SomeCircuit = forall i. SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) i Par1)
+data SomeCircuit
+  = forall i.
+    (Representable i, Binary (Rep i)) =>
+    SomeCircuit (ArithmeticCircuit (Zp BLS12_381_Scalar) i Par1)
 
 -- | Converter itself.
 convert

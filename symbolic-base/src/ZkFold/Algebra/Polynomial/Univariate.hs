@@ -32,6 +32,7 @@ module ZkFold.Algebra.Polynomial.Univariate (
 
 import Control.DeepSeq (NFData (..))
 import Control.Monad (forM_)
+import Data.Aeson (ToJSON)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
@@ -346,7 +347,7 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Eq, Generic, NFData, Show, ToJSON)
 
 class
   ( Ring c
