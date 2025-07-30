@@ -33,6 +33,7 @@ module ZkFold.Algebra.Polynomial.Univariate (
 import Control.DeepSeq (NFData (..))
 import Control.Monad (forM_)
 import Data.Binary (Binary (..))
+import Data.Aeson (ToJSON)
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
@@ -347,7 +348,7 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Generic, NFData, Show)
+  deriving (Eq, Generic, NFData, Show, ToJSON)
 
 instance Binary c => Binary (PolyVec c size) where
   put (PV v) = put $ V.toList v
