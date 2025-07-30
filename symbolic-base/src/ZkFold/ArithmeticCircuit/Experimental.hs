@@ -8,7 +8,7 @@
 module ZkFold.ArithmeticCircuit.Experimental where
 
 import Control.Applicative (pure)
-import Control.DeepSeq (NFData (..), NFData1, rwhnf)
+import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
 import Control.Monad (unless)
 import Control.Monad.State (State, gets, modify', runState, state)
 import Data.Binary (Binary)
@@ -156,7 +156,8 @@ instance
 
 newtype AC a f = MkAC {runAC :: f (Elem a)}
 
-deriving newtype instance NFData1 f => NFData (AC a f)
+instance NFData1 f => NFData (AC a f) where
+  rnf = hliftRnf liftRnf
 
 instance HNFData (AC a) where
   hliftRnf lift = lift rnf . runAC
