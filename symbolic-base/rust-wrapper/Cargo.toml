@@ -4,22 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Crate arkmsm uses arkworks 0.3.0, it is not compatible with version 0.4.0. 
-# We are using an unofficial fork of the repository, which updates the version to 0.4.0. 
-# We need to check the status of arkmsm to move to a stable version.
-ark-msm = { git = "https://github.com/TalDerei/arkmsm.git", rev = "bc95ea3784983d8ced03a642d765bbfdd91faa9b" }
-
-ark-ff = { version = "0.4.0", default-features = false }
-ark-ec = { version = "0.4.0" }
-ark-std = { version = "0.4.0", default-features = false }
-ark-serialize = { version = "0.4.0", default-features = false }
-ark-bls12-381 = { version = "0.4.0" }
+ark-ff = { version = "0.5.0", features = ["parallel"]}
+ark-ec = { version = "0.5.0", features = ["parallel"]}
+ark-std = { version = "0.5.0"}
+ark-serialize = { version = "0.5.0" }
+ark-bls12-381 = { version = "0.5.0" }
 der = "0.7"
 num-bigint = "0.4.6"
 num-traits = "0.2.19"
-ark-poly = "0.4.2"
-ark-test-curves = "0.4.2"
-cfg-if = "0.1"
+ark-poly = "0.5.0"
+ark-test-curves = "0.5.0"
+cfg-if = "1.0.1"
+blake2 = "0.10.6"
+libc = "0.2.13"
+itertools = "0.14"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -41,6 +39,3 @@ harness = false
 name = "mul_fft_bench"
 path = "benches/mul_fft_bench.rs"
 harness = false
-
-[features]
-capi = []
