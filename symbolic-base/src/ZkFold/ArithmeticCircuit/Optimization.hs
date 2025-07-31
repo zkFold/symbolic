@@ -36,7 +36,7 @@ import ZkFold.ArithmeticCircuit.Context (
  )
 import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
-import ZkFold.Data.ByteString (fromByteString)
+import ZkFold.Data.Binary (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 
 -- | @optimize keep ctx@ resolves constraints of the form @k * x + c == 0@

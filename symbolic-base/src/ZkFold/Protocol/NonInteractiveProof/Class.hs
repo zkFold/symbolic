@@ -16,7 +16,7 @@ import ZkFold.Algebra.Class (Bilinear (..), Scale (..), sum)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec, UnivariateRingPolyVec (..))
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()

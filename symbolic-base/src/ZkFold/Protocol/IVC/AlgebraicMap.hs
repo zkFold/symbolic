@@ -21,7 +21,7 @@ import qualified ZkFold.Algebra.Polynomial.Multivariate as PM
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext))
 import ZkFold.ArithmeticCircuit.Context (acSystem, acWitness)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
-import ZkFold.Data.ByteString (Binary, toByteString)
+import ZkFold.Data.Binary (Binary, toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Protocol.IVC.Predicate (Predicate (..))

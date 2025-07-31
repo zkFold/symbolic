@@ -16,7 +16,7 @@ import Optics ((&))
 import Test.QuickCheck (Arbitrary (..), generate, vectorOf)
 import Prelude
 
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (..))
 
 newtype ProofBytes = ProofBytes

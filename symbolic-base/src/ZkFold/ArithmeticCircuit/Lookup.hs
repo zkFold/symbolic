@@ -22,7 +22,7 @@ import GHC.Generics (Generic, Par1, (:*:))
 import qualified Type.Reflection as R
 import Prelude (Show, undefined)
 
-import ZkFold.Data.ByteString ()
+import ZkFold.Data.Binary ()
 
 newtype FunctionId f = FunctionId {funcHash :: ByteString}
   deriving (Eq, Generic, NFData, Ord, Show, ToJSON)

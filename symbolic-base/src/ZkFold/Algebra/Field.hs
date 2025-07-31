@@ -42,7 +42,7 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Control.Conditional (Conditional (..))
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Prelude (iterate', log2ceiling)
 

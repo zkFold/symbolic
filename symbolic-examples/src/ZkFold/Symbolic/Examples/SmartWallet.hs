@@ -51,7 +51,7 @@ import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
 import qualified ZkFold.ArithmeticCircuit as AC
-import ZkFold.Data.ByteString (toByteString)
+import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)

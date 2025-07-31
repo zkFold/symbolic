@@ -18,7 +18,7 @@ import GHC.Wasm.Prim
 import System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import Prelude hiding (Num ((*)), sum)
 
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import ZkFold.Protocol.NonInteractiveProof.Class
 
 foreign import javascript unsafe "blake2b($1, $2, $3, $4, $5)"
