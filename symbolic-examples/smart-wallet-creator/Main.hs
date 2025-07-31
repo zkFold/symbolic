@@ -19,5 +19,8 @@ import ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do
-  let proofBytes = mkProof $ expModProofDebug @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
+  let proofBytes = expModProofDebug @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
   print proofBytes
+
+-- let a = expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
+-- print a

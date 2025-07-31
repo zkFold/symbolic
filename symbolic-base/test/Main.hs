@@ -2,16 +2,7 @@ module Main where
 
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
-import Prelude hiding (
-  Bool,
-  Fractional (..),
-  Num (..),
-  drop,
-  length,
-  replicate,
-  take,
-  (==),
- )
+import Prelude
 
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
 import Tests.Algebra.Field (specField)
@@ -22,6 +13,7 @@ import Tests.Algebra.Permutation (specPermutation)
 import Tests.Algebra.ReedSolomon (specReedSolomon)
 import Tests.Algebra.Univariate (specUnivariate)
 import Tests.Data.Binary (specBinary)
+import Tests.FFI.Rust.Plonkup (specRustPlonkup)
 import Tests.Protocol.IVC
 import Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import Tests.Protocol.Plonkup (specPlonkup)
@@ -84,6 +76,9 @@ spec gen = do
     specSHA2Natural
     specSHA2
     specKeccak
+
+  describe "symbolic-base-test (Rust FFI)" $ do
+    specRustPlonkup
 
 main :: IO ()
 main = hspec . spec =<< initStdGen
