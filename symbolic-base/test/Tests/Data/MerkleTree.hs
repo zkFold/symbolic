@@ -12,6 +12,9 @@ import Data.Maybe (Maybe (..))
 import GHC.TypeNats (type (-), type (^))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary)
+import Prelude (Show, ($))
+import qualified Prelude as Haskell
+
 import Tests.Common (it)
 import ZkFold.Algebra.Class (Ring, toConstant)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -20,8 +23,6 @@ import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.MerkleTree
 import ZkFold.Data.Vector (Vector (..), (!!))
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import Prelude (Show, ($))
-import qualified Prelude as Haskell
 
 testId
   :: forall d h

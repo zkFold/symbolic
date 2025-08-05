@@ -16,13 +16,14 @@ import qualified Data.Vector as V
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Show, error, fromIntegral, pure, ($))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
-import Prelude (Show, error, fromIntegral, pure, ($))
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
@@ -30,7 +31,7 @@ data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: h
   , mLeaves :: Vector (MerkleTreeSize d) h
   }
-  deriving (Generic, Show, Eq)
+  deriving (Eq, Generic, Show)
 
 merkleHash
   :: forall h. Ring h => h -> h -> h
