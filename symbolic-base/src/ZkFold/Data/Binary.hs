@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Data.ByteString (
+module ZkFold.Data.Binary (
   Binary (..),
   Binary1,
   toByteString,
@@ -20,33 +20,17 @@ module ZkFold.Data.ByteString (
 #if __GLASGOW_HASKELL__ < 912
 import           Data.List              (foldl')
 #endif
+import ByteString.Aeson.Orphans ()
 import Control.Applicative (many)
-import qualified Data.Aeson as Aeson
 import Data.Binary
 import Data.Binary.Get
 import Data.Binary.Put
 import qualified Data.ByteString as Strict
-import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as Lazy
-import qualified Data.Text.Encoding as Text
 import GHC.Generics (Par1, U1, (:*:), (:.:))
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Prelude
-
-instance Aeson.FromJSON Strict.ByteString where
-  parseJSON o =
-    either fail return
-      . Base64.decode
-      . Text.encodeUtf8
-      =<< Aeson.parseJSON o
-
-instance Aeson.ToJSON Strict.ByteString where
-  toJSON = Aeson.toJSON . Text.decodeUtf8 . Base64.encode
-
-instance Aeson.FromJSONKey Strict.ByteString
-
-instance Aeson.ToJSONKey Strict.ByteString
 
 class (forall a. Binary a => Binary (f a)) => Binary1 f
 

@@ -23,7 +23,7 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
 import ZkFold.ArithmeticCircuit qualified as Circuit
 import ZkFold.ArithmeticCircuit.Experimental (AC, compile)
-import ZkFold.Data.ByteString (Binary, toByteString)
+import ZkFold.Data.Binary (Binary, toByteString)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)

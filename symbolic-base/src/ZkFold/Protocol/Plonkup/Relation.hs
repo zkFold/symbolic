@@ -5,6 +5,8 @@
 
 module ZkFold.Protocol.Plonkup.Relation where
 
+import Data.Aeson ((.=))
+import qualified Data.Aeson as Aeson
 import Data.Binary (Binary)
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (timesNat)
@@ -65,6 +67,23 @@ data PlonkupRelation i o n a pv = PlonkupRelation
   , prvNum :: !Natural
   -- ^ The number of private inputs.
   }
+
+instance Aeson.ToJSON (pv n) => Aeson.ToJSON (PlonkupRelation i o n a pv) where
+  toJSON PlonkupRelation {..} =
+    Aeson.object
+      [ "qM" .= qM
+      , "qL" .= qL
+      , "qR" .= qR
+      , "qO" .= qO
+      , "qC" .= qC
+      , "qK" .= qK
+      , "t1" .= t1
+      , "t2" .= t2
+      , "t3" .= t3
+      , "sigma" .= sigma
+      , -- TODO serialize witness & pub input as well
+        "prvNum" .= prvNum
+      ]
 
 instance (Show a, Show (pv n)) => Show (PlonkupRelation i o n a pv) where
   show PlonkupRelation {..} =

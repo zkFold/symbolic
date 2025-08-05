@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.Plonkup.Prover.Polynomials where
 
+import Data.Aeson (ToJSON)
+import GHC.Generics (Generic)
 import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
@@ -21,6 +24,9 @@ data PlonkupCircuitPolynomials n g pv = PlonkupCircuitPolynomials
   , s2X :: !(PlonkupPolyExtended n g pv)
   , s3X :: !(PlonkupPolyExtended n g pv)
   }
+  deriving Generic
+
+instance ToJSON (pv (PlonkupPolyExtendedLength n)) => ToJSON (PlonkupCircuitPolynomials n g pv)
 
 instance
   ( Show (ScalarFieldOf g)

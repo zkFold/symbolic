@@ -44,10 +44,13 @@ library
       ZkFold.Symbolic.UPLC.Fun
       ZkFold.UPLC.BuiltinFunction
       ZkFold.UPLC.BuiltinType
+      ZkFold.UPLC.Constant
+      ZkFold.UPLC.Data
       ZkFold.UPLC.Term
     build-depends:
       adjunctions                                ,
       base                          >= 4.9 && < 5,
+      binary                                     ,
       bytestring                                 ,
       constraints                                ,
       symbolic-base                              ,

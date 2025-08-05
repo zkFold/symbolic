@@ -24,7 +24,7 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.Data.ByteString
+import ZkFold.Data.Binary
 import qualified ZkFold.Data.Eq
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly

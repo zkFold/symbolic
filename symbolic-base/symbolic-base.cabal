@@ -137,6 +137,8 @@ library
       ZkFold.Algorithm.ReedSolomon
       ZkFold.Algorithm.Hash.MiMC
       ZkFold.Algorithm.Hash.MiMC.Constants
+      ZkFold.Algorithm.Hash.Poseidon
+      ZkFold.Algorithm.Hash.Poseidon.Constants
       ZkFold.ArithmeticCircuit
       ZkFold.ArithmeticCircuit.Arbitrary
       ZkFold.ArithmeticCircuit.Children
@@ -152,7 +154,7 @@ library
       ZkFold.Control.Conditional
       ZkFold.Control.HApplicative
       ZkFold.Data.Bool
-      ZkFold.Data.ByteString
+      ZkFold.Data.Binary
       ZkFold.Data.Empty
       ZkFold.Data.Eq
       ZkFold.Data.HFunctor
@@ -173,6 +175,7 @@ library
       ZkFold.FFI.Rust.RustBLS
       ZkFold.FFI.Rust.RustFunctions
       ZkFold.FFI.Rust.Types
+      ZkFold.FFI.Rust.Plonkup
       ZkFold.Protocol.IVC
       ZkFold.Protocol.IVC.Accumulator
       ZkFold.Protocol.IVC.AccumulatorScheme
@@ -222,6 +225,7 @@ library
       ZkFold.Symbolic.Algorithm.Hash.Keccak
       ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
       ZkFold.Symbolic.Algorithm.Hash.MiMC
+      ZkFold.Symbolic.Algorithm.Hash.Poseidon
       ZkFold.Symbolic.Algorithm.Hash.SHA2
       ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithm.Mithril
@@ -325,6 +329,7 @@ library
         base64-bytestring                          ,
         binary                               < 0.11,
         bifunctors                                 ,
+        bytestring-aeson-orphans             < 0.2,
         -- TODO: remove `blake2` after refactoring of ZK protocols
         blake2                                < 0.4,
         bytestring                           < 0.13,
@@ -384,6 +389,7 @@ test-suite symbolic-base-test
       Tests.Common
       Tests.Data.Binary
       Tests.Data.MerkleTree
+      Tests.FFI.Rust.Plonkup
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
@@ -391,6 +397,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Algorithm.Blake2b
       Tests.Symbolic.Algorithm.JWT
       Tests.Symbolic.Algorithm.Keccak
+      Tests.Symbolic.Algorithm.Poseidon
       Tests.Symbolic.Algorithm.RSA
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit
