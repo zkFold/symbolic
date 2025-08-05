@@ -19,6 +19,7 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (integral, value)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq
 import ZkFold.Data.Package
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
@@ -375,3 +376,74 @@ incrementPath
   -> MerkleTreePath d c
 incrementPath (MerkleTreePath p) =
   MerkleTreePath . P.fmap Bool . indToPath @c $ fromFieldElement (FieldElement (ind $ P.fmap (\(Bool b) -> b) p) + one)
+
+-- UInt-based operations to mirror the base MerkleTree API
+
+-- | Finds an index of an element satisfying the constraint (UInt-based version)
+findIndexUInt
+  :: forall x c d
+   . ( SymbolicData x
+     , Context x ~ c
+     , SymbolicFold c
+     , KnownNat d
+     , 1 <= d
+     , KnownRegisters c (d - 1) Auto
+     )
+  => MorphFrom c x (Bool c)
+  -> MerkleTree d x
+  -> Maybe c (UInt (d - 1) Auto c)
+findIndexUInt p (MerkleTree _ nodes) = withDict (minusNat @d @1) $ do
+  let leaves = V.last nodes
+      idx = findIndex p leaves
+  case isNothing @c idx of
+    Bool b -> ifThenElse b nothing (just $ strictConv @_ @(UInt (d - 1) Auto c) (fromJust idx))
+
+-- | Returns the index of the first occurrence of an element (UInt-based version)
+elemIndexUInt
+  :: forall x c d
+   . ( SymbolicData x
+     , Context x ~ c
+     , SymbolicFold c
+     , KnownNat d
+     , 1 <= d
+     , KnownRegisters c (d - 1) Auto
+     , Eq x
+     )
+  => x
+  -> MerkleTree d x
+  -> Maybe c (UInt (d - 1) Auto c)
+elemIndexUInt x = findIndexUInt (Morph \y -> bool (just $ fromConstant True) nothing (x == y))
+
+-- | Returns the element at the given UInt index in the Merkle tree
+lookupUInt
+  :: forall x c d
+   . ( SymbolicData x
+     , Context x ~ c
+     , SymbolicFold c
+     , KnownNat d
+     , 1 <= d
+     )
+  => MerkleTree d x
+  -> UInt (d - 1) Auto c
+  -> x
+lookupUInt (MerkleTree _ nodes) idx =
+  let leaves = V.last nodes
+   in leaves L.!! idx
+
+-- | Replaces an element at a given UInt index in the Merkle tree
+replaceAtUInt
+  :: forall x c d
+   . ( SymbolicData x
+     , Context x ~ c
+     , SymbolicFold c
+     , KnownNat d
+     , 1 <= d
+     , KnownRegisters c d Auto
+     )
+  => UInt (d - 1) Auto c
+  -> x
+  -> MerkleTree d x
+  -> MerkleTree d x
+replaceAtUInt idx newLeaf mt =
+  let path = MerkleTreePath . P.fmap Bool . indToPath @c $ strictConv @_ @(c Par1) idx
+   in insertLeaf mt path newLeaf
