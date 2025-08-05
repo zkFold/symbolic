@@ -16,7 +16,6 @@ import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class (Domain, Range, SymbolicData (..), SymbolicFunction (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-
 import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.ByteString
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
@@ -27,7 +26,6 @@ import ZkFold.Symbolic.Examples.FFA
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.FieldElement (exampleInvert)
 import ZkFold.Symbolic.Examples.LEQ (exampleLEQ)
-import ZkFold.Symbolic.Examples.MerkleTree (exampleMerkleTree)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.Pasta (examplePallas_Add, examplePallas_Scale)
 import ZkFold.Symbolic.Examples.ReverseList (exampleReverseList)
@@ -115,7 +113,6 @@ examples =
   , ("Blake2b_256", exampleOutput @A $ exampleBlake2b_256 @64)
   , ("SHA256.32", exampleOutput @A $ exampleSHA @32)
   , ("MiMCHash", exampleOutput @A exampleMiMC)
-  , ("MerkleTree.4", exampleOutput @A $ exampleMerkleTree @4)
   , ("Exp65537Mod", exampleOutput @A expModContract)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
