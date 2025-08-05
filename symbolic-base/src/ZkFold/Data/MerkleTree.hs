@@ -41,7 +41,7 @@ merkleHash
   :: forall h. Ring h => h -> h -> h
 merkleHash = mimcHash2 mimcConstants zero
 
--- | Convert index to binary representation (little-endian bits)
+-- | Convert index to binary representation (little-endian)
 indexToBits :: forall n. KnownNat n => Natural -> Vector n Bool
 indexToBits idx =
   let idxInt = fromIntegral idx :: Int
@@ -69,6 +69,7 @@ merkleProve (MerkleTree _ leaves) idx =
         level = levels List.!! levelIndex
      in level List.!! fromIntegral siblingIdx
 
+-- | Verifies the merkle proof for a given index in the merkle tree
 merkleVerify
   :: forall d h. (Ring h, Eq h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
 merkleVerify (MerkleTree rootHash leaves) idx proof =
@@ -105,7 +106,7 @@ computeRoot
 computeRoot leaves =
   case List.last (computeAllLevels leaves) of
     [root] -> root
-    _ -> error "Invalid tree structure"
+    _ -> error "Merkle tree: impossible"
 
 zeroMerkleTree
   :: forall d h
