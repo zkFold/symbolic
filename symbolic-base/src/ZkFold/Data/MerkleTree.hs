@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.MerkleTree where
+module ZkFold.Data.MerkleTree where
 
 import Data.Bool (Bool)
 import Data.Eq (Eq (..))

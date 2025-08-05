@@ -73,7 +73,7 @@ jobs:
       run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Algebra)"
     
     - name: Test "symbolic-base-test (Serialization)"
-      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Serialization)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Data)"
 
     - name: Test "symbolic-base-test (Protocols)"
       run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Protocols)"

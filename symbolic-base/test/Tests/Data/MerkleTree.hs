@@ -2,7 +2,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Tests.Symbolic.Data.MerkleTree (
+module Tests.Data.MerkleTree (
   specMerkleTree,
 ) where
 
@@ -17,9 +17,9 @@ import ZkFold.Algebra.Class (Ring, toConstant)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Data.MerkleTree
 import ZkFold.Data.Vector (Vector (..), (!!))
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import ZkFold.Symbolic.Data.MerkleTree
 import Prelude (Show, ($))
 import qualified Prelude as Haskell
 

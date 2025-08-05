@@ -8,7 +8,7 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (true))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Maybe (fromJust)
-import ZkFold.Symbolic.Data.MerkleTree
+import ZkFold.Data.MerkleTree
 import ZkFold.Symbolic.Data.Morph
 import ZkFold.Symbolic.Fold (SymbolicFold)
 
