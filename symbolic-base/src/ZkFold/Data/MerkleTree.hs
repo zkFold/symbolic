@@ -20,14 +20,15 @@ import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Int, Show, error, fromIntegral, pure, ($))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
-import Prelude (Int, Show, error, fromIntegral, pure, ($))
-import qualified Prelude as P
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
