@@ -5,25 +5,29 @@
 
 module ZkFold.Data.MerkleTree where
 
-import Data.Bool (Bool)
+import Data.Bits (testBit, xor)
+import Data.Bool (Bool (..))
 import Data.Eq (Eq (..))
+import Data.Foldable (foldl)
 import Data.Function ((.))
 import Data.Functor ((<$>))
+import Data.Functor.Rep (tabulate)
 import qualified Data.List as List
 import Data.Maybe (Maybe (..))
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
+import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
-import Prelude (Show, error, fromIntegral, pure, ($))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
+import Prelude (Int, Show, error, fromIntegral, pure, ($))
+import qualified Prelude as P
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
@@ -36,6 +40,41 @@ data MerkleTree (d :: Natural) h = MerkleTree
 merkleHash
   :: forall h. Ring h => h -> h -> h
 merkleHash = mimcHash2 mimcConstants zero
+
+-- | Convert index to binary representation (little-endian bits)
+indexToBits :: forall n. KnownNat n => Natural -> Vector n Bool
+indexToBits idx =
+  let idxInt = fromIntegral idx :: Int
+   in tabulate (\i -> testBit idxInt (fromIntegral $ fromZp i))
+
+-- | Hash current value with sibling based on bit direction
+hashWithSibling :: Ring h => h -> (Bool, h) -> h
+hashWithSibling current (bit, sibling) =
+  if bit
+    then merkleHash sibling current -- current is right child
+    else merkleHash current sibling -- current is left child
+
+-- | Computes the merkle proof for a given index in the merkle tree
+merkleProve :: forall d h. (Ring h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
+merkleProve (MerkleTree _ leaves) idx =
+  let allLevels = computeAllLevels leaves
+      indexNat = fromZp idx
+   in generateProof allLevels indexNat
+ where
+  generateProof :: [[h]] -> Natural -> Vector (d - 1) h
+  generateProof levels startIdx = tabulate $ \proofLevel ->
+    let levelIndex = fromIntegral $ fromZp proofLevel
+        currentIdx = startIdx `div` (2 P.^ levelIndex)
+        siblingIdx = currentIdx `xor` 1
+        level = levels List.!! levelIndex
+     in level List.!! fromIntegral siblingIdx
+
+merkleVerify
+  :: forall d h. (Ring h, Eq h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
+merkleVerify (MerkleTree rootHash leaves) idx proof =
+  let leaf = leaves V.!! fromZp idx
+      indexBits = indexToBits @(d - 1) $ fromZp idx
+   in foldl hashWithSibling leaf (zip indexBits proof) == rootHash
 
 -- | Computes the next level up in the merkle tree by pairing adjacent elements
 computeNextLevel
