@@ -25,8 +25,12 @@ import Foreign (
 import Foreign.C.Types
 import GHC.Base
 import GHC.IO (unsafePerformIO)
+import GHC.Natural (shiftLNatural)
 import GHC.Num.Natural (naturalFromAddr, naturalToAddr)
 import GHC.Ptr (Ptr (..))
+import Prelude hiding (Eq, Num (..), sum, (*), (/), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (sum)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
@@ -35,9 +39,6 @@ import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
-import Prelude hiding (Eq, Num (..), sum, (*), (/), (^))
-import GHC.Natural (shiftLNatural)
-import qualified Prelude as P
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
@@ -289,7 +290,6 @@ instance RustHaskell RustNatural Natural where
         return $ RNatural (RData fptr)
 
   r2h r = unsafePerformIO $ withForeignPtr (rawData $ rawNatural r) $ peekNatural naturalSize . castPtr
-
 
 -- Zp
 

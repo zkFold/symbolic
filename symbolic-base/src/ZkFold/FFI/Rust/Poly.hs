@@ -9,6 +9,17 @@ import Foreign hiding (new)
 import Foreign.C.Types
 import GHC.Base
 import GHC.IO (unsafePerformIO)
+import Prelude hiding (
+  drop,
+  length,
+  product,
+  replicate,
+  sum,
+  take,
+  (/),
+  (^),
+ )
+
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
 import ZkFold.Algebra.Number (
   KnownNat,
@@ -21,16 +32,6 @@ import ZkFold.Algebra.Polynomial.Univariate (
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
-import Prelude hiding (
-  drop,
-  length,
-  product,
-  replicate,
-  sum,
-  take,
-  (/),
-  (^),
- )
 
 peekArrayV :: Storable a => Int -> Ptr a -> IO (V.Vector a)
 {-# INLINEABLE peekArrayV #-}

@@ -12,6 +12,10 @@ import qualified Data.Vector as V
 import GHC.Base
 import GHC.Natural (naturalFromInteger)
 import Test.QuickCheck hiding (scale)
+import ZkFold.FFI.Rust.Runner (runRustFun0, runRustFun1, runRustFun2, runRustFun3)
+import Prelude hiding (fromIntegral, negate, sum, (*), (+), (-), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (sum)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
@@ -27,12 +31,9 @@ import ZkFold.Data.Binary
 import qualified ZkFold.Data.Eq
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
-import ZkFold.FFI.Rust.Runner (runRustFun0, runRustFun1, runRustFun2, runRustFun3)
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
 import ZkFold.Symbolic.MonadCircuit
-import Prelude hiding (fromIntegral, negate, sum, (*), (+), (-), (^))
-import qualified Prelude as P
 
 deriveIntegerFromNatural :: (a -> a) -> Integer -> (Natural -> a) -> a
 deriveIntegerFromNatural neg i f

@@ -2,9 +2,10 @@ module ZkFold.FFI.Rust.Runner where
 
 import Foreign.ForeignPtr (withForeignPtr)
 import GHC.IO (unsafePerformIO)
+import Prelude
+
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
-import Prelude
 
 runRustFun0
   :: forall r

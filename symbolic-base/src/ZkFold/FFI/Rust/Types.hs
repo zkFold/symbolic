@@ -10,8 +10,9 @@ import Foreign.C.Types
 import GHC.Generics
 import GHC.IO (unsafePerformIO)
 import GHC.Natural (Natural)
-import ZkFold.Control.Conditional
 import Prelude
+
+import ZkFold.Control.Conditional
 
 type FCString = ForeignPtr CChar
 
@@ -116,6 +117,5 @@ newtype Rust_BLS12_381_G2_JacobianPoint = G2_Jacobian Rust_BLS12_381_G2_Point
 type Rust_BLS12_381_G1_CompressedPoint = Point "Rust BLS12-381-G1 Compressed" RustData
 
 type Rust_BLS12_381_G2_CompressedPoint = Point "Rust BLS12-381-G2 Compressed" RustData
-
 
 instance Conditional Bool RustData where bool = B.bool

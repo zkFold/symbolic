@@ -1,13 +1,15 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module Tests.FFI.RustBLS (specRustBLS) where
 
+import Control.Applicative
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
+import Prelude (Eq (..), Integer, Show, String, abs, fromInteger, id, ($), (.), (<>))
+
 import ZkFold.Algebra.Class
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
@@ -18,8 +20,6 @@ import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Types (RustPolyVec)
 import qualified ZkFold.FFI.Rust.Types as Rust
 import ZkFold.Protocol.NonInteractiveProof.Class ()
-import Prelude (Eq (..), Show, Integer, String, abs, fromInteger, id, ($), (.), (<>))
-import Control.Applicative
 
 specRustBLS :: Spec
 specRustBLS = do
@@ -39,7 +39,7 @@ class TestRustHaskell r h where
   h2r' :: h -> r
   r2h' :: r -> h
 
-instance {-# OVERLAPPABLE #-} (RustHaskell r h) => TestRustHaskell r h where
+instance {-# OVERLAPPABLE #-} RustHaskell r h => TestRustHaskell r h where
   h2r' = h2r
   r2h' = r2h
 
@@ -137,21 +137,23 @@ specScalar = do
 
     describe "MSM" $ do
       it "should be correct: msm" $ do
-        withMaxSuccess 10 $ property $ 
-          \(scalars :: PolyVec Haskell.Fr 100) (points :: V.Vector 100 Haskell.BLS12_381_G1_Point) 
-            -> (bilinear (V.toV points) scalars :: Haskell.BLS12_381_G1_Point) 
-            == r2h (bilinear (h2r $ V.toV points) (h2r scalars))
+        withMaxSuccess 10 $
+          property $
+            \(scalars :: PolyVec Haskell.Fr 100) (points :: V.Vector 100 Haskell.BLS12_381_G1_Point) ->
+              (bilinear (V.toV points) scalars :: Haskell.BLS12_381_G1_Point)
+                == r2h (bilinear (h2r $ V.toV points) (h2r scalars))
 
     describe "Scalar Polynomial" $ do
       testUnary @(PolyVec Haskell.Fr Length) "conversion" id id
 
       testBinary @(PolyVec Haskell.Fr Length) "add" (+) (+)
       testBinary @(PolyVec Haskell.Fr Length) "sub" (-) (-)
-      testBinary @(PolyVec Haskell.Fr Length) "mul"
+      testBinary @(PolyVec Haskell.Fr Length)
+        "mul"
         (\x y -> (castHaskell x) * (castHaskell y))
         (\x y -> (castRust x) * (castRust y))
       testBinary @(PolyVec Haskell.Fr Length) "div" polyVecDiv polyVecDiv
-      
+
       testUnary @(PolyVec Haskell.Fr Length) "negate" negate negate
 
       testConst @(PolyVec Haskell.Fr Length) "zero" zero zero

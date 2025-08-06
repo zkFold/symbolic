@@ -21,6 +21,7 @@ import ZkFold.Protocol.Plonkup.Prover
 import ZkFold.Protocol.Plonkup.Relation
 import ZkFold.Protocol.Plonkup.Testing
 import ZkFold.Protocol.Plonkup.Witness
+
 instance Binary (PlonkupCircuitPolynomials n BLS12_381_G1_JacobianPoint (PolyVec Fr)) where
   put (PlonkupCircuitPolynomials {..}) =
     put qlX

@@ -39,12 +39,13 @@ import qualified Data.Vector.Mutable as VM
 import GHC.Generics (Generic)
 import GHC.IsList (IsList (..))
 import Test.QuickCheck (Arbitrary (..), chooseInt)
+import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.DFT (genericDft)
 import ZkFold.Algebra.Number
 import ZkFold.Prelude (log2ceiling, replicate, zipVectorsWithDefault, zipWithDefault)
-import Prelude hiding (Num (..), drop, length, product, replicate, sum, take, (/), (^))
-import qualified Prelude as P
 
 infixl 7 .*., ./.
 
@@ -351,6 +352,7 @@ newtype PolyVec c (size :: Natural) = PV (V.Vector c)
 
 instance (KnownNat size, Ring c, Eq c) => Eq (PolyVec c size) where
   (==) a b = fromPolyVec a == fromPolyVec b
+
 instance Binary c => Binary (PolyVec c size) where
   put (PV v) = put $ V.toList v
   get = PV . V.fromList <$> get
@@ -519,7 +521,7 @@ instance
     | Just (m, cm, c0) <- isShiftedMono rcs = divShiftedMono (l .* finv cm) m c0
     | otherwise = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
-  -- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
+  -- \| Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
   -- The remainder is discarded.
   -- The algorithm requires (size - m) field multiplications.
   --
