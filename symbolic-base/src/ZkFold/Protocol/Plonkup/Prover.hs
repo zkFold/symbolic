@@ -12,6 +12,19 @@ import Data.Foldable (length)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 import GHC.IsList (IsList (..))
+import Prelude hiding (
+  Num (..),
+  drop,
+  length,
+  pi,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat, Natural, value)
@@ -31,18 +44,6 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Testing (PlonkupProverTestInfo (..))
 import ZkFold.Protocol.Plonkup.Utils (sortByList)
 import ZkFold.Protocol.Plonkup.Witness
-import Prelude hiding (
-  Num (..),
-  drop,
-  length,
-  pi,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
 
 plonkupProve
   :: forall i o n g1 g2 ts pv
@@ -301,14 +302,14 @@ plonkupProve
         + qcX
         + alpha
           *. ( ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma)) *. z1X
-                - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
+                 - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
              )
         + (alpha2 * lag1_xi) *. (z1X - one)
         + (alpha3 * (a_xi + zeta * (b_xi + zeta * c_xi) - f_xi)) *. qkX
         + alpha4
           *. ( ((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
-                - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi'))
-                  *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
+                 - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi'))
+                   *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
              )
         + (alpha5 * lag1_xi) *. (z2X - one)
         - zhX_xi *. (qlowX + (xi ^ (n + 2)) *. qmidX + (xi ^ (2 * n + 4)) *. qhighX)
