@@ -536,7 +536,7 @@ instance
   --  > set the (i-m)-th coefficient of the result to be @ci@
   --  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
   --  > Proceed to degree @i-1@
-  divShiftedMono :: forall c size. Field c => PolyVec c size -> Natural -> c -> PolyVec c size
+  divShiftedMono :: PolyVec c size -> Natural -> c -> PolyVec c size
   divShiftedMono (PV cs) m b = PV $ V.create $ do
     let intLen = V.length cs
         intM = fromIntegral m
