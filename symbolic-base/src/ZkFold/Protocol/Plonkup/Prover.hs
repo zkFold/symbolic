@@ -12,25 +12,11 @@ import Data.Foldable (length)
 import qualified Data.Vector as V
 import Data.Word (Word8)
 import GHC.IsList (IsList (..))
-import Prelude hiding (
-  Num (..),
-  drop,
-  length,
-  pi,
-  replicate,
-  sum,
-  take,
-  (!!),
-  (/),
-  (^),
- )
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat, Natural, value)
 import ZkFold.Algebra.Polynomial.Univariate hiding (qr)
 import ZkFold.Data.Vector ((!!))
-import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()
 import ZkFold.Prelude (replicate)
@@ -45,9 +31,21 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Testing (PlonkupProverTestInfo (..))
 import ZkFold.Protocol.Plonkup.Utils (sortByList)
 import ZkFold.Protocol.Plonkup.Witness
+import Prelude hiding (
+  Num (..),
+  drop,
+  length,
+  pi,
+  replicate,
+  sum,
+  take,
+  (!!),
+  (/),
+  (^),
+ )
 
 plonkupProve
-  :: forall i o n g1 g2 ts pv rustG1 rustPv
+  :: forall i o n g1 g2 ts pv
    . ( Ord (ScalarFieldOf g1)
      , Compressible g1
      , ToTranscript ts Word8
@@ -57,11 +55,7 @@ plonkupProve
      , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
-     , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
-     , RustHaskell rustG1 g1
-     , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
-     , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
+     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
      )
   => PlonkupProverSetup i o n g1 g2 pv
   -> (PlonkupWitnessInput i g1, PlonkupProverSecret g1)
@@ -76,8 +70,6 @@ plonkupProve
 
     !n = value @n
     !zhX = polyVecZero (value @n)
-
-    !gsR = h2r <$> gs
 
     (!w1, !w2, !w3) = witness relation wInput
     !wPub = pubInput relation wInput
@@ -97,9 +89,9 @@ plonkupProve
     !cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n g1 pv
 
     !com = bilinear
-    !cmA = gsR `com` aX
-    !cmB = gsR `com` bX
-    !cmC = gsR `com` cX
+    !cmA = gs `com` aX
+    !cmB = gs `com` bX
+    !cmC = gs `com` cX
 
     -- Round 2
 
@@ -131,9 +123,9 @@ plonkupProve
         :: PlonkupPolyExtended n g1 pv
     !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
 
-    !cmF = gsR `com` fX
-    !cmH1 = gsR `com` h1X
-    !cmH2 = gsR `com` h2X
+    !cmF = gs `com` fX
+    !cmH1 = gs `com` h1X
+    !cmH2 = gs `com` h2X
 
     -- Round 3
 
@@ -185,8 +177,8 @@ plonkupProve
       polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2
         :: PlonkupPolyExtended n g1 pv
 
-    !cmZ1 = gsR `com` z1X
-    !cmZ2 = gsR `com` z2X
+    !cmZ1 = gs `com` z1X
+    !cmZ2 = gs `com` z2X
 
     -- Round 4
 
@@ -204,78 +196,34 @@ plonkupProve
     !deltaX = polyVecConstant delta
     !epsilonX = polyVecConstant epsilon
 
-    qmXR :: rustPv (PlonkupPolyExtendedLength n)
-    !qmXR = h2r qmX
-    !qlXR = h2r qlX
-    !qrXR = h2r qrX
-    !qoXR = h2r qoX
-    !qcXR = h2r qcX
-    !qkXR = h2r qkX
-
-    !piXR = h2r piX
-
-    !aXR = h2r aX
-    !bXR = h2r bX
-    !cXR = h2r cX
-
-    !z1XR = h2r z1X
-    !z2XR = h2r z2X
-
-    !s1XR = h2r s1X
-    !s2XR = h2r s2X
-    !s3XR = h2r s3X
-
-    !h1XR = h2r h1X
-    !h2XR = h2r h2X
-
-    !fXR = h2r fX
-    !tXR = h2r tX
-
-    alphaR :: ScalarFieldOf rustG1
-    !alphaR = h2r alpha
-    !alpha2R = h2r alpha2
-    !alpha3R = h2r alpha3
-    !alpha4R = h2r alpha4
-    !alpha5R = h2r alpha5
-    !betaR = h2r beta
-    !gammaXR = h2r gammaX
-    !deltaXR = h2r deltaX
-    !epsilonXR = h2r epsilonX
-    !zetaR = h2r zeta
-
-    !omegas'R = h2r omegas'
-
-    polyVecLinearR :: ScalarFieldOf g1 -> ScalarFieldOf g1 -> rustPv (PlonkupPolyExtendedLength n)
-    polyVecLinearR a b = h2r $ polyVecLinear a b
-
-    !qXs1 = (qmXR * aXR * bXR + qlXR * aXR + qrXR * bXR + qoXR * cXR + piXR + qcXR)
+    !qXs1 = (qmX * aX * bX + qlX * aX + qrX * bX + qoX * cX + piX + qcX)
     !qXs2 =
-      ( (aXR + polyVecLinearR beta gamma)
-          * (bXR + polyVecLinearR (beta * k1) gamma)
-          * (cXR + polyVecLinearR (beta * k2) gamma)
-          * z1XR .* alphaR
+      ( (aX + polyVecLinear beta gamma)
+          * (bX + polyVecLinear (beta * k1) gamma)
+          * (cX + polyVecLinear (beta * k2) gamma)
+          * z1X .* alpha
       )
     !qXs3 =
-      ( (aXR + (betaR *. s1XR) + gammaXR)
-          * (bXR + (betaR *. s2XR) + gammaXR)
-          * (cXR + (betaR *. s3XR) + gammaXR)
-          * (z1XR .*. omegas'R) .* alphaR
+      ( (aX + (beta *. s1X) + gammaX)
+          * (bX + (beta *. s2X) + gammaX)
+          * (cX + (beta *. s3X) + gammaX)
+          * (z1X .*. omegas') .* alpha
       )
-    !qXs4 = ((z1XR - one) * h2r (polyVecLagrange (value @n) 1 omega) .* alpha2R)
-    !qXs5 = (qkXR * (aXR + zetaR *. (bXR + zetaR *. cXR) - fXR) .* alpha3R)
+    !qXs4 = ((z1X - one) * (polyVecLagrange (value @n) 1 omega) .* alpha2)
+    !qXs5 = (qkX * (aX + zeta *. (bX + zeta *. cX) - fX) .* alpha3)
     !qXs6 =
-      ( z2XR
-          * (one + deltaXR)
-          * (epsilonXR + fXR)
-          * ((epsilonXR * (one + deltaXR)) + tXR + deltaXR * (tXR .*. omegas'R)) .* alpha4R
+      ( z2X
+          * (one + deltaX)
+          * (epsilonX + fX)
+          * ((epsilonX * (one + deltaX)) + tX + deltaX * (tX .*. omegas')) .* alpha4
       )
     !qXs7 =
-      ( (z2XR .*. omegas'R)
-          * ((epsilonXR * (one + deltaXR)) + h1XR + deltaXR * h2XR)
-          * ((epsilonXR * (one + deltaXR)) + h2XR + deltaXR * (h1XR .*. omegas'R)) .* alpha4R
+      ( (z2X .*. omegas')
+          * ((epsilonX * (one + deltaX)) + h1X + deltaX * h2X)
+          * ((epsilonX * (one + deltaX)) + h2X + deltaX * (h1X .*. omegas')) .* alpha4
       )
 
-    !qXs8 = ((z2XR - one) * h2r (polyVecLagrange (value @n) 1 omega) .* alpha5R)
+    !qXs8 = ((z2X - one) * (polyVecLagrange (value @n) 1 omega) .* alpha5)
 
     !qXNumerator =
       ( qXs1
@@ -288,15 +236,15 @@ plonkupProve
           + qXs8
       )
 
-    !qX = r2h (divShiftedMono qXNumerator (value @n) (negate one))
+    !qX = divShiftedMono qXNumerator (value @n) (negate one)
 
     !qlowX = toPolyVec $ V.take (fromIntegral (n + 2)) $ fromPolyVec qX
     !qmidX = toPolyVec $ V.take (fromIntegral (n + 2)) $ V.drop (fromIntegral (n + 2)) $ fromPolyVec qX
     !qhighX = toPolyVec $ V.drop (fromIntegral (2 * (n + 2))) $ fromPolyVec qX
 
-    !cmQlow = gsR `com` qlowX
-    !cmQmid = gsR `com` qmidX
-    !cmQhigh = gsR `com` qhighX
+    !cmQlow = gs `com` qlowX
+    !cmQmid = gs `com` qmidX
+    !cmQhigh = gs `com` qhighX
 
     -- Round 5
 
@@ -353,14 +301,14 @@ plonkupProve
         + qcX
         + alpha
           *. ( ((a_xi + beta * xi + gamma) * (b_xi + beta * k1 * xi + gamma) * (c_xi + beta * k2 * xi + gamma)) *. z1X
-                 - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
+                - ((a_xi + beta * s1_xi + gamma) * (b_xi + beta * s2_xi + gamma) * z1_xi') *. (one .* c_xi + beta *. s3X + one .* gamma)
              )
         + (alpha2 * lag1_xi) *. (z1X - one)
         + (alpha3 * (a_xi + zeta * (b_xi + zeta * c_xi) - f_xi)) *. qkX
         + alpha4
           *. ( ((one + delta) * (epsilon + f_xi) * ((epsilon * (one + delta)) + t_xi + delta * t_xi')) *. z2X
-                 - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi'))
-                   *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
+                - (z2_xi' * ((epsilon * (one + delta)) + h2_xi + delta * h1_xi'))
+                  *. (one .* (epsilon * (one + delta)) + h1X + one .* (delta * h2_xi))
              )
         + (alpha5 * lag1_xi) *. (z2X - one)
         - zhX_xi *. (qlowX + (xi ^ (n + 2)) *. qmidX + (xi ^ (2 * n + 4)) *. qhighX)
@@ -389,5 +337,5 @@ plonkupProve
       )
         `polyVecDiv` polyVecLinear one (negate (xi * omega))
 
-    !proof1 = gsR `com` proofX1
-    !proof2 = gsR `com` proofX2
+    !proof1 = gs `com` proofX1
+    !proof2 = gs `com` proofX2

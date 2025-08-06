@@ -6,8 +6,6 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Maybe (fromJust)
 import qualified Data.Vector as V
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Pairing)
 import ZkFold.Algebra.Number (KnownNat, value)
@@ -18,7 +16,6 @@ import ZkFold.Algebra.Polynomial.Univariate (
   toPolyVec,
  )
 import ZkFold.Data.Vector (Vector (..))
-import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()
 import ZkFold.Protocol.Plonkup.Internal (
@@ -30,6 +27,7 @@ import ZkFold.Protocol.Plonkup.Prover.Polynomials (PlonkupCircuitPolynomials (..
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..), toPlonkupRelation)
 import ZkFold.Protocol.Plonkup.Verifier.Commitments (PlonkupCircuitCommitments (..))
 import ZkFold.Symbolic.Class (Arithmetic)
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 data PlonkupSetup i o n g1 g2 pv = PlonkupSetup
   { omega :: !(ScalarFieldOf g1)
@@ -83,7 +81,7 @@ instance
       ++ show commitments
 
 plonkupSetup
-  :: forall i o n g1 g2 gt ts pv rustG1
+  :: forall i o n g1 g2 gt ts pv
    . ( Representable i
      , Representable o
      , Foldable o
@@ -92,14 +90,14 @@ plonkupSetup
      , Pairing g1 g2 gt
      , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
-     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-     , RustHaskell rustG1 g1
-     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
      )
-  => Plonkup i o n g1 g2 ts pv -> PlonkupSetup i o n g1 g2 pv
+  => Plonkup i o n g1 g2 ts pv
+  -> PlonkupSetup i o n g1 g2 pv
 plonkupSetup Plonkup {..} =
   let !gs = toV gs'
-      !gsR = h2r <$> gs
+      -- !gsR = h2r <$> gs
       !h0 = pointGen
 
       !relation@PlonkupRelation {..} = fromJust $ toPlonkupRelation ac :: PlonkupRelation i o n (ScalarFieldOf g1) pv
@@ -130,17 +128,17 @@ plonkupSetup Plonkup {..} =
       !polynomials = PlonkupCircuitPolynomials {..}
 
       !com = bilinear
-      !cmQl = gsR `com` qlX
-      !cmQr = gsR `com` qrX
-      !cmQo = gsR `com` qoX
-      !cmQm = gsR `com` qmX
-      !cmQc = gsR `com` qcX
-      !cmQk = gsR `com` qkX
-      !cmT1 = gsR `com` t1X
-      !cmT2 = gsR `com` t2X
-      !cmT3 = gsR `com` t3X
-      !cmS1 = gsR `com` s1X
-      !cmS2 = gsR `com` s2X
-      !cmS3 = gsR `com` s3X
+      !cmQl = gs `com` qlX
+      !cmQr = gs `com` qrX
+      !cmQo = gs `com` qoX
+      !cmQm = gs `com` qmX
+      !cmQc = gs `com` qcX
+      !cmQk = gs `com` qkX
+      !cmT1 = gs `com` t1X
+      !cmT2 = gs `com` t2X
+      !cmT3 = gs `com` t3X
+      !cmS1 = gs `com` s1X
+      !cmS2 = gs `com` s2X
+      !cmS3 = gs `com` s3X
       !commitments = PlonkupCircuitCommitments {..}
    in PlonkupSetup {..}

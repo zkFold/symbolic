@@ -10,6 +10,19 @@ import Data.Binary (Binary)
 import Data.Functor.Rep (Rep, Representable)
 import qualified Data.Vector as V
 import Data.Word (Word8)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..), Pairing (..))
+import ZkFold.Algebra.Number
+import ZkFold.Algebra.Polynomial.Univariate
+import ZkFold.Protocol.NonInteractiveProof
+import ZkFold.Protocol.Plonkup.Input
+import ZkFold.Protocol.Plonkup.Internal
+import ZkFold.Protocol.Plonkup.Proof
+import ZkFold.Protocol.Plonkup.Prover
+import ZkFold.Protocol.Plonkup.Setup
+import ZkFold.Protocol.Plonkup.Verifier
+import ZkFold.Protocol.Plonkup.Witness
+import ZkFold.Symbolic.Class (Arithmetic)
 import Prelude hiding (
   Num (..),
   div,
@@ -24,46 +37,26 @@ import Prelude hiding (
  )
 import qualified Prelude as P hiding (length)
 
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class (Compressible (..), CyclicGroup (..), Pairing (..))
-import ZkFold.Algebra.Number
-import ZkFold.Algebra.Polynomial.Univariate
-import ZkFold.FFI.Rust.Conversion
-import ZkFold.Protocol.NonInteractiveProof
-import ZkFold.Protocol.Plonkup.Input
-import ZkFold.Protocol.Plonkup.Internal
-import ZkFold.Protocol.Plonkup.Proof
-import ZkFold.Protocol.Plonkup.Prover
-import ZkFold.Protocol.Plonkup.Setup
-import ZkFold.Protocol.Plonkup.Verifier
-import ZkFold.Protocol.Plonkup.Witness
-import ZkFold.Symbolic.Class (Arithmetic)
-
 -- | Based on the paper https://eprint.iacr.org/2022/086.pdf
 instance
-  forall i o n g1 g2 gt ts pv rustG1 rustPv
-   . -- instance forall i o n g1 g2 gt ts pv .
-  ( KnownNat n
-  , Representable i
-  , Representable o
-  , Foldable o
-  , Pairing g1 g2 gt
-  , Compressible g1
-  , Eq gt
-  , Arithmetic (ScalarFieldOf g1)
-  , Binary (Rep i)
-  , ToTranscript ts Word8
-  , ToTranscript ts (ScalarFieldOf g1)
-  , ToTranscript ts (Compressed g1)
-  , FromTranscript ts (ScalarFieldOf g1)
-  , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
-  , KnownNat (PlonkupPolyExtendedLength n)
-  , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
-  , UnivariateFieldPolyVec (ScalarFieldOf rustG1) rustPv
-  , RustHaskell (ScalarFieldOf rustG1) (ScalarFieldOf g1)
-  , RustHaskell rustG1 g1
-  , RustHaskell (rustPv (PlonkupPolyExtendedLength n)) (pv (PlonkupPolyExtendedLength n))
-  )
+  forall i o n g1 g2 gt ts pv
+   . ( KnownNat n
+     , Representable i
+     , Representable o
+     , Foldable o
+     , Pairing g1 g2 gt
+     , Compressible g1
+     , Eq gt
+     , Arithmetic (ScalarFieldOf g1)
+     , Binary (Rep i)
+     , ToTranscript ts Word8
+     , ToTranscript ts (ScalarFieldOf g1)
+     , ToTranscript ts (Compressed g1)
+     , FromTranscript ts (ScalarFieldOf g1)
+     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
+     , KnownNat (PlonkupPolyExtendedLength n)
+     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
+     )
   => NonInteractiveProof (Plonkup i o n g1 g2 ts pv)
   where
   type Transcript (Plonkup i o n g1 g2 ts pv) = ts
@@ -90,9 +83,8 @@ instance
     -> Witness (Plonkup i o n g1 g2 ts pv)
     -> (Input (Plonkup i o n g1 g2 ts pv), Proof (Plonkup i o n g1 g2 ts pv))
   prove setup witness =
-    let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv @rustG1 @rustPv setup witness)
-     in --        let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
-        (input, proof)
+    let (input, proof, _) = with4n6 @n (plonkupProve @i @o @n @g1 @g2 @ts @pv setup witness)
+     in (input, proof)
 
   verify
     :: SetupVerify (Plonkup i o n g1 g2 ts pv)

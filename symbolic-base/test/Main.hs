@@ -1,10 +1,7 @@
 module Main where
 
-import GHC.Natural
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
-import Prelude
-
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
 import Tests.Algebra.Field (specField)
 import Tests.Algebra.Groebner (specGroebner)
@@ -35,54 +32,54 @@ import Tests.Symbolic.Data.List (specList)
 import Tests.Symbolic.Data.MerkleTree (specMerkleTree)
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
+import Prelude
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
-  specRustBLS
+  describe "symbolic-base-test (Algebra)" $ do
+    specGroup
+    specField
+    specEllipticCurve
+    specPairing
+    specPermutation
+    specUnivariate
+    specReedSolomon
+    specGroebner
 
--- describe "symbolic-base-test (Algebra)" $ do
---   specGroup
---   specField
---   specEllipticCurve
---   specPairing
---   specPermutation
---   specUnivariate
---   specReedSolomon
---   specGroebner
+  describe "symbolic-base-test (Serialization)" $ do
+    specBinary
 
--- describe "symbolic-base-test (Serialization)" $ do
---   specBinary
+  describe "symbolic-base-test (Protocols)" $ do
+    specPlonkup
+    specNonInteractiveProof
+    specIVC
 
--- describe "symbolic-base-test (Protocols)" $ do
---   specPlonkup
---   specNonInteractiveProof
---   specIVC
+  describe "symbolic-base-test (Symbolic compiler)" $ do
+    specArithmeticCircuit
+    specCompiler
 
--- describe "symbolic-base-test (Symbolic compiler)" $ do
---   specArithmeticCircuit
---   specCompiler
+  describe "symbolic-base-test (Symbolic data)" $ do
+    specUInt
+    specInt
+    specFFA
+    specByteString
+    specHash
+    specList
+    specMerkleTree
+    specSum
 
--- describe "symbolic-base-test (Symbolic data)" $ do
---   specUInt
---   specInt
---   specFFA
---   specByteString
---   specHash
---   specList
---   specMerkleTree
---   specSum
+  describe "symbolic-base-test (Symbolic cryptography)" $ do
+    specBlake2b
+    specJWT
+    specPoseidon
+    specRSA gen
+    specSHA2Natural
+    specSHA2
+    specKeccak
 
--- describe "symbolic-base-test (Symbolic cryptography)" $ do
---   specBlake2b
---   specJWT
---   specPoseidon
---   specRSA gen
---   specSHA2Natural
---   specSHA2
---   specKeccak
-
--- describe "symbolic-base-test (Rust FFI)" $ do
---   specRustPlonkup
+  describe "symbolic-base-test (Rust FFI)" $ do
+    specRustPlonkup
+    specRustBLS
 
 main :: IO ()
 main = hspec . spec =<< initStdGen

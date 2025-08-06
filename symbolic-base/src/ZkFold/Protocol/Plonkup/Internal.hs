@@ -27,7 +27,6 @@ import ZkFold.Algebra.Polynomial.Univariate (UnivariateFieldPolyVec (..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (acContext))
 import ZkFold.ArithmeticCircuit.Context (acOutput)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.FFI.Rust.Conversion
 import ZkFold.Protocol.Plonkup.Utils (getParams, getSecretParams)
 import ZkFold.Symbolic.Class (Arithmetic)
 
@@ -94,13 +93,12 @@ instance
     return $ Plonkup omega k1 k2 ac h1 gs
 
 lagrangeBasisGroupElements
-  :: forall n g1 pv rustG1
+  :: forall n g1 pv
    . ( KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
      , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
-     , RustHaskell rustG1 g1
-     , Bilinear (V.Vector rustG1) (pv (PlonkupPolyExtendedLength n)) g1
+     , Bilinear (V.Vector g1) (pv (PlonkupPolyExtendedLength n)) g1
      )
   => ScalarFieldOf g1 -> V.Vector g1 -> [g1]
 lagrangeBasisGroupElements omega gs =
-  map (\i -> (h2r <$> gs) `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 ..]
+  map (\i -> gs `bilinear` polyVecLagrange @_ @pv @(PlonkupPolyExtendedLength n) (value @n) i omega) [1 ..]
