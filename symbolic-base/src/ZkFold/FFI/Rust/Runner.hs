@@ -1,6 +1,5 @@
 module ZkFold.FFI.Rust.Runner where
 
-import Foreign (newForeignPtr)
 import Foreign.ForeignPtr (withForeignPtr)
 import GHC.IO (unsafePerformIO)
 import ZkFold.FFI.Rust.RustFunctions

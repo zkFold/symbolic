@@ -83,7 +83,7 @@ instance IsRustType Fr where
   rawType = rawScalar
   toRustType = RScalar . toForeignPtr r_scalar_free
 
--- Point BLS
+-- Point G1 BLS
 
 type Rust_BLS12_381_G1_Point = Point "Rust BLS12-381-G1" RustData
 
@@ -94,6 +94,8 @@ instance IsRustType Rust_BLS12_381_G1_Point where
   rawType = rawPoint
   toRustType = RPoint . toForeignPtr r_g1_free
 
+-- Point G2 BLS
+
 type Rust_BLS12_381_G2_Point = Point "Rust BLS12-381-G2" RustData
 
 foreign import ccall unsafe "&r_g2_free"
@@ -102,15 +104,6 @@ foreign import ccall unsafe "&r_g2_free"
 instance IsRustType Rust_BLS12_381_G2_Point where
   rawType = rawPoint
   toRustType = RPoint . toForeignPtr r_g2_free
-
-type Fq12 = Scalar "Rust BLS12-381-G1 Fq12" RustData
-
-foreign import ccall unsafe "&r_gt_free"
-  r_gt_free :: RustFinalizer
-
-instance IsRustType Fq12 where
-  rawType = rawScalar
-  toRustType = RScalar . toForeignPtr r_gt_free
 
 -- JacobianPoint BLS
 
@@ -123,5 +116,6 @@ newtype Rust_BLS12_381_G2_JacobianPoint = G2_Jacobian Rust_BLS12_381_G2_Point
 type Rust_BLS12_381_G1_CompressedPoint = Point "Rust BLS12-381-G1 Compressed" RustData
 
 type Rust_BLS12_381_G2_CompressedPoint = Point "Rust BLS12-381-G2 Compressed" RustData
+
 
 instance Conditional Bool RustData where bool = B.bool

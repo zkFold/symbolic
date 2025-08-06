@@ -1,13 +1,9 @@
-use std::{
-    alloc::{dealloc, Layout},
-    slice,
-};
+use std::slice;
 
-use ark_bls12_381::{Fq12, Fr as ScalarField, G1Affine, G2Affine};
+use ark_bls12_381::{Fr as ScalarField, G1Affine, G2Affine};
 use ark_ff::PrimeField;
 use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use bytemuck::checked::from_bytes;
 use cfg_if::cfg_if;
 use num_bigint::BigUint;
 
@@ -97,19 +93,16 @@ pub fn unpack_scalar(scalar: &ScalarField) -> Vec<u8> {
 unsafe fn h2r_ptr<T>(var: *const c_char, len: usize, pack: fn(&[u8]) -> T) -> *mut c_char {
     let buffer: &[u8] = slice::from_raw_parts(var as *const u8, len);
     let res: T = pack(buffer);
-    // poke(res)
     Box::into_raw(Box::new(res)) as *mut c_char
 }
 
 unsafe fn r2h_ptr<T>(scalars_var: *mut c_char, out_ptr: *mut c_char, unpack: fn(&T) -> Vec<u8>) {
-    let a = &*(scalars_var as *mut T);
+    let a = peek(scalars_var);
     let res = unpack(a);
     std::ptr::copy(res.as_ptr(), out_ptr as *mut u8, res.len());
 }
 
 pub unsafe fn free_ptr<T>(ptr: *mut c_char) {
-    // println!("Ptr free: {:?}", ptr);
-
     let _ = Box::from_raw(ptr as *mut T);
 }
 
@@ -134,7 +127,6 @@ pub unsafe fn r_r2h_scalar(var: *mut c_char, out_ptr: *mut c_char) {
 
 #[no_mangle]
 pub unsafe fn r_g1_free(ptr: *mut c_char) {
-    // println!("point free");
     free_ptr::<G1Affine>(ptr);
 }
 
@@ -165,29 +157,6 @@ pub unsafe fn r_h2r_g2(var: *const c_char, len: usize) -> *mut c_char {
 #[no_mangle]
 pub unsafe fn r_r2h_g2(var: *mut c_char, out_ptr: *mut c_char) {
     r2h_ptr::<G2Affine>(var, out_ptr, |x| {
-        let mut res = Vec::new();
-        x.serialize_uncompressed(&mut res).unwrap();
-        res
-    });
-}
-
-// GT
-
-#[no_mangle]
-pub unsafe fn r_gt_free(ptr: *mut c_char) {
-    free_ptr::<Fq12>(ptr);
-}
-
-#[no_mangle]
-pub unsafe fn r_h2r_gt(var: *const c_char, len: usize) -> *mut c_char {
-    h2r_ptr::<Fq12>(var, len, |bytes| {
-        Fq12::deserialize_uncompressed_unchecked(bytes).unwrap()
-    })
-}
-
-#[no_mangle]
-pub unsafe fn r_r2h_gt(var: *mut c_char, out_ptr: *mut c_char) {
-    r2h_ptr::<Fq12>(var, out_ptr, |x| {
         let mut res = Vec::new();
         x.serialize_uncompressed(&mut res).unwrap();
         res
@@ -249,8 +218,12 @@ pub unsafe fn r_r2h_point_vec(var: *mut c_char, out_ptr: *mut c_char) {
     r2h_ptr::<Vec<G1Affine>>(var, out_ptr, |x| x.iter().flat_map(unpack_point).collect());
 }
 
-pub unsafe fn poke<T>(b: T) -> *mut c_char {
-    Box::into_raw(Box::new(&b)) as *mut c_char
+unsafe fn peek<'a, T>(ptr: *mut c_char) -> &'a mut T {
+    &mut *(ptr as *mut T)
+}
+
+unsafe fn poke<T>(b: T) -> *mut c_char {
+    Box::into_raw(Box::new(b)) as *mut c_char
 }
 
 pub unsafe fn constant<R>(a: R) -> *mut c_char {
@@ -258,9 +231,9 @@ pub unsafe fn constant<R>(a: R) -> *mut c_char {
 }
 
 pub unsafe fn unary<T1, R>(a_ptr: *mut c_char, f: fn(a: &T1) -> R) -> *mut c_char {
-    let a = &*(a_ptr as *mut T1);
+    let a = peek(a_ptr);
 
-    let res = f(&a);
+    let res = f(a);
 
     poke(res)
 }
@@ -270,10 +243,10 @@ pub unsafe fn binary<T1, T2, R>(
     b_ptr: *mut c_char,
     f: fn(a: &T1, b: &T2) -> R,
 ) -> *mut c_char {
-    let a = &*(a_ptr as *mut T1);
-    let b = &*(b_ptr as *mut T2);
+    let a = peek(a_ptr);
+    let b = peek(b_ptr);
 
-    let res = f(&a, &b);
+    let res = f(a, b);
 
     poke(res)
 }
@@ -284,11 +257,11 @@ pub unsafe fn ternary<T1, T2, T3, R>(
     c_ptr: *mut c_char,
     f: fn(a: &T1, b: &T2, c: &T3) -> R,
 ) -> *mut c_char {
-    let a = &*(a_ptr as *mut T1);
-    let b = &*(b_ptr as *mut T2);
-    let c = &*(c_ptr as *mut T3);
+    let a = peek(a_ptr);
+    let b = peek(b_ptr);
+    let c = peek(c_ptr);
 
-    let res = f(&a, &b, &c);
+    let res = f(a, b, c);
 
     poke(res)
 }

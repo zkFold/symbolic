@@ -1,6 +1,6 @@
-use crate::utils::{binary, c_char, constant, unary, Wrapper};
+use crate::utils::{binary, c_char, constant, unary};
 use ark_bls12_381::Fr as ScalarField;
-use ark_ff::{AdditiveGroup, BigInteger, Field, PrimeField};
+use ark_ff::{AdditiveGroup, Field, PrimeField};
 use std::ops::Neg;
 
 #[no_mangle]

@@ -125,8 +125,6 @@ pub unsafe fn r_poly_one() -> *mut c_char {
     constant(poly_one())
 }
 
-// struct DensePolynomialWrapper<T: ark_ff::Field>(pub DensePolynomial<T>);
-
 impl<T> Mul for Wrapper<DensePolynomial<T>>
 where
     T: ark_ff::Field,
@@ -238,7 +236,6 @@ pub unsafe fn r_poly_div_shifted_mono(
          b: &ScalarField|
          -> DensePolynomial<ScalarField> {
             let m = BigUint::from_bytes_le(m_bytes);
-            // let exp = (exp_bytes);
             #[cfg(target_pointer_width = "64")]
             let digits = m
                 .to_u64_digits()

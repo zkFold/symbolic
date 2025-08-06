@@ -88,11 +88,9 @@ main = defaultMainWithHooks hooks
 
           addExtraLibDir path <$> confHook simpleUserHooks args flags
       , preBuild = \args flags -> do
-          -- execCargoBuild
-          return (Just $ emptyBuildInfo { extraLibs = ["rust_wrapper_dyn"] }, [])
+          return (Just $ emptyBuildInfo { extraLibs = ["rust_wrapper_stat"] }, [])
       , preReg = \args flags -> do
-          -- execCargoBuild
-          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preRepl = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }

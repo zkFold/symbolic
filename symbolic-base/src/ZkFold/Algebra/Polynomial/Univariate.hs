@@ -347,8 +347,10 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Generic, NFData, Show, ToJSON)
+  deriving (Generic, NFData, Show, ToJSON)
 
+instance (KnownNat size, Ring c, Eq c) => Eq (PolyVec c size) where
+  (==) a b = fromPolyVec a == fromPolyVec b
 instance Binary c => Binary (PolyVec c size) where
   put (PV v) = put $ V.toList v
   get = PV . V.fromList <$> get

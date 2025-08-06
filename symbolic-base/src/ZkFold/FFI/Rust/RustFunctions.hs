@@ -73,14 +73,6 @@ foreign import ccall unsafe "r_r2h_scalar_poly"
 foreign import ccall unsafe "r_h2r_point_vec"
   r_h2r_point_vec :: CString -> Int -> IO CString
 
--- GT
-
-foreign import ccall unsafe "r_h2r_gt"
-  r_h2r_gt :: CString -> Int -> IO CString
-
-foreign import ccall unsafe "r_r2h_gt"
-  r_r2h_gt :: CString -> CString -> IO ()
-
 -------------------- MSM --------------------
 
 foreign import ccall unsafe "r_msm"
@@ -240,32 +232,7 @@ foreign import ccall unsafe "r_poly_scale_natural"
 foreign import ccall unsafe "r_poly_div_shifted_mono"
   r_poly_div_shifted_mono :: RustFun3
 
--------------------- GT --------------------
-
--- Const
-
-foreign import ccall unsafe "r_gt_one"
-  r_gt_one :: RustFun0
-
--- Binary
-
-foreign import ccall unsafe "r_pairing"
-  r_pairing :: RustFun2
-
-foreign import ccall unsafe "r_gt_exp"
-  r_gt_exp :: RustFun2
-
-foreign import ccall unsafe "r_gt_exp_natural"
-  r_gt_exp_natural :: RustFun2
-
-foreign import ccall unsafe "r_gt_mul"
-  r_gt_mul :: RustFun2
-
-foreign import ccall unsafe "r_gt_div"
-  r_gt_div :: RustFun2
-
-foreign import ccall unsafe "r_gt_invert"
-  r_gt_invert :: RustFun1
+-- Plonkup prove
 
 foreign import ccall unsafe "rust_wrapper_plonkup_prove"
   rsPlonkupProve

@@ -28,7 +28,7 @@ import GHC.IO (unsafePerformIO)
 import GHC.Num.Natural (naturalFromAddr, naturalToAddr)
 import GHC.Ptr (Ptr (..))
 import ZkFold.Algebra.Class hiding (sum)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fq12, Fr)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 hiding (Fq, Fr)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as EC
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Field
@@ -36,12 +36,12 @@ import ZkFold.Algebra.Number
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
 import Prelude hiding (Eq, Num (..), sum, (*), (/), (^))
+import GHC.Natural (shiftLNatural)
 import qualified Prelude as P
 
 callocForeignPtrBytes :: Int -> IO (ForeignPtr a)
 callocForeignPtrBytes n = do p <- callocBytes n; newForeignPtr finalizerFree p
 
--- import Control.Monad ((<$))
 class RustHaskell r h | r -> h, h -> r where
   h2r :: h -> r
   r2h :: r -> h
@@ -56,23 +56,14 @@ instance {-# OVERLAPPABLE #-} (RustHaskell r h, Storable h) => Storable r where
   peek :: Ptr r -> IO r
   peek = error "Do not call peek on Rust type"
 
-  --  peekElemOff = error "Do not call peekElemOff on Rust type"
-  --  peekByteOff = error "Do not call peekByteOff on Rust type"
-
   poke :: Ptr r -> r -> IO ()
   poke = error "Do not call poke on Rust type"
-
---  pokeElemOff = error "Do not call pokeElemOff on Rust type"
---  pokeByteOff = error "Do not call pokeByteOff on Rust type"
 
 pointG1Size :: Int
 pointG1Size = sizeOf (undefined :: Rust_BLS12_381_G1_Point)
 
 pointG2Size :: Int
 pointG2Size = sizeOf (undefined :: Rust_BLS12_381_G2_Point)
-
-pointGTSize :: Int
-pointGTSize = sizeOf (undefined :: BLS12_381_GT)
 
 scalarSize :: Int
 scalarSize = sizeOf (undefined :: Fr)
@@ -81,7 +72,7 @@ o2nScalar :: Fr -> Fr
 o2nScalar old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
     ptrNew <- r_h2r_scalar ptr scalarSize
-    RScalar . RData <$> (newForeignPtr r_scalar_free ptrNew)
+    RScalar . RData <$> newForeignPtr r_scalar_free ptrNew
 
 n2oScalar :: Fr -> Fr
 n2oScalar new = unsafePerformIO $ do
@@ -131,7 +122,7 @@ instance RustHaskell Fr EC.Fr where
     {-# SCC "r2h_fr" #-}
     unsafePerformIO $
       withForeignPtr fptr $ \ptr -> do
-        peek (castPtr $ ptr)
+        peek (castPtr ptr)
    where
     fptr = rawData $ rawScalar $ n2oScalar s
 
@@ -239,7 +230,7 @@ instance Storable BLS12_381_G2_Point where
   poke ptr p =
     BS.useAsCStringLen
       (BS.toStrict $ encode p)
-      (\(fptr, len) -> copyArray (castPtr $ ptr) fptr len)
+      (uncurry $ copyArray (castPtr ptr))
 
 instance Storable BLS12_381_G2_JacobianPoint where
   sizeOf :: BLS12_381_G2_JacobianPoint -> Int
@@ -276,7 +267,7 @@ instance RustHaskell Rust_BLS12_381_G2_Point BLS12_381_G2_Point where
   h2r p = o2nG2 $ unsafePerformIO $ do
     fptr <- callocForeignPtrBytes (sizeOf (undefined :: BLS12_381_G2_Point))
     withForeignPtr fptr $ \ptr -> do
-      poke (castPtr ptr) (p)
+      poke (castPtr ptr) p
     return $ RPoint $ RData fptr
 
 instance RustHaskell Rust_BLS12_381_G2_JacobianPoint BLS12_381_G2_JacobianPoint where
@@ -284,44 +275,21 @@ instance RustHaskell Rust_BLS12_381_G2_JacobianPoint BLS12_381_G2_JacobianPoint 
 
   h2r p = G2_Jacobian $ h2r (project @_ @BLS12_381_G2_Point p)
 
-instance Storable EC.BLS12_381_GT where
-  sizeOf _ = 12 P.* (sizeOf (undefined :: EC.Fq))
+naturalSize :: Int
+naturalSize = 32
 
-  alignment _ = alignment (undefined :: EC.Fq)
+instance RustHaskell RustNatural Natural where
+  h2r n
+    | n >= (1 `shiftLNatural` (8 P.* naturalSize)) = error "too big natural"
+    | otherwise = unsafePerformIO $ do
+        fptr <- callocForeignPtrBytes @CChar naturalSize
+        withForeignPtr fptr $ \ptr -> do
+          !_ <- pokeNatural (castPtr ptr) n
+          return ()
+        return $ RNatural (RData fptr)
 
-  peek ptr =
-    BLS12_381_GT . decode . BS.fromStrict
-      <$> BS.packCStringLen (castPtr ptr, sizeOf @EC.BLS12_381_GT undefined)
+  r2h r = unsafePerformIO $ withForeignPtr (rawData $ rawNatural r) $ peekNatural naturalSize . castPtr
 
-  poke ptr (BLS12_381_GT p) =
-    BS.useAsCStringLen
-      (BS.toStrict $ encode p)
-      (\(fptr, len) -> copyArray (castPtr ptr) fptr len)
-
-instance RustHaskell Fq12 BLS12_381_GT where
-  r2h p = unsafePerformIO $
-    withForeignPtr (rawData $ rawScalar $ n2oGT p) $ \ptr -> do
-      peek (castPtr $ ptr)
-
-  h2r p = o2nGT $ unsafePerformIO $ do
-    fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.BLS12_381_GT))
-    withForeignPtr fptr $ \ptr -> do
-      poke (castPtr ptr) p
-    return $ RScalar $ RData fptr
-
-o2nGT :: Fq12 -> Fq12
-o2nGT old = unsafePerformIO $ do
-  withForeignPtr (rawData $ rawScalar old) $ \ptr -> do
-    ptrNew <- r_h2r_gt ptr pointGTSize
-    RScalar . RData <$> newForeignPtr r_gt_free ptrNew
-
-n2oGT :: Fq12 -> Fq12
-n2oGT new = unsafePerformIO $ do
-  out <- callocForeignPtrBytes @CChar pointGTSize
-  withForeignPtr (rawData $ rawScalar new) $ \ptr -> do
-    withForeignPtr out $ \optr -> do
-      r_r2h_gt ptr optr
-  return $ RScalar $ RData out
 
 -- Zp
 

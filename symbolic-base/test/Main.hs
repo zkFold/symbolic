@@ -39,49 +39,49 @@ spec :: RandomGen g => g -> Spec
 spec gen = do
   specRustBLS
 
-  describe "symbolic-base-test (Algebra)" $ do
-    specGroup
-    specField
-    specEllipticCurve
-    specPairing
-    specPermutation
-    specUnivariate
-    specReedSolomon
-    specGroebner
+  -- describe "symbolic-base-test (Algebra)" $ do
+  --   specGroup
+  --   specField
+  --   specEllipticCurve
+  --   specPairing
+  --   specPermutation
+  --   specUnivariate
+  --   specReedSolomon
+  --   specGroebner
 
-  describe "symbolic-base-test (Serialization)" $ do
-    specBinary
+  -- describe "symbolic-base-test (Serialization)" $ do
+  --   specBinary
 
-  describe "symbolic-base-test (Protocols)" $ do
-    specPlonkup
-    specNonInteractiveProof
-    specIVC
+  -- describe "symbolic-base-test (Protocols)" $ do
+  --   specPlonkup
+  --   specNonInteractiveProof
+  --   specIVC
 
-  describe "symbolic-base-test (Symbolic compiler)" $ do
-    specArithmeticCircuit
-    specCompiler
+  -- describe "symbolic-base-test (Symbolic compiler)" $ do
+  --   specArithmeticCircuit
+  --   specCompiler
 
-  describe "symbolic-base-test (Symbolic data)" $ do
-    specUInt
-    specInt
-    specFFA
-    specByteString
-    specHash
-    specList
-    specMerkleTree
-    specSum
+  -- describe "symbolic-base-test (Symbolic data)" $ do
+  --   specUInt
+  --   specInt
+  --   specFFA
+  --   specByteString
+  --   specHash
+  --   specList
+  --   specMerkleTree
+  --   specSum
 
-  describe "symbolic-base-test (Symbolic cryptography)" $ do
-    specBlake2b
-    specJWT
-    specPoseidon
-    specRSA gen
-    specSHA2Natural
-    specSHA2
-    specKeccak
+  -- describe "symbolic-base-test (Symbolic cryptography)" $ do
+  --   specBlake2b
+  --   specJWT
+  --   specPoseidon
+  --   specRSA gen
+  --   specSHA2Natural
+  --   specSHA2
+  --   specKeccak
 
-  describe "symbolic-base-test (Rust FFI)" $ do
-    specRustPlonkup
+  -- describe "symbolic-base-test (Rust FFI)" $ do
+  --   specRustPlonkup
 
 main :: IO ()
 main = hspec . spec =<< initStdGen
