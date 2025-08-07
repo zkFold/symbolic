@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -14,21 +15,28 @@ import Data.Functor ((<$>))
 import Data.Functor.Rep (tabulate)
 import qualified Data.List as List
 import Data.Maybe (Maybe (..))
+import Data.String (fromString)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
-import Prelude (Int, Show, error, fromIntegral, pure, ($))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
+import ZkFold.Control.Conditional (ifThenElse)
+import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
+import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
+import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField)
+import Prelude (Int, Show, error, fromInteger, fromIntegral, pure, ($))
+import qualified Prelude as P
+
+-- TODO: ResidueField and related types should properly become a part of our base type hierarchy.
+-- Currently, its use here is a bit awkward.
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
@@ -36,7 +44,7 @@ data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: h
   , mLeaves :: Vector (MerkleTreeSize d) h
   }
-  deriving (Eq, Generic, Show)
+  deriving (Generic, Show)
 
 merkleHash
   :: forall h. Ring h => h -> h -> h
@@ -54,6 +62,23 @@ hashWithSibling current (bit, sibling) =
   if bit
     then merkleHash sibling current -- current is right child
     else merkleHash current sibling -- current is left child
+
+-- | Computes the merkle proof for a given index in the merkle tree
+merkleProve' :: forall d h. (ResidueField h, KnownNat (d - 1)) => MerkleTree d h -> IntegralOf h -> Vector (d - 1) h
+merkleProve' (MerkleTree _ leaves) idx =
+  let allLevels = computeAllLevels leaves
+   in generateProof allLevels idx
+ where
+  generateProof :: [[h]] -> IntegralOf h -> Vector (d - 1) h
+  generateProof levels startIdx = tabulate $ \proofLevel ->
+    let two = one + one
+        levelIndex = fromZp proofLevel
+        currentIdx = startIdx `div` (two ^ levelIndex)
+        siblingIdx = currentIdx + (if mod currentIdx two ZkFold.== zero then one else negate one)
+        level = levels ZkFold.!! levelIndex
+        f [] _ = error "Merkle tree: impossible"
+        f (x : xs) n = if n ZkFold.== zero then x else f xs (n - one)
+     in f level siblingIdx
 
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve :: forall d h. (Ring h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
@@ -137,6 +162,9 @@ instance
   => Iso (MerkleTree d h) (Vector n h)
   where
   from (MerkleTree _ leaves) = leaves
+
+instance Eq h => Eq (MerkleTree d h) where
+  MerkleTree h1 _ == MerkleTree h2 _ = h1 == h2
 
 instance (KnownNat (MerkleTreeSize d), Ring h, Arbitrary h) => Arbitrary (MerkleTree d h) where
   arbitrary = from @(Vector (MerkleTreeSize d) h) <$> arbitrary

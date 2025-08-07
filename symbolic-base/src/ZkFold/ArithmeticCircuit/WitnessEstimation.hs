@@ -10,8 +10,6 @@ import Data.Eq (Eq, (==))
 import Data.Function ((.))
 import Data.Functor (Functor, fmap)
 import Data.Maybe (Maybe (..))
-import Prelude (Integral)
-
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Control.Conditional (Conditional (..))
@@ -19,6 +17,7 @@ import ZkFold.Data.Bool
 import ZkFold.Data.Eq (BooleanOf)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
+import Prelude (Integral)
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
@@ -103,7 +102,14 @@ instance (Field a, Eq a) => Field (UVar a) where
 instance Finite a => Finite (UVar a) where
   type Order (UVar a) = Order a
 
-instance (ResidueField a, Eq a, Conditional (BooleanOf (IntegralOf a)) (Maybe (IntegralOf a))) => ResidueField (UVar a) where
+instance
+  ( ResidueField a
+  , Eq a
+  , Conditional (BooleanOf (IntegralOf a)) (Maybe (IntegralOf a))
+  , Conditional (BooleanOf (IntegralOf a)) (UVar a)
+  )
+  => ResidueField (UVar a)
+  where
   type IntegralOf (UVar a) = Maybe (IntegralOf a)
   fromIntegral (Just x) = ConstUVar (fromIntegral x)
   fromIntegral Nothing = More

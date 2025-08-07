@@ -15,14 +15,13 @@ import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
-import Prelude (Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq)
 import ZkFold.Data.Orphans ()
+import Prelude (Integer)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
@@ -32,6 +31,7 @@ class
   , Eq (IntegralOf a)
   , Conditional (BooleanOf (IntegralOf a)) (BooleanOf (IntegralOf a))
   , Conditional (BooleanOf (IntegralOf a)) (IntegralOf a)
+  , Conditional (BooleanOf (IntegralOf a)) a
   ) =>
   ResidueField a
   where
@@ -128,7 +128,9 @@ class
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   lookupConstraint
     :: (NFData1 f, Foldable f, Functor f, Typeable f)
-    => f var -> LookupTable a f -> m ()
+    => f var
+    -> LookupTable a f
+    -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.

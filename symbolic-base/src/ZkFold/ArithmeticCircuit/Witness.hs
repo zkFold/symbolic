@@ -10,13 +10,12 @@ import Data.Function (const, (.))
 import Data.Functor (Functor)
 import GHC.Generics (Generic (..), K1 (..), M1 (..), (:*:) (..))
 import Numeric.Natural (Natural)
-import Prelude (Integer)
-
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import Prelude (Integer)
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 
@@ -108,6 +107,9 @@ instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (BooleanE a v) where
 
 instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (EuclideanF a v) where
   bool (EuclideanF f) (EuclideanF g) (BooleanE b) = EuclideanF (\x -> bool (f x) (g x) (b x))
+
+instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (WitnessF a v) where
+  bool (WitnessF f) (WitnessF g) (BooleanE b) = WitnessF (\x -> bool (f x) (g x) (b x))
 
 instance (Generic x, GConditional (BooleanE a v) (Rep x)) => Conditional (BooleanE a v) x where
   bool f g b = to (gbool (from f) (from g) b)
