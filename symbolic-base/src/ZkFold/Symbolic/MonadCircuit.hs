@@ -15,13 +15,14 @@ import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
+import Prelude (Integer)
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq)
 import ZkFold.Data.Orphans ()
-import Prelude (Integer)
 
 -- | A 'ResidueField' is a 'FiniteField'
 -- backed by a 'Euclidean' integral type.
