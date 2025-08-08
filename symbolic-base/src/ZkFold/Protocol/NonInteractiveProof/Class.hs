@@ -73,15 +73,15 @@ type RustFFI g pv rustg rustp =
   , Bilinear (V.Vector rustg) rustp rustg
   )
 
-instance
-  {-# OVERLAPPABLE #-}
-  ( f ~ ScalarFieldOf g
-  , RustFFI g (PolyVec f size) rustg rustp
-  , UnivariateRingPolyVec f (PolyVec f)
-  )
-  => Bilinear (V.Vector rustg) (PolyVec f size) g
-  where
-  bilinear gs f = r2h @rustg $ bilinear gs (h2r @rustp f)
+-- instance
+--   {-# OVERLAPPABLE #-}
+--   ( f ~ ScalarFieldOf g
+--   , RustFFI g (PolyVec f size) rustg rustp
+--   , UnivariateRingPolyVec f (PolyVec f)
+--   )
+--   => Bilinear (V.Vector rustg) (PolyVec f size) g
+--   where
+--   bilinear gs f = r2h @rustg $ bilinear gs (h2r @rustp f)
 
 instance
   {-# OVERLAPPABLE #-}

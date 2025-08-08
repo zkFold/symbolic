@@ -311,7 +311,7 @@ fn compress(pt: &GAffine) -> Vec<u8> {
 }
 
 fn bytes(pt: &ScalarField) -> Vec<u8> {
-    unpack_scalar(*pt)
+    unpack_scalar(pt)
 }
 
 fn challenge(transcript: &Vec<u8>) -> ScalarField {

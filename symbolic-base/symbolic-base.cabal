@@ -175,6 +175,7 @@ library
       ZkFold.FFI.Rust.RustFunctions
       ZkFold.FFI.Rust.Types
       ZkFold.FFI.Rust.Plonkup
+      ZkFold.FFI.Rust.Runner
       ZkFold.Protocol.IVC
       ZkFold.Protocol.IVC.Accumulator
       ZkFold.Protocol.IVC.AccumulatorScheme
@@ -413,6 +414,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
+      Tests.FFI.RustBLS
     build-depends:
       base                          >= 4.9 && < 5,
       adjunctions                           < 4.5,

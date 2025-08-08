@@ -348,7 +348,10 @@ instance (Ring c, Arbitrary c, Eq c) => Arbitrary (Poly c) where
 ---------------------------------- Fixed degree polynomials ----------------------------------
 
 newtype PolyVec c (size :: Natural) = PV (V.Vector c)
-  deriving (Eq, Generic, NFData, Show, ToJSON)
+  deriving (Generic, NFData, Show, ToJSON)
+
+instance (KnownNat size, Ring c, Eq c) => Eq (PolyVec c size) where
+  (==) a b = fromPolyVec a == fromPolyVec b
 
 instance Binary c => Binary (PolyVec c size) where
   put (PV v) = put $ V.toList v
@@ -389,13 +392,15 @@ class
 poly2vec
   :: (UnivariateRingPolynomial c poly, UnivariateRingPolyVec c pv)
   => KnownNat size
-  => poly -> pv size
+  => poly
+  -> pv size
 poly2vec = toPolyVec . fromPoly
 
 vec2poly
   :: (UnivariateRingPolyVec c pv, UnivariateRingPolynomial c poly)
   => KnownNat size
-  => pv size -> poly
+  => pv size
+  -> poly
 vec2poly = toPoly . fromPolyVec
 
 -- | (polyVecConstant a0)(x) = a0
@@ -436,6 +441,8 @@ class
   polyVecGrandProduct :: forall size. KnownNat size => pv size -> pv size -> pv size -> c -> c -> pv size
 
   polyVecDiv :: forall size. KnownNat size => pv size -> pv size -> pv size
+
+  divShiftedMono :: forall size. KnownNat size => pv size -> Natural -> c -> pv size
 
   castPolyVec :: forall size size'. (KnownNat size, KnownNat size') => pv size -> pv size'
 
@@ -514,6 +521,33 @@ instance
     | Just (m, cm, c0) <- isShiftedMono rcs = divShiftedMono (l .* finv cm) m c0
     | otherwise = poly2vec $ fst $ qr @c @(Poly c) (vec2poly l) (vec2poly r)
 
+  -- \| Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
+  -- The remainder is discarded.
+  -- The algorithm requires (size - m) field multiplications.
+  --
+  -- Division is performed from higher degrees downwards.
+  --
+  -- i-th step of the algorithm:
+  --
+  --  ci * x^i =
+  --  ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
+  --  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
+  --
+  --  > set the (i-m)-th coefficient of the result to be @ci@
+  --  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
+  --  > Proceed to degree @i-1@
+  divShiftedMono :: PolyVec c size -> Natural -> c -> PolyVec c size
+  divShiftedMono (PV cs) m b = PV $ V.create $ do
+    let intLen = V.length cs
+        intM = fromIntegral m
+    c <- V.thaw cs
+    res <- VM.replicate intLen zero
+    forM_ [intLen P.- 1, intLen P.- 2 .. intM] $ \ix -> do
+      ci <- VM.read c ix
+      VM.write res (ix P.- intM) ci
+      VM.modify c (\x -> x - ci * b) (ix P.- intM)
+    pure res
+
   castPolyVec :: forall size size'. (KnownNat size, KnownNat size') => PolyVec c size -> PolyVec c size'
   castPolyVec (PV cs)
     | value @size <= value @size' = toPolyVec cs
@@ -534,33 +568,6 @@ isShiftedMono cs
 
   filtered :: V.Vector (c, Natural)
   filtered = V.filter ((/= zero) . fst) ixed
-
--- | Efficiently divide a polynomial by a monic 'shifted monomial' of the form x^m + b, m > 0
--- The remainder is discarded.
--- The algorithm requires (size - m) field multiplications.
---
--- Division is performed from higher degrees downwards.
---
--- i-th step of the algorithm:
---
---  ci * x^i =
---  ci * x^i + ci * x^(i-m) * b - ci * x^(i-m) * b =
---  ci * x^(i-m) * (x*m + b) - ci * x^(i-m) * b
---
---  > set the (i-m)-th coefficient of the result to be @ci@
---  > Subtract @ci * b@ from the (i-m)-th coefficient of the numerator
---  > Proceed to degree @i-1@
-divShiftedMono :: forall c size. Field c => PolyVec c size -> Natural -> c -> PolyVec c size
-divShiftedMono (PV cs) m b = PV $ V.create $ do
-  let intLen = V.length cs
-      intM = fromIntegral m
-  c <- V.thaw cs
-  res <- VM.replicate intLen zero
-  forM_ [intLen P.- 1, intLen P.- 2 .. intM] $ \ix -> do
-    ci <- VM.read c ix
-    VM.write res (ix P.- intM) ci
-    VM.modify c (\x -> x - ci * b) (ix P.- intM)
-  pure res
 
 instance
   ( Ring c

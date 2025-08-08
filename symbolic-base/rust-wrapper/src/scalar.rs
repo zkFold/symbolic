@@ -1,33 +1,91 @@
-use std::slice;
+use crate::utils::{binary, c_char, constant, unary};
+use ark_bls12_381::Fr as ScalarField;
+use ark_ff::{AdditiveGroup, Field, PrimeField};
+use std::ops::Neg;
 
-use crate::utils::{c_char, pack_scalar, unpack_scalar};
-
-pub fn mul(s1_buffer: &[u8], s2_buffer: &[u8]) -> Vec<u8> {
-    let s1 = pack_scalar(s1_buffer).unwrap();
-    let s2 = pack_scalar(s2_buffer).unwrap();
-
-    let r = s1 * s2;
-
-    unpack_scalar(r)
+#[no_mangle]
+pub unsafe fn r_scalar_add(s1_ptr: *mut c_char, s2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        s1_ptr,
+        s2_ptr,
+        |a: &ScalarField, b: &ScalarField| -> ScalarField { a + b },
+    )
 }
 
-///
-/// # Safety
-/// The caller must ensure that valid pointers and sizes are passed.
-/// .
 #[no_mangle]
-pub unsafe extern "C" fn rust_wrapper_mul(
-    s1_var: *const c_char,
-    s1_len: usize,
-    s2_var: *const c_char,
-    s2_len: usize,
-    _out_len: usize,
-    out: *mut c_char,
-) {
-    let s1_buffer = slice::from_raw_parts(s1_var as *const u8, s1_len);
-    let s2_buffer = slice::from_raw_parts(s2_var as *const u8, s2_len);
+pub unsafe fn r_scalar_mul(s1_ptr: *mut c_char, s2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        s1_ptr,
+        s2_ptr,
+        |a: &ScalarField, b: &ScalarField| -> ScalarField { a * b },
+    )
+}
 
-    let res = mul(s1_buffer, s2_buffer);
+#[no_mangle]
+pub unsafe fn r_scalar_scale_natural(s1_ptr: *mut c_char, s2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        s1_ptr,
+        s2_ptr,
+        |bytes: &[u8; 32], b: &ScalarField| -> ScalarField {
+            let scalar = ScalarField::from_le_bytes_mod_order(bytes);
 
-    std::ptr::copy(res.as_ptr(), out as *mut u8, res.len());
+            scalar * b
+        },
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_zero() -> *mut c_char {
+    constant(ScalarField::ZERO)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_sub(p1_ptr: *mut c_char, p2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        p1_ptr,
+        p2_ptr,
+        |a: &ScalarField, b: &ScalarField| -> ScalarField { a - b },
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_negate(p1_ptr: *mut c_char) -> *mut c_char {
+    unary(p1_ptr, |a: &ScalarField| -> ScalarField { a.clone().neg() })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_one() -> *mut c_char {
+    constant(ScalarField::ONE)
+}
+
+#[no_mangle]
+pub unsafe fn r_scalar_from_natural(a_ptr: *mut c_char) -> *mut c_char {
+    unary(a_ptr, |a: &[u8; 32]| -> ScalarField {
+        ScalarField::from_le_bytes_mod_order(a)
+    })
+}
+
+#[no_mangle]
+pub unsafe fn r_scalar_exp_natural(s1_ptr: *mut c_char, s2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        s1_ptr,
+        s2_ptr,
+        |a: &ScalarField, bytes: &[u64; 4]| -> ScalarField { a.pow(bytes) },
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_div(p1_ptr: *mut c_char, p2_ptr: *mut c_char) -> *mut c_char {
+    binary(
+        p1_ptr,
+        p2_ptr,
+        |a: &ScalarField, b: &ScalarField| -> ScalarField { a / b },
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_scalar_invert(p1_ptr: *mut c_char) -> *mut c_char {
+    unary(p1_ptr, |a: &ScalarField| -> ScalarField {
+        a.inverse().unwrap_or(ScalarField::ZERO)
+    })
 }
