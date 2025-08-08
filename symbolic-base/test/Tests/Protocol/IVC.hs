@@ -25,7 +25,7 @@ import ZkFold.Protocol.IVC.Accumulator (
   x,
  )
 import ZkFold.Protocol.IVC.AccumulatorScheme as Acc
-import ZkFold.Protocol.IVC.Commit (hcommit)
+import ZkFold.Protocol.IVC.Commit (cyclicCommit)
 import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir (FiatShamir, fiatShamir)
 import qualified ZkFold.Protocol.IVC.FiatShamir as FS
@@ -111,7 +111,7 @@ specIVC = do
       -- sps0Rec = specialSoundProtocolI @D . phiRec
 
       sps :: PAR -> SPS
-      sps = fiatShamir mimcHash . commitOpen . sps0
+      sps = fiatShamir mimcHash . commitOpen cyclicCommit . sps0
 
       -- spsRec :: PAR -> SPSRec
       -- spsRec = fiatShamir mimcHash . commitOpen . sps0Rec
@@ -138,10 +138,10 @@ specIVC = do
       ms p = let NARKInstanceProof _ (NARKProof _ z) = narkIP p in z
 
       scheme :: PAR -> AccumulatorScheme D 1 I (DataSource C) F
-      scheme = accumulatorScheme mimcHash . phi
+      scheme = accumulatorScheme mimcHash cyclicCommit . phi
 
       acc0 :: PAR -> Accumulator K I (DataSource C) F
-      acc0 = emptyAccumulator @D . phi
+      acc0 = emptyAccumulator @D cyclicCommit . phi
 
       -- acc0Rec :: PAR -> Accumulator K (RecursiveI I) (DataSource C) F
       -- acc0Rec = emptyAccumulator @D . phiRec
@@ -155,7 +155,8 @@ specIVC = do
   describe "WeierstrassWitness" $ do
     it "is a homomorphic commitment" $ do
       withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer -> q) ->
-        hcommit @(WeierstrassWitness (Interpreter A)) [p + q] == hcommit [p] + hcommit [q]
+        cyclicCommit @(WeierstrassWitness (Interpreter A)) [p + q]
+        == cyclicCommit [p] + cyclicCommit [q]
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do

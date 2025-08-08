@@ -11,18 +11,17 @@ import Data.Constraint.Nat (plusMinusInverse1)
 import Data.Foldable (Foldable)
 import Data.Functor.Rep (Representable (..), mzipWithRep)
 import Data.Zip (Zip (..))
-import Prelude (fmap, ($), (<$>), type (~))
+import Prelude (fmap, ($), (<$>))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate (polyVecLinear)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (SimplePoly, toVector)
 import ZkFold.Data.Vector (Vector, init, mapWithIx, tail)
 import ZkFold.Protocol.IVC.Accumulator
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.FiatShamir (transcript)
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
@@ -56,19 +55,19 @@ accumulatorScheme
      , Foldable p
      , OracleSource f f
      , OracleSource f c
-     , HomomorphicCommit c
+     , AdditiveGroup c
      , Field f
      , Scale a f
      , Scale a (SimplePoly f (d + 1))
      , Scale f c
      , Binary (Rep i)
      , Binary (Rep p)
-     , f ~ ScalarFieldOf c
      )
   => Hasher
+  -> HomomorphicCommit f c
   -> Predicate a i p
   -> AccumulatorScheme d k i c f
-accumulatorScheme hash phi =
+accumulatorScheme hash hcommit phi =
   let
     prover acc (NARKInstanceProof pubi (NARKProof pi_x pi_w)) =
       let
