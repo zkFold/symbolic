@@ -24,7 +24,8 @@ import Tests.Algebra.Univariate (specUnivariate)
 import Tests.Data.Binary (specBinary)
 import Tests.Data.MerkleTree (specMerkleTree)
 import Tests.FFI.Rust.Plonkup (specRustPlonkup)
-import Tests.Protocol.IVC
+import Tests.FFI.RustBLS (specRustBLS)
+import Tests.Protocol.IVC (specIVC)
 import Tests.Protocol.NonInteractiveProof (specNonInteractiveProof)
 import Tests.Protocol.Plonkup (specPlonkup)
 import Tests.Symbolic.Algorithm.Blake2b (specBlake2b)
@@ -88,6 +89,7 @@ spec gen = do
 
   describe "symbolic-base-test (Rust FFI)" $ do
     specRustPlonkup
+    specRustBLS
 
 main :: IO ()
 main = hspec . spec =<< initStdGen

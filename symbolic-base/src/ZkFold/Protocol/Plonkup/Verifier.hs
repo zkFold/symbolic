@@ -45,7 +45,7 @@ plonkupVerify
      , FromTranscript ts (ScalarFieldOf g1)
      , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)
-     , UnivariateFieldPolyVec (ScalarFieldOf g2) pv
+     , UnivariateFieldPolyVec (ScalarFieldOf g1) pv
      )
   => PlonkupVerifierSetup i o n g1 g2 pv -> PlonkupInput g1 -> PlonkupProof g1 -> Bool
 plonkupVerify

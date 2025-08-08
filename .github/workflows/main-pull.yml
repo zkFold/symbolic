@@ -87,6 +87,9 @@ jobs:
     - name: Test "symbolic-base-test (Symbolic cryptography)"
       run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Symbolic cryptography)"
 
+    - name: Test "symbolic-base-test (Rust FFI)"
+      run: cabal test symbolic-base-test --test-option="--match=symbolic-base-test (Rust FFI)"
+
     - name: Run other tests
       run: cabal test all --test-option="--skip=symbolic-base-test"
 
