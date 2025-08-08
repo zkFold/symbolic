@@ -109,6 +109,9 @@ instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (BooleanE a v) where
 instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (EuclideanF a v) where
   bool (EuclideanF f) (EuclideanF g) (BooleanE b) = EuclideanF (\x -> bool (f x) (g x) (b x))
 
+instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (WitnessF a v) where
+  bool (WitnessF f) (WitnessF g) (BooleanE b) = WitnessF (\x -> bool (f x) (g x) (b x))
+
 instance (Generic x, GConditional (BooleanE a v) (Rep x)) => Conditional (BooleanE a v) x where
   bool f g b = to (gbool (from f) (from g) b)
 

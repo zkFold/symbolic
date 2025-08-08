@@ -103,7 +103,14 @@ instance (Field a, Eq a) => Field (UVar a) where
 instance Finite a => Finite (UVar a) where
   type Order (UVar a) = Order a
 
-instance (ResidueField a, Eq a, Conditional (BooleanOf (IntegralOf a)) (Maybe (IntegralOf a))) => ResidueField (UVar a) where
+instance
+  ( ResidueField a
+  , Eq a
+  , Conditional (BooleanOf (IntegralOf a)) (Maybe (IntegralOf a))
+  , Conditional (BooleanOf (IntegralOf a)) (UVar a)
+  )
+  => ResidueField (UVar a)
+  where
   type IntegralOf (UVar a) = Maybe (IntegralOf a)
   fromIntegral (Just x) = ConstUVar (fromIntegral x)
   fromIntegral Nothing = More

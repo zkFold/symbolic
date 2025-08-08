@@ -172,7 +172,11 @@ instance Finite a => Finite (Vector a) where
   type Order (Vector a) = Order a
 
 instance
-  (ResidueField a, Conditional (BooleanOf a) (Vector a), Conditional (BooleanOf (IntegralOf a)) (Vector (IntegralOf a)))
+  ( ResidueField a
+  , Conditional (BooleanOf a) (Vector a)
+  , Conditional (BooleanOf (IntegralOf a)) (Vector (IntegralOf a))
+  , Conditional (BooleanOf (IntegralOf a)) (Vector a)
+  )
   => ResidueField (Vector a)
   where
   type IntegralOf (Vector a) = Vector (IntegralOf a)

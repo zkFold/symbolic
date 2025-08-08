@@ -2,7 +2,16 @@ module Main where
 
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
-import Prelude
+import Prelude hiding (
+  Bool,
+  Fractional (..),
+  Num (..),
+  drop,
+  length,
+  replicate,
+  take,
+  (==),
+ )
 
 import Tests.Algebra.EllipticCurve (specEllipticCurve)
 import Tests.Algebra.Field (specField)
@@ -13,6 +22,7 @@ import Tests.Algebra.Permutation (specPermutation)
 import Tests.Algebra.ReedSolomon (specReedSolomon)
 import Tests.Algebra.Univariate (specUnivariate)
 import Tests.Data.Binary (specBinary)
+import Tests.Data.MerkleTree (specMerkleTree)
 import Tests.FFI.Rust.Plonkup (specRustPlonkup)
 import Tests.FFI.RustBLS (specRustBLS)
 import Tests.Protocol.IVC (specIVC)
@@ -31,7 +41,6 @@ import Tests.Symbolic.Data.FFA (specFFA)
 import Tests.Symbolic.Data.Hash (specHash)
 import Tests.Symbolic.Data.Int (specInt)
 import Tests.Symbolic.Data.List (specList)
-import Tests.Symbolic.Data.MerkleTree (specMerkleTree)
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
 
@@ -47,8 +56,9 @@ spec gen = do
     specReedSolomon
     specGroebner
 
-  describe "symbolic-base-test (Serialization)" $ do
+  describe "symbolic-base-test (Data)" $ do
     specBinary
+    specMerkleTree
 
   describe "symbolic-base-test (Protocols)" $ do
     specPlonkup
@@ -66,7 +76,6 @@ spec gen = do
     specByteString
     specHash
     specList
-    specMerkleTree
     specSum
 
   describe "symbolic-base-test (Symbolic cryptography)" $ do

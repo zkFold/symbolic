@@ -117,7 +117,6 @@ library
       ZkFold.Symbolic.Examples.FieldElement
       ZkFold.Symbolic.Examples.JWT
       ZkFold.Symbolic.Examples.LEQ
-      ZkFold.Symbolic.Examples.MerkleTree
       ZkFold.Symbolic.Examples.MiMCHash
       ZkFold.Symbolic.Examples.Mithril
       ZkFold.Symbolic.Examples.Pasta
