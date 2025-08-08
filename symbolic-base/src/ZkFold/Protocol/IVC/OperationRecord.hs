@@ -11,7 +11,6 @@ import Prelude (Integer, ($), type (~))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (Natural)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..), withoutConstraints)
 import ZkFold.Symbolic.Data.List (List, emptyList, head, (.:))
 import ZkFold.Symbolic.Data.Sum (Sum, inject, match)
@@ -30,7 +29,8 @@ newRec
 newRec c = OperationRecord $ inject (Left (c, c, c)) .: emptyList
 
 addOp
-  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx, HomomorphicCommit c, Scale s c)
+  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx)
+  => (AdditiveSemigroup c, Scale s c)
   => Either c s
   -> OperationRecord c s ctx
   -> OperationRecord c s ctx
@@ -49,8 +49,9 @@ addOp op' (OperationRecord ops) =
           .: ops
 
 instance
-  (HomomorphicCommit c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx)
-  => AdditiveSemigroup (OperationRecord c s ctx)
+  ( SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx
+  , AdditiveSemigroup c, Scale s c
+  ) => AdditiveSemigroup (OperationRecord c s ctx)
   where
   OperationRecord ops + record =
     let c =
@@ -63,7 +64,7 @@ instance
      in addOp (Left c) record
 
 instance
-  ( HomomorphicCommit c
+  ( AdditiveMonoid c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -76,7 +77,7 @@ instance
   zero = newRec zero
 
 instance
-  ( HomomorphicCommit c
+  ( AdditiveMonoid c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -90,13 +91,14 @@ instance
   negate = scale (-1 :: Integer)
 
 instance
-  (HomomorphicCommit c, Scale s c, SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx, s ~ ScalarFieldOf c)
-  => Scale s (OperationRecord c s ctx)
+  ( AdditiveSemigroup c, Scale s c, SymbolicData c, Context c ~ ctx
+  , SymbolicData s, Context s ~ ctx, s ~ ScalarFieldOf c
+  ) => Scale s (OperationRecord c s ctx)
   where
   scale s = addOp (Right s)
 
 instance
-  ( HomomorphicCommit c
+  ( AdditiveSemigroup c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -109,7 +111,7 @@ instance
   scale n = addOp (Right $ fromConstant n)
 
 instance
-  ( HomomorphicCommit c
+  ( AdditiveSemigroup c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx
@@ -122,7 +124,7 @@ instance
   scale n = addOp (Right $ fromConstant n)
 
 instance
-  ( HomomorphicCommit c
+  ( CyclicGroup c
   , Scale s c
   , SymbolicData c
   , Context c ~ ctx

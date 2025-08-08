@@ -2,8 +2,9 @@
 
 module ZkFold.Protocol.IVC.Commit (
   Commit,
+  HomomorphicCommit,
   oracleCommitment,
-  HomomorphicCommit (..),
+  cyclicCommit,
   PedersonSetup (..),
 ) where
 
@@ -37,11 +38,7 @@ instance
      in iterate (scale x) pointGen
 
 -- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
-class CyclicGroup g => HomomorphicCommit g where
-  hcommit :: [ScalarFieldOf g] -> g
+type HomomorphicCommit a g = [a] -> g
 
-instance
-  CyclicGroup g
-  => HomomorphicCommit g
-  where
-  hcommit v = sum $ zipWith (scale @(ScalarFieldOf g)) v groupElements
+cyclicCommit :: CyclicGroup g => HomomorphicCommit (ScalarFieldOf g) g
+cyclicCommit v = sum $ zipWith scale v groupElements

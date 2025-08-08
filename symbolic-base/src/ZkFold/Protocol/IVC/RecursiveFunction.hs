@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Protocol.IVC.RecursiveFunction where
@@ -88,8 +89,7 @@ type FieldAssumptions a c =
   , Context c ~ CircuitContext a
   , Empty (Payload c)
   , Scale (FieldElement (Context c)) c
-  , HomomorphicCommit c
-  , FieldElement (Context c) ~ ScalarFieldOf c
+  , AdditiveGroup c
   )
 
 instance OracleSource (FieldElement ctx) (FieldElement ctx) where
@@ -107,9 +107,10 @@ recursiveFunction
      , FieldAssumptions a c
      )
   => Hasher
+  -> HomomorphicCommit (FieldElement (Context c)) (DataSource c)
   -> StepFunction a i p
   -> RecursiveFunction d k a i p c
-recursiveFunction hash func =
+recursiveFunction hash hcommit func =
   let
     restore0
       :: (SymbolicData x, Empty (Payload x)) => Context x (Layout x) -> x
@@ -138,7 +139,7 @@ recursiveFunction hash func =
        ) ->
         let z = FieldElement <$> unpacked i
             (x, _ :: FieldElement (Context c)) = restore0 i
-            accX' = verifier (accumulatorScheme hash pRec) z piX accX pf
+            accX' = verifier (accumulatorScheme hash hcommit pRec) z piX accX pf
             h = bool zero (oracle hash accX') flag
          in arithmetize (func x u, h :: FieldElement (CircuitContext a))
 

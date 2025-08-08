@@ -6,10 +6,9 @@ import Data.Zip (zipWith)
 import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
 import ZkFold.Algebra.Class (AdditiveGroup (..))
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (hcommit))
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 data CommitOpen k i p c f = CommitOpen
@@ -43,10 +42,11 @@ data CommitOpen k i p c f = CommitOpen
   }
 
 commitOpen
-  :: (HomomorphicCommit c, f ~ ScalarFieldOf c)
-  => SpecialSoundProtocol k i p f
+  :: AdditiveGroup c
+  => HomomorphicCommit f c
+  -> SpecialSoundProtocol k i p f
   -> CommitOpen k i p c f
-commitOpen SpecialSoundProtocol {..} =
+commitOpen hcommit SpecialSoundProtocol {..} =
   CommitOpen
     { input = input
     , prover = \pi0 w r i ->

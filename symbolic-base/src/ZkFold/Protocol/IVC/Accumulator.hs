@@ -17,18 +17,17 @@ import Data.Functor.Rep (Representable (..), mzipWithRep)
 import GHC.Generics (Generic)
 import Prelude (type (~))
 
-import ZkFold.Algebra.Class (Ring, Scale, zero)
-import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
+import ZkFold.Algebra.Class (Ring, Scale, zero, AdditiveMonoid)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Bool (BoolType (..), and)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 
 -- import Prelude hiding (length, pi)
 
@@ -106,16 +105,16 @@ emptyAccumulator
      , Foldable i
      , Representable p
      , Foldable p
-     , HomomorphicCommit c
+     , AdditiveMonoid c
      , Ring f
      , Scale a f
      , Binary (Rep i)
      , Binary (Rep p)
-     , f ~ ScalarFieldOf c
      )
-  => Predicate a i p
+  => HomomorphicCommit f c
+  -> Predicate a i p
   -> Accumulator k i c f
-emptyAccumulator phi =
+emptyAccumulator hcommit phi =
   let accW = tabulate (const zero)
       aiC = tabulate (const zero)
       aiR = tabulate (const zero)
@@ -134,13 +133,13 @@ emptyAccumulatorInstance
      , Foldable i
      , Representable p
      , Foldable p
-     , HomomorphicCommit c
+     , AdditiveMonoid c
      , Ring f
      , Scale a f
      , Binary (Rep i)
      , Binary (Rep p)
-     , f ~ ScalarFieldOf c
      )
-  => Predicate a i p
+  => HomomorphicCommit f c
+  -> Predicate a i p
   -> AccumulatorInstance k i c f
-emptyAccumulatorInstance phi = emptyAccumulator @d phi ^. x
+emptyAccumulatorInstance hcommit phi = emptyAccumulator @d hcommit phi ^. x
