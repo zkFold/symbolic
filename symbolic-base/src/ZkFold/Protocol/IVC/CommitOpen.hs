@@ -2,14 +2,13 @@
 
 module ZkFold.Protocol.IVC.CommitOpen where
 
-import Data.Zip (zipWith)
 import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import ZkFold.Algebra.Class (AdditiveGroup (..))
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
+import Data.Bifunctor (first)
 
 data CommitOpen k i p c f = CommitOpen
   { input
@@ -37,13 +36,12 @@ data CommitOpen k i p c f = CommitOpen
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> (Vector k c, [f])
+      -> (Vector k (c, c), [f])
   -- ^ verifier output
   }
 
 commitOpen
-  :: AdditiveGroup c
-  => HomomorphicCommit f c
+  :: HomomorphicCommit f c
   -> SpecialSoundProtocol k i p f
   -> CommitOpen k i p c f
 commitOpen hcommit SpecialSoundProtocol {..} =
@@ -53,9 +51,7 @@ commitOpen hcommit SpecialSoundProtocol {..} =
         let m = prover pi0 w r i
          in (m, hcommit m)
     , verifier = \pi pms rs ->
-        let ms = fmap fst pms
-            cs = fmap snd pms
-         in ( zipWith (-) (fmap hcommit ms) cs
-            , verifier pi ms rs
-            )
+        ( first hcommit <$> pms
+        , verifier pi (fst <$> pms) rs
+        )
     }

@@ -114,6 +114,8 @@ deriving newtype instance (Sym c, FromConstant k (FFA BLS12_381_Scalar Auto c)) 
 
 deriving newtype instance Sym c => AdditiveSemigroup (BLS12_381_G2_Point c)
 
+deriving newtype instance Sym c => Zero (BLS12_381_G2_Point c)
+
 deriving newtype instance Sym c => AdditiveMonoid (BLS12_381_G2_Point c)
 
 deriving newtype instance Sym c => AdditiveGroup (BLS12_381_G2_Point c)

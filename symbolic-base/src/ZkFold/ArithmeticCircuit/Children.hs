@@ -6,7 +6,7 @@ import Data.Function (const, flip, id, (.))
 import Data.Monoid (Monoid, mempty)
 import Data.Ord (Ord)
 import Data.Semigroup (Semigroup, (<>))
-import Data.Set (Set, singleton)
+import Data.Set (Set, empty, singleton)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
@@ -56,8 +56,10 @@ instance Finite a => Finite (Children a v) where
 instance Ord v => AdditiveSemigroup (Children a v) where
   (+) = (<>)
 
+instance Zero (Children a v) where
+  zero = C empty
+
 instance Ord v => AdditiveMonoid (Children a v) where
-  zero = mempty
 
 instance Ord v => AdditiveGroup (Children a v) where
   negate = id

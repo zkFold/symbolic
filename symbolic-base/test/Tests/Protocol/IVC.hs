@@ -4,7 +4,6 @@ module Tests.Protocol.IVC where
 
 import Control.Lens ((^.))
 import Data.Bifunctor (bimap, first)
-import Data.Foldable (toList)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
@@ -47,6 +46,7 @@ import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Data.Function (on)
 
 type A = Zp BLS12_381_Scalar
 
@@ -171,7 +171,7 @@ specIVC = do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
-          (\(a, b) -> all ((== zero) . dataSource) (toList a) && all (== zero) b) $
+          (\(a, b) -> all (uncurry ((==) `on` dataSource)) a && all (== zero) b) $
             FS.verifier (sps p) (pi p) (zip (ms p) (cs p)) (unsafeToVector [])
   describe "Accumulator scheme specification" $ do
     describe "decider" $ do

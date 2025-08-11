@@ -285,8 +285,10 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
 instance (Symbolic c, KnownFFA p r c, Scale a (Zp p)) => Scale a (FFA p r c) where
   scale k x = fromConstant (scale k one :: Zp p) * x
 
-instance (Symbolic c, KnownFFA p r c) => AdditiveMonoid (FFA p r c) where
+instance (Symbolic c, KnownFFA p r c) => Zero (FFA p r c) where
   zero = fromConstant (zero :: Zp p)
+
+instance (Symbolic c, KnownFFA p r c) => AdditiveMonoid (FFA p r c)
 
 instance (Symbolic c, KnownFFA p r c) => AdditiveGroup (FFA p r c) where
   -- \| negate cannot overflow if value is nonzero.

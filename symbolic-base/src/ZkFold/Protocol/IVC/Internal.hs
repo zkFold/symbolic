@@ -9,7 +9,7 @@ module ZkFold.Protocol.IVC.Internal where
 
 import Control.Lens ((^.))
 import Control.Lens.Combinators (makeLenses)
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
@@ -42,7 +42,7 @@ import ZkFold.Symbolic.Interpreter (Interpreter (..))
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
   = IVCProof
-  { _proofX :: Vector k (DataSource c)
+  { _proofX :: Vector k c
   -- ^ The commitment to the witness of the recursion circuit satisfiability proof.
   , _proofW :: Vector k [f]
   -- ^ The witness of the recursion circuit satisfiability proof.
@@ -59,7 +59,7 @@ noIVCProof = IVCProof zero zero
 data IVCResult k i c f
   = IVCResult
   { _z :: i f
-  , _acc :: Accumulator k (RecursiveI i) (DataSource c) f
+  , _acc :: Accumulator k (RecursiveI i) c f
   , _proof :: IVCProof k c f
   }
   deriving (Functor, Generic)
@@ -80,8 +80,8 @@ ivcSetup
      , AdditiveMonoid c
      )
   => Hasher
-  -> HomomorphicCommit a (DataSource c)
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) (DataSource cc)
+  -> HomomorphicCommit a c
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) cc
   -> StepFunction a i p
   -> i a
   -> p a
@@ -112,12 +112,12 @@ ivcProve
      , Context c ~ Interpreter a
      , Layout c ~ f
      , Scale a c
-     , OracleSource a (DataSource c)
+     , OracleSource a c
      , AdditiveGroup c
      )
   => Hasher
-  -> HomomorphicCommit a (DataSource c)
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) (DataSource cc)
+  -> HomomorphicCommit a c
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) cc
   -> StepFunction a i p
   -> IVCResult k i c a
   -> p a
@@ -145,16 +145,16 @@ ivcProve hash hcommit1 hcommit2 f res witness =
     messages :: Vector k [a]
     messages = fmap fromConstant <$> res ^. proof ^. proofW
 
-    commits :: Vector k (DataSource c)
+    commits :: Vector k c
     commits = res ^. proof ^. proofX
 
-    narkIP :: NARKInstanceProof k (RecursiveI i) (DataSource c) a
+    narkIP :: NARKInstanceProof k (RecursiveI i) c a
     narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) a
+    accScheme :: AccumulatorScheme d k (RecursiveI i) c a
     accScheme = accumulatorScheme hash hcommit1 pRec
 
-    (acc', pf) = Acc.prover accScheme (fromConstant <$> res ^. acc) narkIP
+    (acc', pf) = Acc.prover accScheme (res ^. acc) narkIP
 
     payload :: RecursiveP d k i p cc a
     payload =
@@ -167,7 +167,7 @@ ivcProve hash hcommit1 hcommit2 f res witness =
             true
             (DataSource <$> pf)
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) a
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c a
     protocol =
       fiatShamir hash $
         commitOpen hcommit1 $
@@ -191,10 +191,10 @@ ivcVerify
      , f ~ FieldElement (CircuitContext a)
      )
   => Hasher
-  -> HomomorphicCommit f (DataSource c)
+  -> HomomorphicCommit f c
   -> StepFunction a i p
   -> IVCResult k i c f
-  -> ((Vector k c, [f]), (Vector k c, c))
+  -> ((Vector k (c, c), [f]), (Vector k c, c))
 ivcVerify hash hcommit f res =
   let
     pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
@@ -206,15 +206,15 @@ ivcVerify hash hcommit f res =
     messages :: Vector k [f]
     messages = res ^. proof ^. proofW
 
-    commits :: Vector k (DataSource c)
+    commits :: Vector k c
     commits = res ^. proof ^. proofX
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) (DataSource c) f
+    accScheme :: AccumulatorScheme d k (RecursiveI i) c f
     accScheme = accumulatorScheme @d hash hcommit pRec
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) (DataSource c) f
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c f
     protocol = fiatShamir hash $ commitOpen hcommit $ specialSoundProtocolC @d pRec
    in
-    ( first (fmap dataSource) $ verifier protocol input (zip messages commits) zero
-    , bimap (fmap dataSource) dataSource $ Acc.decider accScheme (res ^. acc)
+    ( verifier protocol input (zip messages commits) zero
+    , Acc.decider accScheme (res ^. acc)
     )

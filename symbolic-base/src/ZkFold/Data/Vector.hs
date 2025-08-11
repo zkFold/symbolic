@@ -251,8 +251,10 @@ instance AdditiveSemigroup a => AdditiveSemigroup (Vector n a) where
 instance Scale b a => Scale b (Vector n a) where
   scale = fmap . scale
 
-instance (AdditiveMonoid a, KnownNat n) => AdditiveMonoid (Vector n a) where
+instance (Zero a, KnownNat n) => Zero (Vector n a) where
   zero = tabulate (const zero)
+
+instance (AdditiveMonoid a, KnownNat n) => AdditiveMonoid (Vector n a)
 
 instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (Vector n a) where
   negate = fmap negate

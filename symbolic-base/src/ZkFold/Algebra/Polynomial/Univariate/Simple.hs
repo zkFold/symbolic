@@ -77,8 +77,10 @@ instance (Semiring a, KnownNat n) => Exponent (SimplePoly a n) Natural where
 instance AdditiveSemigroup a => AdditiveSemigroup (SimplePoly a n) where
   SimplePoly p + SimplePoly q = SimplePoly $ alignWith (T.mergeThese (+)) p q
 
-instance AdditiveMonoid a => AdditiveMonoid (SimplePoly a n) where
+instance Zero (SimplePoly a n) where
   zero = SimplePoly V.empty
+
+instance AdditiveMonoid a => AdditiveMonoid (SimplePoly a n)
 
 instance AdditiveGroup a => AdditiveGroup (SimplePoly a n) where
   negate = SimplePoly . fmap negate . coeffs

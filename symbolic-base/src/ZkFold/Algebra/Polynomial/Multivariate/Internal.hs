@@ -116,8 +116,10 @@ instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => AdditiveSemigroup (
 instance Scale coef' coef => Scale coef' (Poly coef var pow) where
   scale coef' (UnsafePoly p) = UnsafePoly $ map (first (scale coef')) p
 
-instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => AdditiveMonoid (Poly coef var pow) where
+instance Zero (Poly coef var pow) where
   zero = UnsafePoly []
+
+instance (Eq coef, AdditiveMonoid coef, Ord var, Ord pow) => AdditiveMonoid (Poly coef var pow)
 
 instance (Eq coef, AdditiveGroup coef, Ord var, Ord pow) => AdditiveGroup (Poly coef var pow) where
   negate (UnsafePoly p) = UnsafePoly $ map (first negate) p

@@ -248,16 +248,21 @@ class FromConstant a a => AdditiveSemigroup a where
   double :: a -> a
   double a = a + a
 
+-- | A class of types with a neutral element with respect to addition.
+-- Split into a separate class since defining addition might need additional
+-- (undesirable) constraints.
+class Zero a where
+  -- | An identity with respect to addition:
+  --
+  -- [Identity] @x + zero == x@
+  zero :: a
+
 -- | A class of types with a binary associative, commutative operation and with
 -- an identity element.
 --
 -- While scaling by a natural is specified as a constraint, a default
 -- implementation is provided as a @'natScale'@ function.
-class (AdditiveSemigroup a, Scale Natural a) => AdditiveMonoid a where
-  -- | An identity with respect to addition:
-  --
-  -- [Identity] @x + zero == x@
-  zero :: a
+class (AdditiveSemigroup a, Scale Natural a, Zero a) => AdditiveMonoid a
 
 natScale :: AdditiveMonoid a => Natural -> a -> a
 
@@ -505,8 +510,10 @@ instance MultiplicativeMonoid Natural where
 instance AdditiveSemigroup Natural where
   (+) = (Haskell.+)
 
-instance AdditiveMonoid Natural where
+instance Zero Natural where
   zero = 0
+
+instance AdditiveMonoid Natural
 
 instance Semiring Natural
 
@@ -537,8 +544,10 @@ instance AdditiveSemigroup Integer where
 
 instance Scale Natural Integer
 
-instance AdditiveMonoid Integer where
+instance Zero Integer where
   zero = 0
+
+instance AdditiveMonoid Integer
 
 instance AdditiveGroup Integer where
   negate = Haskell.negate
@@ -580,8 +589,10 @@ instance AdditiveSemigroup Rational where
 
 instance Scale Natural Rational
 
-instance AdditiveMonoid Rational where
+instance Zero Rational where
   zero = 0
+
+instance AdditiveMonoid Rational
 
 instance Scale Integer Rational
 
@@ -632,8 +643,10 @@ instance AdditiveSemigroup Bool where
 
 instance Scale Natural Bool
 
-instance AdditiveMonoid Bool where
+instance Zero Bool where
   zero = False
+
+instance AdditiveMonoid Bool
 
 instance Scale Integer Bool
 
@@ -687,8 +700,10 @@ instance AdditiveSemigroup a => AdditiveSemigroup [a] where
 instance Scale b a => Scale b [a] where
   scale = map . scale
 
-instance AdditiveMonoid a => AdditiveMonoid [a] where
+instance Zero a => Zero [a] where
   zero = repeat zero
+
+instance AdditiveMonoid a => AdditiveMonoid [a]
 
 instance AdditiveGroup a => AdditiveGroup [a] where
   negate = map negate
@@ -724,8 +739,10 @@ instance AdditiveSemigroup a => AdditiveSemigroup (p -> a) where
 instance Scale b a => Scale b (p -> a) where
   scale = (.) . scale
 
-instance AdditiveMonoid a => AdditiveMonoid (p -> a) where
+instance Zero a => Zero (p -> a) where
   zero = const zero
+
+instance AdditiveMonoid a => AdditiveMonoid (p -> a)
 
 instance AdditiveGroup a => AdditiveGroup (p -> a) where
   negate = fmap negate
@@ -764,8 +781,10 @@ instance (MultiplicativeGroup a, Scale (Constant a f) (Constant a f)) => Multipl
 instance AdditiveSemigroup a => AdditiveSemigroup (Constant a f) where
   Constant x + Constant y = Constant (x + y)
 
-instance AdditiveMonoid a => AdditiveMonoid (Constant a f) where
+instance Zero a => Zero (Constant a f) where
   zero = Constant zero
+
+instance AdditiveMonoid a => AdditiveMonoid (Constant a f)
 
 instance AdditiveGroup a => AdditiveGroup (Constant a f) where
   Constant x - Constant y = Constant (x - y)
@@ -810,9 +829,10 @@ instance Scale Natural a => Scale Natural (Maybe a) where
 instance Scale Integer a => Scale Integer (Maybe a) where
   scale = fmap . scale
 
-instance AdditiveMonoid a => AdditiveMonoid (Maybe a) where
-  zero :: Maybe a
+instance Zero a => Zero (Maybe a) where
   zero = Just zero
+
+instance AdditiveMonoid a => AdditiveMonoid (Maybe a) where
 
 instance Exponent a Natural => Exponent (Maybe a) Natural where
   (^) :: Maybe a -> Natural -> Maybe a

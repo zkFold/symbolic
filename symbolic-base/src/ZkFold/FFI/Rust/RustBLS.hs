@@ -66,10 +66,10 @@ instance Binary Fr where
   get = h2r <$> get
 
 instance Exponent BLS12_381_GT Fr where
-  a ^ p = a ^ (r2h p)
+  a ^ p = a ^ r2h p
 
 instance Eq Fr where
-  (==) a b = (r2h a) == (r2h b)
+  (==) a b = r2h a == r2h b
 
 instance ZkFold.Data.Eq.Eq Fr where
   type BooleanOf Fr = Bool
@@ -94,8 +94,10 @@ instance Exponent Fr Integer where
 instance AdditiveSemigroup Fr where
   (+) a b = h2r $ (+) (r2h a) (r2h b)
 
-instance AdditiveMonoid Fr where
+instance Zero Fr where
   zero = h2r zero
+
+instance AdditiveMonoid Fr
 
 instance AdditiveGroup Fr where
   (-) a b = h2r $ (-) (r2h a) (r2h b)
@@ -220,10 +222,13 @@ instance AdditiveSemigroup Rust_BLS12_381_G1_Point where
         (out, pointSize)
       return $ RPoint $ RData out
 
+deriving newtype instance Zero Rust_BLS12_381_G1_JacobianPoint
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G1_JacobianPoint
 
-instance AdditiveMonoid Rust_BLS12_381_G1_Point where
+instance Zero Rust_BLS12_381_G1_Point where
   zero = h2r zero
+
+instance AdditiveMonoid Rust_BLS12_381_G1_Point
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G1_JacobianPoint
 
@@ -290,10 +295,13 @@ deriving newtype instance AdditiveSemigroup Rust_BLS12_381_G2_JacobianPoint
 instance AdditiveSemigroup Rust_BLS12_381_G2_Point where
   a + b = h2r $ (+) (r2h a) (r2h b)
 
+deriving newtype instance Zero Rust_BLS12_381_G2_JacobianPoint
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G2_JacobianPoint
 
-instance AdditiveMonoid Rust_BLS12_381_G2_Point where
+instance Zero Rust_BLS12_381_G2_Point where
   zero = h2r zero
+
+instance AdditiveMonoid Rust_BLS12_381_G2_Point
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G2_JacobianPoint
 
@@ -339,7 +347,7 @@ instance KnownNat size => Scale Fr (RustPolyVec Fr size) where
    where
     runScalarMul :: IO (RustPolyVec Fr size)
     runScalarMul = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
+      let valueSize = fromInteger $ naturalToInteger $ value @size
       out <- callocForeignPtrBytes @CChar (scalarSize P.* valueSize)
 
       runRustFunctionBinary
@@ -355,7 +363,7 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
    where
     runHMul :: IO (RustPolyVec Fr size)
     runHMul = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
+      let valueSize = fromInteger $ naturalToInteger $ value @size
       out <- callocForeignPtrBytes @CChar (scalarSize P.* valueSize)
 
       runRustFunctionBinary
@@ -370,7 +378,7 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
    where
     runScalarAdd :: IO (RustPolyVec Fr size)
     runScalarAdd = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
+      let valueSize = fromInteger $ naturalToInteger $ value @size
       out <- callocForeignPtrBytes @CChar (scalarSize P.* valueSize)
 
       runRustFunctionBinary
@@ -384,14 +392,14 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
   toPolyVec a = h2r $ toPolyVec (r2h <$> a)
 
   fromPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> V.Vector Fr
-  fromPolyVec a = h2r <$> (fromPolyVec $ r2h a)
+  fromPolyVec a = h2r <$> fromPolyVec (r2h a)
 
   evalPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> Fr -> Fr
   evalPolyVec pv x = h2r $ evalPolyVec (r2h pv) (r2h x)
 
 instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
   (./.) :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
-  l ./. r = h2r $ ((./.) (r2h l) (r2h r) :: PolyVec EC.Fr size)
+  l ./. r = h2r (r2h l ./. r2h r :: PolyVec EC.Fr size)
 
   polyVecZero :: forall size. KnownNat size => Natural -> RustPolyVec Fr size
   polyVecZero n = h2r $ polyVecZero n
@@ -412,8 +420,8 @@ instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
    where
     runFFT :: IO (RustPolyVec Fr size)
     runFFT = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
-      out <- callocForeignPtrBytes @CChar (scalarSize P.* (fromInteger $ naturalToInteger $ value @size))
+      let valueSize = fromInteger $ naturalToInteger $ value @size
+      out <- callocForeignPtrBytes @CChar (scalarSize P.* fromInteger (naturalToInteger $ value @size))
 
       runRustFunctionBinary
         rsDivFFT
@@ -426,10 +434,10 @@ instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
   castPolyVec pv = h2r $ castPolyVec (r2h pv)
 
 instance KnownNat size => Scale Natural (RustPolyVec Fr size) where
-  scale c pv = h2r $ (scale c (r2h pv) :: PolyVec EC.Fr size)
+  scale c pv = h2r (scale c (r2h pv) :: PolyVec EC.Fr size)
 
 instance KnownNat size => Scale Integer (RustPolyVec Fr size) where
-  scale c pv = h2r $ (scale c (r2h pv) :: PolyVec EC.Fr size)
+  scale c pv = h2r (scale c (r2h pv) :: PolyVec EC.Fr size)
 
 instance KnownNat size => FromConstant Natural (RustPolyVec Fr size) where
   fromConstant n = h2r $ fromConstant n
@@ -442,8 +450,8 @@ instance KnownNat size => AdditiveSemigroup (RustPolyVec Fr size) where
    where
     runSum :: IO (RustPolyVec Fr size)
     runSum = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
-      out <- callocForeignPtrBytes @CChar (scalarSize P.* (fromInteger $ naturalToInteger $ value @size))
+      let valueSize = fromInteger $ naturalToInteger $ value @size
+      out <- callocForeignPtrBytes @CChar (scalarSize P.* fromInteger (naturalToInteger $ value @size))
 
       runRustFunctionBinary
         rsAdd
@@ -452,8 +460,10 @@ instance KnownNat size => AdditiveSemigroup (RustPolyVec Fr size) where
         (out, valueSize P.* scalarSize)
       return $ RustPV (RData out)
 
-instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size) where
-  zero = h2r $ (zero :: PolyVec EC.Fr size)
+instance KnownNat size => Zero (RustPolyVec Fr size) where
+  zero = h2r (zero :: PolyVec EC.Fr size)
+
+instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size)
 
 instance KnownNat size => AdditiveGroup (RustPolyVec Fr size) where
   negate pv = h2r $ negate (r2h pv)
@@ -469,8 +479,8 @@ instance KnownNat size => MultiplicativeSemigroup (RustPolyVec Fr size) where
    where
     runFFT :: IO (RustPolyVec Fr size)
     runFFT = do
-      let valueSize = (fromInteger $ naturalToInteger $ value @size)
-      out <- callocForeignPtrBytes @CChar (scalarSize P.* (fromInteger $ naturalToInteger $ value @size))
+      let valueSize = fromInteger $ naturalToInteger $ value @size
+      out <- callocForeignPtrBytes @CChar (scalarSize P.* fromInteger (naturalToInteger $ value @size))
 
       runRustFunctionBinary
         rsMulFFT

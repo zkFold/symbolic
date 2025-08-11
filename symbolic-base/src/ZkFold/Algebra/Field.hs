@@ -94,8 +94,10 @@ instance KnownNat p => AdditiveSemigroup (Zp p) where
 instance KnownNat p => Scale Natural (Zp p) where
   scale c (Zp a) = toZp (scale c a)
 
-instance KnownNat p => AdditiveMonoid (Zp p) where
+instance Zero (Zp p) where
   zero = Zp 0
+
+instance KnownNat p => AdditiveMonoid (Zp p)
 
 instance KnownNat p => Scale Integer (Zp p) where
   scale c (Zp a) = toZp (scale c a)
@@ -253,8 +255,10 @@ instance Field f => AdditiveSemigroup (Ext2 f e) where
 instance Scale c f => Scale c (Ext2 f e) where
   scale c (Ext2 a b) = Ext2 (scale c a) (scale c b)
 
-instance Field f => AdditiveMonoid (Ext2 f e) where
+instance Zero f => Zero (Ext2 f e) where
   zero = Ext2 zero zero
+
+instance Field f => AdditiveMonoid (Ext2 f e)
 
 instance Field f => AdditiveGroup (Ext2 f e) where
   negate (Ext2 a b) = Ext2 (negate a) (negate b)
@@ -327,8 +331,10 @@ instance Field f => AdditiveSemigroup (Ext3 f e) where
 instance Scale c f => Scale c (Ext3 f e) where
   scale c (Ext3 d e f) = Ext3 (scale c d) (scale c e) (scale c f)
 
-instance Field f => AdditiveMonoid (Ext3 f e) where
+instance Zero f => Zero (Ext3 f e) where
   zero = Ext3 zero zero zero
+
+instance Field f => AdditiveMonoid (Ext3 f e)
 
 instance Field f => AdditiveGroup (Ext3 f e) where
   negate (Ext3 a b c) = Ext3 (negate a) (negate b) (negate c)

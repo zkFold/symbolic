@@ -68,8 +68,10 @@ instance MultiplicativeMonoid (MerkleHash n) where
 instance AdditiveSemigroup (MerkleHash n) where
   M x + M y = merkleHash (Add, x, y)
 
-instance AdditiveMonoid (MerkleHash n) where
+instance Zero (MerkleHash n) where
   zero = fromConstant (zero :: Natural)
+
+instance AdditiveMonoid (MerkleHash n)
 
 instance Semiring (MerkleHash n)
 

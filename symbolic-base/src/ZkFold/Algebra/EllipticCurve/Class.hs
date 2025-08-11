@@ -357,13 +357,17 @@ instance
             !z3 = square (y1 + z1) - yy - zz
          in Weierstrass (JacobianPoint x3 y3 z3)
 
+instance (Semiring field, Eq field) => Zero (Weierstrass curve (Point field)) where
+  zero = pointInf
+
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   )
   => AdditiveMonoid (Weierstrass curve (Point field))
-  where
+
+instance (Semiring field, Eq field) => Zero (Weierstrass curve (JacobianPoint field)) where
   zero = pointInf
 
 instance
@@ -372,8 +376,6 @@ instance
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => AdditiveMonoid (Weierstrass curve (JacobianPoint field))
-  where
-  zero = pointInf
 
 instance
   ( WeierstrassCurve curve field
@@ -491,11 +493,12 @@ instance
         y2 = (y0 * y1 - a * x0 * x1) // (one - d * x0 * x1 * y0 * y1)
      in pointXY x2 y2
 
+instance Semiring field => Zero (TwistedEdwards curve (AffinePoint field)) where
+  zero = pointXY zero one
+
 instance
   TwistedEdwardsCurve curve field
   => AdditiveMonoid (TwistedEdwards curve (AffinePoint field))
-  where
-  zero = pointXY zero one
 
 instance
   TwistedEdwardsCurve curve field
