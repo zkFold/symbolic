@@ -37,8 +37,8 @@ instance
     let x = fromConstant @Natural $ unLittleEndian $ fromJust $ fromByteString $ hash "42" :: ScalarFieldOf g
      in iterate (scale x) pointGen
 
--- | Homomorphic commitment scheme, i.e. (hcommit x) * (hcommit y) == hcommit (x + y)
-type HomomorphicCommit a g = [a] -> g
+-- | Homomorphic commitment scheme, i.e. hcommit x . hcommit y == hcommit (x + y)
+type HomomorphicCommit a g = [a] -> g -> g
 
 cyclicCommit :: CyclicGroup g => HomomorphicCommit (ScalarFieldOf g) g
-cyclicCommit v = sum $ zipWith scale v groupElements
+cyclicCommit v g = sum (zipWith scale v groupElements) + g

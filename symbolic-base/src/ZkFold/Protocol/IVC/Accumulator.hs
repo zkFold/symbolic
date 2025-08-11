@@ -120,7 +120,7 @@ emptyAccumulator hcommit phi =
       aiR = tabulate (const zero)
       aiMu = zero
       aiPI = tabulate (const zero)
-      aiE = hcommit $ algebraicMap @d phi aiPI accW aiR aiMu
+      aiE = hcommit (algebraicMap @d phi aiPI accW aiR aiMu) zero
       accX = AccumulatorInstance {_pi = LayoutData aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu}
    in Accumulator accX accW
 
