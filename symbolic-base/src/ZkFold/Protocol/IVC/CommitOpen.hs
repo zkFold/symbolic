@@ -8,7 +8,8 @@ import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import Data.Bifunctor (first)
+import ZkFold.Algebra.Class (zero, negate, Zero, AdditiveGroup)
+import Data.Functor ((<&>))
 
 data CommitOpen k i p c f = CommitOpen
   { input
@@ -36,12 +37,13 @@ data CommitOpen k i p c f = CommitOpen
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> (Vector k (c, c), [f])
+      -> (Vector k c, [f])
   -- ^ verifier output
   }
 
 commitOpen
-  :: HomomorphicCommit f c
+  :: (AdditiveGroup f, Zero c)
+  => HomomorphicCommit f c
   -> SpecialSoundProtocol k i p f
   -> CommitOpen k i p c f
 commitOpen hcommit SpecialSoundProtocol {..} =
@@ -49,9 +51,9 @@ commitOpen hcommit SpecialSoundProtocol {..} =
     { input = input
     , prover = \pi0 w r i ->
         let m = prover pi0 w r i
-         in (m, hcommit m)
+         in (m, hcommit m zero)
     , verifier = \pi pms rs ->
-        ( first hcommit <$> pms
+        ( pms <&> \(fs, c) -> hcommit (map negate fs) c
         , verifier pi (fst <$> pms) rs
         )
     }

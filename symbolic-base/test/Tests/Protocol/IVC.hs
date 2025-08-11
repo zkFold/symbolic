@@ -46,7 +46,6 @@ import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Data.Function (on)
 
 type A = Zp BLS12_381_Scalar
 
@@ -137,7 +136,7 @@ specIVC = do
       cs p = let NARKInstanceProof _ (NARKProof z _) = narkIP p in z
       ms p = let NARKInstanceProof _ (NARKProof _ z) = narkIP p in z
 
-      scheme :: PAR -> AccumulatorScheme D 1 I (DataSource C) F
+      scheme :: PAR -> AccumulatorScheme D 1 I (DataSource C) (DataSource C) F
       scheme = accumulatorScheme mimcHash cyclicCommit . phi
 
       acc0 :: PAR -> Accumulator K I (DataSource C) F
@@ -147,7 +146,7 @@ specIVC = do
       -- acc0Rec = emptyAccumulator @D . phiRec
 
       acc p = fst $ prover (scheme p) (acc0 p) $ NARKInstanceProof (pi p) (NARKProof (cs p) (ms p))
-      pf p = snd $ prover (scheme p) (acc0 p) $ NARKInstanceProof (pi p) (NARKProof (cs p) (ms p))
+      pf p = fmap (zero .+) $ snd $ prover (scheme p) (acc0 p) $ NARKInstanceProof (pi p) (NARKProof (cs p) (ms p))
 
       verifierResult p = first dataSource $ verifier (scheme p) (pi p) (cs p) (acc0 p ^. x) (pf p)
       deciderResult p = bimap (fmap dataSource) dataSource $ decider (scheme p) $ acc p
@@ -155,8 +154,8 @@ specIVC = do
   describe "WeierstrassWitness" $ do
     it "is a homomorphic commitment" $ do
       withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer -> q) ->
-        cyclicCommit @(WeierstrassWitness (Interpreter A)) [p + q]
-        == cyclicCommit [p] + cyclicCommit [q]
+        cyclicCommit @(WeierstrassWitness (Interpreter A)) [p + q] zero
+        == (cyclicCommit [p] + cyclicCommit [q]) zero
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
@@ -171,7 +170,7 @@ specIVC = do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do
         withMaxSuccess 10 $ property $ \p ->
-          (\(a, b) -> all (uncurry ((==) `on` dataSource)) a && all (== zero) b) $
+          (\(a, b) -> all ((== zero) . dataSource) a && all (== zero) b) $
             FS.verifier (sps p) (pi p) (zip (ms p) (cs p)) (unsafeToVector [])
   describe "Accumulator scheme specification" $ do
     describe "decider" $ do

@@ -21,7 +21,7 @@ import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
-import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme)
+import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, (.+))
 import qualified ZkFold.Protocol.IVC.AccumulatorScheme as Acc
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
@@ -51,7 +51,7 @@ data IVCProof k c f
 
 makeLenses ''IVCProof
 
-noIVCProof :: (KnownNat k, AdditiveMonoid c, AdditiveMonoid f) => IVCProof k c f
+noIVCProof :: (KnownNat k, Zero c, Zero f) => IVCProof k c f
 noIVCProof = IVCProof zero zero
 
 -- | The current result of recursion together with the first iteration flag,
@@ -77,7 +77,7 @@ ivcSetup
      , LayoutFunctor i
      , LayoutFunctor p
      , FieldAssumptions a cc
-     , AdditiveMonoid c
+     , Zero c
      )
   => Hasher
   -> HomomorphicCommit a c
@@ -151,7 +151,7 @@ ivcProve hash hcommit1 hcommit2 f res witness =
     narkIP :: NARKInstanceProof k (RecursiveI i) c a
     narkIP = NARKInstanceProof input (NARKProof commits messages)
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) c a
+    accScheme :: AccumulatorScheme d k (RecursiveI i) c c a
     accScheme = accumulatorScheme hash hcommit1 pRec
 
     (acc', pf) = Acc.prover accScheme (res ^. acc) narkIP
@@ -165,7 +165,7 @@ ivcProve hash hcommit1 hcommit2 f res witness =
             (DataSource <$> commits)
             (bimap DataSource fromConstant $ res ^. acc ^. x)
             true
-            (DataSource <$> pf)
+            (DataSource . (zero .+) <$> pf)
 
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c a
     protocol =
@@ -194,7 +194,7 @@ ivcVerify
   -> HomomorphicCommit f c
   -> StepFunction a i p
   -> IVCResult k i c f
-  -> ((Vector k (c, c), [f]), (Vector k c, c))
+  -> ((Vector k c, [f]), (Vector k c, c))
 ivcVerify hash hcommit f res =
   let
     pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
@@ -209,7 +209,7 @@ ivcVerify hash hcommit f res =
     commits :: Vector k c
     commits = res ^. proof ^. proofX
 
-    accScheme :: AccumulatorScheme d k (RecursiveI i) c f
+    accScheme :: AccumulatorScheme d k (RecursiveI i) c c f
     accScheme = accumulatorScheme @d hash hcommit pRec
 
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c f
