@@ -13,7 +13,6 @@ import Data.Foldable (foldl)
 import Data.Function ((.))
 import Data.Functor ((<$>))
 import Data.Functor.Rep (tabulate)
-import qualified Data.List as List
 import Data.Maybe (Maybe (..))
 import Data.String (fromString)
 import Data.Type.Equality (type (~))
@@ -22,9 +21,6 @@ import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
-import Prelude (Int, Show, error, fromInteger, fromIntegral, pure, ($))
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Control.Conditional (ifThenElse)
@@ -35,6 +31,8 @@ import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField)
+import Prelude (Int, Show, error, fromInteger, fromIntegral, pure, ($))
+import qualified Prelude as P
 
 -- TODO: ResidueField and related types should properly become a part of our base type hierarchy.
 -- Currently, its use here is a bit awkward.
@@ -47,15 +45,21 @@ data MerkleTree (d :: Natural) h = MerkleTree
   }
   deriving (Generic, Show)
 
+emptyTree
+  :: forall d h
+   . ( KnownNat (MerkleTreeSize d)
+     , Ring h
+     )
+  => MerkleTree d h
+emptyTree = MerkleTree rootHash leaves
+ where
+  leaves = pure zero :: Vector (2 ^ (d - 1)) h
+  rootHash = computeRoot leaves
+
+-- | Hash to use in the Merkle tree
 merkleHash
   :: forall h. Ring h => h -> h -> h
 merkleHash = mimcHash2 mimcConstants zero
-
--- | Convert index to binary representation (little-endian)
-indexToBits :: forall n. KnownNat n => Natural -> Vector n Bool
-indexToBits idx =
-  let idxInt = fromIntegral idx :: Int
-   in tabulate (\i -> testBit idxInt (fromIntegral $ fromZp i))
 
 -- | Hash current value with sibling based on bit direction
 hashWithSibling :: Ring h => h -> (Bool, h) -> h
@@ -93,8 +97,8 @@ merkleProve (MerkleTree _ leaves) idx =
     let levelIndex = fromIntegral $ fromZp proofLevel
         currentIdx = startIdx `div` (2 P.^ levelIndex)
         siblingIdx = currentIdx `xor` 1
-        level = levels List.!! levelIndex
-     in level List.!! fromIntegral siblingIdx
+        level = levels P.!! levelIndex
+     in level P.!! fromIntegral siblingIdx
 
 -- | Verifies the merkle proof for a given index in the merkle tree
 merkleVerify
@@ -103,48 +107,6 @@ merkleVerify (MerkleTree rootHash leaves) idx proof =
   let leaf = leaves V.!! fromZp idx
       indexBits = indexToBits @(d - 1) $ fromZp idx
    in foldl hashWithSibling leaf (zip indexBits proof) == rootHash
-
--- | Computes the next level up in the merkle tree by pairing adjacent elements
-computeNextLevel
-  :: forall h. Ring h => [h] -> [h]
-computeNextLevel [] = []
-computeNextLevel [_] = [] -- odd number, ignore the last element
-computeNextLevel (a : b : rest) = merkleHash a b : computeNextLevel rest
-
--- | Computes all levels of the merkle tree from leaves to root
-computeAllLevels
-  :: forall n h
-   . Ring h
-  => Vector n h
-  -> [[h]]
-computeAllLevels leaves = go (fromVector leaves)
- where
-  go [] = []
-  go [single] = [[single]]
-  go current =
-    let nextLevel = computeNextLevel current
-     in current : go nextLevel
-
-computeRoot
-  :: forall d h
-   . Ring h
-  => Vector (MerkleTreeSize d) h
-  -> h
-computeRoot leaves =
-  case List.last (computeAllLevels leaves) of
-    [root] -> root
-    _ -> error "Merkle tree: impossible"
-
-zeroMerkleTree
-  :: forall d h
-   . ( KnownNat (MerkleTreeSize d)
-     , Ring h
-     )
-  => MerkleTree d h
-zeroMerkleTree = MerkleTree rootHash leaves
- where
-  leaves = pure zero :: Vector (2 ^ (d - 1)) h
-  rootHash = computeRoot leaves
 
 instance
   forall d n h
@@ -217,3 +179,42 @@ replaceAt idx newLeaf (MerkleTree _ leaves) =
  where
   leaves' = Vector $ toV leaves V.// [(fromIntegral $ fromZp idx, newLeaf)]
   root' = computeRoot leaves'
+
+------------------------------- Utilities -------------------------------
+
+-- | Convert index to binary representation (little-endian)
+indexToBits :: forall n. KnownNat n => Natural -> Vector n Bool
+indexToBits idx =
+  let idxInt = fromIntegral idx :: Int
+   in tabulate (\i -> testBit idxInt (fromIntegral $ fromZp i))
+
+-- | Computes the next level up in the merkle tree by pairing adjacent elements
+computeNextLevel
+  :: forall h. Ring h => [h] -> [h]
+computeNextLevel [] = []
+computeNextLevel [_] = [] -- odd number, ignore the last element
+computeNextLevel (a : b : rest) = merkleHash a b : computeNextLevel rest
+
+-- | Computes all levels of the merkle tree from leaves to root
+computeAllLevels
+  :: forall n h
+   . Ring h
+  => Vector n h
+  -> [[h]]
+computeAllLevels leaves = go (fromVector leaves)
+ where
+  go [] = []
+  go [single] = [[single]]
+  go current =
+    let nextLevel = computeNextLevel current
+     in current : go nextLevel
+
+computeRoot
+  :: forall d h
+   . Ring h
+  => Vector (MerkleTreeSize d) h
+  -> h
+computeRoot leaves =
+  case P.last (computeAllLevels leaves) of
+    [root] -> root
+    _ -> error "Merkle tree: impossible"
