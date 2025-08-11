@@ -169,6 +169,7 @@ library
       ZkFold.Data.Type
       ZkFold.Data.Utils
       ZkFold.Data.Vector
+      ZkFold.Data.MerkleTree
       ZkFold.FFI.Rust.Conversion
       ZkFold.FFI.Rust.Poly
       ZkFold.FFI.Rust.RustBLS
@@ -257,7 +258,6 @@ library
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
-      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Morph
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
@@ -389,6 +389,7 @@ test-suite symbolic-base-test
       Tests.Algebra.Univariate.Simple
       Tests.Common
       Tests.Data.Binary
+      Tests.Data.MerkleTree
       Tests.FFI.Rust.Plonkup
       Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
@@ -411,7 +412,6 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
-      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
       Tests.FFI.RustBLS

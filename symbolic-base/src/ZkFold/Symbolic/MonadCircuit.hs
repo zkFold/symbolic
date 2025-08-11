@@ -32,6 +32,7 @@ class
   , Eq (IntegralOf a)
   , Conditional (BooleanOf (IntegralOf a)) (BooleanOf (IntegralOf a))
   , Conditional (BooleanOf (IntegralOf a)) (IntegralOf a)
+  , Conditional (BooleanOf (IntegralOf a)) a
   ) =>
   ResidueField a
   where
@@ -128,7 +129,9 @@ class
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   lookupConstraint
     :: (NFData1 f, Foldable f, Functor f, Typeable f)
-    => f var -> LookupTable a f -> m ()
+    => f var
+    -> LookupTable a f
+    -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.
