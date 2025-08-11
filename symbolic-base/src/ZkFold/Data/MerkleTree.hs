@@ -21,6 +21,9 @@ import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
 import Test.QuickCheck (Arbitrary (..))
+import Prelude (Int, Show, error, fromInteger, fromIntegral, pure, ($))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Control.Conditional (ifThenElse)
@@ -31,8 +34,6 @@ import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField)
-import Prelude (Int, Show, error, fromInteger, fromIntegral, pure, ($))
-import qualified Prelude as P
 
 -- TODO: ResidueField and related types should properly become a part of our base type hierarchy.
 -- Currently, its use here is a bit awkward.
