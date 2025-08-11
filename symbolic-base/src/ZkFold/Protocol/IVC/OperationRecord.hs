@@ -64,6 +64,15 @@ instance
      in addOp (Left c) record
 
 instance
+  ( SymbolicData c
+  , SymbolicData s
+  , Context c ~ ctx
+  , Context s ~ ctx
+  , Zero c
+  ) => Zero (OperationRecord c s ctx) where
+  zero = newRec zero
+
+instance
   ( AdditiveMonoid c
   , Scale s c
   , SymbolicData c
@@ -73,8 +82,6 @@ instance
   , FromConstant Natural s
   )
   => AdditiveMonoid (OperationRecord c s ctx)
-  where
-  zero = newRec zero
 
 instance
   ( AdditiveMonoid c

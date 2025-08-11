@@ -17,7 +17,7 @@ import Data.Functor.Rep (Representable (..), mzipWithRep)
 import GHC.Generics (Generic)
 import Prelude (type (~))
 
-import ZkFold.Algebra.Class (Ring, Scale, zero, AdditiveMonoid)
+import ZkFold.Algebra.Class (Ring, Scale, zero, Zero)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Bool (BoolType (..), and)
 import ZkFold.Data.Eq (Eq (..))
@@ -105,7 +105,7 @@ emptyAccumulator
      , Foldable i
      , Representable p
      , Foldable p
-     , AdditiveMonoid c
+     , Zero c
      , Ring f
      , Scale a f
      , Binary (Rep i)
@@ -133,7 +133,7 @@ emptyAccumulatorInstance
      , Foldable i
      , Representable p
      , Foldable p
-     , AdditiveMonoid c
+     , Zero c
      , Ring f
      , Scale a f
      , Binary (Rep i)

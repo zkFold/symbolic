@@ -30,14 +30,14 @@ import Control.Applicative (Applicative (..))
 import Control.DeepSeq
 import Control.Monad (foldM, zipWithM)
 import Control.Monad.State (StateT (..))
-import Data.Aeson hiding (Bool)
+import qualified Data.Aeson as Aeson
 import qualified Data.Bool as Haskell
 import Data.Foldable (Foldable (toList), foldlM, foldr, foldrM, for_)
 import Data.Function (on)
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.Kind (Type)
-import Data.List (unfoldr, zip)
+import Data.List (unfoldr, zip, iterate)
 import Data.Map (fromList, (!))
 import Data.Maybe (fromJust)
 import Data.Traversable (for, traverse)
@@ -74,7 +74,7 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
-import ZkFold.Prelude (length, replicate, replicateA, take, unsnoc)
+import ZkFold.Prelude (length, replicate, replicateA, take, unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.FFT (fft, ifft)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
@@ -182,7 +182,7 @@ exp65537Mod n modulus = resize $ Haskell.snd $ productMod sq_2_16 n' m'
   n' :: UInt (2 * m) r c
   n' = resize n
 
-  sq_2_16 = Haskell.foldl (\x _ -> Haskell.snd $ productMod x x m') n' [1 .. 16 :: Natural]
+  sq_2_16 = iterate (\x -> Haskell.snd $ productMod x x m') n' !! (16 :: Natural)
 
 bitsPow
   :: forall c n p r
@@ -575,8 +575,11 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UIn
                 return $ V.unsafeToVector (zs ++ [ks])
             )
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (UInt n r c) where
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Zero (UInt n r c) where
   zero = fromConstant (0 :: Natural)
+
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (UInt n r c)
 
 instance
   ( Symbolic c
@@ -966,11 +969,11 @@ vectorToNatural v n = foldr (\l r -> fromConstant l + b * r) 0 vs
   vs = Haskell.map toConstant $ V.fromVector v :: [Natural]
   b = 2 ^ n
 
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromJSON (UInt n r c) where
-  parseJSON = Haskell.fmap strictConv . parseJSON @Natural
+instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Aeson.FromJSON (UInt n r c) where
+  parseJSON = Haskell.fmap strictConv . Aeson.parseJSON @Natural
 
-instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => ToJSON (UInt n r (Interpreter (Zp p))) where
-  toJSON = toJSON . toConstant
+instance (Symbolic (Interpreter (Zp p)), KnownNat n, KnownRegisterSize r) => Aeson.ToJSON (UInt n r (Interpreter (Zp p))) where
+  toJSON = Aeson.toJSON . toConstant
 
 -- Old Ord circuits for compatibility --
 

@@ -38,12 +38,13 @@ type RecursiveI i = i :*: Par1
 newtype DataSource c = DataSource {dataSource :: c}
   deriving newtype
     ( AdditiveGroup
-    , AdditiveMonoid
+    , Zero
     , AdditiveSemigroup
     , CyclicGroup
     , SymbolicData
     )
 
+deriving newtype instance AdditiveMonoid c => AdditiveMonoid (DataSource c)
 deriving instance {-# INCOHERENT #-} Scale a c => Scale a (DataSource c)
 
 instance
@@ -55,15 +56,10 @@ instance
 -- | Payload to the recursive function
 data RecursivePayload d k i p c = RecursivePayload
   { recPayload :: Context c p
-  , recProof :: Vector k (DataSource c)
-  , recAccInst
-      :: AccumulatorInstance
-           k
-           (RecursiveI i)
-           (DataSource c)
-           (FieldElement (Context c))
+  , recProof :: Vector k c
+  , recAccInst :: AccumulatorInstance k (RecursiveI i) c (FieldElement (Context c))
   , recFlag :: Bool (Context c)
-  , recCommits :: Vector (d - 1) (DataSource c)
+  , recCommits :: Vector (d - 1) c
   }
   deriving Generic
 
@@ -90,6 +86,7 @@ type FieldAssumptions a c =
   , Empty (Payload c)
   , Scale (FieldElement (Context c)) c
   , AdditiveGroup c
+  , OracleSource (FieldElement (Context c)) c
   )
 
 instance OracleSource (FieldElement ctx) (FieldElement ctx) where
@@ -107,7 +104,7 @@ recursiveFunction
      , FieldAssumptions a c
      )
   => Hasher
-  -> HomomorphicCommit (FieldElement (Context c)) (DataSource c)
+  -> HomomorphicCommit (FieldElement (Context c)) c
   -> StepFunction a i p
   -> RecursiveFunction d k a i p c
 recursiveFunction hash hcommit func =

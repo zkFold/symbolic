@@ -56,8 +56,10 @@ c1 .+ ConstUVar c2 = ConstUVar (c1 + c2)
 c .+ LinUVar k x b = LinUVar k x (b + c)
 _ .+ More = More
 
-instance (AdditiveMonoid a, Eq a) => AdditiveMonoid (UVar a) where
+instance Zero a => Zero (UVar a) where
   zero = ConstUVar zero
+
+instance (AdditiveMonoid a, Eq a) => AdditiveMonoid (UVar a)
 
 instance (AdditiveGroup a, Eq a) => AdditiveGroup (UVar a) where
   negate = fmap negate

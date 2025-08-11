@@ -54,7 +54,9 @@ instance Exponent (WitnessF a v) Integer where WitnessF f ^ p = WitnessF (f ^ p)
 
 instance AdditiveSemigroup (WitnessF a v) where WitnessF f + WitnessF g = WitnessF (f + g)
 
-instance AdditiveMonoid (WitnessF a v) where zero = WitnessF zero
+instance Zero (WitnessF a v) where zero = WitnessF zero
+
+instance AdditiveMonoid (WitnessF a v)
 
 instance AdditiveGroup (WitnessF a v) where
   negate (WitnessF f) = WitnessF (negate f)
@@ -128,7 +130,9 @@ instance Exponent (EuclideanF a v) Natural where EuclideanF f ^ p = EuclideanF (
 
 instance AdditiveSemigroup (EuclideanF a v) where EuclideanF f + EuclideanF g = EuclideanF (f + g)
 
-instance AdditiveMonoid (EuclideanF a v) where zero = EuclideanF zero
+instance Zero (EuclideanF a v) where zero = EuclideanF zero
+
+instance AdditiveMonoid (EuclideanF a v)
 
 instance AdditiveGroup (EuclideanF a v) where
   negate (EuclideanF f) = EuclideanF (negate f)

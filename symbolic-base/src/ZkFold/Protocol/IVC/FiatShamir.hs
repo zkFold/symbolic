@@ -39,7 +39,7 @@ data FiatShamir k i p c f = FiatShamir
       -- \^ prover messages
       -> Vector (k - 1) f
       -- \^ random challenges
-      -> (Vector k c, [f])
+      -> (Vector k (c, c), [f])
   -- ^ verifier output
   }
 
