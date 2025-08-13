@@ -14,8 +14,8 @@
 
 #![allow(non_snake_case)]
 
+use halo2curves::ff::Field;
 use halo2_proofs::{
-    arithmetic::Field,
     circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value},
     plonk::{
         Advice, Circuit, Column, ConstraintSystem, Error, Fixed,
@@ -279,11 +279,11 @@ impl<F: Field> Circuit<F> for PlonkupCircuit<F> {
         // Define the PlonkUp arithmetic gate constraint
         // qM * w1 * w2 + qL * w1 + qR * w2 + qO * w3 + qC = 0
         meta.create_gate("plonkup_arithmetic", |meta| {
-            let q_mul = meta.query_fixed(selectors.q_mul);
-            let q_left = meta.query_fixed(selectors.q_left);
-            let q_right = meta.query_fixed(selectors.q_right);
-            let q_output = meta.query_fixed(selectors.q_output);
-            let q_const = meta.query_fixed(selectors.q_const);
+            let q_mul = meta.query_fixed(selectors.q_mul, Rotation::cur());
+            let q_left = meta.query_fixed(selectors.q_left, Rotation::cur());
+            let q_right = meta.query_fixed(selectors.q_right, Rotation::cur());
+            let q_output = meta.query_fixed(selectors.q_output, Rotation::cur());
+            let q_const = meta.query_fixed(selectors.q_const, Rotation::cur());
 
             let w1 = meta.query_advice(advice[0], Rotation::cur());
             let w2 = meta.query_advice(advice[1], Rotation::cur());
