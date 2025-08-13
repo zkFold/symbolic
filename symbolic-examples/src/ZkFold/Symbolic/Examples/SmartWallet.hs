@@ -455,7 +455,7 @@ expModProofDebug x ps _ = proof
   plonkup = Plonkup omega k1 k2 debugCircuit h1 gs
   setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
-  (proof, _) = rustPlonkupProve setupP witness
+  (_, proof, _) = rustPlonkupProve setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
 

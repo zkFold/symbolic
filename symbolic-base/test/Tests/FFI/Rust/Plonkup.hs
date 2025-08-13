@@ -53,7 +53,7 @@ specRustPlonkup = do
               plonkup = Plonkup omega k1 k2 a h1 gs
               setupP = setupProve @(PlonkupTs Par1 TestCircuitSize ByteString) plonkup
               witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint (Par1 zero), ps)
-              (proofRust, _) = rustPlonkupProve setupP witness
+              (_, proofRust, _) = rustPlonkupProve setupP witness
               (_, proofHs) = prove @(PlonkupTs Par1 TestCircuitSize ByteString) setupP witness
              in
               proofHs == proofRust

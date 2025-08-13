@@ -8,19 +8,19 @@ import qualified Data.Vector as V
 import Foreign
 import GHC.IO (unsafePerformIO)
 import GHC.Natural (naturalToInteger)
-import Prelude
-
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint, Fr)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.Vector
 import ZkFold.FFI.Rust.RustFunctions (rsPlonkupProve)
+import ZkFold.Protocol.Plonkup.Input (PlonkupInput (PlonkupInput))
 import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover
 import ZkFold.Protocol.Plonkup.Relation
 import ZkFold.Protocol.Plonkup.Testing
 import ZkFold.Protocol.Plonkup.Witness
+import Prelude
 
 instance Binary (PlonkupCircuitPolynomials n BLS12_381_G1_JacobianPoint (PolyVec Fr)) where
   put (PlonkupCircuitPolynomials {..}) =
@@ -260,14 +260,15 @@ rustPlonkupProve
   :: forall i o n
    . KnownNat n
   => PlonkupProverSetup
-       i
-       o
-       n
-       BLS12_381_G1_JacobianPoint
-       BLS12_381_G2_JacobianPoint
-       (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
+      i
+      o
+      n
+      BLS12_381_G1_JacobianPoint
+      BLS12_381_G2_JacobianPoint
+      (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
   -> (PlonkupWitnessInput i BLS12_381_G1_JacobianPoint, PlonkupProverSecret BLS12_381_G1_JacobianPoint)
-  -> ( PlonkupProof BLS12_381_G1_JacobianPoint
+  -> ( PlonkupInput BLS12_381_G1_JacobianPoint
+     , PlonkupProof BLS12_381_G1_JacobianPoint
      , PlonkupProverTestInfo n BLS12_381_G1_JacobianPoint (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
      )
 rustPlonkupProve
@@ -277,7 +278,8 @@ rustPlonkupProve
         proverSecret' = encode proverSecret
         proverRelation = encode (relation proverSetup)
         (!w1, !w2, !w3) = witness (relation proverSetup) wInput
-        !wPub = encode (pubInput (relation proverSetup) wInput)
+        !wPub' = pubInput (relation proverSetup) wInput
+        !wPub = encode wPub'
         !n = fromInteger $ naturalToInteger $ value @n
     BS.useAsCStringLen (BS.toStrict proverSetup') $ \(ptr1, len1) -> do
       BS.useAsCStringLen (BS.toStrict proverSecret') $ \(ptr2, len2) -> do
@@ -287,4 +289,5 @@ rustPlonkupProve
             len <- peek (castPtr ptr) :: IO Int
             bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
             free ptr
-            pure $ decode (BS.fromStrict bs)
+            let (proof, testInfo) = decode (BS.fromStrict bs)
+            pure (PlonkupInput wPub', proof, testInfo)
