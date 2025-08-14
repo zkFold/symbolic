@@ -452,7 +452,6 @@ mod tests {
         prover.assert_satisfied();
     }
 
-
     #[test]
     fn test_basic_arithmetic() {
         let circuit_size = 1;
