@@ -42,7 +42,7 @@ import ZkFold.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Control.Conditional
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
-import ZkFold.Prelude (length, replicate, uncurry3)
+import ZkFold.Prelude (length, replicate, uncurry3, trace)
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPermutationSize)
 import ZkFold.Protocol.Plonkup.LookupConstraint (LookupConstraint (LookupConstraint))
 import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkConstraint)
@@ -298,6 +298,6 @@ toPlonkupRelation !ac =
       pubInput i = map (eval i) $ toList xPub
 
       prvNum = 0
-   in if max cNum nLookup <= n
+   in if trace ("cNum: " <> P.show cNum <> "\nnLookup: " <> P.show nLookup) $ max cNum nLookup <= n
         then Just $ PlonkupRelation {..}
         else Nothing
