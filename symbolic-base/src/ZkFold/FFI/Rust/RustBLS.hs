@@ -284,6 +284,15 @@ instance UnivariateRingPolyVec Fr (RustPolyVec Fr) where
   (+.) :: forall size. Fr -> RustPolyVec Fr size -> RustPolyVec Fr size
   (+.) = runRustFun2 r_poly_add_scalar
 
+  toPolyVec :: forall size. KnownNat size => V.Vector Fr -> RustPolyVec Fr size
+  toPolyVec a = h2r $ toPolyVec (r2h <$> a)
+
+  fromPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> V.Vector Fr
+  fromPolyVec a = h2r <$> fromPolyVec (r2h a)
+
+  evalPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> Fr -> Fr
+  evalPolyVec pv x = h2r $ evalPolyVec (r2h pv) (r2h x)
+
 instance UnivariateFieldPolyVec Fr (RustPolyVec Fr) where
   (./.) :: RustPolyVec Fr size -> RustPolyVec Fr size -> RustPolyVec Fr size
   (./.) = runRustFun2 r_poly_hdiv
