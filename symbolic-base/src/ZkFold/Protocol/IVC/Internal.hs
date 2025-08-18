@@ -18,7 +18,6 @@ import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
-import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, (.+))
@@ -35,9 +34,13 @@ import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocolC,
  )
 import ZkFold.Symbolic.Data.Bool (true)
-import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize)
+import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize, Payload, payload)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Data.Binary (Binary)
+import ZkFold.Symbolic.Class (Symbolic(BaseField))
+import ZkFold.Symbolic.Data.Switch (Switch)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -70,18 +73,20 @@ makeLenses ''IVCResult
 --
 -- It differs from the rest of the iterations as we don't have anything accumulated just yet.
 ivcSetup
-  :: forall d cc k a i p c
+  :: forall d pt k a i p c
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
-     , FieldAssumptions a cc
      , Zero c
+     , Binary a
+     , IsRecursivePoint pt
+     , BaseField (Context pt) ~ a
      )
   => Hasher
   -> HomomorphicCommit a c
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) cc
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) pt
   -> StepFunction a i p
   -> i a
   -> p a
@@ -94,35 +99,34 @@ ivcSetup hash hcommit1 hcommit2 f z0 witness =
     z1 :: i a
     z1 = predicateEval p z0 witness
 
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p cc)
-    pRec = recursivePredicate @cc $ recursiveFunction @cc hash hcommit2 f
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommit2 f
    in
     IVCResult z1 (emptyAccumulator @d hcommit1 pRec) noIVCProof
 
 ivcProve
-  :: forall d cc k a i p c f
+  :: forall d pt k a i p c
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
-     , FieldAssumptions a cc
-     , Layout cc ~ f
-     , SymbolicData c
-     , Context c ~ Interpreter a
-     , Layout c ~ f
+     , Binary a
+     , IsRecursivePoint pt
+     , BaseField (Context pt) ~ a
      , Scale a c
      , OracleSource a c
      , AdditiveGroup c
      )
   => Hasher
   -> HomomorphicCommit a c
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) cc
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) pt
+  -> (c -> Switch (Interpreter a) pt)
   -> StepFunction a i p
   -> IVCResult k i c a
   -> p a
   -> IVCResult k i c a
-ivcProve hash hcommit1 hcommit2 f res witness =
+ivcProve hash hcommit1 hcommit2 ptData f res witness =
   let
     p :: Predicate a i p
     p = predicate f
@@ -130,12 +134,8 @@ ivcProve hash hcommit1 hcommit2 f res witness =
     z' :: i a
     z' = predicateEval p (res ^. z) witness
 
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p cc)
-    pRec = recursivePredicate @cc $ recursiveFunction @cc hash hcommit2 f
-
-    value
-      :: (SymbolicData x, Context x ~ Interpreter a) => x -> Layout x a
-    value = runInterpreter . arithmetize
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommit2 f
 
     input :: RecursiveI i a
     input =
@@ -156,24 +156,28 @@ ivcProve hash hcommit1 hcommit2 f res witness =
 
     (acc', pf) = Acc.prover accScheme (res ^. acc) narkIP
 
-    payload :: RecursiveP d k i p cc a
-    payload =
-      fmap fromConstant $
-        value $
-          RecursivePayload
-            (Interpreter witness)
-            (DataSource <$> commits)
-            (bimap DataSource fromConstant $ res ^. acc ^. x)
-            true
-            (DataSource . (zero .+) <$> pf)
+    value
+      :: (SymbolicData x, Context x ~ Interpreter a)
+      => x -> (Layout x :*: Payload x) a
+    value v = runInterpreter (arithmetize v) :*: payload v
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c a
+    recursivePayload :: RecursiveP d k i p pt a
+    recursivePayload = value RecursivePayload
+      { recPayload = Interpreter witness
+      , recProof = ptData <$> commits
+      , recAccInst = bimap ptData fromConstant (res ^. acc ^. x)
+      , recFlag = true
+      , recCommits = ptData . (zero .+) <$> pf
+      }
+
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt) c a
     protocol =
       fiatShamir hash $
         commitOpen hcommit1 $
           specialSoundProtocolA @d pRec
 
-    (messages', commits') = unzip $ prover protocol input payload zero 0
+    (messages', commits') = unzip $
+      prover protocol input recursivePayload zero 0
 
     ivcProof :: IVCProof k c a
     ivcProof = IVCProof commits' messages'
@@ -181,24 +185,30 @@ ivcProve hash hcommit1 hcommit2 f res witness =
     IVCResult z' acc' ivcProof
 
 ivcVerify
-  :: forall d k a i p c f
+  :: forall d k a i p c pt f
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
      , LayoutFunctor i
      , LayoutFunctor p
-     , FieldAssumptions a c
+     , IsRecursivePoint pt
+     , BaseField (Context pt) ~ a
+     , Binary a
+     , AdditiveGroup c
+     , OracleSource f c
+     , Scale f c
      , f ~ FieldElement (CircuitContext a)
      )
   => Hasher
   -> HomomorphicCommit f c
+  -> HomomorphicCommit f pt
   -> StepFunction a i p
   -> IVCResult k i c f
   -> ((Vector k c, [f]), (Vector k c, c))
-ivcVerify hash hcommit f res =
+ivcVerify hash hcommitC hcommitPt f res =
   let
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p c)
-    pRec = recursivePredicate @c $ recursiveFunction @c hash hcommit f
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommitPt f
 
     input :: RecursiveI i f
     input = (res ^. z) :*: Par1 (oracle hash $ res ^. acc ^. x)
@@ -210,10 +220,10 @@ ivcVerify hash hcommit f res =
     commits = res ^. proof ^. proofX
 
     accScheme :: AccumulatorScheme d k (RecursiveI i) c c f
-    accScheme = accumulatorScheme @d hash hcommit pRec
+    accScheme = accumulatorScheme @d hash hcommitC pRec
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p c) c f
-    protocol = fiatShamir hash $ commitOpen hcommit $ specialSoundProtocolC @d pRec
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt) c f
+    protocol = fiatShamir hash $ commitOpen hcommitC $ specialSoundProtocolC @d pRec
    in
     ( verifier protocol input (zip messages commits) zero
     , Acc.decider accScheme (res ^. acc)

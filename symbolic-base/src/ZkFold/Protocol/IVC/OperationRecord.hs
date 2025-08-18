@@ -1,147 +1,80 @@
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Protocol.IVC.OperationRecord where
 
-import Data.Either (Either (..))
-import GHC.Generics (Generic)
-import Prelude (Integer, ($), type (~))
+import Data.Bifunctor (Bifunctor (..))
+import Data.Functor (Functor, fmap, (<$>))
+import Data.List ((++))
+import Data.Tuple (snd)
+import Prelude (Integer)
 
 import ZkFold.Algebra.Class
+import ZkFold.Protocol.IVC.AccumulatorScheme (AdditiveAction (..))
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import ZkFold.Algebra.Number (Natural)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), withoutConstraints)
-import ZkFold.Symbolic.Data.List (List, emptyList, head, (.:))
-import ZkFold.Symbolic.Data.Sum (Sum, inject, match)
+import Data.Eq (Eq (..))
+import ZkFold.Data.Bool
+import Data.Bool (Bool)
 
-newtype OperationRecord c s ctx = OperationRecord (List ctx (Sum (Either (c, c, c) (c, s, c)) ctx))
-  deriving Generic
+data Operands s c = Addends c c | Scaling s c deriving Functor
 
-instance
-  (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx)
-  => SymbolicData (OperationRecord c s ctx)
+addends :: AdditiveSemigroup c => c -> c -> (Operands s c, c)
+addends a b = (Addends a b, a + b)
 
-newRec
-  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx)
-  => c
-  -> OperationRecord c s ctx
-newRec c = OperationRecord $ inject (Left (c, c, c)) .: emptyList
+scaling :: Scale s c => s -> c -> (Operands s c, c)
+scaling k c = (Scaling k c, scale k c)
 
-addOp
-  :: (SymbolicData c, SymbolicData s, Context c ~ ctx, Context s ~ ctx)
-  => (AdditiveSemigroup c, Scale s c)
-  => Either c s
-  -> OperationRecord c s ctx
-  -> OperationRecord c s ctx
-addOp op' (OperationRecord ops) =
-  let c =
-        match
-          (head ops)
-          ( \case
-              Left (_, _, x) -> x
-              Right (_, _, x) -> x
-          )
-   in OperationRecord $
-        case op' of
-          Left c' -> inject $ Left (c, c', withoutConstraints $ c + c')
-          Right s -> inject $ Right (c, s, withoutConstraints $ scale s c)
-          .: ops
+compute :: (AdditiveSemigroup c, Scale s c) => Operands s c -> c
+compute = \case
+  Addends c d -> c + d
+  Scaling k c -> k *. c
 
-instance
-  ( SymbolicData c, Context c ~ ctx, SymbolicData s, Context s ~ ctx
-  , AdditiveSemigroup c, Scale s c
-  ) => AdditiveSemigroup (OperationRecord c s ctx)
-  where
-  OperationRecord ops + record =
-    let c =
-          match
-            (head ops)
-            ( \case
-                Left (_, _, x) -> x
-                Right (_, _, x) -> x
-            )
-     in addOp (Left c) record
+validate :: (AdditiveSemigroup c, Scale s c, Eq c) => (Operands s c, c) -> Bool
+validate (compute -> c, d) = c == d
 
-instance
-  ( SymbolicData c
-  , SymbolicData s
-  , Context c ~ ctx
-  , Context s ~ ctx
-  , Zero c
-  ) => Zero (OperationRecord c s ctx) where
-  zero = newRec zero
+instance Bifunctor Operands where
+  first f = \case
+    Addends a b -> Addends a b
+    Scaling k c -> Scaling (f k) c
+  second = fmap
 
-instance
-  ( AdditiveMonoid c
-  , Scale s c
-  , SymbolicData c
-  , Context c ~ ctx
-  , SymbolicData s
-  , Context s ~ ctx
-  , FromConstant Natural s
-  )
-  => AdditiveMonoid (OperationRecord c s ctx)
+data OperationRecord s c = OperationRecord
+  { opValue :: c
+  , opLog :: [(Operands s c, c)]
+  }
+  deriving Functor
 
-instance
-  ( AdditiveMonoid c
-  , Scale s c
-  , SymbolicData c
-  , Context c ~ ctx
-  , SymbolicData s
-  , Context s ~ ctx
-  , FromConstant Natural s
-  , FromConstant Integer s
-  )
-  => AdditiveGroup (OperationRecord c s ctx)
-  where
+record :: (Operands s c, c) -> [(Operands s c, c)] -> OperationRecord s c
+record res log = OperationRecord (snd res) (res : log)
+
+instance Bifunctor OperationRecord where
+  first f OperationRecord {..} = OperationRecord
+    { opValue = opValue
+    , opLog = first (first f) <$> opLog
+    }
+  second = fmap
+
+instance Zero c => Zero (OperationRecord s c) where
+  zero = OperationRecord zero []
+
+instance AdditiveSemigroup c => AdditiveSemigroup (OperationRecord s c) where
+  OperationRecord a l + OperationRecord b m = addends a b `record` (l ++ m)
+
+instance (Semiring s, AdditiveMonoid c, Scale s c) =>
+  AdditiveMonoid (OperationRecord s c)
+
+instance (Ring s, AdditiveMonoid c, Scale s c) =>
+  AdditiveGroup (OperationRecord s c) where
   negate = scale (-1 :: Integer)
 
-instance
-  ( AdditiveSemigroup c, Scale s c, SymbolicData c, Context c ~ ctx
-  , SymbolicData s, Context s ~ ctx, s ~ ScalarFieldOf c
-  ) => Scale s (OperationRecord c s ctx)
-  where
-  scale s = addOp (Right s)
+instance AdditiveGroup c => AdditiveAction c (OperationRecord s c) where
+  OperationRecord a l .+ c = addends a c `record` l
 
-instance
-  ( AdditiveSemigroup c
-  , Scale s c
-  , SymbolicData c
-  , Context c ~ ctx
-  , SymbolicData s
-  , Context s ~ ctx
-  , FromConstant Natural s
-  )
-  => Scale Natural (OperationRecord c s ctx)
-  where
-  scale n = addOp (Right $ fromConstant n)
+instance (FromConstant k s, Scale s c) => Scale k (OperationRecord s c) where
+  scale (fromConstant -> k) OperationRecord {..} =
+    scaling k opValue `record` opLog
 
-instance
-  ( AdditiveSemigroup c
-  , Scale s c
-  , SymbolicData c
-  , Context c ~ ctx
-  , SymbolicData s
-  , Context s ~ ctx
-  , FromConstant Integer s
-  )
-  => Scale Integer (OperationRecord c s ctx)
-  where
-  scale n = addOp (Right $ fromConstant n)
+instance (FiniteField s, Scale s c, CyclicGroup c) => CyclicGroup (OperationRecord s c) where
+  type ScalarFieldOf (OperationRecord s c) = s
+  pointGen = zero .+ pointGen @c
 
-instance
-  ( CyclicGroup c
-  , Scale s c
-  , SymbolicData c
-  , Context c ~ ctx
-  , SymbolicData s
-  , Context s ~ ctx
-  , FromConstant Natural s
-  , FromConstant Integer s
-  , Scale (ScalarFieldOf c) (OperationRecord c s ctx)
-  )
-  => CyclicGroup (OperationRecord c s ctx)
-  where
-  type ScalarFieldOf (OperationRecord c s ctx) = ScalarFieldOf c
-  pointGen = newRec pointGen
+instance (AdditiveSemigroup c, Eq c, Scale s c) => Eq (OperationRecord s c) where
+  OperationRecord a l == OperationRecord b m =
+    a == b && all validate l && all validate m
