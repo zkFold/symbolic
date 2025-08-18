@@ -17,17 +17,17 @@ import Data.Functor.Rep (Representable (..), mzipWithRep)
 import GHC.Generics (Generic)
 import Prelude (type (~))
 
-import ZkFold.Algebra.Class (Ring, Scale, zero, Zero)
+import ZkFold.Algebra.Class (Ring, Scale, Zero, zero)
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Bool (BoolType (..), and)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 
 -- import Prelude hiding (length, pi)
 

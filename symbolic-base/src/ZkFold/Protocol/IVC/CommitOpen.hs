@@ -2,14 +2,14 @@
 
 module ZkFold.Protocol.IVC.CommitOpen where
 
+import Data.Functor ((<&>))
 import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
+import ZkFold.Algebra.Class (AdditiveGroup, Zero, negate, zero)
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
-import ZkFold.Algebra.Class (zero, negate, Zero, AdditiveGroup)
-import Data.Functor ((<&>))
 
 data CommitOpen k i p c f = CommitOpen
   { input

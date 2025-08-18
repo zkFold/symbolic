@@ -176,6 +176,7 @@ instance AdditiveSemigroup Rust_BLS12_381_G1_Point where
   (+) = runRustFun2 r_g1_add
 
 deriving newtype instance Zero Rust_BLS12_381_G1_JacobianPoint
+
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G1_JacobianPoint
 
 instance Zero Rust_BLS12_381_G1_Point where
@@ -232,6 +233,7 @@ instance AdditiveSemigroup Rust_BLS12_381_G2_Point where
   (+) = runRustFun2 r_g2_add
 
 deriving newtype instance Zero Rust_BLS12_381_G2_JacobianPoint
+
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G2_JacobianPoint
 
 instance Zero Rust_BLS12_381_G2_Point where

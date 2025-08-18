@@ -76,4 +76,4 @@ instance
 instance Zero (Value n context) where
   zero = Value $ unsafeToVector []
 
-instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveMonoid (Value n context) where
+instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveMonoid (Value n context)

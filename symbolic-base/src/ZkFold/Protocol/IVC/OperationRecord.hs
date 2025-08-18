@@ -1,17 +1,17 @@
 module ZkFold.Protocol.IVC.OperationRecord where
 
 import Data.Bifunctor (Bifunctor (..))
+import Data.Bool (Bool)
+import Data.Eq (Eq (..))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.List ((++))
 import Data.Tuple (snd)
 import Prelude (Integer)
 
 import ZkFold.Algebra.Class
-import ZkFold.Protocol.IVC.AccumulatorScheme (AdditiveAction (..))
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import Data.Eq (Eq (..))
 import ZkFold.Data.Bool
-import Data.Bool (Bool)
+import ZkFold.Protocol.IVC.AccumulatorScheme (AdditiveAction (..))
 
 data Operands s c = Addends c c | Scaling s c deriving Functor
 
@@ -45,10 +45,11 @@ record :: (Operands s c, c) -> [(Operands s c, c)] -> OperationRecord s c
 record res log = OperationRecord (snd res) (res : log)
 
 instance Bifunctor OperationRecord where
-  first f OperationRecord {..} = OperationRecord
-    { opValue = opValue
-    , opLog = first (first f) <$> opLog
-    }
+  first f OperationRecord {..} =
+    OperationRecord
+      { opValue = opValue
+      , opLog = first (first f) <$> opLog
+      }
   second = fmap
 
 instance Zero c => Zero (OperationRecord s c) where
@@ -57,11 +58,14 @@ instance Zero c => Zero (OperationRecord s c) where
 instance AdditiveSemigroup c => AdditiveSemigroup (OperationRecord s c) where
   OperationRecord a l + OperationRecord b m = addends a b `record` (l ++ m)
 
-instance (Semiring s, AdditiveMonoid c, Scale s c) =>
-  AdditiveMonoid (OperationRecord s c)
+instance
+  (Semiring s, AdditiveMonoid c, Scale s c)
+  => AdditiveMonoid (OperationRecord s c)
 
-instance (Ring s, AdditiveMonoid c, Scale s c) =>
-  AdditiveGroup (OperationRecord s c) where
+instance
+  (Ring s, AdditiveMonoid c, Scale s c)
+  => AdditiveGroup (OperationRecord s c)
+  where
   negate = scale (-1 :: Integer)
 
 instance AdditiveGroup c => AdditiveAction c (OperationRecord s c) where

@@ -3,14 +3,13 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Protocol.IVC.RecursiveFunction where
 
 import Data.Binary (Binary (..))
 import Data.Foldable (toList)
-import Data.Function ((.), ($))
+import Data.Function (($), (.))
 import GHC.Generics (Generic, Par1, (:*:))
 import Prelude ((<$>), type (~))
 
@@ -19,20 +18,20 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Empty (empty)
+import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (unpacked)
+import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi, x)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic (witnessF, BaseField))
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic (BaseField, witnessF))
 import ZkFold.Symbolic.Data.Bool (Bool, bool)
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Product (fstP, sndP)
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1
@@ -40,13 +39,14 @@ type RecursiveI i = i :*: Par1
 newtype DataSource c = DataSource {dataSource :: c}
   deriving newtype
     ( AdditiveGroup
-    , Zero
     , AdditiveSemigroup
     , CyclicGroup
     , SymbolicData
+    , Zero
     )
 
 deriving newtype instance AdditiveMonoid c => AdditiveMonoid (DataSource c)
+
 deriving instance {-# INCOHERENT #-} Scale a c => Scale a (DataSource c)
 
 instance
@@ -77,7 +77,7 @@ instance
 
 type RecursiveP d k i p c =
   Layout (RecursivePayload d k i p c)
-  :*: Payload (RecursivePayload d k i p c)
+    :*: Payload (RecursivePayload d k i p c)
 
 type RecursiveFunction d k a i p c =
   StepFunction a (RecursiveI i) (RecursiveP d k i p c)
@@ -119,8 +119,8 @@ recursiveFunction hash hcommit func =
     -- A helper function to derive the accumulator scheme
     func' :: RecursiveFunction d k a i p c
     func'
-      (restore . (, empty) -> (x, h :: FieldElement (Context c)))
-      (restoreP ->
+      (restore . (,empty) -> (x, h :: FieldElement (Context c)))
+      ( restoreP ->
           ( RecursivePayload u _ _ _ _
               :: RecursivePayload d k i p c
             )

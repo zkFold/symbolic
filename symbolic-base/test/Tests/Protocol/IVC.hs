@@ -15,6 +15,8 @@ import ZkFold.Algebra.Number (Natural)
 import ZkFold.Algebra.Polynomial.Univariate (evalPolyVec)
 import ZkFold.Algebra.Polynomial.Univariate.Simple (fromVector)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.ArithmeticCircuit.Var (NewVar)
+import ZkFold.ArithmeticCircuit.Witness (WitnessF)
 import ZkFold.Data.Package (packed, unpacked)
 import ZkFold.Data.Vector (Vector (..), item, singleton, unsafeToVector, zip)
 import ZkFold.Protocol.IVC.Accumulator (
@@ -32,11 +34,13 @@ import ZkFold.Protocol.IVC.NARK (
   NARKProof (..),
   narkInstanceProof,
  )
-import ZkFold.Protocol.IVC.Oracle (mimcHash, OracleSource (..))
+import ZkFold.Protocol.IVC.OperationRecord (OperationRecord (opValue))
+import ZkFold.Protocol.IVC.Oracle (OracleSource (..), mimcHash)
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction (
+  DataSource (DataSource),
   RecursiveI,
-  RecursiveP, DataSource (DataSource),
+  RecursiveP,
  )
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProtocolA)
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
@@ -44,9 +48,6 @@ import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Protocol.IVC.OperationRecord (OperationRecord (opValue))
-import ZkFold.ArithmeticCircuit.Witness (WitnessF)
-import ZkFold.ArithmeticCircuit.Var (NewVar)
 
 type A = Zp BLS12_381_Scalar
 
@@ -85,10 +86,13 @@ type PARDEG = 5
 type PAR = Vector PARDEG A
 
 instance OracleSource A A where source = pure
+
 instance OracleSource A C where
   source = fmap toConstant . source @F . DataSource . opValue
+
 instance OracleSource A PT where
   source = fmap toConstant . source @F . DataSource
+
 instance {-# OVERLAPPING #-} Scale A PT where
   scale = scale @F . fromConstant
 
@@ -147,8 +151,9 @@ specIVC = do
       narkIP p = narkInstanceProof (sps p) pi0 U1
       pi p = let NARKInstanceProof z _ = narkIP p in z
       cs :: PAR -> Vector 1 C
-      cs p = let NARKInstanceProof _ (NARKProof z _) = narkIP p
-              in (zero .+) <$> z
+      cs p =
+        let NARKInstanceProof _ (NARKProof z _) = narkIP p
+         in (zero .+) <$> z
       ms p = let NARKInstanceProof _ (NARKProof _ z) = narkIP p in z
 
       scheme :: PAR -> AccumulatorScheme D 1 I C C A
@@ -171,7 +176,7 @@ specIVC = do
     it "is a homomorphic commitment" $ do
       withMaxSuccess 10 $ property $ \(fromConstant @Integer -> p) (fromConstant @Integer -> q) ->
         cyclicCommit @(WeierstrassWitness (Interpreter A)) [p + q] zero
-        == (cyclicCommit [p] + cyclicCommit [q]) zero
+          == (cyclicCommit [p] + cyclicCommit [q]) zero
   describe "Special sound protocol specification" $ do
     describe "verifier" $ do
       it "must output zeros on the public input and message" $ do

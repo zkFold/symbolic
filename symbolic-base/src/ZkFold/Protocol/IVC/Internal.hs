@@ -10,6 +10,7 @@ module ZkFold.Protocol.IVC.Internal where
 import Control.Lens ((^.))
 import Control.Lens.Combinators (makeLenses)
 import Data.Bifunctor (bimap)
+import Data.Binary (Binary)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
@@ -18,6 +19,7 @@ import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, (.+))
@@ -33,14 +35,12 @@ import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocolA,
   specialSoundProtocolC,
  )
+import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (true)
-import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, SymbolicData, arithmetize, Payload, payload)
+import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, Payload, SymbolicData, arithmetize, payload)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import Data.Binary (Binary)
-import ZkFold.Symbolic.Class (Symbolic(BaseField))
 import ZkFold.Symbolic.Data.Switch (Switch)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -162,13 +162,15 @@ ivcProve hash hcommit1 hcommit2 ptData f res witness =
     value v = runInterpreter (arithmetize v) :*: payload v
 
     recursivePayload :: RecursiveP d k i p pt a
-    recursivePayload = value RecursivePayload
-      { recPayload = Interpreter witness
-      , recProof = ptData <$> commits
-      , recAccInst = bimap ptData fromConstant (res ^. acc ^. x)
-      , recFlag = true
-      , recCommits = ptData . (zero .+) <$> pf
-      }
+    recursivePayload =
+      value
+        RecursivePayload
+          { recPayload = Interpreter witness
+          , recProof = ptData <$> commits
+          , recAccInst = bimap ptData fromConstant (res ^. acc ^. x)
+          , recFlag = true
+          , recCommits = ptData . (zero .+) <$> pf
+          }
 
     protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt) c a
     protocol =
@@ -176,8 +178,9 @@ ivcProve hash hcommit1 hcommit2 ptData f res witness =
         commitOpen hcommit1 $
           specialSoundProtocolA @d pRec
 
-    (messages', commits') = unzip $
-      prover protocol input recursivePayload zero 0
+    (messages', commits') =
+      unzip $
+        prover protocol input recursivePayload zero 0
 
     ivcProof :: IVCProof k c a
     ivcProof = IVCProof commits' messages'

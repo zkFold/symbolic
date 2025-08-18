@@ -37,7 +37,7 @@ import Data.Function (on)
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.Kind (Type)
-import Data.List (unfoldr, zip, iterate)
+import Data.List (iterate, unfoldr, zip)
 import Data.Map (fromList, (!))
 import Data.Maybe (fromJust)
 import Data.Traversable (for, traverse)
@@ -574,7 +574,6 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (UIn
                 (ks, _) <- splitExpansion (highRegisterSize @(BaseField c) @n @r) 1 k
                 return $ V.unsafeToVector (zs ++ [ks])
             )
-
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Zero (UInt n r c) where
   zero = fromConstant (0 :: Natural)

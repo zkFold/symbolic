@@ -832,7 +832,7 @@ instance Scale Integer a => Scale Integer (Maybe a) where
 instance Zero a => Zero (Maybe a) where
   zero = Just zero
 
-instance AdditiveMonoid a => AdditiveMonoid (Maybe a) where
+instance AdditiveMonoid a => AdditiveMonoid (Maybe a)
 
 instance Exponent a Natural => Exponent (Maybe a) Natural where
   (^) :: Maybe a -> Natural -> Maybe a

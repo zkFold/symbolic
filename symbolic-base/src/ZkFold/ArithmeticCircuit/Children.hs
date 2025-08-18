@@ -59,7 +59,7 @@ instance Ord v => AdditiveSemigroup (Children a v) where
 instance Zero (Children a v) where
   zero = C empty
 
-instance Ord v => AdditiveMonoid (Children a v) where
+instance Ord v => AdditiveMonoid (Children a v)
 
 instance Ord v => AdditiveGroup (Children a v) where
   negate = id
