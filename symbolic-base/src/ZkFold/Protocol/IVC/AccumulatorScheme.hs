@@ -194,14 +194,14 @@ accumulatorScheme hash hcommit phi = AccumulatorScheme
   , decider = \acc ->
       let
         -- Fig. 5, step 1
-        commitsDiff = zipWith hcommit (acc ^. w) (acc ^. x ^. c)
+        commitsDiff = zipWith hcommit (negate <$> acc ^. w) (acc ^. x ^. c)
 
         -- Fig. 5, step 2
         err :: [f]
         err = algebraicMap @d phi (layoutData $ acc ^. x ^. pi) (acc ^. w) (acc ^. x ^. r) (acc ^. x ^. mu)
 
         -- Fig. 5, step 3
-        eDiff = hcommit err (acc ^. x ^. e)
+        eDiff = hcommit (negate <$> err) (acc ^. x ^. e)
        in
         (commitsDiff, eDiff)
   }
