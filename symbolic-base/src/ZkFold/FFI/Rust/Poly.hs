@@ -44,34 +44,35 @@ pokeArrayV ptr = V.imapM_ (pokeElemOff ptr)
 -- o2n - call Rust function which convert Haskell serialized view into Rust object and return pointer on it
 -- n20 - call Rust function which convert pointer on Rust object into Haskell bytes
 
-o2nScalarVec :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
+o2nScalarVec :: RustVector Fr -> RustVector Fr
 o2nScalarVec old = unsafePerformIO $ do
-  withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
-    ptrNew <- r_h2r_scalar_vec ptr (sizeOf (undefined :: Fr) * valueSize)
-    RPolyVec . RData <$> newForeignPtr r_scalar_vec_free ptrNew
- where
-  valueSize = fromIntegral $ value @size
+  withForeignPtr (rawData $ rawType old) $ \ptr -> do
+    ptrNew <- r_h2r_scalar_vec ptr (sizeOf (undefined :: Fr) * len)
+    RVector len . RData <$> newForeignPtr r_scalar_vec_free ptrNew
+  where
+    len = length old
 
-n2oScalarVec :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
+n2oScalarVec :: RustVector Fr -> RustVector Fr
 n2oScalarVec new = unsafePerformIO $ do
-  out <- callocForeignPtrBytes @CChar (sizeOf (undefined :: Fr) * valueSize)
-  withForeignPtr (rawData $ rawPolyVec new) $ \ptr -> do
+  out <- callocForeignPtrBytes @CChar (sizeOf (undefined :: Fr) * len)
+  withForeignPtr (rawData $ rawType new) $ \ptr -> do
     withForeignPtr out $ \optr -> do
       r_r2h_scalar_vec ptr optr
-  return $ RPolyVec $ RData out
- where
-  valueSize = fromIntegral $ value @size
+  return $ RVector len $ RData out
+  where
+    len = length new
 
-o2nScalarPoly :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
-o2nScalarPoly old = unsafePerformIO $ do
+
+o2nScalarPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
+o2nScalarPolyVec old = unsafePerformIO $ do
   withForeignPtr (rawData $ rawPolyVec old) $ \ptr -> do
     ptrNew <- r_h2r_scalar_poly ptr (sizeOf (undefined :: Fr) * valueSize)
     RPolyVec . RData <$> newForeignPtr r_scalar_poly_free ptrNew
  where
   valueSize = fromIntegral $ value @size
 
-n2oScalarPoly :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
-n2oScalarPoly new = unsafePerformIO $ do
+n2oScalarPolyVec :: forall size. KnownNat size => RustPolyVec Fr size -> RustPolyVec Fr size
+n2oScalarPolyVec new = unsafePerformIO $ do
   out <- callocForeignPtrBytes @CChar (sizeOf (undefined :: Fr) * valueSize)
   withForeignPtr (rawData $ rawPolyVec new) $ \ptr -> do
     withForeignPtr out $ \optr -> do
@@ -96,10 +97,10 @@ instance
     fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.Fr) * fromIntegral (value @size))
     withForeignPtr fptr $ \ptr -> do
       pokeArrayV (castPtr ptr) (fromPolyVec pv)
-      return $ o2nScalarPoly $ RPolyVec (RData fptr)
+      return $ o2nScalarPolyVec $ RPolyVec (RData fptr)
 
   r2h pv = unsafePerformIO $
-    withForeignPtr (rawData $ rawPolyVec $ n2oScalarPoly pv) $ \ptr -> do
+    withForeignPtr (rawData $ rawPolyVec $ n2oScalarPolyVec pv) $ \ptr -> do
       let valueSize = fromIntegral $ value @size
 
       l <- peekArrayV valueSize (castPtr $ ptr :: Ptr EC.Fr)
@@ -112,4 +113,13 @@ instance RustHaskell (RustVector Rust_BLS12_381_G1_Point) (V.Vector EC.BLS12_381
       pokeArrayV (castPtr ptr) vec
     return $ o2nPointVec $ RVector (V.length vec) (RData fptr)
 
-  r2h = error "We don't want to use r2h for point vector"
+  r2h = error "Not implemented"
+
+instance RustHaskell (RustVector Fr) (V.Vector EC.Fr) where
+  h2r vec = unsafePerformIO $ do
+    fptr <- callocForeignPtrBytes (sizeOf (undefined :: EC.BLS12_381_G1_Point) * V.length vec)
+    withForeignPtr fptr $ \ptr -> do
+      pokeArrayV (castPtr ptr) vec
+    return $  o2nScalarVec $ RVector (V.length vec) (RData fptr)
+
+  r2h = error "Not implemented"

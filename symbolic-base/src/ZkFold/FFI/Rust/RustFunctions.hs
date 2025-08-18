@@ -234,8 +234,8 @@ foreign import ccall unsafe "r_poly_div_shifted_mono"
 
 -- Plonkup prove
 
-foreign import ccall unsafe "rust_wrapper_plonkup_prove"
-  rsPlonkupProve
+foreign import ccall unsafe "r_plonkup_prove_serialized"
+  r_plonkup_prove_serialized
     :: Int
     -> CString
     -> Int
@@ -245,4 +245,49 @@ foreign import ccall unsafe "rust_wrapper_plonkup_prove"
     -> Int
     -> CString
     -> Int
+    -> IO CString
+
+foreign import ccall unsafe "r_plonkup_prove"
+  r_plonkup_prove
+    :: Int64     -- n
+    -> CString -- omega
+    -> CString -- k1
+    -> CString -- k2
+    -> CString -- gs
+    -> CString -- sigma1s
+    -> CString -- sigma2s
+    -> CString -- sigma3s
+
+    -- polynomials
+    -> CString -- qlX
+    -> CString -- qrX
+    -> CString -- qoX
+    -> CString -- qmX
+    -> CString -- qcX
+    -> CString -- qkX
+    -> CString -- t1X
+    -> CString -- t2X
+    -> CString -- t3X
+    -> CString -- s1X
+    -> CString -- s2X
+    -> CString -- s3X
+
+    -> CString -- proverSecret
+
+    -- relation
+    -> CString -- qM
+    -> CString -- qL
+    -> CString -- qR
+    -> CString -- qO
+    -> CString -- qC
+    -> CString -- qK
+    -> CString -- t1
+    -> CString -- t2
+    -> CString -- t3
+    -> Int64 -- prvNum
+    -> CString -- wPub
+
+    -> CString -- w1
+    -> CString -- w2
+    -> CString -- w3
     -> IO CString

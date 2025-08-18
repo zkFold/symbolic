@@ -79,7 +79,12 @@ pub unsafe extern "C" fn r_scalar_div(p1_ptr: *mut c_char, p2_ptr: *mut c_char) 
     binary(
         p1_ptr,
         p2_ptr,
-        |a: &ScalarField, b: &ScalarField| -> ScalarField { a / b },
+        |a: &ScalarField, b: &ScalarField| -> ScalarField {
+            if *b == ScalarField::ZERO {
+                return ScalarField::ZERO;
+            }
+            a / b
+        },
     )
 }
 

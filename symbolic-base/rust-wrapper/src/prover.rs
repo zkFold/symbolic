@@ -19,7 +19,7 @@ use num_bigint::BigUint;
 use std::collections::HashMap;
 use std::ops::{Div, Mul, MulAssign, Neg, Sub};
 
-use crate::utils::c_char;
+use crate::utils::{c_char, peek_const};
 #[derive(Debug)]
 pub struct PlonkupCircuitPolynomials {
     qlX: DensePolynomial<ScalarField>,
@@ -541,50 +541,43 @@ where
     }
 }
 
-pub fn plonkupProve(
+fn plonkupProveUnpacked(
     n: usize,
-    ps: &PlonkupProverSetup,
+    omega: ScalarField,
+    k1: ScalarField,
+    k2: ScalarField,
+    gs: &Vec<GAffine>,
+    sigma1s: &DensePolynomial<ScalarField>,
+    sigma2s: &DensePolynomial<ScalarField>,
+    sigma3s: &DensePolynomial<ScalarField>,
+    qlX: &DensePolynomial<ScalarField>,
+    qrX: &DensePolynomial<ScalarField>,
+    qoX: &DensePolynomial<ScalarField>,
+    qmX: &DensePolynomial<ScalarField>,
+    qcX: &DensePolynomial<ScalarField>,
+    qkX: &DensePolynomial<ScalarField>,
+    t1X: &DensePolynomial<ScalarField>,
+    t2X: &DensePolynomial<ScalarField>,
+    t3X: &DensePolynomial<ScalarField>,
+    s1X: &DensePolynomial<ScalarField>,
+    s2X: &DensePolynomial<ScalarField>,
+    s3X: &DensePolynomial<ScalarField>,
+    _qM: &DensePolynomial<ScalarField>,
+    _qL: &DensePolynomial<ScalarField>,
+    _qR: &DensePolynomial<ScalarField>,
+    _qO: &DensePolynomial<ScalarField>,
+    _qC: &DensePolynomial<ScalarField>,
+    qK: &DensePolynomial<ScalarField>,
+    t1: &DensePolynomial<ScalarField>,
+    t2: &DensePolynomial<ScalarField>,
+    t3: &DensePolynomial<ScalarField>,
+    wPub: &Vec<ScalarField>,
+    prvNum: usize,
+    w1: &DensePolynomial<ScalarField>,
+    w2: &DensePolynomial<ScalarField>,
+    w3: &DensePolynomial<ScalarField>,
     secret: &PlonkupProverSecret,
-    relation: &Relation,
-    witness: &PlonkupWitness,
 ) -> (PlonkupProof, PlonkupProverTestInfo) {
-    let omega = ps.omega;
-    let k1 = ps.k1;
-    let k2 = ps.k2;
-    let gs = &ps.gs;
-    let sigma1s = &ps.sigma1s;
-    let sigma2s = &ps.sigma2s;
-    let sigma3s = &ps.sigma3s;
-
-    let qlX = &ps.polynomials.qlX;
-    let qrX = &ps.polynomials.qrX;
-    let qoX = &ps.polynomials.qoX;
-    let qmX = &ps.polynomials.qmX;
-    let qcX = &ps.polynomials.qcX;
-    let qkX = &ps.polynomials.qkX;
-    let t1X = &ps.polynomials.t1X;
-    let t2X = &ps.polynomials.t2X;
-    let t3X = &ps.polynomials.t3X;
-    let s1X = &ps.polynomials.s1X;
-    let s2X = &ps.polynomials.s2X;
-    let s3X = &ps.polynomials.s3X;
-
-    let _qM = &relation.qM;
-    let _qL = &relation.qL;
-    let _qR = &relation.qR;
-    let _qO = &relation.qO;
-    let _qC = &relation.qC;
-    let qK = &relation.qK;
-    let t1 = &relation.t1;
-    let t2 = &relation.t2;
-    let t3 = &relation.t3;
-    let wPub = &relation.wPub;
-    let prvNum = relation.prvNum;
-
-    let w1 = &witness.w1;
-    let w2 = &witness.w2;
-    let w3 = &witness.w3;
-
     let one = &ScalarField::one();
 
     let zhX = &polyVecZero(n);
@@ -598,15 +591,15 @@ pub fn plonkupProve(
     };
 
     let aX = {
-        let w1X = polyVecInLagrangeBasis(n, &omega, &witness.w1);
+        let w1X = polyVecInLagrangeBasis(n, &omega, &w1);
         &(&polyVecLinear(&secret.get(1), &secret.get(2)).mul(zhX) + &w1X)
     };
     let bX = {
-        let w2X = polyVecInLagrangeBasis(n, &omega, &witness.w2);
+        let w2X = polyVecInLagrangeBasis(n, &omega, &w2);
         &(&polyVecLinear(&secret.get(3), &secret.get(4)).mul(zhX) + &w2X)
     };
     let cX = {
-        let w3X = polyVecInLagrangeBasis(n, &omega, &witness.w3);
+        let w3X = polyVecInLagrangeBasis(n, &omega, &w3);
         &(&polyVecLinear(&secret.get(5), &secret.get(6)).mul(zhX) + &w3X)
     };
 
@@ -677,12 +670,12 @@ pub fn plonkupProve(
     let omegas_tick = &toPolyVec(&iterate_n(4 * n + 6, |x| *x * &omega, *one));
 
     let grandProduct1 = {
-        let gp1_1 = (&witness.w1 + &(omegas.mul(beta))).elementwise(n, |x| x + &gamma);
-        let gp1_2 = (&witness.w2 + &(omegas.mul(beta * k1))).elementwise(n, |x| x + &gamma);
-        let gp1_3 = (&witness.w3 + &(omegas.mul(beta * k2))).elementwise(n, |x| x + &gamma);
-        let gp1_4 = (&witness.w1 + &(sigma1s.mul(beta))).elementwise(n, |x| x + &gamma);
-        let gp1_5 = (&witness.w2 + &(sigma2s.mul(beta))).elementwise(n, |x| x + &gamma);
-        let gp1_6 = (&witness.w3 + &(sigma3s.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_1 = (w1 + &(omegas.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_2 = (w2 + &(omegas.mul(beta * k1))).elementwise(n, |x| x + &gamma);
+        let gp1_3 = (w3 + &(omegas.mul(beta * k2))).elementwise(n, |x| x + &gamma);
+        let gp1_4 = (w1 + &(sigma1s.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_5 = (w2 + &(sigma2s.mul(beta))).elementwise(n, |x| x + &gamma);
+        let gp1_6 = (w3 + &(sigma3s.mul(beta))).elementwise(n, |x| x + &gamma);
 
         &rotR(
             n,
@@ -1000,6 +993,56 @@ pub fn plonkupProve(
     (plonkupProof, testInfo)
 }
 
+fn plonkupProve(
+    n: usize,
+    ps: &PlonkupProverSetup,
+    secret: &PlonkupProverSecret,
+    relation: &Relation,
+    witness: &PlonkupWitness,
+) -> (PlonkupProof, PlonkupProverTestInfo) {
+    let omega = ps.omega;
+    let k1 = ps.k1;
+    let k2 = ps.k2;
+    let gs = &ps.gs;
+    let sigma1s = &ps.sigma1s;
+    let sigma2s = &ps.sigma2s;
+    let sigma3s = &ps.sigma3s;
+
+    let qlX = &ps.polynomials.qlX;
+    let qrX = &ps.polynomials.qrX;
+    let qoX = &ps.polynomials.qoX;
+    let qmX = &ps.polynomials.qmX;
+    let qcX = &ps.polynomials.qcX;
+    let qkX = &ps.polynomials.qkX;
+    let t1X = &ps.polynomials.t1X;
+    let t2X = &ps.polynomials.t2X;
+    let t3X = &ps.polynomials.t3X;
+    let s1X = &ps.polynomials.s1X;
+    let s2X = &ps.polynomials.s2X;
+    let s3X = &ps.polynomials.s3X;
+
+    let qM = &relation.qM;
+    let qL = &relation.qL;
+    let qR = &relation.qR;
+    let qO = &relation.qO;
+    let qC = &relation.qC;
+    let qK = &relation.qK;
+    let t1 = &relation.t1;
+    let t2 = &relation.t2;
+    let t3 = &relation.t3;
+    let wPub = &relation.wPub;
+    let prvNum = relation.prvNum;
+
+    let w1 = &witness.w1;
+    let w2 = &witness.w2;
+    let w3 = &witness.w3;
+
+    plonkupProveUnpacked(
+        n, omega, k1, k2, gs, sigma1s, sigma2s, sigma3s, qlX, qrX, qoX, qmX, qcX, qkX, t1X, t2X,
+        t3X, s1X, s2X, s3X, qM, qL, qR, qO, qC, qK, t1, t2, t3, wPub, prvNum, w1, w2, w3, secret,
+    )
+}
+
 fn deserialize_scalar(buffer: &[u8]) -> (ScalarField, &[u8]) {
     let (left, right) = buffer.split_at(32);
     (PrimeField::from_le_bytes_mod_order(left), right)
@@ -1165,7 +1208,7 @@ fn deserialize_relation(buffer: &[u8]) -> (Relation, &[u8]) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
+pub unsafe extern "C" fn r_plonkup_prove_serialized(
     n: u64,
 
     setup_ptr: *const c_char,
@@ -1200,6 +1243,174 @@ pub unsafe extern "C" fn rust_wrapper_plonkup_prove(
         },
         &relation,
         &PlonkupWitness { w1, w2, w3 },
+    );
+
+    let mut byte_result = vec![
+        serialize_point(proof.cmA),
+        serialize_point(proof.cmB),
+        serialize_point(proof.cmC),
+        serialize_point(proof.cmF),
+        serialize_point(proof.cmH1),
+        serialize_point(proof.cmH2),
+        serialize_point(proof.cmZ1),
+        serialize_point(proof.cmZ2),
+        serialize_point(proof.cmQlow),
+        serialize_point(proof.cmQmid),
+        serialize_point(proof.cmQhigh),
+        serialize_point(proof.proof1),
+        serialize_point(proof.proof2),
+        serialize_scalar(proof.a_xi),
+        serialize_scalar(proof.b_xi),
+        serialize_scalar(proof.c_xi),
+        serialize_scalar(proof.s1_xi),
+        serialize_scalar(proof.s2_xi),
+        serialize_scalar(proof.f_xi),
+        serialize_scalar(proof.t_xi),
+        serialize_scalar(proof.t_xi_tick),
+        serialize_scalar(proof.z1_xi_tick),
+        serialize_scalar(proof.z2_xi_tick),
+        serialize_scalar(proof.h1_xi_tick),
+        serialize_scalar(proof.h2_xi),
+        serialize_scalar(proof.l1_xi),
+        serialize_scalar_vec(proof.l_xi),
+        serialize_scalar(test_info.omega),
+        serialize_scalar(test_info.k1),
+        serialize_scalar(test_info.k2),
+        serialize_scalar_poly(test_info.qlX),
+        serialize_scalar_poly(test_info.qrX),
+        serialize_scalar_poly(test_info.qoX),
+        serialize_scalar_poly(test_info.qmX),
+        serialize_scalar_poly(test_info.qcX),
+        serialize_scalar_poly(test_info.qkX),
+        serialize_scalar_poly(test_info.t1X),
+        serialize_scalar_poly(test_info.t2X),
+        serialize_scalar_poly(test_info.t3X),
+        serialize_scalar_poly(test_info.s1X),
+        serialize_scalar_poly(test_info.s2X),
+        serialize_scalar_poly(test_info.s3X),
+        serialize_scalar_poly(test_info.aX),
+        serialize_scalar_poly(test_info.bX),
+        serialize_scalar_poly(test_info.cX),
+        serialize_scalar_poly(test_info.piX),
+        serialize_scalar_poly(test_info.tX),
+        serialize_scalar_poly(test_info.z1X),
+        serialize_scalar_poly(test_info.z2X),
+        serialize_scalar_poly(test_info.fX),
+        serialize_scalar_poly(test_info.h1X),
+        serialize_scalar_poly(test_info.h2X),
+        serialize_scalar_poly(test_info.zhX),
+        serialize_scalar_poly(test_info.qX),
+        serialize_scalar_poly(test_info.qlowX),
+        serialize_scalar_poly(test_info.qmidX),
+        serialize_scalar_poly(test_info.qhighX),
+        serialize_scalar_poly(test_info.rX),
+        serialize_scalar(test_info.alpha),
+        serialize_scalar(test_info.beta),
+        serialize_scalar(test_info.gamma),
+        serialize_scalar(test_info.delta),
+        serialize_scalar(test_info.epsilon),
+        serialize_scalar(test_info.xi),
+        serialize_scalar(test_info.zeta),
+        serialize_scalar_poly(test_info.f_zeta),
+        serialize_scalar_poly(test_info.t_zeta),
+        serialize_scalar_poly(test_info.omegas),
+        serialize_scalar_poly(test_info.omegas_tick),
+        serialize_scalar_poly(test_info.grandProduct1),
+        serialize_scalar_poly(test_info.grandProduct2),
+        serialize_scalar_poly(test_info.w1),
+        serialize_scalar_poly(test_info.w2),
+        serialize_scalar_poly(test_info.w3),
+    ]
+    .concat();
+
+    let result_len = byte_result.len();
+    let ptr = libc::malloc(result_len + 8) as *mut u8;
+    let mut res = result_len.to_le_bytes().to_vec();
+    res.append(&mut byte_result);
+    std::ptr::copy(res.as_ptr(), ptr as *mut u8, res.len());
+    ptr as *const i8
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn r_plonkup_prove(
+    n: u64,
+    omega_ptr: *const c_char,
+    k1_ptr: *const c_char,
+    k2_ptr: *const c_char,
+    gs_ptr: *const c_char,
+    sigma1s_ptr: *const c_char,
+    sigma2s_ptr: *const c_char,
+    sigma3s_ptr: *const c_char,
+    qlX_ptr: *const c_char,
+    qrX_ptr: *const c_char,
+    qoX_ptr: *const c_char,
+    qmX_ptr: *const c_char,
+    qcX_ptr: *const c_char,
+    qkX_ptr: *const c_char,
+    t1X_ptr: *const c_char,
+    t2X_ptr: *const c_char,
+    t3X_ptr: *const c_char,
+    s1X_ptr: *const c_char,
+    s2X_ptr: *const c_char,
+    s3X_ptr: *const c_char,
+    proverSecret_ptr: *const c_char,
+    qM_ptr: *const c_char,
+    qL_ptr: *const c_char,
+    qR_ptr: *const c_char,
+    qO_ptr: *const c_char,
+    qC_ptr: *const c_char,
+    qK_ptr: *const c_char,
+    t1_ptr: *const c_char,
+    t2_ptr: *const c_char,
+    t3_ptr: *const c_char,
+    prvNum: u64,
+    wPub_ptr: *const c_char,
+    w1_ptr: *const c_char,
+    w2_ptr: *const c_char,
+    w3_ptr: *const c_char,
+) -> *const c_char {
+    let n = n as usize;
+    let omega: ScalarField = *peek_const(omega_ptr);
+    let k1: ScalarField = *peek_const(k1_ptr);
+    let k2: ScalarField = *peek_const(k2_ptr);
+    let gs: &Vec<GAffine> = peek_const(gs_ptr);
+    let sigma1s: &DensePolynomial<ScalarField> = peek_const(sigma1s_ptr);
+    let sigma2s: &DensePolynomial<ScalarField> = peek_const(sigma2s_ptr);
+    let sigma3s: &DensePolynomial<ScalarField> = peek_const(sigma3s_ptr);
+    let qlX: &DensePolynomial<ScalarField> = peek_const(qlX_ptr);
+    let qrX: &DensePolynomial<ScalarField> = peek_const(qrX_ptr);
+    let qoX: &DensePolynomial<ScalarField> = peek_const(qoX_ptr);
+    let qmX: &DensePolynomial<ScalarField> = peek_const(qmX_ptr);
+    let qcX: &DensePolynomial<ScalarField> = peek_const(qcX_ptr);
+    let qkX: &DensePolynomial<ScalarField> = peek_const(qkX_ptr);
+    let t1X: &DensePolynomial<ScalarField> = peek_const(t1X_ptr);
+    let t2X: &DensePolynomial<ScalarField> = peek_const(t2X_ptr);
+    let t3X: &DensePolynomial<ScalarField> = peek_const(t3X_ptr);
+    let s1X: &DensePolynomial<ScalarField> = peek_const(s1X_ptr);
+    let s2X: &DensePolynomial<ScalarField> = peek_const(s2X_ptr);
+    let s3X: &DensePolynomial<ScalarField> = peek_const(s3X_ptr);
+    let secret: &DensePolynomial<ScalarField> = peek_const(proverSecret_ptr);
+    let secret: PlonkupProverSecret = PlonkupProverSecret {
+        secret: secret.to_vec(),
+    };
+    let qM: &DensePolynomial<ScalarField> = peek_const(qM_ptr);
+    let qL: &DensePolynomial<ScalarField> = peek_const(qL_ptr);
+    let qR: &DensePolynomial<ScalarField> = peek_const(qR_ptr);
+    let qO: &DensePolynomial<ScalarField> = peek_const(qO_ptr);
+    let qC: &DensePolynomial<ScalarField> = peek_const(qC_ptr);
+    let qK: &DensePolynomial<ScalarField> = peek_const(qK_ptr);
+    let t1: &DensePolynomial<ScalarField> = peek_const(t1_ptr);
+    let t2: &DensePolynomial<ScalarField> = peek_const(t2_ptr);
+    let t3: &DensePolynomial<ScalarField> = peek_const(t3_ptr);
+    let prvNum = prvNum as usize;
+    let wPub: &Vec<ScalarField> = peek_const(wPub_ptr);
+    let w1: &DensePolynomial<ScalarField> = peek_const(w1_ptr);
+    let w2: &DensePolynomial<ScalarField> = peek_const(w2_ptr);
+    let w3: &DensePolynomial<ScalarField> = peek_const(w3_ptr);
+
+    let (proof, test_info) = plonkupProveUnpacked(
+        n, omega, k1, k2, gs, sigma1s, sigma2s, sigma3s, qlX, qrX, qoX, qmX, qcX, qkX, t1X, t2X,
+        t3X, s1X, s2X, s3X, qM, qL, qR, qO, qC, qK, t1, t2, t3, wPub, prvNum, w1, w2, w3, &secret,
     );
 
     let mut byte_result = vec![

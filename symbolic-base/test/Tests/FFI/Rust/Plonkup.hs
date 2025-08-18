@@ -37,7 +37,7 @@ import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 
 type TestCircuitSize = 2 ^ 6
 
-type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_Point BLS12_381_G2_Point t (PolyVec Fr)
 
 specRustPlonkup :: Spec
 specRustPlonkup = do
@@ -45,15 +45,15 @@ specRustPlonkup = do
     it "should be equal to Haskell prover" $ do
       property $
         \(x :: Fr)
-         (ps :: PlonkupProverSecret BLS12_381_G1_JacobianPoint)
+         (ps :: PlonkupProverSecret BLS12_381_G1_Point)
          (a :: ArithmeticCircuit Fr Par1 Par1) ->
             let
               (omega, k1, k2) = getParams (Number.value @TestCircuitSize)
-              (gs, h1) = getSecretParams @TestCircuitSize @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
+              (gs, h1) = getSecretParams @TestCircuitSize @BLS12_381_G1_Point @BLS12_381_G2_Point x
               plonkup = Plonkup omega k1 k2 a h1 gs
               setupP = setupProve @(PlonkupTs Par1 TestCircuitSize ByteString) plonkup
-              witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint (Par1 zero), ps)
-              (proofRust, _) = rustPlonkupProve setupP witness
+              witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_Point (Par1 zero), ps)
+              (_, proofRust, _) = rustPlonkupProve setupP witness
               (_, proofHs) = prove @(PlonkupTs Par1 TestCircuitSize ByteString) setupP witness
              in
               proofHs == proofRust

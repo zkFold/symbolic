@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE NondecreasingIndentation #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.FFI.Rust.Plonkup where
 
@@ -8,21 +10,23 @@ import qualified Data.Vector as V
 import Foreign
 import GHC.IO (unsafePerformIO)
 import GHC.Natural (naturalToInteger)
-import Prelude
-
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint, Fr)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 ( Fr, BLS12_381_G1_Point, BLS12_381_G2_Point)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.Vector
-import ZkFold.FFI.Rust.RustFunctions (rsPlonkupProve)
+import ZkFold.FFI.Rust.RustFunctions (r_plonkup_prove_serialized, r_plonkup_prove)
+import ZkFold.Protocol.Plonkup.Input (PlonkupInput (PlonkupInput))
 import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover
 import ZkFold.Protocol.Plonkup.Relation
 import ZkFold.Protocol.Plonkup.Testing
 import ZkFold.Protocol.Plonkup.Witness
+import Prelude
+import ZkFold.FFI.Rust.Types hiding (Fr)
+import ZkFold.FFI.Rust.Conversion
 
-instance Binary (PlonkupCircuitPolynomials n BLS12_381_G1_JacobianPoint (PolyVec Fr)) where
+instance Binary (PlonkupCircuitPolynomials n BLS12_381_G1_Point (PolyVec Fr)) where
   put (PlonkupCircuitPolynomials {..}) =
     put qlX
       <> put qrX
@@ -52,7 +56,7 @@ instance Binary (PlonkupCircuitPolynomials n BLS12_381_G1_JacobianPoint (PolyVec
     s3X <- get
     pure $ PlonkupCircuitPolynomials {..}
 
-instance Binary (PlonkupProverSetup i o n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint (PolyVec Fr)) where
+instance Binary (PlonkupProverSetup i o n BLS12_381_G1_Point BLS12_381_G2_Point (PolyVec Fr)) where
   put (PlonkupProverSetup {..}) =
     put omega
       <> put k1
@@ -61,7 +65,6 @@ instance Binary (PlonkupProverSetup i o n BLS12_381_G1_JacobianPoint BLS12_381_G
       <> put sigma1s
       <> put sigma2s
       <> put sigma3s
-      -- <> put relation
       <> put polynomials
 
   get = do
@@ -73,16 +76,15 @@ instance Binary (PlonkupProverSetup i o n BLS12_381_G1_JacobianPoint BLS12_381_G
     sigma2s <- get
     sigma3s <- get
     relation <- undefined
-    -- relation <- get
     polynomials <- get
     pure $ PlonkupProverSetup {..}
 
-instance Binary (PlonkupProverSecret BLS12_381_G1_JacobianPoint) where
+instance Binary (PlonkupProverSecret BLS12_381_G1_Point) where
   put (PlonkupProverSecret v) = put $ V.toList $ toV v
 
   get = PlonkupProverSecret . Vector . V.fromList <$> get
 
-instance Binary (PlonkupProof BLS12_381_G1_JacobianPoint) where
+instance Binary (PlonkupProof BLS12_381_G1_Point) where
   put (PlonkupProof {..}) =
     put cmA
       <> put cmB
@@ -142,7 +144,7 @@ instance Binary (PlonkupProof BLS12_381_G1_JacobianPoint) where
     l_xi <- get
     pure $ PlonkupProof {..}
 
-instance Binary (PlonkupProverTestInfo n BLS12_381_G1_JacobianPoint (PolyVec Fr)) where
+instance (ScalarFieldOf g ~ Fr) => Binary (PlonkupProverTestInfo n g (PolyVec Fr)) where
   put (PlonkupProverTestInfo {..}) =
     put omega
       <> put k1
@@ -260,31 +262,136 @@ rustPlonkupProve
   :: forall i o n
    . KnownNat n
   => PlonkupProverSetup
-       i
-       o
-       n
-       BLS12_381_G1_JacobianPoint
-       BLS12_381_G2_JacobianPoint
-       (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
-  -> (PlonkupWitnessInput i BLS12_381_G1_JacobianPoint, PlonkupProverSecret BLS12_381_G1_JacobianPoint)
-  -> ( PlonkupProof BLS12_381_G1_JacobianPoint
-     , PlonkupProverTestInfo n BLS12_381_G1_JacobianPoint (PolyVec (ScalarFieldOf BLS12_381_G1_JacobianPoint))
+      i
+      o
+      n
+      BLS12_381_G1_Point
+      BLS12_381_G2_Point
+      (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+  -> (PlonkupWitnessInput i BLS12_381_G1_Point, PlonkupProverSecret BLS12_381_G1_Point)
+  -> ( PlonkupInput BLS12_381_G1_Point
+     , PlonkupProof BLS12_381_G1_Point
+     , PlonkupProverTestInfo n BLS12_381_G1_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
      )
 rustPlonkupProve
   proverSetup
   (PlonkupWitnessInput wInput, proverSecret) = unsafePerformIO $ do
-    let proverSetup' = encode proverSetup
-        proverSecret' = encode proverSecret
-        proverRelation = encode (relation proverSetup)
-        (!w1, !w2, !w3) = witness (relation proverSetup) wInput
-        !wPub = encode (pubInput (relation proverSetup) wInput)
-        !n = fromInteger $ naturalToInteger $ value @n
+    let !proverSetup' = encode proverSetup
+    let !proverSecret' = encode proverSecret
+    let !proverRelation = encode (relation proverSetup)
+    let !rel = relation proverSetup
+    let (!w1, !w2, !w3) = witness rel wInput
+    let !pubInput' = pubInput rel
+    let !wPub' =  pubInput' wInput
+    let !wPub = encode wPub'
+    let !n = fromInteger $ naturalToInteger $ value @n
+
     BS.useAsCStringLen (BS.toStrict proverSetup') $ \(ptr1, len1) -> do
       BS.useAsCStringLen (BS.toStrict proverSecret') $ \(ptr2, len2) -> do
         BS.useAsCStringLen (BS.toStrict (proverRelation <> wPub)) $ \(ptr3, len3) -> do
           BS.useAsCStringLen (BS.toStrict (mconcat $ encode <$> [w1, w2, w3])) $ \(ptr4, len4) -> do
-            ptr <- rsPlonkupProve n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
+            ptr <- r_plonkup_prove_serialized n ptr1 len1 ptr2 len2 ptr3 len3 ptr4 len4
             len <- peek (castPtr ptr) :: IO Int
             bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
             free ptr
-            pure $ decode (BS.fromStrict bs)
+            let (proof, testInfo) = decode (BS.fromStrict bs)
+            pure (PlonkupInput wPub', proof, testInfo)
+
+rustPlonkupProveNative
+  :: forall i o n
+   . KnownNat n
+  => PlonkupProverSetup
+      i
+      o
+      n
+      Rust_BLS12_381_G1_Point
+      Rust_BLS12_381_G2_Point
+      (RustPolyVec (ScalarFieldOf Rust_BLS12_381_G1_Point))
+  -> (PlonkupWitnessInput i Rust_BLS12_381_G1_Point, PlonkupProverSecret Rust_BLS12_381_G1_Point)
+  -> ( PlonkupInput BLS12_381_G1_Point
+     , PlonkupProof BLS12_381_G1_Point
+     , PlonkupProverTestInfo n BLS12_381_G1_Point (PolyVec (ScalarFieldOf BLS12_381_G1_Point))
+     )
+rustPlonkupProveNative
+  (PlonkupProverSetup {..})
+  (PlonkupWitnessInput wInput, PlonkupProverSecret secret) = unsafePerformIO $ do
+    let PlonkupRelation {..} = relation
+    let PlonkupCircuitPolynomials {..} = polynomials
+    let (!w1, !w2, !w3) = witness wInput
+    let !wPub = pubInput wInput
+    let !n = integral @n
+    withForeignPtr (rawData $ rawType $ omega) $ \omega_ptr -> do
+    withForeignPtr (rawData $ rawType $ k1) $ \k1_ptr -> do
+    withForeignPtr (rawData $ rawType $ k2) $ \k2_ptr -> do
+    withForeignPtr (rawData $ rawType $ h2r $ r2h <$> gs) $ \gs_ptr -> do
+    withForeignPtr (rawData $ rawType $ sigma1s) $ \sigma1s_ptr -> do
+    withForeignPtr (rawData $ rawType $ sigma2s) $ \sigma2s_ptr -> do
+    withForeignPtr (rawData $ rawType $ sigma3s) $ \sigma3s_ptr -> do
+    withForeignPtr (rawData $ rawType $ qlX) $ \qlX_ptr -> do
+    withForeignPtr (rawData $ rawType $ qrX) $ \qrX_ptr -> do
+    withForeignPtr (rawData $ rawType $ qoX) $ \qoX_ptr -> do
+    withForeignPtr (rawData $ rawType $ qmX) $ \qmX_ptr -> do
+    withForeignPtr (rawData $ rawType $ qcX) $ \qcX_ptr -> do
+    withForeignPtr (rawData $ rawType $ qkX) $ \qkX_ptr -> do
+    withForeignPtr (rawData $ rawType $ t1X) $ \t1X_ptr -> do
+    withForeignPtr (rawData $ rawType $ t2X) $ \t2X_ptr -> do
+    withForeignPtr (rawData $ rawType $ t3X) $ \t3X_ptr -> do
+    withForeignPtr (rawData $ rawType $ s1X) $ \s1X_ptr -> do
+    withForeignPtr (rawData $ rawType $ s2X) $ \s2X_ptr -> do
+    withForeignPtr (rawData $ rawType $ s3X) $ \s3X_ptr -> do
+    withForeignPtr (rawData $ rawType $ h2r $ (toPolyVec $ toV (r2h <$> secret) :: PolyVec Fr 19)) $ \proverSecret_ptr -> do
+    withForeignPtr (rawData $ rawType $ qM) $ \qM_ptr -> do
+    withForeignPtr (rawData $ rawType $ qL) $ \qL_ptr -> do
+    withForeignPtr (rawData $ rawType $ qR) $ \qR_ptr -> do
+    withForeignPtr (rawData $ rawType $ qO) $ \qO_ptr -> do
+    withForeignPtr (rawData $ rawType $ qC) $ \qC_ptr -> do
+    withForeignPtr (rawData $ rawType $ qK) $ \qK_ptr -> do
+    withForeignPtr (rawData $ rawType $ t1) $ \t1_ptr -> do
+    withForeignPtr (rawData $ rawType $ t2) $ \t2_ptr -> do
+    withForeignPtr (rawData $ rawType $ t3) $ \t3_ptr -> do
+    withForeignPtr (rawData $ rawType $ h2r $ V.fromList $ r2h <$> wPub) $ \wPub_ptr -> do
+    withForeignPtr (rawData $ rawType $ w1) $ \w1_ptr -> do
+    withForeignPtr (rawData $ rawType $ w2) $ \w2_ptr -> do
+    withForeignPtr (rawData $ rawType $ w3) $ \w3_ptr -> do
+      ptr <- r_plonkup_prove
+                n
+                omega_ptr
+                k1_ptr
+                k2_ptr
+                gs_ptr
+                sigma1s_ptr
+                sigma2s_ptr
+                sigma3s_ptr
+                qlX_ptr
+                qrX_ptr
+                qoX_ptr
+                qmX_ptr
+                qcX_ptr
+                qkX_ptr
+                t1X_ptr
+                t2X_ptr
+                t3X_ptr
+                s1X_ptr
+                s2X_ptr
+                s3X_ptr
+                proverSecret_ptr
+                qM_ptr
+                qL_ptr
+                qR_ptr
+                qO_ptr
+                qC_ptr
+                qK_ptr
+                t1_ptr
+                t2_ptr
+                t3_ptr
+                (fromInteger $ naturalToInteger prvNum)
+                wPub_ptr
+                w1_ptr
+                w2_ptr
+                w3_ptr
+
+      len <- peek (castPtr ptr) :: IO Int
+      bs <- BS.packCStringLen (ptr `plusPtr` 8, len)
+      free ptr
+      let (proof, testInfo) = decode (BS.fromStrict bs)
+      pure (PlonkupInput $ r2h <$> wPub, proof, testInfo)

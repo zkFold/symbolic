@@ -96,8 +96,8 @@ unsafe fn h2r_ptr<T>(var: *const c_char, len: usize, pack: fn(&[u8]) -> T) -> *m
     Box::into_raw(Box::new(res)) as *mut c_char
 }
 
-unsafe fn r2h_ptr<T>(scalars_var: *mut c_char, out_ptr: *mut c_char, unpack: fn(&T) -> Vec<u8>) {
-    let a = peek(scalars_var);
+unsafe fn r2h_ptr<T>(scalars_var: *const c_char, out_ptr: *mut c_char, unpack: fn(&T) -> Vec<u8>) {
+    let a = peek_const(scalars_var);
     let res = unpack(a);
     std::ptr::copy(res.as_ptr(), out_ptr as *mut u8, res.len());
 }
@@ -218,7 +218,11 @@ pub unsafe fn r_r2h_point_vec(var: *mut c_char, out_ptr: *mut c_char) {
     r2h_ptr::<Vec<G1Affine>>(var, out_ptr, |x| x.iter().flat_map(unpack_point).collect());
 }
 
-unsafe fn peek<'a, T>(ptr: *mut c_char) -> &'a mut T {
+pub unsafe fn peek_const<'a, T>(ptr: *const c_char) -> &'a T {
+    &*(ptr as *mut T)
+}
+
+pub unsafe fn peek_mut<'a, T>(ptr: *mut c_char) -> &'a mut T {
     &mut *(ptr as *mut T)
 }
 
@@ -230,8 +234,8 @@ pub unsafe fn constant<R>(a: R) -> *mut c_char {
     poke(a)
 }
 
-pub unsafe fn unary<T1, R>(a_ptr: *mut c_char, f: fn(a: &T1) -> R) -> *mut c_char {
-    let a = peek(a_ptr);
+pub unsafe fn unary<T1, R>(a_ptr: *const c_char, f: fn(a: &T1) -> R) -> *mut c_char {
+    let a = peek_const(a_ptr);
 
     let res = f(a);
 
@@ -239,12 +243,12 @@ pub unsafe fn unary<T1, R>(a_ptr: *mut c_char, f: fn(a: &T1) -> R) -> *mut c_cha
 }
 
 pub unsafe fn binary<T1, T2, R>(
-    a_ptr: *mut c_char,
-    b_ptr: *mut c_char,
+    a_ptr: *const c_char,
+    b_ptr: *const c_char,
     f: fn(a: &T1, b: &T2) -> R,
 ) -> *mut c_char {
-    let a = peek(a_ptr);
-    let b = peek(b_ptr);
+    let a = peek_const(a_ptr);
+    let b = peek_const(b_ptr);
 
     let res = f(a, b);
 
@@ -252,14 +256,14 @@ pub unsafe fn binary<T1, T2, R>(
 }
 
 pub unsafe fn ternary<T1, T2, T3, R>(
-    a_ptr: *mut c_char,
-    b_ptr: *mut c_char,
-    c_ptr: *mut c_char,
+    a_ptr: *const c_char,
+    b_ptr: *const c_char,
+    c_ptr: *const c_char,
     f: fn(a: &T1, b: &T2, c: &T3) -> R,
 ) -> *mut c_char {
-    let a = peek(a_ptr);
-    let b = peek(b_ptr);
-    let c = peek(c_ptr);
+    let a = peek_const(a_ptr);
+    let b = peek_const(b_ptr);
+    let c = peek_const(c_ptr);
 
     let res = f(a, b, c);
 
