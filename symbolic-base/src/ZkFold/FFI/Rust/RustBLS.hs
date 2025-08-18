@@ -341,7 +341,7 @@ instance KnownNat size => FromConstant Integer (RustPolyVec Fr size) where
 instance KnownNat size => AdditiveSemigroup (RustPolyVec Fr size) where
   (+) = runRustFun2 r_poly_add
 
-instance KnownNat size => Zero (RustPolyVec Fr size) where
+instance Zero (RustPolyVec Fr size) where
   zero = runRustFun0 r_poly_zero
 
 instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size)
