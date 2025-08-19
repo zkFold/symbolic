@@ -1,12 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 
 module ZkFold.Symbolic.Data.Class where
 
 import Control.Applicative (liftA2)
 import Data.Bifunctor (bimap)
-import Data.Foldable (Foldable)
 import Data.Function (flip, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (mzipWithRep)
@@ -28,8 +28,11 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF)
 
+class Traversable (Layout d n) => LayoutFunctor d n
+instance Traversable (Layout d n) => LayoutFunctor d n
+
 -- | A class for Symbolic data types.
-class SymbolicData x where
+class (forall n. LayoutFunctor x n) => SymbolicData x where
   type Layout x (n :: Natural) :: Type -> Type
   type Layout x n = Layout (G.Rep1 x) n
 
@@ -119,7 +122,7 @@ instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
     restore (bimap (hmap fstP) fstP f)
       G.:*: restore (bimap (hmap sndP) sndP f)
 
-instance (Foldable f, R.Representable f, SymbolicData x) => SymbolicData (f G.:.: x) where
+instance (Traversable f, R.Representable f, SymbolicData x) => SymbolicData (f G.:.: x) where
   type Layout (f G.:.: x) n = f G.:.: Layout x n
   type Payload (f G.:.: x) n = f G.:.: Payload x n
 

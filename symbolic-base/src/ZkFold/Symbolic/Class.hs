@@ -64,6 +64,8 @@ class
   , Arithmetic (BaseField c)
   , ResidueField (WitnessField c)
   , FromConstant (BaseField c) (WitnessField c)
+  , Scale (BaseField c) (WitnessField c)
+  , NFData (WitnessField c)
   ) =>
   Symbolic c
   where

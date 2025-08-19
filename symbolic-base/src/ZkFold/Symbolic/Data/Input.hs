@@ -4,7 +4,6 @@ module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
-import Data.Foldable (Foldable)
 import Data.Functor.Rep (Representable)
 import Data.Traversable (Traversable)
 import Data.Typeable (Proxy)
@@ -41,7 +40,7 @@ instance SymbolicInput Proxy where
 instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
   isValid (x G.:*: y) = isValid x && isValid y
 
-instance (Foldable f, Representable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
+instance (Representable f, Traversable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
   isValid = all isValid . G.unComp1
 
 instance SymbolicInput x => SymbolicInput (G.M1 i c x) where
