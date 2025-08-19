@@ -38,7 +38,8 @@ instance (Representable f, Traversable f) => SymbolicInput (Vec f) where
 instance SymbolicInput Proxy where
   isValid _ = true
 
-instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y)
+instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
+  isValid (x G.:*: y) = isValid x && isValid y
 
 instance (Foldable f, Representable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
   isValid = all isValid . G.unComp1
