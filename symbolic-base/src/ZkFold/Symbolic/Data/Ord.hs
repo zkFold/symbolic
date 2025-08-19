@@ -12,7 +12,6 @@ module ZkFold.Symbolic.Data.Ord (
 import Control.DeepSeq (NFData)
 import Data.Foldable (Foldable, fold, toList)
 import Data.Function (on)
-import Data.Functor.Rep (Representable)
 import Data.List (concatMap, reverse, zipWith)
 import Data.Traversable (Traversable, traverse)
 import GHC.Generics
@@ -32,6 +31,7 @@ import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 import Data.Functor (Functor)
+import Data.Semialign (Semialign)
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering
@@ -169,7 +169,7 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, Representable f, Traversable f) => Ord (c f) where
+instance (Symbolic c, Semialign f, Traversable f) => Ord (c f) where
   type OrderingOf (c f) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
   compare = bitwiseCompare `on` getBitsBE

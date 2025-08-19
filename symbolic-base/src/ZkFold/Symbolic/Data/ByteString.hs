@@ -84,19 +84,19 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (ClosedPoly, newAssigned)
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
   deriving Generic
+  deriving SymbolicData via (Vec (Vector n))
 
 deriving stock instance HShow c => Haskell.Show (ByteString n c)
 
 deriving stock instance HEq c => Haskell.Eq (ByteString n c)
 
 deriving anyclass instance HNFData c => NFData (ByteString n c)
-
-deriving newtype instance (KnownNat n, Symbolic c) => SymbolicData (ByteString n c)
 
 deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
 
@@ -344,12 +344,7 @@ instance
 
     zeroA = Haskell.replicate diff (fromConstant (0 :: Integer))
 
-instance
-  ( Symbolic c
-  , KnownNat n
-  )
-  => SymbolicInput (ByteString n c)
-  where
+instance KnownNat n => SymbolicInput (ByteString n) where
   isValid (ByteString bits) = Bool $ fromCircuitF bits $ \v -> do
     let vs = V.fromVector v
     ys <- for vs $ \i -> newAssigned (\p -> p i * (one - p i))

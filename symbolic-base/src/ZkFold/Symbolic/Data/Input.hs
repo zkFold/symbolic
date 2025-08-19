@@ -4,7 +4,6 @@ module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
-import Data.Functor.Rep (Representable)
 import Data.Traversable (Traversable)
 import Data.Typeable (Proxy)
 import qualified GHC.Generics as G
@@ -17,6 +16,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.MonadCircuit
+import Data.Semialign (Semialign, Zip)
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where
@@ -31,7 +31,7 @@ instance SymbolicInput Bool where
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-instance (Representable f, Traversable f) => SymbolicInput (Vec f) where
+instance (Semialign f, Traversable f) => SymbolicInput (Vec f) where
   isValid _ = true
 
 instance SymbolicInput Proxy where
@@ -40,7 +40,7 @@ instance SymbolicInput Proxy where
 instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
   isValid (x G.:*: y) = isValid x && isValid y
 
-instance (Representable f, Traversable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
+instance (Zip f, Traversable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
   isValid = all isValid . G.unComp1
 
 instance SymbolicInput x => SymbolicInput (G.M1 i c x) where

@@ -7,10 +7,8 @@ module ZkFold.Symbolic.Data.Class where
 
 import Control.Applicative (liftA2)
 import Data.Bifunctor (bimap)
-import Data.Function (flip, ($), (.))
+import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
-import Data.Functor.Rep (mzipWithRep)
-import qualified Data.Functor.Rep as R
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Traversable (Traversable)
@@ -26,13 +24,18 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
-import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF)
+import ZkFold.Symbolic.Class
+import Data.Semialign (Semialign, Zip, zipWith)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 
-class Traversable (Layout d n) => LayoutFunctor d n
-instance Traversable (Layout d n) => LayoutFunctor d n
+type IsPayload f = Semialign f
+type IsLayout f = (IsPayload f, Traversable f)
+
+class (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
+instance (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
 
 -- | A class for Symbolic data types.
-class (forall n. LayoutFunctor x n) => SymbolicData x where
+class (forall n. DataFunctor x n) => SymbolicData x where
   type Layout x (n :: Natural) :: Type -> Type
   type Layout x n = Layout (G.Rep1 x) n
 
@@ -122,16 +125,15 @@ instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
     restore (bimap (hmap fstP) fstP f)
       G.:*: restore (bimap (hmap sndP) sndP f)
 
-instance (Traversable f, R.Representable f, SymbolicData x) => SymbolicData (f G.:.: x) where
+instance (Zip f, Traversable f, SymbolicData x) => SymbolicData (f G.:.: x) where
   type Layout (f G.:.: x) n = f G.:.: Layout x n
   type Payload (f G.:.: x) n = f G.:.: Payload x n
 
   arithmetize (G.Comp1 xs) = pack (arithmetize <$> xs)
   payload (G.Comp1 xs) = G.Comp1 (payload <$> xs)
-  interpolate bs =
-    G.Comp1 . R.tabulate . flip \i ->
-      interpolate (fmap (flip R.index i . G.unComp1) <$> bs)
-  restore (c, G.Comp1 ps) = G.Comp1 $ mzipWithRep (curry restore) (unpack c) ps
+  interpolate (I.pushInterpolation . fmap (G.unComp1 <$>) -> bs) i =
+    G.Comp1 $ (`interpolate` i) <$> bs
+  restore (c, G.Comp1 ps) = G.Comp1 $ zipWith (curry restore) (unpack c) ps
 
 instance SymbolicData x => SymbolicData (G.M1 i c x) where
   type Layout (G.M1 i c x) n = Layout x n

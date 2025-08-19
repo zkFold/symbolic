@@ -119,7 +119,6 @@ compileIO
      , Binary (Rep (Payload (Domain f) (Order a)))
      , Representable (Layout (Domain f) (Order a))
      , Representable (Payload (Domain f) (Order a))
-     , Representable (Layout (Range f) (Order a))
      , SymbolicFunction f, Context f ~ CircuitContext a
    )
   => FilePath

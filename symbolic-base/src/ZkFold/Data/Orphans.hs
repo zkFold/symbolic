@@ -1,7 +1,8 @@
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingVia #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Data.Orphans where
@@ -14,8 +15,27 @@ import Data.Aeson.TH (defaultOptions, deriveToJSON1)
 import Data.Binary (Binary)
 import Data.Functor (Functor, (<$>))
 import Data.Functor.Rep (Representable (..), WrappedRep (..))
-import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:))
+import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import Test.QuickCheck (Arbitrary (..))
+import Data.Semialign (Semialign (..))
+import Data.These (These(..))
+import Data.Function (($), (.))
+
+instance Semialign U1 where
+  alignWith _ _ _ = U1
+
+instance Semialign Par1 where
+  alignWith f (Par1 x) (Par1 y) = Par1 $ f (These x y)
+
+instance (Semialign f, Semialign g) => Semialign (f :*: g) where
+  alignWith f (a :*: b) (c :*: d) = alignWith f a c :*: alignWith f b d
+
+instance (Semialign f, Semialign g) => Semialign (f :.: g) where
+  alignWith f (Comp1 g) (Comp1 h) = Comp1 $ alignWith rec g h
+    where
+      rec (This l) = f . This <$> l
+      rec (That r) = f . That <$> r
+      rec (These l r) = alignWith f l r
 
 instance NFData (U1 a)
 

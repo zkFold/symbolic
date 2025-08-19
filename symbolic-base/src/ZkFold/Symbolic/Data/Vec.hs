@@ -23,6 +23,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
+import Data.Semialign (Semialign)
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic
@@ -33,7 +34,7 @@ deriving instance (HEq c, Eq1 f) => Haskell.Eq (Vec f c)
 
 deriving newtype instance Eq (c f) => Eq (Vec f c)
 
-instance (Representable f, Traversable f) => SymbolicData (Vec f) where
+instance (Semialign f, Traversable f) => SymbolicData (Vec f) where
   type Layout (Vec f) n = f
   type Payload (Vec f) n = G.U1
 

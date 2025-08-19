@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Bool (
@@ -19,7 +20,6 @@ import Control.DeepSeq (NFData)
 import Control.Monad (return)
 import Data.Function (($), (.))
 import Data.Functor ((<$>))
-import Data.Functor.Rep (Representable, mzipRep, mzipWithRep)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Proxy (Proxy)
 import Data.Traversable (Traversable, for)
@@ -40,6 +40,9 @@ import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import Data.Semialign (Semialign (align), alignWith)
+import Data.These (These(..))
+import Control.Applicative (pure)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
@@ -85,7 +88,7 @@ instance Symbolic c => BoolType (Bool c) where
         Par1
           <$> newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
-instance (Symbolic c, Representable f, Traversable f) => Conditional (Bool c) (c f) where
+instance (Symbolic c, Semialign f, Traversable f) => Conditional (Bool c) (c f) where
   bool onFalse onTrue = runVec . bool (Vec onFalse) (Vec onTrue)
 
 instance (Symbolic c, SymbolicData d) => Conditional (Bool c) (d c) where
@@ -108,7 +111,7 @@ instance Symbolic c => Eq (Bool c) where
   b == b' = not (b /= b')
   (/=) = xor
 
-instance (Symbolic c, Representable f, Traversable f) => Eq (c f) where
+instance (Symbolic c, Semialign f, Traversable f) => Eq (c f) where
   type BooleanOf (c f) = Bool c
   x == y =
     let
@@ -116,10 +119,14 @@ instance (Symbolic c, Representable f, Traversable f) => Eq (c f) where
         symbolic2F
           x
           y
-          (mzipWithRep (\i j -> bool zero one (i Haskell.== j)))
-          ( \x' y' -> do
-              difference <- for (mzipRep x' y') $ \(i, j) ->
-                newAssigned (\w -> w i - w j)
+          (alignWith \case
+            These i j -> bool zero one (i Haskell.== j)
+            _ -> zero
+          )
+          (\x' y' -> do
+              difference <- for (align x' y') $ \case
+                These i j -> newAssigned \w -> w i - w j
+                _ -> pure (fromConstant @(BaseField c) one)
               (isZeros, _) <- runInvert difference
               return isZeros
           )
@@ -132,10 +139,14 @@ instance (Symbolic c, Representable f, Traversable f) => Eq (c f) where
         symbolic2F
           x
           y
-          (mzipWithRep (\i j -> bool zero one (i Haskell./= j)))
+          (alignWith \case
+            These i j -> bool zero one (i Haskell./= j)
+            _ -> one
+          )
           ( \x' y' -> do
-              difference <- for (mzipRep x' y') $ \(i, j) ->
-                newAssigned (\w -> w i - w j)
+              difference <- for (align x' y') $ \case
+                These i j -> newAssigned \w -> w i - w j
+                _ -> pure (fromConstant @(BaseField c) one)
               (isZeros, _) <- runInvert difference
               for isZeros $ \isZ ->
                 newAssigned (\w -> one - w isZ)
