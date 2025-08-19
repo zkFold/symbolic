@@ -13,6 +13,7 @@ import Data.Functor.Rep (mzipWithRep)
 import qualified Data.Functor.Rep as R
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Traversable (Traversable)
 import Data.Tuple (curry)
 import Data.Type.Equality (type (~))
 import Data.Typeable (Proxy (..))
@@ -25,8 +26,7 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
-import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, witnessF, embedW)
-import Data.Traversable (Traversable)
+import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF)
 
 -- | A class for Symbolic data types.
 class SymbolicData x where
@@ -90,9 +90,9 @@ class SymbolicData x where
     -> x c
   restore = G.to1 . restore
 
-withoutConstraints ::
-  (SymbolicData x, Symbolic c, Traversable (Layout x (Order (BaseField c)))) =>
-  x c -> x c
+withoutConstraints
+  :: (SymbolicData x, Symbolic c, Traversable (Layout x (Order (BaseField c))))
+  => x c -> x c
 withoutConstraints x = restore (embedW $ witnessF $ arithmetize x, payload x)
 
 instance SymbolicData Proxy where
