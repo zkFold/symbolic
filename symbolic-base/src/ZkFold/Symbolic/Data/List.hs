@@ -15,8 +15,6 @@ import Data.Traversable (traverse)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1 (..), (:*:) (..), (:.:) (..))
-import ZkFold.Symbolic.Data.Morph (MorphFrom, MorphTo (..), (@))
-import ZkFold.Symbolic.Data.Switch (Switch (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
@@ -37,36 +35,24 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
 
-data ListItem l p a = ListItem
-  { tailHash :: l a
-  , headLayout :: l a
-  , headPayload :: p a
-  }
-  deriving (Functor, Generic1, Representable)
+newtype HashOf x c = HO { runHO :: c (Layout x (Order (BaseField c))) }
 
-instance (Distributive l, Distributive p) => Distributive (ListItem l p) where
-  distribute f =
-    ListItem
-      { tailHash = distribute (tailHash <$> f)
-      , headLayout = distribute (headLayout <$> f)
-      , headPayload = distribute (headPayload <$> f)
-      }
-
-data List c x = List
-  { lHash :: c (Layout x)
-  , lSize :: c Par1
-  , lWitness :: Payloaded (Infinite :.: ListItem (Layout x) (Payload x)) c
+data List x c = List
+  { lHash :: HashOf x c
+  , lSize :: FieldElement c
+  , lWitness :: Payloaded (Infinite :.: (HashOf x :*: x)) c
   }
   deriving Generic
 
-instance (SymbolicData x, c ~ Context x) => SymbolicData (List c x)
+instance SymbolicData x => SymbolicData (List x)
 
 -- | TODO: Maybe some 'isValid' check for Lists?..
-instance (SymbolicInput x, c ~ Context x) => SymbolicInput (List c x)
+instance SymbolicData x => SymbolicInput (List x)
 
-instance (SymbolicData x, SymbolicEq x, c ~ Context x) => Eq (List c x)
+instance (SymbolicData x, SymbolicEq x, Symbolic c) => Eq (List x c)
 
-instance (FromConstant a b, SymbolicData b, Context b ~ c) => FromConstant [a] (List c b) where
+instance
+  (FromConstant a (b c), SymbolicData b, Symbolic c) => FromConstant [a] (List b c) where
   fromConstant = Haskell.foldr ((.:) . fromConstant) emptyList
 
 size :: List c x -> FieldElement c
@@ -74,32 +60,18 @@ size = FieldElement . lSize
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
-emptyList
-  :: forall context x
-   . SymbolicData x
-  => Context x ~ context
-  => List context x
+emptyList :: forall c x . (SymbolicData x, Symbolic c) => List x c
 emptyList =
   List (embed $ pureRep zero) (fromFieldElement zero) $
     Payloaded $
       tabulate (const zero)
 
-null
-  :: forall context x
-   . Symbolic context
-  => List context x
-  -> Bool context
+null :: forall c x . Symbolic c => List x c -> Bool c
 null List {..} = FieldElement lSize == zero
 
 infixr 5 .:
 
-(.:)
-  :: forall context x
-   . SymbolicData x
-  => Context x ~ context
-  => x
-  -> List context x
-  -> List context x
+(.:) :: forall c x . (SymbolicData x, Symbolic c) => x c -> List x c -> List x c
 x .: List {..} = List incHash incSize incWitness
  where
   headL = arithmetize x
@@ -115,12 +87,8 @@ hashFun :: MonadCircuit i a w m => i -> i -> i -> m i
 hashFun s h t = newAssigned (($ h) + ($ t) * ($ s))
 
 -- | TODO: Is there really a nicer way to handle empty lists?
-uncons
-  :: forall c x
-   . SymbolicData x
-  => Context x ~ c
-  => List c x
-  -> (x, List c x)
+uncons ::
+  forall x c . (SymbolicData x, Symbolic c) => List x c -> (x c, List x c)
 uncons List {..} = case lWitness of
   Payloaded (Comp1 (ListItem {..} :< tWitness)) ->
     ( restore (hmap fstP preimage, headPayload)
@@ -136,31 +104,15 @@ uncons List {..} = case lWitness of
       _ <- mzipWithMRep (\i j -> constraint (($ i) - ($ j))) hash y
       return (hH :*: tH)
 
-head
-  :: SymbolicData x
-  => Context x ~ c
-  => List c x
-  -> x
+head :: (SymbolicData x, Symbolic c) => List x c -> x c
 head = fst . uncons
 
-tail
-  :: SymbolicData x
-  => Context x ~ c
-  => List c x
-  -> List c x
+tail :: (SymbolicData x, Symbolic c) => List x c -> List x c
 tail = snd . uncons
 
-foldl
-  :: forall x y c
-   . ( SymbolicData x
-     , SymbolicData y
-     , Context y ~ c
-     , SymbolicFold c
-     )
-  => MorphFrom c (y, x) y
-  -> y
-  -> List c x
-  -> y
+foldl ::
+  forall x y c . (SymbolicData x, SymbolicData y, SymbolicFold c) =>
+  (forall d. SymbolicFold d => y d -> x d -> y d) -> y c -> List x c -> y c
 foldl f y List {..} =
   restore $
     sfoldl
@@ -175,216 +127,140 @@ foldl f y List {..} =
       lSize
  where
   foldOp
-    :: forall s
-     . (SymbolicFold s, BaseField s ~ BaseField c)
-    => s (Layout y)
-    -> Payload y (WitnessField s)
-    -> s (Layout x :*: Payload x)
-    -> (s (Layout y), Payload y (WitnessField s))
-  foldOp yl yp il =
-    let Switch {..} :: Switch s y =
-          f
-            @ ( Switch yl yp :: Switch s y
-              , Switch (hmap fstP il) (witnessF (hmap sndP il))
-                  :: Switch s x
-              )
-     in (sLayout, sPayload)
+    :: forall s n
+     . (SymbolicFold s, BaseField s ~ BaseField c, n ~ Order (BaseField s))
+    => s (Layout y n)
+    -> Payload y n (WitnessField s)
+    -> s (Layout x n :*: Payload x n)
+    -> (s (Layout y n), Payload y n (WitnessField s))
+  foldOp yl yp il = _
 
-scanl
-  :: forall c x y
-   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
-  => MorphFrom c (y, x) y -> y -> List c x -> List c y
+scanl ::
+  forall c x y . (SymbolicFold c, SymbolicData x, SymbolicData y) =>
+  (forall d. SymbolicFold d => y d -> x d -> y d) -> y c -> List x c -> List y c
 scanl f s =
-  reverse
-    . uncurry (.:)
-    . foldl
-      ( Morph \((y :: Switch s y, ys), x :: Switch s x) ->
-          (f @ (y, x) :: Switch s y, y .: ys)
-      )
-      (s, emptyList)
+  reverse . uncurry (.:) . foldl (\(y, ys) x -> (f y x, y .: ys)) (s, emptyList)
 
 -- | revapp xs ys = reverse xs ++ ys
-revapp
-  :: forall c x
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => List c x
-  -> List c x
-  -> List c x
-revapp xs ys = foldl (Morph \(zs, x :: Switch s x) -> x .: zs) ys xs
+revapp ::
+  forall c x . (SymbolicData x, SymbolicFold c) =>
+  List x c -> List x c -> List x c
+revapp xs ys = foldl (flip (.:)) ys xs
 
-reverse
-  :: (SymbolicData x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+reverse :: (SymbolicData x, SymbolicFold c) => List x c -> List x c
 reverse xs = revapp xs emptyList
 
-last :: (SymbolicData x, Context x ~ c, SymbolicFold c) => List c x -> x
+last :: (SymbolicData x, SymbolicFold c) => List x c -> x c
 last = head . reverse
 
-init
-  :: (SymbolicData x, Context x ~ c, SymbolicFold c) => List c x -> List c x
+init :: (SymbolicData x, SymbolicFold c) => List x c -> List x c
 init = reverse . tail . reverse
 
-(++)
-  :: (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => List c x
-  -> List c x
-  -> List c x
+(++) :: (SymbolicData x, SymbolicFold c) => List x c -> List x c -> List x c
 xs ++ ys = revapp (reverse xs) ys
 
 foldr
-  :: forall c x y
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => (SymbolicData y, Context y ~ c)
-  => MorphFrom c (x, y) y
-  -> y
-  -> List c x
-  -> y
-foldr f s xs =
-  foldl
-    ( Morph \(y :: Switch s y, x :: Switch s x) ->
-        f @ (x, y) :: Switch s y
-    )
-    s
-    (reverse xs)
+  :: forall c x y . (SymbolicData x, SymbolicFold c, SymbolicData y) =>
+  (forall d. SymbolicFold d => x d -> y d -> y d) -> y c -> List x c -> y c
+foldr f s xs = foldl (flip f) s (reverse xs)
 
 mapWithCtx
   :: forall c g x y
    . ( SymbolicFold c
      , SymbolicData g
-     , Context g ~ c
      , SymbolicData x
-     , Context x ~ c
      , SymbolicData y
-     , Context y ~ c
      )
-  => g -> MorphFrom c (g, x) y -> List c x -> List c y
-mapWithCtx g f =
-  snd
-    . foldr
-      ( Morph \(x :: Switch s x, (g' :: Switch s g, ys)) ->
-          (g', (f @ (g', x) :: Switch s y) .: ys)
-      )
-      (g, emptyList)
+  => g c
+  -> (forall d. SymbolicFold d => g d -> x d -> y d)
+  -> List x c
+  -> List y c
+mapWithCtx g f = snd . foldr (\x (g', ys) -> (g', f g' x .: ys)) (g, emptyList)
 
 filter
   :: forall c x
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => MorphFrom c x (Bool c)
-  -> List c x
-  -> List c x
-filter pred =
-  foldr
-    ( Morph \(x :: Switch s x, ys) ->
-        ifThenElse (pred @ x :: Bool s) (x .: ys) ys
-    )
-    emptyList
+   . (SymbolicData x, SymbolicFold c)
+  => (forall d. SymbolicFold d => x d -> Bool d)
+  -> List x c
+  -> List x c
+filter pred = foldr (\(x, ys) -> ifThenElse (pred x) (x .: ys) ys) emptyList
 
 delete
   :: forall c x
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => MorphFrom c (x, x) (Bool c)
-  -> x
-  -> List c x
-  -> List c x
+   . (SymbolicData x, SymbolicFold c)
+  => (forall d. SymbolicFold d => x d -> x d -> Bool d)
+  -> x c
+  -> List x c
+  -> List x c
 delete eq x xs =
   let (_, _, result) =
         foldr
-          ( Morph \(y :: Switch s x, (ok :: Bool s, y0 :: Switch s x, ys)) ->
-              let test = eq @ (y, y0)
+          (\y (ok, y0, ys) ->
+              let test = eq y y0
                in (ok || test, y0, ifThenElse (ok || not test) (y .: ys) ys)
           )
-          (false :: Bool c, x, emptyList)
+          (false, x, emptyList)
           xs
    in result
 
 setminus
   :: forall c x
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => MorphFrom c (x, x) (Bool c)
-  -> List c x
-  -> List c x
-  -> List c x
-setminus eq = foldl $ Morph \(xs, x :: Switch s x) ->
-  delete
-    ( Morph \(y :: Switch s' x, z :: Switch s' x) ->
-        eq @ (y, z) :: Bool s'
-    )
-    x
-    xs
+   . (SymbolicData x, SymbolicFold c)
+  => (forall d. SymbolicFold d => x d -> x d -> Bool d)
+  -> List x c
+  -> List x c
+  -> List x c
+setminus = foldl . flip . delete
 
-singleton
-  :: forall context x
-   . SymbolicData x
-  => Context x ~ context
-  => x
-  -> List context x
+singleton :: forall c x . (SymbolicData x, Symbolic c) => x c -> List x c
 singleton x = x .: emptyList
 
 (!!)
   :: forall x c n
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
+   . (SymbolicData x, SymbolicFold c)
   => (KnownNat n, KnownRegisters c n Auto)
-  => List c x
+  => List x c
   -> UInt n Auto c
-  -> x
+  -> x c
 xs !! n =
   snd $
     foldl
-      ( Morph \((m :: UInt n Auto s, y :: Switch s x), x) ->
-          (m - one, ifThenElse (m == zero :: Bool s) x y)
-      )
+      (\(m, y) x -> (m - one, ifThenElse (m == zero) x y))
       (n, restore (embed $ pureRep zero, pureRep zero))
       xs
 
 concatMap
   :: forall c x y
-   . (SymbolicFold c, SymbolicData x, SymbolicData y, Context y ~ c)
-  => MorphFrom c x (List c y) -> List c x -> List c y
-concatMap f =
-  reverse
-    . foldl
-      ( Morph
-          \(ys :: List s (Switch s y), x :: Switch s x) -> revapp (f @ x) ys
-      )
-      emptyList
+   . (SymbolicFold c, SymbolicData x, SymbolicData y)
+  => (forall d. SymbolicFold d => x d -> List y d) -> List x c -> List y c
+concatMap f = reverse . foldl (\ys x -> revapp (f x) ys) emptyList
 
 concat
-  :: forall c x
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => List c (List c x)
-  -> List c x
-concat = concatMap (Morph \(x :: List s (Switch s x)) -> x)
+  :: forall c x . (SymbolicData x, SymbolicFold c)
+  => List (List x) c -> List x c
+concat = concatMap id
 
 findIndex
   :: forall x c n
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => ( KnownNat n
-     , KnownRegisters c n Auto
-     )
-  => MorphFrom c x (Bool c)
-  -> List c x
+   . (SymbolicData x, SymbolicFold c, KnownNat n, KnownRegisters c n Auto)
+  => (forall d. SymbolicFold d => x d -> Bool d)
+  -> List x c
   -> UInt n Auto c
-findIndex p xs =
-  snd $
-    foldl
-      ( Morph \((m :: UInt n Auto s, y :: UInt n Auto s), x :: Switch s x) ->
-          (m + one, ifThenElse (p @ x :: Bool s) m y)
-      )
-      (zero :: UInt n Auto c, zero)
-      xs
+findIndex p =
+  snd . foldl (\(m, y) x -> (m + one, ifThenElse (p x) m y)) (zero, zero)
 
 insert
   :: forall x c n
-   . (SymbolicData x, Context x ~ c, SymbolicFold c)
-  => (KnownNat n, KnownRegisters c n Auto)
-  => List c x
+   . (SymbolicData x, SymbolicFold c, KnownNat n, KnownRegisters c n Auto)
+  => List x c
   -> UInt n Auto c
-  -> x
-  -> List c x
+  -> x c
+  -> List x c
 insert xs n xi =
   let (_, _, res) =
         foldr
-          ( Morph \(a :: Switch s x, (n' :: UInt n Auto s, xi', l')) ->
-              (n' - one, xi', ifThenElse (n' == zero :: Bool s) (xi' .: l') (a .: l'))
+          (\a (n', xi', l') ->
+              (n' - one, xi', ifThenElse (n' == zero) (xi' .: l') (a .: l'))
           )
           (n, xi, emptyList)
           xs
@@ -392,13 +268,12 @@ insert xs n xi =
 
 slice
   :: forall c x
-   . (SymbolicFold c, SymbolicData x, Context x ~ c)
-  => FieldElement c -> FieldElement c -> List c x -> List c x
+   . (SymbolicFold c, SymbolicData x)
+  => FieldElement c -> FieldElement c -> List x c -> List x c
 slice f t xs =
   let (_, _, res) =
         foldr
-          ( Morph
-              \(x :: Switch s x, (skipCnt :: FieldElement s, lenCnt :: FieldElement s, l)) ->
+          (\x (skipCnt, lenCnt, l) ->
                 ifThenElse
                   (skipCnt == zero)
                   ( ifThenElse
