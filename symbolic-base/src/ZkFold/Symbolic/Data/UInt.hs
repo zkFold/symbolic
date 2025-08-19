@@ -43,7 +43,7 @@ import Data.Traversable (for, traverse)
 import Data.Tuple (swap)
 import Data.Word (Word64)
 import qualified Data.Zip as Z
-import GHC.Generics (Generic, Par1 (..), (:*:) (..), U1 (..))
+import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import GHC.Natural (naturalFromInteger)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
 import Prelude (
@@ -75,6 +75,7 @@ import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (length, replicate, replicateA, take, unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.FFT (fft, ifft)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
@@ -85,11 +86,10 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
-import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) c = UInt
-  { uintData :: c (Vector (NumberOfRegisters (Order (BaseField c)) n r)) }
+  {uintData :: c (Vector (NumberOfRegisters (Order (BaseField c)) n r))}
 
 deriving instance Generic (UInt n r context)
 
@@ -319,9 +319,14 @@ eea a b = eea' 1 a b one zero zero one
     quotient = oldR `div` r
 
     (recS, recT, recR) =
-      eea' (iteration + 1) r (oldR - quotient * r)
-                           s (quotient * s + oldS)
-                           t (quotient * t + oldT)
+      eea'
+        (iteration + 1)
+        r
+        (oldR - quotient * r)
+        s
+        (quotient * s + oldS)
+        t
+        (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
 

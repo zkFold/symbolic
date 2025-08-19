@@ -3,7 +3,7 @@
 module ZkFold.Symbolic.Data.Payloaded where
 
 import Data.Function (($), (.))
-import Data.Functor ((<$>), fmap)
+import Data.Functor (fmap, (<$>))
 import Data.Tuple (snd)
 import GHC.Generics (U1 (..), (:*:) (..))
 

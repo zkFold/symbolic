@@ -82,8 +82,8 @@ instance FromConstant a w => FromConstant a (Identity w) where
   fromConstant = Identity . fromConstant
 
 instance
-  (Arithmetic a, FromConstant a w, Scale a w, ResidueField w) =>
-  MonadCircuit (Identity w) a w (Witnesses a w)
+  (Arithmetic a, FromConstant a w, Scale a w, ResidueField w)
+  => MonadCircuit (Identity w) a w (Witnesses a w)
   where
   unconstrained = return . Identity
   constraint _ = return ()

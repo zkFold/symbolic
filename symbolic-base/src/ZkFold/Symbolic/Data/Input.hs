@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
+import Data.Semialign (Semialign, Zip)
 import Data.Traversable (Traversable)
 import Data.Typeable (Proxy)
 import qualified GHC.Generics as G
@@ -16,7 +17,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.MonadCircuit
-import Data.Semialign (Semialign, Zip)
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where

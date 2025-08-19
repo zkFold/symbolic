@@ -2,7 +2,6 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Bool (
@@ -16,12 +15,15 @@ module ZkFold.Symbolic.Data.Bool (
   or,
 ) where
 
+import Control.Applicative (pure)
 import Control.DeepSeq (NFData)
 import Control.Monad (return)
 import Data.Function (($), (.))
 import Data.Functor ((<$>))
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Proxy (Proxy)
+import Data.Semialign (Semialign (align), alignWith)
+import Data.These (These (..))
 import Data.Traversable (Traversable, for)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..))
@@ -40,9 +42,6 @@ import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Data.Semialign (Semialign (align), alignWith)
-import Data.These (These(..))
-import Control.Applicative (pure)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
@@ -119,11 +118,11 @@ instance (Symbolic c, Semialign f, Traversable f) => Eq (c f) where
         symbolic2F
           x
           y
-          (alignWith \case
-            These i j -> bool zero one (i Haskell.== j)
-            _ -> zero
+          ( alignWith \case
+              These i j -> bool zero one (i Haskell.== j)
+              _ -> zero
           )
-          (\x' y' -> do
+          ( \x' y' -> do
               difference <- for (align x' y') $ \case
                 These i j -> newAssigned \w -> w i - w j
                 _ -> pure (fromConstant @(BaseField c) one)
@@ -139,9 +138,9 @@ instance (Symbolic c, Semialign f, Traversable f) => Eq (c f) where
         symbolic2F
           x
           y
-          (alignWith \case
-            These i j -> bool zero one (i Haskell./= j)
-            _ -> one
+          ( alignWith \case
+              These i j -> bool zero one (i Haskell./= j)
+              _ -> one
           )
           ( \x' y' -> do
               difference <- for (align x' y') $ \case

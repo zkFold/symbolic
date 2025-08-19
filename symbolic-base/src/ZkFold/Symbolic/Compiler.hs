@@ -10,9 +10,11 @@ import Data.Aeson (ToJSON, ToJSON1, ToJSONKey)
 import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Function (($), (.))
-import Data.Functor (fmap, Functor)
+import Data.Functor (Functor, fmap)
 import Data.Functor.Rep (Rep, Representable)
+import Data.Kind (Type)
 import Data.List ((++))
+import Data.Proxy (Proxy)
 import Data.Tuple (swap)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:) (..))
@@ -25,21 +27,22 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext, fool)
 import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Prelude (writeFileJSON)
-import ZkFold.Symbolic.Class (fromCircuit2F, Symbolic)
+import ZkFold.Symbolic.Class (Symbolic, fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (Bool))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
-import Data.Kind (Type)
-import Data.Proxy (Proxy)
 import ZkFold.Symbolic.Data.Vec (runVec)
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 
 type Ctx = (Type -> Type) -> Type
 
-class ( Symbolic (Context f)
-      , SymbolicInput (Domain f)
-      , SymbolicData (Range f)
-      ) => SymbolicFunction f where
+class
+  ( Symbolic (Context f)
+  , SymbolicInput (Domain f)
+  , SymbolicData (Range f)
+  ) =>
+  SymbolicFunction f
+  where
   type Context f :: Ctx
   type Domain f :: Ctx -> Type
   type Range f :: Ctx -> Type
@@ -47,10 +50,13 @@ class ( Symbolic (Context f)
   -- | Saturates a symbolic function.
   apply :: f -> Domain f (Context f) -> Range f (Context f)
 
-instance ( SymbolicInput x
-         , SymbolicFunction y
-         , Context y ~ c
-         ) => SymbolicFunction (x c -> y) where
+instance
+  ( SymbolicInput x
+  , SymbolicFunction y
+  , Context y ~ c
+  )
+  => SymbolicFunction (x c -> y)
+  where
   type Context (x c -> y) = c
   type Domain (x c -> y) = x :*: Domain y
   type Range (x c -> y) = Range y
@@ -114,13 +120,17 @@ compile = compileWith solder toPair
 -- | Compiles a function `f` into an arithmetic circuit. Writes the result to a file.
 compileIO
   :: forall a f
-   . ( ToJSON a, ToJSONKey a, Binary a, ToJSON1 (Layout (Range f) (Order a))
+   . ( ToJSON a
+     , ToJSONKey a
+     , Binary a
+     , ToJSON1 (Layout (Range f) (Order a))
      , Binary (Rep (Layout (Domain f) (Order a)))
      , Binary (Rep (Payload (Domain f) (Order a)))
      , Representable (Layout (Domain f) (Order a))
      , Representable (Payload (Domain f) (Order a))
-     , SymbolicFunction f, Context f ~ CircuitContext a
-   )
+     , SymbolicFunction f
+     , Context f ~ CircuitContext a
+     )
   => FilePath
   -> f
   -> IO ()

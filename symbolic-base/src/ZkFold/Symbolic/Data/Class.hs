@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 module ZkFold.Symbolic.Data.Class where
 
@@ -11,6 +11,7 @@ import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Semialign (Semialign, Zip, zipWith)
 import Data.Traversable (Traversable)
 import Data.Tuple (curry)
 import Data.Type.Equality (type (~))
@@ -24,14 +25,15 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
-import ZkFold.Symbolic.Class
-import Data.Semialign (Semialign, Zip, zipWith)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
+import ZkFold.Symbolic.Class
 
 type IsPayload f = Semialign f
+
 type IsLayout f = (IsPayload f, Traversable f)
 
 class (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
+
 instance (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
 
 -- | A class for Symbolic data types.

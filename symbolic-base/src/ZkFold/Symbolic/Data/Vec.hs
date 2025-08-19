@@ -8,6 +8,7 @@ import Data.Functor (fmap)
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
 import Data.Kind (Type)
+import Data.Semialign (Semialign)
 import Data.Traversable (Traversable (..))
 import Data.Tuple (fst)
 import qualified GHC.Generics as G
@@ -23,7 +24,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
-import Data.Semialign (Semialign)
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic

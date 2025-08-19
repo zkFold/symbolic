@@ -35,8 +35,8 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField)
-import ZkFold.Symbolic.MonadCircuit
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep
   :: (Representable f, Traversable f, Applicative m)
@@ -249,7 +249,8 @@ withCeilRegSize' = Sub $ withKnownNat @(Ceil rs ow) (unsafeSNat (Haskell.div (va
 withCeilRegSize :: forall rs ow {k}. (KnownNat rs, KnownNat ow) => (KnownNat (Ceil rs ow) => k) -> k
 withCeilRegSize = withDict (withCeilRegSize' @rs @ow)
 
-withGetRegisterSize' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize (Order a) n r)
+withGetRegisterSize'
+  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize (Order a) n r)
 withGetRegisterSize' = Sub $ withKnownNat @(GetRegisterSize (Order a) n r) (unsafeSNat (registerSize @a @n @r)) Dict
 
 withGetRegisterSize

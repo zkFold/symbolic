@@ -12,7 +12,9 @@ module ZkFold.Symbolic.Data.Ord (
 import Control.DeepSeq (NFData)
 import Data.Foldable (Foldable, fold, toList)
 import Data.Function (on)
+import Data.Functor (Functor)
 import Data.List (concatMap, reverse, zipWith)
+import Data.Semialign (Semialign)
 import Data.Traversable (Traversable, traverse)
 import GHC.Generics
 import Prelude (Monoid, Semigroup, Show, fmap, map, ($), (.), (<$>), (<>), type (~))
@@ -30,8 +32,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import Data.Functor (Functor)
-import Data.Semialign (Semialign)
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering
