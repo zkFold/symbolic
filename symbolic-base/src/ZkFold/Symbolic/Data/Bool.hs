@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Bool (
@@ -37,7 +38,7 @@ import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class (SymbolicData, interpolate)
+import ZkFold.Symbolic.Data.Class (SymbolicData, interpolate, IsLayout)
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
@@ -87,7 +88,7 @@ instance Symbolic c => BoolType (Bool c) where
         Par1
           <$> newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
-instance (Symbolic c, Semialign f, Traversable f) => Conditional (Bool c) (c f) where
+instance (Symbolic c, IsLayout f) => Conditional (Bool c) (c f) where
   bool onFalse onTrue = runVec . bool (Vec onFalse) (Vec onTrue)
 
 instance (Symbolic c, SymbolicData d) => Conditional (Bool c) (d c) where

@@ -27,10 +27,11 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
+import Control.DeepSeq (NFData1)
 
 type IsPayload f = Semialign f
 
-type IsLayout f = (IsPayload f, Traversable f)
+type IsLayout f = (IsPayload f, Traversable f, NFData1 f)
 
 class (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
 
@@ -127,7 +128,7 @@ instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
     restore (bimap (hmap fstP) fstP f)
       G.:*: restore (bimap (hmap sndP) sndP f)
 
-instance (Zip f, Traversable f, SymbolicData x) => SymbolicData (f G.:.: x) where
+instance (Zip f, IsLayout f, SymbolicData x) => SymbolicData (f G.:.: x) where
   type Layout (f G.:.: x) n = f G.:.: Layout x n
   type Payload (f G.:.: x) n = f G.:.: Payload x n
 

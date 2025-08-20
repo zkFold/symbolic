@@ -9,6 +9,8 @@ import Data.List.Infinite (Infinite)
 import qualified Data.List.Infinite as Inf
 import GHC.Real (fromIntegral)
 import Numeric.Natural (Natural)
+import Data.Semialign (Zip (..), Semialign (..))
+import Data.These (These(..))
 
 instance Distributive Infinite where
   distribute = distributeRep
@@ -17,3 +19,9 @@ instance Representable Infinite where
   type Rep Infinite = Natural
   tabulate = Inf.tabulate . (. fromIntegral)
   index = (. fromIntegral) . (Inf.!!)
+
+instance Semialign Infinite where
+  align = zipWith These
+
+instance Zip Infinite where
+  zipWith = Inf.zipWith

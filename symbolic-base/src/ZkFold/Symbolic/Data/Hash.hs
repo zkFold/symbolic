@@ -30,7 +30,9 @@ data Hash h a c = Hash
   { hHash :: h c
   , hValue :: Payloaded a c
   }
-  deriving (G.Generic, G.Generic1, SymbolicData, SymbolicInput)
+  deriving (G.Generic, G.Generic1, SymbolicInput)
+
+instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
 instance (Symbolic c, SymbolicEq h c) => Eq (Hash h a c)
 

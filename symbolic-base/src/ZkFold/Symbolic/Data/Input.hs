@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
-import Data.Semialign (Semialign, Zip)
-import Data.Traversable (Traversable)
+import Data.Semialign (Zip)
 import Data.Typeable (Proxy)
 import qualified GHC.Generics as G
 import Prelude (($), (.))
@@ -31,7 +31,7 @@ instance SymbolicInput Bool where
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-instance (Semialign f, Traversable f) => SymbolicInput (Vec f) where
+instance IsLayout f => SymbolicInput (Vec f) where
   isValid _ = true
 
 instance SymbolicInput Proxy where
@@ -40,7 +40,7 @@ instance SymbolicInput Proxy where
 instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
   isValid (x G.:*: y) = isValid x && isValid y
 
-instance (Zip f, Traversable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
+instance (Zip f, IsLayout f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
   isValid = all isValid . G.unComp1
 
 instance SymbolicInput x => SymbolicInput (G.M1 i c x) where

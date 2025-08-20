@@ -8,7 +8,6 @@ import Data.Functor (fmap)
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
 import Data.Kind (Type)
-import Data.Semialign (Semialign)
 import Data.Traversable (Traversable (..))
 import Data.Tuple (fst)
 import qualified GHC.Generics as G
@@ -34,7 +33,7 @@ deriving instance (HEq c, Eq1 f) => Haskell.Eq (Vec f c)
 
 deriving newtype instance Eq (c f) => Eq (Vec f c)
 
-instance (Semialign f, Traversable f) => SymbolicData (Vec f) where
+instance IsLayout f => SymbolicData (Vec f) where
   type Layout (Vec f) n = f
   type Payload (Vec f) n = G.U1
 
