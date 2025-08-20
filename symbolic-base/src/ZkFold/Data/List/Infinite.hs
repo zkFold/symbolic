@@ -7,10 +7,10 @@ import Data.Function ((.))
 import Data.Functor.Rep (Representable (..), distributeRep)
 import Data.List.Infinite (Infinite)
 import qualified Data.List.Infinite as Inf
+import Data.Semialign (Semialign (..), Zip (..))
+import Data.These (These (..))
 import GHC.Real (fromIntegral)
 import Numeric.Natural (Natural)
-import Data.Semialign (Zip (..), Semialign (..))
-import Data.These (These(..))
 
 instance Distributive Infinite where
   distribute = distributeRep

@@ -1,31 +1,37 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 {- HLINT ignore "Use zipWithM" -}
 
 module ZkFold.Symbolic.Data.List where
 
+import Control.Applicative (pure)
 import Control.Monad (return, sequence_)
-import Data.Function (($), (.), flip, id)
+import Data.Binary (Binary)
+import Data.Function (flip, id, ($), (.))
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep)
 import qualified Data.List as Haskell
 import Data.List.Infinite (Infinite (..))
-import Data.Traversable (traverse, sequence)
+import Data.Semialign (alignWith, zipWith)
+import Data.These (These (..))
+import Data.Traversable (sequence, traverse)
 import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Par1 (..), (:*:) (..), (:.:) (..), Generic1, U1 (..))
+import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Binary (Binary1)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.List.Infinite ()
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Product (fstP, sndP, uncurryP)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), SymbolicEq)
 import ZkFold.Symbolic.Data.Class
@@ -36,12 +42,6 @@ import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
-import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
-import Data.Semialign (alignWith, zipWith)
-import Data.These (These (..))
-import Control.Applicative (pure)
-import Data.Binary (Binary)
-import ZkFold.Data.Binary (Binary1)
 
 newtype HashOf x c = HO {runHO :: c (Layout x (Order (BaseField c)))}
 
@@ -56,8 +56,8 @@ instance SymbolicData x => SymbolicData (HashOf x) where
 instance SymbolicData x => SymbolicInput (HashOf x) where
   isValid _ = true
 
-emptyHash ::
-  (Symbolic c, Representable (Layout x (Order (BaseField c)))) => HashOf x c
+emptyHash
+  :: (Symbolic c, Representable (Layout x (Order (BaseField c)))) => HashOf x c
 emptyHash = HO $ embed $ pureRep zero
 
 deriving instance (SymbolicData x, Symbolic c) => Eq (HashOf x c)
@@ -77,14 +77,16 @@ instance SymbolicData x => SymbolicInput (List x)
 instance (SymbolicEq x c, Symbolic c) => Eq (List x c)
 
 instance
-  (FromConstant a (b c), SymbolicData b, RepData b c, Symbolic c) =>
-  FromConstant [a] (List b c) where
+  (FromConstant a (b c), SymbolicData b, RepData b c, Symbolic c)
+  => FromConstant [a] (List b c)
+  where
   fromConstant = Haskell.foldr ((.:) . fromConstant) emptyList
 
 size :: List x c -> FieldElement c
 size = lSize
 
 type RepImpl x n = (Representable (Layout x n), Representable (Payload x n))
+
 type RepData x c = RepImpl x (Order (BaseField c))
 
 -- | TODO: A proof-of-concept where hash == id.
@@ -101,7 +103,10 @@ infixr 5 .:
 x .: List {..} = List incHash incSize incWitness
  where
   headL = arithmetize x
-  incHash = HO $ fromCircuit3F (runHO lHash) headL (fromFieldElement incSize)
+  incHash = HO $ fromCircuit3F
+    (runHO lHash)
+    headL
+    (fromFieldElement incSize)
     \vHash vRepr (Par1 s) -> sequence $ alignWith (hashFun s) vHash vRepr
   incSize = lSize + one
   Payloaded li pi = payloaded (lHash :*: x)
@@ -117,23 +122,26 @@ hashFun s (That t) = newAssigned \x -> x t * x s
 uncons
   :: forall x c. (SymbolicData x, Symbolic c) => List x c -> (x c, List x c)
 uncons List {..} = case lWitness of
-  Payloaded (Comp1 (tailHash :*: headLayout :< tl))
-            (Comp1 (_ :*: headPayload :< tp)) ->
-    ( restore (hmap fstP preimage, headPayload)
-    , List (HO $ hmap sndP preimage) decSize $ Payloaded (Comp1 tl) (Comp1 tp)
-    )
-   where
-    decSize = lSize - one
-    preimage :: c (Layout x (Order (BaseField c)) :*: Layout x (Order (BaseField c)))
-    preimage = fromCircuit2F (fromFieldElement decSize) (runHO lHash)
-      \(Par1 s) y -> do
-        tH :*: hH <- traverse unconstrained (tailHash :*: headLayout)
-        hash <- sequence $ alignWith (hashFun s) hH tH
-        sequence_ $ alignWith forceEq hash y
-        return (hH :*: tH)
-    forceEq (These i j) = constraint \x -> x i - x j
-    forceEq (This i) = constraint \x -> x i
-    forceEq (That j) = constraint \x -> x j
+  Payloaded
+    (Comp1 (tailHash :*: headLayout :< tl))
+    (Comp1 (_ :*: headPayload :< tp)) ->
+      ( restore (hmap fstP preimage, headPayload)
+      , List (HO $ hmap sndP preimage) decSize $ Payloaded (Comp1 tl) (Comp1 tp)
+      )
+     where
+      decSize = lSize - one
+      preimage :: c (Layout x (Order (BaseField c)) :*: Layout x (Order (BaseField c)))
+      preimage = fromCircuit2F
+        (fromFieldElement decSize)
+        (runHO lHash)
+        \(Par1 s) y -> do
+          tH :*: hH <- traverse unconstrained (tailHash :*: headLayout)
+          hash <- sequence $ alignWith (hashFun s) hH tH
+          sequence_ $ alignWith forceEq hash y
+          return (hH :*: tH)
+      forceEq (These i j) = constraint \x -> x i - x j
+      forceEq (This i) = constraint \x -> x i
+      forceEq (That j) = constraint \x -> x j
 
 head :: (SymbolicData x, Symbolic c) => List x c -> x c
 head = fst . uncons
@@ -142,15 +150,20 @@ tail :: (SymbolicData x, Symbolic c) => List x c -> List x c
 tail = snd . uncons
 
 type FoldFun f = (Binary1 f, Binary (Rep f))
+
 type FoldImpl x n = (FoldFun (Layout x n), Binary (Rep (Payload x n)))
+
 class (RepData x c, FoldImpl x (Order (BaseField c))) => FoldData x c
+
 instance (RepData x c, FoldImpl x (Order (BaseField c))) => FoldData x c
 
 foldl
   :: forall x y c
    . (SymbolicData x, FoldData x c, SymbolicData y, FoldData y c, SymbolicFold c)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => y d -> x d -> y d)
-  -> y c -> List x c -> y c
+  -> y c
+  -> List x c
+  -> y c
 foldl f y List {..} =
   restore $
     sfoldl
@@ -158,9 +171,9 @@ foldl f y List {..} =
       (arithmetize y)
       (payload y)
       (runHO lHash)
-      (case lWitness of
-        Payloaded (Comp1 wl) (Comp1 wp) ->
-          zipWith (\(_ :*: il) (_ :*: ip) -> il :*: ip) wl wp
+      ( case lWitness of
+          Payloaded (Comp1 wl) (Comp1 wp) ->
+            zipWith (\(_ :*: il) (_ :*: ip) -> il :*: ip) wl wp
       )
       (fromFieldElement lSize)
  where
@@ -179,11 +192,13 @@ scanl
   :: forall c x y
    . (SymbolicFold c, SymbolicData x, SymbolicData y, FoldData x c, FoldData y c)
   => (forall d. SymbolicFold d => y d -> x d -> y d)
-  -> y c -> List x c -> List y c
+  -> y c
+  -> List x c
+  -> List y c
 scanl f s =
   reverse
-  . uncurryP (.:)
-  . foldl (\(y :*: ys) x -> f y x :*: (y .: ys)) (s :*: emptyList)
+    . uncurryP (.:)
+    . foldl (\(y :*: ys) x -> f y x :*: (y .: ys)) (s :*: emptyList)
 
 -- | revapp xs ys = reverse xs ++ ys
 revapp
@@ -208,15 +223,20 @@ foldr
   :: forall c x y
    . (SymbolicData x, SymbolicFold c, SymbolicData y, FoldData x c, FoldData y c)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => x d -> y d -> y d)
-  -> y c -> List x c -> y c
+  -> y c
+  -> List x c
+  -> y c
 foldr f s xs = foldl (flip f) s (reverse xs)
 
 mapWithCtx
   :: forall c g x y
    . ( SymbolicFold c
-     , SymbolicData g, FoldData g c
-     , SymbolicData x, FoldData x c
-     , SymbolicData y, FoldData y c
+     , SymbolicData g
+     , FoldData g c
+     , SymbolicData x
+     , FoldData x c
+     , SymbolicData y
+     , FoldData y c
      )
   => g c
   -> (forall d. SymbolicFold d => g d -> x d -> y d)
@@ -245,7 +265,8 @@ delete eq x xs =
         foldr
           ( \y (ok :*: y0 :*: ys) ->
               let test = eq y y0
-               in (ok || test) :*: y0
+               in (ok || test)
+                    :*: y0
                     :*: ifThenElse (ok || not test) (y .: ys) ys
           )
           (false :*: x :*: emptyList)
@@ -280,10 +301,16 @@ xs !! n =
 
 concatMap
   :: forall c x y
-   . (SymbolicFold c, SymbolicData x, SymbolicData y, FoldData y c, FoldData x c
-   , forall d. BaseField c ~ BaseField d => FoldData y d)
+   . ( SymbolicFold c
+     , SymbolicData x
+     , SymbolicData y
+     , FoldData y c
+     , FoldData x c
+     , forall d. BaseField c ~ BaseField d => FoldData y d
+     )
   => (forall d. (SymbolicFold d, BaseField c ~ BaseField d) => x d -> List y d)
-  -> List x c -> List y c
+  -> List x c
+  -> List y c
 concatMap f = reverse . foldl (\ys x -> revapp (f x) ys) emptyList
 
 concat
@@ -301,12 +328,16 @@ findIndex
   -> UInt n Auto c
 findIndex p =
   sndP
-  . foldl (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y) (zero :*: zero)
+    . foldl (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y) (zero :*: zero)
 
 insert
   :: forall x c n
-   . (SymbolicData x, SymbolicFold c, KnownNat n
-   , KnownRegisters c n Auto, FoldData x c)
+   . ( SymbolicData x
+     , SymbolicFold c
+     , KnownNat n
+     , KnownRegisters c n Auto
+     , FoldData x c
+     )
   => List x c
   -> UInt n Auto c
   -> x c
@@ -315,7 +346,8 @@ insert xs n xi =
   let _ :*: _ :*: res =
         foldr
           ( \a (n' :*: xi' :*: l') ->
-              (n' - one) :*: xi'
+              (n' - one)
+                :*: xi'
                 :*: ifThenElse (n' == zero) (xi' .: l') (a .: l')
           )
           (n :*: xi :*: emptyList)

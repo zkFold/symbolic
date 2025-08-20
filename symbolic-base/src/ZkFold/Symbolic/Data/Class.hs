@@ -6,6 +6,7 @@
 module ZkFold.Symbolic.Data.Class where
 
 import Control.Applicative (liftA2)
+import Control.DeepSeq (NFData1)
 import Data.Bifunctor (bimap)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
@@ -27,7 +28,6 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
-import Control.DeepSeq (NFData1)
 
 type IsPayload f = Semialign f
 
