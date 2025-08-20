@@ -83,11 +83,10 @@ instance
   where
   one = fromConstant (1 :: Natural)
 
-instance
-  (Symbolic c, Traversable f, Representable f)
-  => AdditiveMonoid (Vec f c)
-  where
+instance (Symbolic c, Representable f) => Zero (Vec f c) where
   zero = fromConstant (0 :: Natural)
+
+instance (Symbolic c, Traversable f, Representable f) => AdditiveMonoid (Vec f c)
 
 instance
   (Symbolic c, Traversable f, Representable f)

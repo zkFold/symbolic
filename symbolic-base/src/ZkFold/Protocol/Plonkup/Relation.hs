@@ -135,8 +135,10 @@ instance Exponent a b => Exponent (Vector a) b where
 instance AdditiveSemigroup a => AdditiveSemigroup (Vector a) where
   (+) = zipLongest (+)
 
-instance AdditiveMonoid a => AdditiveMonoid (Vector a) where
+instance Zero a => Zero (Vector a) where
   zero = V.singleton zero
+
+instance AdditiveMonoid a => AdditiveMonoid (Vector a)
 
 instance AdditiveGroup a => AdditiveGroup (Vector a) where
   negate = fmap negate

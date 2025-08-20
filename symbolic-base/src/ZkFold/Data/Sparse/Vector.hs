@@ -57,8 +57,10 @@ instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveSemigroup (SVector s
 instance Scale c a => Scale c (SVector size a) where
   scale c (SVector as) = SVector (map (scale c) as)
 
-instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveMonoid (SVector size a) where
+instance Zero (SVector size a) where
   zero = SVector empty
+
+instance (KnownNat size, AdditiveMonoid a, Eq a) => AdditiveMonoid (SVector size a)
 
 instance (KnownNat size, AdditiveGroup a, Eq a) => AdditiveGroup (SVector size a) where
   negate = fmap negate

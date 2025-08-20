@@ -65,7 +65,7 @@ instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbo
   (<>) (Value va) (Value vb) = Value $ unsafeToVector $ Map.toList $ Map.unionWith (+) (Map.fromList (fromVector va)) (Map.fromList (fromVector vb))
 
 instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Monoid (Value n context) where
-  mempty = Value $ unsafeToVector []
+  mempty = zero
 
 instance
   (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context)
@@ -73,5 +73,7 @@ instance
   where
   (+) = (<>)
 
-instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveMonoid (Value n context) where
-  zero = mempty
+instance Zero (Value n context) where
+  zero = Value $ unsafeToVector []
+
+instance (Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveMonoid (Value n context)

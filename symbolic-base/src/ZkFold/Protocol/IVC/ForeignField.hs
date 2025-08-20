@@ -41,8 +41,10 @@ instance (KnownNat q, Euclidean i) => Exponent (ForeignField q i) Natural where
 instance (KnownNat q, Euclidean i) => AdditiveSemigroup (ForeignField q i) where
   ForeignField f + ForeignField g = ForeignField ((f + g) `mod` fromConstant (value @q))
 
-instance (KnownNat q, Euclidean i) => AdditiveMonoid (ForeignField q i) where
+instance Zero i => Zero (ForeignField q i) where
   zero = ForeignField zero
+
+instance (KnownNat q, Euclidean i) => AdditiveMonoid (ForeignField q i)
 
 instance (KnownNat q, Euclidean i) => AdditiveGroup (ForeignField q i) where
   negate (ForeignField f) = ForeignField (negate f `mod` fromConstant (value @q))

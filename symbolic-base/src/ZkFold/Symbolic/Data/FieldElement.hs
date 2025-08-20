@@ -84,8 +84,10 @@ instance Symbolic c => AdditiveSemigroup (FieldElement c) where
     fromCircuit2F x y $
       \(Par1 i) (Par1 j) -> Par1 <$> newAssigned (\w -> w i + w j)
 
-instance Symbolic c => AdditiveMonoid (FieldElement c) where
+instance Symbolic c => Zero (FieldElement c) where
   zero = FieldElement $ embed (Par1 zero)
+
+instance Symbolic c => AdditiveMonoid (FieldElement c)
 
 instance Symbolic c => AdditiveGroup (FieldElement c) where
   negate (FieldElement x) = FieldElement $ fromCircuitF x $ \(Par1 i) ->

@@ -173,8 +173,10 @@ instance {-# OVERLAPPING #-} (Field c, Eq c) => Scale (Poly c) (Poly c)
 instance Scale k c => Scale k (Poly c) where
   scale = fmap . scale
 
-instance (Ring c, Eq c) => AdditiveMonoid (Poly c) where
+instance Zero (Poly c) where
   zero = P V.empty
+
+instance (Ring c, Eq c) => AdditiveMonoid (Poly c)
 
 instance (Ring c, Eq c) => AdditiveGroup (Poly c) where
   negate (P cs) = P $ fmap negate cs
@@ -591,8 +593,10 @@ instance FromConstant Integer c => FromConstant Integer (PolyVec c size) where
 instance (Ring c, Eq c, KnownNat size) => AdditiveSemigroup (PolyVec c size) where
   PV l + PV r = toPolyVec $ zipVectorsWithDefault zero (+) l r
 
-instance (Ring c, Eq c, KnownNat size) => AdditiveMonoid (PolyVec c size) where
+instance Zero (PolyVec c size) where
   zero = PV V.empty
+
+instance (Ring c, Eq c, KnownNat size) => AdditiveMonoid (PolyVec c size)
 
 instance (Ring c, Eq c, KnownNat size) => AdditiveGroup (PolyVec c size) where
   negate (PV cs) = PV $ fmap negate cs

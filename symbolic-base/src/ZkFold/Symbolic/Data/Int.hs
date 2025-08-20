@@ -75,6 +75,8 @@ abs i = withNumberOfRegisters @n @r @(BaseField c) $ bool i (negate i) (isNegati
 
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (Int n r c)
 
+deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Zero (Int n r c)
+
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (Int n r c)
 
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (Int n r c)
@@ -209,14 +211,14 @@ instance
 
   x < y = y > x
 
-  i1 >= i2 = (isNotNegative i1 && isNegative i2) || (ub && (not $ xor (isNegative i1) (isNegative i2)))
+  i1 >= i2 = (isNotNegative i1 && isNegative i2) || (ub && not (xor (isNegative i1) (isNegative i2)))
    where
     ub =
       withGetRegisterSize @n @r @(BaseField c) $
         withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
           uint i1 >= uint i2
 
-  i1 > i2 = (isNotNegative i1 && isNegative i2) || (ub && (not $ xor (isNegative i1) (isNegative i2)))
+  i1 > i2 = (isNotNegative i1 && isNegative i2) || (ub && not (xor (isNegative i1) (isNegative i2)))
    where
     ub =
       withGetRegisterSize @n @r @(BaseField c) $
