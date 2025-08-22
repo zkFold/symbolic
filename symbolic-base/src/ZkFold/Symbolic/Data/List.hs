@@ -85,10 +85,6 @@ instance
 size :: List x c -> FieldElement c
 size = lSize
 
-type RepImpl x n = (Representable (Layout x n), Representable (Payload x n))
-
-type RepData x c = RepImpl x (Order (BaseField c))
-
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
 emptyList :: forall c x. (RepData x c, Symbolic c) => List x c

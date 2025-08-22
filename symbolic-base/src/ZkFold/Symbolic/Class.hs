@@ -55,6 +55,8 @@ type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m ::
   FunBody '[] g i m = m (g i)
   FunBody (f ': fs) g i m = f i -> FunBody fs g i m
 
+type Ctx = (Type -> Type) -> Type
+
 -- | A Symbolic DSL for performant pure computations with arithmetic circuits.
 -- @c@ is a generic context in which computations are performed.
 class
@@ -67,7 +69,7 @@ class
   , Scale (BaseField c) (WitnessField c)
   , NFData (WitnessField c)
   ) =>
-  Symbolic c
+  Symbolic (c :: Ctx)
   where
   -- | Base algebraic field over which computations are performed.
   type BaseField c :: Type

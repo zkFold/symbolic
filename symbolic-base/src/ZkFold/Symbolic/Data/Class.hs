@@ -10,6 +10,7 @@ import Control.DeepSeq (NFData1)
 import Data.Bifunctor (bimap)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
+import Data.Functor.Rep (Representable)
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semialign (Semialign, Zip, zipWith)
@@ -36,6 +37,10 @@ type IsLayout f = (IsPayload f, Traversable f, NFData1 f)
 class (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
 
 instance (IsPayload (Payload d n), IsLayout (Layout d n)) => DataFunctor d n
+
+type RepImpl x n = (Representable (Layout x n), Representable (Payload x n))
+
+type RepData x c = RepImpl x (Order (BaseField c))
 
 -- | A class for Symbolic data types.
 class (forall n. DataFunctor x n) => SymbolicData x where
