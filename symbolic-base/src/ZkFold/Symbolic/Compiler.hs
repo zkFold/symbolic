@@ -27,7 +27,7 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext, fool)
 import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Prelude (writeFileJSON)
-import ZkFold.Symbolic.Class (Symbolic, fromCircuit2F, Ctx)
+import ZkFold.Symbolic.Class (Ctx, Symbolic, fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (Bool))
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
