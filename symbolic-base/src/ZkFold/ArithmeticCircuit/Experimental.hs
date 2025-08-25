@@ -17,6 +17,7 @@ import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
 import Data.Function (flip, on, ($), (.))
 import Data.Functor (Functor, fmap)
+import Data.Functor.Rep (Rep, Representable)
 import Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
@@ -60,6 +61,7 @@ import ZkFold.Symbolic.Class (
   Symbolic (..),
   fromCircuit2F,
  )
+import ZkFold.Symbolic.Compiler (SymbolicFunction (..))
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.Class (
   Layout,
@@ -69,8 +71,6 @@ import ZkFold.Symbolic.Data.Class (
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
-import ZkFold.Symbolic.Compiler (SymbolicFunction (..))
-import Data.Functor.Rep (Representable, Rep)
 
 ---------------------- Efficient "list" concatenation --------------------------
 

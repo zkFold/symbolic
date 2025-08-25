@@ -435,6 +435,7 @@ order :: forall a. Finite a => Natural
 order = value @(Order a)
 
 type NumberOfBits' k = Log2 (k - 1) + 1
+
 type NumberOfBits a = NumberOfBits' (Order a)
 
 numberOfBits :: forall a. KnownNat (NumberOfBits a) => Natural

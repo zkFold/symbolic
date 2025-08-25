@@ -434,11 +434,12 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
     -> (Natural, ByteString (ChunkSize algorithm) context)
     -> V.Vector (ByteString (WordSize algorithm) context)
   varStep hn (ix, chunk) =
-    toV $ unComp1 $
-      bool @(Bool context)
-        (Comp1 $ Vector @8 hn)
-        (Comp1 $ Vector @8 $ processChunkPure @algorithm @context hn chunk)
-        (len > fromConstant (ix * chunkSize))
+    toV $
+      unComp1 $
+        bool @(Bool context)
+          (Comp1 $ Vector @8 hn)
+          (Comp1 $ Vector @8 $ processChunkPure @algorithm @context hn chunk)
+          (len > fromConstant (ix * chunkSize))
 
 processChunkPure
   :: forall algorithm context

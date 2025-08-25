@@ -32,6 +32,7 @@ import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Data.Word (Word8)
+import GHC.Generics ((:.:) (..))
 import GHC.TypeLits (SomeNat (..), Symbol)
 import GHC.TypeNats (someNatVal, type (<=?))
 import Prelude (($), (.), (<$>))
@@ -72,7 +73,6 @@ import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import GHC.Generics ((:.:)(..))
 
 -- | Width of each lane (in bits) in the Keccak sponge state.
 --
@@ -373,10 +373,11 @@ absorbBlocksVar paddedMsgLen blocks =
           ( \accState (fromZp -> ix, chunk) ->
               let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix
-               in unComp1 $ ifThenElse
-                    (ixFE < numChunksToDrop)
-                    (Comp1 accState)
-                    (Comp1 $ keccakF @context state')
+               in unComp1 $
+                    ifThenElse
+                      (ixFE < numChunksToDrop)
+                      (Comp1 accState)
+                      (Comp1 $ keccakF @context state')
           )
           emptyState
           (zip (tabulate P.id) blockChunks)

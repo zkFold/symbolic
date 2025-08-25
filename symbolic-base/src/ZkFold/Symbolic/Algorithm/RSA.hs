@@ -20,6 +20,7 @@ import GHC.Generics (Generic, Generic1)
 import Prelude (($))
 import qualified Prelude as P
 
+import ZkFold.Algebra.Class (Order)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -39,7 +40,6 @@ import ZkFold.Symbolic.Data.Combinators (
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
-import ZkFold.Algebra.Class (Order)
 
 type Signature keyLen ctx = ByteString keyLen ctx
 

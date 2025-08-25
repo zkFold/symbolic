@@ -33,7 +33,8 @@ import Data.Kind (Type)
 import Data.List.Split (chunksOf)
 import Data.Proxy (Proxy (..))
 import Data.String (IsString (..))
-import GHC.Generics (Generic, Par1 (..), U1 (..), Generic1)
+import Data.Tuple (fst)
+import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..))
 import GHC.TypeLits (KnownSymbol (..), symbolVal, withKnownNat)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
 import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
@@ -47,6 +48,7 @@ import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Vector (Vector, chunks, fromVector, unsafeToVector)
 import ZkFold.Prelude (drop, length, replicate, take)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -56,8 +58,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
-import Data.Tuple (fst)
-import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -233,6 +233,7 @@ wipeUnassigned VarByteString {..} = VarByteString bsLength ((`shiftR` unassigned
 -----------------------------------------------------------------------------------------------------------------------
 
 type WordSize' k = Div (NumberOfBits' k) 2
+
 type WordSize c = WordSize' (Order (BaseField c))
 
 natWordSize :: Natural -> Natural
@@ -245,6 +246,7 @@ withWordSize :: forall a {r}. KnownNat (Order (BaseField a)) => (KnownNat (WordS
 withWordSize = withDict (withWordSize' @a)
 
 type WordCount' n k = Div (n + WordSize' k - 1) (WordSize' k)
+
 type WordCount n c = WordCount' n (Order (BaseField c))
 
 withWordCount
@@ -260,7 +262,7 @@ withWordCount =
           withDict (minusNat @(n + WordSize ctx) @1) $
             withDict (divNat @(n + WordSize ctx - 1) @(WordSize ctx))
 
-newtype Words n ctx = Words { runWords :: ctx (Vector (WordCount n ctx)) }
+newtype Words n ctx = Words {runWords :: ctx (Vector (WordCount n ctx))}
   deriving Generic
 
 deriving newtype instance HNFData ctx => NFData (Words n ctx)

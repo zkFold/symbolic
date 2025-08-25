@@ -10,9 +10,9 @@ import Data.Functor (fmap)
 import ZkFold.Algorithm.Hash.Poseidon
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | Symbolic Poseidon hash
 hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c

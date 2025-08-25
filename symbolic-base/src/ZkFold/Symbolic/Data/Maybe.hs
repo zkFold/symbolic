@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Data.Maybe (
   Maybe,
@@ -38,19 +38,19 @@ instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
 just :: Symbolic c => x c -> Maybe x c
 just = Maybe true
 
-nothing :: forall x c . (SymbolicData x, RepData x c, Symbolic c) => Maybe x c
+nothing :: forall x c. (SymbolicData x, RepData x c, Symbolic c) => Maybe x c
 nothing = Maybe false $ restore (embed (pureRep zero), pureRep zero)
 
 guard :: Bool c -> x c -> Maybe x c
 guard = Maybe
 
-fromMaybe :: forall c x . Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
+fromMaybe :: forall c x. Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
 fromMaybe a (Maybe j t) = bool a t j
 
 isNothing :: Symbolic c => Maybe x c -> Bool c
 isNothing (Maybe h _) = not h
 
-maybe :: forall a b c . Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
+maybe :: forall a b c. Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
 maybe d h (Maybe j x) = fromMaybe d $ Maybe j (h x)
 
 find

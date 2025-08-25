@@ -17,7 +17,7 @@ import Data.Functor (fmap, ($>), (<$>))
 import Data.Functor.Rep (Representable (..))
 import Data.Traversable (Traversable (..))
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Par1 (..), U1 (..), type (:*:) (..), Generic1)
+import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), type (:*:) (..))
 import Numeric.Natural (Natural)
 import System.Random.Stateful (Uniform (..))
 import Text.Show (Show)
@@ -60,7 +60,7 @@ isNative :: forall p c. (Symbolic c, KnownNat p) => Prelude.Bool
 isNative = value @p == value @(Order (BaseField c))
 
 newtype UIntFFA p r c = UIntFFA
-  { uintFFA :: UInt (FFAUIntSize p (Order (BaseField c))) r c }
+  {uintFFA :: UInt (FFAUIntSize p (Order (BaseField c))) r c}
 
 instance SymbolicData (UIntFFA p r) where
   type Layout (UIntFFA p r) k = Layout (UInt (FFAUIntSize p k) r) k
@@ -174,7 +174,7 @@ layoutFFA c =
 
 fromFFA
   :: forall p r a
-   . (Arithmetic a)
+   . Arithmetic a
   => (Par1 :*: Vector (NumberOfRegisters (Order a) (FFAUIntSize p (Order a)) r)) a
   -> Integer
 fromFFA (Par1 x :*: v) =
@@ -306,8 +306,10 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveGroup (FFA p r c) where
       then FFA (negate nx) (UIntFFA zero)
       else
         bool
-          (FFA (fromConstant (value @p) - nx)
-               (UIntFFA (fromConstant (value @p) - uintFFA ux)))
+          ( FFA
+              (fromConstant (value @p) - nx)
+              (UIntFFA (fromConstant (value @p) - uintFFA ux))
+          )
           (FFA nx ux)
           (nx == zero && uintFFA ux == zero)
 
@@ -398,7 +400,7 @@ fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt 
 
 toUInt
   :: forall n p r c
-   . (Symbolic c)
+   . Symbolic c
   => (KnownNat n, KnownNat (NumberOfRegisters (Order (BaseField c)) n r))
   => KnownNat (GetRegisterSize (Order (BaseField c)) n r)
   => FFA p r c
