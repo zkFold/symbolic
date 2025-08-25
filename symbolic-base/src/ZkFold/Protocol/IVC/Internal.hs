@@ -16,6 +16,7 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
+import ZkFold.Symbolic.Data.Switch (Switch)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
@@ -39,7 +40,6 @@ import ZkFold.Symbolic.Class (Symbolic (BaseField))
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, Payload, SymbolicData, arithmetize, payload)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Switch (Switch)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 -- | The recursion circuit satisfiability proof.

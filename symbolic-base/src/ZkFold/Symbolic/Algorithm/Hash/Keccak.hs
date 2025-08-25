@@ -72,6 +72,7 @@ import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
+import GHC.Generics ((:.:)(..))
 
 -- | Width of each lane (in bits) in the Keccak sponge state.
 --
@@ -152,14 +153,14 @@ type Keccak algorithm context k =
   , Symbolic context
   , KnownNat
       ( NumberOfRegisters
-          (BaseField context)
+          (Order (BaseField context))
           (NumberOfBits (BaseField context))
           Auto
       )
   , KnownNat
       ( Ceil
           ( GetRegisterSize
-              (BaseField context)
+              (Order (BaseField context))
               (NumberOfBits (BaseField context))
               Auto
           )
@@ -372,10 +373,10 @@ absorbBlocksVar paddedMsgLen blocks =
           ( \accState (fromZp -> ix, chunk) ->
               let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix
-               in ifThenElse
+               in unComp1 $ ifThenElse
                     (ixFE < numChunksToDrop)
-                    accState
-                    (keccakF @context state')
+                    (Comp1 accState)
+                    (Comp1 $ keccakF @context state')
           )
           emptyState
           (zip (tabulate P.id) blockChunks)

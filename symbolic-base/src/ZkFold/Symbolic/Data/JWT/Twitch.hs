@@ -1,15 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.JWT.Twitch (TwitchPayload (..)) where
 
 import Data.Aeson (FromJSON (..), genericParseJSON)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude ((.), type (~))
+import Prelude ((.))
 import qualified Prelude as P
 
 import ZkFold.Data.Eq
@@ -45,7 +44,7 @@ data TwitchPayload ctx
   , twUserId :: VarByteString 512 ctx
   -- ^ The user's Twitch user ID. This is provided only for users who allow your extension to identify them.
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 -- | @pListen@ and @pSend@ contain the topics the associated user is allowed to listen to and publish to, respectively.
 data PubSubPerms ctx
@@ -53,21 +52,17 @@ data PubSubPerms ctx
   { pListen :: VarByteString 2048 ctx
   , pSend :: VarByteString 2048 ctx
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving instance HEq ctx => P.Eq (PubSubPerms ctx)
 
 deriving instance HShow ctx => P.Show (PubSubPerms ctx)
 
-deriving instance Symbolic ctx => SymbolicData (PubSubPerms ctx)
-
-deriving instance Symbolic ctx => SymbolicInput (PubSubPerms ctx)
-
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
   arbitrary = genericArbitrary uniform
 
-instance (Symbolic ctx, Context (PubSubPerms ctx) ~ ctx) => IsSymbolicJSON (PubSubPerms ctx) where
-  type MaxLength (PubSubPerms ctx) = 4248
+instance Symbolic ctx => IsSymbolicJSON PubSubPerms ctx where
+  type MaxLength PubSubPerms = 4248
   toJsonBits PubSubPerms {..} =
     (fromType @"{\"listen\":")
       @+ pListen
@@ -82,18 +77,14 @@ deriving instance HEq ctx => P.Eq (TwitchPayload ctx)
 
 deriving instance HShow ctx => P.Show (TwitchPayload ctx)
 
-deriving instance Symbolic ctx => SymbolicData (TwitchPayload ctx)
-
-deriving instance Symbolic ctx => SymbolicInput (TwitchPayload ctx)
-
 instance Symbolic ctx => Arbitrary (TwitchPayload ctx) where
   arbitrary = genericArbitrary uniform
 
 instance Symbolic ctx => FromJSON (TwitchPayload ctx) where
   parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
 
-instance Symbolic ctx => IsSymbolicJSON (TwitchPayload ctx) where
-  type MaxLength (TwitchPayload ctx) = 6792
+instance Symbolic ctx => IsSymbolicJSON TwitchPayload ctx where
+  type MaxLength TwitchPayload = 6792
   toJsonBits TwitchPayload {..} =
     (fromType @"{\"channel_id\":\"")
       @+ twChannelId
@@ -111,11 +102,11 @@ instance Symbolic ctx => IsSymbolicJSON (TwitchPayload ctx) where
       @+ twUserId
       `VB.append` (fromType @"\"}")
 
-instance Symbolic ctx => IsBits (TwitchPayload ctx) where
-  type BitCount (TwitchPayload ctx) = 9056
+instance Symbolic ctx => IsBits TwitchPayload ctx where
+  type BitCount TwitchPayload = 9056
   toBits = toAsciiBits
 
-instance (Symbolic ctx, TokenBits (TwitchPayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (TwitchPayload ctx) where
+instance (Symbolic ctx, RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" TwitchPayload ctx where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"
