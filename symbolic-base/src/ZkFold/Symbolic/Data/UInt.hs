@@ -330,7 +330,7 @@ eea a b = eea' 1 a b one zero zero one
 
 --------------------------------------------------------------------------------
 
-instance (Symbolic (Interpreter a), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter a)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter a)) where
   type Const (UInt n r (Interpreter a)) = Natural
   toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @a @n @r)
 

@@ -28,6 +28,7 @@ import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
 import qualified Data.Set as S
 import Data.Traversable (traverse)
 import Data.Tuple (swap, uncurry)
+import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
 import Optics (zoom)
@@ -59,18 +60,17 @@ import ZkFold.Symbolic.Class (
   Symbolic (..),
   fromCircuit2F,
  )
-import ZkFold.Symbolic.Compiler (CompilesWith)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.Class (
   Layout,
   Payload,
-  Range,
-  apply,
   arithmetize,
   restore,
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import ZkFold.Symbolic.Compiler (SymbolicFunction (..))
+import Data.Functor.Rep (Representable, Rep)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -200,9 +200,18 @@ instance
 ------------------------- Optimized compilation function -----------------------
 
 compile
-  :: forall a s f
-   . (CompilesWith (AC a) s f, Binary a)
-  => f -> ArithmeticCircuit a (Payload s :*: Layout s) (Layout (Range f))
+  :: forall a s f n
+   . ( SymbolicFunction f
+     , Context f ~ AC a
+     , Domain f ~ s
+     , Representable (Layout s n)
+     , Representable (Payload s n)
+     , Binary (Rep (Layout s n))
+     , Binary (Rep (Payload s n))
+     , Binary a
+     , n ~ Order a
+     )
+  => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
 compile =
   optimize . solder . \f (p :*: l) ->
     let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)

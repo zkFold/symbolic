@@ -33,7 +33,7 @@ import Data.Kind (Type)
 import Data.List.Split (chunksOf)
 import Data.Proxy (Proxy (..))
 import Data.String (IsString (..))
-import GHC.Generics (Generic, Par1 (..))
+import GHC.Generics (Generic, Par1 (..), U1 (..), Generic1)
 import GHC.TypeLits (KnownSymbol (..), symbolVal, withKnownNat)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
 import Prelude (const, fmap, otherwise, pure, ($), (.), (<$>), (<>), type (~))
@@ -49,13 +49,15 @@ import ZkFold.Data.Vector (Vector, chunks, fromVector, unsafeToVector)
 import ZkFold.Prelude (drop, length, replicate, take)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators hiding (regSize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord ((<))
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
+import Data.Tuple (fst)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -66,7 +68,7 @@ data VarByteString (maxLen :: Natural) (context :: (Type -> Type) -> Type)
   { bsLength :: FieldElement context
   , bsBuffer :: ByteString maxLen context
   }
-  deriving Generic
+  deriving (Generic, Generic1)
 
 deriving stock instance HShow ctx => Haskell.Show (VarByteString n ctx)
 
@@ -74,9 +76,9 @@ deriving stock instance HEq ctx => Haskell.Eq (VarByteString n ctx)
 
 deriving anyclass instance HNFData ctx => NFData (VarByteString n ctx)
 
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicData (VarByteString n ctx)
+deriving instance KnownNat n => SymbolicData (VarByteString n)
 
-deriving instance (KnownNat n, Symbolic ctx) => SymbolicInput (VarByteString n ctx)
+deriving instance KnownNat n => SymbolicInput (VarByteString n)
 
 deriving instance (Symbolic ctx, KnownNat n) => Eq (VarByteString n ctx)
 
@@ -230,7 +232,8 @@ wipeUnassigned VarByteString {..} = VarByteString bsLength ((`shiftR` unassigned
 -- They optimise shifting by working with words rather than bits
 -----------------------------------------------------------------------------------------------------------------------
 
-type WordSize ctx = Div (NumberOfBits (BaseField ctx)) 2
+type WordSize' k = Div (NumberOfBits' k) 2
+type WordSize c = WordSize' (Order (BaseField c))
 
 natWordSize :: Natural -> Natural
 natWordSize n = (ilog2 (n -! 1) + 1) `div` 2
@@ -241,7 +244,8 @@ withWordSize' = Sub $ withKnownNat @(WordSize a) (unsafeSNat (natWordSize (value
 withWordSize :: forall a {r}. KnownNat (Order (BaseField a)) => (KnownNat (WordSize a) => r) -> r
 withWordSize = withDict (withWordSize' @a)
 
-type WordCount n ctx = Div (n + WordSize ctx - 1) (WordSize ctx)
+type WordCount' n k = Div (n + WordSize' k - 1) (WordSize' k)
+type WordCount n c = WordCount' n (Order (BaseField c))
 
 withWordCount
   :: forall n ctx {r}
@@ -256,14 +260,20 @@ withWordCount =
           withDict (minusNat @(n + WordSize ctx) @1) $
             withDict (divNat @(n + WordSize ctx - 1) @(WordSize ctx))
 
-newtype Words n ctx = Words (ctx (Vector (WordCount n ctx)))
+newtype Words n ctx = Words { runWords :: ctx (Vector (WordCount n ctx)) }
   deriving Generic
 
 deriving newtype instance HNFData ctx => NFData (Words n ctx)
 
 deriving newtype instance HShow ctx => Haskell.Show (Words n ctx)
 
-deriving newtype instance (KnownNat (WordCount n ctx), Symbolic ctx) => SymbolicData (Words n ctx)
+instance SymbolicData (Words n) where
+  type Layout (Words n) k = Vector (WordCount' n k)
+  type Payload (Words n) _ = U1
+  arithmetize (Words w) = w
+  payload _ = U1
+  interpolate (fmap (runWords <$>) -> bs) = Words . I.interpolate bs
+  restore = Words . fst
 
 instance
   ( Symbolic ctx

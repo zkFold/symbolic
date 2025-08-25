@@ -168,7 +168,7 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, IsLayout f) => Ord (c f) where
+instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
   type OrderingOf (c f) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
   compare = bitwiseCompare `on` getBitsBE

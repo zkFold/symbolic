@@ -37,7 +37,7 @@ import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class (IsLayout, SymbolicData, interpolate)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData, interpolate)
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
@@ -87,7 +87,7 @@ instance Symbolic c => BoolType (Bool c) where
         Par1
           <$> newAssigned (\x -> let x1 = x v1; x2 = x v2 in x1 + x2 - (one + one) * x1 * x2)
 
-instance (Symbolic c, IsLayout f) => Conditional (Bool c) (c f) where
+instance (Symbolic c, LayoutFunctor f) => Conditional (Bool c) (c f) where
   bool onFalse onTrue = runVec . bool (Vec onFalse) (Vec onTrue)
 
 instance (Symbolic c, SymbolicData d) => Conditional (Bool c) (d c) where

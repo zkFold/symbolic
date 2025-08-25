@@ -11,7 +11,7 @@ import GHC.TypeNats (KnownNat)
 import Prelude hiding (Bool, Eq, Ord)
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class (FromConstant)
+import ZkFold.Algebra.Class (FromConstant, Order)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
@@ -24,12 +24,12 @@ newtype UTCTime c = UTCTime (UInt 11 Auto c)
 
 deriving newtype instance HEq c => Haskell.Eq (UTCTime c)
 
-deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Eq (UTCTime c)
+deriving newtype instance Symbolic c => Eq (UTCTime c)
 
-deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => SymbolicData (UTCTime c)
+deriving newtype instance SymbolicData UTCTime
 
 deriving newtype instance
-  (Symbolic c, KnownRegisters c 11 Auto, regSize ~ GetRegisterSize (BaseField c) 11 Auto, KnownNat (Ceil regSize OrdWord))
+  (Symbolic c, KnownRegisters c 11 Auto, regSize ~ GetRegisterSize (Order (BaseField c)) 11 Auto, KnownNat (Ceil regSize OrdWord))
   => Ord (UTCTime c)
 
 deriving newtype instance FromConstant Natural (UInt 11 Auto c) => FromConstant Natural (UTCTime c)

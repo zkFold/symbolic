@@ -13,8 +13,9 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
+import ZkFold.Symbolic.Class (Symbolic)
 
-hash :: SymbolicData x => x -> FieldElement (Context x)
+hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
 hash =
   mimcHashN mimcConstants zero
     . fmap FieldElement
