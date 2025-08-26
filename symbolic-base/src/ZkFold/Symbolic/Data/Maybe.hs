@@ -16,12 +16,10 @@ module ZkFold.Symbolic.Data.Maybe (
   find,
 ) where
 
-import Data.Functor.Rep (pureRep)
 import GHC.Generics (Generic, Generic1)
 import Prelude (foldr, ($))
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
@@ -38,8 +36,8 @@ instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
 just :: Symbolic c => x c -> Maybe x c
 just = Maybe true
 
-nothing :: forall x c. (SymbolicData x, RepData x c, Symbolic c) => Maybe x c
-nothing = Maybe false $ restore (embed (pureRep zero), pureRep zero)
+nothing :: forall x c . (SymbolicData x, HasRep x c, Symbolic c) => Maybe x c
+nothing = Maybe false dummy
 
 guard :: Bool c -> x c -> Maybe x c
 guard = Maybe
@@ -55,7 +53,7 @@ maybe d h (Maybe j x) = fromMaybe d $ Maybe j (h x)
 
 find
   :: forall a c t
-   . (SymbolicData a, RepData a c, Symbolic c, Haskell.Foldable t)
+   . (SymbolicData a, HasRep a c, Symbolic c, Haskell.Foldable t)
   => (a c -> Bool c)
   -> t (a c)
   -> Maybe a c

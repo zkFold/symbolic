@@ -86,6 +86,7 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
+import Data.Constraint (Dict (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) c = UInt
@@ -104,6 +105,9 @@ deriving newtype instance Symbolic c => Eq (UInt n r c)
 instance SymbolicData (UInt n r) where
   type Layout (UInt n r) k = Vector (NumberOfRegisters k n r)
   type Payload (UInt n r) _ = U1
+  type HasRep (UInt n r) c = KnownNat (NumberOfRegisters (Order (BaseField c)) n r)
+  dataFunctor _ = Dict
+  hasRep _ = Dict
   arithmetize (UInt l) = l
   payload _ = U1
   restore (l, _) = UInt l

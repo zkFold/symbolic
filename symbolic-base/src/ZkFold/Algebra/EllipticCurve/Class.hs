@@ -45,11 +45,9 @@ import qualified Prelude
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Control.Conditional
 import ZkFold.Data.Eq
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input
+import ZkFold.Data.Bool
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
@@ -249,30 +247,6 @@ instance
   isOnCurve p = isOnCurve (project p :: Weierstrass curve (Point field))
 
 deriving newtype instance
-  SymbolicEq field
-  => SymbolicData (Weierstrass curve (Point field))
-
-deriving newtype instance
-  SymbolicEq field
-  => SymbolicData (Weierstrass curve (JacobianPoint field))
-
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (Weierstrass curve (Point field))
-  where
-  isValid = isOnCurve
-
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (Weierstrass curve (JacobianPoint field))
-  where
-  isValid = isOnCurve
-
-deriving newtype instance
   Eq point
   => Eq (Weierstrass curve point)
 
@@ -459,18 +433,6 @@ deriving newtype instance
   => Prelude.Show (TwistedEdwards curve point)
 
 deriving newtype instance
-  SymbolicData field
-  => SymbolicData (TwistedEdwards curve (AffinePoint field))
-
-instance
-  ( TwistedEdwardsCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (TwistedEdwards curve (AffinePoint field))
-  where
-  isValid = isOnCurve
-
-deriving newtype instance
   Eq point
   => Eq (TwistedEdwards curve point)
 
@@ -557,13 +519,6 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
-instance
-  ( SymbolicData (BooleanOf field)
-  , SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (Point field)
-
 instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
 
@@ -601,12 +556,6 @@ instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) whe
     z02 = square z0
     z03 = z0 * z02
   pt0 /= pt1 = not (pt0 Prelude.== pt1)
-
-instance
-  ( SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (JacobianPoint field)
 
 instance Field field => Planar field (JacobianPoint field) where
   pointXY x y = JacobianPoint x y one
@@ -682,13 +631,6 @@ deriving instance
   => Prelude.Eq (CompressedPoint field)
 
 instance
-  ( SymbolicData (BooleanOf field)
-  , SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (CompressedPoint field)
-
-instance
   (BoolType (BooleanOf field), AdditiveMonoid field)
   => HasPointInf (CompressedPoint field)
   where
@@ -701,8 +643,6 @@ data AffinePoint field = AffinePoint
   deriving (Generic, Prelude.Eq)
 
 deriving instance NFData field => NFData (AffinePoint field)
-
-instance SymbolicData field => SymbolicData (AffinePoint field)
 
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 

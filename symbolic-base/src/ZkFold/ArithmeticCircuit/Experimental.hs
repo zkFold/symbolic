@@ -30,7 +30,7 @@ import qualified Data.Set as S
 import Data.Traversable (traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
-import Data.Typeable (Typeable)
+import Data.Typeable (Typeable, Proxy (Proxy))
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
 import Optics (zoom)
 import Prelude (error)
@@ -67,10 +67,11 @@ import ZkFold.Symbolic.Data.Class (
   Layout,
   Payload,
   arithmetize,
-  restore,
+  restore, dataFunctor,
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import Data.Constraint (withDict)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -212,7 +213,7 @@ compile
      , n ~ Order a
      )
   => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
-compile =
+compile = withDict (dataFunctor @(Range f) @n Proxy) $
   optimize . solder . \f (p :*: l) ->
     let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
         Bool b = isValid input

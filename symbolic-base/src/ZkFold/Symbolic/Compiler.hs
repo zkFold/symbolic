@@ -10,11 +10,11 @@ import Data.Aeson (ToJSON, ToJSON1, ToJSONKey)
 import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Function (($), (.))
-import Data.Functor (Functor, fmap)
+import Data.Functor (fmap)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Kind (Type)
 import Data.List ((++))
-import Data.Proxy (Proxy)
+import Data.Proxy (Proxy (Proxy))
 import Data.Tuple (swap)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:) (..))
@@ -33,6 +33,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Vec (runVec)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
+import Data.Constraint (withDict)
 
 class
   ( Symbolic (Context f)
@@ -79,20 +80,22 @@ compileWith
      , Binary a
      , Binary (Rep i)
      , n ~ Order a
-     , Functor (Payload s n)
      , Payload y n ~ U1
      )
   => ((j NewVar -> c0 (Layout (Range f) n)) -> c1 (Layout y n))
   -> (forall x. j x -> (Payload s n x, Layout s n x))
   -> f
   -> y c1
-compileWith opts support f = restore . (,U1) . optimize $ opts \x ->
-  let input = restore . bimap fool (fmap pure) $ swap (support x)
-      Bool b = isValid input
-      output = apply f input
-   in fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
-        constraint (one - ($ i))
-        return r
+compileWith opts support f = withDict (dataFunctor @s @n Proxy) $
+  withDict (dataFunctor @(Range f) @n Proxy) $
+    withDict (dataFunctor @y @n Proxy) $
+      restore . (,U1) . optimize $ opts \x ->
+        let input = restore . bimap fool (fmap pure) $ swap (support x)
+            Bool b = isValid input
+            output = apply f input
+         in fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
+              constraint (one - ($ i))
+              return r
 
 -- | @compile f@ compiles a function @f@ into an optimized arithmetic circuit
 -- packed inside a suitable 'SymbolicData'.
@@ -132,7 +135,7 @@ compileIO
   => FilePath
   -> f
   -> IO ()
-compileIO scriptFile f = do
+compileIO scriptFile f = withDict (dataFunctor @(Range f) @(Order a) Proxy) do
   let ac = runVec (compile f)
   putStrLn "\nCompiling the script...\n"
   putStrLn $ "Number of constraints: " ++ show (acSizeN ac)

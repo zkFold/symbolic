@@ -23,6 +23,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
+import Data.Constraint (Dict(..))
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic
@@ -36,7 +37,10 @@ deriving newtype instance Eq (c f) => Eq (Vec f c)
 instance LayoutFunctor f => SymbolicData (Vec f) where
   type Layout (Vec f) n = f
   type Payload (Vec f) n = G.U1
+  type HasRep (Vec f) _ = Representable f
 
+  dataFunctor _ = Dict
+  hasRep _ = Dict
   arithmetize = runVec
   payload _ = G.U1
   interpolate bs = Vec . I.interpolate (fmap (fmap runVec) bs)

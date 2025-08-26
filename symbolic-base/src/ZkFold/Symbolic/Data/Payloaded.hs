@@ -1,14 +1,13 @@
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Payloaded where
 
-import Data.Bifunctor (Bifunctor (first))
-import Data.Functor (fmap, (<$>))
+import Data.Bifunctor (bimap)
+import Data.Functor (fmap, Functor, (<&>))
 import Data.Semialign (Semialign)
 import Data.Tuple (snd)
-import GHC.Generics (Par1 (Par1), U1 (..), (:*:) (..))
+import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 
 import ZkFold.Algebra.Class (Order, fromConstant)
 import ZkFold.Control.HApplicative (hunit)
@@ -18,37 +17,49 @@ import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), true)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import Data.Constraint (withDict, Dict (..))
+import Data.Function (($), (.))
+import Data.Proxy (Proxy(Proxy))
+import ZkFold.Data.Product (fromPair, toPair)
+import Control.Monad.Representable.Reader (Representable)
 
-data Payloaded d c = Payloaded
-  { pdLayout :: Layout d (Order (BaseField c)) (WitnessField c)
-  , pdPayload :: Payload d (Order (BaseField c)) (WitnessField c)
+newtype Payloaded f d c = Payloaded
+  { runPayloaded :: f ( Layout d (Order (BaseField c)) (WitnessField c)
+                      , Payload d (Order (BaseField c)) (WitnessField c))
   }
 
-payloaded :: (Symbolic c, SymbolicData d) => d c -> Payloaded d c
-payloaded x = witnessF (arithmetize x) `Payloaded` payload x
+payloaded ::
+  forall f d c. (Functor f, Symbolic c, SymbolicData d) =>
+  f (d c) -> Payloaded f d c
+payloaded xs = withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
+  Payloaded $ xs <&> \x -> (witnessF $ arithmetize x, payload x)
 
-restored :: (Symbolic c, SymbolicData d) => Payloaded d c -> d c
-restored (Payloaded l p) = restore (embedW l, p)
+restored ::
+  forall f d c. (Functor f, Symbolic c, SymbolicData d) =>
+  Payloaded f d c -> f (d c)
+restored xs = withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
+  runPayloaded xs <&> \(l, p) -> restore (embedW l, p)
 
-class (Semialign (Layout d n), Semialign (Payload d n)) => Payloadable d n
+instance (Semialign f, SymbolicData d) => SymbolicData (Payloaded f d) where
+  type Layout (Payloaded f d) _ = U1
+  type Payload (Payloaded f d) n = f :.: (Layout d n :*: Payload d n)
+  type HasRep (Payloaded f d) c = (Representable f, HasRep d c)
 
-instance (Semialign (Layout d n), Semialign (Payload d n)) => Payloadable d n
-
-instance (forall n. Payloadable d n) => SymbolicData (Payloaded d) where
-  type Layout (Payloaded d) _ = U1
-  type Payload (Payloaded d) n = Layout d n :*: Payload d n
-
+  dataFunctor (_ :: Proxy '(pfd, n)) = case dataFunctor @d @n Proxy of
+    Dict -> Dict
+  hasRep (_ :: Proxy '(pfd, c)) = case hasRep @d @c Proxy of
+    Dict -> Dict
   arithmetize _ = hunit
-  payload d = pdLayout d :*: pdPayload d
-  restore (snd -> l :*: p) = Payloaded l p
-  interpolate (fmap (first fromConstant) -> bs) (witnessF -> Par1 pt) =
-    interpolateW (fmap pdLayout <$> bs) pt
-      `Payloaded` interpolateW (fmap pdPayload <$> bs) pt
+  payload = Comp1 . fmap fromPair . runPayloaded
+  restore = Payloaded . fmap toPair . unComp1 . snd
+  interpolate (fmap (bimap fromConstant payload) -> bs) (pt :: c p) =
+    withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
+      restore (hunit, interpolateW bs $ unPar1 $ witnessF pt)
 
-instance (forall n. Payloadable d n) => SymbolicInput (Payloaded d) where
+instance (Semialign f, SymbolicData d) => SymbolicInput (Payloaded f d) where
   isValid _ = true
 
-instance Symbolic c => Eq (Payloaded d c) where
-  type BooleanOf (Payloaded d c) = Bool c
+instance Symbolic c => Eq (Payloaded f d c) where
+  type BooleanOf (Payloaded f d c) = Bool c
   _ == _ = true
   _ /= _ = false

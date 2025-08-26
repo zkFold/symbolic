@@ -2,6 +2,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 {- HLINT ignore "Use zipWithM" -}
 
@@ -15,12 +16,12 @@ import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep)
 import qualified Data.List as Haskell
 import Data.List.Infinite (Infinite (..))
-import Data.Semialign (alignWith, zipWith)
+import Data.Semialign (alignWith)
 import Data.These (These (..))
 import Data.Traversable (sequence, traverse)
 import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
@@ -42,15 +43,25 @@ import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
+import Data.Constraint (Dict(..), withDict)
+import Data.Proxy (Proxy (..))
+import Data.List.NonEmpty (NonEmpty)
 
 newtype HashOf x c = HO {runHO :: c (Layout x (Order (BaseField c)))}
 
 instance SymbolicData x => SymbolicData (HashOf x) where
   type Layout (HashOf x) k = Layout x k
   type Payload (HashOf x) _ = U1
+  type HasRep (HashOf x) c = HasRep x c
+  dataFunctor (_ :: Proxy '(hx, n)) = case dataFunctor @x @n Proxy of
+    Dict -> Dict
+  hasRep (_ :: Proxy '(hx, c)) = case hasRep @x @c Proxy of
+    Dict -> Dict
   arithmetize = runHO
   payload _ = U1
-  interpolate (fmap (runHO <$>) -> bs) = HO . I.interpolate bs
+  interpolate (fmap (runHO <$>) -> (bs :: NonEmpty (bc, c lx))) =
+    withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $
+      HO . I.interpolate bs
   restore (l, _) = HO l
 
 instance SymbolicData x => SymbolicInput (HashOf x) where
@@ -60,16 +71,22 @@ emptyHash
   :: (Symbolic c, Representable (Layout x (Order (BaseField c)))) => HashOf x c
 emptyHash = HO $ embed $ pureRep zero
 
-deriving instance (SymbolicData x, Symbolic c) => Eq (HashOf x c)
+instance (SymbolicData x, Symbolic c) => Eq (HashOf x c) where
+  type BooleanOf (HashOf x c) = Bool c
+  HO x == HO y = withDict (dataFunctor @x @(Order (BaseField c)) Proxy) (x == y)
+  x /= y = not (x == y)
 
 data List x c = List
   { lHash :: HashOf x c
   , lSize :: FieldElement c
-  , lWitness :: Payloaded (Infinite :.: (HashOf x :*: x)) c
+  , lWitness :: Payloaded Infinite (HashOf x :*: x) c
   }
   deriving (Generic, Generic1)
 
-instance SymbolicData x => SymbolicData (List x)
+instance SymbolicData x => SymbolicData (List x) where
+  type HasRep (List x) c = HasRep x c
+  hasRep (_ :: Proxy '(lx, c)) = case hasRep @x @c Proxy of
+    Dict -> Dict
 
 -- | TODO: Maybe some 'isValid' check for Lists?..
 instance SymbolicData x => SymbolicInput (List x)
@@ -77,7 +94,7 @@ instance SymbolicData x => SymbolicInput (List x)
 instance (SymbolicEq x c, Symbolic c) => Eq (List x c)
 
 instance
-  (FromConstant a (b c), SymbolicData b, RepData b c, Symbolic c)
+  (FromConstant a (b c), SymbolicData b, HasRep b c, Symbolic c)
   => FromConstant [a] (List b c)
   where
   fromConstant = Haskell.foldr ((.:) . fromConstant) emptyList
@@ -87,8 +104,8 @@ size = lSize
 
 -- | TODO: A proof-of-concept where hash == id.
 -- Replace id with a proper hash if we need lists to be cryptographically secure.
-emptyList :: forall c x. (RepData x c, Symbolic c) => List x c
-emptyList = List emptyHash zero $ pureRep zero `Payloaded` pureRep zero
+emptyList :: forall c x. (SymbolicData x, HasRep x c, Symbolic c) => List x c
+emptyList = dummy
 
 null :: forall c x. Symbolic c => List x c -> Bool c
 null List {..} = lSize == zero
@@ -96,38 +113,36 @@ null List {..} = lSize == zero
 infixr 5 .:
 
 (.:) :: forall c x. (SymbolicData x, Symbolic c) => x c -> List x c -> List x c
-x .: List {..} = List incHash incSize incWitness
- where
-  headL = arithmetize x
-  incHash = HO $ fromCircuit3F
-    (runHO lHash)
-    headL
-    (fromFieldElement incSize)
-    \vHash vRepr (Par1 s) -> sequence $ alignWith (hashFun s) vHash vRepr
-  incSize = lSize + one
-  Payloaded li pi = payloaded (lHash :*: x)
-  Payloaded (Comp1 lw) (Comp1 pw) = lWitness
-  incWitness = Comp1 (li :< lw) `Payloaded` Comp1 (pi :< pw)
+x .: List {..} = List
+  { lSize = incSize
+  , lHash = HO $ withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $
+    fromCircuit3F
+      (runHO lHash)
+      (arithmetize x)
+      (fromFieldElement incSize)
+      \vHash vRepr (Par1 s) -> sequence $ alignWith (hashFun s) vHash vRepr
+  , lWitness = Payloaded $
+      unPar1 (runPayloaded $ payloaded (Par1 $ lHash :*: x))
+      :< runPayloaded lWitness
+  }
+ where incSize = lSize + one
 
 hashFun :: MonadCircuit i a w m => i -> These i i -> m i
 hashFun s (These h t) = newAssigned \x -> x h + x t * x s
 hashFun _ (This h) = pure h
 hashFun s (That t) = newAssigned \x -> x t * x s
 
--- | TODO: Is there really a nicer way to handle empty lists?
-uncons
-  :: forall x c. (SymbolicData x, Symbolic c) => List x c -> (x c, List x c)
+-- | TODO: return symbolic Maybe
+uncons :: forall x c. (SymbolicData x, Symbolic c) => List x c -> (x c, List x c)
 uncons List {..} = case lWitness of
-  Payloaded
-    (Comp1 (tailHash :*: headLayout :< tl))
-    (Comp1 (_ :*: headPayload :< tp)) ->
-      ( restore (hmap fstP preimage, headPayload)
-      , List (HO $ hmap sndP preimage) decSize $ Payloaded (Comp1 tl) (Comp1 tp)
-      )
-     where
+  Payloaded ((tailHash :*: headLayout, _ :*: headPayload) :< oldTail) ->
+    ( restore (hmap fstP preimage, headPayload)
+    , List (HO $ hmap sndP preimage) decSize $ Payloaded oldTail
+    )
+    where
       decSize = lSize - one
       preimage :: c (Layout x (Order (BaseField c)) :*: Layout x (Order (BaseField c)))
-      preimage = fromCircuit2F
+      preimage = withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $ fromCircuit2F
         (fromFieldElement decSize)
         (runHO lHash)
         \(Par1 s) y -> do
@@ -149,9 +164,9 @@ type FoldFun f = (Binary1 f, Binary (Rep f))
 
 type FoldImpl x n = (FoldFun (Layout x n), Binary (Rep (Payload x n)))
 
-class (RepData x c, FoldImpl x (Order (BaseField c))) => FoldData x c
+class (HasRep x c, FoldImpl x (Order (BaseField c))) => FoldData x c
 
-instance (RepData x c, FoldImpl x (Order (BaseField c))) => FoldData x c
+instance (HasRep x c, FoldImpl x (Order (BaseField c))) => FoldData x c
 
 foldl
   :: forall x y c
@@ -161,21 +176,21 @@ foldl
   -> List x c
   -> y c
 foldl f y List {..} =
-  restore $
-    sfoldl
-      foldOp
-      (arithmetize y)
-      (payload y)
-      (runHO lHash)
-      ( case lWitness of
-          Payloaded (Comp1 wl) (Comp1 wp) ->
-            zipWith (\(_ :*: il) (_ :*: ip) -> il :*: ip) wl wp
-      )
-      (fromFieldElement lSize)
+  withDict (dataFunctor @y @(Order (BaseField c)) Proxy) $
+    withDict (hasRep @y @c Proxy) $ withDict (hasRep @x @c Proxy) $
+      restore $
+        sfoldl
+          foldOp
+          (arithmetize y)
+          (payload y)
+          (runHO lHash)
+          ((\(_ :*: l, _ :*: p) -> l :*: p) <$> runPayloaded lWitness)
+          (fromFieldElement lSize)
  where
   foldOp
     :: forall s n
-     . (SymbolicFold s, BaseField s ~ BaseField c, n ~ Order (BaseField s))
+     . ( SymbolicFold s, BaseField s ~ BaseField c, n ~ Order (BaseField s)
+       , Functor (Payload x n))
     => s (Layout y n)
     -> Payload y n (WitnessField s)
     -> s (Layout x n :*: Payload x n)
@@ -278,7 +293,8 @@ setminus
   -> List x c
 setminus f = foldl $ flip (delete f)
 
-singleton :: forall c x. (SymbolicData x, RepData x c, Symbolic c) => x c -> List x c
+singleton ::
+  forall c x. (SymbolicData x, HasRep x c, Symbolic c) => x c -> List x c
 singleton x = x .: emptyList
 
 (!!)
@@ -289,7 +305,7 @@ singleton x = x .: emptyList
   -> UInt n Auto c
   -> x c
 xs !! n =
-  sndP $
+  sndP $ withDict (hasRep @x @c Proxy) $
     foldl
       (\(m :*: y) x -> (m - one) :*: ifThenElse (m == zero) x y)
       (n :*: restore (embed $ pureRep zero, pureRep zero))
