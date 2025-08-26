@@ -46,8 +46,8 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
-import ZkFold.Data.Eq
 import ZkFold.Data.Bool
+import ZkFold.Data.Eq
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent

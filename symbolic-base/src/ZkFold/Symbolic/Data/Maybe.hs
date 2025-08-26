@@ -36,7 +36,7 @@ instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
 just :: Symbolic c => x c -> Maybe x c
 just = Maybe true
 
-nothing :: forall x c . (SymbolicData x, HasRep x c, Symbolic c) => Maybe x c
+nothing :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => Maybe x c
 nothing = Maybe false dummy
 
 guard :: Bool c -> x c -> Maybe x c

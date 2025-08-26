@@ -32,6 +32,7 @@ import Control.Monad (foldM, zipWithM)
 import Control.Monad.State (StateT (..))
 import qualified Data.Aeson as Aeson
 import qualified Data.Bool as Haskell
+import Data.Constraint (Dict (..))
 import Data.Foldable (Foldable (toList), foldlM, foldr, foldrM, for_)
 import Data.Function (on)
 import Data.Functor (Functor (..), (<$>))
@@ -86,7 +87,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
-import Data.Constraint (Dict (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) c = UInt

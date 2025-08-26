@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
+import Data.Constraint (Dict (..))
 import Data.Functor (fmap)
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
@@ -23,7 +24,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
-import Data.Constraint (Dict(..))
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic

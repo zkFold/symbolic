@@ -38,9 +38,9 @@ type family Eithers ts where
   Eithers (t : ts) = t G.:+: Eithers ts
 
 class SymbolicData (Product ts) => Embed ts where
-  embed ::
-    (HasRep (Product ts) c, Symbolic c) =>
-    Proxy ts -> Eithers ts c -> Product ts c
+  embed
+    :: (HasRep (Product ts) c, Symbolic c)
+    => Proxy ts -> Eithers ts c -> Product ts c
   indexOf :: Proxy ts -> Eithers ts c -> Natural
   enum :: Proxy ts -> Product ts c -> [Eithers ts c]
 
@@ -72,9 +72,10 @@ instance SymbolicInput (Product ts) => SymbolicInput (OneOf ts)
 
 instance (Symbolic c, SymbolicEq (Product ts) c) => Eq (OneOf ts c)
 
-embedOneOf ::
-  forall ts c. (Embed ts, HasRep (Product ts) c, Symbolic c) =>
-  Eithers ts c -> OneOf ts c
+embedOneOf
+  :: forall ts c
+   . (Embed ts, HasRep (Product ts) c, Symbolic c)
+  => Eithers ts c -> OneOf ts c
 embedOneOf =
   OneOf <$> fromConstant . indexOf @ts @c Proxy <*> embed @ts @c Proxy
 
@@ -109,8 +110,7 @@ instance Produces G.U1 c where
   produce _ = Proxy
   utilize _ = G.U1
 
-instance
-  (SymbolicData a, HasRep a c) => Produces (G.M1 G.S u (G.K1 v (a c))) c where
+instance (SymbolicData a, HasRep a c) => Produces (G.M1 G.S u (G.K1 v (a c))) c where
   type NP (G.M1 G.S u (G.K1 v (a c))) = a
   produce (G.M1 (G.K1 a)) = a
   utilize = G.M1 . G.K1
@@ -130,8 +130,11 @@ desop :: forall c f u. Injects f c => Eithers (SOP f '[]) c -> f u
 desop = either id (\case {}) . sumTo (Proxy @'[])
 
 instance
-  ( Injects f c, Injects g c, Embed (SOP f (SOP g '[]))
-  , HasRep (Product (SOP f (SOP g '[]))) c)
+  ( Injects f c
+  , Injects g c
+  , Embed (SOP f (SOP g '[]))
+  , HasRep (Product (SOP f (SOP g '[]))) c
+  )
   => Injects (f G.:+: g) c
   where
   type SOP (f G.:+: g) acc = SOP f (SOP g acc)

@@ -11,11 +11,14 @@ module ZkFold.Symbolic.Data.List where
 import Control.Applicative (pure)
 import Control.Monad (return, sequence_)
 import Data.Binary (Binary)
+import Data.Constraint (Dict (..), withDict)
 import Data.Function (flip, id, ($), (.))
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep)
 import qualified Data.List as Haskell
 import Data.List.Infinite (Infinite (..))
+import Data.List.NonEmpty (NonEmpty)
+import Data.Proxy (Proxy (..))
 import Data.Semialign (alignWith)
 import Data.These (These (..))
 import Data.Traversable (sequence, traverse)
@@ -43,9 +46,6 @@ import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
-import Data.Constraint (Dict(..), withDict)
-import Data.Proxy (Proxy (..))
-import Data.List.NonEmpty (NonEmpty)
 
 newtype HashOf x c = HO {runHO :: c (Layout x (Order (BaseField c)))}
 
@@ -113,19 +113,23 @@ null List {..} = lSize == zero
 infixr 5 .:
 
 (.:) :: forall c x. (SymbolicData x, Symbolic c) => x c -> List x c -> List x c
-x .: List {..} = List
-  { lSize = incSize
-  , lHash = HO $ withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $
-    fromCircuit3F
-      (runHO lHash)
-      (arithmetize x)
-      (fromFieldElement incSize)
-      \vHash vRepr (Par1 s) -> sequence $ alignWith (hashFun s) vHash vRepr
-  , lWitness = Payloaded $
-      unPar1 (runPayloaded $ payloaded (Par1 $ lHash :*: x))
-      :< runPayloaded lWitness
-  }
- where incSize = lSize + one
+x .: List {..} =
+  List
+    { lSize = incSize
+    , lHash = HO $
+        withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $
+          fromCircuit3F
+            (runHO lHash)
+            (arithmetize x)
+            (fromFieldElement incSize)
+            \vHash vRepr (Par1 s) -> sequence $ alignWith (hashFun s) vHash vRepr
+    , lWitness =
+        Payloaded $
+          unPar1 (runPayloaded $ payloaded (Par1 $ lHash :*: x))
+            :< runPayloaded lWitness
+    }
+ where
+  incSize = lSize + one
 
 hashFun :: MonadCircuit i a w m => i -> These i i -> m i
 hashFun s (These h t) = newAssigned \x -> x h + x t * x s
@@ -139,20 +143,20 @@ uncons List {..} = case lWitness of
     ( restore (hmap fstP preimage, headPayload)
     , List (HO $ hmap sndP preimage) decSize $ Payloaded oldTail
     )
-    where
-      decSize = lSize - one
-      preimage :: c (Layout x (Order (BaseField c)) :*: Layout x (Order (BaseField c)))
-      preimage = withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $ fromCircuit2F
-        (fromFieldElement decSize)
-        (runHO lHash)
-        \(Par1 s) y -> do
-          tH :*: hH <- traverse unconstrained (tailHash :*: headLayout)
-          hash <- sequence $ alignWith (hashFun s) hH tH
-          sequence_ $ alignWith forceEq hash y
-          return (hH :*: tH)
-      forceEq (These i j) = constraint \x -> x i - x j
-      forceEq (This i) = constraint \x -> x i
-      forceEq (That j) = constraint \x -> x j
+   where
+    decSize = lSize - one
+    preimage :: c (Layout x (Order (BaseField c)) :*: Layout x (Order (BaseField c)))
+    preimage = withDict (dataFunctor @x @(Order (BaseField c)) Proxy) $ fromCircuit2F
+      (fromFieldElement decSize)
+      (runHO lHash)
+      \(Par1 s) y -> do
+        tH :*: hH <- traverse unconstrained (tailHash :*: headLayout)
+        hash <- sequence $ alignWith (hashFun s) hH tH
+        sequence_ $ alignWith forceEq hash y
+        return (hH :*: tH)
+    forceEq (These i j) = constraint \x -> x i - x j
+    forceEq (This i) = constraint \x -> x i
+    forceEq (That j) = constraint \x -> x j
 
 head :: (SymbolicData x, Symbolic c) => List x c -> x c
 head = fst . uncons
@@ -177,20 +181,24 @@ foldl
   -> y c
 foldl f y List {..} =
   withDict (dataFunctor @y @(Order (BaseField c)) Proxy) $
-    withDict (hasRep @y @c Proxy) $ withDict (hasRep @x @c Proxy) $
-      restore $
-        sfoldl
-          foldOp
-          (arithmetize y)
-          (payload y)
-          (runHO lHash)
-          ((\(_ :*: l, _ :*: p) -> l :*: p) <$> runPayloaded lWitness)
-          (fromFieldElement lSize)
+    withDict (hasRep @y @c Proxy) $
+      withDict (hasRep @x @c Proxy) $
+        restore $
+          sfoldl
+            foldOp
+            (arithmetize y)
+            (payload y)
+            (runHO lHash)
+            ((\(_ :*: l, _ :*: p) -> l :*: p) <$> runPayloaded lWitness)
+            (fromFieldElement lSize)
  where
   foldOp
     :: forall s n
-     . ( SymbolicFold s, BaseField s ~ BaseField c, n ~ Order (BaseField s)
-       , Functor (Payload x n))
+     . ( SymbolicFold s
+       , BaseField s ~ BaseField c
+       , n ~ Order (BaseField s)
+       , Functor (Payload x n)
+       )
     => s (Layout y n)
     -> Payload y n (WitnessField s)
     -> s (Layout x n :*: Payload x n)
@@ -293,8 +301,8 @@ setminus
   -> List x c
 setminus f = foldl $ flip (delete f)
 
-singleton ::
-  forall c x. (SymbolicData x, HasRep x c, Symbolic c) => x c -> List x c
+singleton
+  :: forall c x. (SymbolicData x, HasRep x c, Symbolic c) => x c -> List x c
 singleton x = x .: emptyList
 
 (!!)
@@ -305,11 +313,12 @@ singleton x = x .: emptyList
   -> UInt n Auto c
   -> x c
 xs !! n =
-  sndP $ withDict (hasRep @x @c Proxy) $
-    foldl
-      (\(m :*: y) x -> (m - one) :*: ifThenElse (m == zero) x y)
-      (n :*: restore (embed $ pureRep zero, pureRep zero))
-      xs
+  sndP $
+    withDict (hasRep @x @c Proxy) $
+      foldl
+        (\(m :*: y) x -> (m - one) :*: ifThenElse (m == zero) x y)
+        (n :*: restore (embed $ pureRep zero, pureRep zero))
+        xs
 
 concatMap
   :: forall c x y

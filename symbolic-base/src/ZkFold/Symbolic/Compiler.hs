@@ -9,6 +9,7 @@ import Control.Monad (return)
 import Data.Aeson (ToJSON, ToJSON1, ToJSONKey)
 import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
+import Data.Constraint (withDict)
 import Data.Function (($), (.))
 import Data.Functor (fmap)
 import Data.Functor.Rep (Rep, Representable)
@@ -33,7 +34,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Vec (runVec)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
-import Data.Constraint (withDict)
 
 class
   ( Symbolic (Context f)

@@ -7,10 +7,11 @@ module ZkFold.Symbolic.Data.Class where
 import Control.Applicative (liftA2)
 import Control.DeepSeq (NFData1)
 import Data.Bifunctor (bimap)
+import Data.Constraint (Dict (..), withDict)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Representable, pureRep)
-import Data.Kind (Type, Constraint)
+import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semialign (Semialign, Zip, zipWith)
 import Data.Traversable (Traversable)
@@ -28,7 +29,6 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
-import Data.Constraint (Dict (..), withDict)
 
 type PayloadFunctor f = Semialign f
 

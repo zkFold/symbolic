@@ -13,6 +13,7 @@ import Control.Monad (unless)
 import Control.Monad.State (State, gets, modify', runState, state)
 import Data.Binary (Binary)
 import Data.ByteString (ByteString)
+import Data.Constraint (withDict)
 import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
 import Data.Function (flip, on, ($), (.))
@@ -30,7 +31,7 @@ import qualified Data.Set as S
 import Data.Traversable (traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
-import Data.Typeable (Typeable, Proxy (Proxy))
+import Data.Typeable (Proxy (Proxy), Typeable)
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
 import Optics (zoom)
 import Prelude (error)
@@ -67,11 +68,11 @@ import ZkFold.Symbolic.Data.Class (
   Layout,
   Payload,
   arithmetize,
-  restore, dataFunctor,
+  dataFunctor,
+  restore,
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
-import Data.Constraint (withDict)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -213,16 +214,17 @@ compile
      , n ~ Order a
      )
   => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
-compile = withDict (dataFunctor @(Range f) @n Proxy) $
-  optimize . solder . \f (p :*: l) ->
-    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
-        Bool b = isValid input
-        output = apply f input
-        MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
-          constraint (one - ($ i))
-          pure r
-        (vars, circuit) = runState (traverse work constrained) emptyContext
-     in crown circuit vars
+compile =
+  withDict (dataFunctor @(Range f) @n Proxy) $
+    optimize . solder . \f (p :*: l) ->
+      let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
+          Bool b = isValid input
+          output = apply f input
+          MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
+            constraint (one - ($ i))
+            pure r
+          (vars, circuit) = runState (traverse work constrained) emptyContext
+       in crown circuit vars
  where
   work :: Elem a -> State (CircuitContext a U1) (Var a)
   work el = case (elWitness el, elHash el) of
