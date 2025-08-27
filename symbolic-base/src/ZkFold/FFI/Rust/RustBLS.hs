@@ -56,7 +56,7 @@ instance Binary Fr where
   get = h2r <$> get
 
 instance Eq Fr where
-  (==) a b = (r2h a) == (r2h b)
+  (==) a b = r2h a == r2h b
 
 instance ZkFold.Data.Eq.Eq Fr where
   type BooleanOf Fr = Bool
@@ -81,8 +81,10 @@ instance Exponent Fr Integer where
 instance AdditiveSemigroup Fr where
   (+) = runRustFun2 r_scalar_add
 
-instance AdditiveMonoid Fr where
+instance Zero Fr where
   zero = runRustFun0 r_scalar_zero
+
+instance AdditiveMonoid Fr
 
 instance AdditiveGroup Fr where
   (-) = runRustFun2 r_scalar_sub
@@ -173,10 +175,14 @@ deriving newtype instance AdditiveSemigroup Rust_BLS12_381_G1_JacobianPoint
 instance AdditiveSemigroup Rust_BLS12_381_G1_Point where
   (+) = runRustFun2 r_g1_add
 
+deriving newtype instance Zero Rust_BLS12_381_G1_JacobianPoint
+
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G1_JacobianPoint
 
-instance AdditiveMonoid Rust_BLS12_381_G1_Point where
+instance Zero Rust_BLS12_381_G1_Point where
   zero = runRustFun0 r_g1_zero
+
+instance AdditiveMonoid Rust_BLS12_381_G1_Point
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G1_JacobianPoint
 
@@ -226,10 +232,14 @@ deriving newtype instance AdditiveSemigroup Rust_BLS12_381_G2_JacobianPoint
 instance AdditiveSemigroup Rust_BLS12_381_G2_Point where
   (+) = runRustFun2 r_g2_add
 
+deriving newtype instance Zero Rust_BLS12_381_G2_JacobianPoint
+
 deriving newtype instance AdditiveMonoid Rust_BLS12_381_G2_JacobianPoint
 
-instance AdditiveMonoid Rust_BLS12_381_G2_Point where
+instance Zero Rust_BLS12_381_G2_Point where
   zero = runRustFun0 r_g2_zero
+
+instance AdditiveMonoid Rust_BLS12_381_G2_Point
 
 deriving newtype instance AdditiveGroup Rust_BLS12_381_G2_JacobianPoint
 
@@ -333,8 +343,10 @@ instance KnownNat size => FromConstant Integer (RustPolyVec Fr size) where
 instance KnownNat size => AdditiveSemigroup (RustPolyVec Fr size) where
   (+) = runRustFun2 r_poly_add
 
-instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size) where
+instance Zero (RustPolyVec Fr size) where
   zero = runRustFun0 r_poly_zero
+
+instance KnownNat size => AdditiveMonoid (RustPolyVec Fr size)
 
 instance KnownNat size => AdditiveGroup (RustPolyVec Fr size) where
   (-) = runRustFun2 r_poly_sub

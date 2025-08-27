@@ -13,16 +13,7 @@ import Data.String (fromString)
 import GHC.Generics (Generic, Par1 (..), U1 (..), unPar1)
 import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
 
-import ZkFold.Algebra.Class (
-  AdditiveGroup (..),
-  AdditiveMonoid (..),
-  AdditiveSemigroup (..),
-  MultiplicativeMonoid (..),
-  Scale (..),
-  SemiEuclidean (..),
-  fromConstant,
-  (*),
- )
+import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Planar, Point (..), Weierstrass (..), pointXY)
 import ZkFold.Algebra.Number (Natural, value)
@@ -123,17 +114,17 @@ instance
   WeierstrassWitness p1 + WeierstrassWitness p2 =
     WeierstrassWitness (p1 + p2)
 
+instance Symbolic ctx => Zero (WeierstrassWitness ctx) where
+  zero = WeierstrassWitness zero
+
 instance
   ( Symbolic ctx
   , Conditional b (IntegralOf (WitnessField ctx))
   , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
-  , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , Scale Natural (WeierstrassWitness ctx)
   )
   => AdditiveMonoid (WeierstrassWitness ctx)
-  where
-  zero = WeierstrassWitness zero
 
 instance
   ( Symbolic ctx

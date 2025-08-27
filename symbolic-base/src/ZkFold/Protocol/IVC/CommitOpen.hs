@@ -2,14 +2,13 @@
 
 module ZkFold.Protocol.IVC.CommitOpen where
 
-import Data.Zip (zipWith)
+import Data.Functor ((<&>))
 import Prelude hiding (Num (..), length, pi, tail, zipWith, (&&))
 
-import ZkFold.Algebra.Class (AdditiveGroup (..))
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
+import ZkFold.Algebra.Class (AdditiveGroup, Zero, negate, zero)
 import ZkFold.Algebra.Number (Natural, type (-))
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Protocol.IVC.Commit (HomomorphicCommit (hcommit))
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol (..))
 
 data CommitOpen k i p c f = CommitOpen
@@ -43,19 +42,18 @@ data CommitOpen k i p c f = CommitOpen
   }
 
 commitOpen
-  :: (HomomorphicCommit c, f ~ ScalarFieldOf c)
-  => SpecialSoundProtocol k i p f
+  :: (AdditiveGroup f, Zero c)
+  => HomomorphicCommit f c
+  -> SpecialSoundProtocol k i p f
   -> CommitOpen k i p c f
-commitOpen SpecialSoundProtocol {..} =
+commitOpen hcommit SpecialSoundProtocol {..} =
   CommitOpen
     { input = input
     , prover = \pi0 w r i ->
         let m = prover pi0 w r i
-         in (m, hcommit m)
+         in (m, hcommit m zero)
     , verifier = \pi pms rs ->
-        let ms = fmap fst pms
-            cs = fmap snd pms
-         in ( zipWith (-) (fmap hcommit ms) cs
-            , verifier pi ms rs
-            )
+        ( pms <&> \(fs, c) -> hcommit (map negate fs) c
+        , verifier pi (fst <$> pms) rs
+        )
     }
