@@ -37,6 +37,7 @@ import ZkFold.Prelude (drop, take)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
+import Data.Kind (Type)
 
 mzipWithMRep
   :: (Representable f, Traversable f, Applicative m)
@@ -105,18 +106,24 @@ registerSize = case regSize @r of
 
 type Ceil a b = Div (a + b - 1) b
 
-type family GetRegisterSize (n :: Natural) (bits :: Natural) (r :: RegisterSize) :: Natural where
-  GetRegisterSize _ 0 _ = 0
-  GetRegisterSize _ _ (Fixed rs) = rs
-  GetRegisterSize n bits Auto = Ceil bits (NumberOfRegisters n bits Auto)
+type GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) =
+  GetRegisterSizeN (Order a) bits r
 
-type KnownRegisters c bits r = KnownNat (NumberOfRegisters (Order (BaseField c)) bits r)
+type family GetRegisterSizeN n b r :: Natural where
+  GetRegisterSizeN _ 0 _ = 0
+  GetRegisterSizeN _ _ (Fixed rs) = rs
+  GetRegisterSizeN n b Auto = Ceil b (NumberOfRegistersN n b Auto)
 
-type family NumberOfRegisters (n :: Natural) (bits :: Natural) (r :: RegisterSize) :: Natural where
-  NumberOfRegisters _ 0 _ = 0
-  NumberOfRegisters n bits (Fixed bits) = 1
-  NumberOfRegisters n bits (Fixed rs) = If (Mod bits rs >? 0) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters n bits Auto = NumberOfRegisters' n bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
+
+type NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize) =
+  NumberOfRegistersN (Order a) bits r
+
+type family NumberOfRegistersN n b r :: Natural where
+  NumberOfRegistersN _ 0 _ = 0
+  NumberOfRegistersN n b (Fixed b) = 1
+  NumberOfRegistersN n b (Fixed rs) = If (Mod b rs >? 0) (Div b rs + 1) (Div b rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegistersN n b Auto = NumberOfRegisters' n b (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
   -- But it is weird anyway if someone is trying to store a value
   -- which requires more than 50 registers.
 
@@ -237,7 +244,7 @@ withSecondNextNBits = withDict (withSecondNextNBits' @n)
 
 withNumberOfRegisters'
   :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters (Interpreter a) n r
-withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters (Order a) n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
+withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
 
 withNumberOfRegisters
   :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters (Interpreter a) n r => k) -> k
@@ -249,12 +256,11 @@ withCeilRegSize' = Sub $ withKnownNat @(Ceil rs ow) (unsafeSNat (Haskell.div (va
 withCeilRegSize :: forall rs ow {k}. (KnownNat rs, KnownNat ow) => (KnownNat (Ceil rs ow) => k) -> k
 withCeilRegSize = withDict (withCeilRegSize' @rs @ow)
 
-withGetRegisterSize'
-  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize (Order a) n r)
-withGetRegisterSize' = Sub $ withKnownNat @(GetRegisterSize (Order a) n r) (unsafeSNat (registerSize @a @n @r)) Dict
+withGetRegisterSize' :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (GetRegisterSize a n r)
+withGetRegisterSize' = Sub $ withKnownNat @(GetRegisterSize a n r) (unsafeSNat (registerSize @a @n @r)) Dict
 
 withGetRegisterSize
-  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownNat (GetRegisterSize (Order a) n r) => k) -> k
+  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownNat (GetRegisterSize a n r) => k) -> k
 withGetRegisterSize = withDict (withGetRegisterSize' @n @r @a)
 
 padNextPow2 :: forall i a w m n. (MonadCircuit i a w m, KnownNat n) => Vector n i -> m (Vector (NextPow2 n) i)

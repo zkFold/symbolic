@@ -65,8 +65,7 @@ import ZkFold.Symbolic.Data.Combinators (
   Ceil,
   GetRegisterSize,
   Iso (..),
-  NumberOfRegisters,
-  RegisterSize (..),
+  RegisterSize (..), KnownRegisters,
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Ord
@@ -151,16 +150,11 @@ type Keccak algorithm context k =
   , -- So that we are dealing with "byte"strings.
     Mod k 8 ~ 0
   , Symbolic context
-  , KnownNat
-      ( NumberOfRegisters
-          (Order (BaseField context))
-          (NumberOfBits (BaseField context))
-          Auto
-      )
+  , KnownRegisters context (NumberOfBits (BaseField context)) Auto
   , KnownNat
       ( Ceil
           ( GetRegisterSize
-              (Order (BaseField context))
+              (BaseField context)
               (NumberOfBits (BaseField context))
               Auto
           )

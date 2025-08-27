@@ -57,23 +57,23 @@ knownBufLen = withDict (knownBufLen' @n)
 monoAdd :: forall (a :: Natural) (b :: Natural) (c :: Natural). (a <= b) :- (a <= (c + b))
 monoAdd = Sub unsafeAxiom
 
-oneReg :: forall n c. Dict (NumberOfRegisters (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n)) ~ 1)
+oneReg :: forall n c. Dict (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) ~ 1)
 oneReg = unsafeAxiom -- @BufLen n@ is always greater than 2
 
-knownOneReg' :: forall n c. Dict (KnownNat (NumberOfRegisters (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n))))
-knownOneReg' = withKnownNat @(NumberOfRegisters (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
+knownOneReg' :: forall n c. Dict (KnownRegisters c (BufLen n) ('Fixed (BufLen n)))
+knownOneReg' = withKnownNat @(NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
 
 knownOneReg
-  :: forall n c {r}. (KnownNat (NumberOfRegisters (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n))) => r) -> r
+  :: forall n c {r}. (KnownRegisters c (BufLen n) ('Fixed (BufLen n)) => r) -> r
 knownOneReg = withDict (knownOneReg' @n @c)
 
 knownNumWords'
   :: forall n c
    . KnownNat n
-    :- KnownNat (Div (GetRegisterSize (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
+    :- KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
 knownNumWords' =
   Sub $
-    withKnownNat @(Div (GetRegisterSize (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
+    withKnownNat @(Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
       (unsafeSNat $ knownBufLen @n $ wordSize (value @(BufLen n)))
       Dict
  where
@@ -83,7 +83,7 @@ knownNumWords' =
 knownNumWords
   :: forall n c {r}
    . KnownNat n
-  => (KnownNat (Div (GetRegisterSize (Order (BaseField c)) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord) => r) -> r
+  => (KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord) => r) -> r
 knownNumWords = withDict (knownNumWords' @n @c)
 
 withDiv :: forall n {r}. KnownNat n => (KnownNat (Div ((n + OrdWord) - 1) OrdWord) => r) -> r

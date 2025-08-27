@@ -119,7 +119,7 @@ instance
     (Int u1, Int u2) = (abs i1, abs i2)
     (d, m) =
       withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (Order (BaseField c)) n r) @OrdWord $
+        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
           divMod u1 u2
 
     ite_nn = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_np
@@ -166,7 +166,7 @@ quotRem i1 i2 = (r1, r2)
   (Int u1, Int u2) = (abs i1, abs i2)
   (d, m) =
     withGetRegisterSize @n @r @(BaseField c) $
-      withCeilRegSize @(GetRegisterSize (Order (BaseField c)) n r) @OrdWord $
+      withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
         divMod u1 u2
 
   ite_tf = ifThenElse (isNegative i1 && isNotNegative i2) dm_mp ite_pm
@@ -219,14 +219,14 @@ instance
    where
     ub =
       withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (Order (BaseField c)) n r) @OrdWord $
+        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
           uint i1 >= uint i2
 
   i1 > i2 = (isNotNegative i1 && isNegative i2) || (ub && not (xor (isNegative i1) (isNegative i2)))
    where
     ub =
       withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (Order (BaseField c)) n r) @OrdWord $
+        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
           uint i1 > uint i2
 
   max x y = bool @(Bool c) x y $ x < y

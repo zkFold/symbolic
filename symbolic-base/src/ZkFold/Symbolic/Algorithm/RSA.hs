@@ -20,7 +20,6 @@ import GHC.Generics (Generic, Generic1)
 import Prelude (($))
 import qualified Prelude as P
 
-import ZkFold.Algebra.Class (Order)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
@@ -91,7 +90,7 @@ type RSA keyLen msgLen ctx =
   , KnownNat (2 * keyLen)
   , KnownRegisters ctx keyLen 'Auto
   , KnownRegisters ctx (2 * keyLen) 'Auto
-  , KnownNat (Ceil (GetRegisterSize (Order (BaseField ctx)) (2 * keyLen) 'Auto) OrdWord)
+  , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
   )
 
 sign
