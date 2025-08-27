@@ -125,7 +125,6 @@ extractCopyConstraints n sigma =
   in cyclesToConstraints foundCycles
 
 -- | Generate a complete PlonkupCircuit from an ArithmeticCircuit
--- This function leverages the existing PlonkupRelation infrastructure
 generatePlonkupCircuit
   :: forall i o n a pv
    . ( KnownNat n

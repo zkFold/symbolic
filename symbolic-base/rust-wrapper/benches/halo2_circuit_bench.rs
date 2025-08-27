@@ -29,13 +29,13 @@ fn hash_to_field(data: &[u8]) -> Fr {
     Fr::from_uniform_bytes(hash.as_array())
 }
 
-/// Generate a test circuit with the specified number of constraints using realistic field elements
+/// Generate a test circuit with the specified number of constraints
 fn create_test_circuit(num_constraints: usize) -> PlonkupCircuit<Fr> {
     let mut circuit = PlonkupCircuit::<Fr>::new(num_constraints);
 
     // Fill circuit with multiplication chains where output of one becomes input to next
     for i in 0..num_constraints {
-        // Generate deterministic but realistic field elements from hashes
+        // Generate field elements from hashes
         let seed_b = format!("witness_b_{}", i);
         let seed_const = format!("witness_const_{}", i);
 

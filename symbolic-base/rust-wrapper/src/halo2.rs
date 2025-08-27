@@ -1,16 +1,7 @@
 //! Halo2 PlonkUp Circuit Implementation
 //!
-//! This module implements a complete Halo2 circuit for the PlonkUp protocol.
+//! This module implements a Halo2 circuit trait for PlonkUp circuits, enabling us to use Halo2 proofs with these circuits.
 //!
-//! **Usage Example:**
-//! ```rust
-//! use rust_wrapper::halo2::PlonkupCircuit;
-//! use halo2_proofs::dev::MockProver;
-//! use halo2curves::bls12381::Fr;
-//! let circuit = PlonkupCircuit::<Fr>::new(4); // 4 PlonkUp constraints
-//! let prover = MockProver::run(5, &circuit, vec![]).unwrap(); // k=5 for Halo2 (32 total rows)
-//! prover.assert_satisfied();
-//! ```
 
 #![allow(non_snake_case)]
 
