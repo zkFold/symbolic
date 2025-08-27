@@ -273,8 +273,7 @@ instance SymbolicData (Words n) where
   type Layout (Words n) k = Vector (WordCount' n k)
   type Payload (Words n) _ = U1
   type HasRep (Words n) c = KnownNat (WordCount n c)
-  dataFunctor _ = Dict
-  hasRep _ = Dict
+
   arithmetize (Words w) = w
   payload _ = U1
   interpolate (fmap (runWords <$>) -> bs) = Words . I.interpolate bs

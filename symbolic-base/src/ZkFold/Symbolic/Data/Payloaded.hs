@@ -5,10 +5,8 @@ module ZkFold.Symbolic.Data.Payloaded where
 
 import Control.Monad.Representable.Reader (Representable)
 import Data.Bifunctor (bimap)
-import Data.Constraint (Dict (..), withDict)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<&>))
-import Data.Proxy (Proxy (Proxy))
 import Data.Semialign (Semialign)
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
@@ -35,34 +33,24 @@ payloaded
   :: forall f d c
    . (Functor f, Symbolic c, SymbolicData d)
   => f (d c) -> Payloaded f d c
-payloaded xs =
-  withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
-    Payloaded $
-      xs <&> \x -> (witnessF $ arithmetize x, payload x)
+payloaded xs = Payloaded $ xs <&> \x -> (witnessF $ arithmetize x, payload x)
 
 restored
   :: forall f d c
    . (Functor f, Symbolic c, SymbolicData d)
   => Payloaded f d c -> f (d c)
-restored xs =
-  withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
-    runPayloaded xs <&> \(l, p) -> restore (embedW l, p)
+restored xs = runPayloaded xs <&> \(l, p) -> restore (embedW l, p)
 
 instance (Semialign f, SymbolicData d) => SymbolicData (Payloaded f d) where
   type Layout (Payloaded f d) _ = U1
   type Payload (Payloaded f d) n = f :.: (Layout d n :*: Payload d n)
   type HasRep (Payloaded f d) c = (Representable f, HasRep d c)
 
-  dataFunctor (_ :: Proxy '(pfd, n)) = case dataFunctor @d @n Proxy of
-    Dict -> Dict
-  hasRep (_ :: Proxy '(pfd, c)) = case hasRep @d @c Proxy of
-    Dict -> Dict
   arithmetize _ = hunit
   payload = Comp1 . fmap fromPair . runPayloaded
   restore = Payloaded . fmap toPair . unComp1 . snd
   interpolate (fmap (bimap fromConstant payload) -> bs) (pt :: c p) =
-    withDict (dataFunctor @d @(Order (BaseField c)) Proxy) $
-      restore (hunit, interpolateW bs $ unPar1 $ witnessF pt)
+    restore (hunit, interpolateW bs $ unPar1 $ witnessF pt)
 
 instance (Semialign f, SymbolicData d) => SymbolicInput (Payloaded f d) where
   isValid _ = true

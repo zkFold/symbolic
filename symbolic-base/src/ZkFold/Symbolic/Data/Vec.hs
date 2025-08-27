@@ -4,7 +4,6 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
-import Data.Constraint (Dict (..))
 import Data.Functor (fmap)
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
@@ -39,8 +38,6 @@ instance LayoutFunctor f => SymbolicData (Vec f) where
   type Payload (Vec f) n = G.U1
   type HasRep (Vec f) _ = Representable f
 
-  dataFunctor _ = Dict
-  hasRep _ = Dict
   arithmetize = runVec
   payload _ = G.U1
   interpolate bs = Vec . I.interpolate (fmap (fmap runVec) bs)

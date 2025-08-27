@@ -32,7 +32,6 @@ import Control.Monad (foldM, zipWithM)
 import Control.Monad.State (StateT (..))
 import qualified Data.Aeson as Aeson
 import qualified Data.Bool as Haskell
-import Data.Constraint (Dict (..))
 import Data.Foldable (Foldable (toList), foldlM, foldr, foldrM, for_)
 import Data.Function (on)
 import Data.Functor (Functor (..), (<$>))
@@ -106,8 +105,7 @@ instance SymbolicData (UInt n r) where
   type Layout (UInt n r) k = Vector (NumberOfRegisters k n r)
   type Payload (UInt n r) _ = U1
   type HasRep (UInt n r) c = KnownNat (NumberOfRegisters (Order (BaseField c)) n r)
-  dataFunctor _ = Dict
-  hasRep _ = Dict
+
   arithmetize (UInt l) = l
   payload _ = U1
   restore (l, _) = UInt l

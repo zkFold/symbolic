@@ -3,15 +3,13 @@
 module ZkFold.Symbolic.Data.Hash where
 
 import Control.Monad (return)
-import Data.Constraint (withDict)
 import Data.Function (($))
 import Data.Functor.Identity (Identity (Identity))
-import Data.Proxy (Proxy (Proxy))
 import qualified GHC.Generics as G
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Class (BaseField, Symbolic, fromCircuit2F)
+import ZkFold.Symbolic.Class (Symbolic, fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (..), SymbolicEq)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -57,9 +55,8 @@ preimage Hash {..} =
   let Identity raw = restored hValue
       Bool b = hasher raw == hHash
    in restore
-        ( withDict (dataFunctor @a @(Order (BaseField c)) Proxy) $
-            fromCircuit2F (arithmetize raw) b $ \r (G.Par1 i) -> do
-              constraint (($ i) - one)
-              return r
+        ( fromCircuit2F (arithmetize raw) b $ \r (G.Par1 i) -> do
+            constraint (($ i) - one)
+            return r
         , payload raw
         )
