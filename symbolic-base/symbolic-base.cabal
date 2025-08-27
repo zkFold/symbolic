@@ -219,6 +219,7 @@ library
       ZkFold.Protocol.NonInteractiveProof.Class
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
+      ZkFold.Protocol.Halo2
       ZkFold.Prelude
       ZkFold.Symbolic.Algorithm.ECDSA.ECDSA
       ZkFold.Symbolic.Algorithm.Hash.Blake2b
