@@ -65,7 +65,8 @@ import ZkFold.Symbolic.Data.Combinators (
   Ceil,
   GetRegisterSize,
   Iso (..),
-  RegisterSize (..), KnownRegisters,
+  KnownRegisters,
+  RegisterSize (..),
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Ord

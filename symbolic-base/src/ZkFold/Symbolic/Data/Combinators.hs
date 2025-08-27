@@ -13,6 +13,7 @@ import Data.Constraint.Nat
 import Data.Constraint.Unsafe
 import Data.Foldable (foldlM)
 import Data.Functor.Rep (Representable, mzipWithRep)
+import Data.Kind (Type)
 import Data.List (find, splitAt)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromMaybe)
@@ -37,7 +38,6 @@ import ZkFold.Prelude (drop, take)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
-import Data.Kind (Type)
 
 mzipWithMRep
   :: (Representable f, Traversable f, Applicative m)

@@ -212,15 +212,16 @@ compile
      , n ~ Order a
      )
   => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
-compile = optimize . solder . \f (p :*: l) ->
-  let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
-      Bool b = isValid input
-      output = apply f input
-      MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
-        constraint (one - ($ i))
-        pure r
-      (vars, circuit) = runState (traverse work constrained) emptyContext
-   in crown circuit vars
+compile =
+  optimize . solder . \f (p :*: l) ->
+    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
+        Bool b = isValid input
+        output = apply f input
+        MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
+          constraint (one - ($ i))
+          pure r
+        (vars, circuit) = runState (traverse work constrained) emptyContext
+     in crown circuit vars
  where
   work :: Elem a -> State (CircuitContext a U1) (Var a)
   work el = case (elWitness el, elHash el) of

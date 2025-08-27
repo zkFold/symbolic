@@ -1,10 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 {- HLINT ignore "Use zipWithM" -}
 
@@ -163,14 +163,15 @@ foldl
   -> y c
   -> List x c
   -> y c
-foldl f y List {..} = restore $
-  sfoldl
-    foldOp
-    (arithmetize y)
-    (payload y)
-    (runHO lHash)
-    ((\(_ :*: l, _ :*: p) -> l :*: p) <$> runPayloaded lWitness)
-    (fromFieldElement lSize)
+foldl f y List {..} =
+  restore $
+    sfoldl
+      foldOp
+      (arithmetize y)
+      (payload y)
+      (runHO lHash)
+      ((\(_ :*: l, _ :*: p) -> l :*: p) <$> runPayloaded lWitness)
+      (fromFieldElement lSize)
  where
   foldOp
     :: forall s n
@@ -292,10 +293,12 @@ singleton x = x .: emptyList
   => List x c
   -> UInt n Auto c
   -> x c
-xs !! n = sndP $ foldl
-  (\(m :*: y) x -> (m - one) :*: ifThenElse (m == zero) x y)
-  (n :*: restore (embed $ pureRep zero, pureRep zero))
-  xs
+xs !! n =
+  sndP $
+    foldl
+      (\(m :*: y) x -> (m - one) :*: ifThenElse (m == zero) x y)
+      (n :*: restore (embed $ pureRep zero, pureRep zero))
+      xs
 
 concatMap
   :: forall c x y

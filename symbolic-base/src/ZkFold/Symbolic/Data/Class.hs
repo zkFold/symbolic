@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 module ZkFold.Symbolic.Data.Class where
 
@@ -55,9 +55,12 @@ class IsRepData x c => RepData x (c :: Ctx)
 instance IsRepData x c => RepData x c
 
 -- | A class for Symbolic data types.
-class ( forall n. DataFunctor x n
-      , forall c. HasRep x c => RepData x c
-      ) => SymbolicData x where
+class
+  ( forall n. DataFunctor x n
+  , forall c. HasRep x c => RepData x c
+  ) =>
+  SymbolicData x
+  where
   type Layout x (n :: Natural) :: Type -> Type
   type Layout x n = Layout (G.Rep1 x) n
 

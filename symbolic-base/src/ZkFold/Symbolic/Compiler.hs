@@ -14,6 +14,7 @@ import Data.Functor (fmap)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Kind (Type)
 import Data.List ((++))
+import Data.Proxy (Proxy)
 import Data.Tuple (swap)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:) (..))
@@ -32,7 +33,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Vec (runVec)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
-import Data.Proxy (Proxy)
 
 class
   ( Symbolic (Context f)
