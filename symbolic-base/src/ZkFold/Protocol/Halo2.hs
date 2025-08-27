@@ -30,15 +30,34 @@ import qualified Data.Vector as V
 import GHC.Generics (Generic)
 import GHC.TypeNats (KnownNat, natVal, type (*))
 import Numeric.Natural (Natural)
+import Prelude (
+  concat,
+  div,
+  elem,
+  filter,
+  fromIntegral,
+  head,
+  length,
+  map,
+  mod,
+  notElem,
+  return,
+  tail,
+  zip,
+  ($),
+  (*),
+  (++),
+  (-),
+  (==),
+  (>),
+ )
+
 import ZkFold.Algebra.Permutation (Permutation, fromPermutation)
 import ZkFold.Algebra.Polynomial.Univariate (UnivariateRingPolyVec, fromPolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..), toPlonkupRelation)
 import qualified ZkFold.Protocol.Plonkup.Relation as Plonkup
 import ZkFold.Symbolic.Class (Arithmetic)
-import Prelude (return, ($), (-), filter, map, div, mod, head, tail, 
-                length, notElem, (>), fromIntegral, (==), elem, concat, 
-                zip, (++), (*))
 
 -- | Witness data for the three PlonkUp witness columns
 data PlonkupWitnessData a = PlonkupWitnessData
@@ -80,49 +99,50 @@ data PlonkupCircuit a = PlonkupCircuit
 -- | Extract copy constraints from a PlonkUp permutation
 -- The permutation represents connections between the three witness columns
 extractCopyConstraints :: Natural -> Permutation (3 * n) -> [(Natural, Natural, Natural, Natural)]
-extractCopyConstraints n sigma = 
-  let 
+extractCopyConstraints n sigma =
+  let
     -- Convert permutation to vector (1-indexed)
     permVec = fromPermutation sigma
-    
+
     -- Convert from 1-indexed permutation to 0-indexed with column information
     -- Index i maps to (column, row) where:
     -- - column = (i-1) `div` n  (0 = w1, 1 = w2, 2 = w3)
     -- - row = (i-1) `mod` n
-    indexToPosition i = 
+    indexToPosition i =
       let idx = i - 1
-      in (idx `div` n, idx `mod` n)
-    
+       in (idx `div` n, idx `mod` n)
+
     -- Find all cycles in the permutation that have length > 1
     findCycles :: [Natural] -> [[Natural]]
     findCycles [] = []
-    findCycles (i:is) = 
+    findCycles (i : is) =
       let cycle = findCycle i [i]
           remaining = filter (`notElem` cycle) is
-      in if length cycle > 1 
-         then cycle : findCycles remaining
-         else findCycles remaining
-      where
-        findCycle start visited =
-          let next = permVec V.! (fromIntegral start - 1)
-          in if next == start
-             then visited
-             else if next `elem` visited
-                  then visited  -- Avoid infinite loops
+       in if length cycle > 1
+            then cycle : findCycles remaining
+            else findCycles remaining
+     where
+      findCycle start visited =
+        let next = permVec V.! (fromIntegral start - 1)
+         in if next == start
+              then visited
+              else
+                if next `elem` visited
+                  then visited -- Avoid infinite loops
                   else findCycle next (next : visited)
-    
+
     -- Convert cycles to copy constraints
     cyclesToConstraints cycleList = concat $ map cycleToConstraints cycleList
-      where
-        cycleToConstraints cycle = 
-          let positions = map indexToPosition cycle
-              pairs = zip positions (tail positions ++ [head positions])
-          in map (\((col1, row1), (col2, row2)) -> (col1, row1, col2, row2)) pairs
-    
+     where
+      cycleToConstraints cycle =
+        let positions = map indexToPosition cycle
+            pairs = zip positions (tail positions ++ [head positions])
+         in map (\((col1, row1), (col2, row2)) -> (col1, row1, col2, row2)) pairs
+
     allIndices = [1 .. 3 * n]
     foundCycles = findCycles allIndices
-    
-  in cyclesToConstraints foundCycles
+   in
+    cyclesToConstraints foundCycles
 
 -- | Generate a complete PlonkupCircuit from an ArithmeticCircuit
 generatePlonkupCircuit
