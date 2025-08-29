@@ -61,14 +61,19 @@ isNative = value @p == value @(Order (BaseField c))
 
 newtype UIntFFA p r c = UIntFFA
   {uintFFA :: UInt (FFAUIntSize p (Order (BaseField c))) r c}
+  deriving (Eq, NFData, Prelude.Eq, Show)
 
 instance SymbolicData (UIntFFA p r) where
   type Layout (UIntFFA p r) k = Layout (UInt (FFAUIntSize p k) r) k
   type Payload (UIntFFA p r) k = Payload (UInt (FFAUIntSize p k) r) k
+  type HasRep (UIntFFA p r) c = KnownFFA p r c
   arithmetize = arithmetize . uintFFA
   payload = payload . uintFFA
   interpolate (fmap (uintFFA <$>) -> bs) = UIntFFA . interpolate bs
   restore = UIntFFA . restore
+
+instance SymbolicInput (UIntFFA p r) where
+  isValid = isValid . uintFFA
 
 data FFA p r c = FFA
   { nativeResidue :: FieldElement c
@@ -86,18 +91,18 @@ type KnownFFA p r c =
   , KnownRegisterSize r
   , KnownRegisters c (FFAUIntSize p (Order (BaseField c))) r
   , KnownNat (FFAMaxBits p c)
-  , KnownNat (GetRegisterSize (Order (BaseField c)) (FFAMaxBits p c) r)
+  , KnownNat (GetRegisterSize (BaseField c) (FFAMaxBits p c) r)
   , KnownRegisters c (FFAMaxBits p c) r
-  , KnownNat (Ceil (GetRegisterSize (Order (BaseField c)) (FFAMaxBits p c) r) OrdWord)
+  , KnownNat (Ceil (GetRegisterSize (BaseField c) (FFAMaxBits p c) r) OrdWord)
   , KnownRegisters c (NumberOfBits (Zp p)) r
-  , KnownNat (GetRegisterSize (Order (BaseField c)) (NumberOfBits (Zp p)) r)
+  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (Zp p)) r)
   , KnownNat (NumberOfBits (Zp p))
   )
 
 instance SymbolicData (FFA p r)
 
-instance KnownNat p => SymbolicInput (FFA p r) where
-  isValid ffa@(FFA _ (UIntFFA ux) :: FFA p r c) =
+instance (KnownNat p, KnownRegisterSize r) => SymbolicInput (FFA p r) where
+  isValid ffa@(FFA _ ux :: FFA p r c) =
     if isNative @p @c
       then true
       else isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
@@ -118,7 +123,7 @@ bezoutFFA =
     (fromConstant $ value @p)
 
 instance
-  (Arithmetic a, KnownRegisterSize r)
+  (Arithmetic a, KnownFFA p r (Interpreter a))
   => ToConstant (FFA p r (Interpreter a))
   where
   type Const (FFA p r (Interpreter a)) = Zp p
@@ -136,14 +141,14 @@ instance
   where
   fromConstant c =
     let c' = toConstant (fromConstant c :: Zp p)
-     in FFA (fromConstant c') (fromConstant c')
+     in FFA (fromConstant c') (UIntFFA $ fromConstant c')
 
 instance
   {-# OVERLAPPING #-}
   (Symbolic c, Order (BaseField c) ~ p, KnownRegisterSize r)
   => FromConstant (FieldElement c) (FFA p r c)
   where
-  fromConstant nx = FFA nx zero
+  fromConstant nx = FFA nx (UIntFFA zero)
 
 instance {-# OVERLAPPING #-} FromConstant (FFA p r c) (FFA p r c)
 
@@ -153,29 +158,29 @@ instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
   uniformM = fmap fromConstant . uniformM @(Zp p)
 
 valueFFA
-  :: forall p r c i n
-   . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), n ~ Order (BaseField c))
-  => (Par1 :*: Vector (NumberOfRegisters n (FFAUIntSize p n) r)) i
+  :: forall p r c i a
+   . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c)
+  => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i
   -> IntegralOf (WitnessField c)
 valueFFA (Par1 ni :*: ui) =
   let n = toIntegral (at ni :: WitnessField c)
-      u = natural @c @(FFAUIntSize p n) @r ui
-      k = (u - n) * fromConstant (bezoutFFA @p @n)
-   in k * fromConstant (value @n) + n
+      u = natural @c @(FFAUIntSize p (Order a)) @r ui
+      k = (u - n) * fromConstant (bezoutFFA @p @(Order a))
+   in k * fromConstant (order @a) + n
 
 layoutFFA
-  :: forall p r c n w
-   . (Symbolic c, KnownFFA p r c, n ~ Order (BaseField c), w ~ WitnessField c)
+  :: forall p r c a w
+   . (Symbolic c, KnownFFA p r c, a ~ BaseField c, w ~ WitnessField c)
   => IntegralOf w
-  -> (Par1 :*: Vector (NumberOfRegisters n (FFAUIntSize p n) r)) w
+  -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) w
 layoutFFA c =
   Par1 (fromIntegral c)
-    :*: tabulate (register @c @(FFAUIntSize p n) @r c)
+    :*: tabulate (register @c @(FFAUIntSize p (Order a)) @r c)
 
 fromFFA
   :: forall p r a
-   . Arithmetic a
-  => (Par1 :*: Vector (NumberOfRegisters (Order a) (FFAUIntSize p (Order a)) r)) a
+   . (Arithmetic a, KnownFFA p r (Interpreter a))
+  => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
   -> Integer
 fromFFA (Par1 x :*: v) =
   fromConstant $
@@ -187,7 +192,7 @@ toFFA
   :: forall p r a
    . (Arithmetic a, KnownFFA p r (Interpreter a))
   => Integer
-  -> (Par1 :*: Vector (NumberOfRegisters (Order a) (FFAUIntSize p (Order a)) r)) a
+  -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
 toFFA n =
   let FFA (FieldElement (Interpreter x)) (UIntFFA (UInt (Interpreter v))) =
         fromConstant n :: FFA p r (Interpreter a)
@@ -328,7 +333,7 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Exponent (FFA p r c) Integer w
 instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
   finv (FFA nx ux) =
     if isNative @p @c
-      then FFA (finv nx) zero
+      then FFA (finv nx) (UIntFFA zero)
       else FFA ny uy
    where
     p :: FromConstant Natural a => a
@@ -364,7 +369,7 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
     ck =
       isValid (ur :*: FFA @p nl ul)
         && (nr * nx == nl * p + one)
-        && (ur * ux == ul * p + one)
+        && (uintFFA ur * uintFFA ux == uintFFA ul * p + one)
     -- \| Sew constraints into result.
     ny :*: uy =
       restore
@@ -387,22 +392,22 @@ instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
 fromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (GetRegisterSize (Order (BaseField c)) n r))
+  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => UInt n r c
   -> FFA p r c
-fromUInt ux = FFA (toNative ux) (resize ux)
+fromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 
 fromInt
   :: (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (GetRegisterSize (Order (BaseField c)) n r))
+  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => Int n r c -> FFA p r c
 fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
 
 toUInt
   :: forall n p r c
    . Symbolic c
-  => (KnownNat n, KnownNat (NumberOfRegisters (Order (BaseField c)) n r))
-  => KnownNat (GetRegisterSize (Order (BaseField c)) n r)
+  => (KnownFFA p r c, KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n r))
+  => KnownNat (GetRegisterSize (BaseField c) n r)
   => FFA p r c
   -> UInt n r c
 toUInt x = uy

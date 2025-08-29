@@ -12,7 +12,6 @@ module ZkFold.Symbolic.Data.List where
 
 import Control.Applicative (pure)
 import Control.Monad (return, sequence_)
-import Data.Binary (Binary)
 import Data.Function (flip, id, ($), (.))
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), pureRep)
@@ -29,7 +28,6 @@ import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Data.Binary (Binary1)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.List.Infinite ()
@@ -148,17 +146,9 @@ head = fst . uncons
 tail :: (SymbolicData x, Symbolic c) => List x c -> List x c
 tail = snd . uncons
 
-type FoldFun f = (Binary1 f, Binary (Rep f))
-
-type FoldImpl x n = (FoldFun (Layout x n), Binary (Rep (Payload x n)))
-
-class (HasRep x c, FoldImpl x (Order (BaseField c))) => FoldData x c
-
-instance (HasRep x c, FoldImpl x (Order (BaseField c))) => FoldData x c
-
 foldl
   :: forall x y c
-   . (SymbolicData x, FoldData x c, SymbolicData y, FoldData y c, SymbolicFold c)
+   . (SymbolicData x, HasRep x c, SymbolicData y, HasRep y c, SymbolicFold c)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => y d -> x d -> y d)
   -> y c
   -> List x c
@@ -190,7 +180,7 @@ foldl f y List {..} =
 
 scanl
   :: forall c x y
-   . (SymbolicFold c, SymbolicData x, SymbolicData y, FoldData x c, FoldData y c)
+   . (SymbolicData x, HasRep x c, SymbolicData y, HasRep y c, SymbolicFold c)
   => (forall d. SymbolicFold d => y d -> x d -> y d)
   -> y c
   -> List x c
@@ -203,25 +193,27 @@ scanl f s =
 -- | revapp xs ys = reverse xs ++ ys
 revapp
   :: forall c x
-   . (SymbolicData x, SymbolicFold c, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c)
   => List x c -> List x c -> List x c
 revapp xs ys = foldl (flip (.:)) ys xs
 
-reverse :: (SymbolicData x, FoldData x c, SymbolicFold c) => List x c -> List x c
+reverse :: (SymbolicData x, HasRep x c, SymbolicFold c) => List x c -> List x c
 reverse xs = revapp xs emptyList
 
-last :: (SymbolicData x, FoldData x c, SymbolicFold c) => List x c -> x c
+last :: (SymbolicData x, HasRep x c, SymbolicFold c) => List x c -> x c
 last = head . reverse
 
-init :: (SymbolicData x, FoldData x c, SymbolicFold c) => List x c -> List x c
+init :: (SymbolicData x, HasRep x c, SymbolicFold c) => List x c -> List x c
 init = reverse . tail . reverse
 
-(++) :: (SymbolicData x, FoldData x c, SymbolicFold c) => List x c -> List x c -> List x c
+(++)
+  :: (SymbolicData x, HasRep x c, SymbolicFold c)
+  => List x c -> List x c -> List x c
 xs ++ ys = revapp (reverse xs) ys
 
 foldr
   :: forall c x y
-   . (SymbolicData x, SymbolicFold c, SymbolicData y, FoldData x c, FoldData y c)
+   . (SymbolicData x, HasRep x c, SymbolicData y, HasRep y c, SymbolicFold c)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => x d -> y d -> y d)
   -> y c
   -> List x c
@@ -230,13 +222,13 @@ foldr f s xs = foldl (flip f) s (reverse xs)
 
 mapWithCtx
   :: forall c g x y
-   . ( SymbolicFold c
-     , SymbolicData g
-     , FoldData g c
+   . ( SymbolicData g
+     , HasRep g c
      , SymbolicData x
-     , FoldData x c
+     , HasRep x c
      , SymbolicData y
-     , FoldData y c
+     , HasRep y c
+     , SymbolicFold c
      )
   => g c
   -> (forall d. SymbolicFold d => g d -> x d -> y d)
@@ -247,7 +239,7 @@ mapWithCtx g f =
 
 filter
   :: forall c x
-   . (SymbolicData x, SymbolicFold c, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c)
   => (forall d. SymbolicFold d => x d -> Bool d)
   -> List x c
   -> List x c
@@ -255,7 +247,7 @@ filter pred = foldr (\x ys -> ifThenElse (pred x) (x .: ys) ys) emptyList
 
 delete
   :: forall c x
-   . (SymbolicData x, SymbolicFold c, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => x d -> x d -> Bool d)
   -> x c
   -> List x c
@@ -273,9 +265,16 @@ delete eq x xs =
           xs
    in result
 
+class HasRep x c => HasRep' x c
+
+instance HasRep x c => HasRep' x c
+
 setminus
   :: forall c x
-   . (SymbolicData x, SymbolicFold c, forall d. (Symbolic d, BaseField d ~ BaseField c) => FoldData x d)
+   . ( SymbolicData x
+     , SymbolicFold c
+     , forall d. (Symbolic d, BaseField d ~ BaseField c) => HasRep' x d
+     )
   => (forall d. SymbolicFold d => x d -> x d -> Bool d)
   -> List x c
   -> List x c
@@ -288,7 +287,7 @@ singleton x = x .: emptyList
 
 (!!)
   :: forall x c n
-   . (SymbolicData x, SymbolicFold c, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c)
   => (KnownNat n, KnownRegisters c n Auto)
   => List x c
   -> UInt n Auto c
@@ -302,12 +301,11 @@ xs !! n =
 
 concatMap
   :: forall c x y
-   . ( SymbolicFold c
-     , SymbolicData x
+   . ( SymbolicData x
+     , HasRep x c
      , SymbolicData y
-     , FoldData y c
-     , FoldData x c
-     , forall d. BaseField c ~ BaseField d => FoldData y d
+     , SymbolicFold c
+     , forall d. BaseField c ~ BaseField d => HasRep' y d
      )
   => (forall d. (SymbolicFold d, BaseField c ~ BaseField d) => x d -> List y d)
   -> List x c
@@ -316,14 +314,17 @@ concatMap f = reverse . foldl (\ys x -> revapp (f x) ys) emptyList
 
 concat
   :: forall c x
-   . (SymbolicData x, SymbolicFold c, forall d. BaseField c ~ BaseField d => FoldData x d)
+   . ( SymbolicData x
+     , SymbolicFold c
+     , forall d. BaseField c ~ BaseField d => HasRep' x d
+     )
   => List (List x) c -> List x c
 concat = concatMap id
 
 findIndex
   :: forall x c n
-   . (SymbolicData x, SymbolicFold c, KnownNat n)
-  => (KnownRegisters c n Auto, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c, KnownNat n)
+  => KnownRegisters c n Auto
   => (forall d. SymbolicFold d => x d -> Bool d)
   -> List x c
   -> UInt n Auto c
@@ -334,10 +335,10 @@ findIndex p =
 insert
   :: forall x c n
    . ( SymbolicData x
+     , HasRep x c
      , SymbolicFold c
      , KnownNat n
      , KnownRegisters c n Auto
-     , FoldData x c
      )
   => List x c
   -> UInt n Auto c
@@ -357,7 +358,7 @@ insert xs n xi =
 
 slice
   :: forall c x
-   . (SymbolicFold c, SymbolicData x, FoldData x c)
+   . (SymbolicData x, HasRep x c, SymbolicFold c)
   => FieldElement c -> FieldElement c -> List x c -> List x c
 slice f t xs =
   let _ :*: _ :*: res =

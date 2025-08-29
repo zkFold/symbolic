@@ -36,7 +36,7 @@ deriving newtype instance Eq (c f) => Eq (Vec f c)
 instance LayoutFunctor f => SymbolicData (Vec f) where
   type Layout (Vec f) n = f
   type Payload (Vec f) n = G.U1
-  type HasRep (Vec f) _ = Representable f
+  type HasRep (Vec f) _ = RepLayout f
 
   arithmetize = runVec
   payload _ = G.U1

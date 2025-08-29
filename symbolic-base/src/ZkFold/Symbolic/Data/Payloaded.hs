@@ -3,7 +3,6 @@
 
 module ZkFold.Symbolic.Data.Payloaded where
 
-import Control.Monad.Representable.Reader (Representable)
 import Data.Bifunctor (bimap)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<&>))
@@ -44,7 +43,7 @@ restored xs = runPayloaded xs <&> \(l, p) -> restore (embedW l, p)
 instance (Semialign f, SymbolicData d) => SymbolicData (Payloaded f d) where
   type Layout (Payloaded f d) _ = U1
   type Payload (Payloaded f d) n = f :.: (Layout d n :*: Payload d n)
-  type HasRep (Payloaded f d) c = (Representable f, HasRep d c)
+  type HasRep (Payloaded f d) c = (RepPayload f, HasRep d c)
 
   arithmetize _ = hunit
   payload = Comp1 . fmap fromPair . runPayloaded

@@ -20,8 +20,10 @@ import ZkFold.Symbolic.MonadCircuit
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where
-  isValid :: Symbolic c => d c -> Bool c
-  default isValid :: (G.Generic1 d, SymbolicInput (G.Rep1 d), Symbolic c) => d c -> Bool c
+  isValid :: (Symbolic c, HasRep d c) => d c -> Bool c
+  default isValid
+    :: (G.Generic1 d, SymbolicInput (G.Rep1 d), HasRep (G.Rep1 d) c, Symbolic c)
+    => d c -> Bool c
   isValid = isValid . G.from1
 
 instance SymbolicInput Bool where

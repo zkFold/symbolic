@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Compiler where
 
@@ -11,7 +12,7 @@ import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Function (($), (.))
 import Data.Functor (fmap)
-import Data.Functor.Rep (Rep, Representable)
+import Data.Functor.Rep (Rep)
 import Data.Kind (Type)
 import Data.List ((++))
 import Data.Proxy (Proxy)
@@ -38,6 +39,8 @@ class
   ( Symbolic (Context f)
   , SymbolicInput (Domain f)
   , SymbolicData (Range f)
+  , HasRep (Domain f) (Context f)
+  , RepData (Domain f) (Context f)
   ) =>
   SymbolicFunction f
   where
@@ -52,6 +55,7 @@ instance
   ( SymbolicInput x
   , SymbolicFunction y
   , Context y ~ c
+  , HasRep x c
   )
   => SymbolicFunction (x c -> y)
   where
@@ -100,10 +104,6 @@ compile
    . ( SymbolicFunction f
      , Context f ~ CircuitContext a
      , Domain f ~ s
-     , Representable (Layout s n)
-     , Representable (Payload s n)
-     , Binary (Rep (Layout s n))
-     , Binary (Rep (Payload s n))
      , Binary a
      , n ~ Order a
      , SymbolicData y
@@ -120,13 +120,9 @@ compileIO
    . ( ToJSON a
      , ToJSONKey a
      , Binary a
-     , ToJSON1 (Layout (Range f) (Order a))
-     , Binary (Rep (Layout (Domain f) (Order a)))
-     , Binary (Rep (Payload (Domain f) (Order a)))
-     , Representable (Layout (Domain f) (Order a))
-     , Representable (Payload (Domain f) (Order a))
      , SymbolicFunction f
      , Context f ~ CircuitContext a
+     , ToJSON1 (Layout (Range f) (Order a))
      )
   => FilePath
   -> f

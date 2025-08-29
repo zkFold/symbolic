@@ -8,9 +8,10 @@ module ZkFold.Symbolic.Data.Class where
 import Control.Applicative (liftA2)
 import Control.DeepSeq (NFData1)
 import Data.Bifunctor (bimap)
+import Data.Binary (Binary)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
-import Data.Functor.Rep (Representable, pureRep)
+import Data.Functor.Rep (Rep, Representable, pureRep)
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semialign (Semialign, Zip, zipWith)
@@ -23,6 +24,7 @@ import qualified GHC.Generics as G
 import ZkFold.Algebra.Class (Order, zero)
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Control.HApplicative (hliftA2, hpure)
+import ZkFold.Data.Binary (Binary1)
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Package (pack, unpack)
@@ -45,8 +47,12 @@ instance IsDataFunctor x n => DataFunctor x n
 
 -- Representable data
 
+type RepPayload f = (Representable f, Binary (Rep f))
+
+type RepLayout f = (RepPayload f, Binary1 f)
+
 type RepDataImpl x (n :: Natural) =
-  (Representable (Layout x n), Representable (Payload x n))
+  (RepLayout (Layout x n), RepPayload (Payload x n))
 
 type IsRepData x (c :: Ctx) = RepDataImpl x (Order (BaseField c))
 
@@ -161,7 +167,7 @@ instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
 instance (Zip f, LayoutFunctor f, SymbolicData x) => SymbolicData (f G.:.: x) where
   type Layout (f G.:.: x) n = f G.:.: Layout x n
   type Payload (f G.:.: x) n = f G.:.: Payload x n
-  type HasRep (f G.:.: x) n = (Representable f, HasRep x n)
+  type HasRep (f G.:.: x) n = (RepLayout f, HasRep x n)
 
   arithmetize (G.Comp1 xs) = pack (arithmetize <$> xs)
   payload (G.Comp1 xs) = G.Comp1 (payload <$> xs)
