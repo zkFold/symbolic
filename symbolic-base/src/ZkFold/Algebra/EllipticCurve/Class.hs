@@ -265,22 +265,23 @@ instance
   => AdditiveSemigroup (Weierstrass curve (Point field))
   where
   Weierstrass pt0@(Point x0 y0 isInf0) + Weierstrass pt1@(Point x1 y1 isInf1) =
-    Weierstrass $ if isInf0
-      then pt1
-      else
-        if isInf1
-          then pt0 -- additive identity
-          else
-            if x0 == x1 && y0 + y1 == zero
-              then pointInf -- additive inverse
-              else
-                let slope =
-                      if x0 == x1 && y0 == y1
-                        then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
-                        else (y1 - y0) // (x1 - x0) -- secant
-                    x2 = slope * slope - x0 - x1
-                    y2 = slope * (x0 - x2) - y0
-                 in pointXY x2 y2
+    Weierstrass $
+      if isInf0
+        then pt1
+        else
+          if isInf1
+            then pt0 -- additive identity
+            else
+              if x0 == x1 && y0 + y1 == zero
+                then pointInf -- additive inverse
+                else
+                  let slope =
+                        if x0 == x1 && y0 == y1
+                          then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
+                          else (y1 - y0) // (x1 - x0) -- secant
+                      x2 = slope * slope - x0 - x1
+                      y2 = slope * (x0 - x2) - y0
+                   in pointXY x2 y2
 
 instance
   ( Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))

@@ -37,8 +37,9 @@ predicate func =
         exec . runVec . compileWith solder (const (U1, U1)) $
           func (Vec $ embed x) (Vec $ embed u)
     , predicateCircuit =
-        runVec $ compileWith
-          (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
-          (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1))
-          func
+        runVec $
+          compileWith
+            (guessOutput \(i :*: p :*: j) -> (i :*: p, j))
+            (\(i :*: p) -> (U1 :*: U1 :*: U1, i :*: p :*: U1))
+            func
     }

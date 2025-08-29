@@ -19,6 +19,7 @@ import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, (.+))
@@ -28,7 +29,7 @@ import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
-import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate, Compilable)
+import ZkFold.Protocol.IVC.Predicate (Compilable, Predicate (..), StepFunction, predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction
 import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocolA,
@@ -38,9 +39,8 @@ import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.Class (Layout, Payload, SymbolicData, arithmetize, payload)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.Data.Vec (Vec(..))
-import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -77,7 +77,8 @@ ivcSetup
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , Compilable i, Zip i
+     , Compilable i
+     , Zip i
      , Compilable p
      , Zero c
      , Arithmetic a
@@ -109,7 +110,8 @@ ivcProve
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , Zip i, Compilable i
+     , Zip i
+     , Compilable i
      , Compilable p
      , Arithmetic a
      , Binary a
@@ -167,9 +169,12 @@ ivcProve hash hcommit1 hcommit2 ptData f res witness =
         RecursivePayload
           { recPayload = Vec $ Interpreter witness
           , recProof = ptData <$> commits
-          , recAccInst = fromConstant $ bimap ptData
-              (fromConstant @_ @(FieldElement (Interpreter a)))
-              (res ^. acc ^. x)
+          , recAccInst =
+              fromConstant $
+                bimap
+                  ptData
+                  (fromConstant @_ @(FieldElement (Interpreter a)))
+                  (res ^. acc ^. x)
           , recFlag = true
           , recCommits = ptData . (zero .+) <$> pf
           }
@@ -194,7 +199,8 @@ ivcVerify
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , Zip i, Compilable i
+     , Zip i
+     , Compilable i
      , Compilable p
      , IsRecursivePoint pt a
      , Arithmetic a

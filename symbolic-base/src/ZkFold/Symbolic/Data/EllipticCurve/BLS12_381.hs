@@ -16,8 +16,8 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.EllipticCurve.Point
+import ZkFold.Symbolic.Data.FFA
 
 type BLS12_381_G1_Point = Point "BLS12-381-G1" (FFA BLS12_381_Base 'Auto)
 

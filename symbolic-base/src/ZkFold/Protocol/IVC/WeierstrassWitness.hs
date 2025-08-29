@@ -40,8 +40,7 @@ instance
   WeierstrassWitness p1 == WeierstrassWitness p2 = p1 Haskell.== p2
   WeierstrassWitness p1 /= WeierstrassWitness p2 = p1 Haskell./= p2
 
-instance SymbolicData WeierstrassWitness
-  where
+instance SymbolicData WeierstrassWitness where
   type Layout WeierstrassWitness _ = Vector 5
   type Payload WeierstrassWitness _ = U1
   arithmetize (WeierstrassWitness (Weierstrass (Point a b isInf))) =

@@ -14,6 +14,7 @@ import Data.Foldable (Foldable)
 import Data.Function (const)
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), mzipWithRep)
+import Data.Semialign (Zip)
 import GHC.Generics (Generic, Generic1)
 import Prelude (type (~))
 
@@ -25,10 +26,9 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
-import ZkFold.Protocol.IVC.Predicate (Predicate, Compilable)
+import ZkFold.Protocol.IVC.Predicate (Compilable, Predicate)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData, LayoutFunctor)
-import Data.Semialign (Zip)
 
 -- import Prelude hiding (length, pi)
 
@@ -49,33 +49,38 @@ data AccumulatorInstance' k i c f ctx = AccumulatorInstance'
   , _e' :: c ctx
   , _mu' :: f ctx
   }
-  deriving (Generic1)
+  deriving Generic1
 
 instance
   (Zip i, LayoutFunctor i, SymbolicData c, SymbolicData f)
   => SymbolicData (AccumulatorInstance' k i c f)
 
 instance
-  FromConstant (AccumulatorInstance k i (c ctx) (f ctx))
-               (AccumulatorInstance' k i c f ctx) where
-  fromConstant AccumulatorInstance {..} = AccumulatorInstance'
-    { _pi' = _pi
-    , _c' = _c
-    , _r' = _r
-    , _e' = _e
-    , _mu' = _mu
-    }
+  FromConstant
+    (AccumulatorInstance k i (c ctx) (f ctx))
+    (AccumulatorInstance' k i c f ctx)
+  where
+  fromConstant AccumulatorInstance {..} =
+    AccumulatorInstance'
+      { _pi' = _pi
+      , _c' = _c
+      , _r' = _r
+      , _e' = _e
+      , _mu' = _mu
+      }
 
 instance ToConstant (AccumulatorInstance' k i c f ctx) where
-  type Const (AccumulatorInstance' k i c f ctx) =
-    AccumulatorInstance k i (c ctx) (f ctx)
-  toConstant AccumulatorInstance' {..} = AccumulatorInstance
-    { _pi = _pi'
-    , _c = _c'
-    , _r = _r'
-    , _e = _e'
-    , _mu = _mu'
-    }
+  type
+    Const (AccumulatorInstance' k i c f ctx) =
+      AccumulatorInstance k i (c ctx) (f ctx)
+  toConstant AccumulatorInstance' {..} =
+    AccumulatorInstance
+      { _pi = _pi'
+      , _c = _c'
+      , _r = _r'
+      , _e = _e'
+      , _mu = _mu'
+      }
 
 makeLenses ''AccumulatorInstance
 

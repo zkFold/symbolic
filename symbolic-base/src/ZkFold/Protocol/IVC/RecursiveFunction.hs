@@ -9,7 +9,8 @@ module ZkFold.Protocol.IVC.RecursiveFunction where
 
 import Data.Binary (Binary (..))
 import Data.Function (($), (.))
-import GHC.Generics (Generic, Par1, (:*:) (..), Generic1)
+import Data.Semialign (Zip)
+import GHC.Generics (Generic, Generic1, Par1, (:*:) (..))
 import Prelude ((<$>), type (~))
 
 import ZkFold.Algebra.Class
@@ -25,13 +26,12 @@ import ZkFold.Protocol.IVC.Accumulator hiding (pi, x)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme (..), accumulatorScheme)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
-import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate, Compilable)
+import ZkFold.Protocol.IVC.Predicate (Compilable, Predicate (..), StepFunction, predicate)
 import ZkFold.Symbolic.Class (Arithmetic, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool, bool)
-import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData (..), RepData)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, RepData, SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
-import Data.Semialign (Zip)
 
 -- | Public input to the recursive function
 type RecursiveI i = i :*: Par1
@@ -79,7 +79,8 @@ type IsRecursivePoint c a =
 -- | Transform a step function into a recursive function
 recursiveFunction
   :: forall c d k a i p ctx
-   . ( Compilable i, Zip i
+   . ( Compilable i
+     , Zip i
      , Compilable p
      , KnownNat (d - 1)
      , KnownNat (d + 1)
