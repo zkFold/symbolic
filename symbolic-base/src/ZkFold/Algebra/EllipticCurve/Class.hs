@@ -221,7 +221,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => EllipticCurve (Weierstrass curve (Point field))
   where
@@ -259,13 +259,13 @@ deriving newtype instance
   => Planar field (Weierstrass curve point)
 
 instance
-  ( Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  ( Conditional (BooleanOf field) (Point field)
   , Field field
   )
   => AdditiveSemigroup (Weierstrass curve (Point field))
   where
-  pt0@(Weierstrass (Point x0 y0 isInf0)) + pt1@(Weierstrass (Point x1 y1 isInf1)) =
-    if isInf0
+  Weierstrass pt0@(Point x0 y0 isInf0) + Weierstrass pt1@(Point x1 y1 isInf1) =
+    Weierstrass $ if isInf0
       then pt1
       else
         if isInf1
@@ -337,7 +337,7 @@ instance (Semiring field, Eq field) => Zero (Weierstrass curve (Point field)) wh
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveMonoid (Weierstrass curve (Point field))
 
@@ -354,12 +354,12 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveGroup (Weierstrass curve (Point field))
   where
-  negate pt@(Weierstrass (Point x y isInf)) =
-    if isInf then pt else pointXY x (negate y)
+  negate (Weierstrass pt@(Point x y isInf)) =
+    Weierstrass $ if isInf then pt else pointXY x (negate y)
 
 instance
   ( WeierstrassCurve curve field
@@ -373,7 +373,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => Scale Natural (Weierstrass curve (Point field))
   where
@@ -391,7 +391,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => Scale Integer (Weierstrass curve (Point field))
   where

@@ -9,22 +9,24 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
-import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
+import qualified ZkFold.Algebra.EllipticCurve.Class as Haskell
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.EllipticCurve.Point
 
-type BLS12_381_G1_Point ctx = Weierstrass "BLS12-381-G1" (Point (FFA BLS12_381_Base 'Auto ctx))
+type BLS12_381_G1_Point = Point "BLS12-381-G1" (FFA BLS12_381_Base 'Auto)
 
 instance
   (Symbolic ctx, KnownFFA BLS12_381_Base Auto ctx)
   => FromConstant Haskell.BLS12_381_G1_Point (BLS12_381_G1_Point ctx)
   where
-  fromConstant (Weierstrass (Point x y b)) =
-    Weierstrass (Point (fromConstant x) (fromConstant y) (fromConstant b))
+  fromConstant (Weierstrass (Haskell.Point x y b)) =
+    Point (fromConstant x) (fromConstant y) (fromConstant b)
 
 instance
   ( Symbolic ctx
