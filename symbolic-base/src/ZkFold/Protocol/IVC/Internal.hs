@@ -16,11 +16,9 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import Data.Zip (Zip (..), unzip)
 import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
-import ZkFold.Symbolic.Data.Switch (Switch)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
-import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.Accumulator hiding (pi)
 import ZkFold.Protocol.IVC.AccumulatorScheme (AccumulatorScheme, accumulatorScheme, (.+))
@@ -30,17 +28,19 @@ import ZkFold.Protocol.IVC.CommitOpen (commitOpen)
 import ZkFold.Protocol.IVC.FiatShamir
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
-import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate)
+import ZkFold.Protocol.IVC.Predicate (Predicate (..), StepFunction, predicate, Compilable)
 import ZkFold.Protocol.IVC.RecursiveFunction
 import ZkFold.Protocol.IVC.SpecialSound (
   specialSoundProtocolA,
   specialSoundProtocolC,
  )
-import ZkFold.Symbolic.Class (Symbolic (BaseField))
+import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool (true)
-import ZkFold.Symbolic.Data.Class (Context, Layout, LayoutFunctor, Payload, SymbolicData, arithmetize, payload)
+import ZkFold.Symbolic.Data.Class (Layout, Payload, SymbolicData, arithmetize, payload)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import ZkFold.Symbolic.Data.Vec (Vec(..))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 
 -- | The recursion circuit satisfiability proof.
 data IVCProof k c f
@@ -77,16 +77,16 @@ ivcSetup
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , LayoutFunctor i
-     , LayoutFunctor p
+     , Compilable i, Zip i
+     , Compilable p
      , Zero c
+     , Arithmetic a
      , Binary a
-     , IsRecursivePoint pt
-     , BaseField (Context pt) ~ a
+     , IsRecursivePoint pt a
      )
   => Hasher
   -> HomomorphicCommit a c
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) pt
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) (pt (CircuitContext a))
   -> StepFunction a i p
   -> i a
   -> p a
@@ -99,7 +99,7 @@ ivcSetup hash hcommit1 hcommit2 f z0 witness =
     z1 :: i a
     z1 = predicateEval p z0 witness
 
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt (Order a))
     pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommit2 f
    in
     IVCResult z1 (emptyAccumulator @d hcommit1 pRec) noIVCProof
@@ -109,19 +109,19 @@ ivcProve
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , LayoutFunctor i
-     , LayoutFunctor p
+     , Zip i, Compilable i
+     , Compilable p
+     , Arithmetic a
      , Binary a
-     , IsRecursivePoint pt
-     , BaseField (Context pt) ~ a
+     , IsRecursivePoint pt a
      , Scale a c
      , OracleSource a c
      , AdditiveGroup c
      )
   => Hasher
   -> HomomorphicCommit a c
-  -> HomomorphicCommit (FieldElement (CircuitContext a)) pt
-  -> (c -> Switch (Interpreter a) pt)
+  -> HomomorphicCommit (FieldElement (CircuitContext a)) (pt (CircuitContext a))
+  -> (c -> pt (Interpreter a))
   -> StepFunction a i p
   -> IVCResult k i c a
   -> p a
@@ -134,7 +134,7 @@ ivcProve hash hcommit1 hcommit2 ptData f res witness =
     z' :: i a
     z' = predicateEval p (res ^. z) witness
 
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt (Order a))
     pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommit2 f
 
     input :: RecursiveI i a
@@ -157,22 +157,24 @@ ivcProve hash hcommit1 hcommit2 ptData f res witness =
     (acc', pf) = Acc.prover accScheme (res ^. acc) narkIP
 
     value
-      :: (SymbolicData x, Context x ~ Interpreter a)
-      => x -> (Layout x :*: Payload x) a
+      :: SymbolicData x
+      => x (Interpreter a) -> (Layout x (Order a) :*: Payload x (Order a)) a
     value v = runInterpreter (arithmetize v) :*: payload v
 
-    recursivePayload :: RecursiveP d k i p pt a
+    recursivePayload :: RecursiveP d k i p pt (Order a) a
     recursivePayload =
       value
         RecursivePayload
-          { recPayload = Interpreter witness
+          { recPayload = Vec $ Interpreter witness
           , recProof = ptData <$> commits
-          , recAccInst = bimap ptData fromConstant (res ^. acc ^. x)
+          , recAccInst = fromConstant $ bimap ptData
+              (fromConstant @_ @(FieldElement (Interpreter a)))
+              (res ^. acc ^. x)
           , recFlag = true
           , recCommits = ptData . (zero .+) <$> pf
           }
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt) c a
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt (Order a)) c a
     protocol =
       fiatShamir hash $
         commitOpen hcommit1 $
@@ -192,10 +194,10 @@ ivcVerify
    . ( KnownNat (d + 1)
      , KnownNat (d - 1)
      , k ~ 1
-     , LayoutFunctor i
-     , LayoutFunctor p
-     , IsRecursivePoint pt
-     , BaseField (Context pt) ~ a
+     , Zip i, Compilable i
+     , Compilable p
+     , IsRecursivePoint pt a
+     , Arithmetic a
      , Binary a
      , AdditiveGroup c
      , OracleSource f c
@@ -204,13 +206,13 @@ ivcVerify
      )
   => Hasher
   -> HomomorphicCommit f c
-  -> HomomorphicCommit f pt
+  -> HomomorphicCommit f (pt (CircuitContext a))
   -> StepFunction a i p
   -> IVCResult k i c f
   -> ((Vector k c, [f]), (Vector k c, c))
 ivcVerify hash hcommitC hcommitPt f res =
   let
-    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt)
+    pRec :: Predicate a (RecursiveI i) (RecursiveP d k i p pt (Order a))
     pRec = recursivePredicate @pt $ recursiveFunction @pt hash hcommitPt f
 
     input :: RecursiveI i f
@@ -225,7 +227,7 @@ ivcVerify hash hcommitC hcommitPt f res =
     accScheme :: AccumulatorScheme d k (RecursiveI i) c c f
     accScheme = accumulatorScheme @d hash hcommitC pRec
 
-    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt) c f
+    protocol :: FiatShamir k (RecursiveI i) (RecursiveP d k i p pt (Order a)) c f
     protocol = fiatShamir hash $ commitOpen hcommitC $ specialSoundProtocolC @d pRec
    in
     ( verifier protocol input (zip messages commits) zero
