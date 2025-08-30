@@ -24,12 +24,16 @@ newtype UTCTime c = UTCTime (UInt 11 Auto c)
 
 deriving newtype instance HEq c => Haskell.Eq (UTCTime c)
 
-deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => Eq (UTCTime c)
+deriving newtype instance Symbolic c => Eq (UTCTime c)
 
-deriving newtype instance (Symbolic c, KnownRegisters c 11 Auto) => SymbolicData (UTCTime c)
+deriving newtype instance SymbolicData UTCTime
 
 deriving newtype instance
-  (Symbolic c, KnownRegisters c 11 Auto, regSize ~ GetRegisterSize (BaseField c) 11 Auto, KnownNat (Ceil regSize OrdWord))
+  ( Symbolic c
+  , KnownRegisters c 11 Auto
+  , regSize ~ GetRegisterSize (BaseField c) 11 Auto
+  , KnownNat (Ceil regSize OrdWord)
+  )
   => Ord (UTCTime c)
 
 deriving newtype instance FromConstant Natural (UInt 11 Auto c) => FromConstant Natural (UTCTime c)
