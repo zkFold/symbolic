@@ -11,10 +11,10 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 -- | Index associated with a data availability source.
-type DAIndex context = FieldElement context
+type DAIndex = FieldElement
 
 -- | Denotes data availability type, 'True' corresponds to offline transactions, while 'False' denotes online transactions.
-type DAType context = Bool context
+type DAType = Bool
 
 -- | Does 'DAType' correspond to offline transaction?
 isOffline :: forall context. Symbolic context => DAType context -> Bool context

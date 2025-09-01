@@ -16,7 +16,6 @@ import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
@@ -30,8 +29,6 @@ newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
 deriving instance (HNFData c, NFData1 f) => NFData (Vec f c)
 
 deriving instance (HEq c, Eq1 f) => Haskell.Eq (Vec f c)
-
-deriving newtype instance Eq (c f) => Eq (Vec f c)
 
 instance LayoutFunctor f => SymbolicData (Vec f) where
   type Layout (Vec f) n = f

@@ -77,6 +77,8 @@ instance Eq a => Eq (Maybe a) where
   _ == _ = false
   x /= y = not (x == y)
 
+instance (Eq (f a), Eq (g a), BooleanOf (f a) ~ BooleanOf (g a)) => Eq ((f G.:*: g) a)
+
 instance (Eq x0, Eq x1, BooleanOf x0 ~ BooleanOf x1) => Eq (x0, x1)
 
 instance

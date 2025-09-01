@@ -10,10 +10,11 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.Bool
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
-import ZkFold.Symbolic.Data.Morph
 import Prelude (fst, undefined, ($), (.))
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Data.Product (fstP)
+import GHC.Generics ((:*:)(..))
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction
@@ -41,32 +42,30 @@ validateTransactionWithAssetDiff tx =
     resTxAccValidity :: Bool context = undefined
     -- Generated value.
     resTxAccOutValues :: AssetValues context =
-      fst $
+      fstP $
         Symbolic.List.foldl
-          ( Morph \((accOutValues :: AssetValues s, accTxOwner :: Address s), txOut :: Output s) ->
-              ( ifThenElse
+          (\(accOutValues :*: accTxOwner) txOut ->
+              ifThenElse
                   (txoAddress txOut == accTxOwner)
                   accOutValues
                   (addAssetValue (txoValue txOut) accOutValues)
-              , accTxOwner
-              )
+              :*: accTxOwner
           )
-          (emptyAssetValues :: AssetValues context, txOwner tx)
+          (emptyAssetValues :*: txOwner tx)
           (txOutputs tx)
     -- Consumed value.
     resTxAccInValues :: AssetValues context =
-      fst $
+      fstP $
         Symbolic.List.foldl
-          ( Morph \((accInValues :: AssetValues s, accTxOwner :: Address s), txInput :: Input s) ->
+          (\(accInValues :*: accTxOwner) txInput ->
               let out = txiOutput txInput
-               in ( ifThenElse
+               in ifThenElse
                       (txoAddress out == accTxOwner)
-                      (accInValues)
+                      accInValues
                       (addAssetValue (txoValue $ txiOutput txInput) accInValues)
-                  , accTxOwner
-                  )
+                  :*: accTxOwner
           )
-          (emptyAssetValues :: AssetValues context, txOwner tx)
+          (emptyAssetValues :*: txOwner tx)
           (txInputs tx)
    in
     ( resTxAccValidity

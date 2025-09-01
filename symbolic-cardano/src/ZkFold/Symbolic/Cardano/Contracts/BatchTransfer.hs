@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Cardano.Contracts.BatchTransfer where
 
 import Data.Maybe (fromJust)
 import Data.Zip (zip)
+import GHC.Generics ((:*:) (..))
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
@@ -11,10 +12,8 @@ import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (StrictConv (..))
 import Prelude hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
@@ -22,17 +21,15 @@ import ZkFold.Symbolic.Cardano.Types
 
 type Tokens = 10
 
-type TxOut context = Output Tokens () context
+type TxOut = Output Tokens ()
 
-type TxIn context = Input Tokens () context
+type TxIn = Input Tokens ()
 
-type Tx context = Transaction 6 0 11 Tokens 0 () context
+type Tx = Transaction 6 0 11 Tokens 0 ()
 
 verifySignature
   :: forall context
    . ( Symbolic context
-     , SymbolicData (TxOut context)
-     , KnownRegisters context 256 'Auto
      )
   => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
@@ -41,13 +38,11 @@ verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFi
   base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
   mimc :: FieldElement context
-  mimc = hash (pay, change)
+  mimc = hash (pay :*: change)
 
 batchTransfer
   :: forall context
    . ( Symbolic context
-     , SymbolicInput (TxOut context)
-     , KnownRegisters context 256 'Auto
      , KnownRegisters context 64 'Auto
      )
   => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context) -> Bool context

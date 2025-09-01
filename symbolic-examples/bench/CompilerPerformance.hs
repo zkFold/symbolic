@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module Main where
 
 import Control.DeepSeq (NFData, force)
@@ -9,17 +7,17 @@ import Data.ByteString (foldr)
 import Data.Function (($), (.))
 import Data.Functor.Rep (Representable (..))
 import Data.String (String)
-import Data.Type.Equality (type (~))
 import System.IO (IO)
 import Test.Tasty.Bench
-import ZkFold.Algebra.Class (Ring, fromConstant, zero, (+))
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
+import ZkFold.Algebra.Class (Ring, fromConstant, zero, (+), Order)
+import ZkFold.ArithmeticCircuit (eval)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Data.Class (Context, Layout, SymbolicData)
+import ZkFold.Symbolic.Data.Class (Layout, HasRep, SymbolicData, RepData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Vec (Vec, runVec)
 import Prelude (toInteger)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
@@ -32,17 +30,17 @@ benchmark
    . ( Arithmetic a
      , Binary a
      , SymbolicInput i
-     , Context i ~ CircuitContext a
+     , HasRep i (CircuitContext a)
+     , RepData i (CircuitContext a)
      , SymbolicData o
-     , Context o ~ CircuitContext a
-     , NFData (Layout o a)
+     , NFData (Layout o (Order a) a)
      )
-  => String -> (i -> o) -> Benchmark
+  => String -> (i (CircuitContext a) -> o (CircuitContext a)) -> Benchmark
 benchmark name fun =
   bgroup
     name
-    [ bench "compilation" $ nf (compile @_ @(ArithmeticCircuit a _ _)) fun
-    , env (return $ force $ compile fun) $ \c ->
+    [ bench "compilation" $ nf (compile @_ @(Vec _)) fun
+    , env (return $ force $ runVec $ compile fun) $ \c ->
         bench "evaluation" $ nf (`eval` tabulate fromBinary) c
     ]
 

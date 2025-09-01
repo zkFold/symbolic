@@ -10,15 +10,17 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (true), (&&))
 import ZkFold.Symbolic.Data.Hash
 import ZkFold.Symbolic.Data.List (List)
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
-import ZkFold.Symbolic.Data.Morph
-import Prelude (snd, ($))
+import Prelude (($))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+import GHC.Generics ((:*:)(..))
+import ZkFold.Data.Product (sndP)
+import Data.Function ((.))
 
 -- | Witness for 'TransactionBatch' validation.
 data TransactionBatchWitness context = TransactionBatchWitness
-  { tbwBatchDatas :: List context (TransactionBatchData context, TransactionBatchDataWitness context)
+  { tbwBatchDatas :: List (TransactionBatchData :*: TransactionBatchDataWitness) context
   }
 
 -- | Validate 'TransactionBatch'.
@@ -37,30 +39,25 @@ validateTransactionBatch
   -- ^ Witness used for validation.
   -> Bool context
 validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} TransactionBatchWitness {..} =
-  let ( -- Batch data hashes as computed via provided witness.
-        resBatchAccDataHashes :: List context (DAIndex context, HashSimple context)
-        , -- Are individual batches valid? And is 'tbValidityInterval' within the interval of transactions present inside these batches?
-          resBatchAccBatchesValid
-        , _
-        ) =
+  let -- Batch data hashes as computed via provided witness.
+      resBatchAccDataHashes
+        :*: -- Are individual batches valid? And is 'tbValidityInterval' within the interval of transactions present inside these batches?
+            resBatchAccBatchesValid
+        :*: _
+         =
           Symbolic.List.foldl
-            ( Morph
-                \( ( batchAccDataHashes :: List s (DAIndex s, HashSimple s)
-                     , batchAccBatchesValid :: Bool s
-                     , batchAccBatchValidityInterval :: Interval s
-                     )
-                   , (tbd :: TransactionBatchData s, tbdw :: TransactionBatchDataWitness s)
-                   ) ->
-                    let (batchValid, batchDAIndex) = validateTransactionBatchDataWithIx batchAccBatchValidityInterval tbd tbdw
-                     in ( (batchDAIndex, hasher tbd) Symbolic.List..: batchAccDataHashes
-                        , batchAccBatchesValid && batchValid
-                        , batchAccBatchValidityInterval
-                        )
+            (\(batchAccDataHashes
+                :*: batchAccBatchesValid
+                :*: batchAccBatchValidityInterval
+              ) (tbd :*: tbdw) ->
+                let (batchValid, batchDAIndex) =
+                       validateTransactionBatchDataWithIx
+                         batchAccBatchValidityInterval tbd tbdw
+                 in ((batchDAIndex :*: hasher tbd) Symbolic.List..: batchAccDataHashes)
+                    :*: (batchAccBatchesValid && batchValid)
+                    :*: batchAccBatchValidityInterval
             )
-            ( Symbolic.List.emptyList :: List context (DAIndex context, HashSimple context)
-            , true :: Bool context
-            , tbValidityInterval
-            )
+            (Symbolic.List.emptyList :*: true :*: tbValidityInterval)
             tbwBatchDatas
    in -- 'tbBridgeIn' represents correct hash.
       -- TODO: We might not need to do this check if this is performed by smart contract. Same for 'tbBridgeOut' and 'tbPreviousBatch'
@@ -84,20 +81,20 @@ validateTransactionBatch valBridgeIn valBridgeOut prevTB TransactionBatch {..} T
 
 -- | Check if there are no duplicate 'DAIndex' in the given list.
 noDuplicateIndicesInBatch
-  :: forall context. Signature context => List context (DAIndex context, HashSimple context) -> Bool context
-noDuplicateIndicesInBatch ls =
-  snd $
+  :: forall context. Signature context
+  => List (DAIndex :*: HashSimple) context -> Bool context
+noDuplicateIndicesInBatch =
+  sndP .
     Symbolic.List.foldl
-      ( Morph \((accList :: List s (DAIndex s), accNoDuplicateIndices :: Bool s), (ix :: DAIndex s, _ :: HashSimple s)) ->
-          let curAccNoDuplicateIndices :: Bool s =
-                snd $
+      (\(accList :*: accNoDuplicateIndices) (ix :*: _) ->
+          let curAccNoDuplicateIndices =
+                sndP $
                   Symbolic.List.foldl
-                    ( Morph \((givenIx :: DAIndex s', accInternalNoDuplicateIndices :: Bool s'), ix' :: DAIndex s') ->
-                        (givenIx, accInternalNoDuplicateIndices && (givenIx /= ix'))
+                    (\(givenIx :*: accInternalNoDuplicateIndices) ix' ->
+                        givenIx :*: (accInternalNoDuplicateIndices && (givenIx /= ix'))
                     )
-                    (ix, accNoDuplicateIndices)
+                    (ix :*: accNoDuplicateIndices)
                     accList
-           in (ix Symbolic.List..: accList, curAccNoDuplicateIndices)
+           in (ix Symbolic.List..: accList) :*: curAccNoDuplicateIndices
       )
-      (Symbolic.List.emptyList :: List context (DAIndex context), true :: Bool context)
-      ls
+      (Symbolic.List.emptyList :*: true)

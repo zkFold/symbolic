@@ -38,6 +38,7 @@ import ZkFold.Symbolic.Ledger.Types.Output
 import ZkFold.Symbolic.Ledger.Types.Root
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
+import GHC.Generics ((:*:))
 
 {-
     zkFold's ledger is a UTXO-based ledger. The architecture of the ledger is mostly similar to the Cardano ledger with some key differences:
@@ -61,10 +62,10 @@ type Signature context =
   , Hashable (HashSimple context) (Transaction context)
   , Hashable (HashSimple context) (TransactionBatch context)
   , Hashable (HashSimple context) (TransactionBatchData context)
-  , Hashable (HashSimple context) (Circuit context, DAIndex context, DAType context)
+  , Hashable (HashSimple context) ((Circuit :*: DAIndex :*: DAType) context)
   , forall s. Hashable (HashSimple s) (AssetValues s)
   , forall s. Hashable (HashSimple s) (Transaction s)
   , forall s. Hashable (HashSimple s) (TransactionBatch s)
   , forall s. Hashable (HashSimple s) (TransactionBatchData s)
-  , forall s. Hashable (HashSimple s) (Circuit s, DAIndex s, DAType s)
+  , forall s. Hashable (HashSimple s) ((Circuit :*: DAIndex :*: DAType) s)
   )

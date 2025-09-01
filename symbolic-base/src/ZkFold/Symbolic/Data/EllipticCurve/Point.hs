@@ -23,13 +23,16 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 
 data Point curve f c = Point
   { px :: f c
   , py :: f c
   , pIsInf :: Bool c
   }
-  deriving (Generic, Generic1, SymbolicData)
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+
+-- TODO: Add 'isOnCurve' check to 'isValid'
 
 deriving instance (HNFData c, NFData (f c)) => NFData (Point curve f c)
 

@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
@@ -91,14 +92,13 @@ import ZkFold.Symbolic.MonadCircuit (ClosedPoly, newAssigned)
 newtype ByteString (n :: Natural) (context :: (Type -> Type) -> Type) = ByteString (context (Vector n))
   deriving Generic
   deriving SymbolicData via (Vec (Vector n))
+  deriving Eq via (Vec (Vector n) context)
 
 deriving stock instance HShow c => Haskell.Show (ByteString n c)
 
 deriving stock instance HEq c => Haskell.Eq (ByteString n c)
 
 deriving anyclass instance HNFData c => NFData (ByteString n c)
-
-deriving newtype instance (Symbolic c, KnownNat n) => Eq (ByteString n c)
 
 instance
   ( Symbolic c

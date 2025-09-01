@@ -110,9 +110,9 @@ instance Symbolic c => Eq (Bool c) where
   b == b' = not (b /= b')
   (/=) = xor
 
-instance (Symbolic c, Semialign f, Traversable f) => Eq (c f) where
-  type BooleanOf (c f) = Bool c
-  x == y =
+instance (Symbolic c, Semialign f, Traversable f) => Eq (Vec f c) where
+  type BooleanOf (Vec f c) = Bool c
+  Vec x == Vec y =
     let
       result =
         symbolic2F
@@ -132,7 +132,7 @@ instance (Symbolic c, Semialign f, Traversable f) => Eq (c f) where
      in
       all Bool (unpacked result)
 
-  x /= y =
+  Vec x /= Vec y =
     let
       result =
         symbolic2F

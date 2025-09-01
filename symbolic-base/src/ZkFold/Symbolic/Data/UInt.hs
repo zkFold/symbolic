@@ -86,20 +86,19 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype UInt (n :: Natural) (r :: RegisterSize) c = UInt
   {uintData :: c (Vector (NumberOfRegisters (BaseField c) n r))}
-
-deriving instance Generic (UInt n r context)
+  deriving Generic
+  deriving Eq via (Vec (Vector (NumberOfRegisters (BaseField c) n r)) c)
 
 deriving instance HNFData context => NFData (UInt n r context)
 
 deriving instance HEq context => Haskell.Eq (UInt n r context)
 
 deriving instance HShow context => Haskell.Show (UInt n r context)
-
-deriving newtype instance Symbolic c => Eq (UInt n r c)
 
 instance SymbolicData (UInt n r) where
   type Layout (UInt n r) k = Vector (NumberOfRegistersN k n r)

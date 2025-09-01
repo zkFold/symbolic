@@ -10,4 +10,4 @@ import Prelude hiding (Bool, Eq, Ord, length, splitAt, (*), (+))
 -- | Set of commitments to the constraints of the circuit.
 --
 -- 'Circuit' is used to represent the smart contract that locks funds at a particular address.
-type Circuit context = FieldElement context
+type Circuit = FieldElement

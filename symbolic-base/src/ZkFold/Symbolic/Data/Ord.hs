@@ -146,12 +146,11 @@ instance KnownNat n => Ord (Zp n) where
 newtype Ordering c = Ordering (c Par1)
   deriving Generic
   deriving SymbolicData via (Vec Par1)
+  deriving (Eq, Ord) via (Vec Par1 c)
 
 deriving instance HShow c => Show (Ordering c)
 
 instance HNFData c => NFData (Ordering c)
-
-instance Symbolic c => Eq (Ordering c)
 
 instance Symbolic c => Semigroup (Ordering c) where
   Ordering o1 <> Ordering o2 = Ordering $
@@ -168,10 +167,10 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
-  type OrderingOf (c f) = Ordering c
+instance (Symbolic c, LayoutFunctor f) => Ord (Vec f c) where
+  type OrderingOf (Vec f c) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare = bitwiseCompare `on` getBitsBE
+  compare = bitwiseCompare `on` (getBitsBE . runVec)
 
 bitwiseCompare :: forall c. Symbolic c => c [] -> c [] -> Ordering c
 bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
@@ -195,8 +194,6 @@ instance Symbolic c => Ord (Bool c) where
       \(Par1 v1) (Par1 v2) -> fmap Par1 $
         newAssigned $
           \x -> let x1 = x v1; x2 = x v2 in x1 - x2
-
-deriving newtype instance Symbolic c => Ord (Ordering c)
 
 class
   ( GEq u

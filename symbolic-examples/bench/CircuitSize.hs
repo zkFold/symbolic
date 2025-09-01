@@ -13,6 +13,7 @@ import Text.Show (Show (..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.ArithmeticCircuit as Circuit
 import ZkFold.Symbolic.Compiler (compile)
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..))
 import qualified ZkFold.Symbolic.Examples as Examples
@@ -36,5 +37,5 @@ main =
       "Compiler golden tests"
       [ Golden.goldenVsString name ("stats/" <> name) $ pure (metrics name circuit)
       | (name, ExampleOutput cf) <- Examples.examples
-      , let circuit = compile cf
+      , let circuit = runVec $ compile cf
       ]

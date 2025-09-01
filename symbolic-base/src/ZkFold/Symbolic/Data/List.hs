@@ -1,10 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE DerivingVia #-}
 
 {- HLINT ignore "Use zipWithM" -}
 
@@ -44,6 +44,7 @@ import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Fold
 import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 
 newtype HashOf x c = HO {runHO :: c (Layout x (Order (BaseField c)))}
 
@@ -65,7 +66,8 @@ emptyHash
   :: (Symbolic c, Representable (Layout x (Order (BaseField c)))) => HashOf x c
 emptyHash = HO $ embed $ pureRep zero
 
-deriving newtype instance (SymbolicData x, Symbolic c) => Eq (HashOf x c)
+deriving via (Vec (Layout x (Order (BaseField c))) c) instance
+  (SymbolicData x, Symbolic c) => Eq (HashOf x c)
 
 -- | TODO: Maybe some 'isValid' check for Lists?..
 data List x c = List

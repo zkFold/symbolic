@@ -7,9 +7,10 @@ module ZkFold.Symbolic.Algorithm.Mithril where
 import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.TypeLits (KnownNat)
+import GHC.Generics ((:*:) (..))
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
-import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
@@ -17,15 +18,16 @@ import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 
 type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx
    . ( Symbolic ctx
-     , baseField ~ FFA q 'Auto ctx
+     , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
+     , point ~ Point (Weierstrass curve) baseField ctx
      , ScalarFieldOf point ~ scalarField
      , CyclicGroup point
      , KnownFFA q 'Auto ctx
@@ -42,7 +44,7 @@ mithril stakeDist messageHash (r, s) =
   let
    in foldl'
         ( \acc (point, stake) ->
-            if (ecdsaVerify @n @point point messageHash (r, s))
+            if ecdsaVerify @n @point point messageHash (r :*: s)
               then acc + stake
               else acc
         )

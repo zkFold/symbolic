@@ -1,7 +1,10 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Examples.ReverseList (exampleReverseList) where
 
 import ZkFold.Data.Vector (Vector, reverse)
+import GHC.Generics ((:.:) (..))
 
 -- | Reverses the order of elements in a vector
-exampleReverseList :: Vector n t -> Vector n t
-exampleReverseList = reverse
+exampleReverseList :: (Vector n :.: t) c -> (Vector n :.: t) c
+exampleReverseList (Comp1 v) = Comp1 (reverse v)

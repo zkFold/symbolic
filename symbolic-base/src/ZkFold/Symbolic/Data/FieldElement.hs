@@ -33,6 +33,7 @@ import ZkFold.Symbolic.MonadCircuit (newAssigned)
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
   deriving (SymbolicData, SymbolicInput) via (Vec Par1)
+  deriving (Eq, Ord) via (Vec Par1 c)
 
 fieldElements :: (Package c, Functor f) => c f -> f (FieldElement c)
 fieldElements = fmap FieldElement . unpacked
@@ -44,10 +45,6 @@ deriving stock instance HEq c => Haskell.Eq (FieldElement c)
 deriving stock instance (HEq c, Haskell.Ord (c Par1)) => Haskell.Ord (FieldElement c)
 
 deriving newtype instance HNFData c => NFData (FieldElement c)
-
-deriving newtype instance Symbolic c => Eq (FieldElement c)
-
-deriving newtype instance Symbolic c => Ord (FieldElement c)
 
 instance {-# INCOHERENT #-} (Symbolic c, FromConstant k (BaseField c)) => FromConstant k (FieldElement c) where
   fromConstant = FieldElement . embed . Par1 . fromConstant

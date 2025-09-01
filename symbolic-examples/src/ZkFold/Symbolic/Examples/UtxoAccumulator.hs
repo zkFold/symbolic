@@ -38,22 +38,23 @@ import ZkFold.Symbolic.Data.Bool (Bool (..), all, any, (&&))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude ((++))
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 utxoAccumulator
   :: forall n c
    . Symbolic c
-  => Vector n (FieldElement c)
-  -> Vector n (FieldElement c)
-  -> (FieldElement c, FieldElement c)
-  -> (Bool c, Vector n (FieldElement c), Vector n (FieldElement c))
-utxoAccumulator hs as (a, r) =
+  => (Vector n :.: FieldElement) c
+  -> (Vector n :.: FieldElement) c
+  -> (FieldElement :*: FieldElement) c
+  -> (Bool :*: Vector n :.: FieldElement :*: Vector n :.: FieldElement) c
+utxoAccumulator (Comp1 hs) (Comp1 as) (a :*: r) =
   let
-    h = hash (a, r)
+    h = hash (a :*: r)
 
     cond1 = any (== h) hs
     cond2 = all (/= a) as
    in
-    (cond1 && cond2, hs, as)
+    (cond1 && cond2) :*: Comp1 hs :*: Comp1 as
 
 type UtxoAccumulatorInput n = Vector n :*: Vector n :*: Par1 :*: Par1
 
@@ -65,6 +66,7 @@ utxoAccumulatorCircuit
   => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
   hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3)
+    $ runVec
     $ compileWith
       solder
       ( \(i1 :*: i2 :*: i3) ->
@@ -155,7 +157,7 @@ utxoAccumulatorHash a r =
   let
     f = fromConstant @(ScalarFieldOf BLS12_381_G1_Point) @(FieldElement (Interpreter (ScalarFieldOf BLS12_381_G1_Point)))
    in
-    toConstant $ hash (f a, f r)
+    toConstant $ hash (f a :*: f r)
 
 utxoAccumulatorProve
   :: forall n m
