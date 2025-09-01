@@ -16,8 +16,8 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
+import ZkFold.Symbolic.Data.FFA
 
 type Pluto_Point = Point (Weierstrass "Pluto-Eris") (FFA PlutoEris_p 'Auto)
 

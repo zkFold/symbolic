@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.EllipticCurve.Point where
 
 import Control.DeepSeq (NFData)
+import Data.Coerce (Coercible, coerce)
 import qualified Data.Eq as Haskell
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap)
@@ -23,7 +23,6 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import Data.Coerce (coerce, Coercible)
 
 data Point curve f c = Point
   { px :: f c
@@ -62,8 +61,8 @@ type Base n c f d = n c (Elliptic.Point (f d))
 
 viaBase
   :: forall n c f d e p g
-  . (e ~ Base n c f d, p ~ Point (n c) f d, Functor g, BooleanOf (f d) ~ Bool d)
-  => (Coercible e (Elliptic.Point (f d)))
+   . (e ~ Base n c f d, p ~ Point (n c) f d, Functor g, BooleanOf (f d) ~ Bool d)
+  => Coercible e (Elliptic.Point (f d))
   => (g e -> e) -> g p -> p
 viaBase f =
   fromConstant @(Elliptic.Point (f d)) . coerce . f . fmap (coerce . toConstant)
@@ -87,29 +86,39 @@ instance (Symbolic c, Semiring (f c)) => Zero (Point curve f c) where
 
 instance
   {-# OVERLAPPABLE #-}
-  ( BooleanOf (f c) ~ Bool c, Scale k (Base nt curve f c)
-  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  ( BooleanOf (f c) ~ Bool c
+  , Scale k (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c))
+  )
   => Scale k (Point (nt curve) f c)
   where
   scale k = viaBase (scale k . unPar1) . Par1
 
 instance
-  ( BooleanOf (f c) ~ Bool c, AdditiveSemigroup (Base nt curve f c)
-  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  ( BooleanOf (f c) ~ Bool c
+  , AdditiveSemigroup (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c))
+  )
   => AdditiveSemigroup (Point (nt curve) f c)
   where
   (+) = curry $ viaBase (uncurry (+) . unTwo) . uncurry Two
 
 instance
-  ( Symbolic c, Semiring (f c), BooleanOf (f c) ~ Bool c
+  ( Symbolic c
+  , Semiring (f c)
+  , BooleanOf (f c) ~ Bool c
   , AdditiveMonoid (Base nt curve f c)
-  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c))
+  )
   => AdditiveMonoid (Point (nt curve) f c)
 
 instance
-  ( Symbolic c, Semiring (f c), BooleanOf (f c) ~ Bool c
+  ( Symbolic c
+  , Semiring (f c)
+  , BooleanOf (f c) ~ Bool c
   , AdditiveGroup (Base nt curve f c)
-  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c))
+  )
   => AdditiveGroup (Point (nt curve) f c)
   where
   negate = viaBase (negate . unPar1) . Par1

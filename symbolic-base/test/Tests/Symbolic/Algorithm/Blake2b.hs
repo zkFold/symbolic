@@ -23,8 +23,8 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.Data.Vec (runVec)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
 blake2bNumeric =

@@ -4,6 +4,7 @@ module Tests.Symbolic.Compiler (specCompiler) where
 
 import Data.Function (id, ($))
 import Data.Proxy (Proxy)
+import GHC.Generics ((:*:))
 import Test.Hspec (Spec, describe)
 
 import Tests.Symbolic.Compiler.CompileWith (specCompileWith)
@@ -15,7 +16,6 @@ import ZkFold.Symbolic.Compiler (compileIO)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
-import GHC.Generics ((:*:))
 
 type A = Zp BLS12_381_Scalar
 

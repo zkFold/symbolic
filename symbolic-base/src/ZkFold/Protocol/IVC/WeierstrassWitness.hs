@@ -90,9 +90,11 @@ instance
   )
   => Conditional b (WeierstrassWitness ctx)
   where
-  bool (WeierstrassWitness (Weierstrass p1))
-       (WeierstrassWitness (Weierstrass p2)) b =
-    WeierstrassWitness $ Weierstrass (bool p1 p2 b)
+  bool
+    (WeierstrassWitness (Weierstrass p1))
+    (WeierstrassWitness (Weierstrass p2))
+    b =
+      WeierstrassWitness $ Weierstrass (bool p1 p2 b)
 
 instance
   ( Symbolic ctx

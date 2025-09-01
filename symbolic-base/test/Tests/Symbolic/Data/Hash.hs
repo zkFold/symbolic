@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Hash (specHash) where
@@ -23,7 +22,7 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
-import ZkFold.Symbolic.Data.Vec (Vec(runVec))
+import ZkFold.Symbolic.Data.Vec (Vec (runVec))
 
 instance Symbolic c => Hashable (FieldElement c) (FieldElement c) where
   hasher _ = zero

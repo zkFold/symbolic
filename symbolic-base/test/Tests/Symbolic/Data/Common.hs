@@ -20,7 +20,7 @@ import Text.Show (Show)
 import Prelude (String, return, (++), type (~))
 
 import Tests.Common (it)
-import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), Order)
+import ZkFold.Algebra.Class (FromConstant (..), Order, ToConstant (..))
 import ZkFold.ArithmeticCircuit (
   ArithmeticCircuit,
   checkCircuit,
@@ -32,10 +32,10 @@ import ZkFold.ArithmeticCircuit (
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), RepData)
+import ZkFold.Symbolic.Data.Class (RepData, SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.Data.Vec (runVec)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 {-
   For all symbolic types we need to do the following:
@@ -86,9 +86,13 @@ type Match a x =
   (Payload x (Order a) ~ U1, Show (x (Interpreter a)), Binary a, Show a)
 
 type MatchingSymbolicInput a x =
-  ( SymbolicInput x, Match a x, HasRep x (CircuitContext a)
-  , HasRep x (Interpreter a), RepData x (CircuitContext a)
-  , Arbitrary (x (Interpreter a)))
+  ( SymbolicInput x
+  , Match a x
+  , HasRep x (CircuitContext a)
+  , HasRep x (Interpreter a)
+  , RepData x (CircuitContext a)
+  , Arbitrary (x (Interpreter a))
+  )
 
 type MatchingSymbolicOutput a x =
   (SymbolicData x, Match a x, Eq (x (Interpreter a)))
@@ -120,13 +124,17 @@ evalCircuit1 ac input =
 evalCircuit2
   :: forall x y z a
    . ( Arithmetic a
-     , SymbolicInput x, RepData x (Interpreter a)
-     , SymbolicInput y, RepData y (Interpreter a)
+     , SymbolicInput x
+     , RepData x (Interpreter a)
+     , SymbolicInput y
+     , RepData y (Interpreter a)
      , SymbolicData z
      , Payload z (Order a) ~ U1
      )
-  => ArithmeticCircuit a (Layout x (Order a) :*: Layout y (Order a))
-                         (Layout z (Order a))
+  => ArithmeticCircuit
+       a
+       (Layout x (Order a) :*: Layout y (Order a))
+       (Layout z (Order a))
   -> x (Interpreter a)
   -> y (Interpreter a)
   -> z (Interpreter a)
@@ -176,8 +184,10 @@ compileCircuit2
      , SymbolicData z
      )
   => (x (CircuitContext a) -> y (CircuitContext a) -> z (CircuitContext a))
-  -> ArithmeticCircuit a (Layout x (Order a) :*: Layout y (Order a))
-                         (Layout z (Order a))
+  -> ArithmeticCircuit
+       a
+       (Layout x (Order a) :*: Layout y (Order a))
+       (Layout z (Order a))
 compileCircuit2 =
   runVec . compileWith @a solder (\(ix :*: iy) -> (U1 :*: U1 :*: U1, ix :*: iy :*: U1))
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -6,7 +7,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE BlockArguments #-}
 
 module ZkFold.Algebra.EllipticCurve.Class (
   -- * curve classes
@@ -36,8 +36,13 @@ module ZkFold.Algebra.EllipticCurve.Class (
 
 import Control.DeepSeq (NFData, NFData1)
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Foldable (Foldable)
+import Data.Functor (Functor)
 import Data.Kind (Type)
+import Data.Semialign (Semialign (..), Zip (..))
 import Data.String (fromString)
+import Data.These (These (..))
+import Data.Traversable (Traversable)
 import GHC.Generics
 import GHC.TypeLits (Symbol)
 import Test.QuickCheck hiding (scale)
@@ -49,11 +54,6 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
-import Data.Functor (Functor)
-import Data.Semialign (Zip (..), Semialign (..))
-import Data.These (These(..))
-import Data.Traversable (Traversable)
-import Data.Foldable (Foldable)
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
@@ -647,7 +647,7 @@ data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   }
-  deriving (Functor, Foldable, Traversable, Generic, Generic1, Prelude.Eq)
+  deriving (Foldable, Functor, Generic, Generic1, Prelude.Eq, Traversable)
 
 deriving instance NFData field => NFData (AffinePoint field)
 

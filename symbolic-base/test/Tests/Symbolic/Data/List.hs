@@ -23,8 +23,8 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.List (List, emptyList, foldr, head, lSize, tail, (.:))
+import ZkFold.Symbolic.Data.Vec (Vec (runVec))
 import ZkFold.Symbolic.Fold (SymbolicFold)
-import ZkFold.Symbolic.Data.Vec (Vec(runVec))
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x

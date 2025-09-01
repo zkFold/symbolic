@@ -43,8 +43,9 @@ specCompileWith :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Sp
 specCompileWith = describe "CompileWith specification" $ do
   prop "Guessing with payload is constant in input" $
     let circuit =
-          runVec $ compileWith @a
-            (guessOutput toPair)
-            (\(p :*: q) -> (U1 :*: U1 :*: U1, p :*: q :*: U1))
-            testFunction
+          runVec $
+            compileWith @a
+              (guessOutput toPair)
+              (\(p :*: q) -> (U1 :*: U1 :*: U1, p :*: q :*: U1))
+              testFunction
      in \x p q -> witGen circuit (x :*: p) === witGen circuit (x :*: q)

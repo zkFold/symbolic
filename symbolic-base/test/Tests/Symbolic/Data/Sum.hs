@@ -1,9 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE EmptyCase #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeOperators #-}
-
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Sum (specSum) where
@@ -14,8 +13,10 @@ import Data.Functor ((<$>))
 import Data.Maybe (Maybe)
 import Data.Proxy (Proxy)
 import Data.Semigroup ((<>))
+import Data.Tuple (Solo)
 import Data.Typeable (Typeable)
-import GHC.Generics (Generic, Rep, (:+:)(..), V1)
+import Data.Void (absurd)
+import GHC.Generics (Generic, Rep, V1, (:+:) (..))
 import Test.Hspec (Spec, describe)
 import qualified Test.QuickCheck as Q
 import Test.QuickCheck.Instances ()
@@ -28,14 +29,12 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Class (SymbolicData (HasRep))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Sum
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import ZkFold.Symbolic.Data.Class (SymbolicData(HasRep))
-import Data.Void (absurd)
-import Data.Tuple (Solo)
 
 instance {-# OVERLAPPING #-} Q.Arbitrary (f a) => Q.Arbitrary ((f :+: V1) a) where
   arbitrary = L1 <$> Q.arbitrary
@@ -44,7 +43,7 @@ instance (Q.Arbitrary (f a), Q.Arbitrary (g a)) => Q.Arbitrary ((f :+: g) a) whe
   arbitrary = Q.oneof [L1 <$> Q.arbitrary, R1 <$> Q.arbitrary]
 
 instance Q.Function (V1 a) where
-  function = Q.functionMap (\case) absurd
+  function = Q.functionMap (\case {}) absurd
 
 instance (Q.Function (f a), Q.Function (g a)) => Q.Function ((f :+: g) a)
 
@@ -61,7 +60,7 @@ instance
   function = Q.functionMap toConstant fromConstant
 
 instance Q.CoArbitrary (V1 a) where
-  coarbitrary x = case x of
+  coarbitrary x = case x of {}
 
 instance (Q.CoArbitrary (f a), Q.CoArbitrary (g a)) => Q.CoArbitrary ((f :+: g) a)
 

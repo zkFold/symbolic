@@ -14,8 +14,8 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
-import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
+import ZkFold.Symbolic.Data.FFA
 
 type Jubjub_Point = AffinePoint (TwistedEdwards "jubjub") (FFA Jubjub_Base 'Auto)
 

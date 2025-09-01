@@ -14,8 +14,8 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
-import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
+import ZkFold.Symbolic.Data.FFA
 
 type BN254_G1_Point = Point (Weierstrass "BN254_G1") (FFA BN254_Base 'Auto)
 

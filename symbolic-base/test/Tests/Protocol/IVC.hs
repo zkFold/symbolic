@@ -3,6 +3,7 @@
 module Tests.Protocol.IVC where
 
 import Control.Lens ((^.))
+import Data.Foldable (toList)
 import GHC.Generics (U1 (..))
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (property, withMaxSuccess)
@@ -45,11 +46,10 @@ import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProto
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
 import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (arithmetize))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData(arithmetize))
-import Data.Foldable (toList)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 type Q = BLS12_381_Scalar
 

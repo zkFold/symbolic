@@ -15,8 +15,8 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
+import ZkFold.Symbolic.Data.FFA
 
 type Pallas_Point = Point (Weierstrass "Pasta") (FFA FpModulus 'Auto)
 
