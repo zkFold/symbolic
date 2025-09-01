@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   Transaction (txInputs, txOutputs, txValidityInterval, txOwner),
@@ -49,7 +49,7 @@ data Transaction context = Transaction
   -- ^ Inputs belonging to this address are considered spent whereas others are considered to be only referenced by this transaction.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance
   ( KnownRegistersAssetQuantity context
@@ -113,7 +113,7 @@ data OutputRef context = OutputRef
   -- ^ The index of the output in the transaction's output list.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (OutputRef context)
 
@@ -125,6 +125,6 @@ data Input context = Input
   -- ^ The output being spent.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (Input context)

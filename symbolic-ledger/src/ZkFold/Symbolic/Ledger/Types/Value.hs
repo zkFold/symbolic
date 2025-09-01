@@ -1,7 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   AssetPolicy,
@@ -75,7 +75,7 @@ data AssetValue context = AssetValue
   , assetQuantity :: AssetQuantity context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
@@ -121,16 +121,19 @@ addAssetValue
 addAssetValue givenAssetVal (UnsafeAssetValues assetValList) =
   let assetExisted :*: _ :*: r =
         Symbolic.List.foldr
-          (\y (found :*: givenAssetVal' :*: ys) ->
-            let isSame = givenAssetVal' == y
-             in (found || isSame)
-                :*: givenAssetVal'
-                :*: ifThenElse isSame
-                      (AssetValue
-                        { assetPolicy = assetPolicy y
-                        , assetName = assetName y
-                        , assetQuantity = assetQuantity y + assetQuantity givenAssetVal'
-                        } .: ys)
+          ( \y (found :*: givenAssetVal' :*: ys) ->
+              let isSame = givenAssetVal' == y
+               in (found || isSame)
+                    :*: givenAssetVal'
+                    :*: ifThenElse
+                      isSame
+                      ( AssetValue
+                          { assetPolicy = assetPolicy y
+                          , assetName = assetName y
+                          , assetQuantity = assetQuantity y + assetQuantity givenAssetVal'
+                          }
+                          .: ys
+                      )
                       (y .: ys)
           )
           (false :*: givenAssetVal :*: emptyList)
@@ -150,7 +153,7 @@ negateAssetValues
 negateAssetValues (UnsafeAssetValues ls) =
   UnsafeAssetValues $
     Symbolic.List.foldr
-      (\av acc ->
+      ( \av acc ->
           (av {assetQuantity = assetQuantity av & negate}) .: acc
       )
       (emptyList :: List AssetValue context)

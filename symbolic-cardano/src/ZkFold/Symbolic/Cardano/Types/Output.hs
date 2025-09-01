@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 

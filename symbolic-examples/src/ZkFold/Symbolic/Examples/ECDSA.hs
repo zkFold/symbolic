@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Examples.ECDSA (exampleECDSA) where
 
+import GHC.Generics ((:*:))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
@@ -9,7 +11,6 @@ import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
-import GHC.Generics ((:*:))
 
 exampleECDSA
   :: Symbolic ctx

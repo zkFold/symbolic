@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 

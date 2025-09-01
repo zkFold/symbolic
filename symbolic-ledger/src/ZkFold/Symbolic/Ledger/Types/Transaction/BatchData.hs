@@ -1,5 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.BatchData (
   TransactionBatchData (..),
@@ -29,7 +29,7 @@ data TransactionBatchData context = TransactionBatchData
   -- ^ All offline transactions (represented by their transaction hash) associated with a particular data availability source that are included in the batch.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance
   ( KnownRegistersAssetQuantity context

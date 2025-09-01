@@ -29,8 +29,7 @@ type Tx = Transaction 6 0 11 Tokens 0 ()
 
 verifySignature
   :: forall context
-   . ( Symbolic context
-     )
+   . Symbolic context
   => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
 verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
  where

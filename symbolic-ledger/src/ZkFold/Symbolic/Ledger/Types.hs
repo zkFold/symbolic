@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Ledger.Types (
 
 -- Re-exports
 
+import GHC.Generics ((:*:))
 import GHC.TypeLits (KnownNat)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (
@@ -38,7 +39,6 @@ import ZkFold.Symbolic.Ledger.Types.Output
 import ZkFold.Symbolic.Ledger.Types.Root
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
-import GHC.Generics ((:*:))
 
 {-
     zkFold's ledger is a UTXO-based ledger. The architecture of the ledger is mostly similar to the Cardano ledger with some key differences:

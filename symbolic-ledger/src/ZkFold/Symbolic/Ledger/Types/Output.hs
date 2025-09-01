@@ -1,5 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Output where
 
@@ -23,6 +23,6 @@ data Output context = Output
   -- ^ 'Datum' associated with the output.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (Output context)

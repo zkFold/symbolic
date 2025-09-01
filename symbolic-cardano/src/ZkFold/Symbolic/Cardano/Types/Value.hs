@@ -1,16 +1,15 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
-{-# LANGUAGE BlockArguments #-}
 
 module ZkFold.Symbolic.Cardano.Types.Value where
 
 import qualified Data.Map as Map
-import GHC.Generics (Generic1, Generic)
+import GHC.Generics (Generic, Generic1)
 import GHC.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
@@ -45,10 +44,11 @@ deriving instance
   , Haskell.Ord (PolicyId context)
   , Haskell.Ord (AssetName context)
   , Haskell.Ord (UInt 64 Auto context)
-  ) => Haskell.Ord (SingleAsset context)
+  )
+  => Haskell.Ord (SingleAsset context)
 
 instance Symbolic context => Scale Natural (SingleAsset context) where
-  scale k SingleAsset {..} = SingleAsset { amount = scale k amount, .. }
+  scale k SingleAsset {..} = SingleAsset {amount = scale k amount, ..}
 
 newtype Value n context = Value {getValue :: Vector n (SingleAsset context)}
   deriving stock Generic1
@@ -70,17 +70,25 @@ instance Symbolic context => Scale Natural (Value n context) where
   scale :: Natural -> Value n context -> Value n context
   n `scale` Value v = Value $ fmap (scale n) v
 
-instance (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Semigroup (Value n context) where
+instance
+  (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context)
+  => Semigroup (Value n context)
+  where
   Value va <> Value vb =
     Value $ fromMap $ Map.unionWith (+) (toMap va) (toMap vb)
-    where
-      toMap = Map.fromList . fromVector . fmap
+   where
+    toMap =
+      Map.fromList . fromVector . fmap
         \(SingleAsset pid aname q) -> ((pid, aname), q)
-      fromMap =
-        fmap (\((pid, aname), q) -> SingleAsset pid aname q)
-        . unsafeToVector . Map.toList
+    fromMap =
+      fmap (\((pid, aname), q) -> SingleAsset pid aname q)
+        . unsafeToVector
+        . Map.toList
 
-instance (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => Monoid (Value n context) where
+instance
+  (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context)
+  => Monoid (Value n context)
+  where
   mempty = zero
 
 instance
@@ -92,4 +100,6 @@ instance
 instance Zero (Value n context) where
   zero = Value $ unsafeToVector []
 
-instance (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context) => AdditiveMonoid (Value n context)
+instance
+  (HEq context, Haskell.Ord (PolicyId context), Haskell.Ord (AssetName context), Symbolic context)
+  => AdditiveMonoid (Value n context)

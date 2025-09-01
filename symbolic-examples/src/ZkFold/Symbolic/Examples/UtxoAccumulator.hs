@@ -36,9 +36,9 @@ import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Data.Bool (Bool (..), all, any, (&&))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Vec (runVec)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude ((++))
-import ZkFold.Symbolic.Data.Vec (runVec)
 
 utxoAccumulator
   :: forall n c

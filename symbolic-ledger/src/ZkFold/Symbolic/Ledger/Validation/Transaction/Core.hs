@@ -6,15 +6,15 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction.Core (
   validateTransactionWithAssetDiff,
 ) where
 
+import GHC.Generics ((:*:) (..))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
+import ZkFold.Data.Product (fstP)
 import ZkFold.Symbolic.Data.Bool
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import Prelude (fst, undefined, ($), (.))
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Data.Product (fstP)
-import GHC.Generics ((:*:)(..))
 
 -- | This function extracts boolean from 'validateTransaction', see it for more details.
 validateTransaction
@@ -44,12 +44,12 @@ validateTransactionWithAssetDiff tx =
     resTxAccOutValues :: AssetValues context =
       fstP $
         Symbolic.List.foldl
-          (\(accOutValues :*: accTxOwner) txOut ->
+          ( \(accOutValues :*: accTxOwner) txOut ->
               ifThenElse
-                  (txoAddress txOut == accTxOwner)
-                  accOutValues
-                  (addAssetValue (txoValue txOut) accOutValues)
-              :*: accTxOwner
+                (txoAddress txOut == accTxOwner)
+                accOutValues
+                (addAssetValue (txoValue txOut) accOutValues)
+                :*: accTxOwner
           )
           (emptyAssetValues :*: txOwner tx)
           (txOutputs tx)
@@ -57,13 +57,13 @@ validateTransactionWithAssetDiff tx =
     resTxAccInValues :: AssetValues context =
       fstP $
         Symbolic.List.foldl
-          (\(accInValues :*: accTxOwner) txInput ->
+          ( \(accInValues :*: accTxOwner) txInput ->
               let out = txiOutput txInput
                in ifThenElse
-                      (txoAddress out == accTxOwner)
-                      accInValues
-                      (addAssetValue (txoValue $ txiOutput txInput) accInValues)
-                  :*: accTxOwner
+                    (txoAddress out == accTxOwner)
+                    accInValues
+                    (addAssetValue (txoValue $ txiOutput txInput) accInValues)
+                    :*: accTxOwner
           )
           (emptyAssetValues :*: txOwner tx)
           (txInputs tx)

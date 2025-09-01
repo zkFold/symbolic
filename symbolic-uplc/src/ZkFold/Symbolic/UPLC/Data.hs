@@ -1,12 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.UPLC.Data (DataCell (..), Data, KnownData, unfoldData, foldData, serialiseData) where
 
@@ -16,7 +16,7 @@ import Data.Type.Equality (type (~))
 import GHC.Generics qualified as G
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Symbolic.Class (Symbolic, BaseField)
+import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -84,7 +84,8 @@ concatMapCell
   :: forall c x y
    . (SymbolicFold c, SymbolicData x, SymbolicData y)
   => (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => x d -> List y d)
-  -> DataCell x c -> List c y
+  -> DataCell x c
+  -> List c y
 concatMapCell f DConstrCell {..} = concatMap f cFields
 concatMapCell f (DMapCell es) = concatMap (\(k, v) -> f k ++ f v) es
 concatMapCell f (DListCell xs) = concatMap f xs

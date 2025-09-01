@@ -1,11 +1,11 @@
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
   TransactionBatch (..),
 ) where
 
-import GHC.Generics (Generic, (:*:), Generic1)
+import GHC.Generics (Generic, Generic1, (:*:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -35,7 +35,7 @@ data TransactionBatch context = TransactionBatch
   -- ^ Hash of the previous transaction batch.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData)
+  deriving anyclass SymbolicData
 
 instance
   ( KnownRegistersAssetQuantity context

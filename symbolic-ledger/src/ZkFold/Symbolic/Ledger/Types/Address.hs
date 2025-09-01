@@ -2,10 +2,11 @@ module ZkFold.Symbolic.Ledger.Types.Address (
   Address,
 ) where
 
+import GHC.Generics ((:*:))
+
 import ZkFold.Symbolic.Ledger.Types.Circuit (Circuit)
 import ZkFold.Symbolic.Ledger.Types.DataAvailability
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
-import GHC.Generics ((:*:))
 
 -- | Address on the zkFold ledger.
 --

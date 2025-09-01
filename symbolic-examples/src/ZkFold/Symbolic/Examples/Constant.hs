@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Examples.Constant (
   exampleConst,
   exampleConditionalConst,
@@ -9,6 +10,7 @@ module ZkFold.Symbolic.Examples.Constant (
 
 import Control.Monad.Representable.Reader (Representable (tabulate))
 import Data.Function (const, ($))
+import GHC.Generics ((:.:) (Comp1))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Number (KnownNat, Natural)
 import ZkFold.Data.Vector (Vector)
@@ -18,7 +20,6 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
 import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
-import GHC.Generics ((:.:) (Comp1))
 
 exampleConst :: Symbolic c => FieldElement c
 exampleConst = fromConstant (5 :: Natural)

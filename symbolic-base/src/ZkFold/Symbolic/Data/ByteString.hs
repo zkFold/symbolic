@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}

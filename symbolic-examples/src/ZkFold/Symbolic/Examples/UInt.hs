@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Examples.UInt (
 ) where
 
 import Data.Type.Equality (type (~))
+import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (*))
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
@@ -26,7 +27,6 @@ import ZkFold.Symbolic.Data.Combinators (
  )
 import ZkFold.Symbolic.Data.Ord ((<=))
 import ZkFold.Symbolic.Data.UInt (OrdWord, StrictNum (..), UInt, expMod, productMod)
-import GHC.Generics ((:*:) (..))
 
 exampleUIntMul
   :: (KnownNat n, KnownRegisterSize r, Symbolic c)
