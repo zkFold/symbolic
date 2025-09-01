@@ -16,6 +16,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 testFunc :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
 testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
@@ -30,7 +31,7 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
 testBool
   :: (Arithmetic a, Binary a)
   => ArithmeticCircuit a ((U1 :*: U1) :*: Par1 :*: U1) Par1
-testBool = compile identBool
+testBool = runVec $ compile identBool
  where
   identBool :: Bool c -> Bool c
   identBool x = x

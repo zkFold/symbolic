@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Tests.Symbolic.Compiler (specCompiler) where
 
 import Data.Function (id, ($))
@@ -13,6 +15,7 @@ import ZkFold.Symbolic.Compiler (compileIO)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
+import GHC.Generics ((:*:))
 
 type A = Zp BLS12_381_Scalar
 
@@ -23,6 +26,6 @@ specCompiler = do
   describe "Compiler specification" $ do
     let _ =
           -- compile-time test
-          compileIO @A "ex" $ id @(FieldElement C, Proxy C, UInt 32 Auto C)
+          compileIO @A "ex" $ id @((FieldElement :*: Proxy :*: UInt 32 Auto) C)
     specCompileWith @A
     specOptimization @A

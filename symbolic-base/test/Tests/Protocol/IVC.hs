@@ -38,7 +38,6 @@ import ZkFold.Protocol.IVC.OperationRecord (OperationRecord (opValue))
 import ZkFold.Protocol.IVC.Oracle (OracleSource (..), mimcHash)
 import ZkFold.Protocol.IVC.Predicate (Predicate (..), predicate)
 import ZkFold.Protocol.IVC.RecursiveFunction (
-  DataSource (DataSource),
   RecursiveI,
   RecursiveP,
  )
@@ -46,20 +45,27 @@ import ZkFold.Protocol.IVC.SpecialSound (SpecialSoundProtocol, specialSoundProto
 import qualified ZkFold.Protocol.IVC.SpecialSound as SPS
 import ZkFold.Protocol.IVC.WeierstrassWitness (WeierstrassWitness (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData(arithmetize))
+import Data.Foldable (toList)
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 
-type A = Zp BLS12_381_Scalar
+type Q = BLS12_381_Scalar
 
-type F = FieldElement (Interpreter A)
+type A = Zp Q
 
-type PT = WeierstrassWitness (Interpreter A)
+type IC = Interpreter A
 
-type PT' = WeierstrassWitness (CircuitContext A)
+type F = FieldElement IC
 
-type C = OperationRecord A PT
+type PT = WeierstrassWitness
 
-type C' = OperationRecord (WitnessF A NewVar) PT'
+type C = OperationRecord A (PT IC)
+
+type CC = CircuitContext A
+
+type C' = OperationRecord (WitnessF A NewVar) (PT CC)
 
 type I = Vector 1
 
@@ -69,15 +75,15 @@ type K = 1
 
 type PHI = Predicate A I P
 
-type PHIREC = Predicate A (RecursiveI I) (RecursiveP D K I P PT)
+type PHIREC = Predicate A (RecursiveI I) (RecursiveP D K I P PT Q)
 
 type SPS0 = SpecialSoundProtocol 1 I P A
 
-type SPS0Rec = SpecialSoundProtocol 1 (RecursiveI I) (RecursiveP D K I P PT) F
+type SPS0Rec = SpecialSoundProtocol 1 (RecursiveI I) (RecursiveP D K I P PT Q) F
 
 type SPS = FiatShamir 1 I P C A
 
-type SPSRec = FiatShamir 1 (RecursiveI I) (RecursiveP D K I P PT) C F
+type SPSRec = FiatShamir 1 (RecursiveI I) (RecursiveP D K I P PT Q) C F
 
 type D = 2
 
@@ -87,27 +93,30 @@ type PAR = Vector PARDEG A
 
 instance OracleSource A A where source = pure
 
+dataSource :: PT IC -> [A]
+dataSource = fmap toConstant . toList . fieldElements . arithmetize
+
 instance OracleSource A C where
-  source = fmap toConstant . source @F . DataSource . opValue
+  source = dataSource . opValue
 
-instance OracleSource A PT where
-  source = fmap toConstant . source @F . DataSource
+instance OracleSource A (PT IC) where
+  source = dataSource
 
-instance {-# OVERLAPPING #-} Scale A PT where
+instance {-# OVERLAPPING #-} Scale A (PT IC) where
   scale = scale @F . fromConstant
 
 testFunction
   :: forall ctx
    . (Symbolic ctx, FromConstant A (BaseField ctx))
   => PAR
-  -> ctx (Vector 1)
-  -> ctx U1
-  -> ctx (Vector 1)
-testFunction p i _ =
+  -> Vec (Vector 1) ctx
+  -> Vec U1 ctx
+  -> Vec (Vector 1) ctx
+testFunction p (runVec -> i) _ =
   let p' = fromVector $ fmap fromConstant p
       z = FieldElement <$> unpacked i
       y = singleton $ evalPolyVec p' $ item z
-   in packed $ fromFieldElement <$> y
+   in Vec $ packed $ fromFieldElement <$> y
 
 specIVC :: Spec
 specIVC = do

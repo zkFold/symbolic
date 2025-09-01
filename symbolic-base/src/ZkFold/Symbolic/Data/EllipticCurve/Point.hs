@@ -1,17 +1,18 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.EllipticCurve.Point where
 
 import Control.DeepSeq (NFData)
 import qualified Data.Eq as Haskell
-import Data.Function (const, ($), (.))
+import Data.Function (($), (.))
 import Data.Functor (Functor, fmap)
 import Data.Tuple (curry, uncurry)
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..))
+import GHC.Generics (Generic, Generic1, Par1 (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
@@ -22,6 +23,7 @@ import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import Data.Coerce (coerce, Coercible)
 
 data Point curve f c = Point
   { px :: f c
@@ -56,13 +58,15 @@ data Two a = Two a a deriving Functor
 unTwo :: Two a -> (a, a)
 unTwo (Two x y) = (x, y)
 
-type WEP c f d = Weierstrass c (Elliptic.Point (f d))
+type Base n c f d = n c (Elliptic.Point (f d))
 
-viaWeierstrass
-  :: (w ~ WEP curve f c, p ~ Point curve f c, Functor g, BooleanOf (f c) ~ Bool c)
-  => (g w -> w) -> g p -> p
-viaWeierstrass f =
-  fromConstant . pointWeierstrass . f . fmap (Weierstrass . toConstant)
+viaBase
+  :: forall n c f d e p g
+  . (e ~ Base n c f d, p ~ Point (n c) f d, Functor g, BooleanOf (f d) ~ Bool d)
+  => (Coercible e (Elliptic.Point (f d)))
+  => (g e -> e) -> g p -> p
+viaBase f =
+  fromConstant @(Elliptic.Point (f d)) . coerce . f . fmap (coerce . toConstant)
 
 instance Symbolic c => Planar (f c) (Point curve f c) where
   pointXY px py = Point {pIsInf = false, ..}
@@ -78,31 +82,34 @@ instance
   Point x y i == Point x' y' i' =
     ifThenElse (i || i') (i && i' && x' * y == x * y') ((x, y) == (x', y'))
 
-instance
-  (Symbolic c, SymbolicEq f c, Semiring (f c))
-  => Zero (Point curve f c)
-  where
-  zero = viaWeierstrass (const zero) U1
+instance (Symbolic c, Semiring (f c)) => Zero (Point curve f c) where
+  zero = pointInf
 
 instance
   {-# OVERLAPPABLE #-}
-  (BooleanOf (f c) ~ Bool c, Scale k (WEP curve f c))
-  => Scale k (Point curve f c)
+  ( BooleanOf (f c) ~ Bool c, Scale k (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  => Scale k (Point (nt curve) f c)
   where
-  scale k = viaWeierstrass (scale k . unPar1) . Par1
+  scale k = viaBase (scale k . unPar1) . Par1
 
 instance
-  (Symbolic c, SymbolicEq f c, Field (f c))
-  => AdditiveSemigroup (Point curve f c)
+  ( BooleanOf (f c) ~ Bool c, AdditiveSemigroup (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  => AdditiveSemigroup (Point (nt curve) f c)
   where
-  (+) = curry $ viaWeierstrass (uncurry (+) . unTwo) . uncurry Two
+  (+) = curry $ viaBase (uncurry (+) . unTwo) . uncurry Two
 
 instance
-  (Symbolic c, SymbolicEq f c, WeierstrassCurve curve (f c))
-  => AdditiveMonoid (Point curve f c)
+  ( Symbolic c, Semiring (f c), BooleanOf (f c) ~ Bool c
+  , AdditiveMonoid (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  => AdditiveMonoid (Point (nt curve) f c)
 
 instance
-  (Symbolic c, SymbolicEq f c, WeierstrassCurve curve (f c))
-  => AdditiveGroup (Point curve f c)
+  ( Symbolic c, Semiring (f c), BooleanOf (f c) ~ Bool c
+  , AdditiveGroup (Base nt curve f c)
+  , Coercible (Base nt curve f c) (Elliptic.Point (f c)))
+  => AdditiveGroup (Point (nt curve) f c)
   where
-  negate = viaWeierstrass (negate . unPar1) . Par1
+  negate = viaBase (negate . unPar1) . Par1

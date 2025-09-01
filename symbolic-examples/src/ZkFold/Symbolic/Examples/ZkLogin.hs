@@ -16,7 +16,7 @@ type PublicInput ctx = ByteString 256 ctx
 zkLogin
   :: forall ctx
    . RSA.RSA 2048 10328 ctx
-  => TokenBits (GooglePayload ctx)
+  => TokenBits GooglePayload
   => TokenHeader ctx
   -> GooglePayload ctx
   -> Signature "RS256" ctx
@@ -34,7 +34,7 @@ zkLogin jHeader jPayload jSignature amount recipient certificate pi = tokenValid
 zkLoginNoSig
   :: forall ctx
    . RSA.RSA 2048 10328 ctx
-  => TokenBits (GooglePayload ctx)
+  => TokenBits GooglePayload
   => TokenHeader ctx
   -> GooglePayload ctx
   -> Signature "RS256" ctx
@@ -52,7 +52,7 @@ zkLoginNoSig jHeader jPayload _ amount recipient _ pi = piValid
 exampleZkLoginNoSig
   :: forall ctx
    . RSA.RSA 2048 10328 ctx
-  => TokenBits (GooglePayload ctx)
+  => TokenBits GooglePayload ctx
   => TokenHeader ctx
   -> GooglePayload ctx
   -> Signature "RS256" ctx

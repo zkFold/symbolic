@@ -5,7 +5,6 @@ module ZkFold.Algebra.EllipticCurve.Ed25519 (
   Ed25519_Base,
   Ed25519_Scalar,
   Ed25519_Point,
-  Ed25519_PointOf,
   Fl,
   Fq,
 ) where
@@ -26,9 +25,7 @@ type Ed25519_Base = 578960446186580977117854925043439539266349923328202820197287
 
 instance Prime Ed25519_Base
 
-type Ed25519_PointOf baseField = TwistedEdwards "ed25519" (AffinePoint baseField)
-
-type Ed25519_Point = Ed25519_PointOf Fq
+type Ed25519_Point = TwistedEdwards "ed25519" (AffinePoint Fq)
 
 type Fl = Zp Ed25519_Scalar
 

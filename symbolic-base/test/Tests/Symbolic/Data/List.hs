@@ -11,7 +11,6 @@ import Test.Hspec (Spec, describe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary)
 import Text.Show (Show)
-import ZkFold.Symbolic.Data.Morph
 
 import ZkFold.Algebra.Class (one)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
@@ -25,6 +24,7 @@ import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.List (List, emptyList, foldr, head, lSize, tail, (.:))
 import ZkFold.Symbolic.Fold (SymbolicFold)
+import ZkFold.Symbolic.Data.Vec (Vec(runVec))
 
 headTest :: Symbolic c => FieldElement c -> FieldElement c -> Bool c
 headTest x y = head (x .: y .: emptyList) == x
@@ -36,24 +36,24 @@ foldrTest :: forall c. SymbolicFold c => FieldElement c -> FieldElement c -> Boo
 foldrTest x y = lSize r == lSize l
  where
   l = x .: y .: emptyList
-  r = foldr (Morph \(a :: FieldElement s, b :: List s (FieldElement s)) -> a .: b) (emptyList @c @(FieldElement c)) l
+  r = foldr (.:) (emptyList @c @FieldElement) l
 
-headFun :: Symbolic c => List c (FieldElement c) -> FieldElement c
+headFun :: Symbolic c => List FieldElement c -> FieldElement c
 headFun = head
 
 specList' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
 specList' = describe "List spec" $ do
   let _headChecks =
         -- compile-time test
-        acOutput $ acContext (compile @a headFun)
+        acOutput $ acContext $ runVec (compile @a headFun)
   prop "Head works fine" $ \x y ->
-    eval1 (compile @a headTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (runVec $ compile @a headTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
   prop "Tail works fine" $ \x y ->
-    eval1 (compile @a tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (runVec $ compile @a tailTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
   prop "Foldr works fine" $ \x y ->
-    eval1 (compile @a foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
+    eval1 (runVec $ compile @a foldrTest) ((U1 :*: U1 :*: U1) :*: Par1 x :*: Par1 y :*: U1)
       Haskell.== one
 
 specList :: Spec

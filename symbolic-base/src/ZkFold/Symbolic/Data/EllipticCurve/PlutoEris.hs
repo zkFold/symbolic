@@ -9,7 +9,7 @@ import Prelude (fromInteger, ($))
 import qualified Prelude
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.PlutoEris (PlutoEris_p, PlutoEris_q)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class
@@ -17,12 +17,11 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 
-type Pluto_Point ctx =
-  Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_p 'Auto ctx))
+type Pluto_Point = Point (Weierstrass "Pluto-Eris") (FFA PlutoEris_p 'Auto)
 
-type Eris_Point ctx =
-  Weierstrass "Pluto-Eris" (Point (FFA PlutoEris_q 'Auto ctx))
+type Eris_Point = Point (Weierstrass "Pluto-Eris") (FFA PlutoEris_q 'Auto)
 
 instance
   ( Symbolic ctx

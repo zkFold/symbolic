@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Hash (specHash) where
@@ -22,16 +23,17 @@ import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
+import ZkFold.Symbolic.Data.Vec (Vec(runVec))
 
 instance Symbolic c => Hashable (FieldElement c) (FieldElement c) where
   hasher _ = zero
 
 hashTest :: forall c. Symbolic c => FieldElement c -> Bool c
-hashTest e = preimage @(FieldElement c) (hash e) == e
+hashTest e = preimage @FieldElement (hash e) == e
 
 specHash' :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Spec
 specHash' = describe "Hash spec" $ prop "Preimage works fine" $ \x ->
-  eval1 (compile @a hashTest) ((U1 :*: U1) :*: Par1 x :*: U1) Haskell.== one
+  eval1 (runVec $ compile @a hashTest) ((U1 :*: U1) :*: Par1 x :*: U1) Haskell.== one
 
 specHash :: Spec
 specHash = specHash' @(Zp BLS12_381_Scalar)

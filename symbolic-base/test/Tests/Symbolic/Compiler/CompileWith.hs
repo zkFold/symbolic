@@ -25,6 +25,7 @@ import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Data.Bool ((&&))
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 testFunction :: Symbolic c => ByteString 256 c -> ByteString 256 c -> ByteString 256 c
 testFunction = (&&)
@@ -42,7 +43,7 @@ specCompileWith :: forall a. (Arbitrary a, Arithmetic a, Binary a, Show a) => Sp
 specCompileWith = describe "CompileWith specification" $ do
   prop "Guessing with payload is constant in input" $
     let circuit =
-          compileWith @a
+          runVec $ compileWith @a
             (guessOutput toPair)
             (\(p :*: q) -> (U1 :*: U1 :*: U1, p :*: q :*: U1))
             testFunction

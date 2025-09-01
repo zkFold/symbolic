@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE BlockArguments #-}
 
 module ZkFold.Algebra.EllipticCurve.Class (
   -- * curve classes
@@ -33,7 +34,7 @@ module ZkFold.Algebra.EllipticCurve.Class (
   Project (..),
 ) where
 
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData, NFData1)
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Kind (Type)
 import Data.String (fromString)
@@ -48,6 +49,11 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
+import Data.Functor (Functor)
+import Data.Semialign (Zip (..), Semialign (..))
+import Data.These (These(..))
+import Data.Traversable (Traversable)
+import Data.Foldable (Foldable)
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
@@ -641,9 +647,11 @@ data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   }
-  deriving (Generic, Prelude.Eq)
+  deriving (Functor, Foldable, Traversable, Generic, Generic1, Prelude.Eq)
 
 deriving instance NFData field => NFData (AffinePoint field)
+
+deriving instance NFData1 AffinePoint
 
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 
@@ -653,3 +661,9 @@ instance Prelude.Show field => Prelude.Show (AffinePoint field) where
   show (AffinePoint x y) =
     Prelude.mconcat
       ["(", Prelude.show x, ", ", Prelude.show y, ")"]
+
+instance Semialign AffinePoint where
+  alignWith f = zipWith \a b -> f (These a b)
+
+instance Zip AffinePoint where
+  zipWith f (AffinePoint x y) (AffinePoint z w) = AffinePoint (f x z) (f y w)

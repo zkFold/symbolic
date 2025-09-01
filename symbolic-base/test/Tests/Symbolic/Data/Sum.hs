@@ -1,6 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeOperators #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Sum (specSum) where
@@ -12,8 +15,7 @@ import Data.Maybe (Maybe)
 import Data.Proxy (Proxy)
 import Data.Semigroup ((<>))
 import Data.Typeable (Typeable)
-import Data.Void (Void)
-import GHC.Generics (Generic, Rep)
+import GHC.Generics (Generic, Rep, (:+:)(..), V1)
 import Test.Hspec (Spec, describe)
 import qualified Test.QuickCheck as Q
 import Test.QuickCheck.Instances ()
@@ -31,9 +33,20 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Sum
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Data.Class (SymbolicData(HasRep))
+import Data.Void (absurd)
+import Data.Tuple (Solo)
 
-instance {-# OVERLAPPING #-} Q.Arbitrary a => Q.Arbitrary (Either a Void) where
-  arbitrary = Left <$> Q.arbitrary
+instance {-# OVERLAPPING #-} Q.Arbitrary (f a) => Q.Arbitrary ((f :+: V1) a) where
+  arbitrary = L1 <$> Q.arbitrary
+
+instance (Q.Arbitrary (f a), Q.Arbitrary (g a)) => Q.Arbitrary ((f :+: g) a) where
+  arbitrary = Q.oneof [L1 <$> Q.arbitrary, R1 <$> Q.arbitrary]
+
+instance Q.Function (V1 a) where
+  function = Q.functionMap (\case) absurd
+
+instance (Q.Function (f a), Q.Function (g a)) => Q.Function ((f :+: g) a)
 
 instance Arithmetic a => Q.Function (FieldElement (Interpreter a)) where
   function = Q.functionMap (toConstant . toConstant) fromConstant
@@ -46,6 +59,11 @@ instance
   => Q.Function (UInt n r (Interpreter a))
   where
   function = Q.functionMap toConstant fromConstant
+
+instance Q.CoArbitrary (V1 a) where
+  coarbitrary x = case x of
+
+instance (Q.CoArbitrary (f a), Q.CoArbitrary (g a)) => Q.CoArbitrary ((f :+: g) a)
 
 instance Arithmetic a => Q.CoArbitrary (FieldElement (Interpreter a)) where
   coarbitrary = Q.coarbitrary . toConstant . toConstant
@@ -61,24 +79,27 @@ instance
 
 specOneOf'
   :: forall a ts
-   . ( Show a
+   . ( Arithmetic a
+     , Show a
      , Typeable a
      , Q.Arbitrary a
      , Typeable ts
-     , Embed ts (Interpreter a)
-     , Show (Eithers ts)
-     , Q.Arbitrary (Eithers ts)
-     , Q.CoArbitrary (Eithers ts)
-     , Q.Function (Eithers ts)
+     , Embed ts
+     , HasRep (Product ts) (Interpreter a)
+     , Show (Eithers ts (Interpreter a))
+     , Q.Arbitrary (Eithers ts (Interpreter a))
+     , Q.CoArbitrary (Eithers ts (Interpreter a))
+     , Q.Function (Eithers ts (Interpreter a))
      )
   => Spec
 specOneOf' = describe (show (typeAt @(OneOf ts (Interpreter a))) <> " spec") do
   it "preserves sum" \(Q.Fn f) e ->
-    matchOneOf @(FieldElement (Interpreter a)) @ts (embedOneOf e) f Q.=== f e
+    matchOneOf @FieldElement @ts @(Interpreter a) (embedOneOf e) f Q.=== f e
 
 specSumOf'
   :: forall a t
-   . ( Show a
+   . ( Arithmetic a
+     , Show a
      , Typeable a
      , Q.Arbitrary a
      , Generic t
@@ -104,14 +125,10 @@ specOneOf
      )
   => Spec
 specOneOf = do
-  specOneOf' @a @'[FieldElement (Interpreter a)]
-  specOneOf' @a @'[Proxy (Interpreter a), FieldElement (Interpreter a)]
-  specOneOf' @a @'[FieldElement (Interpreter a), ByteString 16 (Interpreter a)]
-  specOneOf' @a
-    @'[ ByteString 16 (Interpreter a)
-      , FieldElement (Interpreter a)
-      , UInt 32 Auto (Interpreter a)
-      ]
+  specOneOf' @a @'[FieldElement]
+  specOneOf' @a @'[Proxy, FieldElement]
+  specOneOf' @a @'[FieldElement, ByteString 16]
+  specOneOf' @a @'[ByteString 16, FieldElement, UInt 32 Auto]
 
 data OneOf3 c = BS (ByteString 16 c) | FE (FieldElement c) | UD (UInt 32 Auto c)
   deriving (Generic, Show)
@@ -127,7 +144,7 @@ specSumOf
   :: forall a
    . (Arithmetic a, Show a, Typeable a, Q.Arbitrary a, KnownNat (NumberOfRegisters a 32 Auto)) => Spec
 specSumOf = do
-  specSumOf' @a @(FieldElement (Interpreter a))
+  specSumOf' @a @(Solo (FieldElement (Interpreter a)))
   specSumOf' @a @(Maybe (FieldElement (Interpreter a)))
   specSumOf' @a @(Either (FieldElement (Interpreter a)) (ByteString 16 (Interpreter a)))
   specSumOf' @a @(OneOf3 (Interpreter a))

@@ -37,7 +37,7 @@ main = do
   let a = fromConstant @Natural 0 :: FFA Ed25519_Scalar Auto A
   --  let b = fromConstant @Natural 1 :: FFA Ed25519_Scalar A
   print a
-  let (FFA (FieldElement nx) (UInt ux)) = a ^ (100000 :: Natural)
+  let (FFA (FieldElement nx) (UIntFFA (UInt ux))) = a ^ (100000 :: Natural)
   --  let (FFA ap) = (scale (100000 :: Natural) a)
   print $ exec nx
   print $ exec ux

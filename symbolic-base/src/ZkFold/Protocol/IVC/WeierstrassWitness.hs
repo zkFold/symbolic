@@ -85,18 +85,19 @@ instance
 instance
   ( Symbolic ctx
   , BoolType b
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   )
   => Conditional b (WeierstrassWitness ctx)
   where
-  bool (WeierstrassWitness p1) (WeierstrassWitness p2) b =
-    WeierstrassWitness (bool p1 p2 b)
+  bool (WeierstrassWitness (Weierstrass p1))
+       (WeierstrassWitness (Weierstrass p2)) b =
+    WeierstrassWitness $ Weierstrass (bool p1 p2 b)
 
 instance
   ( Symbolic ctx
   , Conditional b (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   )
   => AdditiveSemigroup (WeierstrassWitness ctx)
@@ -110,7 +111,7 @@ instance Symbolic ctx => Zero (WeierstrassWitness ctx) where
 instance
   ( Symbolic ctx
   , Conditional b (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , Scale Natural (WeierstrassWitness ctx)
   )
@@ -119,7 +120,7 @@ instance
 instance
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , Scale Natural (WeierstrassWitness ctx)
@@ -134,7 +135,7 @@ instance
   {-# OVERLAPPING #-}
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   )
@@ -147,7 +148,7 @@ instance
   {-# OVERLAPPING #-}
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   )
@@ -168,7 +169,7 @@ instance
 instance
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , Scale Natural (WeierstrassWitness ctx)
@@ -187,7 +188,7 @@ instance
 instance
   ( Symbolic ctx
   , Conditional (BooleanOf (IntegralOf (WitnessField ctx))) (IntegralOf (WitnessField ctx))
-  , Conditional b (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
+  , Conditional b (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))))
   , Conditional b b
   , b ~ BooleanOf (IntegralOf (WitnessField ctx))
   , w ~ FieldElement ctx

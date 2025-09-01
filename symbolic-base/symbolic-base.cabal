@@ -247,6 +247,7 @@ library
       ZkFold.Symbolic.Data.EllipticCurve.Pasta
       ZkFold.Symbolic.Data.EllipticCurve.PlutoEris
       ZkFold.Symbolic.Data.EllipticCurve.Point
+      ZkFold.Symbolic.Data.EllipticCurve.Point.Affine
       ZkFold.Symbolic.Data.EllipticCurve.Secp256k1
       ZkFold.Symbolic.Data.FFA
       ZkFold.Symbolic.Data.FieldElement
