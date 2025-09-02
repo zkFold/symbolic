@@ -3,8 +3,7 @@
 module Tests.Symbolic.Compiler (specCompiler) where
 
 import Data.Function (id, ($))
-import Data.Proxy (Proxy)
-import GHC.Generics ((:*:))
+import GHC.Generics ((:*:), U1)
 import Test.Hspec (Spec, describe)
 
 import Tests.Symbolic.Compiler.CompileWith (specCompileWith)
@@ -26,6 +25,6 @@ specCompiler = do
   describe "Compiler specification" $ do
     let _ =
           -- compile-time test
-          compileIO @A "ex" $ id @((FieldElement :*: Proxy :*: UInt 32 Auto) C)
+          compileIO @A "ex" $ id @((FieldElement :*: U1 :*: UInt 32 Auto) C)
     specCompileWith @A
     specOptimization @A

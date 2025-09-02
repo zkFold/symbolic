@@ -30,26 +30,24 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 ------------------------------ Product & Eithers -------------------------------
 
 type family Product ts where
-  Product '[] = Proxy
+  Product '[] = G.U1
   Product (t : ts) = t G.:*: Product ts
 
 type family Eithers ts where
   Eithers '[] = G.V1
   Eithers (t : ts) = t G.:+: Eithers ts
 
-class SymbolicData (Product ts) => Embed ts where
-  embed
-    :: (HasRep (Product ts) c, Symbolic c)
-    => Proxy ts -> Eithers ts c -> Product ts c
+class (SymbolicData (Product ts), HasRep (Product ts) c) => Embed ts c where
+  embed :: Symbolic c => Proxy ts -> Eithers ts c -> Product ts c
   indexOf :: Proxy ts -> Eithers ts c -> Natural
   enum :: Proxy ts -> Product ts c -> [Eithers ts c]
 
-instance Embed '[] where
+instance Embed '[] c where
   embed _ = \case {}
   indexOf _ = \case {}
   enum _ = const []
 
-instance (SymbolicData t, Embed ts) => Embed (t ': ts) where
+instance (SymbolicData t, HasRep t c, Embed ts c) => Embed (t ': ts) c where
   embed _ = \case
     G.L1 x -> x G.:*: dummy
     G.R1 x -> dummy G.:*: embed @ts Proxy x
@@ -73,15 +71,12 @@ instance SymbolicInput (Product ts) => SymbolicInput (OneOf ts)
 instance (Symbolic c, SymbolicEq (Product ts) c) => Eq (OneOf ts c)
 
 embedOneOf
-  :: forall ts c
-   . (Embed ts, HasRep (Product ts) c, Symbolic c)
-  => Eithers ts c -> OneOf ts c
-embedOneOf =
-  OneOf <$> fromConstant . indexOf @ts @c Proxy <*> embed @ts @c Proxy
+  :: forall ts c. (Embed ts c, Symbolic c) => Eithers ts c -> OneOf ts c
+embedOneOf = OneOf <$> fromConstant . indexOf @ts Proxy <*> embed @ts Proxy
 
 matchOneOf
   :: forall r ts c
-   . (Embed ts, SymbolicData r, HasRep r c, Symbolic c)
+   . (Embed ts c, SymbolicData r, HasRep r c, Symbolic c)
   => OneOf ts c
   -> (Eithers ts c -> r c)
   -> r c
@@ -93,46 +88,24 @@ matchOneOf OneOf {..} f =
     [] -> dummy
     (b : bs) -> interpolate (b :| bs) (fromFieldElement discriminant)
 
------------------------------- Nested Product type family ----------------------
-
-class (SymbolicData (NP f), HasRep (NP f) c) => Produces f c where
-  type NP f :: Ctx -> Type
-  produce :: f u -> NP f c
-  utilize :: NP f c -> f u
-
-instance (Produces f c, Produces g c) => Produces (f G.:*: g) c where
-  type NP (f G.:*: g) = NP f G.:*: NP g
-  produce (f G.:*: g) = produce f G.:*: produce g
-  utilize (x G.:*: y) = utilize x G.:*: utilize y
-
-instance Produces G.U1 c where
-  type NP G.U1 = Proxy
-  produce _ = Proxy
-  utilize _ = G.U1
-
-instance (SymbolicData a, HasRep a c) => Produces (G.M1 G.S u (G.K1 v (a c))) c where
-  type NP (G.M1 G.S u (G.K1 v (a c))) = a
-  produce (G.M1 (G.K1 a)) = a
-  utilize = G.M1 . G.K1
-
 ---------------- Sum-of-Products form of a Symbolic datatype -------------------
 
-class (Embed (SOP f '[]), HasRep (Product (SOP f '[])) c) => Injects f c where
+class Embed (SOP f '[]) c => Injects f c where
   type SOP f (acc :: [Ctx -> Type]) :: [Ctx -> Type]
-  sumFrom :: f u -> Proxy ts -> Eithers (SOP f ts) c
+  sumFrom :: f c -> Proxy ts -> Eithers (SOP f ts) c
   sumSkip :: Proxy '(ts, f) -> Eithers ts c -> Eithers (SOP f ts) c
-  sumTo :: Proxy ts -> Eithers (SOP f ts) c -> Either (f u) (Eithers ts c)
+  sumTo :: Proxy ts -> Eithers (SOP f ts) c -> Either (f c) (Eithers ts c)
 
-sopify :: forall c f u. Injects f c => f u -> Eithers (SOP f '[]) c
-sopify f = sumFrom @_ @c f (Proxy @'[])
+sopify :: Injects f c => f c -> Eithers (SOP f '[]) c
+sopify f = sumFrom f (Proxy @'[])
 
-desop :: forall c f u. Injects f c => Eithers (SOP f '[]) c -> f u
+desop :: Injects f c => Eithers (SOP f '[]) c -> f c
 desop = either id (\case {}) . sumTo (Proxy @'[])
 
 instance
   ( Injects f c
   , Injects g c
-  , Embed (SOP f (SOP g '[]))
+  , Embed (SOP f (SOP g '[])) c
   , HasRep (Product (SOP f (SOP g '[]))) c
   )
   => Injects (f G.:+: g) c
@@ -156,19 +129,19 @@ instance Injects f c => Injects (G.M1 G.D u f) c where
   type SOP (G.M1 G.D u f) acc = SOP f acc
   sumFrom (G.M1 f) = sumFrom f
   sumSkip (_ :: Proxy '(ts, g)) = sumSkip $ Proxy @'(ts, f)
-  sumTo p = first G.M1 . sumTo @f p
+  sumTo p = first G.M1 . sumTo p
 
-instance Produces f c => Injects (G.M1 G.C u f) c where
-  type SOP (G.M1 G.C u f) acc = NP f ': acc
-  sumFrom (G.M1 f) _ = G.L1 (produce f)
+instance (SymbolicData f, HasRep f c) => Injects (G.M1 G.C u f) c where
+  type SOP (G.M1 G.C u f) acc = f ': acc
+  sumFrom (G.M1 f) _ = G.L1 f
   sumSkip _ = G.R1
   sumTo _ = \case
-    G.L1 x -> Left $ G.M1 (utilize x)
+    G.L1 x -> Left $ G.M1 x
     G.R1 x -> Right x
 
 ----------------------------- Sum wrapper datatype -----------------------------
 
-type Cons a = SOP (G.Rep a) '[]
+type Cons a = SOP (G.Rep1 a) '[]
 
 type Prod a = Product (Cons a)
 
@@ -180,12 +153,10 @@ deriving newtype instance SymbolicInput (Prod a) => SymbolicInput (Sum a)
 
 deriving newtype instance (SymbolicEq (Prod a) c, Symbolic c) => Eq (Sum a c)
 
-inject
-  :: forall a c. (Generic a, Injects (G.Rep a) c, Symbolic c) => a -> Sum a c
-inject = Sum . embedOneOf . sopify @c . G.from
+inject :: (Generic1 a, Injects (G.Rep1 a) c, Symbolic c) => a c -> Sum a c
+inject = Sum . embedOneOf . sopify . G.from1
 
 match
-  :: forall a r c
-   . (SymbolicData r, HasRep r c, Generic a, Injects (G.Rep a) c, Symbolic c)
-  => Sum a c -> (a -> r c) -> r c
-match Sum {..} f = matchOneOf sumOf (f . G.to . desop)
+  :: (Generic1 a, SymbolicData r, HasRep r c, Injects (G.Rep1 a) c, Symbolic c)
+  => Sum a c -> (a c -> r c) -> r c
+match Sum {..} f = matchOneOf sumOf (f . G.to1 . desop)

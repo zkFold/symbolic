@@ -235,7 +235,7 @@ mapWithCtx
      , SymbolicFold c
      )
   => g c
-  -> (forall d. SymbolicFold d => g d -> x d -> y d)
+  -> (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => g d -> x d -> y d)
   -> List x c
   -> List y c
 mapWithCtx g f =

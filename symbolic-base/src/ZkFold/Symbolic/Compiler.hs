@@ -15,7 +15,6 @@ import Data.Functor (fmap)
 import Data.Functor.Rep (Rep)
 import Data.Kind (Type)
 import Data.List ((++))
-import Data.Proxy (Proxy)
 import Data.Tuple (swap)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (Par1), U1 (..), (:*:) (..))
@@ -66,7 +65,7 @@ instance
 
 instance (SymbolicData x, Symbolic c) => SymbolicFunction (x c) where
   type Context (x c) = c
-  type Domain (x c) = Proxy
+  type Domain (x c) = U1
   type Range (x c) = x
   apply x _ = x
 

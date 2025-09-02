@@ -3,6 +3,7 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE MonoLocalBinds #-}
 
 import Control.Monad (return)
 import Data.ByteString qualified as B
@@ -19,7 +20,7 @@ import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary, Property, property, (===))
 import Test.QuickCheck.Instances ()
 import Text.Show (Show)
-import ZkFold.Algebra.Class (zero)
+import ZkFold.Algebra.Class (zero, Order)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (eval)
@@ -27,7 +28,7 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (false, true)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (..), RepData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import Prelude (either, error, id, (.), type (~))
 
@@ -35,26 +36,27 @@ import ZkFold.Symbolic.UPLC.Converter (contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Constant
 import ZkFold.UPLC.Term
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 areSame
   :: forall a x y
    . ( a ~ Zp BLS12_381_Scalar
      , SymbolicInput x
+     , HasRep x (CircuitContext a)
+     , RepData x (CircuitContext a)
      , SymbolicData y
-     , Context x ~ CircuitContext a
-     , Context y ~ CircuitContext a
-     , Eq (Layout y a)
-     , Arbitrary (Layout x a)
-     , Show (Layout y a)
-     , Show (Layout x a)
+     , Eq (Layout y (Order a) a)
+     , Arbitrary (Layout x (Order a) a)
+     , Show (Layout y (Order a) a)
+     , Show (Layout x (Order a) a)
      )
-  => (Term -> x -> y)
+  => (Term -> x (CircuitContext a) -> y (CircuitContext a))
   -> Term
-  -> (x -> y)
+  -> (x (CircuitContext a) -> y (CircuitContext a))
   -> Property
 areSame v t f =
-  let acT = compile (v t)
-      acF = compile f
+  let acT = runVec $ compile (v t)
+      acF = runVec $ compile f
       p = tabulate (const zero)
    in property $ \i -> eval acT (p :*: i) === eval acF (p :*: i)
 

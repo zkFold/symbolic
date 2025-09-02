@@ -18,7 +18,6 @@ import Data.Semialign (Semialign, Zip, zipWith)
 import Data.Traversable (Traversable)
 import Data.Tuple (curry)
 import Data.Type.Equality (type (~))
-import Data.Typeable (Proxy (..))
 import qualified GHC.Generics as G
 
 import ZkFold.Algebra.Class (Order, zero)
@@ -138,15 +137,15 @@ withoutConstraints x = restore (embedW $ witnessF $ arithmetize x, payload x)
 dummy :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => x c
 dummy = restore (embed (pureRep zero), pureRep zero)
 
-instance SymbolicData Proxy where
-  type Layout Proxy _ = G.U1
-  type Payload Proxy _ = G.U1
-  type HasRep Proxy _ = ()
+instance SymbolicData G.U1 where
+  type Layout G.U1 _ = G.U1
+  type Payload G.U1 _ = G.U1
+  type HasRep G.U1 _ = ()
 
   arithmetize _ = hpure G.U1
   payload _ = G.U1
-  interpolate _ _ = Proxy
-  restore _ = Proxy
+  interpolate _ _ = G.U1
+  restore _ = G.U1
 
 instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
   type Layout (x G.:*: y) n = Layout x n G.:*: Layout y n

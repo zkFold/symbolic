@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.UPLC.Fun (Fun (..)) where
 
@@ -8,19 +9,20 @@ import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.UPLC.BuiltinType
+import ZkFold.Symbolic.Data.Class (HasRep)
 
 -- | Symbolic function of a definite UPLC signature.
 data Fun (s :: [BuiltinType]) (t :: BuiltinType) c where
   -- | Fully applied (saturated) function.
-  FSat :: IsData t v c => Symbolic.Maybe c v -> Fun '[] t c
+  FSat :: (IsData t v, HasRep v c) => Symbolic.Maybe v c -> Fun '[] t c
   -- | A function which returns another (possibly saturated) function.
-  FLam :: IsData s v c => (v -> Fun ss t c) -> Fun (s ': ss) t c
+  FLam :: IsData s v => (v c -> Fun ss t c) -> Fun (s ': ss) t c
 
-instance IsData t v c => FromConstant (Symbolic.Maybe c v) (Fun '[] t c) where
+instance (IsData t v, HasRep v c) => FromConstant (Symbolic.Maybe v c) (Fun '[] t c) where
   fromConstant = FSat
 
 instance
-  (IsData s v c, FromConstant f (Fun ss t c))
-  => FromConstant (v -> f) (Fun (s ': ss) t c)
+  (IsData s v, FromConstant f (Fun ss t c))
+  => FromConstant (v c -> f) (Fun (s ': ss) t c)
   where
   fromConstant f = FLam (fromConstant . f)

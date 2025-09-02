@@ -6,7 +6,6 @@ module ZkFold.Symbolic.Data.Input (
 ) where
 
 import Data.Semialign (Zip)
-import Data.Typeable (Proxy)
 import qualified GHC.Generics as G
 import Prelude (($), (.))
 
@@ -36,7 +35,7 @@ instance SymbolicInput Bool where
 instance LayoutFunctor f => SymbolicInput (Vec f) where
   isValid _ = true
 
-instance SymbolicInput Proxy where
+instance SymbolicInput G.U1 where
   isValid _ = true
 
 instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where

@@ -15,12 +15,12 @@ import Data.Function (const, flip, ($), (.))
 import Data.List (concatMap, map, null, (++))
 import Data.Maybe (Maybe (..), fromJust, listToMaybe)
 import Data.Ord ((<))
-import Data.Proxy (Proxy (..))
 import Data.Text (unpack)
 import Data.Traversable (traverse)
 import Data.Typeable (cast)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.EllipticCurve.Class (Weierstrass (..))
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq qualified as Symbolic
@@ -51,6 +51,8 @@ import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Constant
 import ZkFold.UPLC.Data
 import ZkFold.UPLC.Term
+import GHC.Generics (U1 (..), type (:*:) (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData(HasRep))
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -64,7 +66,8 @@ import ZkFold.UPLC.Term
 -- should yield a value of a builtin type.
 --
 -- We encode this with a Symbolic 'Maybe' of an arbitrary 'IsData'.
-data MaybeValue c = forall t v. IsData t v c => MaybeValue (Symbolic.Maybe c v)
+data MaybeValue c =
+  forall t v. (IsData t v, HasRep v c) => MaybeValue (Symbolic.Maybe v c)
 
 -- | Evaluation function.
 --
@@ -74,7 +77,7 @@ data MaybeValue c = forall t v. IsData t v c => MaybeValue (Symbolic.Maybe c v)
 eval :: forall c. Sym c => Term -> [ExValue c] -> MaybeValue c
 eval t args = case impl [] t $ map aValue args of
   Just v -> v
-  Nothing -> MaybeValue (Symbolic.nothing :: Symbolic.Maybe c (Proxy c))
+  Nothing -> MaybeValue (Symbolic.nothing :: Symbolic.Maybe U1 c)
 
 -- | Type actually used inside Converter to represent evaluation result.
 --
@@ -188,7 +191,8 @@ aValue (ExValue v) = AThunk . Right . Just $ MaybeValue (Symbolic.just v)
 -- 1. given an argument, try to convert to the correct type;
 -- 2. go further.
 applyMono :: Sym c => Bool c -> Fun s t c -> [SomeValue c] -> SomeValue c
-applyMono b (FSat x) [] = Just $ MaybeValue (bool Symbolic.nothing x b)
+applyMono b (FSat x) [] =
+  Just $ MaybeValue (bool Symbolic.nothing x b)
 applyMono _ (FSat _) (_ : _) = Nothing
 applyMono _ (FLam _) [] = Nothing
 applyMono b (FLam f) (v : args) = do
@@ -219,7 +223,7 @@ applyPoly :: forall c s t. Sym c => Env c -> BuiltinPolyFunction s t -> [Arg c] 
 applyPoly ctx IfThenElse (ct : tt : et : args) = do
   MaybeValue c0 <- evalArg ctx ct []
   withArms (evalArg ctx tt args) (evalArg ctx et args) $ \t e0 -> do
-    c :: Symbolic.Maybe c (Bool c) <- cast c0
+    c :: Symbolic.Maybe Bool c <- cast c0
     e <- cast e0
     return $ MaybeValue (Symbolic.maybe Symbolic.nothing (bool e t) c)
 applyPoly ctx ChooseUnit (_ : t : args) = evalArg ctx t args
@@ -258,10 +262,10 @@ applyPoly ctx (BPFList NullList) [xs0] = do
   ExList v <- asList (Symbolic.fromJust p)
   return $ MaybeValue (symMaybe p (L.null v))
 applyPoly ctx ChooseData (dt : c0 : m0 : l0 : i0 : b0 : args) = do
-  MaybeValue (cast -> Just (dv :: Symbolic.Maybe c (Data.Data c))) <- evalArg ctx dt []
+  MaybeValue (cast -> Just (dv :: Symbolic.Maybe Data.Data c)) <- evalArg ctx dt []
   let brs0 = map (\x -> evalArg ctx x args) [c0, m0, l0, i0, b0]
-  MaybeValue (_ :: Symbolic.Maybe c d) <- listToMaybe (concatMap toList brs0)
-  [cv, mv, lv, iv, bv :: Symbolic.Maybe c d] <- traverse (>>= \(MaybeValue v) -> cast v) brs0
+  MaybeValue (_ :: Symbolic.Maybe d c) <- listToMaybe (concatMap toList brs0)
+  [cv, mv, lv, iv, bv :: Symbolic.Maybe d c] <- traverse (>>= \(MaybeValue v) -> cast v) brs0
   return $
     MaybeValue $
       flip (Symbolic.maybe Symbolic.nothing) dv $
@@ -279,8 +283,8 @@ withArms
   => SomeValue c
   -> SomeValue c
   -> ( forall s t u v
-        . (IsData s u c, IsData t v c)
-       => Symbolic.Maybe c u -> Symbolic.Maybe c v -> Maybe r
+        . (IsData s u, HasRep u c, IsData t v, HasRep v c)
+       => Symbolic.Maybe u c -> Symbolic.Maybe v c -> Maybe r
      )
   -> Maybe r
 withArms (Just (MaybeValue t)) (Just (MaybeValue e0)) f = f t e0
@@ -289,14 +293,14 @@ withArms Nothing (Just (MaybeValue @_ @_ @v e0)) f = f (Symbolic.nothing @v) e0
 withArms Nothing Nothing _ = Nothing
 
 -- | Helper function.
-symMaybe :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> t -> Symbolic.Maybe c t
+symMaybe :: (Sym c, IsData d t, HasRep t c) => Symbolic.Maybe u c -> t c -> Symbolic.Maybe t c
 symMaybe b v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b)
 
-symMaybe2 :: (Sym c, IsData d t c) => Symbolic.Maybe c u -> Symbolic.Maybe c w -> t -> Symbolic.Maybe c t
+symMaybe2 :: (Sym c, IsData d t, HasRep t c) => Symbolic.Maybe u c -> Symbolic.Maybe w c -> t c -> Symbolic.Maybe t c
 symMaybe2 b1 b2 v = bool Symbolic.nothing (Symbolic.just v) (Symbolic.isJust b1 && Symbolic.isJust b2)
 
 -- | Some Symbolic value of a definite UPLC builtin type.
-data SymValue t c = forall v. IsData t v c => SymValue v
+data SymValue t c = forall v. (IsData t v, HasRep v c) => SymValue (v c)
 
 -- | Given a UPLC constant, evaluate it as a corresponding Symbolic value.
 -- Types would not let you go (terribly) wrong!
@@ -305,7 +309,7 @@ evalConstant (CBool b) = SymValue (if b then true else false)
 evalConstant (CInteger i) = withNumberOfRegisters @IntLength @Auto @(BaseField c) $ SymValue (fromConstant i)
 evalConstant (CByteString b) = SymValue (fromConstant b)
 evalConstant (CString s) = SymValue (fromString $ unpack s)
-evalConstant (CUnit ()) = SymValue Proxy
+evalConstant (CUnit ()) = SymValue U1
 evalConstant (CData d) = SymValue (fromConstant d)
 evalConstant (CList []) = error "TODO: handle empty list constants"
 evalConstant (CList lst) =
@@ -317,13 +321,13 @@ evalConstant (CG2 _) = error "TODO: add proper G2 support"
 
 -- | Useful helper function.
 pair :: Sym c => SymValue t c -> SymValue u c -> SymValue (BTPair t u) c
-pair (SymValue p) (SymValue q) = SymValue (p, q)
+pair (SymValue p) (SymValue q) = SymValue (p :*: q)
 
 makeSingleton :: Sym c => SymValue u c -> SymValue (BTList u) c
 makeSingleton (SymValue xs) = SymValue $ L.singleton xs
 
 consList :: forall c u. Sym c => SymValue u c -> SymValue (BTList u) c -> SymValue (BTList u) c
-consList (SymValue (x :: v)) (SymValue (xs :: vs)) =
+consList (SymValue (x :: v)) (SymValue (xs :: vs c)) =
   SymValue @_ @_ @vs . fromJust . cast $ x L..: fromJust (cast xs)
 
 -- | Given a tag and fields, evaluate them as an instance of UPLC Data type.
@@ -353,11 +357,11 @@ evalMono (BMFInteger fun) = case fun of
   ModInteger -> fromConstant \v w -> Symbolic.just @c (mod v w)
   QuotientInteger -> fromConstant \v w -> Symbolic.just @c (quot v w)
   RemainderInteger -> fromConstant \v w -> Symbolic.just @c (rem v w)
-  EqualsInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.== w)
-  LessThanInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.< w)
-  LessThanEqualsInteger -> fromConstant \v w -> Symbolic.just @c (v Symbolic.<= w)
-  IntegerToByteString -> fromConstant \b w (Int i) ->
-    Symbolic.guard
+  EqualsInteger -> FLam \v -> FLam \w -> FSat $ Symbolic.just @c (v Symbolic.== w)
+  LessThanInteger -> FLam \v -> FLam \w -> FSat $ Symbolic.just @c (v Symbolic.< w)
+  LessThanEqualsInteger -> FLam \v -> FLam \w -> FSat $ Symbolic.just @c (v Symbolic.<= w)
+  IntegerToByteString -> FLam \b -> FLam \w -> FLam \(Int i) ->
+    FSat $ Symbolic.guard
       (isNotNegative w)
       VarByteString
         { bsLength =
@@ -368,15 +372,15 @@ evalMono (BMFInteger fun) = case fun of
               let res = from i :: ByteString IntLength c
                in ifThenElse b res (reverseEndianness @8 res)
         }
-  ByteStringToInteger -> fromConstant \b (VarByteString _ bs) ->
-    Symbolic.just @c . Int . from @(ByteString IntLength c) . resize $
+  ByteStringToInteger -> FLam \b -> FLam \(VarByteString _ bs) ->
+    FSat $ Symbolic.just @c . Int . from @(ByteString IntLength c) . resize $
       ifThenElse b bs (reverseEndianness @8 bs)
 evalMono (BMFByteString fun) = case fun of
   AppendByteString -> fromConstant \v w -> Symbolic.just @c (v `app` w)
-  ConsByteString -> fromConstant \v w ->
+  ConsByteString -> FLam \v -> FLam \w ->
     let bu :: ByteString 8 c = dropN @8 @IntLength (from $ uint v)
-     in Symbolic.just @c $ dropZeros @BSLength (append w $ fromByteString bu)
-  SliceByteString -> fromConstant \(Int f) (Int t) (VarByteString l b) ->
+     in FSat $ Symbolic.just @c $ dropZeros @BSLength (append w $ fromByteString bu)
+  SliceByteString -> FLam \(Int f) -> FLam \(Int t) -> FLam \(VarByteString l b) ->
     let f' = from (resize f :: UInt (NumberOfBits (BaseField c)) Auto c)
         t' = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
         (fr, to) = (Symbolic.max f' zero, Symbolic.min (f' + t' - one) (l - one))
@@ -385,11 +389,11 @@ evalMono (BMFByteString fun) = case fun of
           shiftR
             (shiftL b (fromConstant (value @BSLength) - l + fr * fe8))
             (fromConstant (value @BSLength) - to * fe8)
-     in Symbolic.just @c (VarByteString to newB)
-  LengthOfByteString -> fromConstant \(VarByteString l _) ->
+     in FSat $ Symbolic.just @c (VarByteString to newB)
+  LengthOfByteString -> FLam \(VarByteString l _) ->
     let l' = resize (from l :: UInt (NumberOfBits (BaseField c)) Auto c)
-     in Symbolic.just @c $ div (Int l') (fromConstant (8 :: Natural))
-  IndexByteString -> fromConstant \(VarByteString l b) i@(Int t) ->
+     in FSat $ Symbolic.just @c $ div (Int l') (fromConstant (8 :: Natural))
+  IndexByteString -> FLam \(VarByteString l b) -> FLam \i@(Int t) ->
     let indexIn = (isNotNegative i && t Symbolic.< fromConstant (value @BSLength))
         fr = from (resize t :: UInt (NumberOfBits (BaseField c)) Auto c)
         fe8 = fromConstant (8 :: Natural) :: FieldElement c
@@ -397,44 +401,44 @@ evalMono (BMFByteString fun) = case fun of
           shiftR
             (shiftL b (fromConstant (value @BSLength) - l + fr * fe8))
             (fromConstant (value @BSLength) - fe8)
-     in bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn
+     in FSat $ bool Symbolic.nothing (Symbolic.just @c (Int . from $ truncate @_ @IntLength newB)) indexIn
   EqualsByteString -> fromConstant \v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w
-  LessThanByteString -> fromConstant \v w ->
-    Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.< from (bsBuffer w)
-  LessThanEqualsByteString -> fromConstant \v w ->
-    Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w)
+  LessThanByteString -> FLam \v -> FLam \w ->
+    FSat $ Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.< from (bsBuffer w)
+  LessThanEqualsByteString -> FLam \v -> FLam \w ->
+    FSat $ Symbolic.just @c $ (from (bsBuffer v) :: UInt BSLength Auto c) Symbolic.<= from (bsBuffer w)
 evalMono (BMFString fun) = case fun of
   AppendString -> fromConstant \v w -> Symbolic.just @c (v `app` w)
   EqualsString -> fromConstant \v w -> Symbolic.just @c $ bsBuffer v Symbolic.== bsBuffer w
   EncodeUtf8 -> fromConstant (Symbolic.just @c . dropZeros @BSLength)
   DecodeUtf8 -> fromConstant \(VarByteString l b) -> Symbolic.just @c $ VarByteString l (resize b)
 evalMono (BMFAlgorithm fun) = case fun of
-  SHA2_256 -> fromConstant \v ->
-    Symbolic.just @c
+  SHA2_256 -> FLam \v ->
+    FSat $ Symbolic.just @c
       VarByteString
         { bsLength = fromConstant (256 :: Natural)
         , bsBuffer = resize (sha2Var @"SHA256" v)
         }
-  SHA3_256 -> fromConstant \v ->
-    Symbolic.just @c
+  SHA3_256 -> FLam \v ->
+    FSat $ Symbolic.just @c
       VarByteString
         { bsLength = fromConstant (256 :: Natural)
         , bsBuffer = resize (keccakVar @"SHA3-256" v)
         }
-  Blake2b_224 -> fromConstant \v ->
-    Symbolic.just @c
+  Blake2b_224 -> FLam \v ->
+    FSat $ Symbolic.just @c
       VarByteString
         { bsLength = fromConstant (224 :: Natural)
         , bsBuffer = resize $ blake2b_224 (bsBuffer v)
         }
-  Blake2b_256 -> fromConstant \v ->
-    Symbolic.just @c
+  Blake2b_256 -> FLam \v ->
+    FSat $ Symbolic.just @c
       VarByteString
         { bsLength = fromConstant (256 :: Natural)
         , bsBuffer = resize $ blake2b_256 (bsBuffer v)
         }
-  VerifyEd25519Signature -> fromConstant \vk m s ->
-    Symbolic.guard
+  VerifyEd25519Signature -> FLam \vk -> FLam \m -> FLam \s ->
+    FSat $ Symbolic.guard
       ( bsLength vk
           Symbolic.== fromConstant (32 * 8 :: Natural)
           && bsLength s
@@ -443,16 +447,16 @@ evalMono (BMFAlgorithm fun) = case fun of
       (ecdsaVerifyVar (resize $ bsBuffer vk) m (resize $ bsBuffer s))
   VerifyEcdsaSecp256k1Signature -> error "TODO: verify ECDSA secp256k1 signature"
   VerifySchnorrSecp256k1Signature -> error "TODO: verify Schnorr secp256k1 signature"
-  Keccak_256 -> fromConstant \v ->
-    Symbolic.just @c
+  Keccak_256 -> FLam \v ->
+    FSat $ Symbolic.just @c
       VarByteString
         { bsLength = fromConstant (256 :: Natural)
         , bsBuffer = resize $ keccakVar @"Keccak256" v
         }
   Ripemd_160 -> error "TODO: RIPEMD-160"
 evalMono (BMFData fun) = case fun of
-  ConstrData -> fromConstant \(resize . uint -> t) f ->
-    Symbolic.just @c $ Data.foldData (Data.DConstrCell t f)
+  ConstrData -> FLam \(resize . uint -> t) -> FLam $
+    FSat . Symbolic.just @c . Data.foldData . Data.DConstrCell t
   MapData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DMapCell)
   ListData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DListCell)
   IData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DIntCell)
@@ -461,7 +465,7 @@ evalMono (BMFData fun) = case fun of
     fromConstant
       ( `Data.unfoldData`
           \case
-            Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t, f)
+            Data.DConstrCell (Int . resize -> t) f -> Symbolic.just @c (t :*: f)
             _ -> Symbolic.nothing
       )
   UnMapData ->
@@ -492,18 +496,19 @@ evalMono (BMFData fun) = case fun of
             Data.DBSCell bs -> Symbolic.just @c bs
             _ -> Symbolic.nothing
       )
-  EqualsData -> fromConstant \d e -> Symbolic.just @c (d Symbolic.== e)
-  MkPairData -> fromConstant \d e -> Symbolic.just @c (d, e)
-  MkNilData -> fromConstant $ const (Symbolic.just @c L.emptyList)
-  MkNilPairData -> fromConstant $ const (Symbolic.just @c L.emptyList)
+  EqualsData -> FLam \d -> FLam \e -> FSat $ Symbolic.just @c (d Symbolic.== e)
+  MkPairData -> fromConstant \d e -> Symbolic.just @c (d :*: e)
+  MkNilData -> FLam $ const $ FSat $ Symbolic.just @c L.emptyList
+  MkNilPairData -> FLam $ const $ FSat $ Symbolic.just @c L.emptyList
   SerializeData -> fromConstant (Symbolic.just @c . Data.serialiseData)
 evalMono (BMFCurve fun) = case fun of
   BLS_G1 fn -> case fn of
-    Bls12_381_G1_add -> fromConstant \p q -> Symbolic.just @c (p + q)
+    Bls12_381_G1_add -> FLam \p -> FLam \q ->
+      FSat $ Symbolic.just @c (p + q)
     Bls12_381_G1_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G1_scalarMul -> fromConstant \i p ->
       Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
-    Bls12_381_G1_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
+    Bls12_381_G1_equal -> FLam \p -> FLam \q -> FSat $ Symbolic.just @c (p Symbolic.== q)
     Bls12_381_G1_hashToGroup -> error "TODO: hash to G1"
     Bls12_381_G1_compress -> error "TODO: compress G1"
     Bls12_381_G1_uncompress -> error "TODO: uncompress G1"
@@ -512,7 +517,8 @@ evalMono (BMFCurve fun) = case fun of
     Bls12_381_G2_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G2_scalarMul -> fromConstant \i p ->
       Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
-    Bls12_381_G2_equal -> fromConstant \p q -> Symbolic.just @c (p Symbolic.== q)
+    Bls12_381_G2_equal -> FLam \p -> FLam \q ->
+      FSat $ Symbolic.just (p Symbolic.== q)
     Bls12_381_G2_hashToGroup -> error "TODO: hash to G2"
     Bls12_381_G2_compress -> error "TODO: compress G2"
     Bls12_381_G2_uncompress -> error "TODO: uncompress G2"
@@ -520,8 +526,8 @@ evalMono (BMFCurve fun) = case fun of
   Bls12_381_mulMlResult -> fromConstant \r s -> Symbolic.just @c (r + s)
   Bls12_381_finalVerify -> error "TODO: final verify"
 evalMono (BMFBitwise fun) = case fun of
-  AndByteString -> fromConstant \ext a b ->
-    Symbolic.just @c $
+  AndByteString -> FLam \ext -> FLam \a -> FLam \b ->
+    FSat $ Symbolic.just @c $
       ifThenElse
         ext
         ( let n = bsLength a `Symbolic.max` bsLength b
@@ -536,8 +542,8 @@ evalMono (BMFBitwise fun) = case fun of
           { bsLength = bsLength a `Symbolic.min` bsLength b
           , bsBuffer = bsBuffer a && bsBuffer b
           }
-  OrByteString -> fromConstant \ext a b ->
-    Symbolic.just @c $
+  OrByteString -> FLam \ext -> FLam \a -> FLam \b ->
+    FSat $ Symbolic.just @c $
       wipeUnassigned
         VarByteString
           { bsLength =
@@ -547,8 +553,8 @@ evalMono (BMFBitwise fun) = case fun of
                 (bsLength a `Symbolic.min` bsLength b)
           , bsBuffer = bsBuffer a || bsBuffer b
           }
-  XorByteString -> fromConstant \ext a b ->
-    Symbolic.just @c $
+  XorByteString -> FLam \ext -> FLam \a -> FLam \b ->
+    FSat $ Symbolic.just @c $
       wipeUnassigned
         VarByteString
           { bsLength =
@@ -561,11 +567,11 @@ evalMono (BMFBitwise fun) = case fun of
   ComplementByteString -> fromConstant \bs ->
     Symbolic.just @c $
       wipeUnassigned bs {bsBuffer = not (bsBuffer bs)}
-  ShiftByteString -> fromConstant \_bs i ->
-    Symbolic.just @c $
+  ShiftByteString -> FLam \_bs -> FLam \i ->
+    FSat $ Symbolic.just @c $
       ifThenElse (isNegative i) (error "TODO: shiftL") (error "TODO: shiftR")
-  RotateByteString -> fromConstant \_bs i ->
-    Symbolic.just @c $
+  RotateByteString -> FLam \_bs -> FLam \i ->
+    FSat $ Symbolic.just @c $
       ifThenElse (isNegative i) (error "TODO: rotL") (error "TODO: rotR")
   CountSetBits -> error "TODO: countBits"
   FindFirstSetBit -> error "TODO: findSet"
