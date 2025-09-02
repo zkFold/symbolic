@@ -3,7 +3,7 @@
 module Tests.Symbolic.Compiler (specCompiler) where
 
 import Data.Function (id, ($))
-import GHC.Generics ((:*:), U1)
+import GHC.Generics (U1, (:*:))
 import Test.Hspec (Spec, describe)
 
 import Tests.Symbolic.Compiler.CompileWith (specCompileWith)

@@ -18,6 +18,7 @@ import Data.Ord ((<))
 import Data.Text (unpack)
 import Data.Traversable (traverse)
 import Data.Typeable (cast)
+import GHC.Generics (U1 (..), type (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class (Weierstrass (..))
@@ -31,6 +32,7 @@ import ZkFold.Symbolic.Algorithm.Hash.SHA2 (sha2Var)
 import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, reverseEndianness, truncate)
+import ZkFold.Symbolic.Data.Class (SymbolicData (HasRep))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FFA (fromInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -51,8 +53,6 @@ import ZkFold.UPLC.BuiltinType
 import ZkFold.UPLC.Constant
 import ZkFold.UPLC.Data
 import ZkFold.UPLC.Term
-import GHC.Generics (U1 (..), type (:*:) (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData(HasRep))
 
 ------------------------------- MAIN ALGORITHM ---------------------------------
 
@@ -66,8 +66,8 @@ import ZkFold.Symbolic.Data.Class (SymbolicData(HasRep))
 -- should yield a value of a builtin type.
 --
 -- We encode this with a Symbolic 'Maybe' of an arbitrary 'IsData'.
-data MaybeValue c =
-  forall t v. (IsData t v, HasRep v c) => MaybeValue (Symbolic.Maybe v c)
+data MaybeValue c
+  = forall t v. (IsData t v, HasRep v c) => MaybeValue (Symbolic.Maybe v c)
 
 -- | Evaluation function.
 --
@@ -361,20 +361,22 @@ evalMono (BMFInteger fun) = case fun of
   LessThanInteger -> FLam \v -> FLam \w -> FSat $ Symbolic.just @c (v Symbolic.< w)
   LessThanEqualsInteger -> FLam \v -> FLam \w -> FSat $ Symbolic.just @c (v Symbolic.<= w)
   IntegerToByteString -> FLam \b -> FLam \w -> FLam \(Int i) ->
-    FSat $ Symbolic.guard
-      (isNotNegative w)
-      VarByteString
-        { bsLength =
-            from @(UInt (NumberOfBits (BaseField c)) IntRegSize c) $
-              resize (uint w)
-        , bsBuffer =
-            resize $
-              let res = from i :: ByteString IntLength c
-               in ifThenElse b res (reverseEndianness @8 res)
-        }
+    FSat $
+      Symbolic.guard
+        (isNotNegative w)
+        VarByteString
+          { bsLength =
+              from @(UInt (NumberOfBits (BaseField c)) IntRegSize c) $
+                resize (uint w)
+          , bsBuffer =
+              resize $
+                let res = from i :: ByteString IntLength c
+                 in ifThenElse b res (reverseEndianness @8 res)
+          }
   ByteStringToInteger -> FLam \b -> FLam \(VarByteString _ bs) ->
-    FSat $ Symbolic.just @c . Int . from @(ByteString IntLength c) . resize $
-      ifThenElse b bs (reverseEndianness @8 bs)
+    FSat $
+      Symbolic.just @c . Int . from @(ByteString IntLength c) . resize $
+        ifThenElse b bs (reverseEndianness @8 bs)
 evalMono (BMFByteString fun) = case fun of
   AppendByteString -> fromConstant \v w -> Symbolic.just @c (v `app` w)
   ConsByteString -> FLam \v -> FLam \w ->
@@ -414,49 +416,56 @@ evalMono (BMFString fun) = case fun of
   DecodeUtf8 -> fromConstant \(VarByteString l b) -> Symbolic.just @c $ VarByteString l (resize b)
 evalMono (BMFAlgorithm fun) = case fun of
   SHA2_256 -> FLam \v ->
-    FSat $ Symbolic.just @c
-      VarByteString
-        { bsLength = fromConstant (256 :: Natural)
-        , bsBuffer = resize (sha2Var @"SHA256" v)
-        }
+    FSat $
+      Symbolic.just @c
+        VarByteString
+          { bsLength = fromConstant (256 :: Natural)
+          , bsBuffer = resize (sha2Var @"SHA256" v)
+          }
   SHA3_256 -> FLam \v ->
-    FSat $ Symbolic.just @c
-      VarByteString
-        { bsLength = fromConstant (256 :: Natural)
-        , bsBuffer = resize (keccakVar @"SHA3-256" v)
-        }
+    FSat $
+      Symbolic.just @c
+        VarByteString
+          { bsLength = fromConstant (256 :: Natural)
+          , bsBuffer = resize (keccakVar @"SHA3-256" v)
+          }
   Blake2b_224 -> FLam \v ->
-    FSat $ Symbolic.just @c
-      VarByteString
-        { bsLength = fromConstant (224 :: Natural)
-        , bsBuffer = resize $ blake2b_224 (bsBuffer v)
-        }
+    FSat $
+      Symbolic.just @c
+        VarByteString
+          { bsLength = fromConstant (224 :: Natural)
+          , bsBuffer = resize $ blake2b_224 (bsBuffer v)
+          }
   Blake2b_256 -> FLam \v ->
-    FSat $ Symbolic.just @c
-      VarByteString
-        { bsLength = fromConstant (256 :: Natural)
-        , bsBuffer = resize $ blake2b_256 (bsBuffer v)
-        }
+    FSat $
+      Symbolic.just @c
+        VarByteString
+          { bsLength = fromConstant (256 :: Natural)
+          , bsBuffer = resize $ blake2b_256 (bsBuffer v)
+          }
   VerifyEd25519Signature -> FLam \vk -> FLam \m -> FLam \s ->
-    FSat $ Symbolic.guard
-      ( bsLength vk
-          Symbolic.== fromConstant (32 * 8 :: Natural)
-          && bsLength s
-          Symbolic.== fromConstant (64 * 8 :: Natural)
-      )
-      (ecdsaVerifyVar (resize $ bsBuffer vk) m (resize $ bsBuffer s))
+    FSat $
+      Symbolic.guard
+        ( bsLength vk
+            Symbolic.== fromConstant (32 * 8 :: Natural)
+            && bsLength s
+            Symbolic.== fromConstant (64 * 8 :: Natural)
+        )
+        (ecdsaVerifyVar (resize $ bsBuffer vk) m (resize $ bsBuffer s))
   VerifyEcdsaSecp256k1Signature -> error "TODO: verify ECDSA secp256k1 signature"
   VerifySchnorrSecp256k1Signature -> error "TODO: verify Schnorr secp256k1 signature"
   Keccak_256 -> FLam \v ->
-    FSat $ Symbolic.just @c
-      VarByteString
-        { bsLength = fromConstant (256 :: Natural)
-        , bsBuffer = resize $ keccakVar @"Keccak256" v
-        }
+    FSat $
+      Symbolic.just @c
+        VarByteString
+          { bsLength = fromConstant (256 :: Natural)
+          , bsBuffer = resize $ keccakVar @"Keccak256" v
+          }
   Ripemd_160 -> error "TODO: RIPEMD-160"
 evalMono (BMFData fun) = case fun of
-  ConstrData -> FLam \(resize . uint -> t) -> FLam $
-    FSat . Symbolic.just @c . Data.foldData . Data.DConstrCell t
+  ConstrData -> FLam \(resize . uint -> t) ->
+    FLam $
+      FSat . Symbolic.just @c . Data.foldData . Data.DConstrCell t
   MapData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DMapCell)
   ListData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DListCell)
   IData -> fromConstant (Symbolic.just @c . Data.foldData . Data.DIntCell)
@@ -527,52 +536,57 @@ evalMono (BMFCurve fun) = case fun of
   Bls12_381_finalVerify -> error "TODO: final verify"
 evalMono (BMFBitwise fun) = case fun of
   AndByteString -> FLam \ext -> FLam \a -> FLam \b ->
-    FSat $ Symbolic.just @c $
-      ifThenElse
-        ext
-        ( let n = bsLength a `Symbolic.max` bsLength b
-           in VarByteString
-                { bsLength = n
-                , bsBuffer =
-                    bsBuffer (a `app` ones (n - bsLength a))
-                      && bsBuffer (b `app` ones (n - bsLength b))
-                }
-        )
-        VarByteString
-          { bsLength = bsLength a `Symbolic.min` bsLength b
-          , bsBuffer = bsBuffer a && bsBuffer b
-          }
+    FSat $
+      Symbolic.just @c $
+        ifThenElse
+          ext
+          ( let n = bsLength a `Symbolic.max` bsLength b
+             in VarByteString
+                  { bsLength = n
+                  , bsBuffer =
+                      bsBuffer (a `app` ones (n - bsLength a))
+                        && bsBuffer (b `app` ones (n - bsLength b))
+                  }
+          )
+          VarByteString
+            { bsLength = bsLength a `Symbolic.min` bsLength b
+            , bsBuffer = bsBuffer a && bsBuffer b
+            }
   OrByteString -> FLam \ext -> FLam \a -> FLam \b ->
-    FSat $ Symbolic.just @c $
-      wipeUnassigned
-        VarByteString
-          { bsLength =
-              ifThenElse
-                ext
-                (bsLength a `Symbolic.max` bsLength b)
-                (bsLength a `Symbolic.min` bsLength b)
-          , bsBuffer = bsBuffer a || bsBuffer b
-          }
+    FSat $
+      Symbolic.just @c $
+        wipeUnassigned
+          VarByteString
+            { bsLength =
+                ifThenElse
+                  ext
+                  (bsLength a `Symbolic.max` bsLength b)
+                  (bsLength a `Symbolic.min` bsLength b)
+            , bsBuffer = bsBuffer a || bsBuffer b
+            }
   XorByteString -> FLam \ext -> FLam \a -> FLam \b ->
-    FSat $ Symbolic.just @c $
-      wipeUnassigned
-        VarByteString
-          { bsLength =
-              ifThenElse
-                ext
-                (bsLength a `Symbolic.max` bsLength b)
-                (bsLength a `Symbolic.min` bsLength b)
-          , bsBuffer = bsBuffer a `xor` bsBuffer b
-          }
+    FSat $
+      Symbolic.just @c $
+        wipeUnassigned
+          VarByteString
+            { bsLength =
+                ifThenElse
+                  ext
+                  (bsLength a `Symbolic.max` bsLength b)
+                  (bsLength a `Symbolic.min` bsLength b)
+            , bsBuffer = bsBuffer a `xor` bsBuffer b
+            }
   ComplementByteString -> fromConstant \bs ->
     Symbolic.just @c $
       wipeUnassigned bs {bsBuffer = not (bsBuffer bs)}
   ShiftByteString -> FLam \_bs -> FLam \i ->
-    FSat $ Symbolic.just @c $
-      ifThenElse (isNegative i) (error "TODO: shiftL") (error "TODO: shiftR")
+    FSat $
+      Symbolic.just @c $
+        ifThenElse (isNegative i) (error "TODO: shiftL") (error "TODO: shiftR")
   RotateByteString -> FLam \_bs -> FLam \i ->
-    FSat $ Symbolic.just @c $
-      ifThenElse (isNegative i) (error "TODO: rotL") (error "TODO: rotR")
+    FSat $
+      Symbolic.just @c $
+        ifThenElse (isNegative i) (error "TODO: rotL") (error "TODO: rotR")
   CountSetBits -> error "TODO: countBits"
   FindFirstSetBit -> error "TODO: findSet"
   ReadBit -> error "TODO: readBit"

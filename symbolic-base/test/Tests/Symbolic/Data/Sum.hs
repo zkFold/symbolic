@@ -1,21 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DeriveAnyClass #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Sum (specSum) where
 
+import Control.Applicative (pure)
 import Data.Function ((.))
 import Data.Functor ((<$>))
 import Data.Semigroup ((<>))
 import Data.Typeable (Typeable)
 import Data.Void (absurd)
-import GHC.Generics (Generic, V1, (:+:) (..), Rep1, Generic1, U1)
+import GHC.Generics (Generic, Generic1, Rep1, U1, V1, (:+:) (..))
 import Test.Hspec (Spec, describe)
 import qualified Test.QuickCheck as Q
 import Test.QuickCheck.Instances ()
@@ -33,7 +33,6 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Sum
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import Control.Applicative (pure)
 
 instance {-# OVERLAPPING #-} Q.Arbitrary (f a) => Q.Arbitrary ((f :+: V1) a) where
   arbitrary = L1 <$> Q.arbitrary
@@ -133,10 +132,10 @@ specOneOf = do
   specOneOf' @a @'[FieldElement, ByteString 16]
   specOneOf' @a @'[ByteString 16, FieldElement, UInt 32 Auto]
 
-newtype Only f c = Only { runOnly :: f c }
+newtype Only f c = Only {runOnly :: f c}
   deriving stock (Generic, Generic1, Show)
   deriving newtype (Q.Arbitrary, Q.CoArbitrary)
-  deriving anyclass (Q.Function)
+  deriving anyclass Q.Function
 
 data Might b c = Indeed (b c) | None
   deriving stock (Generic, Generic1, Show)

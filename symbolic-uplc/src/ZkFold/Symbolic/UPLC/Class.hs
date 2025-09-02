@@ -16,6 +16,7 @@ module ZkFold.Symbolic.UPLC.Class (
 
 import Data.Maybe (Maybe (..))
 import Data.Typeable (Typeable)
+import GHC.Generics (U1, (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class (Weierstrass (..))
@@ -36,7 +37,6 @@ import ZkFold.Symbolic.Fold (SymbolicFold)
 import ZkFold.Symbolic.UPLC.Constants
 import ZkFold.Symbolic.UPLC.Data qualified as Symbolic
 import ZkFold.UPLC.BuiltinType
-import GHC.Generics ((:*:) (..), U1)
 
 -- | Class of Symbolic datatypes used inside Converter.
 -- Each instance enforces a one-to-one correspondence between some 'BuiltinType'

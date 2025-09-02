@@ -5,11 +5,11 @@ module ZkFold.Symbolic.UPLC.Fun (Fun (..)) where
 
 import Data.Function ((.))
 import ZkFold.Algebra.Class (FromConstant (..))
+import ZkFold.Symbolic.Data.Class (HasRep)
 import ZkFold.Symbolic.Data.Maybe qualified as Symbolic
 
 import ZkFold.Symbolic.UPLC.Class
 import ZkFold.UPLC.BuiltinType
-import ZkFold.Symbolic.Data.Class (HasRep)
 
 -- | Symbolic function of a definite UPLC signature.
 data Fun (s :: [BuiltinType]) (t :: BuiltinType) c where

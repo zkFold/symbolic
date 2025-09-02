@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE MonoLocalBinds #-}
 
 import Control.Monad (return)
 import Data.ByteString qualified as B
@@ -20,7 +20,7 @@ import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (Arbitrary, Property, property, (===))
 import Test.QuickCheck.Instances ()
 import Text.Show (Show)
-import ZkFold.Algebra.Class (zero, Order)
+import ZkFold.Algebra.Class (Order, zero)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (eval)
@@ -28,15 +28,15 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (false, true)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), RepData)
+import ZkFold.Symbolic.Data.Class (RepData, SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Vec (runVec)
 import Prelude (either, error, id, (.), type (~))
 
 import ZkFold.Symbolic.UPLC.Converter (contractV3)
 import ZkFold.UPLC.BuiltinFunction
 import ZkFold.UPLC.Constant
 import ZkFold.UPLC.Term
-import ZkFold.Symbolic.Data.Vec (runVec)
 
 areSame
   :: forall a x y

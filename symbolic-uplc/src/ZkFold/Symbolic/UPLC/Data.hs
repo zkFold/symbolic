@@ -3,12 +3,12 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE MonoLocalBinds #-}
 
 module ZkFold.Symbolic.UPLC.Data (DataCell (..), Data, KnownData, unfoldData, foldData, serialiseData) where
 
@@ -70,9 +70,12 @@ instance (SymbolicFold c, KnownData c) => FromConstant Data.Data (DataCell Data 
 mapCell
   :: forall c g x y
    . ( SymbolicFold c
-     , SymbolicData g, HasRep g c
-     , SymbolicData x, HasRep x c
-     , SymbolicData y, HasRep y c
+     , SymbolicData g
+     , HasRep g c
+     , SymbolicData x
+     , HasRep x c
+     , SymbolicData y
+     , HasRep y c
      )
   => g c -> (forall d. (SymbolicFold d, BaseField d ~ BaseField c) => g d -> x d -> y d) -> DataCell x c -> DataCell y c
 mapCell g f DConstrCell {..} = DConstrCell {cFields = mapWithCtx g f cFields, ..}
@@ -127,8 +130,9 @@ foldData cell = MkData (inject offset .: concatMapCell runData cell)
       DMapCell $
         tail $
           scanl
-            (\(_ G.:*: p) (k G.:*: v) ->
-               let q = nextPtr p k in q G.:*: nextPtr q v)
+            ( \(_ G.:*: p) (k G.:*: v) ->
+                let q = nextPtr p k in q G.:*: nextPtr q v
+            )
             (nullptr G.:*: nullptr)
             es
     DListCell xs -> DListCell (toPtrs xs)
