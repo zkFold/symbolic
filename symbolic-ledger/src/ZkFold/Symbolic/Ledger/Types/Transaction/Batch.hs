@@ -8,45 +8,32 @@ import GHC.Generics (Generic)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.List (List)
+import ZkFold.Symbolic.Ledger.Types.Address (Address)
+import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
+import ZkFold.Symbolic.Ledger.Types.Nonce (KnownRegistersNonce)
+import ZkFold.Symbolic.Ledger.Types.Root (Root)
+import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import ZkFold.Symbolic.Ledger.Types.DataAvailability (DAIndex)
-import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
-import ZkFold.Symbolic.Ledger.Types.Interval (Interval)
-import ZkFold.Symbolic.Ledger.Types.Transaction.Core (KnownRegistersOutputIndex)
-import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-
--- TODO: Use POSIXTime instead of UTCTime?
-
--- | Defines the on-chain representation of the Symbolic Ledger state transition.
-data TransactionBatch context = TransactionBatch
-  { tbDataHashes :: List context (DAIndex context, HashSimple context)
-  -- ^ Hash of 'TransactionBatchData' indexed by the corresponding data availability source.
-  , tbBridgeIn :: HashSimple context
-  -- ^ Hash of the 'AssetValues' that are bridged into the ledger.
-  , tbBridgeOut :: HashSimple context
-  -- ^ Hash of the 'AssetValues' that are bridged out of the ledger.
-  , tbValidityInterval :: Interval context
-  -- ^ The validity interval of the transaction batch. The bounds are inclusive.
-  , tbPreviousBatch :: HashSimple context
-  -- ^ Hash of the previous transaction batch.
+data TransactionBatch c = TransactionBatch
+  { tbAddressTransactionsRoot :: Root (Address c, List c (HashSimple c))
+  -- ^ Merkle tree root of the address's transactions.
+  , tbAddresses :: List c (Address c)
+  -- ^ List of addresses included in the batch which are sending funds.
   }
   deriving stock Generic
 
 instance
   ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
+  , KnownRegistersNonce context
   , Symbolic context
   )
   => SymbolicData (TransactionBatch context)
 
 instance
   ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
+  , KnownRegistersNonce context
   , Symbolic context
   )
   => Eq (TransactionBatch context)
