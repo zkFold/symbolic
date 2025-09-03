@@ -8,12 +8,13 @@ import GHC.Generics (Generic)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (KnownRegistersNonce, Nonce)
 import ZkFold.Symbolic.Ledger.Types.Root (Root)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValues, KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State context = State

@@ -9,12 +9,13 @@ import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.List (List)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (KnownRegistersNonce)
 import ZkFold.Symbolic.Ledger.Types.Root (Root)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 data TransactionBatch c = TransactionBatch
   { tbAddressTransactionsRoot :: Root (Address c, List c (HashSimple c))
