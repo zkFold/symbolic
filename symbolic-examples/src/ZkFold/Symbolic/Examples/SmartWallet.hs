@@ -24,6 +24,7 @@ module ZkFold.Symbolic.Examples.SmartWallet (
   ByteStringFromHex (..),
   mkProof,
   mkSetup,
+  TranscriptConstraints,
 ) where
 
 import Data.Aeson (withText)
