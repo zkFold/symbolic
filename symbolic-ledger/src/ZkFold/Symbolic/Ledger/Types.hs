@@ -22,6 +22,7 @@ import ZkFold.Symbolic.Data.Combinators (
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.UInt (OrdWord)
 import ZkFold.Symbolic.Fold (SymbolicFold)
+
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.Root
