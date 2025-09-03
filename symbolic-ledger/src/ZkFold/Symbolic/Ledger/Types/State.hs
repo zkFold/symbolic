@@ -17,7 +17,7 @@ import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State context = State
-  { sPreviousBatch :: HashSimple context
+  { sPreviousStateHash :: HashSimple context
   -- ^ Hash of the previous state.
   , sBridgeIn :: HashSimple context
   -- ^ Hash of the 'AssetValues' that are bridged into the ledger.
