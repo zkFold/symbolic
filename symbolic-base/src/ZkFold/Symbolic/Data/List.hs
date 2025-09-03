@@ -334,8 +334,9 @@ findIndex
   -> UInt n Auto c
 findIndex p =
   sndP
-    . foldl (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y)
-            ((zero :: UInt n Auto c) :*: zero)
+    . foldl
+      (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y)
+      ((zero :: UInt n Auto c) :*: zero)
 
 insert
   :: forall x c n
