@@ -2,15 +2,9 @@ module ZkFold.Symbolic.Ledger.Types.Address (
   Address,
 ) where
 
-import GHC.Generics ((:*:))
-
-import ZkFold.Symbolic.Ledger.Types.Circuit (Circuit)
-import ZkFold.Symbolic.Ledger.Types.DataAvailability
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Address on the zkFold ledger.
---
--- Circuit describes the smart contract that locks funds at this address.
---
--- Data availability index points to a data availability source that posts data about the address's transactions. The data availability type indicates whether the address is associated with online or offline transactions.
-type Address = Hash (Circuit :*: DAIndex :*: DAType)
+type Address context = Hash (FieldElement context)
