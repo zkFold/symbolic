@@ -123,7 +123,7 @@ validateTransactionBatchDataWithIx tbInterval TransactionBatchData {..} Transact
           )
           ( nothing
               :*: tbInterval
-              :*: true
+              :*: (true :: Bool context)
               :*: emptyList
               :*: emptyList
               :*: empty
@@ -168,7 +168,7 @@ updateAddrsTxsList addr addrTxs addrsTxs =
                         ((iterAddr :*: iterAddrTxs) .: accAddrsTxs)
                       :*: (accFound || elemMatches)
           )
-          (addr :*: addrTxs :*: emptyList :*: false)
+          (addr :*: addrTxs :*: emptyList :*: (false :: Bool context))
           addrsTxs
    in ifThenElse
         addrExists

@@ -17,7 +17,7 @@ import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Bool (BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
@@ -76,7 +76,7 @@ mkTransaction inputs outputs validityInterval owner =
   let (hasOwnerInput :*: _) =
         Symbolic.List.foldl
           (\(accBool :*: owner') x -> (accBool || txoAddress (txiOutput x) == owner') :*: owner')
-          (false :*: owner)
+          ((false :: Bool context) :*: owner)
           inputs
    in ifThenElse
         hasOwnerInput

@@ -265,7 +265,7 @@ delete eq x xs =
                     :*: y0
                     :*: ifThenElse (ok || not test) (y .: ys) ys
           )
-          (false :*: x :*: emptyList)
+          ((false :: Bool c) :*: x :*: emptyList)
           xs
    in result
 
@@ -334,7 +334,8 @@ findIndex
   -> UInt n Auto c
 findIndex p =
   sndP
-    . foldl (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y) (zero :*: zero)
+    . foldl (\(m :*: y) x -> (m + one) :*: ifThenElse (p x) m y)
+            ((zero :: UInt n Auto c) :*: zero)
 
 insert
   :: forall x c n

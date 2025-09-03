@@ -17,6 +17,7 @@ import Prelude (($))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction.BatchData
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 -- | Witness for 'TransactionBatch' validation.
 data TransactionBatchWitness context = TransactionBatchWitness
@@ -101,4 +102,4 @@ noDuplicateIndicesInBatch =
                     accList
            in (ix Symbolic.List..: accList) :*: curAccNoDuplicateIndices
       )
-      (Symbolic.List.emptyList :*: true)
+      ((Symbolic.List.emptyList :: List FieldElement context) :*: (true :: Bool context))
