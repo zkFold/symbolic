@@ -26,7 +26,7 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
-import ZkFold.Control.Conditional (ifThenElse, Conditional)
+import ZkFold.Control.Conditional (Conditional, ifThenElse)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V

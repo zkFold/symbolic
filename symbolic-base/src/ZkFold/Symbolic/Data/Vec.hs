@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
-import Data.Functor (fmap, Functor, (<$>))
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
 import Data.Kind (Type)
@@ -12,6 +12,7 @@ import Data.Traversable (Traversable (..))
 import Data.Tuple (fst)
 import qualified GHC.Generics as G
 import GHC.Num (Natural)
+import Test.QuickCheck (Arbitrary (arbitrary))
 import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell
 
@@ -22,7 +23,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
-import Test.QuickCheck (Arbitrary (arbitrary))
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic
