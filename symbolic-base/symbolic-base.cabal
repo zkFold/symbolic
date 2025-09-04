@@ -261,6 +261,7 @@ library
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Sum

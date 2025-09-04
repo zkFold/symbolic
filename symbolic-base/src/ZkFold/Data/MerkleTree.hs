@@ -26,7 +26,7 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
-import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Control.Conditional (ifThenElse, Conditional)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
@@ -63,7 +63,7 @@ merkleHash
 merkleHash = mimcHash2 mimcConstants zero
 
 -- | Hash current value with sibling based on bit direction
-hashWithSibling :: Ring h => h -> (Bool, h) -> h
+hashWithSibling :: (Ring h, Conditional b h) => h -> (b, h) -> h
 hashWithSibling current (bit, sibling) =
   if bit
     then merkleHash sibling current -- current is right child

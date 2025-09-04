@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
-import Data.Functor (fmap)
+import Data.Functor (fmap, Functor, (<$>))
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
 import Data.Kind (Type)
@@ -22,6 +22,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
 import ZkFold.Symbolic.MonadCircuit
+import Test.QuickCheck (Arbitrary (arbitrary))
 
 newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
   deriving G.Generic
@@ -47,6 +48,12 @@ instance
   fromConstant = Vec . embed . tabulate . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (Vec f c) (Vec f c)
+
+instance
+  (Symbolic c, Arbitrary (f (BaseField c)), Functor f)
+  => Arbitrary (Vec f c)
+  where
+  arbitrary = Vec . embed <$> arbitrary
 
 instance
   (Symbolic c, Traversable f, Representable f)
