@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -12,10 +12,38 @@ import Control.Monad (return)
 import Data.Aeson (FromJSON, ToJSON, ToJSON1 (..))
 import Data.Aeson.TH (defaultOptions, deriveToJSON1)
 import Data.Binary (Binary)
+import Data.Function (($), (.))
 import Data.Functor (Functor, (<$>))
 import Data.Functor.Rep (Representable (..), WrappedRep (..))
-import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:))
+import Data.Semialign (Semialign (..), Zip (..))
+import Data.These (These (..))
+import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import Test.QuickCheck (Arbitrary (..))
+
+instance Semialign U1 where alignWith _ _ _ = U1
+
+instance Semialign Par1 where
+  alignWith f (Par1 x) (Par1 y) = Par1 $ f (These x y)
+
+instance (Semialign f, Semialign g) => Semialign (f :*: g) where
+  alignWith f (a :*: b) (c :*: d) = alignWith f a c :*: alignWith f b d
+
+instance (Semialign f, Semialign g) => Semialign (f :.: g) where
+  alignWith f (Comp1 g) (Comp1 h) = Comp1 $ alignWith rec g h
+   where
+    rec (This l) = f . This <$> l
+    rec (That r) = f . That <$> r
+    rec (These l r) = alignWith f l r
+
+instance Zip U1 where zipWith _ _ _ = U1
+
+instance Zip Par1 where zipWith f (Par1 x) (Par1 y) = Par1 (f x y)
+
+instance (Zip f, Zip g) => Zip (f :*: g) where
+  zipWith f (a :*: b) (c :*: d) = zipWith f a c :*: zipWith f b d
+
+instance (Zip f, Zip g) => Zip (f :.: g) where
+  zipWith f (Comp1 g) (Comp1 h) = Comp1 $ zipWith (zipWith f) g h
 
 instance NFData (U1 a)
 

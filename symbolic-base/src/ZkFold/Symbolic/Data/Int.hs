@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.Int where
 import Control.DeepSeq
 import qualified Data.Bool as Haskell
 import Data.Kind (Type)
-import GHC.Generics (Generic, Par1 (..))
+import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
 import Test.QuickCheck (Arbitrary (..))
 import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell hiding ((-))
@@ -37,11 +37,11 @@ deriving instance HEq c => Haskell.Eq (Int n r c)
 
 deriving instance HShow c => Haskell.Show (Int n r c)
 
-deriving instance (KnownRegisters c n r, Symbolic c) => SymbolicData (Int n r c)
+deriving instance SymbolicData (Int n r)
 
-deriving instance (KnownRegisters c n r, KnownNat n, KnownRegisterSize r, Symbolic c) => SymbolicInput (Int n r c)
+deriving instance (KnownNat n, KnownRegisterSize r) => SymbolicInput (Int n r)
 
-deriving instance (KnownRegisters c n r, Symbolic c) => Eq (Int n r c)
+deriving instance Symbolic c => Eq (Int n r c)
 
 deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)
 
@@ -112,8 +112,10 @@ instance
   )
   => SemiEuclidean (Int n r c)
   where
-  divMod i1 i2 = ifThenElse (i1 == zero) dm_pp ite_nn
+  divMod i1 i2 = (r1, r2)
    where
+    r1 :*: r2 = ifThenElse (i1 == zero) dm_pp ite_nn
+
     (Int u1, Int u2) = (abs i1, abs i2)
     (d, m) =
       withGetRegisterSize @n @r @(BaseField c) $
@@ -124,10 +126,10 @@ instance
     ite_np = ifThenElse (isNegative i1 && isNotNegative i2) dm_mp ite_pm
     ite_pm = ifThenElse (isNotNegative i1 && isNegative i2) dm_pm dm_pp
 
-    dm_mm = (Int d, negate (Int m))
-    dm_mp = bool (negate (Int d) - one, i2 - Int m) (negate $ Int d, Int m) (m == zero)
-    dm_pm = bool (negate (Int d) - one, i2 + Int m) (negate $ Int d, Int m) (m == zero)
-    dm_pp = (Int d, Int m)
+    dm_mm = Int d :*: negate (Int m)
+    dm_mp = bool ((negate (Int d) - one) :*: (i2 - Int m)) (negate (Int d) :*: Int m) (m == zero)
+    dm_pm = bool ((negate (Int d) - one) :*: (i2 + Int m)) (negate (Int d) :*: Int m) (m == zero)
+    dm_pp = Int d :*: Int m
 
 div
   :: forall n r c
@@ -157,8 +159,10 @@ quotRem
      , KnownRegisters c n r
      )
   => Int n r c -> Int n r c -> (Int n r c, Int n r c)
-quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
+quotRem i1 i2 = (r1, r2)
  where
+  r1 :*: r2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
+
   (Int u1, Int u2) = (abs i1, abs i2)
   (d, m) =
     withGetRegisterSize @n @r @(BaseField c) $
@@ -168,10 +172,10 @@ quotRem i1 i2 = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_tf
   ite_tf = ifThenElse (isNegative i1 && isNotNegative i2) dm_mp ite_pm
   ite_pm = ifThenElse (isNotNegative i1 && isNegative i2) dm_pm dm_pp
 
-  dm_mm = (Int d, negate (Int m))
-  dm_mp = (negate (Int d), negate (Int m))
-  dm_pm = (negate (Int d), Int m)
-  dm_pp = (Int d, Int m)
+  dm_mm = Int d :*: negate (Int m)
+  dm_mp = negate (Int d) :*: negate (Int m)
+  dm_pm = negate (Int d) :*: Int m
+  dm_pp = Int d :*: Int m
 
 quot
   :: forall n r c

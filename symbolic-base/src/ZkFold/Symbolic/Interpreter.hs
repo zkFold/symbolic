@@ -2,7 +2,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Interpreter (Interpreter (..)) where
+module ZkFold.Symbolic.Interpreter (Interpreter (..), Witnesses (..)) where
 
 import Control.Applicative (Applicative)
 import Control.DeepSeq (NFData (..), NFData1 (..))
@@ -61,7 +61,7 @@ instance Arithmetic a => Symbolic (Interpreter a) where
   type WitnessField (Interpreter a) = a
   witnessF (Interpreter x) = x
   fromCircuitF (Interpreter x) c =
-    Interpreter $ runIdentity <$> runWitnesses @a (c $ fmap Identity x)
+    Interpreter $ runIdentity <$> runWitnesses @a @a (c $ fmap Identity x)
   sanityF (Interpreter x) f _ = Interpreter (f x)
 
 instance Arithmetic a => SymbolicFold (Interpreter a) where
@@ -72,16 +72,19 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
 
 -- | An example implementation of a @'MonadCircuit'@ which computes witnesses
 -- immediately and drops the constraints.
-newtype Witnesses a x = Witnesses {runWitnesses :: x}
+newtype Witnesses a w x = Witnesses {runWitnesses :: x}
   deriving (Applicative, Functor, Monad) via Identity
 
-instance Arithmetic a => Witness (Identity a) a where
+instance ResidueField w => Witness (Identity w) w where
   at = runIdentity
 
-instance FromConstant a (Identity a) where
-  fromConstant = Identity
+instance FromConstant a w => FromConstant a (Identity w) where
+  fromConstant = Identity . fromConstant
 
-instance Arithmetic a => MonadCircuit (Identity a) a a (Witnesses a) where
+instance
+  (Arithmetic a, FromConstant a w, Scale a w, ResidueField w)
+  => MonadCircuit (Identity w) a w (Witnesses a w)
+  where
   unconstrained = return . Identity
   constraint _ = return ()
   lookupConstraint _ _ = return ()

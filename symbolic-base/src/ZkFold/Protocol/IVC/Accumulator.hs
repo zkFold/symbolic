@@ -11,13 +11,14 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Binary (Binary)
 import qualified Data.Eq as Haskell
 import Data.Foldable (Foldable)
-import Data.Function (const, ($))
-import Data.Functor (Functor (..))
+import Data.Function (const)
+import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..), mzipWithRep)
-import GHC.Generics (Generic)
+import Data.Semialign (Zip)
+import GHC.Generics (Generic, Generic1)
 import Prelude (type (~))
 
-import ZkFold.Algebra.Class (Ring, Scale, Zero, zero)
+import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (+), type (-))
 import ZkFold.Data.Bool (BoolType (..), and)
 import ZkFold.Data.Eq (Eq (..))
@@ -25,15 +26,15 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Protocol.IVC.AlgebraicMap (algebraicMap)
 import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
-import ZkFold.Protocol.IVC.Predicate (Predicate)
-import ZkFold.Symbolic.Data.Class (LayoutData (..), LayoutFunctor, SymbolicData (..))
+import ZkFold.Protocol.IVC.Predicate (Compilable, Predicate)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData)
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 -- import Prelude hiding (length, pi)
 
 -- Page 19, Accumulator instance
 data AccumulatorInstance k i c f = AccumulatorInstance
-  { _pi :: LayoutData i f -- pi ∈ M^{l_in} in the paper
+  { _pi :: i f -- pi ∈ M^{l_in} in the paper
   , _c :: Vector k c -- [C_i] ∈ C^k in the paper
   , _r :: Vector (k - 1) f -- [r_i] ∈ F^{k-1} in the paper
   , _e :: c -- E ∈ C in the paper
@@ -41,12 +42,52 @@ data AccumulatorInstance k i c f = AccumulatorInstance
   }
   deriving (Functor, Generic, Haskell.Eq)
 
+data AccumulatorInstance' k i c f ctx = AccumulatorInstance'
+  { _pi' :: i (f ctx)
+  , _c' :: Vector k (c ctx)
+  , _r' :: Vector (k - 1) (f ctx)
+  , _e' :: c ctx
+  , _mu' :: f ctx
+  }
+  deriving Generic1
+
+instance
+  (Zip i, LayoutFunctor i, SymbolicData c, SymbolicData f)
+  => SymbolicData (AccumulatorInstance' k i c f)
+
+instance
+  FromConstant
+    (AccumulatorInstance k i (c ctx) (f ctx))
+    (AccumulatorInstance' k i c f ctx)
+  where
+  fromConstant AccumulatorInstance {..} =
+    AccumulatorInstance'
+      { _pi' = _pi
+      , _c' = _c
+      , _r' = _r
+      , _e' = _e
+      , _mu' = _mu
+      }
+
+instance ToConstant (AccumulatorInstance' k i c f ctx) where
+  type
+    Const (AccumulatorInstance' k i c f ctx) =
+      AccumulatorInstance k i (c ctx) (f ctx)
+  toConstant AccumulatorInstance' {..} =
+    AccumulatorInstance
+      { _pi = _pi'
+      , _c = _c'
+      , _r = _r'
+      , _e = _e'
+      , _mu = _mu'
+      }
+
 makeLenses ''AccumulatorInstance
 
-instance (ResidueField f, LayoutFunctor i, Eq c, BooleanOf (IntegralOf f) ~ BooleanOf c) => Eq (AccumulatorInstance k i c f) where
+instance (ResidueField f, Compilable i, Eq c, BooleanOf (IntegralOf f) ~ BooleanOf c) => Eq (AccumulatorInstance k i c f) where
   type BooleanOf (AccumulatorInstance k i c f) = BooleanOf (IntegralOf f)
   acc1 == acc2 =
-    and (mzipWithRep (==) (fmap toIntegral $ layoutData $ _pi acc1) (fmap toIntegral $ layoutData $ _pi acc2))
+    and (mzipWithRep (==) (toIntegral <$> _pi acc1) (toIntegral <$> _pi acc2))
       && _c acc1
       == _c acc2
       && fmap toIntegral (_r acc1)
@@ -74,16 +115,6 @@ instance
   where
   source AccumulatorInstance {..} =
     source (FoldableSource _pi, _c, _r, _e, _mu)
-
-instance
-  ( KnownNat (k - 1)
-  , KnownNat k
-  , LayoutFunctor i
-  , SymbolicData c
-  , SymbolicData f
-  , Context f ~ Context c
-  )
-  => SymbolicData (AccumulatorInstance k i c f)
 
 -- Page 19, Accumulator
 -- @acc.x@ (accumulator instance) from the paper corresponds to _x
@@ -121,7 +152,7 @@ emptyAccumulator hcommit phi =
       aiMu = zero
       aiPI = tabulate (const zero)
       aiE = hcommit (algebraicMap @d phi aiPI accW aiR aiMu) zero
-      accX = AccumulatorInstance {_pi = LayoutData aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu}
+      accX = AccumulatorInstance {_pi = aiPI, _c = aiC, _r = aiR, _e = aiE, _mu = aiMu}
    in Accumulator accX accW
 
 emptyAccumulatorInstance

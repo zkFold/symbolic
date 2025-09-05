@@ -1,8 +1,9 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Output where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
@@ -21,8 +22,7 @@ data Output context = Output
   , txoDatum :: Datum context
   -- ^ 'Datum' associated with the output.
   }
-  deriving stock Generic
-
-instance (KnownRegistersAssetQuantity context, Symbolic context) => SymbolicData (Output context)
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (Output context)

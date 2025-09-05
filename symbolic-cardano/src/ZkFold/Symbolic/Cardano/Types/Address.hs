@@ -1,9 +1,10 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Cardano.Types.Address where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -25,12 +26,8 @@ data Address context = Address
   , paymentCredential :: PaymentCredential context
   , stakingCredential :: StakingCredential context
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving instance HEq context => Haskell.Eq (Address context)
 
 instance Symbolic context => Eq (Address context)
-
-instance Symbolic context => SymbolicData (Address context)
-
-instance Symbolic context => SymbolicInput (Address context)

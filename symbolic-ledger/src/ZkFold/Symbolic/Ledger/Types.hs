@@ -16,6 +16,7 @@ module ZkFold.Symbolic.Ledger.Types (
 
 -- Re-exports
 
+import GHC.Generics ((:*:))
 import GHC.TypeLits (KnownNat)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (
@@ -61,10 +62,10 @@ type Signature context =
   , Hashable (HashSimple context) (Transaction context)
   , Hashable (HashSimple context) (TransactionBatch context)
   , Hashable (HashSimple context) (TransactionBatchData context)
-  , Hashable (HashSimple context) (Circuit context, DAIndex context, DAType context)
+  , Hashable (HashSimple context) ((Circuit :*: DAIndex :*: DAType) context)
   , forall s. Hashable (HashSimple s) (AssetValues s)
   , forall s. Hashable (HashSimple s) (Transaction s)
   , forall s. Hashable (HashSimple s) (TransactionBatch s)
   , forall s. Hashable (HashSimple s) (TransactionBatchData s)
-  , forall s. Hashable (HashSimple s) (Circuit s, DAIndex s, DAType s)
+  , forall s. Hashable (HashSimple s) ((Circuit :*: DAIndex :*: DAType) s)
   )

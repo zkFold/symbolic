@@ -5,75 +5,47 @@ module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
-import Data.Type.Equality (type (~))
-import Data.Typeable (Proxy)
+import Data.Semialign (Zip)
 import qualified GHC.Generics as G
-import GHC.TypeLits (KnownNat)
 import Prelude (($), (.))
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.Vec
 import ZkFold.Symbolic.MonadCircuit
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where
-  isValid :: d -> Bool (Context d)
+  isValid :: (Symbolic c, HasRep d c) => d c -> Bool c
   default isValid
-    :: (G.Generic d, GSymbolicInput (G.Rep d), GContext (G.Rep d) ~ Context d)
-    => d
-    -> Bool (Context d)
-  isValid = gisValid @(G.Rep d) . G.from
+    :: (G.Generic1 d, SymbolicInput (G.Rep1 d), HasRep (G.Rep1 d) c, Symbolic c)
+    => d c -> Bool c
+  isValid = isValid . G.from1
 
-instance Symbolic c => SymbolicInput (Bool c) where
+instance SymbolicInput Bool where
   isValid (Bool b) = Bool $
     fromCircuitF b $
       \(G.Par1 v) -> do
         u <- newAssigned (\x -> x v * (one - x v))
         isZero $ G.Par1 u
 
-instance (Symbolic c, LayoutFunctor f) => SymbolicInput (c f) where
+instance LayoutFunctor f => SymbolicInput (Vec f) where
   isValid _ = true
 
-instance Symbolic c => SymbolicInput (Proxy c) where
+instance SymbolicInput G.U1 where
   isValid _ = true
 
-instance
-  ( Context x ~ Context y
-  , SymbolicInput x
-  , SymbolicInput y
-  )
-  => SymbolicInput (x, y)
+instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
+  isValid (x G.:*: y) = isValid x && isValid y
 
-instance
-  ( Context x ~ Context y
-  , Context y ~ Context z
-  , SymbolicInput x
-  , SymbolicInput y
-  , SymbolicInput z
-  )
-  => SymbolicInput (x, y, z)
+instance (Zip f, LayoutFunctor f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
+  isValid = all isValid . G.unComp1
 
-instance (KnownNat n, SymbolicInput x) => SymbolicInput (Vector n x) where
-  isValid = all isValid
+instance SymbolicInput x => SymbolicInput (G.M1 i c x) where
+  isValid (G.M1 x) = isValid x
 
-class GSymbolicData u => GSymbolicInput u where
-  gisValid :: u x -> Bool (GContext u)
-
-instance
-  ( GContext u ~ GContext v
-  , GSymbolicInput u
-  , GSymbolicInput v
-  )
-  => GSymbolicInput (u G.:*: v)
-  where
-  gisValid (u G.:*: v) = gisValid u && gisValid v
-
-instance GSymbolicInput u => GSymbolicInput (G.M1 i c u) where
-  gisValid (G.M1 u) = gisValid u
-
-instance SymbolicInput x => GSymbolicInput (G.Rec0 x) where
-  gisValid (G.K1 x) = isValid x
+instance SymbolicInput x => SymbolicInput (G.Rec1 x) where
+  isValid (G.Rec1 x) = isValid x

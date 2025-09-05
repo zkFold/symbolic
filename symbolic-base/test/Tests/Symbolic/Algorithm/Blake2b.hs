@@ -23,6 +23,7 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
+import ZkFold.Symbolic.Data.Vec (runVec)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
 blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
@@ -60,7 +61,7 @@ equalityBlake target input = fromConstant target ZkFold.== blake2b_224 @3 @c inp
 blake2bSymbolic :: Spec
 blake2bSymbolic =
   let ac :: ArithmeticCircuit Fr ((U1 :*: U1) :*: Vector 24 :*: U1) Par1
-      ac = compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
+      ac = runVec $ compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
       ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
       input = runInterpreter bs
    in it "simple test with cardano-crypto " $ eval1 ac ((U1 :*: U1) :*: input :*: U1) == 1

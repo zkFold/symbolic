@@ -1,10 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
   TransactionBatch (..),
 ) where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1, (:*:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -22,7 +23,7 @@ import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data TransactionBatch context = TransactionBatch
-  { tbDataHashes :: List context (DAIndex context, HashSimple context)
+  { tbDataHashes :: List (DAIndex :*: HashSimple) context
   -- ^ Hash of 'TransactionBatchData' indexed by the corresponding data availability source.
   , tbBridgeIn :: HashSimple context
   -- ^ Hash of the 'AssetValues' that are bridged into the ledger.
@@ -33,15 +34,8 @@ data TransactionBatch context = TransactionBatch
   , tbPreviousBatch :: HashSimple context
   -- ^ Hash of the previous transaction batch.
   }
-  deriving stock Generic
-
-instance
-  ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
-  , Symbolic context
-  )
-  => SymbolicData (TransactionBatch context)
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
 
 instance
   ( KnownRegistersAssetQuantity context

@@ -12,6 +12,7 @@ import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Maybe (isJust)
+import ZkFold.Symbolic.Data.Vec (runVec)
 
 import ZkFold.Symbolic.UPLC.Data (Data)
 import ZkFold.Symbolic.UPLC.Evaluation (ExValue (ExValue), MaybeValue (..), Sym, eval)
@@ -43,9 +44,9 @@ convert
   -- ^ Type of a script.
   -> SomeCircuit
   -- ^ Result of a conversion.
-convert t SpendingV1 = SomeCircuit $ compile (spendingContract t)
-convert t OtherV1 = SomeCircuit $ compile (otherContract t)
-convert t V3 = SomeCircuit $ compile (contractV3 t)
+convert t SpendingV1 = SomeCircuit $ runVec $ compile (spendingContract t)
+convert t OtherV1 = SomeCircuit $ runVec $ compile (otherContract t)
+convert t V3 = SomeCircuit $ runVec $ compile (contractV3 t)
 
 -- | Datum context.
 type DatumCtx c = Data c

@@ -1,5 +1,8 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Examples.ECDSA (exampleECDSA) where
 
+import GHC.Generics ((:*:))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
@@ -17,6 +20,6 @@ exampleECDSA
   => KnownFFA FqModulus 'Auto ctx
   => Pallas_Point ctx
   -> FFA FqModulus 'Auto ctx
-  -> (FFA FqModulus 'Auto ctx, FFA FqModulus 'Auto ctx)
+  -> (FFA FqModulus 'Auto :*: FFA FqModulus 'Auto) ctx
   -> Bool ctx
 exampleECDSA = ecdsaVerify @256

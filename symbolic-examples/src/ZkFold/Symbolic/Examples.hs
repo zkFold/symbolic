@@ -6,14 +6,17 @@ import Control.DeepSeq (NFData)
 import Data.Function (($))
 import Data.String (String)
 import Data.Type.Equality (type (~))
+import ZkFold.Algebra.Class (Order)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Binary (Binary)
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compiler (SymbolicFunction (..))
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class (Domain, Range, SymbolicData (..), SymbolicFunction (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
@@ -40,25 +43,22 @@ type B = Zp FpModulus
 data ExampleOutput where
   ExampleOutput
     :: forall a i o
-     . ( Binary a
+     . ( Arithmetic a
+       , Binary a
        , SymbolicInput i
-       , Context i ~ CircuitContext a
+       , HasRep i (CircuitContext a)
        , SymbolicData o
-       , Context o ~ CircuitContext a
-       , NFData (Layout o a)
+       , NFData (Layout o (Order a) a)
        )
-    => (i -> o)
+    => (i (CircuitContext a) -> o (CircuitContext a))
     -> ExampleOutput
 
 exampleOutput
   :: forall a f
    . ( Binary a
      , SymbolicFunction f
-     , SymbolicInput (Domain f)
-     , Context (Domain f) ~ CircuitContext a
-     , SymbolicData (Range f)
-     , Context (Range f) ~ CircuitContext a
-     , NFData (Layout (Range f) a)
+     , Context f ~ CircuitContext a
+     , NFData (Layout (Range f) (Order a) a)
      )
   => f
   -> ExampleOutput
@@ -77,7 +77,7 @@ examples =
   , ("Conditional.Const", exampleOutput @A exampleConditionalConst) -- TODO: should be 1 constraint, 1 variable
   , ("Conditional.Const.Const", exampleOutput @A exampleConditionalConstConst)
   , ("FibonacciMod.100", exampleOutput @A $ exampleFibonacciMod 100) -- TODO: rework after the IVC implementation
-  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000 (CircuitContext _))) -- TODO: should be 3000*32 == 96000 constraints
+  , ("Reverse.32.3000", exampleOutput @A $ exampleReverseList @32 @(ByteString 3000)) -- TODO: should be 3000*32 == 96000 constraints
   , ("LEQ", exampleOutput @A exampleLEQ)
   , ("ByteString.And.32", exampleOutput @A $ exampleByteStringAnd @32)
   , ("ByteString.Or.64", exampleOutput @A $ exampleByteStringOr @64)
