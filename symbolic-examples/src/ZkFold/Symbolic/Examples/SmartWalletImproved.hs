@@ -37,7 +37,7 @@ import Deriving.Aeson
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Array
-import GHC.Generics (Par1 (..), U1 (..), type (:*:) (..))
+import GHC.Generics (Par1 (..), U1 (..), type (:*:) (..), Generic1  )
 import GHC.Natural (naturalToInteger)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -73,6 +73,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Input
+import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
@@ -102,19 +103,11 @@ data ExpModInput c
   { emiSig :: UInt 2048 Auto c
   , emiTokenName :: FieldElement c
   }
-  deriving Generic
+  deriving (Generic, Generic1)
 
-deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx 2048 'Auto
-  )
-  => SymbolicData (ExpModInput ctx)
+deriving instance SymbolicData ExpModInput
 
-deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx 2048 'Auto
-  )
-  => SymbolicInput (ExpModInput ctx)
+deriving instance SymbolicInput ExpModInput 
 
 expModContract
   :: forall c
@@ -144,7 +137,7 @@ expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) = hashAsFE * t
     pure $ Par1 ans
 
 expModCircuit :: Natural -> Natural -> ExpModCircuit
-expModCircuit pubE' pubN' = C.compile @Fr $ expModContract (RSA.PublicKey {..})
+expModCircuit pubE' pubN' = runVec $ C.compile @Fr $ expModContract (RSA.PublicKey {..})
  where
   pubE = fromConstant pubE'
   pubN = fromConstant pubN'
