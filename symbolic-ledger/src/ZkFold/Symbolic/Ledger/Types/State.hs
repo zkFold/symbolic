@@ -14,7 +14,7 @@ import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
 import ZkFold.Symbolic.Ledger.Types.Root (Root)
-import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, AssetValues, KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
@@ -27,7 +27,7 @@ data State context bi bo = State
   , sBridgeOut :: Hash (Vector bo (Address context, AssetValue context))
   -- ^ Assets that are bridged out of the ledger.
   -- We don't make it a nested vector as that would impose a length of nested vector even if user is not bridging more than one asset.
-  , sAccountInfo :: Root (Address context, Nonce context, Root (AssetValues context))
+  , sAccountInfo :: Root (Address context, Nonce context, Root (AssetValue context))
   -- ^ Merkle tree root for account information.
   }
   deriving stock Generic
