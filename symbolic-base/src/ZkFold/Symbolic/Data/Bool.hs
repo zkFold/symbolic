@@ -13,6 +13,7 @@ module ZkFold.Symbolic.Data.Bool (
   any,
   and,
   or,
+  assert,
 ) where
 
 import Control.Applicative (pure)
@@ -37,11 +38,11 @@ import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData, interpolate)
+import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import ZkFold.Symbolic.MonadCircuit (newAssigned, constraint)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
@@ -152,3 +153,13 @@ instance (Symbolic c, Semialign f, Traversable f) => Eq (Vec f c) where
           )
      in
       any Bool (unpacked result)
+
+-- | TODO: worth reusing in FFA and Hash modules
+assert :: (Symbolic c, SymbolicData h) => (h c -> Bool c) -> h c -> h c
+assert p x =
+  restore
+    ( fromCircuit2F (arithmetize $ p x) (arithmetize x) \(Par1 b) i -> do
+        constraint (\v -> v b - one)
+        pure i
+    , payload x
+    )
