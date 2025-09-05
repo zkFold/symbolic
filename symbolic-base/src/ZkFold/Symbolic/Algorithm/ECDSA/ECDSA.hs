@@ -5,15 +5,17 @@
 module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 
 import Data.Type.Equality
+import GHC.Generics ((:*:) (..))
 import GHC.TypeLits (KnownNat)
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
-import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
 import ZkFold.Symbolic.Data.UInt (UInt)
 
@@ -21,10 +23,10 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 ecdsaVerify
   :: forall n point curve p q baseField scalarField ctx
    . ( S.Symbolic ctx
-     , baseField ~ FFA q 'Auto ctx
-     , scalarField ~ FFA p 'Auto ctx
-     , point ~ Weierstrass curve (Point baseField)
-     , ScalarFieldOf point ~ scalarField
+     , baseField ~ FFA q 'Auto
+     , scalarField ~ FFA p 'Auto
+     , point ~ Point (Weierstrass curve) baseField ctx
+     , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
@@ -33,12 +35,12 @@ ecdsaVerify
      , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
      )
   => point
-  -> scalarField
-  -> (scalarField, scalarField)
+  -> scalarField ctx
+  -> (scalarField :*: scalarField) ctx
   -> Bool ctx
-ecdsaVerify publicKey messageHash (r, s) =
+ecdsaVerify publicKey messageHash (r :*: s) =
   case c of
-    Weierstrass (Point x _ isInf) ->
+    (Point x _ isInf) ->
       if isInf || r == zero || s == zero
         then false
         else (toUInt r :: UInt n 'Auto ctx) == toUInt x

@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Examples.UInt (
 ) where
 
 import Data.Type.Equality (type (~))
+import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (*))
 import ZkFold.Symbolic.Class (Symbolic (BaseField))
@@ -38,8 +39,8 @@ exampleUIntProductMod
   => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
   => KnownNat (NumberOfRegisters (BaseField c) n r)
   => Symbolic c
-  => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
-exampleUIntProductMod = productMod
+  => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r :*: UInt n r) c
+exampleUIntProductMod x y z = let (p, m) = productMod x y z in p :*: m
 
 exampleUIntDivMod
   :: ( KnownNat n
@@ -49,8 +50,8 @@ exampleUIntDivMod
      , KnownNat k
      , KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
      )
-  => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c)
-exampleUIntDivMod = divMod
+  => UInt n r c -> UInt n r c -> (UInt n r :*: UInt n r) c
+exampleUIntDivMod x y = let (d, m) = divMod x y in d :*: m
 
 exampleUIntExpMod
   :: forall n p m r c

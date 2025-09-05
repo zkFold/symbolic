@@ -8,20 +8,19 @@ import Prelude (fromInteger, ($))
 import qualified Prelude
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
 
-type Pallas_Point ctx =
-  Weierstrass "Pasta" (Point (FFA FpModulus 'Auto ctx))
+type Pallas_Point = Point (Weierstrass "Pasta") (FFA FpModulus 'Auto)
 
-type Vesta_Point ctx =
-  Weierstrass "Pasta" (Point (FFA FqModulus 'Auto ctx))
+type Vesta_Point = Point (Weierstrass "Pasta") (FFA FqModulus 'Auto)
 
 instance
   ( Symbolic ctx

@@ -19,9 +19,9 @@ import Data.Aeson (FromJSON (..), genericParseJSON)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Constraint (withDict)
 import Data.Kind (Type)
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import GHC.TypeLits (Symbol)
-import Prelude (($), (.), type (~))
+import Prelude (($), (.))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Number
@@ -36,16 +36,14 @@ import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
 -- | Types than can be represented as a Symbolic JSON string
-class IsSymbolicJSON a where
+class IsSymbolicJSON a c where
   type MaxLength a :: Natural
-
-  toJsonBits :: a -> VarByteString (MaxLength a) (Context a)
+  toJsonBits :: a c -> VarByteString (MaxLength a) c
 
 -- | Types than can be serialised
-class IsBits a where
+class IsBits a c where
   type BitCount a :: Natural
-
-  toBits :: a -> VarByteString (BitCount a) (Context a)
+  toBits :: a c -> VarByteString (BitCount a) c
 
 -- | Signing algorithm for JWT (such as RS256)
 class SigningAlgorithm (alg :: Symbol) where
@@ -55,18 +53,9 @@ class SigningAlgorithm (alg :: Symbol) where
   type Hash alg (ctx :: (Type -> Type) -> Type) :: Type
 
 -- | Types that can act as JWT Payload
-class IsTokenPayload (alg :: Symbol) a where
-  signPayload
-    :: a
-    -> SKey alg (Context a)
-    -> (TokenHeader (Context a), Signature alg (Context a))
-
-  verifyJWT
-    :: TokenHeader (Context a)
-    -> a
-    -> Signature alg (Context a)
-    -> VKey alg (Context a)
-    -> (Bool (Context a), Hash alg (Context a))
+class IsTokenPayload (alg :: Symbol) a c where
+  signPayload :: a c -> SKey alg c -> (TokenHeader c, Signature alg c)
+  verifyJWT :: TokenHeader c -> a c -> Signature alg c -> VKey alg c -> (Bool c, Hash alg c)
 
 -- | Json Web Token header with information about encryption algorithm and signature
 data TokenHeader ctx
@@ -78,7 +67,7 @@ data TokenHeader ctx
   , hdTyp :: VarByteString 32 ctx
   -- ^ Type of token
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving instance HEq ctx => P.Eq (TokenHeader ctx)
 
@@ -86,15 +75,11 @@ deriving instance HShow ctx => P.Show (TokenHeader ctx)
 
 deriving instance HNFData ctx => NFData (TokenHeader ctx)
 
-deriving instance Symbolic ctx => SymbolicData (TokenHeader ctx)
-
-deriving instance Symbolic ctx => SymbolicInput (TokenHeader ctx)
-
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-instance Symbolic ctx => IsSymbolicJSON (TokenHeader ctx) where
-  type MaxLength (TokenHeader ctx) = 648
+instance Symbolic ctx => IsSymbolicJSON TokenHeader ctx where
+  type MaxLength TokenHeader = 648
   toJsonBits TokenHeader {..} =
     force $
       (fromType @"{\"alg\":\"")
@@ -105,28 +90,26 @@ instance Symbolic ctx => IsSymbolicJSON (TokenHeader ctx) where
         @+ hdTyp
         `VB.append` (fromType @"\"}")
 
-instance Symbolic ctx => IsBits (TokenHeader ctx) where
-  type BitCount (TokenHeader ctx) = 864
+instance Symbolic ctx => IsBits TokenHeader ctx where
+  type BitCount TokenHeader = 864
   toBits = toAsciiBits
 
 toAsciiBits
   :: forall a ctx
-   . IsSymbolicJSON a
-  => Context a ~ ctx
+   . IsSymbolicJSON a ctx
   => KnownNat (MaxLength a)
   => Symbolic ctx
-  => a -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
+  => a ctx -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
 
-type TokenBits a = (IsBits a, KnownNat (872 + BitCount a))
+type TokenBits a c = (IsBits a c, KnownNat (872 + BitCount a))
 
 tokenBits
   :: forall p ctx
    . Symbolic ctx
-  => Context p ~ ctx
-  => TokenBits p
+  => TokenBits p ctx
   => TokenHeader ctx
-  -> p
+  -> p ctx
   -> VarByteString (864 + 8 + BitCount p) ctx
 tokenBits h p =
   force $

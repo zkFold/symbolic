@@ -1,10 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class (Symbolic (..))
@@ -24,17 +25,9 @@ data OutputRef context = OutputRef
   { outputRefId :: TxRefId context
   , outputRefIndex :: TxRefIndex context
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving instance HEq context => Haskell.Eq (OutputRef context)
-
-instance
-  (Symbolic context, KnownRegisters context 32 Auto)
-  => SymbolicData (OutputRef context)
-
-instance
-  (Symbolic context, KnownRegisters context 32 Auto)
-  => SymbolicInput (OutputRef context)
 
 instance
   (Symbolic context, KnownRegisters context 32 Auto)

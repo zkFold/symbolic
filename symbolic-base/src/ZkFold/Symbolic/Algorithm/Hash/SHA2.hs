@@ -27,7 +27,7 @@ import Data.Type.Bool (If)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
-import GHC.Generics (Par1 (..))
+import GHC.Generics (Par1 (..), type (:.:) (..))
 import GHC.TypeLits (Symbol)
 import GHC.TypeNats (withKnownNat, type (<=?))
 import Prelude (Int, id, pure, zip, ($), ($!), (.), (>>=))
@@ -435,10 +435,11 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
     -> V.Vector (ByteString (WordSize algorithm) context)
   varStep hn (ix, chunk) =
     toV $
-      bool @(Bool context)
-        (Vector @8 hn)
-        (Vector @8 $ processChunkPure @algorithm @context hn chunk)
-        (len > fromConstant (ix * chunkSize))
+      unComp1 $
+        bool @(Bool context)
+          (Comp1 $ Vector @8 hn)
+          (Comp1 $ Vector @8 $ processChunkPure @algorithm @context hn chunk)
+          (len > fromConstant (ix * chunkSize))
 
 processChunkPure
   :: forall algorithm context

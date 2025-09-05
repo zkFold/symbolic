@@ -32,6 +32,7 @@ import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Data.Word (Word8)
+import GHC.Generics ((:.:) (..))
 import GHC.TypeLits (SomeNat (..), Symbol)
 import GHC.TypeNats (someNatVal, type (<=?))
 import Prelude (($), (.), (<$>))
@@ -64,7 +65,7 @@ import ZkFold.Symbolic.Data.Combinators (
   Ceil,
   GetRegisterSize,
   Iso (..),
-  NumberOfRegisters,
+  KnownRegisters,
   RegisterSize (..),
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -150,12 +151,7 @@ type Keccak algorithm context k =
   , -- So that we are dealing with "byte"strings.
     Mod k 8 ~ 0
   , Symbolic context
-  , KnownNat
-      ( NumberOfRegisters
-          (BaseField context)
-          (NumberOfBits (BaseField context))
-          Auto
-      )
+  , KnownRegisters context (NumberOfBits (BaseField context)) Auto
   , KnownNat
       ( Ceil
           ( GetRegisterSize
@@ -372,10 +368,11 @@ absorbBlocksVar paddedMsgLen blocks =
           ( \accState (fromZp -> ix, chunk) ->
               let state' = updateStateInAbsorption @algorithm @context chunk threshold accState
                   ixFE :: FieldElement context = fromConstant ix
-               in ifThenElse
-                    (ixFE < numChunksToDrop)
-                    accState
-                    (keccakF @context state')
+               in unComp1 $
+                    ifThenElse
+                      (ixFE < numChunksToDrop)
+                      (Comp1 accState)
+                      (Comp1 $ keccakF @context state')
           )
           emptyState
           (zip (tabulate P.id) blockChunks)

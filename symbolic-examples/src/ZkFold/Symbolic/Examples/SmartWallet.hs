@@ -40,7 +40,7 @@ import Deriving.Aeson
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Array
-import GHC.Generics (Par1 (..), U1 (..), type (:*:) (..))
+import GHC.Generics (Generic1, Par1 (..), U1 (..), type (:*:) (..))
 import GHC.Natural (naturalToInteger)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -77,6 +77,7 @@ import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
+import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
@@ -261,21 +262,11 @@ data ExpModInput c
   , emiSig :: UInt 2048 Auto c
   , emiTokenName :: FieldElement c
   }
-  deriving Generic
+  deriving Generic1
 
-deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx RSA.PubExponentSize 'Auto
-  , KnownRegisters ctx 2048 'Auto
-  )
-  => SymbolicData (ExpModInput ctx)
+deriving instance SymbolicData ExpModInput
 
-deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx RSA.PubExponentSize 'Auto
-  , KnownRegisters ctx 2048 'Auto
-  )
-  => SymbolicInput (ExpModInput ctx)
+deriving instance SymbolicInput ExpModInput
 
 expModContract
   :: forall c
@@ -304,7 +295,7 @@ expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * t
     pure $ Par1 ans
 
 expModCircuit :: ExpModCircuit
-expModCircuit = C.compile @Fr expModContract
+expModCircuit = runVec $ C.compile @Fr expModContract
 
 expModSetup
   :: forall t
@@ -419,8 +410,8 @@ expModProofMock x ps empi = proof
 -- A meaningless function with range and polynomial constraints for debugging
 -- The number of constraints depends on ExpModCircuitGatesMock
 --
-debugFun :: forall c. Symbolic c => c Par1 -> c Par1
-debugFun cp = fromCircuitF cp $ \(Par1 i) -> do
+debugFun :: forall c. Symbolic c => Vec Par1 c -> Vec Par1 c
+debugFun (Vec cp) = Vec $ fromCircuitF cp $ \(Par1 i) -> do
   o <- newAssigned $ \p -> p i + fromConstant @Natural 42
   o' <- newAssigned $ \p -> p o * p i
   let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
@@ -433,7 +424,7 @@ debugFun cp = fromCircuitF cp $ \(Par1 i) -> do
   pure $ Par1 out
 
 debugCircuit :: ArithmeticCircuit Fr Par1 Par1
-debugCircuit = C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
+debugCircuit = runVec $ C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
 
 expModProofDebug
   :: forall t
@@ -491,7 +482,7 @@ readPointers xPtr psPtr proofInputPtr = do
   let x = toZp $ read xStr
 
   psStr <- peekCString psPtr
-  let ps = PlonkupProverSecret $ V.unsafeToVector $ (toZp . read) <$> words psStr
+  let ps = PlonkupProverSecret $ V.unsafeToVector $ toZp . read <$> words psStr
 
   [e, m, s, t] <- words <$> peekCString proofInputPtr
   let empi = ExpModProofInput (read e) (read m) (read s) (read t)

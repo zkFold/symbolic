@@ -5,7 +5,6 @@ module ZkFold.Algebra.EllipticCurve.Jubjub (
   Jubjub_Base,
   Jubjub_Scalar,
   Jubjub_Point,
-  Jubjub_PointOf,
   Fl,
   Fq,
 ) where
@@ -25,9 +24,7 @@ instance Prime Jubjub_Scalar
 -- construction."
 type Jubjub_Base = BLS12_381_Scalar
 
-type Jubjub_PointOf baseField = TwistedEdwards "jubjub" (AffinePoint baseField)
-
-type Jubjub_Point = Jubjub_PointOf Fq
+type Jubjub_Point = TwistedEdwards "jubjub" (AffinePoint Fq)
 
 type Fl = Zp Jubjub_Scalar
 

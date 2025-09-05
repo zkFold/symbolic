@@ -7,16 +7,17 @@ import Data.Function (($))
 import qualified Prelude
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
-import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_PointOf, Jubjub_Scalar)
+import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
+import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
+import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
 
-type Jubjub_Point ctx = Jubjub_PointOf (FFA Jubjub_Base 'Auto ctx)
+type Jubjub_Point = AffinePoint (TwistedEdwards "jubjub") (FFA Jubjub_Base 'Auto)
 
 instance
   ( Symbolic ctx

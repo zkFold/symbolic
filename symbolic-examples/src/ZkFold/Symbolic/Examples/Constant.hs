@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeOperators #-}
+
 module ZkFold.Symbolic.Examples.Constant (
   exampleConst,
   exampleConditionalConst,
@@ -8,6 +10,7 @@ module ZkFold.Symbolic.Examples.Constant (
 
 import Control.Monad.Representable.Reader (Representable (tabulate))
 import Data.Function (const, ($))
+import GHC.Generics ((:.:) (Comp1))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Number (KnownNat, Natural)
 import ZkFold.Data.Vector (Vector)
@@ -32,6 +35,6 @@ exampleEqConst = exampleEq exampleConst
 
 exampleEqVectorConst
   :: (KnownNat n, Symbolic c)
-  => Vector n (FieldElement c)
+  => (Vector n :.: FieldElement) c
   -> Bool c
-exampleEqVectorConst = exampleEqVector (tabulate $ const exampleConst)
+exampleEqVectorConst = exampleEqVector (Comp1 $ tabulate $ const exampleConst)

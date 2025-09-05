@@ -6,9 +6,7 @@ module ZkFold.Algebra.EllipticCurve.Secp256k1 (
   Secp256k1_Base,
   Secp256k1_Scalar,
   Secp256k1_Point,
-  Secp256k1_PointOf,
   Secp256k1_JacobianPoint,
-  Secp256k1_JacobianPointOf,
   Fn,
   Fp,
 ) where
@@ -26,13 +24,9 @@ type Secp256k1_Base = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE
 
 instance Prime Secp256k1_Base
 
-type Secp256k1_Point = Secp256k1_PointOf Fp
+type Secp256k1_Point = Weierstrass "secp256k1" (Point Fp)
 
-type Secp256k1_PointOf field = Weierstrass "secp256k1" (Point field)
-
-type Secp256k1_JacobianPoint = Secp256k1_JacobianPointOf Fp
-
-type Secp256k1_JacobianPointOf field = Weierstrass "secp256k1" (JacobianPoint field)
+type Secp256k1_JacobianPoint = Weierstrass "secp256k1" (JacobianPoint Fp)
 
 type Fn = Zp Secp256k1_Scalar
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -10,8 +10,9 @@ module ZkFold.Symbolic.Data.Ord (
 ) where
 
 import Control.DeepSeq (NFData)
-import Data.Foldable (fold, toList)
+import Data.Foldable (Foldable, fold, toList)
 import Data.Function (on)
+import Data.Functor (Functor)
 import Data.List (concatMap, reverse, zipWith)
 import Data.Traversable (traverse)
 import GHC.Generics
@@ -28,6 +29,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion)
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 class Monoid ordering => IsOrdering ordering where
@@ -143,14 +145,12 @@ instance KnownNat n => Ord (Zp n) where
 
 newtype Ordering c = Ordering (c Par1)
   deriving Generic
-
-deriving instance HNFData c => NFData (Ordering c)
+  deriving SymbolicData via (Vec Par1)
+  deriving (Eq, Ord) via (Vec Par1 c)
 
 deriving instance HShow c => Show (Ordering c)
 
-deriving newtype instance Symbolic c => Eq (Ordering c)
-
-instance Symbolic c => SymbolicData (Ordering c)
+instance HNFData c => NFData (Ordering c)
 
 instance Symbolic c => Semigroup (Ordering c) where
   Ordering o1 <> Ordering o2 = Ordering $
@@ -167,15 +167,15 @@ instance Symbolic c => IsOrdering (Ordering c) where
   eq = Ordering $ embed (Par1 zero)
   gt = Ordering $ embed (Par1 one)
 
-instance (Symbolic c, LayoutFunctor f) => Ord (c f) where
-  type OrderingOf (c f) = Ordering c
+instance (Symbolic c, LayoutFunctor f) => Ord (Vec f c) where
+  type OrderingOf (Vec f c) = Ordering c
   ordering x y z o = bool (bool x y (o == eq)) z (o == gt)
-  compare = bitwiseCompare `on` getBitsBE
+  compare = bitwiseCompare `on` (getBitsBE . runVec)
 
 bitwiseCompare :: forall c. Symbolic c => c [] -> c [] -> Ordering c
 bitwiseCompare x y = fold ((zipWith (compare `on` Bool) `on` unpacked) x y)
 
-getBitsBE :: forall c f. (Symbolic c, LayoutFunctor f) => c f -> c []
+getBitsBE :: forall c f. (Symbolic c, Foldable f, Functor f) => c f -> c []
 -- ^ @getBitsBE x@ returns a list of circuits computing bits of @x@, eldest to
 -- youngest.
 getBitsBE x =
@@ -194,8 +194,6 @@ instance Symbolic c => Ord (Bool c) where
       \(Par1 v1) (Par1 v2) -> fmap Par1 $
         newAssigned $
           \x -> let x1 = x v1; x2 = x v2 in x1 - x2
-
-deriving newtype instance Symbolic c => Ord (Ordering c)
 
 class
   ( GEq u

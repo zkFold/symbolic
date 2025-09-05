@@ -1,10 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module ZkFold.Symbolic.Cardano.Types.Input where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq)
@@ -24,7 +25,7 @@ data Input tokens datum context = Input
   { txiOutputRef :: OutputRef context
   , txiOutput :: Output tokens datum context
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -35,22 +36,6 @@ instance
   => Eq (Input tokens datum context)
 
 deriving instance HEq context => Haskell.Eq (Input tokens datum context)
-
-instance
-  ( Symbolic context
-  , KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
-  )
-  => SymbolicData (Input tokens datum context)
-
-instance
-  ( Symbolic context
-  , KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
-  )
-  => SymbolicInput (Input tokens datum context)
 
 txiAddress :: Input tokens datum context -> Address context
 txiAddress (Input _ txo) = txoAddress txo

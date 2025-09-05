@@ -3,8 +3,8 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.RandomOracle where
 
+import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (Log2)
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
@@ -41,7 +41,6 @@ randomOracle
   :: forall context
    . ( Symbolic context
      , Bits (FieldElement context) ~ context (Vector 256)
-     , Log2 (Order (BaseField context)) ~ 255
      )
   => BaseField context -> Tx context -> FieldElement context -> Bool context
 randomOracle c tx w =
@@ -52,11 +51,11 @@ randomOracle c tx w =
     -- Extracting information about the transaction
     seed = hash $ txiOutputRef $ txInputs tx !! 0
     Value vs = txoTokens $ txOutputs tx !! 0
-    ((p, name), n) = vs !! 1
-    policyId = fst $ fst $ getValue (txMint tx) !! 0
+    SingleAsset p name n = vs !! 1
+    SingleAsset policyId _ _ = getValue (txMint tx) !! 0
 
     -- Computing the random number
-    r = hash (w, seed)
+    r = hash (w :*: seed)
 
     -- The token's policy is correct
     conditionPolicyId = p == policyId
