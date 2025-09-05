@@ -42,7 +42,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned, constraint)
+import ZkFold.Symbolic.MonadCircuit (constraint, newAssigned)
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
