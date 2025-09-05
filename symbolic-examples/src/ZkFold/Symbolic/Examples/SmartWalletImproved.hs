@@ -37,7 +37,7 @@ import Deriving.Aeson
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Array
-import GHC.Generics (Par1 (..), U1 (..), type (:*:) (..), Generic1  )
+import GHC.Generics (Generic1, Par1 (..), U1 (..), type (:*:) (..))
 import GHC.Natural (naturalToInteger)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -73,8 +73,8 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
+import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
@@ -107,7 +107,7 @@ data ExpModInput c
 
 deriving instance SymbolicData ExpModInput
 
-deriving instance SymbolicInput ExpModInput 
+deriving instance SymbolicInput ExpModInput
 
 expModContract
   :: forall c
