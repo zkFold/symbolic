@@ -11,7 +11,6 @@ import GHC.Generics (Generic)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
@@ -41,7 +40,6 @@ instance
 
 instance
   ( KnownRegistersAssetQuantity context
-  , KnownRegisters context 256 Auto
   , Symbolic context
   )
   => Eq (Transaction context)

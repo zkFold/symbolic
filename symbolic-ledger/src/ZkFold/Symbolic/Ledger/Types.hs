@@ -22,7 +22,6 @@ import ZkFold.Symbolic.Data.Combinators (
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.UInt (OrdWord)
 import ZkFold.Symbolic.Fold (SymbolicFold)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.Root
@@ -39,7 +38,7 @@ import ZkFold.Symbolic.Ledger.Types.Value
     - Stake delegation and governance is implemented through contracts.
 -}
 
-type Signature context =
+type Signature context t =
   ( KnownRegistersAssetQuantity context
   , KnownRegisters context 11 Auto
   , SymbolicFold context
@@ -48,8 +47,8 @@ type Signature context =
     -- TODO: Remove @ImpredicativeTypes@ extension from symbolic-ledger once above 'Hashable' issue is sorted.
     Hashable (HashSimple context) (AssetValues context)
   , Hashable (HashSimple context) (Transaction context)
-  , Hashable (HashSimple context) (TransactionBatch context)
+  , Hashable (HashSimple context) (TransactionBatch context t)
   , forall s. Hashable (HashSimple s) (AssetValues s)
   , forall s. Hashable (HashSimple s) (Transaction s)
-  , forall s. Hashable (HashSimple s) (TransactionBatch s)
+  , forall s. Hashable (HashSimple s) (TransactionBatch s t)
   )

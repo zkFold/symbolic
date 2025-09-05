@@ -5,32 +5,31 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
 ) where
 
 import GHC.Generics (Generic)
+import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Eq (Eq)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.List (List)
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
-import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple)
-import ZkFold.Symbolic.Ledger.Types.Root (Root)
+import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
-data TransactionBatch c = TransactionBatch
-  { tbAddressTransactionsRoot :: Root (Address c, List c (HashSimple c))
-  -- ^ Merkle tree root of the address's transactions.
-  , tbAddresses :: List c (Address c)
-  -- ^ List of addresses included in the batch which are sending funds.
+newtype TransactionBatch c t = TransactionBatch
+  { tbTransactions :: Vector t (Transaction c)
+  -- ^ Vector of transaction hashes.
   }
   deriving stock Generic
 
 instance
-  ( KnownRegistersAssetQuantity context
-  , Symbolic context
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  , KnownNat t
   )
-  => SymbolicData (TransactionBatch context)
+  => SymbolicData (TransactionBatch context t)
 
 instance
-  ( KnownRegistersAssetQuantity context
-  , Symbolic context
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  , KnownNat t
   )
-  => Eq (TransactionBatch context)
+  => Eq (TransactionBatch context t)

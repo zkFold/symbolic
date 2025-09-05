@@ -11,7 +11,7 @@ import qualified ZkFold.Symbolic.Data.Hash as Symbolic.Hash
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Hash type used in the zkFold ledger.
-type Hash a = Symbolic.Hash.Hash (FieldElement (Context a)) a
+type Hash a = Symbolic.Hash.Hash (HashSimple (Context a)) a
 
 -- TODO: Introduce a phantom type to track hash relation? Also should likely add strong typing than synonyms.
 
