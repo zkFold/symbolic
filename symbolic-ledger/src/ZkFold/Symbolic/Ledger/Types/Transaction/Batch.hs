@@ -12,7 +12,6 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 newtype TransactionBatch c t = TransactionBatch
   { tbTransactions :: Vector t (Transaction c)
