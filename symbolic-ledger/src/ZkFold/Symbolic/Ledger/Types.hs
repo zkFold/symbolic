@@ -3,28 +3,25 @@
 module ZkFold.Symbolic.Ledger.Types (
   module ZkFold.Symbolic.Ledger.Types.Address,
   module ZkFold.Symbolic.Ledger.Types.Hash,
+  module ZkFold.Symbolic.Ledger.Types.State,
   module ZkFold.Symbolic.Ledger.Types.Transaction,
   module ZkFold.Symbolic.Ledger.Types.Root,
   module ZkFold.Symbolic.Ledger.Types.Value,
-  Signature,
+  SignatureTransaction,
+  SignatureTransactionBatch,
+  SignatureState,
 ) where
 
 -- Re-exports
 
 import GHC.TypeLits (KnownNat)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  KnownRegisters,
-  RegisterSize (Auto),
- )
 import ZkFold.Symbolic.Data.Hash (Hashable)
-import ZkFold.Symbolic.Data.UInt (OrdWord)
-import ZkFold.Symbolic.Fold (SymbolicFold)
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.Root
+import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
 
@@ -38,17 +35,28 @@ import ZkFold.Symbolic.Ledger.Types.Value
     - Stake delegation and governance is implemented through contracts.
 -}
 
-type Signature context t =
-  ( KnownRegistersAssetQuantity context
-  , KnownRegisters context 11 Auto
-  , SymbolicFold context
-  , KnownNat (Ceil (GetRegisterSize (BaseField context) 11 Auto) OrdWord)
-  , -- TODO: Can we derive 'Hashable h' based on constituents (using generic)?
-    -- TODO: Remove @ImpredicativeTypes@ extension from symbolic-ledger once above 'Hashable' issue is sorted.
-    Hashable (HashSimple context) (AssetValues context)
+type SignatureTransaction context =
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
   , Hashable (HashSimple context) (Transaction context)
-  , Hashable (HashSimple context) (TransactionBatch context t)
-  , forall s. Hashable (HashSimple s) (AssetValues s)
   , forall s. Hashable (HashSimple s) (Transaction s)
+  )
+
+type SignatureTransactionBatch context t =
+  ( SignatureTransaction context
+  , KnownNat t
+  , Hashable (HashSimple context) (TransactionBatch context t)
   , forall s. Hashable (HashSimple s) (TransactionBatch s t)
+  )
+
+type SignatureState context bi bo =
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  , KnownNat bi
+  , KnownNat bo
+  , Hashable (HashSimple context) (State context bi bo)
+  , forall s. Hashable (HashSimple s) (State s bi bo)
+  , Hashable (HashSimple context) (Vector bi (Address context, AssetValue context))
+  , Hashable (HashSimple context) (Vector bo (Address context, Address context, AssetValue context))
+  -- , forall s. Hashable (HashSimple s) (Vector bi (Address s, Address s, AssetValue s))
   )
