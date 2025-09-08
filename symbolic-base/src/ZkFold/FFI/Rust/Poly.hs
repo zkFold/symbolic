@@ -117,7 +117,8 @@ instance RustHaskell (RustVector Rust_BLS12_381_G1_Point) (V.Vector EC.BLS12_381
 
 instance RustHaskell (RustVector Rust_BLS12_381_G1_JacobianPoint) (V.Vector EC.BLS12_381_G1_JacobianPoint) where
   -- Rust Jacobian G1 points are just a newtype over Rust G1 points. We only need a type cast here
-  h2r vec = let RVector len dat = h2r (EC.project @_ @EC.BLS12_381_G1_Point <$> vec) 
-             in RVector len dat 
+  h2r vec =
+    let RVector len dat = h2r (EC.project @_ @EC.BLS12_381_G1_Point <$> vec)
+     in RVector len dat
 
   r2h = error "We don't want to use r2h for point vector"

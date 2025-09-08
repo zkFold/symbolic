@@ -84,7 +84,7 @@ instance
   where
   bilinear gs f = r2h @rustg $ bilinear (h2r @(RustVector rustg) gs) (h2r @rustp f)
 
-    {--
+{--
 instance
   {-# OVERLAPPABLE #-}
   ( CyclicGroup g
