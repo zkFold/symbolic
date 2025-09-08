@@ -20,7 +20,7 @@ import ZkFold.Data.Binary
 import ZkFold.FFI.Rust.Conversion
 import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.RustBLS ()
-import ZkFold.FFI.Rust.Types ()
+import ZkFold.FFI.Rust.Types (RustVector)
 
 class Monoid ts => ToTranscript ts a where
   toTranscript :: a -> ts
@@ -70,19 +70,21 @@ class NonInteractiveProof a where
 type RustFFI g pv rustg rustp =
   ( RustHaskell rustp pv
   , RustHaskell rustg g
-  , Bilinear (V.Vector rustg) rustp rustg
+  , RustHaskell (RustVector rustg) (V.Vector g)
+  , Bilinear (RustVector rustg) rustp rustg
   )
 
--- instance
---   {-# OVERLAPPABLE #-}
---   ( f ~ ScalarFieldOf g
---   , RustFFI g (PolyVec f size) rustg rustp
---   , UnivariateRingPolyVec f (PolyVec f)
---   )
---   => Bilinear (V.Vector rustg) (PolyVec f size) g
---   where
---   bilinear gs f = r2h @rustg $ bilinear gs (h2r @rustp f)
+instance
+  {-# OVERLAPPABLE #-}
+  ( f ~ ScalarFieldOf g
+  , RustFFI g (PolyVec f size) rustg rustp
+  , UnivariateRingPolyVec f (PolyVec f)
+  )
+  => Bilinear (V.Vector g) (PolyVec f size) g
+  where
+  bilinear gs f = r2h @rustg $ bilinear (h2r @(RustVector rustg) gs) (h2r @rustp f)
 
+    {--
 instance
   {-# OVERLAPPABLE #-}
   ( CyclicGroup g
@@ -94,3 +96,4 @@ instance
   => Bilinear (V.Vector g) (PolyVec f size) g
   where
   bilinear gs f = sum $ V.zipWith (\a b -> force $ scale a b) (fromPolyVec f) gs
+  --}
