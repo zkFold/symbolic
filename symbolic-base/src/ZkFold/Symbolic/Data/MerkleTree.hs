@@ -16,7 +16,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
 ) where
 
 import Data.Bool (otherwise)
-import Data.Foldable (foldl', toList, foldr)
+import Data.Foldable (foldl', foldr, toList)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Ord ((<=))
@@ -100,21 +100,24 @@ MerkleTree {..} `contains` MerkleEntry {..} =
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
 (!!)
-  :: forall d c . (Symbolic c, KnownNat (d - 1))
+  :: forall d c
+   . (Symbolic c, KnownNat (d - 1))
   => MerkleTree d c -> Index d c -> FieldElement c
 tree !! position =
-  assert (\value -> tree `contains` MerkleEntry {..}) $ fromBaseHash $
-    recIndex (fromBool <$> position) $ toBaseLeaves (leafHash tree)
-  where
-    recIndex
-      :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
-    recIndex i v = foldr splitter Data.head (toList i) (toV v)
-      where
-        splitter :: b -> (Data.Vector a -> a) -> Data.Vector a -> a
-        splitter b rec d = let (l, r) = bisect d in ifThenElse b (rec r) (rec l)
+  assert (\value -> tree `contains` MerkleEntry {..}) $
+    fromBaseHash $
+      recIndex (fromBool <$> position) $
+        toBaseLeaves (leafHash tree)
+ where
+  recIndex
+    :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
+  recIndex i v = foldr splitter Data.head (toList i) (toV v)
+   where
+    splitter :: b -> (Data.Vector a -> a) -> Data.Vector a -> a
+    splitter b rec d = let (l, r) = bisect d in ifThenElse b (rec r) (rec l)
 
-    fromBool :: Bool c -> Bool' c
-    fromBool (Bool b) = (== one) $ toIntegral $ unPar1 $ witnessF b
+  fromBool :: Bool c -> Bool' c
+  fromBool (Bool b) = (== one) $ toIntegral $ unPar1 $ witnessF b
 
 search
   :: forall c d
