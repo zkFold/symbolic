@@ -3,24 +3,25 @@
 
 module Tests.Symbolic.Data.MerkleTree (specMerkleTree) where
 
-import Test.QuickCheck (Arbitrary (arbitrary), (==>))
-import ZkFold.Symbolic.Class (Arithmetic)
-import Text.Show (Show, show)
+import qualified Data.Eq as P
+import Data.Function (($))
+import Data.Typeable (Typeable)
+import GHC.TypeLits (KnownNat)
 import Test.Hspec (Spec, describe)
+import Test.QuickCheck (Arbitrary (arbitrary), (==>))
+import Text.Show (Show, show)
+
+import Tests.Common (it, typeAt)
+import Tests.Symbolic.Data.Common (specConstantRoundtrip)
+import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
-import ZkFold.Symbolic.Data.MerkleTree
-import Tests.Common (typeAt, it)
-import ZkFold.Symbolic.Interpreter (Interpreter)
-import Data.Function (($))
-import GHC.TypeLits (KnownNat)
-import Data.Typeable (Typeable)
-import Tests.Symbolic.Data.Common (specConstantRoundtrip)
-import ZkFold.Symbolic.Data.Maybe (Maybe(fromJust))
-import qualified Data.Eq as P
 import ZkFold.Data.Eq ((==))
-import ZkFold.Algebra.Class
+import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Maybe (Maybe (fromJust))
+import ZkFold.Symbolic.Data.MerkleTree
+import ZkFold.Symbolic.Interpreter (Interpreter)
 
 specMerkleTree'
   :: forall d a
@@ -35,14 +36,17 @@ specMerkleTree' = describe (show $ typeAt @(MerkleTree d (Interpreter a))) do
   it "replace . search' == id" \(t :: MerkleTree d (Interpreter a)) position ->
     let pred x = x == fromConstant (toConstant (t !! position))
      in replace (fromJust $ search pred t) t P.== t
-  it "index . replace == id"
+  it
+    "index . replace == id"
     \(t :: MerkleTree d (Interpreter a)) position value ->
       replace MerkleEntry {..} t !! position P.== value
-  it "replace p x . replace p y == replace p x"
+  it
+    "replace p x . replace p y == replace p x"
     \(t :: MerkleTree d (Interpreter a)) p x y ->
       replace (MerkleEntry p x) (replace (MerkleEntry p y) t)
-      P.== replace (MerkleEntry p x) t
-  it "replace p x . replace q y == replace q y . replace p x"
+        P.== replace (MerkleEntry p x) t
+  it
+    "replace p x . replace q y == replace q y . replace p x"
     \(t :: MerkleTree d (Interpreter a)) p q x y ->
       let e = MerkleEntry p x
           f = MerkleEntry q y

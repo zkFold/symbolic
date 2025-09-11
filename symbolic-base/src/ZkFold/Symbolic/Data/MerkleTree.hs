@@ -33,10 +33,11 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
+import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
-import ZkFold.Data.Vector (Vector, mapWithIx, toV, unsafeToVector, zip, reverse)
-import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF, Arithmetic)
+import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector, zip)
+import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
@@ -44,10 +45,9 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
+import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
-import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
-import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 
 type Leaves d = Vector (Base.MerkleTreeSize d)
 
@@ -84,7 +84,8 @@ toLeaves src@MerkleTree {..} =
 
 instance
   (Symbolic c, BaseField c ~ a, Base.MerkleTreeSize d ~ n)
-  => FromConstant (Vector n a) (MerkleTree d c) where
+  => FromConstant (Vector n a) (MerkleTree d c)
+  where
   fromConstant = fromLeaves . fmap fromConstant
 
 instance Arithmetic a => ToConstant (MerkleTree d (Interpreter a)) where

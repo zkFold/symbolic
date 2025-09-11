@@ -28,6 +28,7 @@ import Data.These (These (..))
 import Data.Traversable (Traversable, for)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..))
+import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
 import qualified Prelude as Haskell
 
@@ -43,7 +44,6 @@ import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (constraint, newAssigned)
-import Test.QuickCheck (Arbitrary (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
