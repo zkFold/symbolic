@@ -19,6 +19,8 @@ import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), true)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import Data.Functor.Classes (Show1)
+import Text.Show (Show)
 
 newtype Payloaded f d c = Payloaded
   { runPayloaded
@@ -27,6 +29,11 @@ newtype Payloaded f d c = Payloaded
            , Payload d (Order (BaseField c)) (WitnessField c)
            )
   }
+
+deriving instance
+  ( Show1 f, Show (Layout d (Order (BaseField c)) (WitnessField c))
+  , Show (Payload d (Order (BaseField c)) (WitnessField c))
+  ) => Show (Payloaded f d c)
 
 payloaded
   :: forall f d c

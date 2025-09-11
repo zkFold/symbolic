@@ -43,6 +43,7 @@ import ZkFold.Symbolic.Data.Combinators (runInvert)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (constraint, newAssigned)
+import Test.QuickCheck (Arbitrary (..))
 
 -- TODO (Issue #18): hide this constructor
 newtype Bool c = Bool (c Par1)
@@ -62,6 +63,9 @@ instance {-# OVERLAPPING #-} (Haskell.Eq a, MultiplicativeMonoid a) => Show (Boo
 
 instance Symbolic c => FromConstant Haskell.Bool (Bool c) where
   fromConstant b = ifThenElse b true false
+
+instance Symbolic c => Arbitrary (Bool c) where
+  arbitrary = fromConstant @Haskell.Bool <$> arbitrary
 
 instance Symbolic c => BoolType (Bool c) where
   true = Bool $ embed (Par1 one)

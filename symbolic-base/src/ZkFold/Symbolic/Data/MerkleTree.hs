@@ -12,6 +12,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
   (!!),
   search,
   search',
+  KnownMerkleTree,
   replace,
 ) where
 
@@ -34,8 +35,8 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
-import ZkFold.Data.Vector (Vector, mapWithIx, toV, unsafeToVector, zip)
-import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF)
+import ZkFold.Data.Vector (Vector, mapWithIx, toV, unsafeToVector, zip, reverse)
+import ZkFold.Symbolic.Class (BaseField, Symbolic, WitnessField, embedW, witnessF, Arithmetic)
 import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
@@ -45,6 +46,8 @@ import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
+import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
+import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 
 type Leaves d = Vector (Base.MerkleTreeSize d)
 
@@ -53,6 +56,11 @@ data MerkleTree d c = MerkleTree
   , leafHash :: Payloaded (Leaves d) FieldElement c
   }
   deriving (Eq, Generic, Generic1, SymbolicData, SymbolicInput)
+
+instance HEq c => P.Eq (MerkleTree d c) where
+  MerkleTree rh _ == MerkleTree rh' _ = rh P.== rh'
+
+deriving instance (HShow c, P.Show (WitnessField c)) => P.Show (MerkleTree d c)
 
 emptyTree :: (KnownNat (Base.MerkleTreeSize d), Symbolic c) => MerkleTree d c
 emptyTree = fromLeaves zero
@@ -75,6 +83,15 @@ toLeaves src@MerkleTree {..} =
         fromFieldElement <$> restored leafHash
 
 instance
+  (Symbolic c, BaseField c ~ a, Base.MerkleTreeSize d ~ n)
+  => FromConstant (Vector n a) (MerkleTree d c) where
+  fromConstant = fromLeaves . fmap fromConstant
+
+instance Arithmetic a => ToConstant (MerkleTree d (Interpreter a)) where
+  type Const (MerkleTree d (Interpreter a)) = Vector (Base.MerkleTreeSize d) a
+  toConstant = runInterpreter . runVec . toLeaves
+
+instance
   (Symbolic c, Arbitrary (BaseField c), KnownNat (Base.MerkleTreeSize d))
   => Arbitrary (MerkleTree d c)
   where
@@ -95,7 +112,7 @@ contains
 MerkleTree {..} `contains` MerkleEntry {..} =
   let baseTree = Base.MerkleTree (toBaseHash rootHash) (toBaseLeaves leafHash)
       path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
-   in foldl' Base.hashWithSibling value (zip position path) == rootHash
+   in foldl' Base.hashWithSibling value (zip (reverse position) path) == rootHash
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
@@ -172,8 +189,10 @@ search'
   -> MerkleEntry d c
 search' p = assert (p . value) . fromJust . search p
 
+type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
+
 replace
-  :: (Symbolic c, KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
+  :: (Symbolic c, KnownMerkleTree d)
   => MerkleEntry d c -> MerkleTree d c -> MerkleTree d c
 replace entry@MerkleEntry {..} =
   assert (`contains` entry)
