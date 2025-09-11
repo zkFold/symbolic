@@ -123,7 +123,6 @@ library
       ZkFold.Symbolic.Examples.ReverseList
       ZkFold.Symbolic.Examples.RSA
       ZkFold.Symbolic.Examples.SmartWallet
-      ZkFold.Symbolic.Examples.SmartWalletImproved
       ZkFold.Symbolic.Examples.UInt
       ZkFold.Symbolic.Examples.UtxoAccumulator
       ZkFold.Symbolic.Examples.ZkLogin
