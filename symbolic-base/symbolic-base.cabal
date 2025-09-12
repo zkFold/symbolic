@@ -161,6 +161,7 @@ library
       ZkFold.Data.HFunctor.Classes
       ZkFold.Data.List.Infinite
       ZkFold.Data.Matrix
+      ZkFold.Data.Ord
       ZkFold.Data.Orphans
       ZkFold.Data.Package
       ZkFold.Data.Product

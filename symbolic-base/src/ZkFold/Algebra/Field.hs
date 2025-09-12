@@ -1,10 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Algebra.Field (
   IrreduciblePoly (..),
@@ -45,6 +45,7 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Prelude (iterate', log2ceiling)
+import ZkFold.Data.Ord (Ord)
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -76,6 +77,8 @@ instance KnownNat p => Haskell.Eq (Zp p) where
 
 instance KnownNat p => Haskell.Ord (Zp p) where
   Zp a <= Zp b = residue @p a Haskell.<= residue @p b
+
+deriving via (HaskellEqOrd (Zp n)) instance KnownNat n => Ord (Zp n)
 
 instance KnownNat p => Haskell.Enum (Zp p) where
   succ = (+ one)

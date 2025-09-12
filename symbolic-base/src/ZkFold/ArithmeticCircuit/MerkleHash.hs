@@ -18,11 +18,16 @@ import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import ZkFold.Data.Ord (Ord (..), IsOrdering (..))
+import Data.Semigroup (Semigroup (..))
+import Data.Monoid (Monoid (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M {runHash :: ByteString}
 
 data Prec
   = If
+  | Ordering
+  | Cmp
   | Or
   | Eq
   | Neq
@@ -106,6 +111,22 @@ instance BoolType (MerkleHash (Just 2)) where
   (&&) = (*)
   M x || M y = merkleHash (Or, x, y)
   xor = (+)
+
+instance Semigroup (MerkleHash (Just 3)) where
+  x <> y = ordering x y x x
+
+instance Monoid (MerkleHash (Just 3)) where
+  mempty = fromConstant (0 :: Natural)
+
+instance IsOrdering (MerkleHash (Just 3)) where
+  lt = fromConstant ((-1) :: Integer)
+  eq = mempty
+  gt = fromConstant (1 :: Natural)
+
+instance Ord (MerkleHash n) where
+  type OrderingOf (MerkleHash n) = MerkleHash (Just 3)
+  ordering (M x) (M y) (M z) (M o) = merkleHash (Ordering, x, y, z, o)
+  compare (M x) (M y) = merkleHash (Cmp, x, y)
 
 instance SemiEuclidean (MerkleHash Nothing) where
   div (M x) (M y) = merkleHash (Div, x, y)

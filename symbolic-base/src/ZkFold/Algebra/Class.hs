@@ -6,7 +6,6 @@
 
 module ZkFold.Algebra.Class where
 
-import Control.Applicative (Applicative (..))
 import Data.Bool (Bool (..), otherwise, (&&))
 import Data.Foldable (Foldable (foldl', foldl1, foldr))
 import Data.Function (const, flip, id, ($), (.))
@@ -15,7 +14,6 @@ import Data.Functor.Constant (Constant (..))
 import Data.Kind (Type)
 import Data.List (map, repeat, (++))
 import Data.Maybe (Maybe (..))
-import Data.Ord (Ord (..))
 import Data.Ratio (Rational)
 import Data.Type.Equality (type (~))
 import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
@@ -26,6 +24,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
 import ZkFold.Prelude (length, replicate, zipWith')
+import ZkFold.Data.Ord (Ord)
 
 infixl 7 .*, *., *, /
 
@@ -229,7 +228,7 @@ intPow :: MultiplicativeGroup a => a -> Integer -> a
 -- exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
 -- instance.
 intPow !a !n
-  | n < 0 = invert a ^ naturalFromInteger (-n)
+  | n Haskell.< 0 = invert a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
 
 --------------------------------------------------------------------------------
@@ -306,7 +305,7 @@ intScale :: AdditiveGroup a => Integer -> a -> a
 -- | A default implementation for integer scaling. Uses only natural scaling and
 -- @'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
 intScale !n !a
-  | n < 0 = naturalFromInteger (-n) `scale` negate a
+  | n Haskell.< 0 = naturalFromInteger (-n) `scale` negate a
   | otherwise = naturalFromInteger n `scale` a
 
 --------------------------------------------------------------------------------
@@ -329,7 +328,7 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 -- given @a@ and @b@.
 --
 -- This is a generalization of a notion of Euclidean domains to semirings.
-class Semiring a => SemiEuclidean a where
+class (Semiring a, Ord a) => SemiEuclidean a where
   {-# MINIMAL divMod | (div, mod) #-}
 
   divMod :: a -> a -> (a, a)
@@ -423,7 +422,7 @@ class (Ring a, Exponent a Integer, Eq a, Conditional (BooleanOf a) a) => Field a
 -- instance.
 intPowF :: Field a => a -> Integer -> a
 intPowF !a !n
-  | n < 0 = finv a ^ naturalFromInteger (-n)
+  | n Haskell.< 0 = finv a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
 
 -- | Class of finite structures. @Order a@ should be the actual number of
@@ -805,82 +804,3 @@ instance (SemiEuclidean a, Scale (Constant a f) (Constant a f)) => SemiEuclidean
   mod (Constant x) (Constant y) = Constant (mod x y)
 
 instance (Ring a, Scale (Constant a f) (Constant a f)) => Ring (Constant a f)
-
---------------------------------------------------------------------------------
-
-instance Finite a => Finite (Maybe a) where
-  type Order (Maybe a) = Order a
-
-instance FromConstant Integer a => FromConstant Integer (Maybe a) where
-  fromConstant = Just . fromConstant
-
-instance FromConstant Natural a => FromConstant Natural (Maybe a) where
-  fromConstant = Just . fromConstant
-
-instance AdditiveSemigroup a => AdditiveSemigroup (Maybe a) where
-  (+) :: Maybe a -> Maybe a -> Maybe a
-  (+) = liftA2 (+)
-
-instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Maybe a) where
-  (*) :: Maybe a -> Maybe a -> Maybe a
-  (*) = liftA2 (*)
-
-instance Scale Natural a => Scale Natural (Maybe a) where
-  scale = fmap . scale
-
-instance Scale Integer a => Scale Integer (Maybe a) where
-  scale = fmap . scale
-
-instance Zero a => Zero (Maybe a) where
-  zero = Just zero
-
-instance AdditiveMonoid a => AdditiveMonoid (Maybe a)
-
-instance Exponent a Natural => Exponent (Maybe a) Natural where
-  (^) :: Maybe a -> Natural -> Maybe a
-  (^) m n = liftA2 (^) m (Just n)
-
-instance Exponent a Integer => Exponent (Maybe a) Integer where
-  (^) :: Maybe a -> Integer -> Maybe a
-  (^) m n = liftA2 (^) m (Just n)
-
-instance MultiplicativeMonoid a => MultiplicativeMonoid (Maybe a) where
-  one :: Maybe a
-  one = Just one
-
-instance Semiring a => Semiring (Maybe a)
-
-instance AdditiveGroup a => AdditiveGroup (Maybe a) where
-  negate :: Maybe a -> Maybe a
-  negate = fmap negate
-
-instance Ring a => Ring (Maybe a)
-
-instance (Field a, Conditional (BooleanOf a) (Maybe a)) => Field (Maybe a) where
-  finv :: Maybe a -> Maybe a
-  finv = fmap finv
-
-  rootOfUnity :: Natural -> Maybe (Maybe a)
-  rootOfUnity = Just . rootOfUnity @a
-
-instance ToConstant a => ToConstant (Maybe a) where
-  type Const (Maybe a) = Maybe (Const a)
-  toConstant :: Maybe a -> Maybe (Const a)
-  toConstant = fmap toConstant
-
-instance Scale a a => Scale a (Maybe a) where
-  scale s = fmap (scale s)
-
-instance FromConstant a (Maybe a) where
-  fromConstant = Just
-
-instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
-  fromConstant = fmap fromConstant
-
-instance SemiEuclidean a => SemiEuclidean (Maybe a) where
-  divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
-  divMod _ _ = (Nothing, Nothing)
-
-instance Euclidean a => Euclidean (Maybe a) where
-  eea (Just x) (Just y) = let (g, s, t) = eea x y in (Just g, Just s, Just t)
-  eea _ _ = (Nothing, Nothing, Nothing)
