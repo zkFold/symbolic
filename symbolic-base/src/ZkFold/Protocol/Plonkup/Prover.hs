@@ -89,10 +89,10 @@ plonkupProve
     !bX = polyVecLinear (secret 3) (secret 4) * zhX + w2X :: PlonkupPolyExtended n g1 pv
     !cX = polyVecLinear (secret 5) (secret 6) * zhX + w3X :: PlonkupPolyExtended n g1 pv
 
-    !com = bilinear
-    !cmA = gs `com` aX
-    !cmB = gs `com` bX
-    !cmC = gs `com` cX
+    !com = bilinear gs
+    !cmA = com aX
+    !cmB = com bX
+    !cmC = com cX
 
     -- Round 2
 
@@ -124,9 +124,9 @@ plonkupProve
         :: PlonkupPolyExtended n g1 pv
     !h2X = polyVecLinear (secret 12) (secret 13) * zhX + polyVecInLagrangeBasis omega h2 :: PlonkupPolyExtended n g1 pv
 
-    !cmF = gs `com` fX
-    !cmH1 = gs `com` h1X
-    !cmH2 = gs `com` h2X
+    !cmF = com fX
+    !cmH1 = com h1X
+    !cmH2 = com h2X
 
     -- Round 3
 
@@ -178,8 +178,8 @@ plonkupProve
       polyVecQuadratic (secret 17) (secret 18) (secret 19) * zhX + polyVecInLagrangeBasis omega grandProduct2
         :: PlonkupPolyExtended n g1 pv
 
-    !cmZ1 = gs `com` z1X
-    !cmZ2 = gs `com` z2X
+    !cmZ1 = com z1X
+    !cmZ2 = com z2X
 
     -- Round 4
 
@@ -243,9 +243,9 @@ plonkupProve
     !qmidX = toPolyVec $ V.take (fromIntegral (n + 2)) $ V.drop (fromIntegral (n + 2)) $ fromPolyVec qX
     !qhighX = toPolyVec $ V.drop (fromIntegral (2 * (n + 2))) $ fromPolyVec qX
 
-    !cmQlow = gs `com` qlowX
-    !cmQmid = gs `com` qmidX
-    !cmQhigh = gs `com` qhighX
+    !cmQlow = com qlowX
+    !cmQmid = com qmidX
+    !cmQhigh = com qhighX
 
     -- Round 5
 
@@ -338,5 +338,5 @@ plonkupProve
       )
         `polyVecDiv` polyVecLinear one (negate (xi * omega))
 
-    !proof1 = gs `com` proofX1
-    !proof2 = gs `com` proofX2
+    !proof1 = com proofX1
+    !proof2 = com proofX2
