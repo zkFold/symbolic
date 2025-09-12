@@ -1,21 +1,22 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Data.Ord where
 
+import qualified Data.Bool as Haskell
+import Data.Functor.Constant (Constant (..))
 import Data.Monoid (Monoid)
 import qualified Data.Ord as Haskell
-import ZkFold.Data.Eq
-import qualified GHC.Generics as G
-import Data.Type.Equality (type (~))
-import ZkFold.Data.Bool
 import Data.Semigroup ((<>))
-import qualified Numeric.Natural as Haskell
-import qualified Data.Bool as Haskell
 import qualified Data.String as Haskell
+import Data.Type.Equality (type (~))
+import qualified GHC.Generics as G
 import qualified GHC.Integer as Haskell
-import Data.Functor.Constant (Constant (..))
+import qualified Numeric.Natural as Haskell
+
+import ZkFold.Data.Bool
+import ZkFold.Data.Eq
 
 class Monoid ordering => IsOrdering ordering where
   lt, eq, gt :: ordering

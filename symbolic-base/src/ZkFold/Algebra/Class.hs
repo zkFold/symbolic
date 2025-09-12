@@ -23,8 +23,8 @@ import qualified Prelude as Haskell
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
-import ZkFold.Prelude (length, replicate, zipWith')
 import ZkFold.Data.Ord (Ord)
+import ZkFold.Prelude (length, replicate, zipWith')
 
 infixl 7 .*, *., *, /
 

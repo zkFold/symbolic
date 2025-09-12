@@ -1,10 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Algebra.Field (
   IrreduciblePoly (..),
@@ -44,8 +44,8 @@ import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Binary
 import ZkFold.Data.Eq
-import ZkFold.Prelude (iterate', log2ceiling)
 import ZkFold.Data.Ord (Ord)
+import ZkFold.Prelude (iterate', log2ceiling)
 
 ------------------------------ Prime Fields -----------------------------------
 

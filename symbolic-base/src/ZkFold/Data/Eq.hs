@@ -1,14 +1,16 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Data.Eq where
 
 import Data.Bool (Bool)
 import qualified Data.Eq as Haskell
 import Data.Foldable (Foldable)
+import Data.Functor.Constant (Constant)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
+import qualified Data.Ord as Haskell
 import Data.Ratio (Rational)
 import Data.String (String)
 import Data.Type.Equality (type (~))
@@ -17,8 +19,6 @@ import Numeric.Natural (Natural)
 import Prelude (Integer)
 
 import ZkFold.Data.Bool
-import qualified Data.Ord as Haskell
-import Data.Functor.Constant (Constant)
 
 class BoolType (BooleanOf a) => Eq a where
   type BooleanOf a
@@ -41,7 +41,7 @@ class BoolType (BooleanOf a) => Eq a where
 elem :: (Eq a, Foldable t) => a -> t a -> BooleanOf a
 elem x = any (== x)
 
-newtype HaskellEqOrd a = HaskellEqOrd { runHaskellEqOrd :: a }
+newtype HaskellEqOrd a = HaskellEqOrd {runHaskellEqOrd :: a}
   deriving (Haskell.Eq, Haskell.Ord)
 
 instance Haskell.Eq a => Eq (HaskellEqOrd a) where

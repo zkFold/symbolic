@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.Ord (
@@ -23,6 +22,7 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
+import ZkFold.Data.Ord
 import ZkFold.Data.Package
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
@@ -30,7 +30,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
-import ZkFold.Data.Ord
 
 newtype Ordering c = Ordering (c Par1)
   deriving Generic
