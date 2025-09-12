@@ -7,23 +7,26 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Examples.SmartWallet (
+  -- ZK smart wallet proof/setup
   expModContract,
   expModCircuit,
   expModSetup,
   expModProof,
-  ExpModCircuitGates,
-  ExpModProofInput (..),
-  PlonkupTs,
+  -- Mock circuits for testing
   expModSetupMock,
   expModProofMock,
+  -- Circuit for debugging
   expModProofDebug,
-  ExpModCircuitGatesMock,
+  ExpModProofInput (..),
+  PlonkupTs,
+  ExpModCircuitGates,
   ZKSetupBytes (..),
   ZKProofBytes (..),
   ZKF (..),
   ByteStringFromHex (..),
   mkProof,
   mkSetup,
+  TranscriptConstraints,
 ) where
 
 import Data.Aeson (withText)
@@ -238,14 +241,24 @@ mkProof PlonkupProof {..} =
         , l1_xi = ZKF $ convertZp xi
         }
 
--- type ExpModCircuitGates = 2^17
 type ExpModCircuitGates = 2 ^ 18
 
-type ExpModLayout = ((Vector 1 :*: Vector 17) :*: (Vector 17 :*: Par1))
+type ExpModLayout = (Vector 17 :*: Par1)
 
-type ExpModCompiledInput = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (ExpModLayout :*: U1)
+type ExpModCompiledInput = ((U1 :*: U1) :*: U1) :*: (ExpModLayout :*: U1)
 
 type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
+
+data ExpModInput c
+  = ExpModInput
+  { emiSig :: UInt 2048 Auto c
+  , emiTokenName :: FieldElement c
+  }
+  deriving (Generic, Generic1)
+
+deriving instance SymbolicData ExpModInput
+
+deriving instance SymbolicInput ExpModInput
 
 type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
 
@@ -256,26 +269,15 @@ type TranscriptConstraints ts =
   , FromTranscript ts Fr
   )
 
-data ExpModInput c
-  = ExpModInput
-  { emiPKey :: RSA.PublicKey 2048 c
-  , emiSig :: UInt 2048 Auto c
-  , emiTokenName :: FieldElement c
-  }
-  deriving Generic1
-
-deriving instance SymbolicData ExpModInput
-
-deriving instance SymbolicInput ExpModInput
-
 expModContract
   :: forall c
    . Symbolic c
   => KnownNat (NumberOfRegisters (BaseField c) 4096 Auto)
   => KnownNat (Ceil (GetRegisterSize (BaseField c) 4096 Auto) OrdWord)
-  => ExpModInput c
+  => RSA.PublicKey 2048 c
+  -> ExpModInput c
   -> FieldElement c
-expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
+expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
  where
   msgHash :: UInt 2048 Auto c
   msgHash = exp65537Mod @c @2048 @2048 sig pubN
@@ -294,8 +296,11 @@ expModContract (ExpModInput RSA.PublicKey {..} sig tokenNameAsFE) = hashAsFE * t
     ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
     pure $ Par1 ans
 
-expModCircuit :: ExpModCircuit
-expModCircuit = runVec $ C.compile @Fr expModContract
+expModCircuit :: Natural -> Natural -> ExpModCircuit
+expModCircuit pubE' pubN' = runVec $ C.compile @Fr $ expModContract (RSA.PublicKey {..})
+ where
+  pubE = fromConstant pubE'
+  pubN = fromConstant pubN'
 
 expModSetup
   :: forall t
@@ -328,7 +333,7 @@ expModProof
    . TranscriptConstraints t
   => Fr
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
-  -> ExpModCircuit
+  -> (Natural -> Natural -> ExpModCircuit)
   -> ExpModProofInput
   -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
 expModProof x ps ac ExpModProofInput {..} = proof
@@ -336,10 +341,6 @@ expModProof x ps ac ExpModProofInput {..} = proof
   input :: ExpModInput (Interpreter Fr)
   input =
     ExpModInput
-      ( RSA.PublicKey
-          (fromConstant piPubE)
-          (fromConstant piPubN)
-      )
       (fromConstant piSignature)
       (fromConstant piTokenName)
 
@@ -347,11 +348,11 @@ expModProof x ps ac ExpModProofInput {..} = proof
   witnessInputs = runInterpreter $ arithmetize input
 
   paddedWitnessInputs :: ExpModCompiledInput Fr
-  paddedWitnessInputs = (((U1 :*: U1) :*: (U1 :*: U1)) :*: U1) :*: (witnessInputs :*: U1)
+  paddedWitnessInputs = ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
   (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 ac h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
+  plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
   witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
   (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
