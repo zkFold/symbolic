@@ -2,35 +2,48 @@
 
 module ZkFold.Protocol.Plonkup.Relation.LookupVector where
 
-import Data.Vector (Vector)
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import Numeric.Natural (Natural)
-import qualified Data.Vector as V
-import qualified Prelude
-import Data.Functor (Functor, fmap)
 import Control.Applicative (Applicative (..), liftA3)
-import Data.Semialign (Semialign(alignWith))
-import Data.These (These(..))
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Algebra.Class
-import ZkFold.Data.Bool (BoolType)
-import ZkFold.Control.Conditional (Conditional (..))
-import ZkFold.Data.Ord (Ord (..), IsOrdering)
+import Data.Functor (Functor, fmap)
 import Data.Monoid (Monoid)
+import Data.Semialign (Semialign (alignWith))
 import Data.Semigroup (Semigroup)
+import Data.These (These (..))
+import Data.Vector (Vector)
+import qualified Data.Vector as V
+import Numeric.Natural (Natural)
+import qualified Prelude
 
-data LookupVector a = LV { init :: Vector a, rest :: a }
+import ZkFold.Algebra.Class
+import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType)
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Ord (IsOrdering, Ord (..))
+import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+
+data LookupVector a = LV {init :: Vector a, rest :: a}
   deriving Functor
-  deriving ( BoolType, Semigroup, Monoid, IsOrdering
-           , Zero, AdditiveSemigroup, AdditiveGroup
-           , MultiplicativeSemigroup, MultiplicativeMonoid
-           ) via (ApplicativeAlgebra LookupVector a)
+  deriving
+    ( AdditiveGroup
+    , AdditiveSemigroup
+    , BoolType
+    , IsOrdering
+    , Monoid
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , Semigroup
+    , Zero
+    )
+    via (ApplicativeAlgebra LookupVector a)
 
-deriving via (ApplicativeAlgebra LookupVector a)
-  instance FromConstant b a => FromConstant b (LookupVector a)
+deriving via
+  (ApplicativeAlgebra LookupVector a)
+  instance
+    FromConstant b a => FromConstant b (LookupVector a)
 
-deriving via (ApplicativeAlgebra LookupVector a)
-  instance Scale k a => Scale k (LookupVector a)
+deriving via
+  (ApplicativeAlgebra LookupVector a)
+  instance
+    Scale k a => Scale k (LookupVector a)
 
 fromVector :: Vector a -> LookupVector a
 fromVector init = LV {..} where rest = V.last init
@@ -42,10 +55,10 @@ toVector (Prelude.fromIntegral -> len) LV {..} =
 instance Applicative LookupVector where
   pure rest = LV {..} where init = V.empty
   LV fi fr <*> LV xi xr = alignWith elim fi xi `LV` fr xr
-    where
-      elim (This f) = f xr
-      elim (That x) = fr x
-      elim (These f x) = f x
+   where
+    elim (This f) = f xr
+    elim (That x) = fr x
+    elim (These f x) = f x
 
 instance Finite a => Finite (LookupVector a) where
   type Order (LookupVector a) = Order a

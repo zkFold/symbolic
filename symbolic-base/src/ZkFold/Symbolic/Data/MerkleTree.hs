@@ -43,7 +43,7 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector, zip)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||), BoolType)
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType, Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)

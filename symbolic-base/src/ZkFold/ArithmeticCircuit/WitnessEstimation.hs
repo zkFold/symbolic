@@ -1,14 +1,18 @@
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.ArithmeticCircuit.WitnessEstimation where
 
+import Control.Applicative (Applicative (..), liftA3)
 import Data.Bool (Bool (..), otherwise)
 import Data.Eq (Eq, (==))
 import Data.Function ((.))
 import Data.Functor (Functor, fmap)
+import Data.Monoid (Monoid (..))
+import Data.Semigroup (Semigroup (..))
 import Data.Type.Equality (type (~))
+import GHC.Real (Integral)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Var (NewVar)
@@ -16,12 +20,8 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq (BooleanOf)
 import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
-import ZkFold.Data.Ord (Ord (..), IsOrdering (..))
-import Data.Monoid (Monoid (..))
-import GHC.Real (Integral)
-import Control.Applicative (Applicative (..), liftA3)
-import Data.Semigroup (Semigroup (..))
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
@@ -101,19 +101,33 @@ instance (ResidueField a, Eq a, BooleanOf a ~ Bool) => ResidueField (UVar a) whe
 
 data Partial a = Known a | Unknown
   deriving Functor
-  deriving ( BoolType, Semigroup, Monoid, IsOrdering, Zero
-           , AdditiveSemigroup, AdditiveGroup
-           , MultiplicativeSemigroup, MultiplicativeMonoid
-           ) via (ApplicativeAlgebra Partial a)
+  deriving
+    ( AdditiveGroup
+    , AdditiveSemigroup
+    , BoolType
+    , IsOrdering
+    , Monoid
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , Semigroup
+    , Zero
+    )
+    via (ApplicativeAlgebra Partial a)
 
-deriving via (ApplicativeAlgebra Partial a)
-  instance FromConstant c a => FromConstant c (Partial a)
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    FromConstant c a => FromConstant c (Partial a)
 
-deriving via (ApplicativeAlgebra Partial a)
-  instance Scale k a => Scale k (Partial a)
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    Scale k a => Scale k (Partial a)
 
-deriving via (ApplicativeAlgebra Partial a)
-  instance AdditiveMonoid a => AdditiveMonoid (Partial a)
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    AdditiveMonoid a => AdditiveMonoid (Partial a)
 
 instance Applicative Partial where
   pure = Known

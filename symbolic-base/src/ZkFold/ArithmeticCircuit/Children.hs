@@ -3,9 +3,9 @@
 module ZkFold.ArithmeticCircuit.Children where
 
 import Data.Function (const, flip, id, (.))
-import Data.Monoid (Monoid, mempty, mconcat)
+import Data.Monoid (Monoid, mconcat, mempty)
 import Data.Ord (Ord)
-import Data.Semigroup ((<>), Semigroup)
+import Data.Semigroup (Semigroup, (<>))
 import Data.Set (Set, empty, singleton)
 
 import ZkFold.Algebra.Class
@@ -13,8 +13,8 @@ import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 import qualified ZkFold.Data.Ord as ZkFold
+import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 children :: forall a v. (Finite a, Ord v) => WitnessF a v -> Set v
 children = runC @a . flip runWitnessF (C . singleton)

@@ -42,8 +42,8 @@ import ZkFold.Protocol.Plonkup.Internal (PlonkupPermutationSize)
 import ZkFold.Protocol.Plonkup.LookupConstraint (LookupConstraint (LookupConstraint))
 import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkConstraint)
 import ZkFold.Protocol.Plonkup.PlonkupConstraint
+import ZkFold.Protocol.Plonkup.Relation.LookupVector (fromVector, toVector)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Protocol.Plonkup.Relation.LookupVector (toVector, fromVector)
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation
@@ -162,8 +162,8 @@ toPlonkupRelation !ac =
             g' = lookupFunction (acLookupFunction (acContext ac)) g
          in ( k
             , \f ->
-              let !ts' = ts id
-               in f <$> (ts' :*: fmap (toVector k) (g' $ fromVector <$> ts'))
+                let !ts' = ts id
+                 in f <$> (ts' :*: fmap (toVector k) (g' $ fromVector <$> ts'))
             )
 
       lkup

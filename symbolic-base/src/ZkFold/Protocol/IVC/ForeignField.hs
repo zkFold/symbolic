@@ -1,5 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.IVC.ForeignField where
 
@@ -12,8 +12,8 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
 import ZkFold.Data.Ord (Ord (..))
+import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
   deriving (Generic, Haskell.Eq)

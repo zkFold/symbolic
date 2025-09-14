@@ -5,17 +5,17 @@ import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (Monad (..), ap)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
+import Data.Monoid (Monoid (..))
+import Data.Semigroup (Semigroup (..))
+import GHC.Integer (Integer)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
-import ZkFold.Data.Ord (Ord (..), IsOrdering (..))
-import Data.Semigroup (Semigroup (..))
-import Data.Monoid (Monoid (..))
-import GHC.Integer (Integer)
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 

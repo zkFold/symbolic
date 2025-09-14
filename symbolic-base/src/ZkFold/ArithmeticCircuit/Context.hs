@@ -52,7 +52,7 @@ import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
 import ZkFold.ArithmeticCircuit.Var
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
-import ZkFold.ArithmeticCircuit.WitnessEstimation (UVar (..), Partial (..))
+import ZkFold.ArithmeticCircuit.WitnessEstimation (Partial (..), UVar (..))
 import ZkFold.Control.HApplicative (HApplicative, hliftA2, hpure)
 import ZkFold.Data.Binary (fromByteString, toByteString)
 import ZkFold.Data.HFunctor (HFunctor, hmap)

@@ -6,6 +6,7 @@
 
 module ZkFold.Algebra.Class where
 
+import Control.Applicative (Applicative, liftA2, liftA3, pure)
 import Data.Bool (Bool (..), otherwise)
 import Data.Foldable (Foldable (foldl', foldl1, foldr))
 import Data.Function (const, flip, id, ($), (.))
@@ -13,7 +14,9 @@ import Data.Functor (Functor (..))
 import Data.Kind (Type)
 import Data.List (map, repeat, (++))
 import Data.Maybe (Maybe (..))
+import Data.Monoid (Monoid, mempty)
 import Data.Ratio (Rational)
+import Data.Semigroup (Semigroup, (<>))
 import Data.Type.Equality (type (~))
 import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
 import Prelude (Integer)
@@ -21,13 +24,10 @@ import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (Conditional (..))
-import ZkFold.Data.Eq (BooleanOf, Eq (..))
-import ZkFold.Prelude (length, replicate, zipWith')
-import ZkFold.Data.Ord (IsOrdering (..), Ord)
-import Control.Applicative (Applicative, liftA2, pure, liftA3)
 import ZkFold.Data.Bool (BoolType (..))
-import Data.Monoid (Monoid, mempty)
-import Data.Semigroup (Semigroup, (<>))
+import ZkFold.Data.Eq (BooleanOf, Eq (..))
+import ZkFold.Data.Ord (IsOrdering (..), Ord)
+import ZkFold.Prelude (length, replicate, zipWith')
 
 infixl 7 .*, *., *, /
 
@@ -760,12 +760,14 @@ instance Ring a => Ring (p -> a)
 
 --------------------------------------------------------------------------------
 
-newtype ApplicativeAlgebra f a =
-  ApplicativeAlgebra { runApplicativeAlgebra :: f a }
-  deriving newtype (Functor, Applicative, Eq, Ord)
+newtype ApplicativeAlgebra f a
+  = ApplicativeAlgebra {runApplicativeAlgebra :: f a}
+  deriving newtype (Applicative, Eq, Functor, Ord)
 
-instance (Applicative f, Conditional b a)
-  => Conditional (ApplicativeAlgebra f b) (ApplicativeAlgebra f a) where
+instance
+  (Applicative f, Conditional b a)
+  => Conditional (ApplicativeAlgebra f b) (ApplicativeAlgebra f a)
+  where
   bool = liftA3 bool
 
 instance (Applicative f, BoolType a) => BoolType (ApplicativeAlgebra f a) where
@@ -790,18 +792,20 @@ instance (Applicative f, IsOrdering a) => IsOrdering (ApplicativeAlgebra f a) wh
 instance (Functor f, Exponent a p) => Exponent (ApplicativeAlgebra f a) p where
   as ^ p = fmap (^ p) as
 
-instance {-# INCOHERENT #-}
+instance
+  {-# INCOHERENT #-}
   (Applicative f, FromConstant c a)
-  => FromConstant c (ApplicativeAlgebra f a) where
+  => FromConstant c (ApplicativeAlgebra f a)
+  where
   fromConstant = pure . fromConstant
 
-instance {-# INCOHERENT #-}
-  FromConstant (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
+instance {-# INCOHERENT #-} FromConstant (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
 instance (Functor f, Scale k a) => Scale k (ApplicativeAlgebra f a) where
   scale k = fmap (scale k)
 
-instance {-# OVERLAPPING #-}
+instance
+  {-# OVERLAPPING #-}
   (Applicative f, MultiplicativeSemigroup a)
   => Scale (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
@@ -818,10 +822,12 @@ instance (Applicative f, AdditiveGroup a) => AdditiveGroup (ApplicativeAlgebra f
 
 instance
   (Applicative f, MultiplicativeSemigroup a)
-  => MultiplicativeSemigroup (ApplicativeAlgebra f a) where
+  => MultiplicativeSemigroup (ApplicativeAlgebra f a)
+  where
   (*) = liftA2 (*)
 
 instance
   (Applicative f, MultiplicativeMonoid a)
-  => MultiplicativeMonoid (ApplicativeAlgebra f a) where
+  => MultiplicativeMonoid (ApplicativeAlgebra f a)
+  where
   one = pure one

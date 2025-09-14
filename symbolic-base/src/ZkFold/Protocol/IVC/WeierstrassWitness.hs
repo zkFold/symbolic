@@ -71,7 +71,8 @@ instance (Symbolic ctx, w ~ WitnessField ctx) => OracleSource w (WeierstrassWitn
 instance
   ( Symbolic ctx
   , BoolType (BooleanOf (WitnessField ctx))
-  ) => Eq (WeierstrassWitness ctx)
+  )
+  => Eq (WeierstrassWitness ctx)
   where
   type
     BooleanOf (WeierstrassWitness ctx) =

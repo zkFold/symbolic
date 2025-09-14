@@ -4,7 +4,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- Avoid reduction overflow error caused by NumberOfRegisters
 {-# OPTIONS_GHC -freduction-depth=0 #-}
@@ -200,9 +199,7 @@ reverseEndianness
   => ByteString n c -> ByteString n c
 reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
 
-instance
-  (Symbolic c, KnownNat n) => Conditional (ByteString n c) (ByteString n c)
-  where
+instance (Symbolic c, KnownNat n) => Conditional (ByteString n c) (ByteString n c) where
   bool onFalse onTrue condition =
     (condition && onTrue) || (not condition && onFalse)
 
