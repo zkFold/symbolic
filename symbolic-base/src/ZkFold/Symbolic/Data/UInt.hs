@@ -290,8 +290,7 @@ cast n =
 -- If the algorithm is only used to find @gcd(a, b)@ (i.e. @s@ and @t@ will be discarded), @a@ and @b@ can be arbitrary integers.
 eea
   :: forall n c r
-   . Symbolic c
-  => SemiEuclidean (UInt n r c)
+   . SemiEuclidean (UInt n r c)
   => KnownNat n
   => AdditiveGroup (UInt n r c)
   => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)

@@ -6,11 +6,10 @@
 
 module ZkFold.Algebra.Class where
 
-import Data.Bool (Bool (..), otherwise, (&&))
+import Data.Bool (Bool (..), otherwise)
 import Data.Foldable (Foldable (foldl', foldl1, foldr))
 import Data.Function (const, flip, id, ($), (.))
 import Data.Functor (Functor (..))
-import Data.Functor.Constant (Constant (..))
 import Data.Kind (Type)
 import Data.List (map, repeat, (++))
 import Data.Maybe (Maybe (..))
@@ -21,10 +20,14 @@ import Prelude (Integer)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Number
-import ZkFold.Control.Conditional (Conditional)
+import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
-import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (length, replicate, zipWith')
+import ZkFold.Data.Ord (IsOrdering (..), Ord)
+import Control.Applicative (Applicative, liftA2, pure, liftA3)
+import ZkFold.Data.Bool (BoolType (..))
+import Data.Monoid (Monoid, mempty)
+import Data.Semigroup (Semigroup, (<>))
 
 infixl 7 .*, *., *, /
 
@@ -328,7 +331,7 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 -- given @a@ and @b@.
 --
 -- This is a generalization of a notion of Euclidean domains to semirings.
-class (Semiring a, Ord a) => SemiEuclidean a where
+class (Semiring a, Ord a, Conditional (BooleanOf a) a) => SemiEuclidean a where
   {-# MINIMAL divMod | (div, mod) #-}
 
   divMod :: a -> a -> (a, a)
@@ -757,50 +760,68 @@ instance Ring a => Ring (p -> a)
 
 --------------------------------------------------------------------------------
 
-instance {-# OVERLAPPING #-} FromConstant (Constant a f) (Constant a f)
+newtype ApplicativeAlgebra f a =
+  ApplicativeAlgebra { runApplicativeAlgebra :: f a }
+  deriving newtype (Functor, Applicative, Eq, Ord)
 
-instance FromConstant a b => FromConstant a (Constant b f) where
-  fromConstant = Constant . fromConstant
+instance (Applicative f, Conditional b a)
+  => Conditional (ApplicativeAlgebra f b) (ApplicativeAlgebra f a) where
+  bool = liftA3 bool
 
-instance Scale b a => Scale b (Constant a f) where
-  scale c (Constant x) = Constant (scale c x)
+instance (Applicative f, BoolType a) => BoolType (ApplicativeAlgebra f a) where
+  true = pure true
+  false = pure false
+  not = fmap not
+  (&&) = liftA2 (&&)
+  (||) = liftA2 (||)
+  xor = liftA2 xor
 
-instance (MultiplicativeSemigroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeSemigroup (Constant a f) where
-  Constant x * Constant y = Constant (x * y)
+instance (Applicative f, Semigroup a) => Semigroup (ApplicativeAlgebra f a) where
+  (<>) = liftA2 (<>)
 
-instance Exponent a b => Exponent (Constant a f) b where
-  Constant x ^ y = Constant (x ^ y)
+instance (Applicative f, Monoid a) => Monoid (ApplicativeAlgebra f a) where
+  mempty = pure mempty
 
-instance (MultiplicativeMonoid a, Scale (Constant a f) (Constant a f)) => MultiplicativeMonoid (Constant a f) where
-  one = Constant one
+instance (Applicative f, IsOrdering a) => IsOrdering (ApplicativeAlgebra f a) where
+  lt = pure lt
+  eq = pure eq
+  gt = pure gt
 
-instance (MultiplicativeGroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeGroup (Constant a f) where
-  Constant x / Constant y = Constant (x / y)
+instance (Functor f, Exponent a p) => Exponent (ApplicativeAlgebra f a) p where
+  as ^ p = fmap (^ p) as
 
-  invert (Constant x) = Constant (invert x)
+instance {-# INCOHERENT #-}
+  (Applicative f, FromConstant c a)
+  => FromConstant c (ApplicativeAlgebra f a) where
+  fromConstant = pure . fromConstant
 
-instance AdditiveSemigroup a => AdditiveSemigroup (Constant a f) where
-  Constant x + Constant y = Constant (x + y)
+instance {-# INCOHERENT #-}
+  FromConstant (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
-instance Zero a => Zero (Constant a f) where
-  zero = Constant zero
+instance (Functor f, Scale k a) => Scale k (ApplicativeAlgebra f a) where
+  scale k = fmap (scale k)
 
-instance AdditiveMonoid a => AdditiveMonoid (Constant a f)
+instance {-# OVERLAPPING #-}
+  (Applicative f, MultiplicativeSemigroup a)
+  => Scale (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
-instance AdditiveGroup a => AdditiveGroup (Constant a f) where
-  Constant x - Constant y = Constant (x - y)
+instance (Applicative f, Zero a) => Zero (ApplicativeAlgebra f a) where
+  zero = pure zero
 
-  negate (Constant x) = Constant (negate x)
+instance (Applicative f, AdditiveSemigroup a) => AdditiveSemigroup (ApplicativeAlgebra f a) where
+  (+) = liftA2 (+)
 
-instance (Semiring a, Scale (Constant a f) (Constant a f)) => Semiring (Constant a f)
+instance (Applicative f, AdditiveMonoid a) => AdditiveMonoid (ApplicativeAlgebra f a)
 
-instance (SemiEuclidean a, Scale (Constant a f) (Constant a f)) => SemiEuclidean (Constant a f) where
-  divMod (Constant x) (Constant y) = (Constant q, Constant r)
-   where
-    (q, r) = divMod x y
+instance (Applicative f, AdditiveGroup a) => AdditiveGroup (ApplicativeAlgebra f a) where
+  negate = fmap negate
 
-  div (Constant x) (Constant y) = Constant (div x y)
+instance
+  (Applicative f, MultiplicativeSemigroup a)
+  => MultiplicativeSemigroup (ApplicativeAlgebra f a) where
+  (*) = liftA2 (*)
 
-  mod (Constant x) (Constant y) = Constant (mod x y)
-
-instance (Ring a, Scale (Constant a f) (Constant a f)) => Ring (Constant a f)
+instance
+  (Applicative f, MultiplicativeMonoid a)
+  => MultiplicativeMonoid (ApplicativeAlgebra f a) where
+  one = pure one

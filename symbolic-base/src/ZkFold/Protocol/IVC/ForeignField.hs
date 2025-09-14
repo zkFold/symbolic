@@ -1,4 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Protocol.IVC.ForeignField where
 
@@ -12,6 +13,7 @@ import ZkFold.Algebra.Number (KnownNat, Natural, Prime, value)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
+import ZkFold.Data.Ord (Ord (..))
 
 newtype ForeignField q i = ForeignField {foreignField :: i}
   deriving (Generic, Haskell.Eq)
@@ -26,6 +28,8 @@ instance Eq i => Eq (ForeignField q i) where
   type BooleanOf (ForeignField q i) = BooleanOf i
   ForeignField f == ForeignField g = f == g
   ForeignField f /= ForeignField g = f /= g
+
+deriving newtype instance Ord i => Ord (ForeignField q i)
 
 deriving instance {-# INCOHERENT #-} Conditional b i => Conditional b (ForeignField q i)
 
@@ -72,7 +76,7 @@ instance (KnownNat q, Euclidean i) => Euclidean (ForeignField q i) where
 instance (Prime q, Euclidean i) => Exponent (ForeignField q i) Integer where
   f ^ p = f ^ fromInteger @Natural (p `mod` (fromConstant (value @q) - 1))
 
-instance (Prime q, Eq i, Euclidean i, Conditional (BooleanOf i) i) => Field (ForeignField q i) where
+instance (Prime q, Euclidean i) => Field (ForeignField q i) where
   finv f = f ^ (value @q -! 2)
 
 instance (KnownNat q, KnownNat (NumberOfBits (Zp q))) => Finite (ForeignField q i) where
@@ -81,10 +85,7 @@ instance (KnownNat q, KnownNat (NumberOfBits (Zp q))) => Finite (ForeignField q 
 instance
   ( Prime q
   , KnownNat (NumberOfBits (Zp q))
-  , Eq i
   , Euclidean i
-  , Conditional (BooleanOf i) (BooleanOf i)
-  , Conditional (BooleanOf i) i
   )
   => ResidueField (ForeignField q i)
   where

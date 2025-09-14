@@ -1,6 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.ArithmeticCircuit.Witness where
 
 import Control.Applicative (Applicative (..))
@@ -8,15 +5,17 @@ import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (Monad (..), ap)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
-import GHC.Generics (Generic (..), K1 (..), M1 (..), (:*:) (..))
 import Numeric.Natural (Natural)
-import Prelude (Integer)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import ZkFold.Data.Ord (Ord (..), IsOrdering (..))
+import Data.Semigroup (Semigroup (..))
+import Data.Monoid (Monoid (..))
+import GHC.Integer (Integer)
 
 type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
 
@@ -91,6 +90,10 @@ instance Finite a => ResidueField (WitnessF a v) where
 
 newtype BooleanF a v = BooleanF {booleanF :: forall w. IsWitness a w => (v -> w) -> BooleanOf w}
 
+instance Conditional (BooleanF a v) (BooleanF a v) where
+  bool (BooleanF f) (BooleanF g) (BooleanF h) =
+    BooleanF (\x -> bool (f x) (g x) (h x))
+
 instance BoolType (BooleanF a v) where
   true = BooleanF (const true)
   false = BooleanF (const false)
@@ -105,22 +108,24 @@ instance FromConstant Natural (EuclideanF a v) where fromConstant x = EuclideanF
 
 instance FromConstant Integer (EuclideanF a v) where fromConstant x = EuclideanF (fromConstant x)
 
-instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (BooleanE a v) where
-  bool (BooleanE f) (BooleanE g) (BooleanE b) = BooleanE (\x -> bool (f x) (g x) (b x))
-
-instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (EuclideanF a v) where
-  bool (EuclideanF f) (EuclideanF g) (BooleanE b) = EuclideanF (\x -> bool (f x) (g x) (b x))
-
-instance {-# OVERLAPPING #-} Conditional (BooleanE a v) (WitnessF a v) where
-  bool (WitnessF f) (WitnessF g) (BooleanE b) = WitnessF (\x -> bool (f x) (g x) (b x))
-
-instance (Generic x, GConditional (BooleanE a v) (Rep x)) => Conditional (BooleanE a v) x where
-  bool f g b = to (gbool (from f) (from g) b)
+instance Conditional (BooleanF a v) (EuclideanF a v) where
+  bool (EuclideanF f) (EuclideanF g) (BooleanF h) =
+    EuclideanF (\x -> bool (f x) (g x) (h x))
 
 instance Eq (EuclideanF a v) where
-  type BooleanOf (EuclideanF a v) = BooleanE a v
-  EuclideanF f == EuclideanF g = BooleanE (\x -> f x == g x)
-  EuclideanF f /= EuclideanF g = BooleanE (\x -> f x /= g x)
+  type BooleanOf (EuclideanF a v) = BooleanF a v
+  EuclideanF f == EuclideanF g = BooleanF (\x -> f x == g x)
+  EuclideanF f /= EuclideanF g = BooleanF (\x -> f x /= g x)
+
+instance Ord (EuclideanF a v) where
+  type OrderingOf (EuclideanF a v) = OrderingF a v
+  ordering (EuclideanF f) (EuclideanF g) (EuclideanF h) (OrderingF o) =
+    EuclideanF (\x -> ordering (f x) (g x) (h x) (o x))
+  compare (EuclideanF f) (EuclideanF g) = OrderingF (\x -> compare (f x) (g x))
+  EuclideanF f < EuclideanF g = BooleanF (\x -> f x < g x)
+  EuclideanF f <= EuclideanF g = BooleanF (\x -> f x <= g x)
+  EuclideanF f >= EuclideanF g = BooleanF (\x -> f x >= g x)
+  EuclideanF f > EuclideanF g = BooleanF (\x -> f x > g x)
 
 instance Scale Natural (EuclideanF a v) where scale k (EuclideanF f) = EuclideanF (scale k f)
 
@@ -155,25 +160,16 @@ instance Euclidean (EuclideanF a v) where
   EuclideanF f `bezoutL` EuclideanF g = EuclideanF (\x -> f x `bezoutL` g x)
   EuclideanF f `bezoutR` EuclideanF g = EuclideanF (\x -> f x `bezoutR` g x)
 
-newtype BooleanE a v = BooleanE {booleanE :: forall w. IsWitness a w => (v -> w) -> BooleanOf (IntegralOf w)}
+newtype OrderingF a v = OrderingF
+  {orderingF :: forall w. IsWitness a w => (v -> w) -> OrderingOf (IntegralOf w)}
 
-instance BoolType (BooleanE a v) where
-  true = BooleanE (const true)
-  false = BooleanE (const false)
-  not (BooleanE f) = BooleanE (not . f)
-  BooleanE f && BooleanE g = BooleanE (\x -> f x && g x)
-  BooleanE f || BooleanE g = BooleanE (\x -> f x || g x)
-  BooleanE f `xor` BooleanE g = BooleanE (\x -> f x `xor` g x)
+instance Semigroup (OrderingF a v) where
+  OrderingF f <> OrderingF g = OrderingF (\x -> f x <> g x)
 
-class GConditional b f where
-  gbool :: f x -> f x -> b -> f x
+instance Monoid (OrderingF a v) where
+  mempty = OrderingF (const mempty)
 
-instance Conditional (BooleanE a v) x => GConditional (BooleanE a v) (K1 i x) where
-  gbool (K1 f) (K1 g) b = K1 (bool f g b)
-
-instance GConditional b f => GConditional b (M1 i c f) where
-  gbool (M1 f) (M1 g) b = M1 (gbool f g b)
-
-instance (GConditional b f, GConditional b g) => GConditional b (f :*: g) where
-  gbool (f1 :*: f2) (g1 :*: g2) b =
-    gbool f1 g1 b :*: gbool f2 g2 b
+instance IsOrdering (OrderingF a v) where
+  lt = OrderingF (const lt)
+  eq = OrderingF (const eq)
+  gt = OrderingF (const gt)
