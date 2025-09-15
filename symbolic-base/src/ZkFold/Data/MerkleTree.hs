@@ -40,9 +40,11 @@ import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField)
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
+type Leaves d = Vector (MerkleTreeSize d)
+
 data MerkleTree (d :: Natural) h = MerkleTree
   { mHash :: h
-  , mLeaves :: Vector (MerkleTreeSize d) h
+  , mLeaves :: Leaves d h
   }
   deriving (Generic, Show)
 
@@ -54,7 +56,7 @@ emptyTree
   => MerkleTree d h
 emptyTree = MerkleTree rootHash leaves
  where
-  leaves = pure zero :: Vector (2 ^ (d - 1)) h
+  leaves = pure zero :: Leaves d h
   rootHash = computeRoot leaves
 
 -- | Hash to use in the Merkle tree
@@ -70,7 +72,9 @@ hashWithSibling current (bit, sibling) =
     else merkleHash current sibling -- current is left child
 
 -- | Computes the merkle proof for a given index in the merkle tree
-merkleProve' :: forall d h. (ResidueField h, KnownNat (d - 1)) => MerkleTree d h -> IntegralOf h -> Vector (d - 1) h
+merkleProve'
+  :: forall d h. (ResidueField h, KnownNat (d - 1))
+  => MerkleTree d h -> IntegralOf h -> Vector (d - 1) h
 merkleProve' (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves
    in generateProof allLevels idx
@@ -87,7 +91,9 @@ merkleProve' (MerkleTree _ leaves) idx =
      in f level siblingIdx
 
 -- | Computes the merkle proof for a given index in the merkle tree
-merkleProve :: forall d h. (Ring h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
+merkleProve
+  :: forall d h. (Ring h, KnownNat (d - 1))
+  => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
 merkleProve (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves
       indexNat = fromZp idx
@@ -103,7 +109,8 @@ merkleProve (MerkleTree _ leaves) idx =
 
 -- | Verifies the merkle proof for a given index in the merkle tree
 merkleVerify
-  :: forall d h. (Ring h, Eq h, KnownNat (d - 1)) => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
+  :: forall d h. (Ring h, Eq h, KnownNat (d - 1))
+  => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
 merkleVerify (MerkleTree rootHash leaves) idx proof =
   let leaf = leaves V.!! fromZp idx
       indexBits = indexToBits @(d - 1) $ fromZp idx
@@ -190,18 +197,13 @@ indexToBits idx =
    in tabulate (\i -> testBit idxInt (fromIntegral $ fromZp i))
 
 -- | Computes the next level up in the merkle tree by pairing adjacent elements
-computeNextLevel
-  :: forall h. Ring h => [h] -> [h]
+computeNextLevel :: forall h. Ring h => [h] -> [h]
 computeNextLevel [] = []
 computeNextLevel [_] = [] -- odd number, ignore the last element
 computeNextLevel (a : b : rest) = merkleHash a b : computeNextLevel rest
 
 -- | Computes all levels of the merkle tree from leaves to root
-computeAllLevels
-  :: forall n h
-   . Ring h
-  => Vector n h
-  -> [[h]]
+computeAllLevels :: forall n h. Ring h => Vector n h -> [[h]]
 computeAllLevels leaves = go (fromVector leaves)
  where
   go [] = []
@@ -210,11 +212,7 @@ computeAllLevels leaves = go (fromVector leaves)
     let nextLevel = computeNextLevel current
      in current : go nextLevel
 
-computeRoot
-  :: forall d h
-   . Ring h
-  => Vector (MerkleTreeSize d) h
-  -> h
+computeRoot :: forall d h. Ring h => Leaves d h -> h
 computeRoot leaves =
   case P.last (computeAllLevels leaves) of
     [root] -> root

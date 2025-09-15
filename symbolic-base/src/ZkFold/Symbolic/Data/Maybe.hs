@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Maybe (
   Maybe,
   guard,
   maybe,
+  mmap,
   just,
   nothing,
   fromMaybe,
@@ -25,6 +26,7 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
+import Data.Function ((.))
 
 data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
   deriving (Generic, Generic1, SymbolicData)
@@ -46,10 +48,13 @@ fromMaybe :: forall c x. Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
 fromMaybe a (Maybe j t) = bool a t j
 
 isNothing :: Symbolic c => Maybe x c -> Bool c
-isNothing (Maybe h _) = not h
+isNothing = not . isJust
 
 maybe :: forall a b c. Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
-maybe d h (Maybe j x) = fromMaybe d $ Maybe j (h x)
+maybe d h = fromMaybe d . mmap h
+
+mmap :: (a c -> b c) -> Maybe a c -> Maybe b c
+mmap f (Maybe b a) = Maybe b (f a)
 
 find
   :: forall a c t

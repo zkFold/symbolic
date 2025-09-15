@@ -11,9 +11,14 @@ module ZkFold.Symbolic.Data.MerkleTree (
   contains,
   (!!),
   search,
+  find,
+  findIndex,
+  elemIndex,
+  lookup,
   search',
   KnownMerkleTree,
   replace,
+  replaceAt,
 ) where
 
 import Data.Bool (otherwise)
@@ -25,7 +30,7 @@ import Data.Tuple (fst)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
-import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..))
+import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:.:) (..))
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
@@ -42,18 +47,16 @@ import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard)
+import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
-type Leaves d = Vector (Base.MerkleTreeSize d)
-
 data MerkleTree d c = MerkleTree
-  { rootHash :: FieldElement c
-  , leafHash :: Payloaded (Leaves d) FieldElement c
+  { mHash   :: FieldElement c
+  , mLeaves :: Payloaded (Base.Leaves d) FieldElement c
   }
   deriving (Eq, Generic, Generic1, SymbolicData, SymbolicInput)
 
@@ -65,22 +68,24 @@ deriving instance (HShow c, P.Show (WitnessField c)) => P.Show (MerkleTree d c)
 emptyTree :: (KnownNat (Base.MerkleTreeSize d), Symbolic c) => MerkleTree d c
 emptyTree = fromLeaves zero
 
-fromLeavesW :: Symbolic c => Leaves d (WitnessField c) -> MerkleTree d c
-fromLeavesW src@(Payloaded . fmap ((,U1) . Par1) -> leafHash) = MerkleTree {..}
+unconstrainedFromLeaves
+  :: Symbolic c => Base.Leaves d (WitnessField c) -> MerkleTree d c
+unconstrainedFromLeaves src@(Payloaded . fmap ((,U1) . Par1) -> mLeaves)
+  = MerkleTree {..}
  where
-  rootHash = fromBaseHash (Base.computeRoot src)
+  mHash = fromBaseHash (Base.computeRoot src)
 
-fromLeaves :: Symbolic c => Leaves d (FieldElement c) -> MerkleTree d c
-fromLeaves src@(payloaded -> leafHash) = MerkleTree {..}
+fromLeaves :: Symbolic c => Base.Leaves d (FieldElement c) -> MerkleTree d c
+fromLeaves src@(payloaded -> mLeaves) = MerkleTree {..}
  where
-  rootHash = Base.computeRoot src
+  mHash = Base.computeRoot src
 
-toLeaves :: Symbolic c => MerkleTree d c -> Vec (Leaves d) c
+toLeaves :: Symbolic c => MerkleTree d c -> Vec (Base.Leaves d) c
 toLeaves src@MerkleTree {..} =
   assert ((== src) . fromLeaves . fieldElements . runVec) $
     Vec $
       packed $
-        fromFieldElement <$> restored leafHash
+        fromFieldElement <$> restored mLeaves
 
 instance
   (Symbolic c, BaseField c ~ a, Base.MerkleTreeSize d ~ n)
@@ -89,7 +94,7 @@ instance
   fromConstant = fromLeaves . fmap fromConstant
 
 instance Arithmetic a => ToConstant (MerkleTree d (Interpreter a)) where
-  type Const (MerkleTree d (Interpreter a)) = Vector (Base.MerkleTreeSize d) a
+  type Const (MerkleTree d (Interpreter a)) = Base.Leaves d a
   toConstant = runInterpreter . runVec . toLeaves
 
 instance
@@ -98,7 +103,7 @@ instance
   where
   arbitrary = fromLeaves <$> arbitrary
 
-type Index d c = Vector (d - 1) (Bool c)
+type Index d = Vector (d - 1) :.: Bool
 
 data MerkleEntry d c = MerkleEntry
   { position :: Index d c
@@ -111,9 +116,9 @@ contains
    . (Symbolic c, KnownNat (d - 1))
   => MerkleTree d c -> MerkleEntry d c -> Bool c
 MerkleTree {..} `contains` MerkleEntry {..} =
-  let baseTree = Base.MerkleTree (toBaseHash rootHash) (toBaseLeaves leafHash)
+  let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
       path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
-   in foldl' Base.hashWithSibling value (zip (reverse position) path) == rootHash
+   in foldl' Base.hashWithSibling value (zip (reverse (unComp1 position)) path) == mHash
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
@@ -124,8 +129,8 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 tree !! position =
   assert (\value -> tree `contains` MerkleEntry {..}) $
     fromBaseHash $
-      recIndex (fromBool <$> position) $
-        toBaseLeaves (leafHash tree)
+      recIndex (fromBool <$> unComp1 position) $
+        toBaseLeaves (mLeaves tree)
  where
   recIndex
     :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
@@ -148,7 +153,7 @@ search pred tree =
     toEntry $
       recSearch
         (fromBool . pred . FieldElement . WC . Par1)
-        (toBaseLeaves $ leafHash tree)
+        (toBaseLeaves $ mLeaves tree)
  where
   recSearch
     :: forall n b a
@@ -173,7 +178,7 @@ search pred tree =
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
   toEntry
     ( toBool -> wasFound
-      , fmap toBool -> position
+      , Comp1 . fmap toBool -> position
       , fromBaseHash -> value
       ) = guard wasFound MerkleEntry {..}
 
@@ -182,6 +187,35 @@ search pred tree =
 
   toBool :: Bool' c -> Bool c
   toBool = Bool . embedW . Par1 . bool zero one
+
+find
+  :: forall c d
+   . (Symbolic c, KnownNat (d - 1))
+  => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
+  -> MerkleTree d c
+  -> Maybe FieldElement c
+find pred = mmap value . search pred
+
+findIndex
+  :: forall c d
+   . (Symbolic c, KnownNat (d - 1))
+  => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
+  -> MerkleTree d c
+  -> Maybe (Index d) c
+findIndex pred = mmap position . search pred
+
+elemIndex
+  :: forall c d
+   . (Symbolic c, KnownNat (d - 1))
+  => FieldElement (WitnessContext c)
+  -> MerkleTree d c
+  -> Maybe (Index d) c
+elemIndex elem = findIndex (== elem)
+
+lookup
+  :: (Symbolic c, KnownNat (d - 1))
+  => MerkleTree d c -> Index d c -> FieldElement c
+lookup = (!!)
 
 search'
   :: (Symbolic c, KnownNat (d - 1))
@@ -197,15 +231,20 @@ replace
   => MerkleEntry d c -> MerkleTree d c -> MerkleTree d c
 replace entry@MerkleEntry {..} =
   assert (`contains` entry)
-    . fromLeavesW
+    . unconstrainedFromLeaves
     . mapWithIx (replacer (toBasePosition position, toBaseHash value))
     . toBaseLeaves
-    . leafHash
+    . mLeaves
  where
   replacer
     :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
     => (i, a) -> n -> a -> a
   replacer (i, a') n = ifThenElse (i == fromConstant n) a'
+
+replaceAt
+  :: (Symbolic c, KnownMerkleTree d)
+  => Index d c -> FieldElement c -> MerkleTree d c -> MerkleTree d c
+replaceAt position value = replace MerkleEntry {..}
 
 ---------------------------- conversion functions ------------------------------
 
@@ -218,12 +257,13 @@ fromBaseHash = FieldElement . embedW . Par1
 toBaseHash :: Symbolic c => FieldElement c -> WitnessField c
 toBaseHash = unPar1 . witnessF . fromFieldElement
 
-toBaseLeaves :: Payloaded (Leaves d) FieldElement c -> Leaves d (WitnessField c)
+toBaseLeaves
+  :: Payloaded (Base.Leaves d) FieldElement c -> Base.Leaves d (WitnessField c)
 toBaseLeaves = fmap (unPar1 . fst) . runPayloaded
 
 toBasePosition
   :: forall c d. Symbolic c => Index d c -> IntegralOf (WitnessField c)
-toBasePosition = foldl' (\x b -> double x + fromBool b) zero
+toBasePosition = foldl' (\x b -> double x + fromBool b) zero . unComp1
  where
   fromBool :: Bool c -> IntegralOf (WitnessField c)
   fromBool (Bool c) = toIntegral $ unPar1 $ witnessF c
