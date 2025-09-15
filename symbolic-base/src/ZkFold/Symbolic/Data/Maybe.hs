@@ -17,6 +17,7 @@ module ZkFold.Symbolic.Data.Maybe (
   find,
 ) where
 
+import Data.Function ((.))
 import GHC.Generics (Generic, Generic1)
 import Prelude (foldr, ($))
 import qualified Prelude as Haskell
@@ -26,7 +27,6 @@ import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import Data.Function ((.))
 
 data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
   deriving (Generic, Generic1, SymbolicData)

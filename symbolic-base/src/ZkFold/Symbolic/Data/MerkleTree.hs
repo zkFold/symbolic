@@ -55,7 +55,7 @@ import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
 data MerkleTree d c = MerkleTree
-  { mHash   :: FieldElement c
+  { mHash :: FieldElement c
   , mLeaves :: Payloaded (Base.Leaves d) FieldElement c
   }
   deriving (Eq, Generic, Generic1, SymbolicData, SymbolicInput)
@@ -70,8 +70,8 @@ emptyTree = fromLeaves zero
 
 unconstrainedFromLeaves
   :: Symbolic c => Base.Leaves d (WitnessField c) -> MerkleTree d c
-unconstrainedFromLeaves src@(Payloaded . fmap ((,U1) . Par1) -> mLeaves)
-  = MerkleTree {..}
+unconstrainedFromLeaves src@(Payloaded . fmap ((,U1) . Par1) -> mLeaves) =
+  MerkleTree {..}
  where
   mHash = fromBaseHash (Base.computeRoot src)
 

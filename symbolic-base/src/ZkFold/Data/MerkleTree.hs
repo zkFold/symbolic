@@ -73,7 +73,8 @@ hashWithSibling current (bit, sibling) =
 
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve'
-  :: forall d h. (ResidueField h, KnownNat (d - 1))
+  :: forall d h
+   . (ResidueField h, KnownNat (d - 1))
   => MerkleTree d h -> IntegralOf h -> Vector (d - 1) h
 merkleProve' (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves
@@ -92,7 +93,8 @@ merkleProve' (MerkleTree _ leaves) idx =
 
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve
-  :: forall d h. (Ring h, KnownNat (d - 1))
+  :: forall d h
+   . (Ring h, KnownNat (d - 1))
   => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
 merkleProve (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves
@@ -109,7 +111,8 @@ merkleProve (MerkleTree _ leaves) idx =
 
 -- | Verifies the merkle proof for a given index in the merkle tree
 merkleVerify
-  :: forall d h. (Ring h, Eq h, KnownNat (d - 1))
+  :: forall d h
+   . (Ring h, Eq h, KnownNat (d - 1))
   => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
 merkleVerify (MerkleTree rootHash leaves) idx proof =
   let leaf = leaves V.!! fromZp idx
