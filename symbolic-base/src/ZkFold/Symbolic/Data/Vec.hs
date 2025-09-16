@@ -4,47 +4,56 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
+import Data.Kind (Type)
 import Data.Traversable (Traversable (..))
-import GHC.Generics (Generic)
+import Data.Tuple (fst)
+import qualified GHC.Generics as G
 import GHC.Num (Natural)
+import Test.QuickCheck (Arbitrary (arbitrary))
 import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (mzipWithMRep)
-import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.MonadCircuit
 
-newtype Vec f c = Vec {runVec :: c f}
-
-deriving newtype instance
-  (Symbolic c, LayoutFunctor f)
-  => SymbolicData (Vec f c)
-
-deriving newtype instance
-  (Symbolic c, LayoutFunctor f)
-  => SymbolicInput (Vec f c)
-
-deriving instance Generic (Vec f c)
+newtype Vec (f :: Type -> Type) c = Vec {runVec :: c f}
+  deriving G.Generic
 
 deriving instance (HNFData c, NFData1 f) => NFData (Vec f c)
 
 deriving instance (HEq c, Eq1 f) => Haskell.Eq (Vec f c)
 
-deriving newtype instance (Symbolic c, LayoutFunctor f) => Eq (Vec f c)
+instance LayoutFunctor f => SymbolicData (Vec f) where
+  type Layout (Vec f) n = f
+  type Payload (Vec f) n = G.U1
+  type HasRep (Vec f) _ = RepLayout f
+
+  arithmetize = runVec
+  payload _ = G.U1
+  interpolate bs = Vec . I.interpolate (fmap (fmap runVec) bs)
+  restore = Vec . fst
 
 instance
-  {-# INCOHERENT #-}
   (Symbolic c, Representable f, FromConstant k (BaseField c))
   => FromConstant k (Vec f c)
   where
   fromConstant = Vec . embed . tabulate . fromConstant
+
+instance {-# OVERLAPPING #-} FromConstant (Vec f c) (Vec f c)
+
+instance
+  (Symbolic c, Arbitrary (f (BaseField c)), Functor f)
+  => Arbitrary (Vec f c)
+  where
+  arbitrary = Vec . embed <$> arbitrary
 
 instance
   (Symbolic c, Traversable f, Representable f)

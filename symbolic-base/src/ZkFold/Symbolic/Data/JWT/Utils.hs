@@ -60,15 +60,17 @@ monoAdd = Sub unsafeAxiom
 oneReg :: forall n c. Dict (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) ~ 1)
 oneReg = unsafeAxiom -- @BufLen n@ is always greater than 2
 
-knownOneReg' :: forall n c. Dict (KnownNat (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))))
+knownOneReg' :: forall n c. Dict (KnownRegisters c (BufLen n) ('Fixed (BufLen n)))
 knownOneReg' = withKnownNat @(NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
 
-knownOneReg :: forall n c {r}. (KnownNat (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) => r) -> r
+knownOneReg
+  :: forall n c {r}. (KnownRegisters c (BufLen n) ('Fixed (BufLen n)) => r) -> r
 knownOneReg = withDict (knownOneReg' @n @c)
 
 knownNumWords'
   :: forall n c
-   . KnownNat n :- KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
+   . KnownNat n
+    :- KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
 knownNumWords' =
   Sub $
     withKnownNat @(Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)

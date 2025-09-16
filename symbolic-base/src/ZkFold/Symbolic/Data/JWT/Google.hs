@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.JWT.Google (GooglePayload (..)) where
@@ -10,10 +9,10 @@ import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Maybe (fromMaybe)
 import Data.Scientific (toBoundedInteger)
 import qualified Data.Text as T
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import Generic.Random (genericArbitrary, uniform)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude (fmap, ($), (.), type (~))
+import Prelude (fmap, ($), (.))
 import qualified Prelude as P
 
 import ZkFold.Data.Eq
@@ -61,15 +60,11 @@ data GooglePayload ctx
   , plExp :: VarByteString 80 ctx
   -- ^ Expiration time (seconds since Unix epoch), a decimal number
   }
-  deriving Generic
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving instance HEq ctx => P.Eq (GooglePayload ctx)
 
 deriving instance HShow ctx => P.Show (GooglePayload ctx)
-
-deriving instance Symbolic ctx => SymbolicData (GooglePayload ctx)
-
-deriving instance Symbolic ctx => SymbolicInput (GooglePayload ctx)
 
 instance Symbolic ctx => Arbitrary (GooglePayload ctx) where
   arbitrary = genericArbitrary uniform
@@ -88,8 +83,8 @@ instance Symbolic ctx => FromJSON (GooglePayload ctx) where
     stringify (JSON.Object o) = JSON.Object $ fmap stringify o
     stringify rest = rest
 
-instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (GooglePayload ctx) where
-  type MaxLength (GooglePayload ctx) = 7088
+instance Symbolic ctx => IsSymbolicJSON GooglePayload ctx where
+  type MaxLength GooglePayload = 7088
   toJsonBits GooglePayload {..} =
     (fromType @"{\"iss\":\"")
       @+ plIss
@@ -121,11 +116,11 @@ instance (Symbolic ctx, Context (GooglePayload ctx) ~ ctx) => IsSymbolicJSON (Go
       @+ plExp
       `VB.append` (fromType @"}")
 
-instance Symbolic ctx => IsBits (GooglePayload ctx) where
-  type BitCount (GooglePayload ctx) = 9456
+instance Symbolic ctx => IsBits GooglePayload ctx where
+  type BitCount GooglePayload = 9456
   toBits = toAsciiBits
 
-instance (Symbolic ctx, TokenBits (GooglePayload ctx), RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" (GooglePayload ctx) where
+instance (Symbolic ctx, RSA.RSA 2048 10328 ctx) => IsTokenPayload "RS256" GooglePayload ctx where
   signPayload jPayload SigningKey {..} = (jHeader, signature)
    where
     jHeader = TokenHeader "RS256" prvKid "JWT"

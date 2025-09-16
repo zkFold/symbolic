@@ -28,7 +28,6 @@ import ZkFold.Protocol.IVC.FiatShamir (transcript)
 import ZkFold.Protocol.IVC.NARK (NARKInstanceProof (..), NARKProof (..))
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Predicate)
-import ZkFold.Symbolic.Data.Class (LayoutData (LayoutData), layoutData)
 
 -- | Accumulator scheme for V_NARK as described in Chapter 3.4 of the Protostar paper
 data AccumulatorScheme d k i c pt f = AccumulatorScheme
@@ -123,7 +122,7 @@ accumulatorScheme hash hcommit phi =
 
               -- X * pi + pi' as a list of univariate polynomials
               polyPi :: i (SimplePoly f (d + 1))
-              polyPi = mzipWithRep polyVecLinear pubi (layoutData $ acc ^. x ^. pi)
+              polyPi = mzipWithRep polyVecLinear pubi (acc ^. x ^. pi)
 
               -- X * mi + mi'
               polyW :: Vector k [SimplePoly f (d + 1)]
@@ -157,7 +156,7 @@ accumulatorScheme hash hcommit phi =
 
               -- Fig. 3, steps 5, 6
               mu' = alpha + acc ^. x ^. mu
-              pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (layoutData $ acc ^. x ^. pi)
+              pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (acc ^. x ^. pi)
               ri'' = scale alpha r_i + acc ^. x ^. r
               ci'' = zipWith (.+) (acc ^. x ^. c) (fmap (scale alpha) pi_x)
               m_i'' = zipWith (+) (scale alpha pi_w) (acc ^. w)
@@ -166,7 +165,7 @@ accumulatorScheme hash hcommit phi =
               eCapital' = (acc ^. x ^. e) .+ sum (mapWithIx (\i a -> scale (alpha ^ (i + 1)) a) pf)
              in
               ( Accumulator
-                  (AccumulatorInstance (LayoutData pi'') ci'' ri'' eCapital' mu')
+                  (AccumulatorInstance pi'' ci'' ri'' eCapital' mu')
                   m_i''
               , pf
               )
@@ -185,14 +184,14 @@ accumulatorScheme hash hcommit phi =
 
           -- Fig. 4, steps 3-4
           mu' = alpha + acc ^. mu
-          pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (layoutData $ acc ^. pi)
+          pi'' = mzipWithRep (+) (fmap (* alpha) pubi) (acc ^. pi)
           ri'' = zipWith (+) (scale alpha r_i) (acc ^. r)
           ci'' = zipWith (.+) (acc ^. c) (fmap (scale alpha) pi_x)
 
           -- Fig 4, step 5
           e' = (acc ^. e) .+ sum (mapWithIx (\i a -> scale (alpha ^ (i + 1)) a) pf)
          in
-          AccumulatorInstance {_pi = LayoutData pi'', _c = ci'', _r = ri'', _e = e', _mu = mu'}
+          AccumulatorInstance {_pi = pi'', _c = ci'', _r = ri'', _e = e', _mu = mu'}
     , decider = \acc ->
         let
           -- Fig. 5, step 1
@@ -200,7 +199,7 @@ accumulatorScheme hash hcommit phi =
 
           -- Fig. 5, step 2
           err :: [f]
-          err = algebraicMap @d phi (layoutData $ acc ^. x ^. pi) (acc ^. w) (acc ^. x ^. r) (acc ^. x ^. mu)
+          err = algebraicMap @d phi (acc ^. x ^. pi) (acc ^. w) (acc ^. x ^. r) (acc ^. x ^. mu)
 
           -- Fig. 5, step 3
           eDiff = hcommit (negate <$> err) (acc ^. x ^. e)

@@ -7,6 +7,6 @@ import ZkFold.Symbolic.Data.VarByteString (VarByteString)
 
 exampleJWTSerialisation
   :: Symbolic c
-  => TokenBits (GooglePayload c)
+  => TokenBits GooglePayload c
   => TokenHeader c -> GooglePayload c -> VarByteString 10328 c
 exampleJWTSerialisation = tokenBits

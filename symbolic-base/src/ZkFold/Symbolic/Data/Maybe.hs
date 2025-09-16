@@ -1,12 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
   Maybe,
   guard,
   maybe,
+  mmap,
   just,
   nothing,
   fromMaybe,
@@ -16,72 +17,51 @@ module ZkFold.Symbolic.Data.Maybe (
   find,
 ) where
 
-import Data.Functor ((<$>))
-import Data.Functor.Rep (pureRep)
-import GHC.Generics (Generic)
-import Prelude (foldr, ($), type (~))
+import Data.Function ((.))
+import GHC.Generics (Generic, Generic1)
+import Prelude (foldr, ($))
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 
-data Maybe context x = Maybe {isJust :: Bool context, fromJust :: x}
-  deriving stock
-    ( Generic
-    , Haskell.Foldable
-    , Haskell.Functor
-    , Haskell.Traversable
-    )
+data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
+  deriving (Generic, Generic1, SymbolicData)
 
-deriving stock instance (HEq c, Haskell.Eq x) => Haskell.Eq (Maybe c x)
+deriving stock instance (HEq c, Haskell.Eq (x c)) => Haskell.Eq (Maybe x c)
 
-instance (SymbolicData x, Context x ~ c) => SymbolicData (Maybe c x)
+instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
 
-instance (Context x ~ c, SymbolicEq x) => Eq (Maybe c x)
-
-just :: Symbolic c => x -> Maybe c x
+just :: Symbolic c => x c -> Maybe x c
 just = Maybe true
 
-nothing
-  :: forall x c
-   . (SymbolicData x, Context x ~ c)
-  => Maybe c x
-nothing =
-  Maybe false $ restore (embed (pureRep zero), pureRep zero)
+nothing :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => Maybe x c
+nothing = Maybe false dummy
 
-guard :: Bool c -> x -> Maybe c x
+guard :: Bool c -> x c -> Maybe x c
 guard = Maybe
 
-fromMaybe
-  :: forall c x
-   . Conditional (Bool c) x
-  => x
-  -> Maybe c x
-  -> x
+fromMaybe :: forall c x. Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
 fromMaybe a (Maybe j t) = bool a t j
 
-isNothing :: Symbolic c => Maybe c x -> Bool c
-isNothing (Maybe h _) = not h
+isNothing :: Symbolic c => Maybe x c -> Bool c
+isNothing = not . isJust
 
-maybe
-  :: forall a b c
-   . Conditional (Bool c) b
-  => b
-  -> (a -> b)
-  -> Maybe c a
-  -> b
-maybe d h m = fromMaybe d (h <$> m)
+maybe :: forall a b c. Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
+maybe d h = fromMaybe d . mmap h
+
+mmap :: (a c -> b c) -> Maybe a c -> Maybe b c
+mmap f (Maybe b a) = Maybe b (f a)
 
 find
   :: forall a c t
-   . (SymbolicData a, Context a ~ c, Haskell.Foldable t)
-  => (a -> Bool c)
-  -> t a
-  -> Maybe c a
+   . (SymbolicData a, HasRep a c, Symbolic c, Haskell.Foldable t)
+  => (a c -> Bool c)
+  -> t (a c)
+  -> Maybe a c
 find p =
   let n = nothing
    in foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n

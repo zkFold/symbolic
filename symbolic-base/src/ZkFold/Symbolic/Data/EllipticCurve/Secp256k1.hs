@@ -7,16 +7,17 @@ import Data.Function (($))
 import qualified Prelude
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class
-import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_PointOf, Secp256k1_Scalar)
+import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
+import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_Scalar)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
+import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
 
-type Secp256k1_Point ctx = Secp256k1_PointOf (FFA Secp256k1_Base 'Auto ctx)
+type Secp256k1_Point = Point (Weierstrass "secp256k1") (FFA Secp256k1_Base 'Auto)
 
 instance
   ( Symbolic ctx

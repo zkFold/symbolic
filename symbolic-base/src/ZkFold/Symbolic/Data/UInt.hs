@@ -36,7 +36,6 @@ import Data.Foldable (Foldable (toList), foldlM, foldr, foldrM, for_)
 import Data.Function (on)
 import Data.Functor (Functor (..), (<$>))
 import Data.Functor.Rep (Representable (..))
-import Data.Kind (Type)
 import Data.List (iterate, unfoldr, zip)
 import Data.Map (fromList, (!))
 import Data.Maybe (fromJust)
@@ -44,7 +43,7 @@ import Data.Traversable (for, traverse)
 import Data.Tuple (swap)
 import Data.Word (Word64)
 import qualified Data.Zip as Z
-import GHC.Generics (Generic, Par1 (..), (:*:) (..))
+import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import GHC.Natural (naturalFromInteger)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
 import Prelude (
@@ -76,22 +75,24 @@ import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (length, replicate, replicateA, take, unsnoc, (!!))
 import ZkFold.Symbolic.Algorithm.FFT (fft, ifft)
+import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Ord
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit
 
 -- TODO (Issue #18): hide this constructor
-newtype UInt (n :: Natural) (r :: RegisterSize) (context :: (Type -> Type) -> Type)
-  = UInt (context (Vector (NumberOfRegisters (BaseField context) n r)))
-
-deriving instance Generic (UInt n r context)
+newtype UInt (n :: Natural) (r :: RegisterSize) c = UInt
+  {uintData :: c (Vector (NumberOfRegisters (BaseField c) n r))}
+  deriving Generic
+  deriving Eq via (Vec (Vector (NumberOfRegisters (BaseField c) n r)) c)
 
 deriving instance HNFData context => NFData (UInt n r context)
 
@@ -99,9 +100,15 @@ deriving instance HEq context => Haskell.Eq (UInt n r context)
 
 deriving instance HShow context => Haskell.Show (UInt n r context)
 
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => SymbolicData (UInt n r c)
+instance SymbolicData (UInt n r) where
+  type Layout (UInt n r) k = Vector (NumberOfRegistersN k n r)
+  type Payload (UInt n r) _ = U1
+  type HasRep (UInt n r) c = KnownRegisters c n r
 
-deriving newtype instance (KnownRegisters c n r, Symbolic c) => Eq (UInt n r c)
+  arithmetize (UInt l) = l
+  payload _ = U1
+  restore (l, _) = UInt l
+  interpolate (fmap (uintData <$>) -> is) = UInt . I.interpolate is
 
 toNative
   :: forall n r c a
@@ -286,7 +293,6 @@ eea
    . Symbolic c
   => SemiEuclidean (UInt n r c)
   => KnownNat n
-  => KnownRegisters c n r
   => AdditiveGroup (UInt n r c)
   => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
 eea a b = eea' 1 a b one zero zero one
@@ -306,18 +312,26 @@ eea a b = eea' 1 a b one zero zero one
   eea' iteration oldR r oldS s oldT t
     | iteration Haskell.== iterations = (oldS, oldT, oldR)
     | otherwise =
-        bool @(Bool c)
-          rec
-          (if Haskell.even iteration then b - oldS else oldS, if Haskell.odd iteration then a - oldT else oldT, oldR)
-          (r == zero)
+        ( bool recS (if Haskell.even iteration then b - oldS else oldS) (r == zero)
+        , bool recT (if Haskell.odd iteration then a - oldT else oldT) (r == zero)
+        , bool recR oldR (r == zero)
+        )
    where
     quotient = oldR `div` r
 
-    rec = eea' (iteration + 1) r (oldR - quotient * r) s (quotient * s + oldS) t (quotient * t + oldT)
+    (recS, recT, recR) =
+      eea'
+        (iteration + 1)
+        r
+        (oldR - quotient * r)
+        s
+        (quotient * s + oldS)
+        t
+        (quotient * t + oldT)
 
 --------------------------------------------------------------------------------
 
-instance (Symbolic (Interpreter a), KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter a)) where
+instance (Arithmetic a, KnownNat n, KnownRegisterSize r) => ToConstant (UInt n r (Interpreter a)) where
   type Const (UInt n r (Interpreter a)) = Natural
   toConstant (UInt (Interpreter xs)) = vectorToNatural xs (registerSize @a @n @r)
 
@@ -918,14 +932,12 @@ instance (Symbolic c, KnownNat n, KnownRegisterSize r) => StrictNum (UInt n r c)
       return (p : ps <> [p'])
 
 instance
-  ( Symbolic c
-  , KnownNat n
+  ( KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
   )
-  => SymbolicInput (UInt n r c)
+  => SymbolicInput (UInt n r)
   where
-  isValid (UInt bits)
+  isValid (UInt bits :: UInt n r c)
     | value @n == 0 = true
     | otherwise = Bool $ fromCircuitF bits $ \v -> do
         let vs = V.fromVector v
@@ -955,7 +967,9 @@ fullSub r xk yk b = do
 
 naturalToVector
   :: forall c n r
-   . (Symbolic c, KnownNat n, KnownRegisterSize r) => Natural -> Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)
+   . (Symbolic c, KnownNat n, KnownRegisterSize r)
+  => Natural
+  -> Vector (NumberOfRegisters (BaseField c) n r) (BaseField c)
 naturalToVector c
   | value @n == 0 = V.unsafeToVector []
   | otherwise =

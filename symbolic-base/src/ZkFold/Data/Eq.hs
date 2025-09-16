@@ -77,6 +77,16 @@ instance Eq a => Eq (Maybe a) where
   _ == _ = false
   x /= y = not (x == y)
 
+instance Eq (f a) => Eq (G.Rec1 f a)
+
+instance Eq (f a) => Eq (G.M1 i c f a)
+
+instance {-# OVERLAPPING #-} Eq (f a) => Eq ((f G.:*: G.U1) a) where
+  (x G.:*: _) == (y G.:*: _) = x == y
+  (x G.:*: _) /= (y G.:*: _) = x /= y
+
+instance (Eq (f a), Eq (g a), BooleanOf (f a) ~ BooleanOf (g a)) => Eq ((f G.:*: g) a)
+
 instance (Eq x0, Eq x1, BooleanOf x0 ~ BooleanOf x1) => Eq (x0, x1)
 
 instance

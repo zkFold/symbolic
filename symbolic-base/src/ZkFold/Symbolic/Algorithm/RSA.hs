@@ -16,7 +16,7 @@ module ZkFold.Symbolic.Algorithm.RSA (
 ) where
 
 import Control.DeepSeq (NFData, force)
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import Prelude (($))
 import qualified Prelude as P
 
@@ -25,7 +25,7 @@ import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool, (&&))
+import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (
@@ -36,7 +36,7 @@ import ZkFold.Symbolic.Data.Combinators (
   RegisterSize (..),
   Resize (..),
  )
-import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
 
@@ -50,22 +50,17 @@ data PrivateKey keyLen ctx
 
 deriving instance Generic (PrivateKey keyLen context)
 
+deriving instance Generic1 (PrivateKey keyLen)
+
 deriving instance HNFData context => NFData (PrivateKey keyLen context)
 
 deriving instance HEq context => P.Eq (PrivateKey keyLen context)
 
 deriving instance HShow context => P.Show (PrivateKey keyLen context)
 
-deriving instance (Symbolic ctx, KnownRegisters ctx keyLen 'Auto) => SymbolicData (PrivateKey keyLen ctx)
+deriving instance SymbolicData (PrivateKey keyLen)
 
-instance
-  ( Symbolic ctx
-  , KnownNat keyLen
-  , KnownRegisters ctx keyLen 'Auto
-  )
-  => SymbolicInput (PrivateKey keyLen ctx)
-  where
-  isValid PrivateKey {..} = isValid prvD && isValid prvN
+deriving instance KnownNat keyLen => SymbolicInput (PrivateKey keyLen)
 
 type PubExponentSize = 18
 
@@ -77,28 +72,17 @@ data PublicKey keyLen ctx
 
 deriving instance Generic (PublicKey keyLen context)
 
+deriving instance Generic1 (PublicKey keyLen)
+
 deriving instance HNFData context => NFData (PublicKey keyLen context)
 
 deriving instance HEq context => P.Eq (PublicKey keyLen context)
 
 deriving instance HShow context => P.Show (PublicKey keyLen context)
 
-deriving instance
-  ( Symbolic ctx
-  , KnownRegisters ctx PubExponentSize 'Auto
-  , KnownRegisters ctx keyLen 'Auto
-  )
-  => SymbolicData (PublicKey keyLen ctx)
+deriving instance SymbolicData (PublicKey keyLen)
 
-instance
-  ( Symbolic ctx
-  , KnownNat keyLen
-  , KnownRegisters ctx PubExponentSize 'Auto
-  , KnownRegisters ctx keyLen 'Auto
-  )
-  => SymbolicInput (PublicKey keyLen ctx)
-  where
-  isValid PublicKey {..} = isValid pubE && isValid pubN
+deriving instance KnownNat keyLen => SymbolicInput (PublicKey keyLen)
 
 type RSA keyLen msgLen ctx =
   ( SHA2 "SHA256" ctx msgLen

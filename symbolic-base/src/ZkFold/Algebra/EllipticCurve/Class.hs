@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -33,10 +34,15 @@ module ZkFold.Algebra.EllipticCurve.Class (
   Project (..),
 ) where
 
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData, NFData1)
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Foldable (Foldable)
+import Data.Functor (Functor)
 import Data.Kind (Type)
+import Data.Semialign (Semialign (..), Zip (..))
 import Data.String (fromString)
+import Data.These (These (..))
+import Data.Traversable (Traversable)
 import GHC.Generics
 import GHC.TypeLits (Symbol)
 import Test.QuickCheck hiding (scale)
@@ -45,11 +51,9 @@ import qualified Prelude
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Control.Conditional
+import ZkFold.Data.Bool
 import ZkFold.Data.Eq
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
@@ -223,7 +227,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => EllipticCurve (Weierstrass curve (Point field))
   where
@@ -249,30 +253,6 @@ instance
   isOnCurve p = isOnCurve (project p :: Weierstrass curve (Point field))
 
 deriving newtype instance
-  SymbolicEq field
-  => SymbolicData (Weierstrass curve (Point field))
-
-deriving newtype instance
-  SymbolicEq field
-  => SymbolicData (Weierstrass curve (JacobianPoint field))
-
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (Weierstrass curve (Point field))
-  where
-  isValid = isOnCurve
-
-instance
-  ( WeierstrassCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (Weierstrass curve (JacobianPoint field))
-  where
-  isValid = isOnCurve
-
-deriving newtype instance
   Eq point
   => Eq (Weierstrass curve point)
 
@@ -285,28 +265,29 @@ deriving newtype instance
   => Planar field (Weierstrass curve point)
 
 instance
-  ( Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  ( Conditional (BooleanOf field) (Point field)
   , Field field
   )
   => AdditiveSemigroup (Weierstrass curve (Point field))
   where
-  pt0@(Weierstrass (Point x0 y0 isInf0)) + pt1@(Weierstrass (Point x1 y1 isInf1)) =
-    if isInf0
-      then pt1
-      else
-        if isInf1
-          then pt0 -- additive identity
-          else
-            if x0 == x1 && y0 + y1 == zero
-              then pointInf -- additive inverse
-              else
-                let slope =
-                      if x0 == x1 && y0 == y1
-                        then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
-                        else (y1 - y0) // (x1 - x0) -- secant
-                    x2 = slope * slope - x0 - x1
-                    y2 = slope * (x0 - x2) - y0
-                 in pointXY x2 y2
+  Weierstrass pt0@(Point x0 y0 isInf0) + Weierstrass pt1@(Point x1 y1 isInf1) =
+    Weierstrass $
+      if isInf0
+        then pt1
+        else
+          if isInf1
+            then pt0 -- additive identity
+            else
+              if x0 == x1 && y0 + y1 == zero
+                then pointInf -- additive inverse
+                else
+                  let slope =
+                        if x0 == x1 && y0 == y1
+                          then (x0 * x0 + x0 * x0 + x0 * x0) // (y0 + y0) -- tangent
+                          else (y1 - y0) // (x1 - x0) -- secant
+                      x2 = slope * slope - x0 - x1
+                      y2 = slope * (x0 - x2) - y0
+                   in pointXY x2 y2
 
 instance
   ( Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
@@ -363,7 +344,7 @@ instance (Semiring field, Eq field) => Zero (Weierstrass curve (Point field)) wh
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveMonoid (Weierstrass curve (Point field))
 
@@ -380,12 +361,12 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveGroup (Weierstrass curve (Point field))
   where
-  negate pt@(Weierstrass (Point x y isInf)) =
-    if isInf then pt else pointXY x (negate y)
+  negate (Weierstrass pt@(Point x y isInf)) =
+    Weierstrass $ if isInf then pt else pointXY x (negate y)
 
 instance
   ( WeierstrassCurve curve field
@@ -399,7 +380,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => Scale Natural (Weierstrass curve (Point field))
   where
@@ -417,7 +398,7 @@ instance
 instance
   ( WeierstrassCurve curve field
   , Conditional (BooleanOf field) (BooleanOf field)
-  , Conditional (BooleanOf field) (Weierstrass curve (Point field))
+  , Conditional (BooleanOf field) (Point field)
   )
   => Scale Integer (Weierstrass curve (Point field))
   where
@@ -457,18 +438,6 @@ deriving newtype instance
 deriving newtype instance
   Prelude.Show point
   => Prelude.Show (TwistedEdwards curve point)
-
-deriving newtype instance
-  SymbolicData field
-  => SymbolicData (TwistedEdwards curve (AffinePoint field))
-
-instance
-  ( TwistedEdwardsCurve curve field
-  , SymbolicEq field
-  )
-  => SymbolicInput (TwistedEdwards curve (AffinePoint field))
-  where
-  isValid = isOnCurve
 
 deriving newtype instance
   Eq point
@@ -557,13 +526,6 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
-instance
-  ( SymbolicData (BooleanOf field)
-  , SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (Point field)
-
 instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
 
@@ -601,12 +563,6 @@ instance (Prelude.Eq field, Field field) => Prelude.Eq (JacobianPoint field) whe
     z02 = square z0
     z03 = z0 * z02
   pt0 /= pt1 = not (pt0 Prelude.== pt1)
-
-instance
-  ( SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (JacobianPoint field)
 
 instance Field field => Planar field (JacobianPoint field) where
   pointXY x y = JacobianPoint x y one
@@ -682,13 +638,6 @@ deriving instance
   => Prelude.Eq (CompressedPoint field)
 
 instance
-  ( SymbolicData (BooleanOf field)
-  , SymbolicData field
-  , Context field ~ Context (BooleanOf field)
-  )
-  => SymbolicData (CompressedPoint field)
-
-instance
   (BoolType (BooleanOf field), AdditiveMonoid field)
   => HasPointInf (CompressedPoint field)
   where
@@ -698,11 +647,11 @@ data AffinePoint field = AffinePoint
   { _x :: field
   , _y :: field
   }
-  deriving (Generic, Prelude.Eq)
+  deriving (Foldable, Functor, Generic, Generic1, Prelude.Eq, Traversable)
 
 deriving instance NFData field => NFData (AffinePoint field)
 
-instance SymbolicData field => SymbolicData (AffinePoint field)
+deriving instance NFData1 AffinePoint
 
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 
@@ -712,3 +661,9 @@ instance Prelude.Show field => Prelude.Show (AffinePoint field) where
   show (AffinePoint x y) =
     Prelude.mconcat
       ["(", Prelude.show x, ", ", Prelude.show y, ")"]
+
+instance Semialign AffinePoint where
+  alignWith f = zipWith \a b -> f (These a b)
+
+instance Zip AffinePoint where
+  zipWith f (AffinePoint x y) (AffinePoint z w) = AffinePoint (f x z) (f y w)

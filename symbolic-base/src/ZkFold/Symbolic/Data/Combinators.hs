@@ -12,7 +12,7 @@ import Data.Constraint
 import Data.Constraint.Nat
 import Data.Constraint.Unsafe
 import Data.Foldable (foldlM)
-import Data.Functor.Rep (Representable, mzipRep, mzipWithRep)
+import Data.Functor.Rep (Representable, mzipWithRep)
 import Data.Kind (Type)
 import Data.List (find, splitAt)
 import Data.List.Split (chunksOf)
@@ -36,6 +36,7 @@ import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField)
+import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep
@@ -105,32 +106,35 @@ registerSize = case regSize @r of
 
 type Ceil a b = Div (a + b - 1) b
 
-type family GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
-  GetRegisterSize _ 0 _ = 0
-  GetRegisterSize a bits (Fixed rs) = rs
-  GetRegisterSize a bits Auto = Ceil bits (NumberOfRegisters a bits Auto)
+type GetRegisterSize (a :: Type) (bits :: Natural) (r :: RegisterSize) =
+  GetRegisterSizeN (Order a) bits r
+
+type family GetRegisterSizeN n b r :: Natural where
+  GetRegisterSizeN _ 0 _ = 0
+  GetRegisterSizeN _ _ (Fixed rs) = rs
+  GetRegisterSizeN n b Auto = Ceil b (NumberOfRegistersN n b Auto)
 
 type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
 
-type family NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize) :: Natural where
-  NumberOfRegisters _ 0 _ = 0
-  NumberOfRegisters a bits (Fixed bits) = 1
-  NumberOfRegisters a bits (Fixed rs) = If (Mod bits rs >? 0) (Div bits rs + 1) (Div bits rs) -- if rs <= maxregsize a, ceil (n / rs)
-  NumberOfRegisters a bits Auto = NumberOfRegisters' a bits (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
+type NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize) =
+  NumberOfRegistersN (Order a) bits r
+
+type family NumberOfRegistersN n b r :: Natural where
+  NumberOfRegistersN _ 0 _ = 0
+  NumberOfRegistersN n b (Fixed b) = 1
+  NumberOfRegistersN n b (Fixed rs) = If (Mod b rs >? 0) (Div b rs + 1) (Div b rs) -- if rs <= maxregsize a, ceil (n / rs)
+  NumberOfRegistersN n b Auto = NumberOfRegisters' n b (ListRange 1 50) -- TODO: Compilation takes ages if this constant is greater than 10000.
   -- But it is weird anyway if someone is trying to store a value
   -- which requires more than 50 registers.
 
-type family NumberOfRegisters' (a :: Type) (bits :: Natural) (c :: [Natural]) :: Natural where
-  NumberOfRegisters' a bits '[] = 0
-  NumberOfRegisters' a bits (x ': xs) =
+type family NumberOfRegisters' (n :: Natural) (bits :: Natural) (c :: [Natural]) :: Natural where
+  NumberOfRegisters' _ _ '[] = 0
+  NumberOfRegisters' n bits (x ': xs) =
     OrdCond
-      (CmpNat bits (x * MaxRegisterSize a x))
+      (CmpNat bits (x * MaxRegisterSize n x))
       x
       x
-      (NumberOfRegisters' a bits xs)
-
-type family BitLimit (a :: Type) :: Natural where
-  BitLimit a = Log2 (Order a)
+      (NumberOfRegisters' n bits xs)
 
 type family MaxAdded (regCount :: Natural) :: Natural where
   MaxAdded regCount =
@@ -140,8 +144,8 @@ type family MaxAdded (regCount :: Natural) :: Natural where
       (Log2 regCount)
       (1 + Log2 regCount)
 
-type family MaxRegisterSize (a :: Type) (regCount :: Natural) :: Natural where
-  MaxRegisterSize a regCount = Div (BitLimit a - MaxAdded regCount) 2
+type family MaxRegisterSize (n :: Natural) (regCount :: Natural) :: Natural where
+  MaxRegisterSize n regCount = Div (Log2 n - MaxAdded regCount) 2
 
 type family ListRange (from :: Natural) (to :: Natural) :: [Natural] where
   ListRange from from = '[from]
@@ -239,11 +243,11 @@ withSecondNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1) +
 withSecondNextNBits = withDict (withSecondNextNBits' @n)
 
 withNumberOfRegisters'
-  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownNat (NumberOfRegisters a n r)
+  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters (Interpreter a) n r
 withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
 
 withNumberOfRegisters
-  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownNat (NumberOfRegisters a n r) => k) -> k
+  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters (Interpreter a) n r => k) -> k
 withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
 
 withCeilRegSize' :: forall rs ow. (KnownNat rs, KnownNat ow) :- KnownNat (Ceil rs ow)
@@ -365,16 +369,18 @@ splitExpansion16 n1 k = do
       . (`div` fromConstant @Natural (2 ^ n1))
       . toIntegral
 
-runInvert :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i, f i)
+runInvert :: (MonadCircuit i a w m, Traversable f) => f i -> m (f i, f i)
 runInvert is = do
-  js <- for is $ \i -> newConstrained (\x j -> x i * x j) (one - at i // at i)
-  ks <- for (mzipRep is js) $ \(i, j) -> newConstrained (\x k -> x i * x k + x j - one) (finv (at i))
-  return (js, ks)
+  jks <- for is $ \i -> do
+    j <- newConstrained (\x j -> x i * x j) (one - at i // at i)
+    k <- newConstrained (\x k -> x i * x k + x j - one) (finv (at i))
+    pure (j, k)
+  return (Haskell.fst <$> jks, Haskell.snd <$> jks)
 
 runInvertOrFail :: (MonadCircuit i a w m, Traversable f) => f i -> m (f i)
 runInvertOrFail is = for is $ \i -> newConstrained (\x j -> x i * x j - one) (finv (at i))
 
-isZero :: (MonadCircuit i a w m, Representable f, Traversable f) => f i -> m (f i)
+isZero :: (MonadCircuit i a w m, Traversable f) => f i -> m (f i)
 isZero is = Haskell.fst <$> runInvert is
 
 ilog2 :: Natural -> Natural
