@@ -7,6 +7,8 @@ module ZkFold.Symbolic.Data.MerkleTree (
   emptyTree,
   fromLeaves,
   toLeaves,
+  merklePath,
+  rootOnReplace,
   MerkleEntry (..),
   contains,
   (!!),
@@ -30,7 +32,7 @@ import Data.Tuple (fst)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
-import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:.:) (..))
+import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:.:) (..), (:*:) (..))
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
@@ -41,7 +43,7 @@ import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
-import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector, zip)
+import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
@@ -53,6 +55,7 @@ import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
+import ZkFold.Data.Product (toPair)
 
 data MerkleTree d c = MerkleTree
   { mHash :: FieldElement c
@@ -103,22 +106,34 @@ instance
   where
   arbitrary = fromLeaves <$> arbitrary
 
+type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
+
 type Index d = Vector (d - 1) :.: Bool
+
+merklePath
+  :: (Symbolic c, KnownNat (d - 1))
+  => MerkleTree d c -> Index d c -> MerklePath d c
+merklePath MerkleTree {..} position =
+  let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
+      path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
+   in Comp1 $ zipWith (:*:) (reverse $ unComp1 position) path
+
+rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
+rootOnReplace (Comp1 path) value =
+  foldl' ((. toPair) . Base.hashWithSibling) value path
 
 data MerkleEntry d c = MerkleEntry
   { position :: Index d c
   , value :: FieldElement c
   }
-  deriving (Generic1, SymbolicData)
+  deriving (Generic1, SymbolicData, SymbolicInput)
 
 contains
   :: forall d c
    . (Symbolic c, KnownNat (d - 1))
   => MerkleTree d c -> MerkleEntry d c -> Bool c
-MerkleTree {..} `contains` MerkleEntry {..} =
-  let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
-      path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
-   in foldl' Base.hashWithSibling value (zip (reverse (unComp1 position)) path) == mHash
+tree `contains` MerkleEntry {..} =
+  rootOnReplace (merklePath tree position) value == mHash tree
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
