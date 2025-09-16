@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (validateTransaction)
 
