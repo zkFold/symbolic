@@ -530,17 +530,6 @@ fn vn(v: &ScalarField, n: u64) -> ScalarField {
     v.pow([n])
 }
 
-fn div_or_zero<T: AdditiveGroup>(a: &T, b: &T) -> T
-where
-    for<'a, 'b> &'a T: Div<&'b T, Output = T>,
-{
-    if b == &T::ZERO {
-        T::ZERO
-    } else {
-        a / b
-    }
-}
-
 pub fn plonkupProve(
     n: usize,
     ps: &PlonkupProverSetup,
@@ -689,9 +678,9 @@ pub fn plonkupProve(
             &cumprod(n, &{
                 let it = zip_with(&gp1_1, &gp1_2, |a, b| a * b);
                 let it = zip_with(&it, &gp1_3, |a, b| a * b);
-                let it = zip_with(&it, &gp1_4, div_or_zero);
-                let it = zip_with(&it, &gp1_5, div_or_zero);
-                let it = zip_with(&it, &gp1_6, div_or_zero);
+                let it = zip_with(&it, &gp1_4, |a, b| a / b);
+                let it = zip_with(&it, &gp1_5, |a, b| a / b);
+                let it = zip_with(&it, &gp1_6, |a, b| a / b);
                 it
             }),
         )
@@ -711,8 +700,8 @@ pub fn plonkupProve(
             n,
             &cumprod(n, &{
                 let it = zip_with(&gp2_1, &gp2_2, |a, b| a * b);
-                let it = zip_with(&it, &gp2_3, div_or_zero);
-                let it = zip_with(&it, &gp2_4, div_or_zero);
+                let it = zip_with(&it, &gp2_3, |a, b| a / b);
+                let it = zip_with(&it, &gp2_4, |a, b| a / b);
                 it
             }),
         )

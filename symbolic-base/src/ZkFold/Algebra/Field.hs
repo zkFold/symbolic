@@ -35,9 +35,6 @@ import GHC.TypeLits (Symbol)
 import System.Random (Random (..))
 import System.Random.Stateful (Uniform (..), UniformRange (..))
 import Test.QuickCheck hiding (scale)
-import Prelude (Integer)
-import qualified Prelude as Haskell
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
@@ -45,6 +42,8 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Prelude (iterate', log2ceiling)
+import Prelude (Integer)
+import qualified Prelude as Haskell
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -144,9 +143,7 @@ instance KnownNat n => Eq (Zp n) where
 
 instance Prime p => Field (Zp p) where
   --    finv (Zp a) = fromConstant $ inv a (value @p)
-  finv zp@(Zp a) 
-    | a == 0 = Haskell.error "Division by zero"
-    | Haskell.otherwise = zp ^ (value @p -! 2)
+  finv zp = zp ^ (value @p -! 2)
 
   rootOfUnity l
     | l == 0 = Nothing
