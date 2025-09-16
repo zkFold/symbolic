@@ -13,12 +13,13 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
+import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import qualified Prelude as Haskell hiding ((||))
+
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude as Haskell hiding ((||))
 
 -- | Transaction in our symbolic ledger.
 data Transaction context = Transaction
