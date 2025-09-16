@@ -32,7 +32,7 @@ import Data.Tuple (fst)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
-import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:.:) (..), (:*:) (..))
+import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
@@ -43,6 +43,7 @@ import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
+import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
@@ -55,7 +56,6 @@ import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
-import ZkFold.Data.Product (toPair)
 
 data MerkleTree d c = MerkleTree
   { mHash :: FieldElement c
