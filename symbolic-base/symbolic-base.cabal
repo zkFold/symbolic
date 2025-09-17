@@ -219,6 +219,7 @@ library
       ZkFold.Protocol.Plonkup.Witness
       ZkFold.Protocol.NonInteractiveProof
       ZkFold.Protocol.NonInteractiveProof.Class
+      ZkFold.Protocol.NonInteractiveProof.TrustedSetup
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Protocol.Halo2
