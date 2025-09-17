@@ -15,11 +15,11 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
-import ZkFold.Symbolic.Ledger.Types.Root (Root)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
-type AccountInfo users = Hash (Vector users :.: (Address :*: Nonce :*: Root AssetValue))
+-- | Account information for a given user. Contains user's address, nonce and root hash of their asset merle tree.
+type AccountInfo users = Hash (Vector users :.: (Address :*: Nonce :*: HashSimple))
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State bi bo users context = State
