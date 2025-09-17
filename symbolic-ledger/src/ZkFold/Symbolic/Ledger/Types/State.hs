@@ -12,12 +12,13 @@ import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+
 import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
 import ZkFold.Symbolic.Ledger.Types.Root (Root)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 type AccountInfo = Root (Address :*: Nonce :*: Root AssetValue)
 

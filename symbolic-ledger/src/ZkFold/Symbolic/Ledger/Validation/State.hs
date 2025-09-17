@@ -9,9 +9,10 @@ import GHC.Generics ((:*:) (..))
 import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType ((&&)))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
+import qualified Prelude as P
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
-import qualified Prelude as P
 
 validateStateUpdate
   :: forall context bi bo t
