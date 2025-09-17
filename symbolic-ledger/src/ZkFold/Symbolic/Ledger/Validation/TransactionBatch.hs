@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
   validateTransactionBatch,
 ) where
 
+import GHC.Generics ((:*:) (..), (:.:))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
@@ -15,14 +16,14 @@ validateTransactionBatch
   :: forall context t bo
    . SignatureTransactionBatch context t
   => AccountInfo context
-  -> Vector bo (Address context, Address context, AssetValue context)
-  -> TransactionBatch context t
-  -> (Bool context, AccountInfo context, AccountInfo context)
+  -> (Vector bo :.: (Address :*: Address :*: AssetValue)) context
+  -> TransactionBatch t context
+  -> (Bool :*: AccountInfo :*: AccountInfo) context
 validateTransactionBatch ai bridgedOutAssets tb =
   foldl'
-    ( \(isValid, aiAcc, aiAccWithoutBridgedOut) tx ->
-        let (isTxValid, newAi, newAiWithoutBridgedOut) = validateTransaction aiAcc aiAccWithoutBridgedOut bridgedOutAssets tx
-         in (isValid && isTxValid, newAi, newAiWithoutBridgedOut)
+    ( \(isValid :*: aiAcc :*: aiAccWithoutBridgedOut) tx ->
+        let (isTxValid :*: newAi :*: newAiWithoutBridgedOut) = validateTransaction aiAcc aiAccWithoutBridgedOut bridgedOutAssets tx
+         in ((isValid && isTxValid) :*: newAi :*: newAiWithoutBridgedOut)
     )
-    (true :: Bool context, ai, ai)
+    (true :*: ai :*: ai)
     tb.tbTransactions

@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Ledger.Types (
 
 -- Re-exports
 
+import GHC.Generics ((:*:), (:.:))
 import GHC.TypeLits (KnownNat)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
@@ -45,8 +46,8 @@ type SignatureTransaction context =
 type SignatureTransactionBatch context t =
   ( SignatureTransaction context
   , KnownNat t
-  , Hashable (HashSimple context) (TransactionBatch context t)
-  , forall s. Hashable (HashSimple s) (TransactionBatch s t)
+  , Hashable (HashSimple context) (TransactionBatch t context)
+  , forall s. Hashable (HashSimple s) (TransactionBatch t s)
   )
 
 type SignatureState context bi bo =
@@ -54,9 +55,8 @@ type SignatureState context bi bo =
   , KnownRegistersAssetQuantity context
   , KnownNat bi
   , KnownNat bo
-  , Hashable (HashSimple context) (State context bi bo)
-  , forall s. Hashable (HashSimple s) (State s bi bo)
-  , Hashable (HashSimple context) (Vector bi (Address context, AssetValue context))
-  , Hashable (HashSimple context) (Vector bo (Address context, Address context, AssetValue context))
-  -- , forall s. Hashable (HashSimple s) (Vector bi (Address s, Address s, AssetValue s))
+  , Hashable (HashSimple context) (State bi bo context)
+  , forall s. Hashable (HashSimple s) (State bi bo s)
+  , Hashable (HashSimple context) ((Vector bi :.: (Address :*: AssetValue)) context)
+  , Hashable (HashSimple context) ((Vector bo :.: (Address :*: Address :*: AssetValue)) context)
   )

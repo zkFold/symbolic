@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
@@ -7,7 +8,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   txId,
 ) where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
@@ -32,13 +33,8 @@ data Transaction context = Transaction
   -- ^ Asset being transferred.
   , isBridgeOut :: Bool context
   }
-  deriving stock Generic
-
-instance
-  ( KnownRegistersAssetQuantity context
-  , Symbolic context
-  )
-  => SymbolicData (Transaction context)
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
 
 instance
   ( KnownRegistersAssetQuantity context
@@ -47,7 +43,7 @@ instance
   => Eq (Transaction context)
 
 -- | Transaction hash.
-type TransactionId context = Hash (Transaction context)
+type TransactionId = Hash Transaction
 
 txId
   :: ( KnownRegistersAssetQuantity context

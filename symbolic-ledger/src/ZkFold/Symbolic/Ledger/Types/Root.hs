@@ -4,17 +4,16 @@ module ZkFold.Symbolic.Ledger.Types.Root (
   insert,
 ) where
 
-import Prelude hiding (Bool, Eq, Ord, length, splitAt, (*), (+))
-
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
+import Prelude hiding (Bool, Eq, Ord, length, splitAt, (*), (+))
 
 -- TODO: Move from Hash to correct type from symbolic-base.
 
 -- | Denotes root of a Merkle tree with leaves of type @t@.
-type Root t = Hash t
+type Root = Hash
 
-empty :: Root t
+empty :: Root t c
 empty = undefined
 
-insert :: t -> Root t -> Root t
+insert :: t c -> Root t c -> Root t c
 insert = undefined

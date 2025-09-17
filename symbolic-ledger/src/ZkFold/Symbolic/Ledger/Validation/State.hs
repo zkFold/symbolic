@@ -5,6 +5,7 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
 ) where
 
+import GHC.Generics ((:*:) (..))
 import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType ((&&)))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
@@ -16,11 +17,11 @@ validateStateUpdate
   :: forall context bi bo t
    . SignatureState context bi bo
   => SignatureTransactionBatch context t
-  => State context bi bo
+  => State bi bo context
   -- ^ Previous state.
-  -> TransactionBatch context t
+  -> TransactionBatch t context
   -- ^ The "action" that is applied to the state.
-  -> State context bi bo
+  -> State bi bo context
   -- ^ New state.
   -> Bool context
 validateStateUpdate previousState action newState =
@@ -32,7 +33,7 @@ validateStateUpdate previousState action newState =
     -- 1. If a transaction bridges out an asset, we see it is included in bridge out list.
     -- 2. When traversing transactions in batch, we maintain two merkle trees. If a transaction bridges out, we subtract it from one but not from the other. In the end, we subtract "bridgedOutAssets" from the other and check if both are equal.
     bridgedOutAssets = preimage newState.sBridgeOut
-    (isBatchValid, newAi, newAiWithoutBridgedOut) =
+    (isBatchValid :*: newAi :*: newAiWithoutBridgedOut) =
       validateTransactionBatch merkleTreeWithBridgedInAssets bridgedOutAssets action
    in
     -- New state correctly links to the previous state.
