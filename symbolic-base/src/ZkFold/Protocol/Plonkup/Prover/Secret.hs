@@ -1,24 +1,26 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Protocol.Plonkup.Prover.Secret where
 
 import Data.Aeson.Types (FromJSON (..), ToJSON (..))
+import Data.Data (Typeable)
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..))
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
-
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.Vector (Vector (..))
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 newtype PlonkupProverSecret g = PlonkupProverSecret (Vector 19 (ScalarFieldOf g))
   deriving stock Generic
 
-deriving anyclass instance ToJSON (PlonkupProverSecret BLS12_381_G1_Point)
+instance ToJSON (ScalarFieldOf g) => ToJSON (PlonkupProverSecret g)
 
-deriving anyclass instance FromJSON (PlonkupProverSecret BLS12_381_G1_Point)
+instance FromJSON (ScalarFieldOf g) => FromJSON (PlonkupProverSecret g)
+
+deriving newtype instance (Typeable g, s ~ ScalarFieldOf g, ToSchema s) => ToSchema (PlonkupProverSecret g)
 
 instance Show (ScalarFieldOf g) => Show (PlonkupProverSecret g) where
   show (PlonkupProverSecret v) =
