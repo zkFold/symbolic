@@ -391,7 +391,8 @@ instance
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 witToVar
-  :: forall a. (Finite a, Prime (Order a), Binary a)
+  :: forall a
+   . (Finite a, Prime (Order a), Binary a)
   => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV

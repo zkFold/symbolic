@@ -35,4 +35,5 @@ integral :: forall size n. (KnownNat size, Integral n) => n
 integral = Integral.fromIntegral (value @size)
 
 instance Prime 2
+
 instance Prime 3

@@ -17,8 +17,7 @@ import ZkFold.Data.Ord (Ord (..))
 newtype ForeignField (q :: Natural) i = ForeignField {foreignField :: i}
   deriving (Generic, Haskell.Eq)
 
-instance {-# INCOHERENT #-}
-  (KnownNat q, Euclidean i, FromConstant c i) => FromConstant c (ForeignField q i) where
+instance {-# INCOHERENT #-} (KnownNat q, Euclidean i, FromConstant c i) => FromConstant c (ForeignField q i) where
   fromConstant x = ForeignField (fromConstant x `mod` fromConstant (value @q))
 
 instance {-# OVERLAPPING #-} FromConstant (ForeignField q i) (ForeignField q i)
