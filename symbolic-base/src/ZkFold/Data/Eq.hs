@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -6,8 +7,10 @@ module ZkFold.Data.Eq where
 import Data.Bool (Bool)
 import qualified Data.Eq as Haskell
 import Data.Foldable (Foldable)
+import Data.Functor.Constant (Constant)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
+import qualified Data.Ord as Haskell
 import Data.Ratio (Rational)
 import Data.String (String)
 import Data.Type.Equality (type (~))
@@ -38,37 +41,25 @@ class BoolType (BooleanOf a) => Eq a where
 elem :: (Eq a, Foldable t) => a -> t a -> BooleanOf a
 elem x = any (== x)
 
--- TODO: newtype for deriving of our Eq from Haskell.Eq
+newtype HaskellEqOrd a = HaskellEqOrd {runHaskellEqOrd :: a}
+  deriving (Haskell.Eq, Haskell.Ord)
 
-instance Eq Natural where
-  type BooleanOf Natural = Bool
+instance Haskell.Eq a => Eq (HaskellEqOrd a) where
+  type BooleanOf (HaskellEqOrd a) = Bool
   (==) = (Haskell.==)
   (/=) = (Haskell./=)
 
-instance Eq Integer where
-  type BooleanOf Integer = Bool
-  (==) = (Haskell.==)
-  (/=) = (Haskell./=)
+deriving via (HaskellEqOrd Natural) instance Eq Natural
 
-instance Eq Int where
-  type BooleanOf Int = Bool
-  (==) = (Haskell.==)
-  (/=) = (Haskell./=)
+deriving via (HaskellEqOrd Integer) instance Eq Integer
 
-instance Eq Bool where
-  type BooleanOf Bool = Bool
-  (==) = (Haskell.==)
-  (/=) = (Haskell./=)
+deriving via (HaskellEqOrd Int) instance Eq Int
 
-instance Eq String where
-  type BooleanOf String = Bool
-  (==) = (Haskell.==)
-  (/=) = (Haskell./=)
+deriving via (HaskellEqOrd Bool) instance Eq Bool
 
-instance Eq Rational where
-  type BooleanOf Rational = Bool
-  (==) = (Haskell.==)
-  (/=) = (Haskell./=)
+deriving via (HaskellEqOrd String) instance Eq String
+
+deriving via (HaskellEqOrd Rational) instance Eq Rational
 
 instance Eq a => Eq (Maybe a) where
   type BooleanOf (Maybe a) = BooleanOf a
@@ -76,6 +67,8 @@ instance Eq a => Eq (Maybe a) where
   Nothing == Nothing = true
   _ == _ = false
   x /= y = not (x == y)
+
+instance Eq a => Eq (Constant a b)
 
 instance Eq (f a) => Eq (G.Rec1 f a)
 

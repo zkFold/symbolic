@@ -52,7 +52,7 @@ import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
 import ZkFold.ArithmeticCircuit.Var
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
-import ZkFold.ArithmeticCircuit.WitnessEstimation (UVar (..))
+import ZkFold.ArithmeticCircuit.WitnessEstimation (Partial (..), UVar (..))
 import ZkFold.Control.HApplicative (HApplicative, hliftA2, hpure)
 import ZkFold.Data.Binary (fromByteString, toByteString)
 import ZkFold.Data.HFunctor (HFunctor, hmap)
@@ -341,14 +341,14 @@ instance
 
   constraint p =
     let evalMaybe = \case
-          ConstVar cV -> Just cV
-          _ -> Nothing
+          ConstVar cV -> Known cV
+          _ -> Unknown
      in case p evalMaybe of
-          Just c ->
+          Known c ->
             if c == zero
               then pure ()
               else error "The constraint is non-zero"
-          Nothing ->
+          Unknown ->
             zoom #acSystem . modify $
               M.insert (witToVar (p at)) (p $ evalVar var)
 

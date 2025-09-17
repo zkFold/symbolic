@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
@@ -13,6 +14,7 @@ import Data.Functor.Rep (Rep, Representable)
 import Data.Kind (Type)
 import Data.Set (singleton)
 import Data.Traversable (Traversable)
+import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
 import Prelude (Integer)
@@ -20,8 +22,7 @@ import Prelude (Integer)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
-import ZkFold.Control.Conditional (Conditional)
-import ZkFold.Data.Eq (BooleanOf, Eq)
+import ZkFold.Data.Eq (BooleanOf)
 import ZkFold.Data.Orphans ()
 
 -- | A 'ResidueField' is a 'FiniteField'
@@ -29,10 +30,7 @@ import ZkFold.Data.Orphans ()
 class
   ( FiniteField a
   , Euclidean (IntegralOf a)
-  , Eq (IntegralOf a)
-  , Conditional (BooleanOf (IntegralOf a)) (BooleanOf (IntegralOf a))
-  , Conditional (BooleanOf (IntegralOf a)) (IntegralOf a)
-  , Conditional (BooleanOf (IntegralOf a)) a
+  , BooleanOf a ~ BooleanOf (IntegralOf a)
   ) =>
   ResidueField a
   where
