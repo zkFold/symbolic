@@ -9,17 +9,16 @@ import GHC.Generics ((:*:) (..), (:.:))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (validateTransaction)
 
 validateTransactionBatch
-  :: forall context t bo
+  :: forall context t bo users
    . SignatureTransactionBatch context t
-  => AccountInfo context
+  => AccountInfo users context
   -> (Vector bo :.: (Address :*: Address :*: AssetValue)) context
   -> TransactionBatch t context
-  -> (Bool :*: AccountInfo :*: AccountInfo) context
+  -> (Bool :*: AccountInfo users :*: AccountInfo users) context
 validateTransactionBatch ai bridgedOutAssets tb =
   foldl'
     ( \(isValid :*: aiAcc :*: aiAccWithoutBridgedOut) tx ->

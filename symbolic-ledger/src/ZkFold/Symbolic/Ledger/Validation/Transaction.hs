@@ -12,18 +12,17 @@ import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
 
-import ZkFold.Symbolic.Ledger.Types
-
 validateTransaction
-  :: forall context bo
+  :: forall context bo users
    . SignatureTransaction context
-  => AccountInfo context
-  -> AccountInfo context
+  => AccountInfo users context
+  -> AccountInfo users context
   -> (Vector bo :.: (Address :*: Address :*: AssetValue)) context
   -> Transaction context
-  -> (Bool :*: AccountInfo :*: AccountInfo) context
+  -> (Bool :*: AccountInfo users :*: AccountInfo users) context
 validateTransaction ai aiWithoutBridgedOut (Comp1 bridgedOutAssets) tx =
   ifThenElse
     tx.isBridgeOut

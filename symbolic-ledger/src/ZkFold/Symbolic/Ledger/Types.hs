@@ -19,7 +19,6 @@ import GHC.TypeLits (KnownNat)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.Root
@@ -51,13 +50,13 @@ type SignatureTransactionBatch context t =
   , forall s. Hashable (HashSimple s) (TransactionBatch t s)
   )
 
-type SignatureState context bi bo =
+type SignatureState context bi bo users =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
   , KnownNat bi
   , KnownNat bo
-  , Hashable (HashSimple context) (State bi bo context)
-  , forall s. Hashable (HashSimple s) (State bi bo s)
+  , Hashable (HashSimple context) (State bi bo users context)
+  , forall s. Hashable (HashSimple s) (State bi bo users s)
   , Hashable (HashSimple context) ((Vector bi :.: (Address :*: AssetValue)) context)
   , Hashable (HashSimple context) ((Vector bo :.: (Address :*: Address :*: AssetValue)) context)
   )
