@@ -7,7 +7,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import qualified ZkFold.Symbolic.Data.Hash as Symbolic.Hash
 
 -- | Hash type used in the zkFold ledger.
-type Hash = Symbolic.Hash.Hash FieldElement
+type Hash = Symbolic.Hash.Hash HashSimple
 
 -- TODO: Introduce a phantom type to track hash relation? Also should likely add strong typing than synonyms.
 
