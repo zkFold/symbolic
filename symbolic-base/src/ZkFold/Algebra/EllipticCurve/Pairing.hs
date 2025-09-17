@@ -45,7 +45,6 @@ millerAlgorithmBLS12
    . WeierstrassCurve d fldD
   => FiniteField fldC
   => Scale fldC fldD
-  => Conditional (BooleanOf fldD) (BooleanOf fldD)
   => Conditional (BooleanOf fldD) (Point fldD)
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g)
   => BooleanOf fldC ~ BooleanOf fldD
@@ -65,7 +64,6 @@ millerAlgorithmBN
    . WeierstrassCurve d fldD
   => FiniteField fldC
   => Scale fldC fldD
-  => Conditional (BooleanOf fldD) (BooleanOf fldD)
   => Conditional (BooleanOf fldD) (Point fldD)
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD))
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g)
@@ -89,7 +87,6 @@ finalStepBN
    . WeierstrassCurve d fldD
   => FiniteField fldC
   => Scale fldC fldD
-  => Conditional (BooleanOf fldD) (BooleanOf fldD)
   => Conditional (BooleanOf fldD) (Point fldD)
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD))
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g)
@@ -113,7 +110,6 @@ millerLoop
   :: WeierstrassCurve d fldD
   => Field fldC
   => Scale fldC fldD
-  => Conditional (BooleanOf fldD) (BooleanOf fldD)
   => Conditional (BooleanOf fldD) (Point fldD)
   => Conditional (BooleanOf fldD) (Weierstrass d (Point fldD), g)
   => BooleanOf fldC ~ BooleanOf fldD

@@ -161,6 +161,7 @@ library
       ZkFold.Data.HFunctor.Classes
       ZkFold.Data.List.Infinite
       ZkFold.Data.Matrix
+      ZkFold.Data.Ord
       ZkFold.Data.Orphans
       ZkFold.Data.Package
       ZkFold.Data.Product
@@ -207,6 +208,7 @@ library
       ZkFold.Protocol.Plonkup.Prover.Secret
       ZkFold.Protocol.Plonkup.Prover.Setup
       ZkFold.Protocol.Plonkup.Relation
+      ZkFold.Protocol.Plonkup.Relation.LookupVector
       ZkFold.Protocol.Plonkup.Setup
       ZkFold.Protocol.Plonkup.Testing
       ZkFold.Protocol.Plonkup.Update
