@@ -226,7 +226,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   )
   => EllipticCurve (Weierstrass curve (Point field))
@@ -241,7 +240,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   , Conditional (BooleanOf field) (Weierstrass curve (Point field))
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
@@ -343,7 +341,6 @@ instance (Semiring field, Eq field) => Zero (Weierstrass curve (Point field)) wh
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveMonoid (Weierstrass curve (Point field))
@@ -353,14 +350,12 @@ instance (Semiring field, Eq field) => Zero (Weierstrass curve (JacobianPoint fi
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => AdditiveMonoid (Weierstrass curve (JacobianPoint field))
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   )
   => AdditiveGroup (Weierstrass curve (Point field))
@@ -370,7 +365,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => AdditiveGroup (Weierstrass curve (JacobianPoint field))
@@ -379,7 +373,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   )
   => Scale Natural (Weierstrass curve (Point field))
@@ -388,7 +381,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => Scale Natural (Weierstrass curve (JacobianPoint field))
@@ -397,7 +389,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Point field)
   )
   => Scale Integer (Weierstrass curve (Point field))
@@ -406,7 +397,6 @@ instance
 
 instance
   ( WeierstrassCurve curve field
-  , Conditional (BooleanOf field) (BooleanOf field)
   , Conditional (BooleanOf field) (Weierstrass curve (JacobianPoint field))
   )
   => Scale Integer (Weierstrass curve (JacobianPoint field))
@@ -532,12 +522,7 @@ instance Eq field => Planar field (Point field) where
 instance (Semiring field, Eq field) => HasPointInf (Point field) where
   pointInf = Point zero one true
 
-instance
-  ( Conditional (BooleanOf field) (BooleanOf field)
-  , Field field
-  )
-  => Eq (Point field)
-  where
+instance Field field => Eq (Point field) where
   Point x0 y0 isInf0 == Point x1 y1 isInf1 =
     if not isInf0 && not isInf1
       then x0 == x1 && y0 == y1
@@ -571,7 +556,7 @@ instance (Semiring field, Eq field) => HasPointInf (JacobianPoint field) where
   pointInf = JacobianPoint one one zero
 
 instance
-  (Prelude.Show field, BooleanOf field ~ Prelude.Bool, Field field, Eq field)
+  (Prelude.Show field, BooleanOf field ~ Prelude.Bool, Field field)
   => Prelude.Show (JacobianPoint field)
   where
   show (JacobianPoint x y z) =

@@ -1,15 +1,11 @@
-{-# LANGUAGE TypeOperators #-}
-
 module ZkFold.Control.Conditional where
 
 import Data.Bool (Bool)
 import qualified Data.Bool as H
 
-import ZkFold.Data.Bool
-
 -- TODO: move to ZkFold.Data.Bool
 
-class BoolType b => Conditional b a where
+class Conditional b a where
   -- | Properties:
   --
   -- [On true] @bool onFalse onTrue 'true' == onTrue@

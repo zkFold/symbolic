@@ -46,7 +46,7 @@ import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), Conditional, assert, bool, (||))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType, Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -172,7 +172,7 @@ search pred tree =
  where
   recSearch
     :: forall n b a
-     . (Conditional b b, Conditional b a)
+     . (BoolType b, Conditional b a)
     => (a -> b) -> Vector (2 ^ n) a -> (b, Vector n b, a)
   recSearch p d =
     let (b, i, x) = doSearch (toV d)
