@@ -68,6 +68,6 @@ arbitraryLookupConstraint inVars ac = do
   return $
     flip execState ac $
       newRanged b $
-        fromIntegral $
+        fromConstant $
           toIntegral (at v :: CircuitWitness a)
             `mod` toIntegral (fromConstant (b + one) :: CircuitWitness a)

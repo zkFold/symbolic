@@ -93,7 +93,7 @@ instance NFData a => NFData (CircuitFold a) where
 data LookupFunction a
   = forall f g.
     (Representable f, Traversable g, Typeable f, Typeable g, Binary (Rep f)) =>
-    LookupFunction (forall x. ResidueField x => f x -> g x)
+    LookupFunction (forall x. PrimeField x => f x -> g x)
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -104,7 +104,7 @@ appendFunction
   :: forall f g a
    . (Representable f, Typeable f, Binary (Rep f))
   => (Traversable g, Typeable g, Arithmetic a)
-  => (forall x. ResidueField x => f x -> g x)
+  => (forall x. PrimeField x => f x -> g x)
   -> FunctionRegistry a
   -> (FunctionId (f a -> g a), FunctionRegistry a)
 appendFunction f r =
@@ -116,7 +116,7 @@ lookupFunction
    . (Typeable f, Typeable g)
   => FunctionRegistry a
   -> FunctionId (f a -> g a)
-  -> (forall x. ResidueField x => f x -> g x)
+  -> (forall x. PrimeField x => f x -> g x)
 lookupFunction m (FunctionId i) = case m M.! i of
   LookupFunction f -> cast1 . f . cast1
  where
@@ -390,7 +390,9 @@ instance
 --
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
-witToVar :: forall a. (Finite a, Binary a) => WitnessF a NewVar -> ByteString
+witToVar
+  :: forall a. (Finite a, Prime (Order a), Binary a)
+  => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV
   FoldLVar fldID fldV -> merkleHash (fldID, False, fldV)

@@ -15,9 +15,8 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
-type IsWitness a w = (Scale a w, FromConstant a w, ResidueField w)
+type IsWitness a w = (Scale a w, FromConstant a w, PrimeField w)
 
 newtype WitnessF a v = WitnessF {runWitnessF :: forall w. IsWitness a w => (v -> w) -> w}
   deriving Functor
@@ -40,6 +39,9 @@ instance FromConstant Natural (WitnessF a v) where fromConstant x = WitnessF (fr
 instance FromConstant Integer (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
 
 instance {-# INCOHERENT #-} FromConstant a (WitnessF a v) where fromConstant x = WitnessF (fromConstant x)
+
+instance FromConstant (EuclideanF a v) (WitnessF a v) where
+  fromConstant (EuclideanF f) = WitnessF (fromConstant . f)
 
 instance Scale Natural (WitnessF a v) where scale k (WitnessF f) = WitnessF (scale k f)
 
@@ -83,9 +85,8 @@ instance Field (WitnessF a v) where
 
 instance Finite a => Finite (WitnessF a v) where type Order (WitnessF a v) = Order a
 
-instance Finite a => ResidueField (WitnessF a v) where
+instance PrimeField a => PrimeField (WitnessF a v) where
   type IntegralOf (WitnessF a v) = EuclideanF a v
-  fromIntegral (EuclideanF f) = WitnessF (fromIntegral . f)
   toIntegral (WitnessF f) = EuclideanF (toIntegral . f)
 
 newtype BooleanF a v = BooleanF {booleanF :: forall w. IsWitness a w => (v -> w) -> BooleanOf w}

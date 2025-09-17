@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
@@ -11,43 +10,20 @@ import Data.Foldable (Foldable)
 import Data.Function (($), (.))
 import Data.Functor (Functor)
 import Data.Functor.Rep (Rep, Representable)
-import Data.Kind (Type)
 import Data.Set (singleton)
 import Data.Traversable (Traversable)
-import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
-import Prelude (Integer)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Lookup
-import ZkFold.Data.Eq (BooleanOf)
 import ZkFold.Data.Orphans ()
-
--- | A 'ResidueField' is a 'FiniteField'
--- backed by a 'Euclidean' integral type.
-class
-  ( FiniteField a
-  , Euclidean (IntegralOf a)
-  , BooleanOf a ~ BooleanOf (IntegralOf a)
-  ) =>
-  ResidueField a
-  where
-  type IntegralOf a :: Type
-  fromIntegral :: IntegralOf a -> a
-  toIntegral :: a -> IntegralOf a
-
-instance PrimeField (Zp p) => ResidueField (Zp p) where
-  type IntegralOf (Zp p) = Integer
-  fromIntegral = fromConstant
-  toIntegral = fromConstant . toConstant
 
 -- | A type of witness builders. @i@ is a type of variables.
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ResidueField w => Witness i w | i -> w where
+class PrimeField w => Witness i w | i -> w where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 
@@ -118,7 +94,7 @@ class
   --   (see 'lookupConstraint').
   registerFunction
     :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
-    => (forall x. ResidueField x => f x -> g x)
+    => (forall x. PrimeField x => f x -> g x)
     -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.

@@ -18,7 +18,6 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering, Ord (..))
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 data LookupVector a = LV {init :: Vector a, rest :: a}
   deriving Functor
@@ -65,6 +64,10 @@ instance Finite a => Finite (LookupVector a) where
 
 instance {-# OVERLAPPING #-} FromConstant (LookupVector a) (LookupVector a)
 
+instance {-# OVERLAPPING #-}
+  FromConstant b a => FromConstant (LookupVector b) (LookupVector a) where
+  fromConstant = fmap fromConstant
+
 instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (LookupVector a) (LookupVector a)
 
 instance Conditional b a => Conditional (LookupVector b) (LookupVector a) where
@@ -105,7 +108,6 @@ instance Euclidean a => Euclidean (LookupVector a) where
 instance Field a => Field (LookupVector a) where
   finv = fmap finv
 
-instance ResidueField a => ResidueField (LookupVector a) where
+instance PrimeField a => PrimeField (LookupVector a) where
   type IntegralOf (LookupVector a) = LookupVector (IntegralOf a)
-  fromIntegral = fmap fromIntegral
   toIntegral = fmap toIntegral

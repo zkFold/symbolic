@@ -93,6 +93,7 @@ optimize keep (CircuitContext s lf lc w f o) =
   inInterval :: Set (a, a) -> a -> Bool
   inInterval si v = any (\(l', r') -> (l' <= v) && (v <= r')) si
 
+  optimizeFold :: CircuitFold a -> CircuitFold a
   optimizeFold CircuitFold {..} =
     CircuitFold
       { foldStep = \(i :: (p :*: s :*: j) NewVar) ->
