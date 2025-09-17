@@ -38,7 +38,6 @@ import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
 import ZkFold.Symbolic.Fold (SymbolicFold)
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
 import Prelude hiding (
   Bool,
   Eq,
@@ -55,6 +54,8 @@ import Prelude hiding (
   (==),
   (||),
  )
+
+import ZkFold.Symbolic.Ledger.Types.Address (Address)
 
 -- | Asset policy is the address of the initial UTxO that contains the asset.
 type AssetPolicy context = Address context

@@ -19,6 +19,7 @@ import GHC.TypeLits (KnownNat)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Hash (Hashable)
+
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.Root
