@@ -12,8 +12,9 @@ import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
+
+import ZkFold.Symbolic.Ledger.Types
 
 validateTransaction
   :: forall context bo users
