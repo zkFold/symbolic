@@ -24,6 +24,7 @@ import Data.Function (const, id, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.List ((++))
 import Data.Maybe (Maybe (..))
+import Data.OpenApi (ToSchema)
 import Data.Semigroup ((<>))
 import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
@@ -46,7 +47,6 @@ import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (iterate', log2ceiling)
-import Data.OpenApi (ToSchema)
 
 ------------------------------ Prime Fields -----------------------------------
 
