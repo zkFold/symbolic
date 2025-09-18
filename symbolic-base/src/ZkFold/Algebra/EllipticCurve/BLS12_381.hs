@@ -10,9 +10,8 @@ module ZkFold.Algebra.EllipticCurve.BLS12_381 where
 import Control.Monad
 import Data.Bits
 import Data.Foldable
+import Data.OpenApi (ToSchema)
 import Data.Word
-import Prelude hiding (Num (..), (/), (^))
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pairing
@@ -21,6 +20,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Data.Binary
 import qualified ZkFold.Data.Eq as ZkFold
+import Prelude hiding (Num (..), (/), (^))
 
 -------------------------------- Introducing Fields ----------------------------------
 
@@ -72,6 +72,10 @@ instance Field field => WeierstrassCurve "BLS12-381-G1" field where
 type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 
 type BLS12_381_G1_JacobianPoint = Weierstrass "BLS12-381-G1" (JacobianPoint Fq)
+
+instance ToSchema BLS12_381_G1_Point
+
+instance ToSchema BLS12_381_G1_JacobianPoint
 
 type BLS12_381_G1_CompressedPoint =
   Weierstrass "BLS12-381-G1" (CompressedPoint Fq)

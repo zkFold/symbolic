@@ -46,12 +46,13 @@ import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (iterate', log2ceiling)
+import Data.OpenApi (ToSchema)
 
 ------------------------------ Prime Fields -----------------------------------
 
 newtype Zp (p :: Natural) = Zp Integer
   deriving Generic
-  deriving newtype (FromJSONKey, NFData, ToJSONKey)
+  deriving newtype (FromJSONKey, NFData, ToJSONKey, ToSchema)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
