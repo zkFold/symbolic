@@ -51,7 +51,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class (compress)
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
-import ZkFold.Algebra.Number (KnownNat, Natural, type (^), type (+))
+import ZkFold.Algebra.Number (KnownNat, Natural, type (+), type (^))
 import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
@@ -312,7 +312,7 @@ expModSetup
   => TrustedSetup (ExpModCircuitGates + 6)
   -> ExpModCircuit
   -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
-expModSetup TrustedSetup{..} ac = setupV
+expModSetup TrustedSetup {..} ac = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
   plonkup = Plonkup omega k1 k2 ac g2_1 g1s
@@ -339,7 +339,7 @@ expModProof
   -> (Natural -> Natural -> ExpModCircuit)
   -> ExpModProofInput
   -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
-expModProof TrustedSetup{..} ps ac ExpModProofInput {..} = proof
+expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
  where
   input :: ExpModInput (Interpreter Fr)
   input =
@@ -368,12 +368,12 @@ type ExpModCircuitGatesMock = 2 ^ 10
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
 
-expModSetupMock 
+expModSetupMock
   :: forall t
-  .  TranscriptConstraints t 
+   . TranscriptConstraints t
   => TrustedSetup (ExpModCircuitGatesMock + 6)
   -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModSetupMock TrustedSetup{..} = setupV
+expModSetupMock TrustedSetup {..} = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
   plonkup = Plonkup omega k1 k2 identityCircuit g2_1 g1s
@@ -398,7 +398,7 @@ expModProofMock
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
   -> (Input (PlonkupTs Par1 ExpModCircuitGatesMock t), Proof (PlonkupTs Par1 ExpModCircuitGatesMock t))
-expModProofMock TrustedSetup{..} ps empi = (proofInput, proof)
+expModProofMock TrustedSetup {..} ps empi = (proofInput, proof)
  where
   input :: Fr
   input = nativeSolution empi
@@ -438,7 +438,7 @@ expModProofDebug
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
   -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofDebug TrustedSetup{..} ps _ = proof
+expModProofDebug TrustedSetup {..} ps _ = proof
  where
   input :: Fr
   input = toZp (-42)
