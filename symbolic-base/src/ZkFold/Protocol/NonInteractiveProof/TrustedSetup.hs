@@ -64,7 +64,7 @@ readTrustedSetup fp isCompressed = do
  where
   g1Size, g2Size :: P.Int
   g1Size = if isCompressed then 48 else 96
-  g2Size = if isCompressed then 96 else 192
+  g2Size = 192
 
   getG :: forall g. Binary g => Handle -> P.Int -> IO (Maybe g)
   getG handle size = do
@@ -82,8 +82,8 @@ saveTrustedSetup fp isCompressed TrustedSetup {..} = do
   handle <- openBinaryFile fp WriteMode
 
   forM_ g1s $ BS.hPut handle . toBS
-  BS.hPut handle . toBS $ g2_0
-  BS.hPut handle . toBS $ g2_1
+  BS.hPut handle . toByteString $ g2_0
+  BS.hPut handle . toByteString $ g2_1
 
   hClose handle
  where
