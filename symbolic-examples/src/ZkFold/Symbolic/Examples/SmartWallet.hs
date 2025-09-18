@@ -8,18 +8,20 @@
 
 module ZkFold.Symbolic.Examples.SmartWallet (
   -- ZK smart wallet proof/setup
+  ExpModCircuitGates,
   expModContract,
   expModCircuit,
   expModSetup,
   expModProof,
   -- Mock circuits for testing
+  ExpModCircuitGatesMock,
   expModSetupMock,
   expModProofMock,
+  nativeSolution,
   -- Circuit for debugging
   expModProofDebug,
   ExpModProofInput (..),
   PlonkupTs,
-  ExpModCircuitGates,
   ZKSetupBytes (..),
   ZKProofBytes (..),
   ZKF (..),
@@ -49,7 +51,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class (compress)
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
-import ZkFold.Algebra.Number (KnownNat, Natural, type (^))
+import ZkFold.Algebra.Number (KnownNat, Natural, type (^), type (+))
 import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
@@ -63,12 +65,14 @@ import ZkFold.Protocol.NonInteractiveProof as NP (
   FromTranscript (..),
   NonInteractiveProof (..),
   ToTranscript (..),
+  TrustedSetup (..),
+  powersOfTauSubset,
  )
 import ZkFold.Protocol.Plonkup (Plonkup (..))
 import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
-import ZkFold.Protocol.Plonkup.Utils (getParams, getSecretParams)
+import ZkFold.Protocol.Plonkup.Utils (getParams)
 import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
@@ -305,14 +309,13 @@ expModCircuit pubE' pubN' = runVec $ C.compile @Fr $ expModContract (RSA.PublicK
 expModSetup
   :: forall t
    . TranscriptConstraints t
-  => Fr
+  => TrustedSetup (ExpModCircuitGates + 6)
   -> ExpModCircuit
   -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
-expModSetup x ac = setupV
+expModSetup TrustedSetup{..} ac = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-  (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 ac h1 gs
+  plonkup = Plonkup omega k1 k2 ac g2_1 g1s
   setupV = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
 
 data ExpModProofInput
@@ -331,12 +334,12 @@ deriving instance FromJSON ExpModProofInput
 expModProof
   :: forall t
    . TranscriptConstraints t
-  => Fr
+  => TrustedSetup (ExpModCircuitGates + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> (Natural -> Natural -> ExpModCircuit)
   -> ExpModProofInput
   -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
-expModProof x ps ac ExpModProofInput {..} = proof
+expModProof TrustedSetup{..} ps ac ExpModProofInput {..} = proof
  where
   input :: ExpModInput (Interpreter Fr)
   input =
@@ -351,8 +354,7 @@ expModProof x ps ac ExpModProofInput {..} = proof
   paddedWitnessInputs = ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-  (gs, h1) = getSecretParams @ExpModCircuitGates @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) h1 gs :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
+  plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
   witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
   (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
@@ -361,17 +363,20 @@ expModProof x ps ac ExpModProofInput {..} = proof
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 18
+type ExpModCircuitGatesMock = 2 ^ 10
 
 identityCircuit :: ArithmeticCircuit Fr Par1 Par1
 identityCircuit = AC.idCircuit
 
-expModSetupMock :: forall t. TranscriptConstraints t => Fr -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModSetupMock x = setupV
+expModSetupMock 
+  :: forall t
+  .  TranscriptConstraints t 
+  => TrustedSetup (ExpModCircuitGatesMock + 6)
+  -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
+expModSetupMock TrustedSetup{..} = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-  (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+  plonkup = Plonkup omega k1 k2 identityCircuit g2_1 g1s
   setupV = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
 
 nativeSolution :: ExpModProofInput -> Fr
@@ -389,11 +394,11 @@ nativeSolution ExpModProofInput {..} = input
 expModProofMock
   :: forall t
    . TranscriptConstraints t
-  => Fr
+  => TrustedSetup (ExpModCircuitGatesMock + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
-  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofMock x ps empi = proof
+  -> (Input (PlonkupTs Par1 ExpModCircuitGatesMock t), Proof (PlonkupTs Par1 ExpModCircuitGatesMock t))
+expModProofMock TrustedSetup{..} ps empi = (proofInput, proof)
  where
   input :: Fr
   input = nativeSolution empi
@@ -402,11 +407,10 @@ expModProofMock x ps empi = proof
   witnessInputs = Par1 input
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-  (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 identityCircuit h1 gs
+  plonkup = Plonkup omega k1 k2 identityCircuit g2_1 g1s
   setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
-  (_, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+  (proofInput, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
 
 -- A meaningless function with range and polynomial constraints for debugging
 -- The number of constraints depends on ExpModCircuitGatesMock
@@ -430,11 +434,11 @@ debugCircuit = runVec $ C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)
 expModProofDebug
   :: forall t
    . TranscriptConstraints t
-  => Fr
+  => TrustedSetup (ExpModCircuitGatesMock + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
   -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
-expModProofDebug x ps _ = proof
+expModProofDebug TrustedSetup{..} ps _ = proof
  where
   input :: Fr
   input = toZp (-42)
@@ -443,49 +447,48 @@ expModProofDebug x ps _ = proof
   witnessInputs = Par1 input
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
-  (gs, h1) = getSecretParams @ExpModCircuitGatesMock @BLS12_381_G1_JacobianPoint @BLS12_381_G2_JacobianPoint x
-  plonkup = Plonkup omega k1 k2 debugCircuit h1 gs
+  plonkup = Plonkup omega k1 k2 debugCircuit g2_1 g1s
   setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
   witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
   (proof, _) = rustPlonkupProve setupP witness
 
-foreign export ccall mkProofBytesWasm :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesWasm :: CString -> CString -> IO CString
 
-foreign export ccall mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesMockWasm :: CString -> CString -> IO CString
 
-foreign export ccall mkProofBytesDebug :: CString -> CString -> CString -> IO CString
+foreign export ccall mkProofBytesDebug :: CString -> CString -> IO CString
 
-mkProofBytesWasm :: CString -> CString -> CString -> IO CString
-mkProofBytesWasm xPtr psPtr proofInputPtr = do
-  (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
-  let proofBytes = mkProof $ expModProof @ByteString x ps expModCircuit proofInput
+mkProofBytesWasm :: CString -> CString -> IO CString
+mkProofBytesWasm psPtr proofInputPtr = do
+  ts <- powersOfTauSubset
+  (ps, proofInput) <- readPointers psPtr proofInputPtr
+  let proofBytes = mkProof $ expModProof @ByteString ts ps expModCircuit proofInput
   let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ proofBytes
   newArray (json <> [CChar 0])
 
-mkProofBytesMockWasm :: CString -> CString -> CString -> IO CString
-mkProofBytesMockWasm xPtr psPtr proofInputPtr = do
-  (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
-  let mockProofBytes = mkProof $ expModProofMock @ByteString x ps proofInput
+mkProofBytesMockWasm :: CString -> CString -> IO CString
+mkProofBytesMockWasm psPtr proofInputPtr = do
+  ts <- powersOfTauSubset
+  (ps, proofInput) <- readPointers psPtr proofInputPtr
+  let mockProofBytes = mkProof $ snd $ expModProofMock @ByteString ts ps proofInput
   let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
   newArray (json <> [CChar 0])
 
-mkProofBytesDebug :: CString -> CString -> CString -> IO CString
-mkProofBytesDebug xPtr psPtr proofInputPtr = do
-  (x, ps, proofInput) <- readPointers xPtr psPtr proofInputPtr
-  let mockProofBytes = mkProof $ expModProofDebug @ByteString x ps proofInput
+mkProofBytesDebug :: CString -> CString -> IO CString
+mkProofBytesDebug psPtr proofInputPtr = do
+  ts <- powersOfTauSubset
+  (ps, proofInput) <- readPointers psPtr proofInputPtr
+  let mockProofBytes = mkProof $ expModProofDebug @ByteString ts ps proofInput
   let json = fmap (CChar . fromIntegral) . BS.unpack . BS.toStrict . Aeson.encode $ mockProofBytes
   newArray (json <> [CChar 0])
 
 readPointers
-  :: CString -> CString -> CString -> IO (Fr, PlonkupProverSecret BLS12_381_G1_JacobianPoint, ExpModProofInput)
-readPointers xPtr psPtr proofInputPtr = do
-  xStr <- peekCString xPtr
-  let x = toZp $ read xStr
-
+  :: CString -> CString -> IO (PlonkupProverSecret BLS12_381_G1_JacobianPoint, ExpModProofInput)
+readPointers psPtr proofInputPtr = do
   psStr <- peekCString psPtr
   let ps = PlonkupProverSecret $ V.unsafeToVector $ toZp . read <$> words psStr
 
   [e, m, s, t] <- words <$> peekCString proofInputPtr
   let empi = ExpModProofInput (read e) (read m) (read s) (read t)
 
-  pure (x, ps, empi)
+  pure (ps, empi)

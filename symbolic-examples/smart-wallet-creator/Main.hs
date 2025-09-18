@@ -11,16 +11,21 @@
 module Main where
 
 import Data.ByteString (ByteString)
+import GHC.Generics (Par1 (..))
 import ZkFold.Algebra.Class
 import ZkFold.Protocol.Plonkup.Prover.Secret
+import ZkFold.Protocol.Plonkup.Input
+import ZkFold.Protocol.NonInteractiveProof
 import Prelude hiding (Fractional (..), Num (..), length)
 
 import ZkFold.Symbolic.Examples.SmartWallet
 
 main :: IO ()
 main = do
-  let proofBytes = expModProofDebug @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
+  ts <- powersOfTauSubset
+  let setupBytes = expModSetupMock @ByteString ts 
+      (input, proofBytes) = expModProofMock @ByteString ts (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
+  print input
+  print $ verify @(PlonkupTs Par1 ExpModCircuitGatesMock ByteString) setupBytes input proofBytes 
   print proofBytes
 
--- let a = expModProof @ByteString one (PlonkupProverSecret $ pure (one + one)) (ExpModProofInput 17 3 7 11)
--- print a
