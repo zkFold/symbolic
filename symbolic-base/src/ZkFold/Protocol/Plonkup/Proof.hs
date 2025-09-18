@@ -7,8 +7,9 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Data (Typeable)
 import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic)
-import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 
 data PlonkupProof g = PlonkupProof
   { cmA :: !g

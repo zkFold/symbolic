@@ -11,6 +11,7 @@ import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..), Arbitrary1, arbitrary1)
 import Text.Show (Show, show)
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 
 newtype PlonkupWitnessInput i g

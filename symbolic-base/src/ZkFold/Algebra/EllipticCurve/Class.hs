@@ -39,9 +39,9 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Foldable (Foldable)
 import Data.Functor (Functor)
 import Data.Kind (Type)
+import Data.OpenApi (ToSchema (..))
 import Data.Semialign (Semialign (..), Zip (..))
 import Data.String (fromString)
-import Data.OpenApi (ToSchema(..))
 import Data.These (These (..))
 import Data.Traversable (Traversable)
 import GHC.Generics
@@ -535,9 +535,9 @@ data JacobianPoint field = JacobianPoint
   , _y :: field
   , _z :: field
   }
-  deriving (Generic, ToJSON, FromJSON)
+  deriving (FromJSON, Generic, ToJSON)
 
-instance (ToSchema f) => ToSchema (JacobianPoint f)
+instance ToSchema f => ToSchema (JacobianPoint f)
 
 deriving instance NFData field => NFData (JacobianPoint field)
 

@@ -9,9 +9,10 @@ import Data.Data (Typeable)
 import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..))
+import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
+
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.Vector (Vector (..))
-import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
 newtype PlonkupProverSecret g = PlonkupProverSecret (Vector 19 (ScalarFieldOf g))
   deriving stock Generic
