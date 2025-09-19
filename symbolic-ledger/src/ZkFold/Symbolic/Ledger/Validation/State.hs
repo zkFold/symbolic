@@ -18,9 +18,8 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
+import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 
 {- Note [State validation]
 
@@ -43,21 +42,22 @@ For validating state, we check following:
 \* Bridged out list is correctly computed.
 -}
 
-data StateWitness bi bo ud a context = StateWitness
+data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: (MerkleEntry ud)) context
+  , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
 
 validateStateUpdate
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch i o a t context
+  => SignatureTransactionBatch ud i o a t context
   => State bi bo ud a context
   -- ^ Previous state.
   -> TransactionBatch i o a t context
   -- ^ The "action" that is applied to the state.
   -> State bi bo ud a context
   -- ^ New state.
-  -> StateWitness bi bo ud a context
+  -> StateWitness bi bo ud a i o t context
   -- ^ Witness for the state.
   -> Bool context
 validateStateUpdate previousState action newState sw =
@@ -91,15 +91,15 @@ validateStateUpdate previousState action newState sw =
         (zero :*: true :*: initialUTxOTree)
         bridgedInAssetsWithWitness
     bridgedOutOutputs = preimage newState.sBridgeOut
-    (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action
+    (isBatchValid :*: utxoTree) = validateTransactionBatch sw.swTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action
    in
     -- New state correctly links to the previous state.
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO
