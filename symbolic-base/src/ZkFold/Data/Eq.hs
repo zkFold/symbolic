@@ -14,6 +14,7 @@ import qualified Data.Ord as Haskell
 import Data.Ratio (Rational)
 import Data.String (String)
 import Data.Type.Equality (type (~))
+import GHC.Generics ((:.:))
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
 import Prelude (Integer)
@@ -28,14 +29,18 @@ class BoolType (BooleanOf a) => Eq a where
   (==) :: a -> a -> BooleanOf a
   default (==)
     :: (G.Generic a, GEq (G.Rep a), BooleanOf a ~ GBooleanOf (G.Rep a))
-    => a -> a -> BooleanOf a
+    => a
+    -> a
+    -> BooleanOf a
   x == y = geq (G.from x) (G.from y)
 
   infix 4 /=
   (/=) :: a -> a -> BooleanOf a
   default (/=)
     :: (G.Generic a, GEq (G.Rep a), BooleanOf a ~ GBooleanOf (G.Rep a))
-    => a -> a -> BooleanOf a
+    => a
+    -> a
+    -> BooleanOf a
   x /= y = gneq (G.from x) (G.from y)
 
 elem :: (Eq a, Foldable t) => a -> t a -> BooleanOf a
@@ -73,6 +78,8 @@ instance Eq a => Eq (Constant a b)
 instance Eq (f a) => Eq (G.Rec1 f a)
 
 instance Eq (f a) => Eq (G.M1 i c f a)
+
+instance Eq (f (g a)) => Eq ((:.:) f g a)
 
 instance {-# OVERLAPPING #-} Eq (f a) => Eq ((f G.:*: G.U1) a) where
   (x G.:*: _) == (y G.:*: _) = x == y
