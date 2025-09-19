@@ -36,6 +36,8 @@ import Data.Zip (zipWith)
 import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
@@ -55,7 +57,6 @@ import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
 import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
-import qualified Prelude as P
 
 data MerkleTree d c = MerkleTree
   { mHash :: FieldElement c

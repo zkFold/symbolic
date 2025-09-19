@@ -17,8 +17,9 @@ import Data.Type.Equality (type (~))
 import GHC.Generics ((:.:))
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
-import ZkFold.Data.Bool
 import Prelude (Integer)
+
+import ZkFold.Data.Bool
 
 class BoolType (BooleanOf a) => Eq a where
   type BooleanOf a
