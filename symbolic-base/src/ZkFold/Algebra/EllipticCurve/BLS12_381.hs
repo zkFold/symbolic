@@ -160,7 +160,7 @@ instance Compressible BLS12_381_G2_Point where
     if isInf
       then pointInf
       else pointCompressed @BLS12_381_G2_Point x (y > negate y)
-  decompress = error "Not implemented" -- TODO: implement decompression with a proper sqrt in F_p^2 
+  decompress = error "Not implemented" -- TODO: implement decompression with a proper sqrt in F_p^2
 
 instance Compressible BLS12_381_G2_JacobianPoint where
   type Compressed BLS12_381_G2_JacobianPoint = BLS12_381_G2_CompressedPoint
