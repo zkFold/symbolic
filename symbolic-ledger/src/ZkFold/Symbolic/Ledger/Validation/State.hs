@@ -41,6 +41,8 @@ For validating state, we check following:
 -}
 
 data StateWitness bi bo ud a context = StateWitness
+  { swAddBridgeIn :: (Vector bi :.: (MerkleEntry ud)) context
+  }
 
 validateStateUpdate
   :: forall bi bo ud a i o t context
@@ -57,49 +59,56 @@ validateStateUpdate
   -> Bool context
 validateStateUpdate previousState action newState sw =
   let
-   in -- bridgeInAssets = preimage newState.sBridgeIn
-      -- bridgedInAssetsWithTree = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swBridgeIn)
-      -- (Comp1 accountInfoOldState) = preimage previousState.sAccountInfo
-      -- accountInfoWithBridgedInAssets' =
-      --   foldl'
-      --     ( \acc ((address :*: assetValue) :*: _) ->
-      --         let
-      --           addressExists = foldl' (\found ((addr :*: _ :*: _)) -> found || addr == address) false acc
-      --          in
-      --           ifThenElse
-      --             addressExists
-      --             P.undefined
-      --             P.undefined
-      --     )
-      --     accountInfoOldState
-      --     bridgedInAssetsWithTree
-      -- accountInfoWithBridgedInAssets =
-      --   fmap
-      --     ( \(address :*: nonce :*: hash) ->
-      --         let x = foldl' (\found ((addr :*: av) :*: _) -> found || addr == address) (false :: Bool context) bridgedInAssetsWithTree
-      --          in ifThenElse
-      --               (true :: Bool context)
-      --               (address :*: nonce :*: hash)
-      --               (address :*: nonce :*: hash)
-      --     )
-      --     accountInfoOldState
-      -- -- Bridged in assets are added to the account info. This represents our starting point of account info.
-      -- merkleTreeWithBridgedInAssets = addBridgedInAssets previousState.sAccountInfo (bridgeInAssets)
-      -- -- To verify validity of bridged out assets, we use following approach:
-      -- --
-      -- -- 1. If a transaction bridges out an asset, we see it is included in bridge out list.
-      -- -- 2. When traversing transactions in batch, we maintain two merkle trees. If a transaction bridges out, we subtract it from one but not from the other. In the end, we subtract "bridgedOutAssets" from the other and check if both are equal.
-      -- bridgedOutAssets = preimage newState.sBridgeOut
-      -- (isBatchValid :*: newAi :*: newAiWithoutBridgedOut) =
-      --   validateTransactionBatch merkleTreeWithBridgedInAssets bridgedOutAssets action
+    initialUTxOTree = previousState.sUTxO
+    bridgeInAssets = preimage newState.sBridgeIn
+    bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
+    -- TODO: Do we need to check if merkle entry's given are all unique? Perhaps not as when it's updated, the `contains` check will fail.
 
-      -- New state correctly links to the previous state.
-      newState.sPreviousStateHash
-        == hasher previousState
-        && newState.sLength
-        == previousState.sLength
-        + one -- TODO: Confirm if this is the correct way to increment the length.
-        && P.undefined
+    utxoTreeWithBridgeIn = P.undefined
+   in
+    -- bridgeInAssets = preimage newState.sBridgeIn
+    -- bridgedInAssetsWithTree = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swBridgeIn)
+    -- (Comp1 accountInfoOldState) = preimage previousState.sAccountInfo
+    -- accountInfoWithBridgedInAssets' =
+    --   foldl'
+    --     ( \acc ((address :*: assetValue) :*: _) ->
+    --         let
+    --           addressExists = foldl' (\found ((addr :*: _ :*: _)) -> found || addr == address) false acc
+    --          in
+    --           ifThenElse
+    --             addressExists
+    --             P.undefined
+    --             P.undefined
+    --     )
+    --     accountInfoOldState
+    --     bridgedInAssetsWithTree
+    -- accountInfoWithBridgedInAssets =
+    --   fmap
+    --     ( \(address :*: nonce :*: hash) ->
+    --         let x = foldl' (\found ((addr :*: av) :*: _) -> found || addr == address) (false :: Bool context) bridgedInAssetsWithTree
+    --          in ifThenElse
+    --               (true :: Bool context)
+    --               (address :*: nonce :*: hash)
+    --               (address :*: nonce :*: hash)
+    --     )
+    --     accountInfoOldState
+    -- -- Bridged in assets are added to the account info. This represents our starting point of account info.
+    -- merkleTreeWithBridgedInAssets = addBridgedInAssets previousState.sAccountInfo (bridgeInAssets)
+    -- -- To verify validity of bridged out assets, we use following approach:
+    -- --
+    -- -- 1. If a transaction bridges out an asset, we see it is included in bridge out list.
+    -- -- 2. When traversing transactions in batch, we maintain two merkle trees. If a transaction bridges out, we subtract it from one but not from the other. In the end, we subtract "bridgedOutAssets" from the other and check if both are equal.
+    -- bridgedOutAssets = preimage newState.sBridgeOut
+    -- (isBatchValid :*: newAi :*: newAiWithoutBridgedOut) =
+    --   validateTransactionBatch merkleTreeWithBridgedInAssets bridgedOutAssets action
+
+    -- New state correctly links to the previous state.
+    newState.sPreviousStateHash
+      == hasher previousState
+      && newState.sLength
+      == previousState.sLength
+      + one -- TODO: Confirm if this is the correct way to increment the length.
+      && P.undefined
 
 --   -- See above note on how we verify for bridged out assets.
 --   && subtractBridgedOutAssets bridgedOutAssets newAiWithoutBridgedOut
