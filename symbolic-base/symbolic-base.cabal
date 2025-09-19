@@ -293,6 +293,9 @@ library
     other-modules:
       Paths_symbolic_base
 
+    autogen-modules:
+      Paths_symbolic_base
+
     if arch(wasm32)
       build-depends:
         ghc-experimental
