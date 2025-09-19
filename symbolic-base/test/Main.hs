@@ -48,8 +48,8 @@ import Tests.Symbolic.Data.UInt (specUInt)
 spec :: RandomGen g => g -> Spec
 spec gen = do
   describe "symbolic-base-test (Algebra)" $ do
---    specGroup
---    specField
+    specGroup
+    specField
     specEllipticCurve
     specPairing
     specPermutation
