@@ -8,9 +8,10 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import ZkFold.Algebra.Class (AdditiveSemigroup (..), MultiplicativeMonoid (..), Zero (..))
+import ZkFold.Algebra.Class (AdditiveSemigroup (..), FromConstant (fromConstant), MultiplicativeMonoid (..), Zero (..))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
+import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
@@ -19,8 +20,8 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
@@ -77,14 +78,35 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
               )
               ( boutsAcc
                   :*: (outputIx + one)
-                  :*: (boutsValidAcc && (utxoTreeAcc `MerkleTree.contains` merkleEntry) && (merkleEntry.value == nullUTxOHash @a @context))
+                  :*: ( boutsValidAcc
+                          && ifThenElse
+                            (output == nullOutput)
+                            true
+                            ( (utxoTreeAcc `MerkleTree.contains` merkleEntry)
+                                && (merkleEntry.value == nullUTxOHash @a @context)
+                                && foldl'
+                                  ( \found asset ->
+                                      found
+                                        || ifThenElse
+                                          (asset.assetPolicy == adaPolicy && asset.assetName == adaName)
+                                          (asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+                                          false
+                                  )
+                                  (false :: Bool context)
+                                  (unComp1 (oAssets output))
+                            )
+                      )
                   :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
-                         in MerkleTree.replace
-                              ( merkleEntry
-                                  { MerkleTree.value = hash utxo & Base.hHash
-                                  }
-                              )
+                         in ifThenElse
+                              (output == nullOutput)
                               utxoTreeAcc
+                              ( MerkleTree.replace
+                                  ( merkleEntry
+                                      { MerkleTree.value = hash utxo & Base.hHash
+                                      }
+                                  )
+                                  utxoTreeAcc
+                              )
                       )
               )
         )

@@ -5,7 +5,9 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   AssetPolicy,
+  adaPolicy,
   AssetName,
+  adaName,
   AssetQuantity,
   AssetValue (..),
   nullAssetValue,
@@ -66,6 +68,14 @@ type AssetName context = FieldElement context
 type AssetQuantity context = Int 128 Auto context
 
 type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
+
+-- TODO: Replace with actual value.
+adaPolicy :: AssetPolicy context
+adaPolicy = undefined
+
+-- TODO: Replace with actual value.
+adaName :: AssetName context
+adaName = undefined
 
 -- | A value represents the details of an asset that is contained in a transaction output.
 data AssetValue context = AssetValue

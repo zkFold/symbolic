@@ -19,7 +19,6 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 
@@ -32,6 +31,7 @@ For validating transactions, we should check:
 \* Outputs are added to the UTxO set if they are not bridge out outputs.
 \* We require signature from addresses corresponding to spent UTxOs.
 \* Bridged out outputs are checked to be same as in bridge out list.
+\* Outputs must have at least one ada.
 
 For validating batch, we simply apply transaction validation check iteratively.
 
@@ -99,9 +99,9 @@ validateStateUpdate previousState action newState sw =
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO
