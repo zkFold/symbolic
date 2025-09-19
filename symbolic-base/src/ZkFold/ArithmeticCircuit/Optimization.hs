@@ -32,9 +32,8 @@ import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
   Constraint,
-  witToVar,
+  witToVar, LookupType, asRange,
  )
-import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.Binary (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)

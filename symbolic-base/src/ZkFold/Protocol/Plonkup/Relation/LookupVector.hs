@@ -39,6 +39,9 @@ deriving via
   instance
     FromConstant b a => FromConstant b (LookupVector a)
 
+deriving via (ApplicativeAlgebra LookupVector a)
+  instance {-# INCOHERENT #-} FromConstant a (LookupVector a)
+
 deriving via
   (ApplicativeAlgebra LookupVector a)
   instance

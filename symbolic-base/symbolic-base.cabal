@@ -145,7 +145,6 @@ library
       ZkFold.ArithmeticCircuit.Context
       ZkFold.ArithmeticCircuit.Desugaring
       ZkFold.ArithmeticCircuit.Experimental
-      ZkFold.ArithmeticCircuit.Lookup
       ZkFold.ArithmeticCircuit.MerkleHash
       ZkFold.ArithmeticCircuit.Optimization
       ZkFold.ArithmeticCircuit.Var
@@ -157,6 +156,7 @@ library
       ZkFold.Data.Binary
       ZkFold.Data.Empty
       ZkFold.Data.Eq
+      ZkFold.Data.FromList
       ZkFold.Data.HFunctor
       ZkFold.Data.HFunctor.Classes
       ZkFold.Data.List.Infinite
