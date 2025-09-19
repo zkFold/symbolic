@@ -8,20 +8,23 @@ module ZkFold.Protocol.NonInteractiveProof.TrustedSetup (
   TrustedSetup (..),
 ) where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, mapM)
 import qualified Data.ByteString as BS
 import Data.Maybe (Maybe (..))
+import Data.Type.Equality (type (~))
 import GHC.Generics (Generic)
 import GHC.IO.Handle (BufferMode (..), SeekMode (..), hSeek, hSetBuffering)
 import GHC.IO.StdHandles (openBinaryFile)
 import System.IO (Handle, IOMode (..), hClose)
-import Prelude (Bool (..), FilePath, IO, otherwise, ($), (.), (<$>), (<*>))
+import Prelude (Bool (..), FilePath, IO, otherwise, ($), (.), (>>=))
 import qualified Prelude as P
 
+import Paths_symbolic_base
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.Number
 import ZkFold.Data.Binary
+import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 
@@ -33,19 +36,27 @@ data TrustedSetup (n :: Natural)
   }
   deriving (Generic, P.Show)
 
+-- | Read the the first 2^18 + 6 G1 points and both G2 points from the Midnight trusted setup.
+-- See https://github.com/midnightntwrk/midnight-trusted-setup/tree/main
+--
 powersOfTau2e18p6 :: IO (TrustedSetup (2 ^ 18 + 6))
 powersOfTau2e18p6 = powersOfTauSubset
 
+-- | Read no more than 2^18 + 6 G1 points and both G2 points from the Midnight trusted setup.
+--
 powersOfTauSubset :: forall (n :: Natural). KnownNat n => IO (TrustedSetup n)
 powersOfTauSubset = do
-  Just ts <- readTrustedSetup "data/midnight_powers_of_tau_2e18" True
+  fp <- getDataFileName "data/midnight_powers_of_tau_2e18"
+  Just ts <- readTrustedSetup fp True
   P.pure ts
 
+-- | Parse the trusted setup file and extract @n@ G1 points and both G2 points.
+--
 readTrustedSetup
   :: forall (n :: Natural)
    . KnownNat n
-  => FilePath
-  -> Bool
+  => FilePath -- ^ Path to the file
+  -> Bool -- ^ whether G1 points are compressed. Does not affect G2 points as they are never compressed
   -> IO (Maybe (TrustedSetup n))
 readTrustedSetup fp isCompressed = do
   handle <- openBinaryFile fp ReadMode
@@ -60,11 +71,21 @@ readTrustedSetup fp isCompressed = do
 
   hClose handle
 
-  P.pure $ TrustedSetup <$> P.sequence g1s <*> g20 <*> g21
+  -- sanity check: make sure all the points lie on the curve
+  let ts = do
+        g1s' <- mapM (>>= checkPt) g1s
+        g20' <- g20 >>= checkPt
+        g21' <- g21 >>= checkPt
+        P.pure $ TrustedSetup g1s' g20' g21'
+
+  P.pure ts
  where
   g1Size, g2Size :: P.Int
   g1Size = if isCompressed then 48 else 96
   g2Size = 192
+
+  checkPt :: (EllipticCurve pt, BooleanOf (BaseFieldOf pt) ~ Bool) => pt -> Maybe pt
+  checkPt pt = if isOnCurve pt then Just pt else Nothing
 
   getG :: forall g. Binary g => Handle -> P.Int -> IO (Maybe g)
   getG handle size = do
@@ -72,11 +93,13 @@ readTrustedSetup fp isCompressed = do
     let pt = fromByteString buf
     P.pure pt
 
+-- | Save the trusted setup to a file.
+--
 saveTrustedSetup
   :: forall (n :: Natural)
-   . FilePath
-  -> Bool
-  -> TrustedSetup n
+   . FilePath -- ^ Path to the file
+  -> Bool -- ^ whether to compress G1 points. Does not affect G2 points as they are never compressed
+  -> TrustedSetup n -- ^ Trusted Setup to save
   -> IO ()
 saveTrustedSetup fp isCompressed TrustedSetup {..} = do
   handle <- openBinaryFile fp WriteMode

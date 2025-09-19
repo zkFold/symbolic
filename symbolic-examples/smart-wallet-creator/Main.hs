@@ -14,7 +14,6 @@ import Data.ByteString (ByteString)
 import GHC.Generics (Par1 (..))
 import ZkFold.Algebra.Class
 import ZkFold.Protocol.NonInteractiveProof
-import ZkFold.Protocol.Plonkup.Input
 import ZkFold.Protocol.Plonkup.Prover.Secret
 import Prelude hiding (Fractional (..), Num (..), length)
 

@@ -89,7 +89,7 @@ instance Compressible BLS12_381_G1_Point where
       else
         let b = weierstrassB @"BLS12-381-G1"
             q = order @Fq
-            sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
+            sqrt_ z = z ^ ((q + 1) `Prelude.div` 4)
             y' = sqrt_ (x * x * x + b)
             y'' = negate y'
             y = if bigY then max y' y'' else min y' y''
