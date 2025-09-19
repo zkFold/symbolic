@@ -92,8 +92,6 @@ library
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
       ZkFold.Symbolic.Ledger.Types.Hash
-      ZkFold.Symbolic.Ledger.Types.Nonce
-      ZkFold.Symbolic.Ledger.Types.Root
       ZkFold.Symbolic.Ledger.Types.State
       ZkFold.Symbolic.Ledger.Types.Transaction
       ZkFold.Symbolic.Ledger.Types.Transaction.Batch

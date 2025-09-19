@@ -2,44 +2,40 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.State (
-  AccountInfo,
   State (..),
 ) where
 
-import GHC.Generics (Generic, Generic1, (:.:), type (:*:) (..))
-import GHC.TypeNats (KnownNat)
+import GHC.Generics (Generic, Generic1, (:.:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
-import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
-import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Ledger.Types.Transaction
+import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
--- | Account information for a given user. Contains user's address, nonce and root hash of their asset merle tree.
-type AccountInfo users = Hash (Vector users :.: (Address :*: Nonce :*: HashSimple))
-
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
-data State bi bo users context = State
+data State bi bo ud a context = State
   { sPreviousStateHash :: HashSimple context
   -- ^ Hash of the previous state.
-  , sBridgeIn :: Hash (Vector bi :.: (Address :*: AssetValue)) context
-  -- ^ Assets that are bridged into the ledger.
-  -- We don't make it a nested vector as that would impose a length of nested vector even if user is not bridging more than one asset.
-  , sBridgeOut :: Hash (Vector bo :.: (Address :*: Address :*: AssetValue)) context
-  -- ^ Assets that are bridged out of the ledger. In the format of (from, to, asset). Following the same reasoning as bridged in assets, we don't make it a nested vector.
-  , sAccountInfo :: AccountInfo users context
-  -- ^ Merkle tree root for account information.
+  , sUTxO :: MerkleTree ud context
+  -- ^ Merkle tree of UTxO set.
+  , sLength :: FieldElement context
+  -- ^ Denotes length of the state chain.
+  , sBridgeIn :: Hash (Vector bi :.: Output a) context
+  -- ^ Outputs that are bridged into the ledger. These lead to creation of new UTxOs where `orTxId` of the output is obtained by hashing `sLength` and `orIndex` is the index of the output in the vector.
+  , sBridgeOut :: Hash (Vector bo :.: Output a) context
+  -- ^ Denotes outputs that are bridged out of the ledger.
   }
   deriving stock (Generic, Generic1)
   deriving anyclass SymbolicData
 
 instance
-  ( KnownRegistersAssetQuantity context
-  , KnownNat bi
-  , KnownNat bo
-  , Symbolic context
-  )
-  => Eq (State bi bo users context)
+  forall bi bo ud a context
+   . ( KnownRegistersAssetQuantity context
+     , Symbolic context
+     )
+  => Eq (State bi bo ud a context)
