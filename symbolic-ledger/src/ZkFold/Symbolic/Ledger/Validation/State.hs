@@ -15,9 +15,10 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree)
+import qualified Prelude as P
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
-import qualified Prelude as P
 
 {- Note [State validation]
 

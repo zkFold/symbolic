@@ -9,9 +9,10 @@ import GHC.Generics ((:*:) (..), (:.:))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import qualified Prelude as P
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (validateTransaction)
-import qualified Prelude as P
 
 validateTransactionBatch = P.undefined
 
