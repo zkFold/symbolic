@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
@@ -5,20 +6,22 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
 ) where
 
+import Data.Function ((&))
 import Data.Functor (Functor (..))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import ZkFold.Algebra.Class (MultiplicativeMonoid (..), (+))
+import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Data.Eq ((==))
+import ZkFold.Data.Eq (Eq (..), (==))
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree)
-import qualified Prelude as P
-
+import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
+import ZkFold.Symbolic.Data.Hash qualified as Base
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree, replace)
+import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
+import Prelude qualified as P
 
 {- Note [State validation]
 
@@ -65,7 +68,29 @@ validateStateUpdate previousState action newState sw =
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
     -- TODO: Do we need to check if merkle entry's given are all unique? Perhaps not as when it's updated, the `contains` check will fail.
 
-    utxoTreeWithBridgeIn = P.undefined
+    bridgeInHash = newState.sLength & hash & Base.hHash
+    (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
+      foldl'
+        ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
+            let isValid' = isValidAcc && (acc `MerkleTree.contains` merkleEntry) && (merkleEntry.value == (nullUTxOHash @a @context))
+                utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
+                utxoHash = hash utxo & Base.hHash
+             in ( (ix + one)
+                    :*: isValid'
+                    :*: ifThenElse
+                      (isValid' && (utxoHash /= nullUTxOHash @a @context))
+                      ( MerkleTree.replace
+                          ( merkleEntry
+                              { MerkleTree.value = utxoHash
+                              }
+                          )
+                          acc
+                      )
+                      acc
+                )
+        )
+        (zero :*: true :*: initialUTxOTree)
+        bridgedInAssetsWithWitness
    in
     -- bridgeInAssets = preimage newState.sBridgeIn
     -- bridgedInAssetsWithTree = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swBridgeIn)
@@ -109,6 +134,7 @@ validateStateUpdate previousState action newState sw =
       && newState.sLength
       == previousState.sLength
       + one -- TODO: Confirm if this is the correct way to increment the length.
+      && isWitBridgeInValid
       && P.undefined
 
 --   -- See above note on how we verify for bridged out assets.

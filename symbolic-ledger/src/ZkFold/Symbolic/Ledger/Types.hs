@@ -12,10 +12,12 @@ module ZkFold.Symbolic.Ledger.Types (
 ) where
 
 import GHC.Generics ((:.:))
+import GHC.TypeNats (KnownNat, type (-))
+import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.State
@@ -25,8 +27,11 @@ import ZkFold.Symbolic.Ledger.Types.Value
 type SignatureTransaction i o a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
+  , KnownNat a
   , Hashable (HashSimple context) (Transaction i o a context)
   , forall s. Hashable (HashSimple s) (Transaction i o a s)
+  , Hashable (HashSimple context) (UTxO a context)
+  , forall s. Hashable (HashSimple s) (UTxO a s)
   )
 
 type SignatureTransactionBatch i o a t context =
@@ -38,8 +43,12 @@ type SignatureTransactionBatch i o a t context =
 type SignatureState bi bo ud a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
+  , KnownNat (ud - 1)
+  , KnownNat (MerkleTreeSize ud)
   , Hashable (HashSimple context) (State bi bo ud a context)
   , forall s. Hashable (HashSimple s) (State bi bo ud a s)
   , Hashable (HashSimple context) ((Vector bi :.: Output a) context)
   , Hashable (HashSimple context) ((Vector bo :.: Output a) context)
+  , Hashable (HashSimple context) (FieldElement context)
+  , forall s. Hashable (HashSimple s) (FieldElement s)
   )
