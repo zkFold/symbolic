@@ -19,9 +19,9 @@ import GHC.TypeLits (KnownNat)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
+import ZkFold.Symbolic.Ledger.Types.Nonce (Nonce)
 import ZkFold.Symbolic.Ledger.Types.Root
 import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
@@ -60,4 +60,5 @@ type SignatureState context bi bo users =
   , forall s. Hashable (HashSimple s) (State bi bo users s)
   , Hashable (HashSimple context) ((Vector bi :.: (Address :*: AssetValue)) context)
   , Hashable (HashSimple context) ((Vector bo :.: (Address :*: Address :*: AssetValue)) context)
+  , Hashable (HashSimple context) ((Vector users :.: (Address :*: Nonce :*: HashSimple)) context)
   )

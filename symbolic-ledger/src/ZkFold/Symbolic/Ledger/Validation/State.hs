@@ -5,22 +5,29 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
 ) where
 
-import GHC.Generics ((:*:) (..), (:.:))
+import Data.Functor (Functor (..))
+import GHC.Generics ((:*:) (..), (:.:) (..))
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
-import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType ((&&)))
+import ZkFold.Data.Vector (Vector, Zip (..))
+import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), preimage)
-import qualified Prelude as P
-
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
+import qualified Prelude as P
 
 data StateWitness bi bo users ad context = StateWitness
-  { swBridgeIn :: (Vector bi :.: (MerklePath ad)) context
+  { swBridgeIn :: (Vector bi :.: (MerkleTree ad :*: MerkleEntry ad :*: AssetValue :*: MerklePath ad)) context
+  -- ^
+  -- 1. User must have given correct merkle tree, we check it by computing root hash.
   }
 
+-- TODO: Do we need to check if the root hash given by `MerkleTree` in witness is consistent with it's leaves?
+
 validateStateUpdate
-  :: forall context bi bo t users
+  :: forall context bi bo t users ad
    . SignatureState context bi bo users
   => SignatureTransactionBatch context t
   => State bi bo users context
@@ -29,11 +36,39 @@ validateStateUpdate
   -- ^ The "action" that is applied to the state.
   -> State bi bo users context
   -- ^ New state.
+  -> StateWitness bi bo users ad context
+  -- ^ Witness for the state.
   -> Bool context
-validateStateUpdate previousState action newState =
+validateStateUpdate previousState action newState sw =
   let
+    bridgeInAssets = preimage newState.sBridgeIn
+    bridgedInAssetsWithTree = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swBridgeIn)
+    (Comp1 accountInfoOldState) = preimage previousState.sAccountInfo
+    accountInfoWithBridgedInAssets' =
+      foldl'
+        ( \acc ((address :*: assetValue) :*: _) ->
+            let
+              addressExists = foldl' (\found ((addr :*: _ :*: _)) -> found || addr == address) false acc
+             in
+              ifThenElse
+                addressExists
+                P.undefined
+                P.undefined
+        )
+        accountInfoOldState
+        bridgedInAssetsWithTree
+    accountInfoWithBridgedInAssets =
+      fmap
+        ( \(address :*: nonce :*: hash) ->
+            let x = foldl' (\found ((addr :*: av) :*: _) -> found || addr == address) (false :: Bool context) bridgedInAssetsWithTree
+             in ifThenElse
+                  (true :: Bool context)
+                  (address :*: nonce :*: hash)
+                  (address :*: nonce :*: hash)
+        )
+        accountInfoOldState
     -- Bridged in assets are added to the account info. This represents our starting point of account info.
-    merkleTreeWithBridgedInAssets = addBridgedInAssets previousState.sAccountInfo (preimage newState.sBridgeIn)
+    merkleTreeWithBridgedInAssets = addBridgedInAssets previousState.sAccountInfo (bridgeInAssets)
     -- To verify validity of bridged out assets, we use following approach:
     --
     -- 1. If a transaction bridges out an asset, we see it is included in bridge out list.

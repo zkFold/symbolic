@@ -8,6 +8,7 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   AssetName,
   AssetQuantity,
   AssetValue (..),
+  nullAssetValue,
   AssetValues,
   KnownRegistersAssetQuantity,
 
@@ -55,10 +56,8 @@ import Prelude hiding (
   (||),
  )
 
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
-
--- | Asset policy is the address of the initial UTxO that contains the asset.
-type AssetPolicy context = Address context
+-- | Asset policy.
+type AssetPolicy context = FieldElement context
 
 -- | Name of the asset.
 type AssetName context = FieldElement context
@@ -78,6 +77,9 @@ data AssetValue context = AssetValue
   deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
+
+nullAssetValue :: Symbolic context => AssetValue context
+nullAssetValue = AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
 
 -- | Denotes multiple assets.
 newtype AssetValues context = UnsafeAssetValues (List AssetValue context)
