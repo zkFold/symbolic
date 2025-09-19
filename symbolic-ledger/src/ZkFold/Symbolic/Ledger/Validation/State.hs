@@ -19,10 +19,9 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree, replace)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import Prelude qualified as P
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
+import Prelude qualified as P
 
 {- Note [State validation]
 
@@ -92,43 +91,9 @@ validateStateUpdate previousState action newState sw =
         )
         (zero :*: true :*: initialUTxOTree)
         bridgedInAssetsWithWitness
+    bridgedOutOutputs = preimage newState.sBridgeOut
+    (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action
    in
-    -- bridgeInAssets = preimage newState.sBridgeIn
-    -- bridgedInAssetsWithTree = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swBridgeIn)
-    -- (Comp1 accountInfoOldState) = preimage previousState.sAccountInfo
-    -- accountInfoWithBridgedInAssets' =
-    --   foldl'
-    --     ( \acc ((address :*: assetValue) :*: _) ->
-    --         let
-    --           addressExists = foldl' (\found ((addr :*: _ :*: _)) -> found || addr == address) false acc
-    --          in
-    --           ifThenElse
-    --             addressExists
-    --             P.undefined
-    --             P.undefined
-    --     )
-    --     accountInfoOldState
-    --     bridgedInAssetsWithTree
-    -- accountInfoWithBridgedInAssets =
-    --   fmap
-    --     ( \(address :*: nonce :*: hash) ->
-    --         let x = foldl' (\found ((addr :*: av) :*: _) -> found || addr == address) (false :: Bool context) bridgedInAssetsWithTree
-    --          in ifThenElse
-    --               (true :: Bool context)
-    --               (address :*: nonce :*: hash)
-    --               (address :*: nonce :*: hash)
-    --     )
-    --     accountInfoOldState
-    -- -- Bridged in assets are added to the account info. This represents our starting point of account info.
-    -- merkleTreeWithBridgedInAssets = addBridgedInAssets previousState.sAccountInfo (bridgeInAssets)
-    -- -- To verify validity of bridged out assets, we use following approach:
-    -- --
-    -- -- 1. If a transaction bridges out an asset, we see it is included in bridge out list.
-    -- -- 2. When traversing transactions in batch, we maintain two merkle trees. If a transaction bridges out, we subtract it from one but not from the other. In the end, we subtract "bridgedOutAssets" from the other and check if both are equal.
-    -- bridgedOutAssets = preimage newState.sBridgeOut
-    -- (isBatchValid :*: newAi :*: newAiWithoutBridgedOut) =
-    --   validateTransactionBatch merkleTreeWithBridgedInAssets bridgedOutAssets action
-
     -- New state correctly links to the previous state.
     newState.sPreviousStateHash
       == hasher previousState
@@ -136,7 +101,9 @@ validateStateUpdate previousState action newState sw =
       == previousState.sLength
       + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
-      && P.undefined
+      && isBatchValid
+      && utxoTree
+      == newState.sUTxO
 
 --   -- See above note on how we verify for bridged out assets.
 --   && subtractBridgedOutAssets bridgedOutAssets newAiWithoutBridgedOut
