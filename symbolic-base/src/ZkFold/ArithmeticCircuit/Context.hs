@@ -1,8 +1,8 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.ArithmeticCircuit.Context where
 
@@ -15,7 +15,7 @@ import Data.Binary (Binary)
 import Data.Bool (Bool (..), (&&))
 import Data.ByteString (ByteString)
 import Data.Either (Either (..))
-import Data.Eq ((==), Eq)
+import Data.Eq (Eq, (==))
 import Data.Foldable (Foldable, fold, foldl', for_, toList)
 import Data.Function (flip, ($), (.))
 import Data.Functor (Functor, fmap, (<$>), (<&>))
@@ -52,6 +52,7 @@ import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.ArithmeticCircuit.WitnessEstimation (Partial (..), UVar (..))
 import ZkFold.Control.HApplicative (HApplicative, hliftA2, hpure)
 import ZkFold.Data.Binary (fromByteString, toByteString)
+import ZkFold.Data.FromList (FromList, fromList)
 import ZkFold.Data.HFunctor (HFunctor, hmap)
 import ZkFold.Data.HFunctor.Classes
 import ZkFold.Data.Package (Package, packWith, unpackWith)
@@ -59,7 +60,6 @@ import ZkFold.Prelude (take)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
-import ZkFold.Data.FromList (FromList, fromList)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural
@@ -112,8 +112,16 @@ data LookupType a
   | LTProduct (LookupType a) (LookupType a)
   | LTPlot ByteString (LookupType a)
   deriving
-    ( Eq, Generic, NFData, Ord, Show, Aeson.ToJSON
-    , Aeson.ToJSONKey, Aeson.FromJSON, Aeson.FromJSONKey)
+    ( Aeson.FromJSON
+    , Aeson.FromJSONKey
+    , Aeson.ToJSON
+    , Aeson.ToJSONKey
+    , Eq
+    , Generic
+    , NFData
+    , Ord
+    , Show
+    )
 
 asRange :: LookupType a -> Maybe (Set (a, a))
 asRange (LTRanges rs) = Just rs
@@ -391,7 +399,8 @@ lookupType (Plot f t) = do
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
 witToVar
-  :: forall a. (Finite a, Prime (Order a), Binary a)
+  :: forall a
+   . (Finite a, Prime (Order a), Binary a)
   => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV

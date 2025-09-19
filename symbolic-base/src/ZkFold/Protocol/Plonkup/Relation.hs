@@ -4,6 +4,7 @@
 
 module ZkFold.Protocol.Plonkup.Relation where
 
+import Control.Applicative (pure)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
 import Data.Binary (Binary)
@@ -19,6 +20,7 @@ import Data.Map (elems, (!))
 import qualified Data.Map.Monoidal as M
 import Data.Maybe (Maybe (..), fromJust)
 import Data.Monoid (Sum (..))
+import Data.Semigroup ((<>))
 import qualified Data.Set as S
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -33,7 +35,7 @@ import ZkFold.Algebra.Permutation (Permutation, fromCycles, mkIndexPartition)
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, var)
 import ZkFold.Algebra.Polynomial.Univariate (UnivariateRingPolyVec (..), toPolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, witnessGenerator)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), LookupType (..), LookupFunction (..))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), LookupFunction (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Prelude (length, replicate, uncurry3)
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPermutationSize)
@@ -42,8 +44,6 @@ import ZkFold.Protocol.Plonkup.PlonkConstraint (PlonkConstraint (..), toPlonkCon
 import ZkFold.Protocol.Plonkup.PlonkupConstraint
 import ZkFold.Protocol.Plonkup.Relation.LookupVector (fromVector, toVector)
 import ZkFold.Symbolic.Class (Arithmetic)
-import Control.Applicative (pure)
-import Data.Semigroup ((<>))
 
 -- Here `n` is the total number of constraints, `i` is the number of inputs to the circuit, and `a` is the field type.
 data PlonkupRelation i o n a pv = PlonkupRelation

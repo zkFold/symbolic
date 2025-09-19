@@ -3,10 +3,10 @@
 
 module ZkFold.Data.FromList where
 
-import Control.Monad.State (State, state, runState)
-import GHC.Generics (Par1 (..), (:*:) (..))
-import GHC.Err (error)
 import Control.Applicative (liftA2)
+import Control.Monad.State (State, runState, state)
+import GHC.Err (error)
+import GHC.Generics (Par1 (..), (:*:) (..))
 
 class FromList f where
   parseList :: State [a] (f a)
@@ -14,7 +14,7 @@ class FromList f where
 instance FromList Par1 where
   parseList = state \case
     [] -> error "parseList @Par1: empty list"
-    (x:xs) -> (Par1 x, xs)
+    (x : xs) -> (Par1 x, xs)
 
 instance (FromList f, FromList g) => FromList (f :*: g) where
   parseList = liftA2 (:*:) parseList parseList

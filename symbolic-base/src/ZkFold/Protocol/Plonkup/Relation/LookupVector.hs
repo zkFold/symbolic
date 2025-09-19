@@ -39,8 +39,11 @@ deriving via
   instance
     FromConstant b a => FromConstant b (LookupVector a)
 
-deriving via (ApplicativeAlgebra LookupVector a)
-  instance {-# INCOHERENT #-} FromConstant a (LookupVector a)
+deriving via
+  (ApplicativeAlgebra LookupVector a)
+  instance
+  {-# INCOHERENT #-}
+    FromConstant a (LookupVector a)
 
 deriving via
   (ApplicativeAlgebra LookupVector a)
@@ -67,8 +70,7 @@ instance Finite a => Finite (LookupVector a) where
 
 instance {-# OVERLAPPING #-} FromConstant (LookupVector a) (LookupVector a)
 
-instance {-# OVERLAPPING #-}
-  FromConstant b a => FromConstant (LookupVector b) (LookupVector a) where
+instance {-# OVERLAPPING #-} FromConstant b a => FromConstant (LookupVector b) (LookupVector a) where
   fromConstant = fmap fromConstant
 
 instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (LookupVector a) (LookupVector a)

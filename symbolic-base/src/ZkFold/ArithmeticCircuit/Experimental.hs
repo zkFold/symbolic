@@ -41,9 +41,9 @@ import ZkFold.ArithmeticCircuit.Context (
   acLookup,
   acSystem,
   acWitness,
-  lookupType,
   crown,
   emptyContext,
+  lookupType,
   witToVar,
  )
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
@@ -66,7 +66,7 @@ import ZkFold.Symbolic.Data.Class (
   restore,
  )
 import ZkFold.Symbolic.Data.Input (isValid)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..), LookupTable)
+import ZkFold.Symbolic.MonadCircuit (LookupTable, MonadCircuit (..), Witness (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 

@@ -1,23 +1,23 @@
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
 
 import Control.DeepSeq (NFData1)
 import Control.Monad (Monad (return))
+import Data.Binary (Binary)
 import Data.Foldable (Foldable)
 import Data.Function (($), (.))
 import Data.Functor (Functor)
-import Data.Set (singleton, Set)
+import Data.Functor.Rep (Rep, Representable)
+import Data.Set (Set, singleton)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..), (:*:) (..))
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Orphans ()
-import Data.Functor.Rep (Representable, Rep)
-import Data.Binary (Binary)
 import ZkFold.Data.FromList (FromList)
+import ZkFold.Data.Orphans ()
 
 -- | A type of witness builders. @i@ is a type of variables.
 --
@@ -49,7 +49,8 @@ data LookupTable a f where
   Plot
     :: (Representable f, FromList f, Binary (Rep f), Foldable g)
     => (forall w. (PrimeField w, Algebra a w) => f w -> g w)
-    -> LookupTable a f -> LookupTable a (f :*: g)
+    -> LookupTable a f
+    -> LookupTable a (f :*: g)
 
 -- | A monadic DSL for constructing arithmetic circuits.
 -- @var@ is a type of variables, @a@ is a base field, @w@ is a type of witnesses
