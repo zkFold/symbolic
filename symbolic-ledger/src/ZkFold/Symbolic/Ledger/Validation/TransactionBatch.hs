@@ -15,12 +15,11 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
-data TransactionBatchWitness ud i o a t context = TransactionBatchWitness
-  { tbwTransactions :: (Vector t :.: (TransactionWitness ud i o a)) context
+newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
+  { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
 
 validateTransactionBatch

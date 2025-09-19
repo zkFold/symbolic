@@ -19,7 +19,6 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
 
 data TransactionWitness ud i o a context = TransactionWitness
@@ -70,7 +69,7 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
               ( (boutsAcc + one)
                   :*: (outputIx + one)
                   :*: ( boutsValidAcc
-                          && foldl' (\found (boutput) -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                          && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
                       )
                   :*: utxoTreeAcc
               )

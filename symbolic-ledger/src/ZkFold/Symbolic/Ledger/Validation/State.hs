@@ -19,7 +19,6 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 
@@ -45,7 +44,7 @@ For validating state, we check following:
 -}
 
 data StateWitness bi bo ud a i o t context = StateWitness
-  { swAddBridgeIn :: (Vector bi :.: (MerkleEntry ud)) context
+  { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
 
@@ -99,9 +98,9 @@ validateStateUpdate previousState action newState sw =
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO
