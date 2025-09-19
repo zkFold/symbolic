@@ -38,12 +38,10 @@ data TrustedSetup (n :: Natural)
 
 -- | Read the the first 2^18 + 6 G1 points and both G2 points from the Midnight trusted setup.
 -- See https://github.com/midnightntwrk/midnight-trusted-setup/tree/main
---
 powersOfTau2e18p6 :: IO (TrustedSetup (2 ^ 18 + 6))
 powersOfTau2e18p6 = powersOfTauSubset
 
 -- | Read no more than 2^18 + 6 G1 points and both G2 points from the Midnight trusted setup.
---
 powersOfTauSubset :: forall (n :: Natural). KnownNat n => IO (TrustedSetup n)
 powersOfTauSubset = do
   fp <- getDataFileName "data/midnight_powers_of_tau_2e18"
@@ -51,12 +49,13 @@ powersOfTauSubset = do
   P.pure ts
 
 -- | Parse the trusted setup file and extract @n@ G1 points and both G2 points.
---
 readTrustedSetup
   :: forall (n :: Natural)
    . KnownNat n
-  => FilePath -- ^ Path to the file
-  -> Bool -- ^ whether G1 points are compressed. Does not affect G2 points as they are never compressed
+  => FilePath
+  -- ^ Path to the file
+  -> Bool
+  -- ^ whether G1 points are compressed. Does not affect G2 points as they are never compressed
   -> IO (Maybe (TrustedSetup n))
 readTrustedSetup fp isCompressed = do
   handle <- openBinaryFile fp ReadMode
@@ -94,12 +93,14 @@ readTrustedSetup fp isCompressed = do
     P.pure pt
 
 -- | Save the trusted setup to a file.
---
 saveTrustedSetup
   :: forall (n :: Natural)
-   . FilePath -- ^ Path to the file
-  -> Bool -- ^ whether to compress G1 points. Does not affect G2 points as they are never compressed
-  -> TrustedSetup n -- ^ Trusted Setup to save
+   . FilePath
+  -- ^ Path to the file
+  -> Bool
+  -- ^ whether to compress G1 points. Does not affect G2 points as they are never compressed
+  -> TrustedSetup n
+  -- ^ Trusted Setup to save
   -> IO ()
 saveTrustedSetup fp isCompressed TrustedSetup {..} = do
   handle <- openBinaryFile fp WriteMode

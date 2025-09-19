@@ -67,9 +67,9 @@ specEllipticCurve = do
   specBLS12Compression @BLS12_381_G1_Point
   specBLS12Compression @BLS12_381_G1_JacobianPoint
 
-specBLS12Compression 
-  :: forall point 
-   . Compressible point 
+specBLS12Compression
+  :: forall point
+   . Compressible point
   => CyclicGroup point
   => Eq point
   => Arbitrary (ScalarFieldOf point)
@@ -77,12 +77,12 @@ specBLS12Compression
   => Typeable point
   => Spec
 specBLS12Compression = do
-    describe ("Compressing and decompressing " <> show (typeRep (Proxy :: Proxy point))) $ do
-      it "should compress and decompress correctly" $ do
-        let g = pointGen @point
-        property $ \(coef :: ScalarFieldOf point) ->
-          let pt = coef `scale` g
-           in pt == decompress (compress pt)
+  describe ("Compressing and decompressing " <> show (typeRep (Proxy :: Proxy point))) $ do
+    it "should compress and decompress correctly" $ do
+      let g = pointGen @point
+      property $ \(coef :: ScalarFieldOf point) ->
+        let pt = coef `scale` g
+         in pt == decompress (compress pt)
 
 specEllipticCurveGenerator
   :: forall point
