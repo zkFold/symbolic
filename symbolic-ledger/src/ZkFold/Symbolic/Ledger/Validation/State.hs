@@ -104,16 +104,3 @@ validateStateUpdate previousState action newState sw =
       && isBatchValid
       && utxoTree
       == newState.sUTxO
-
---   -- See above note on how we verify for bridged out assets.
---   && subtractBridgedOutAssets bridgedOutAssets newAiWithoutBridgedOut
---   == newAi
---   -- New account info is the same as the one in the new state.
---   && newAi
---   == newState.sAccountInfo
---   -- Batch is valid.
---   && isBatchValid
-
-addBridgedInAssets = P.undefined
-
-subtractBridgedOutAssets = P.undefined
