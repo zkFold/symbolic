@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Ledger.Validation.State (
 ) where
 
 import Data.Function ((&))
-import Data.Functor (Functor (..))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
@@ -17,10 +16,8 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerklePath, MerkleTree, replace)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import Prelude qualified as P
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (validateTransactionBatch)
 
@@ -99,9 +96,9 @@ validateStateUpdate previousState action newState sw =
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO

@@ -14,7 +14,6 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (validateTransaction)
 
@@ -36,7 +35,7 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb =
           tb.tbTransactions
       bouts =
         foldl'
-          (\acc (output) -> ifThenElse (output == nullOutput @a @context) (acc + one) acc)
+          (\acc output -> ifThenElse (output == nullOutput @a @context) (acc + one) acc)
           zero
           (unComp1 bridgedOutOutputs)
    in ((isValid && (bouts == boCount)) :*: updatedUTxOTree)

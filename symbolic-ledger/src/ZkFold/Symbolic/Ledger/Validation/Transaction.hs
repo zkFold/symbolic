@@ -7,44 +7,39 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
+import ZkFold.Algebra.Class (AdditiveSemigroup (..), MultiplicativeMonoid (..), Zero (..))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import ZkFold.Data.MerkleTree (MerkleTree)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
+import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
 
-import ZkFold.Symbolic.Ledger.Types
-
-validateTransaction = P.undefined
-
--- validateTransaction
---   :: forall ud i o a context
---    . SignatureTransaction context
---   => MerkleTree ud context
---   -> (Vector bo :.: (Address :*: Address :*: AssetValue)) context
---   -> Transaction context
---   -> (Bool :*: AccountInfo users :*: AccountInfo users) context
--- validateTransaction ai aiWithoutBridgedOut (Comp1 bridgedOutAssets) tx =
---   ifThenElse
---     tx.isBridgeOut
---     ( foldl'
---         (\found (from :*: to :*: asset) -> found || (from :*: to :*: asset) == (tx.from :*: tx.to :*: tx.asset))
---         (false :: Bool context)
---         bridgedOutAssets
---         :*: subtractAsset ai (tx.from, tx.asset)
---         :*: aiWithoutBridgedOut
---     )
---     ( true
---         :*: ( subtractAsset ai (tx.from, tx.asset)
---                 & addAsset ai (tx.to, tx.asset)
---             )
---         :*: ( subtractAsset aiWithoutBridgedOut (tx.from, tx.asset)
---                 & addAsset aiWithoutBridgedOut (tx.to, tx.asset)
---             )
---     )
-
--- subtractAsset = P.undefined
-
--- addAsset = P.undefined
+validateTransaction
+  :: forall ud bo i o a context
+   . SignatureTransaction i o a context
+  => MerkleTree ud context
+  -> (Vector bo :.: Output a) context
+  -> Transaction i o a context
+  -> (FieldElement :*: Bool :*: MerkleTree ud) context
+validateTransaction utxoTree bridgedOutOutputs tx =
+  let
+    (bouts :*: boutsIncluded) =
+      foldl'
+        ( \(boutsAcc :*: boutsIncludedAcc) (output :*: bout) ->
+            ifThenElse
+              bout
+              ( (boutsAcc + one)
+                  :*: ( boutsIncludedAcc
+                          && foldl' (\found (boutput) -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                      )
+              )
+              (boutsAcc :*: boutsIncludedAcc)
+        )
+        (zero :*: (true :: Bool context))
+        (unComp1 tx.outputs)
+   in
+    (bouts :*: boutsIncluded :*: utxoTree)
