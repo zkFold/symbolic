@@ -81,6 +81,9 @@ instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetVal
 nullAssetValue :: Symbolic context => AssetValue context
 nullAssetValue = AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
 
+instance Symbolic context => Zero (AssetValue context) where
+  zero = nullAssetValue
+
 -- | Denotes multiple assets.
 newtype AssetValues context = UnsafeAssetValues (List AssetValue context)
   deriving newtype SymbolicData

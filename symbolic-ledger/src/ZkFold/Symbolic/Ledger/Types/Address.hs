@@ -1,11 +1,15 @@
 module ZkFold.Symbolic.Ledger.Types.Address (
   Address,
+  nullAddress,
 ) where
 
+import ZkFold.Algebra.Class (Zero (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash)
-
 -- | Address on the zkFold ledger.
-type Address = Hash FieldElement
+type Address = FieldElement
+
+nullAddress :: Symbolic context => Address context
+nullAddress = zero

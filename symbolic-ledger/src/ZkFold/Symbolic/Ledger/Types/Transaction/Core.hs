@@ -5,13 +5,16 @@
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   OutputRef (..),
   Output (..),
+  nullOutput,
   UTxO (..),
   Transaction (..),
   TransactionId,
   txId,
 ) where
 
-import GHC.Generics (Generic, Generic1, (:*:), (:.:))
+import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
+import GHC.TypeNats (KnownNat)
+import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -20,12 +23,11 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.UInt (UInt)
-import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude as Haskell hiding ((||))
-
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
+import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import qualified Prelude as Haskell hiding ((||))
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -57,6 +59,9 @@ instance
   , KnownRegistersAssetQuantity context
   )
   => Eq (Output a context)
+
+nullOutput :: (Symbolic context, KnownNat a) => Output a context
+nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
 
 data UTxO a context = UTxO
   { uRef :: OutputRef context
