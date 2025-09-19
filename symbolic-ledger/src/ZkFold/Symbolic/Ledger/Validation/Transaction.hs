@@ -15,8 +15,9 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
-import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
+
+import ZkFold.Symbolic.Ledger.Types
 
 validateTransaction
   :: forall ud bo i o a context
