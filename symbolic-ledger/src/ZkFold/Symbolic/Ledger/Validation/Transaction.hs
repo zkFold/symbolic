@@ -19,12 +19,11 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
 
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
+  , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
 validateTransaction
@@ -37,6 +36,7 @@ validateTransaction
   -> (FieldElement :*: Bool :*: MerkleTree ud) context
 validateTransaction txw utxoTree bridgedOutOutputs tx =
   let
+    txId' = txId tx & Base.hHash
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: updatedUTxOTreeForInputs) =
       foldl'
@@ -60,19 +60,33 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
         )
         ((true :: Bool context) :*: utxoTree)
         inputsWithWitness
-    (bouts :*: boutsIncluded) =
+    outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
+    (bouts :*: _ :*: boutsValid :*: updatedUTxOTreeForOutputs) =
       foldl'
-        ( \(boutsAcc :*: boutsIncludedAcc) (output :*: bout) ->
+        ( \(boutsAcc :*: outputIx :*: boutsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
             ifThenElse
               bout
               ( (boutsAcc + one)
-                  :*: ( boutsIncludedAcc
+                  :*: (outputIx + one)
+                  :*: ( boutsValidAcc
                           && foldl' (\found (boutput) -> found || output == boutput) false (unComp1 bridgedOutOutputs)
                       )
+                  :*: utxoTreeAcc
               )
-              (boutsAcc :*: boutsIncludedAcc)
+              ( boutsAcc
+                  :*: (outputIx + one)
+                  :*: (boutsValidAcc && (utxoTreeAcc `MerkleTree.contains` merkleEntry) && (merkleEntry.value == nullUTxOHash @a @context))
+                  :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
+                         in MerkleTree.replace
+                              ( merkleEntry
+                                  { MerkleTree.value = hash utxo & Base.hHash
+                                  }
+                              )
+                              utxoTreeAcc
+                      )
+              )
         )
-        (zero :*: (true :: Bool context))
-        (unComp1 tx.outputs)
+        (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
+        outputsWithWitness
    in
-    (bouts :*: (boutsIncluded && isInsValid) :*: utxoTree)
+    (bouts :*: (boutsValid && isInsValid) :*: updatedUTxOTreeForOutputs)
