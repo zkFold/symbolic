@@ -13,6 +13,7 @@ license-file:       LICENSE
 build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
+    data/midnight_powers_of_tau_2e18
 extra-source-files:
   rust-wrapper/*.toml
   rust-wrapper/src/*.rs
@@ -219,6 +220,7 @@ library
       ZkFold.Protocol.Plonkup.Witness
       ZkFold.Protocol.NonInteractiveProof
       ZkFold.Protocol.NonInteractiveProof.Class
+      ZkFold.Protocol.NonInteractiveProof.TrustedSetup
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Protocol.Halo2
@@ -287,6 +289,12 @@ library
     if arch(javascript) || arch(wasm32)
       js-sources:
         js-src/blake2b.js
+
+    other-modules:
+      Paths_symbolic_base
+
+    autogen-modules:
+      Paths_symbolic_base
 
     if arch(wasm32)
       build-depends:
