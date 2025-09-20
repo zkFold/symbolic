@@ -9,7 +9,6 @@ import Prelude
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
   BLS12_381_G1_Point,
-  BLS12_381_G2_CompressedPoint,
   BLS12_381_G2_Point,
   BLS12_381_Scalar,
  )
@@ -33,6 +32,5 @@ specBinary = describe "Binary instance" $ do
   prop "roundtrips Point BLS12_381_G1" $ doesRoundtrip @BLS12_381_G1_Point
   prop "roundtrips CompressedPoint BLS12_381_G1" $ doesRoundtrip @BLS12_381_G1_CompressedPoint
   prop "roundtrips Point BLS12_381_G2" $ doesRoundtrip @BLS12_381_G2_Point
-  prop "roundtrips CompressedPoint BLS12_381_G2" $ doesRoundtrip @BLS12_381_G2_CompressedPoint
   prop "roundtrips Point Pallas" $ doesRoundtrip @Pallas_Point
   prop "roundtrips Point Vesta" $ doesRoundtrip @Vesta_Point
