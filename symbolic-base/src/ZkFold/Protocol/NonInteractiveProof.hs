@@ -2,15 +2,17 @@
 
 module ZkFold.Protocol.NonInteractiveProof (
   module ZkFold.Protocol.NonInteractiveProof.Class,
+  module ZkFold.Protocol.NonInteractiveProof.TrustedSetup,
   module ZkFold.Protocol.NonInteractiveProof.Testing,
 ) where
 
 import ZkFold.Protocol.NonInteractiveProof.Class
+import ZkFold.Protocol.NonInteractiveProof.TrustedSetup
 #if defined(javascript_HOST_ARCH)
-import           ZkFold.Protocol.NonInteractiveProof.JS () 
+import ZkFold.Protocol.NonInteractiveProof.JS () 
 #elif defined(wasm32_HOST_ARCH)
-import           ZkFold.Protocol.NonInteractiveProof.WASM () 
+import ZkFold.Protocol.NonInteractiveProof.WASM () 
 #else
-import           ZkFold.Protocol.NonInteractiveProof.Haskell () 
+import ZkFold.Protocol.NonInteractiveProof.Haskell () 
 #endif
 import ZkFold.Protocol.NonInteractiveProof.Testing

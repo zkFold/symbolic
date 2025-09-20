@@ -89,7 +89,7 @@ instance Compressible BLS12_381_G1_Point where
       else
         let b = weierstrassB @"BLS12-381-G1"
             q = order @Fq
-            sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
+            sqrt_ z = z ^ ((q + 1) `Prelude.div` 4)
             y' = sqrt_ (x * x * x + b)
             y'' = negate y'
             y = if bigY then max y' y'' else min y' y''
@@ -160,17 +160,7 @@ instance Compressible BLS12_381_G2_Point where
     if isInf
       then pointInf
       else pointCompressed @BLS12_381_G2_Point x (y > negate y)
-  decompress (Weierstrass (CompressedPoint x bigY isInf)) =
-    if isInf
-      then pointInf
-      else
-        let b = weierstrassB @"BLS12-381-G2"
-            q = order @Fq2
-            sqrt_ z = z ^ ((q + 1) `Prelude.div` 2)
-            y' = sqrt_ (x * x * x + b)
-            y'' = negate y'
-            y = if bigY then max y' y'' else min y' y''
-         in pointXY x y
+  decompress = error "Not implemented" -- TODO: implement decompression with a proper sqrt in F_p^2
 
 instance Compressible BLS12_381_G2_JacobianPoint where
   type Compressed BLS12_381_G2_JacobianPoint = BLS12_381_G2_CompressedPoint
