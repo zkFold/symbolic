@@ -4,6 +4,7 @@
 
 module ZkFold.ArithmeticCircuit.Var where
 
+import ByteString.Aeson.Orphans ()
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad, ap, (>>=))

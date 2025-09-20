@@ -16,8 +16,7 @@ import Data.Tuple (fst, uncurry)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Context (CircuitContext, acLookup)
-import ZkFold.ArithmeticCircuit.Lookup (asRange)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext, acLookup, asRange)
 import ZkFold.ArithmeticCircuit.Var (toVar)
 import ZkFold.Prelude (assert, length)
 import ZkFold.Symbolic.Class (Arithmetic)

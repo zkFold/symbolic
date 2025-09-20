@@ -4,6 +4,7 @@
 
 module ZkFold.Protocol.Plonkup.Relation where
 
+import Control.Applicative (pure)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as Aeson
 import Data.Binary (Binary)
@@ -15,14 +16,14 @@ import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Rep, Representable, tabulate)
 import Data.List (map, (++))
 import qualified Data.List as L
-import Data.Map (elems)
+import Data.Map (elems, (!))
 import qualified Data.Map.Monoidal as M
 import Data.Maybe (Maybe (..), fromJust)
 import Data.Monoid (Sum (..))
+import Data.Semigroup ((<>))
 import qualified Data.Set as S
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import GHC.Generics (Par1 (..), (:*:) (..))
 import GHC.IsList (fromList)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show (..))
@@ -34,8 +35,7 @@ import ZkFold.Algebra.Permutation (Permutation, fromCycles, mkIndexPartition)
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, var)
 import ZkFold.Algebra.Polynomial.Univariate (UnivariateRingPolyVec (..), toPolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, witnessGenerator)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), lookupFunction)
-import ZkFold.ArithmeticCircuit.Lookup (LookupTable (..), LookupType (LookupType))
+import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), LookupFunction (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Prelude (length, replicate, uncurry3)
 import ZkFold.Protocol.Plonkup.Internal (PlonkupPermutationSize)
@@ -143,53 +143,52 @@ toPlonkupRelation !ac =
       toTriple [!x, !y, !z] = (x, y, z)
       toTriple ws = P.error ("Expected list of length 1-3, got " ++ show (length ws))
 
-      unfold :: LookupTable a f -> (Natural, (Vector a -> Vector a) -> f (Vector a))
-      unfold (Ranges !rs) =
+      unfold :: LookupType a -> (Natural, (Vector a -> Vector a) -> [Vector a])
+      unfold (LTRanges !rs) =
         let !segs = S.toList rs
          in ( sum [toConstant (hi - lo + one) | (lo, hi) <- segs]
-            , Par1 . ($ V.concat [V.enumFromTo lo hi | (lo, hi) <- segs])
+            , pure . ($ V.concat [V.enumFromTo lo hi | (lo, hi) <- segs])
             )
-      unfold (Product !t !u) =
+      unfold (LTProduct !t !u) =
         let (!m, ts) = unfold t
             (!k, us) = unfold u
          in ( m * k
             , \f ->
                 ts (f . V.concatMap (V.replicate (P.fromIntegral k)))
-                  :*: us (f . V.concat . L.replicate (P.fromIntegral m))
+                  <> us (f . V.concat . L.replicate (P.fromIntegral m))
             )
-      unfold (Plot !g !t) =
+      unfold (LTPlot !g !t) =
         let (!k, ts) = unfold t
-            g' = lookupFunction (acLookupFunction (acContext ac)) g
+            LookupFunction g' = acLookupFunction (acContext ac) ! g
          in ( k
             , \f ->
                 let !ts' = ts id
-                 in f <$> (ts' :*: fmap (toVector k) (g' $ fromVector <$> ts'))
+                 in f <$> (ts' <> fmap (toVector k) (g' $ fromVector <$> ts'))
             )
 
       lkup
-        :: Foldable f
-        => LookupTable a f
+        :: LookupType a
         -> [[Var a]]
         -> ([LookupConstraint i a], Sum Natural, (Vector a, Vector a, Vector a))
       lkup !lt !vs =
         let (!k, !ts) = unfold lt
          in ( L.map (uncurry3 LookupConstraint . toTriple) vs
             , Sum k
-            , toTriple $ toList (ts id)
+            , toTriple (ts id)
             )
 
       -- Lookup queries.
       (!xLookup, Sum !nLookup, (!xs, !ys, !zs)) = case M.assocs (acLookup $ acContext ac) of
         [] -> ([], 0, (V.empty, V.empty, V.empty))
-        [(LookupType lt, vs)] -> lkup lt [L.map toVar v | v <- S.toList vs]
+        [(lt, vs)] -> lkup lt [L.map toVar v | v <- S.toList vs]
         asscs -> flip foldMap (L.zip [(0 :: Natural) ..] asscs) $
           -- \^ Folding concatenates tuples pointwise, so:
           -- \* lists of constraints get concatenated
           -- \* vectors of values get concatenated, too
           -- Just as planned!
-          \(fromConstant -> i, (LookupType lt, vs)) ->
+          \(fromConstant -> i, (lt, vs)) ->
             lkup
-              (Ranges (S.singleton (i, i)) `Product` lt)
+              (LTRanges (S.singleton (i, i)) `LTProduct` lt)
               [fromConstant i : L.map toVar v | v <- S.toList vs]
       -- NOTE we use constant variables
       -- to encode № of a lookup table
