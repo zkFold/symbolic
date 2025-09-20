@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main where
 
@@ -22,6 +23,8 @@ import ZkFold.Algebra.Polynomial.Univariate
 -- DFT of a polynomial of length n requires calculating primitive roots of unity of order n.
 -- Choosing 257 allows us to calculate DFT of polynomials of length up to 256 as all these numbers divide 257 - 1.
 type TestPrime = 257
+
+instance Prime TestPrime
 
 -- | Generate random polynomials of given size
 polynomials :: forall a. Prime a => Int -> IO (Poly (Zp a), Poly (Zp a))

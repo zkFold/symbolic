@@ -21,7 +21,6 @@ import ZkFold.Data.Bool
 import ZkFold.Data.Eq (BooleanOf)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
@@ -29,6 +28,10 @@ instance FromConstant c a => FromConstant c (UVar a) where
   fromConstant = ConstUVar . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)
+
+instance {-# OVERLAPPING #-} FromConstant c a => FromConstant (Partial c) (UVar a) where
+  fromConstant (Known c) = ConstUVar (fromConstant c)
+  fromConstant Unknown = More
 
 instance (Scale k a, AdditiveMonoid k, Eq k, AdditiveMonoid a) => Scale k (UVar a) where
   scale k v
@@ -92,10 +95,8 @@ instance (Field a, Eq a) => Field (UVar a) where
 instance Finite a => Finite (UVar a) where
   type Order (UVar a) = Order a
 
-instance (ResidueField a, Eq a, BooleanOf a ~ Bool) => ResidueField (UVar a) where
+instance (PrimeField a, Eq a, BooleanOf a ~ Bool) => PrimeField (UVar a) where
   type IntegralOf (UVar a) = Partial (IntegralOf a)
-  fromIntegral (Known x) = ConstUVar (fromIntegral x)
-  fromIntegral Unknown = More
   toIntegral (ConstUVar c) = Known (toIntegral c)
   toIntegral _ = Unknown
 

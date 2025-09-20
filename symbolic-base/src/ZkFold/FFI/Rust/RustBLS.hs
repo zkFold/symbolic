@@ -33,7 +33,6 @@ import ZkFold.FFI.Rust.Poly ()
 import ZkFold.FFI.Rust.Runner (runRustFun0, runRustFun1, runRustFun2, runRustFun3)
 import ZkFold.FFI.Rust.RustFunctions
 import ZkFold.FFI.Rust.Types
-import ZkFold.Symbolic.MonadCircuit
 
 deriveIntegerFromNatural :: (a -> a) -> Integer -> (Natural -> a) -> a
 deriveIntegerFromNatural neg i f
@@ -46,9 +45,8 @@ instance ToConstant Fr where
   type Const Fr = Natural
   toConstant = toConstant . r2h
 
-instance ResidueField Fr where
+instance PrimeField Fr where
   type IntegralOf Fr = Integer
-  fromIntegral = fromConstant
   toIntegral = toIntegral . r2h
 
 instance Binary Fr where

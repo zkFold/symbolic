@@ -75,14 +75,14 @@ instance Arithmetic a => SymbolicFold (Interpreter a) where
 newtype Witnesses a w x = Witnesses {runWitnesses :: x}
   deriving (Applicative, Functor, Monad) via Identity
 
-instance ResidueField w => Witness (Identity w) w where
+instance PrimeField w => Witness (Identity w) w where
   at = runIdentity
 
 instance FromConstant a w => FromConstant a (Identity w) where
   fromConstant = Identity . fromConstant
 
 instance
-  (Arithmetic a, FromConstant a w, Scale a w, ResidueField w)
+  (Arithmetic a, FromConstant a w, Scale a w, PrimeField w)
   => MonadCircuit (Identity w) a w (Witnesses a w)
   where
   unconstrained = return . Identity
