@@ -29,28 +29,34 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
+import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
 
-import ZkFold.Symbolic.Ledger.Types
-
+-- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
+-- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
    . SignatureTransaction ud i o a context
   => TransactionWitness ud i o a context
   -> MerkleTree ud context
+  -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
+  -- ^ Bridged out outputs.
   -> Transaction i o a context
+  -- ^ Transaction.
   -> (FieldElement :*: Bool :*: MerkleTree ud) context
+  -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree.
 validateTransaction txw utxoTree bridgedOutOutputs tx =
   let
     txId' = txId tx & Base.hHash
     inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo) -> utxo.uOutput.oAssets)
     outputsAssets = unComp1 tx.outputs & P.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
+    -- We check if all output assets are covered by inputs.
     (outAssetsWithinInputs :*: finalInputAssets) =
       foldl'
         ( \(isValid1 :*: inputAssetsAcc) outputAssets ->
@@ -138,6 +144,7 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
         )
         ((true :: Bool context) :*: Comp1 inputAssets)
         outputsAssets
+    -- We check if all inputs are covered by outputs.
     inputsConsumed =
       foldl'
         ( \acc inAssetsComp ->
@@ -217,6 +224,7 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
    in
     (bouts :*: (boutsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
 
+-- | Check if output has at least one ada.
 outputHasAtLeastOneAda
   :: forall a context
    . (KnownRegistersAssetQuantity context, Symbolic context)
@@ -226,7 +234,8 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))
