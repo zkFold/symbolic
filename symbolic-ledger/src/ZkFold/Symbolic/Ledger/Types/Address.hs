@@ -11,5 +11,6 @@ import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 -- | Address on the zkFold ledger.
 type Address = FieldElement
 
+-- | Null address.
 nullAddress :: Symbolic context => Address context
 nullAddress = zero
