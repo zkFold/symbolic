@@ -9,10 +9,9 @@ module ZkFold.Symbolic.Ledger.Validation.State (
 
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), Zero (..), (+))
+import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
-import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
@@ -20,8 +19,6 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import Prelude qualified as P
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
@@ -114,9 +111,9 @@ validateStateUpdate previousState action newState sw =
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one -- TODO: Confirm if this is the correct way to increment the length.
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO
