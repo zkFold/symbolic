@@ -8,11 +8,18 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import ZkFold.Algebra.Class (AdditiveSemigroup (..), FromConstant (fromConstant), MultiplicativeMonoid (..), Zero (..))
+import ZkFold.Algebra.Class (
+  AdditiveGroup (..),
+  AdditiveSemigroup (..),
+  FromConstant (fromConstant),
+  MultiplicativeMonoid (..),
+  Zero (..),
+ )
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord ((>=))
-import ZkFold.Data.Vector (Vector, Zip (..))
+import ZkFold.Data.Vector (Vector, Zip (..), (!!))
+import qualified ZkFold.Data.Vector as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -20,9 +27,8 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
@@ -40,6 +46,108 @@ validateTransaction
 validateTransaction txw utxoTree bridgedOutOutputs tx =
   let
     txId' = txId tx & Base.hHash
+    inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo) -> utxo.uOutput.oAssets)
+    outputsAssets = unComp1 tx.outputs & P.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
+    (outAssetsWithinInputs :*: finalInputAssets) =
+      foldl'
+        ( \(isValid1 :*: inputAssetsAcc) outputAssets ->
+            foldl'
+              ( \(isValid2 :*: inputAssetsAcc') outputAsset ->
+                  let
+                    -- Whether an input asset matches the current output asset by policy and name.
+                    sameAsset av = (av.assetPolicy == outputAsset.assetPolicy) && (av.assetName == outputAsset.assetName)
+
+                    -- Given a remaining quantity to cover, compute the remaining after consuming from one input's assets.
+                    remainingAfterInput rem inAssetsComp =
+                      let asVec = unComp1 inAssetsComp
+                       in foldl'
+                            ( \r av ->
+                                ifThenElse
+                                  (sameAsset av)
+                                  ( ifThenElse
+                                      (r >= av.assetQuantity)
+                                      (r + negate av.assetQuantity)
+                                      zero
+                                  )
+                                  r
+                            )
+                            rem
+                            asVec
+
+                    -- Compute remaining before each input using a prefix scan across inputs.
+                    inputsVec = unComp1 inputAssetsAcc'
+                    remsAcrossInputs =
+                      Vector.scanl
+                        remainingAfterInput
+                        outputAsset.assetQuantity
+                        inputsVec
+
+                    -- Update assets for a single input, given the remaining before this input.
+                    updateInputAssets remBefore inAssetsComp =
+                      let asVec = unComp1 inAssetsComp
+                          -- Remaining before each asset within this input.
+                          remsWithinInput =
+                            Vector.scanl
+                              ( \r av ->
+                                  ifThenElse
+                                    (sameAsset av)
+                                    ( ifThenElse
+                                        (r >= av.assetQuantity)
+                                        (r + negate av.assetQuantity)
+                                        zero
+                                    )
+                                    r
+                              )
+                              remBefore
+                              asVec
+                          -- Update each asset using the remaining before that asset.
+                          updatedAs =
+                            Vector.mapWithIx
+                              ( \ix av ->
+                                  let rBefore = remsWithinInput !! ix
+                                   in ifThenElse
+                                        (sameAsset av)
+                                        ( let newQty = ifThenElse (rBefore >= av.assetQuantity) zero (av.assetQuantity + negate rBefore)
+                                           in av {assetQuantity = newQty}
+                                        )
+                                        av
+                              )
+                              asVec
+                       in Comp1 updatedAs
+
+                    -- Build updated inputs by mapping with index and using prefix-remaining per input.
+                    updatedInputs =
+                      Vector.mapWithIx
+                        ( \ix inAssetsComp ->
+                            let remBefore = remsAcrossInputs !! ix
+                             in updateInputAssets remBefore inAssetsComp
+                        )
+                        inputsVec
+
+                    -- Final remaining after all inputs processed for this output asset.
+                    finalRemaining = Vector.last remsAcrossInputs
+                    isValid' = isValid2 && (finalRemaining == zero)
+                   in
+                    (isValid' :*: Comp1 updatedInputs)
+              )
+              (isValid1 :*: inputAssetsAcc)
+              outputAssets
+        )
+        ((true :: Bool context) :*: Comp1 inputAssets)
+        outputsAssets
+    inputsConsumed =
+      foldl'
+        ( \acc inAssetsComp ->
+            let asVec = unComp1 inAssetsComp
+             in acc
+                  && foldl'
+                    ( \acc2 av -> acc2 && (av.assetQuantity == zero)
+                    )
+                    true
+                    asVec
+        )
+        true
+        (unComp1 finalInputAssets)
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: updatedUTxOTreeForInputs) =
       foldl'
@@ -114,4 +222,4 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
-    (bouts :*: (boutsValid && isInsValid) :*: updatedUTxOTreeForOutputs)
+    (bouts :*: (boutsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)

@@ -18,7 +18,6 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.State
@@ -28,6 +27,7 @@ import ZkFold.Symbolic.Ledger.Types.Value
 type SignatureTransaction ud i o a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
+  , KnownNat i
   , KnownNat a
   , KnownNat (ud - 1)
   , KnownNat (MerkleTreeSize ud)
