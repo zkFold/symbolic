@@ -69,11 +69,11 @@ type AssetQuantity context = Int 128 Auto context
 
 type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
 
--- TODO: Replace with actual value.
+-- TODO: Replace with actual value, once we finalize how policy names are represented.
 adaPolicy :: AssetPolicy context
 adaPolicy = undefined
 
--- TODO: Replace with actual value.
+-- TODO: Replace with actual value, once we finalize how asset names are represented.
 adaName :: AssetName context
 adaName = undefined
 
@@ -88,6 +88,7 @@ data AssetValue context = AssetValue
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
+-- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context
 nullAssetValue = AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
 
