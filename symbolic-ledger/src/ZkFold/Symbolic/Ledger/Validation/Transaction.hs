@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction (
   TransactionWitness (..),
   validateTransaction,
+  outputHasAtLeastOneAda,
 ) where
 
 import Data.Function ((&))
@@ -21,15 +22,15 @@ import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import qualified ZkFold.Data.Vector as Vector
 import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
@@ -193,16 +194,7 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
                             true
                             ( (utxoTreeAcc `MerkleTree.contains` merkleEntry)
                                 && (merkleEntry.value == nullUTxOHash @a @context)
-                                && foldl'
-                                  ( \found asset ->
-                                      found
-                                        || ifThenElse
-                                          (asset.assetPolicy == adaPolicy && asset.assetName == adaName)
-                                          (asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
-                                          false
-                                  )
-                                  (false :: Bool context)
-                                  (unComp1 (oAssets output))
+                                && outputHasAtLeastOneAda output
                             )
                       )
                   :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
@@ -223,3 +215,18 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
         outputsWithWitness
    in
     (bouts :*: (boutsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
+
+outputHasAtLeastOneAda
+  :: forall a context
+   . (KnownRegistersAssetQuantity context, Symbolic context)
+  => Output a context
+  -> Bool context
+outputHasAtLeastOneAda output =
+  foldl'
+    ( \found asset ->
+        found
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
+    )
+    false
+    (unComp1 (oAssets output))
