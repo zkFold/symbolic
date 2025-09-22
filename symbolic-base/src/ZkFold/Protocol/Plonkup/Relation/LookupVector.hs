@@ -42,6 +42,12 @@ deriving via
 deriving via
   (ApplicativeAlgebra LookupVector a)
   instance
+  {-# INCOHERENT #-}
+    FromConstant a (LookupVector a)
+
+deriving via
+  (ApplicativeAlgebra LookupVector a)
+  instance
     Scale k a => Scale k (LookupVector a)
 
 fromVector :: Vector a -> LookupVector a

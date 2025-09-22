@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.MonadCircuit where
@@ -10,13 +11,12 @@ import Data.Foldable (Foldable)
 import Data.Function (($), (.))
 import Data.Functor (Functor)
 import Data.Functor.Rep (Rep, Representable)
-import Data.Set (singleton)
-import Data.Traversable (Traversable)
+import Data.Set (Set, singleton)
 import Data.Typeable (Typeable)
-import GHC.Generics (Par1 (..))
+import GHC.Generics (Par1 (..), (:*:) (..))
 
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Lookup
+import ZkFold.Data.FromList (FromList)
 import ZkFold.Data.Orphans ()
 
 -- | A type of witness builders. @i@ is a type of variables.
@@ -38,17 +38,19 @@ class PrimeField w => Witness i w | i -> w where
 -- suitable type, you don't have to check it yourself.
 type ClosedPoly var a = forall x. Algebra a x => (var -> x) -> x
 
--- | A type of constraints for new variables.
--- @var@ is a type of variables, @a@ is a base field.
---
--- A function is a constraint for a new variable if, given an arbitrary algebra
--- @x@ over @a@, a function mapping known variables to their witnesses in that
--- algebra and a new variable, it computes the value of a constraint polynomial
--- in that algebra.
---
--- NOTE: the property above is correct by construction for each function of a
--- suitable type, you don't have to check it yourself.
-type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
+-- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
+-- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
+data LookupTable a f where
+  -- | @Ranges@ describes a set of disjoint segments of the base field.
+  Ranges :: Set (a, a) -> LookupTable a Par1
+  -- | @Product t u@ is a cartesian product of tables @t@ and @u@.
+  Product :: LookupTable a f -> LookupTable a g -> LookupTable a (f :*: g)
+  -- | @Plot f x@ is a plot of a function @f@ with @x@ as a domain.
+  Plot
+    :: (Representable f, FromList f, Binary (Rep f), Foldable g)
+    => (forall w. (PrimeField w, Algebra a w) => f w -> g w)
+    -> LookupTable a f
+    -> LookupTable a (f :*: g)
 
 -- | A monadic DSL for constructing arithmetic circuits.
 -- @var@ is a type of variables, @a@ is a base field, @w@ is a type of witnesses
@@ -89,13 +91,6 @@ class
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   constraint :: ClosedPoly var a -> m ()
-
-  -- | Registers new lookup function in the system to be used in lookup tables
-  --   (see 'lookupConstraint').
-  registerFunction
-    :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
-    => (forall x. PrimeField x => f x -> g x)
-    -> m (FunctionId (f a -> g a))
 
   -- | Adds new lookup constraint to the system.
   --   For examples of lookup constraints, see 'rangeConstraint'.
@@ -139,6 +134,18 @@ newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
   return v
+
+-- | A type of constraints for new variables.
+-- @var@ is a type of variables, @a@ is a base field.
+--
+-- A function is a constraint for a new variable if, given an arbitrary algebra
+-- @x@ over @a@, a function mapping known variables to their witnesses in that
+-- algebra and a new variable, it computes the value of a constraint polynomial
+-- in that algebra.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
+type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 
 -- | Creates new variable from witness constrained by a polynomial.
 -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@

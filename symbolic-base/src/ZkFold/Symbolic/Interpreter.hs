@@ -19,7 +19,6 @@ import GHC.Generics (Generic, Par1 (..))
 import Text.Show (Show (..))
 
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..))
 import ZkFold.Control.HApplicative
 import ZkFold.Data.HFunctor
 import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
@@ -88,4 +87,3 @@ instance
   unconstrained = return . Identity
   constraint _ = return ()
   lookupConstraint _ _ = return ()
-  registerFunction _ = return (FunctionId "")
