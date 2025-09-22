@@ -10,10 +10,10 @@ import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
+-- | Transaction batch.
 newtype TransactionBatch i o a t c = TransactionBatch
   { tbTransactions :: Vector t (Transaction i o a c)
   -- ^ Vector of transaction hashes.

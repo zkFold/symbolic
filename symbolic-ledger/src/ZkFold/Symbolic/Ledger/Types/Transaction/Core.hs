@@ -31,12 +31,11 @@ import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.UInt (UInt)
-import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import Prelude qualified as Haskell hiding ((||))
-
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
+import Prelude qualified as Haskell hiding ((||))
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -53,6 +52,7 @@ instance
   Symbolic context
   => Eq (OutputRef context)
 
+-- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
 nullOutputRef = OutputRef {orTxId = zero, orIndex = zero}
 
@@ -72,9 +72,11 @@ instance
   )
   => Eq (Output a context)
 
+-- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
 nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
 
+-- | A UTxO.
 data UTxO a context = UTxO
   { uRef :: OutputRef context
   , uOutput :: Output a context
@@ -88,9 +90,11 @@ instance
   )
   => Eq (UTxO a context)
 
+-- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
 nullUTxO = UTxO {uRef = nullOutputRef, uOutput = nullOutput}
 
+-- | Null UTxO's hash.
 nullUTxOHash
   :: forall a context. (Symbolic context, KnownNat a, Hashable (HashSimple context) (UTxO a context)) => HashSimple context
 nullUTxOHash = hash (nullUTxO @a @context) & Base.hHash
@@ -115,6 +119,7 @@ instance
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)
 
+-- | Obtain transaction hash.
 txId
   :: forall i o a context
    . ( Symbolic context
