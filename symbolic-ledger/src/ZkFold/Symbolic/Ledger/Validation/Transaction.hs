@@ -29,9 +29,8 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -43,16 +42,17 @@ data TransactionWitness ud i o a context = TransactionWitness
 validateTransaction
   :: forall ud bo i o a context
    . SignatureTransaction ud i o a context
-  => TransactionWitness ud i o a context
-  -> MerkleTree ud context
+  => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
   -> Transaction i o a context
   -- ^ Transaction.
+  -> TransactionWitness ud i o a context
+  -- ^ Transaction witness.
   -> (FieldElement :*: Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree.
-validateTransaction txw utxoTree bridgedOutOutputs tx =
+validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
     inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo) -> utxo.uOutput.oAssets)
@@ -169,7 +169,6 @@ validateTransaction txw utxoTree bridgedOutOutputs tx =
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
                   && (acc `MerkleTree.contains` merkleEntry)
-                  && (utxo /= nullUTxO)
              in
               ( isValid'
                   :*: MerkleTree.replace
@@ -235,7 +234,8 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))

@@ -19,7 +19,6 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
@@ -28,7 +27,7 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 
 For validating transactions, we should check:
 
-\* Inputs come from UTxO set. Inputs list does not include the "null" UTxO.
+\* Inputs come from UTxO set.
 \* We subtract inputs UTxOs from the UTxO set.
 \* Outputs are added to the UTxO set if they are not bridge out outputs.
 \* We require signature from addresses corresponding to spent UTxOs.
@@ -73,7 +72,6 @@ validateStateUpdate previousState action newState sw =
     initialUTxOTree = previousState.sUTxO
     bridgeInAssets = preimage newState.sBridgeIn
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
-    -- TODO: Do we need to check if merkle entry's given are all unique? Perhaps not as when it's updated, the `contains` check will fail.
 
     bridgeInHash = newState.sLength & hash & Base.hHash
     (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
@@ -83,7 +81,7 @@ validateStateUpdate previousState action newState sw =
                 isValid' =
                   isValidAcc
                     && ifThenElse
-                      (utxoHash == nullUTxOHash')
+                      (output == nullOutput)
                       true
                       ( (acc `MerkleTree.contains` merkleEntry)
                           && (merkleEntry.value == nullUTxOHash')
@@ -94,7 +92,7 @@ validateStateUpdate previousState action newState sw =
              in ( (ix + one)
                     :*: isValid'
                     :*: ifThenElse
-                      (isValid' && (utxoHash /= nullUTxOHash'))
+                      (isValid' && (output /= nullOutput))
                       ( MerkleTree.replace
                           ( merkleEntry
                               { MerkleTree.value = utxoHash
@@ -108,15 +106,15 @@ validateStateUpdate previousState action newState sw =
         (zero :*: true :*: initialUTxOTree)
         bridgedInAssetsWithWitness
     bridgedOutOutputs = preimage newState.sBridgeOut
-    (isBatchValid :*: utxoTree) = validateTransactionBatch sw.swTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action
+    (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
     -- New state correctly links to the previous state.
     newState.sPreviousStateHash
       == hasher previousState
       && newState.sLength
-      == previousState.sLength
-      + one -- TODO: Confirm if this is the correct way to increment the length.
+        == previousState.sLength
+          + one
       && isWitBridgeInValid
       && isBatchValid
       && utxoTree
-      == newState.sUTxO
+        == newState.sUTxO

@@ -15,7 +15,6 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
@@ -28,23 +27,23 @@ newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
 validateTransactionBatch
   :: forall ud bo i o a t context
    . SignatureTransactionBatch ud i o a t context
-  => TransactionBatchWitness ud i o a t context
-  -- ^ Witness for the transaction batch.
-  -> MerkleTree ud context
+  => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
   -> TransactionBatch i o a t context
   -- ^ Transaction batch.
+  -> TransactionBatchWitness ud i o a t context
+  -- ^ Witness for the transaction batch.
   -> (Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree.
-validateTransactionBatch tbw utxoTree bridgedOutOutputs tb =
+validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
   let
     transactionBatchWithWitness = zipWith (:*:) tb.tbTransactions (unComp1 tbw.tbwTransactions)
     (boCount :*: isValid :*: updatedUTxOTree) =
       foldl'
         ( \(boCountAcc :*: isValidAcc :*: accUTxOTree) (tx :*: txw) ->
-            let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction txw accUTxOTree bridgedOutOutputs tx
+            let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
              in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
         )
         ((zero :: FieldElement context) :*: true :*: utxoTree)
