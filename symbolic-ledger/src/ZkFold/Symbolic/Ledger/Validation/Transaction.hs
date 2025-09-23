@@ -29,9 +29,8 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -183,21 +182,21 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         ((true :: Bool context) :*: utxoTree)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
-    (bouts :*: _ :*: boutsValid :*: updatedUTxOTreeForOutputs) =
+    (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
       foldl'
-        ( \(boutsAcc :*: outputIx :*: boutsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
+        ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
             ifThenElse
               bout
               ( (boutsAcc + one)
                   :*: (outputIx + one)
-                  :*: ( boutsValidAcc
+                  :*: ( outsValidAcc
                           && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
                       )
                   :*: utxoTreeAcc
               )
               ( boutsAcc
                   :*: (outputIx + one)
-                  :*: ( boutsValidAcc
+                  :*: ( outsValidAcc
                           && ifThenElse
                             (output == nullOutput)
                             true
@@ -223,7 +222,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
-    (bouts :*: (boutsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
+    (bouts :*: (outsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
 
 -- | Check if output has at least one ada.
 outputHasAtLeastOneAda
@@ -235,7 +234,8 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))
