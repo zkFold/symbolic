@@ -4,6 +4,7 @@
 
 module ZkFold.ArithmeticCircuit.Var where
 
+import ByteString.Aeson.Orphans ()
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad, ap, (>>=))
@@ -85,4 +86,5 @@ type Var a = LinVar a NewVar
 toVar :: Semiring a => NewVar -> Var a
 toVar = pure
 
-instance Finite a => Witness (Var a) (CircuitWitness a) where at = evalVar pure
+instance PrimeField a => Witness (Var a) (CircuitWitness a) where
+  at = evalVar pure

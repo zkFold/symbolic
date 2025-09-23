@@ -5,6 +5,7 @@ module Tests.Algebra.EllipticCurve (specEllipticCurve) where
 
 import Data.Foldable
 import Data.Proxy
+import Data.Typeable (Typeable, typeRep)
 import GHC.TypeLits
 import Test.Hspec
 import Test.QuickCheck hiding (scale)
@@ -62,6 +63,26 @@ specEllipticCurve = do
   specProjections @Vesta_Point @Vesta_JacobianPoint
   specProjections @Pluto_Point @Pluto_JacobianPoint
   specProjections @Eris_Point @Eris_JacobianPoint
+
+  specBLS12Compression @BLS12_381_G1_Point
+  specBLS12Compression @BLS12_381_G1_JacobianPoint
+
+specBLS12Compression
+  :: forall point
+   . Compressible point
+  => CyclicGroup point
+  => Eq point
+  => Arbitrary (ScalarFieldOf point)
+  => Show (ScalarFieldOf point)
+  => Typeable point
+  => Spec
+specBLS12Compression = do
+  describe ("Compressing and decompressing " <> show (typeRep (Proxy :: Proxy point))) $ do
+    it "should compress and decompress correctly" $ do
+      let g = pointGen @point
+      property $ \(coef :: ScalarFieldOf point) ->
+        let pt = coef `scale` g
+         in pt == decompress (compress pt)
 
 specEllipticCurveGenerator
   :: forall point

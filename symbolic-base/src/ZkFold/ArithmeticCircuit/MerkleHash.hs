@@ -20,7 +20,6 @@ import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 newtype MerkleHash (n :: Maybe Natural) = M {runHash :: ByteString}
 
@@ -99,9 +98,8 @@ instance Eq (MerkleHash n) where
 instance Field (MerkleHash (Just n)) where
   finv (M x) = merkleHash (Mul, x)
 
-instance Finite (Zp n) => ResidueField (MerkleHash (Just n)) where
+instance PrimeField (Zp n) => PrimeField (MerkleHash (Just n)) where
   type IntegralOf (MerkleHash (Just n)) = MerkleHash Nothing
-  fromIntegral = fromConstant
   toIntegral = merkleHash
 
 instance BoolType (MerkleHash (Just 2)) where

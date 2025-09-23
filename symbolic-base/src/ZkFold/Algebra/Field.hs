@@ -173,6 +173,10 @@ inv a p =
    where
     q = x `div` x'
 
+instance (Finite (Zp p), Prime p) => PrimeField (Zp p) where
+  type IntegralOf (Zp p) = Integer
+  toIntegral = fromConstant . toConstant
+
 instance Prime p => BinaryExpansion (Zp p) where
   type Bits (Zp p) = [Zp p]
   binaryExpansion = Haskell.map (Zp . fromConstant) . binaryExpansion . fromZp

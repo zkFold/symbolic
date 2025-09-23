@@ -19,7 +19,7 @@ module ZkFold.Symbolic.Data.Maybe (
 
 import Data.Function ((.))
 import GHC.Generics (Generic, Generic1)
-import Prelude (foldr, ($))
+import Prelude (foldr)
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Eq
@@ -63,5 +63,4 @@ find
   -> t (a c)
   -> Maybe a c
 find p =
-  let n = nothing
-   in foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n
+  foldr (\i r -> maybe (bool nothing (just i) (p i)) (Haskell.const r) r) nothing
