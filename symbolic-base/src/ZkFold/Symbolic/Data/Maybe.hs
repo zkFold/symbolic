@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Maybe (
   Maybe,
   guard,
   maybe,
+  mmap,
   just,
   nothing,
   fromMaybe,
@@ -16,8 +17,9 @@ module ZkFold.Symbolic.Data.Maybe (
   find,
 ) where
 
+import Data.Function ((.))
 import GHC.Generics (Generic, Generic1)
-import Prelude (foldr, ($))
+import Prelude (foldr)
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Eq
@@ -46,10 +48,13 @@ fromMaybe :: forall c x. Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
 fromMaybe a (Maybe j t) = bool a t j
 
 isNothing :: Symbolic c => Maybe x c -> Bool c
-isNothing (Maybe h _) = not h
+isNothing = not . isJust
 
 maybe :: forall a b c. Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
-maybe d h (Maybe j x) = fromMaybe d $ Maybe j (h x)
+maybe d h = fromMaybe d . mmap h
+
+mmap :: (a c -> b c) -> Maybe a c -> Maybe b c
+mmap f (Maybe b a) = Maybe b (f a)
 
 find
   :: forall a c t
@@ -58,5 +63,4 @@ find
   -> t (a c)
   -> Maybe a c
 find p =
-  let n = nothing
-   in foldr (\i r -> maybe @a @_ @c (bool @(Bool c) n (just i) $ p i) (Haskell.const r) r) n
+  foldr (\i r -> maybe (bool nothing (just i) (p i)) (Haskell.const r) r) nothing

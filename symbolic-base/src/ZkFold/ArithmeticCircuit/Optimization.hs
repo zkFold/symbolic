@@ -32,9 +32,10 @@ import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
   Constraint,
+  LookupType,
+  asRange,
   witToVar,
  )
-import ZkFold.ArithmeticCircuit.Lookup (LookupType, asRange)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..))
 import ZkFold.Data.Binary (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
@@ -93,6 +94,7 @@ optimize keep (CircuitContext s lf lc w f o) =
   inInterval :: Set (a, a) -> a -> Bool
   inInterval si v = any (\(l', r') -> (l' <= v) && (v <= r')) si
 
+  optimizeFold :: CircuitFold a -> CircuitFold a
   optimizeFold CircuitFold {..} =
     CircuitFold
       { foldStep = \(i :: (p :*: s :*: j) NewVar) ->

@@ -5,7 +5,9 @@ import qualified Data.Bool as Haskell
 import Data.Foldable (Foldable, foldr)
 import Data.Function (id, (.))
 
-class BoolType b where
+import ZkFold.Control.Conditional (Conditional)
+
+class Conditional b b => BoolType b where
   true, false :: b
   not :: b -> b
   infixr 3 &&

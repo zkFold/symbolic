@@ -1,16 +1,18 @@
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.ArithmeticCircuit.WitnessEstimation where
 
-import Control.Applicative (liftA2)
+import Control.Applicative (Applicative (..), liftA3)
 import Data.Bool (Bool (..), otherwise)
-import qualified Data.Bool as Haskell
 import Data.Eq (Eq, (==))
 import Data.Function ((.))
 import Data.Functor (Functor, fmap)
-import Data.Maybe (Maybe (..))
-import Prelude (Integral)
+import Data.Monoid (Monoid (..))
+import Data.Semigroup (Semigroup (..))
+import Data.Type.Equality (type (~))
+import GHC.Real (Integral)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Var (NewVar)
@@ -18,7 +20,7 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq (BooleanOf)
 import qualified ZkFold.Data.Eq as ZkFold
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField, fromIntegral, toIntegral)
+import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
@@ -26,6 +28,10 @@ instance FromConstant c a => FromConstant c (UVar a) where
   fromConstant = ConstUVar . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)
+
+instance {-# OVERLAPPING #-} FromConstant c a => FromConstant (Partial c) (UVar a) where
+  fromConstant (Known c) = ConstUVar (fromConstant c)
+  fromConstant Unknown = More
 
 instance (Scale k a, AdditiveMonoid k, Eq k, AdditiveMonoid a) => Scale k (UVar a) where
   scale k v
@@ -76,26 +82,10 @@ instance (Semiring a, Eq a) => Semiring (UVar a)
 
 instance (Ring a, Eq a) => Ring (UVar a)
 
-instance BoolType (Maybe Bool) where
-  true = Just True
-  false = Just False
-  not = fmap not
-  Just False && _ = false
-  _ && Just False = false
-  x && y = liftA2 (&&) x y
-  Just True || _ = true
-  _ || Just True = true
-  x || y = liftA2 (||) x y
-  xor = liftA2 xor
-
-instance Conditional (Maybe Bool) (UVar a) where
-  bool x y (Just b) = Haskell.bool x y b
-  bool _ _ Nothing = More
-
 instance Eq a => ZkFold.Eq (UVar a) where
-  type BooleanOf (UVar a) = Maybe Bool
-  ConstUVar c == ConstUVar d = Just (c == d)
-  _ == _ = Nothing
+  type BooleanOf (UVar a) = Partial Bool
+  ConstUVar c == ConstUVar d = Known (c == d)
+  _ == _ = Unknown
   u /= v = not (u ZkFold.== v)
 
 instance (Field a, Eq a) => Field (UVar a) where
@@ -105,16 +95,83 @@ instance (Field a, Eq a) => Field (UVar a) where
 instance Finite a => Finite (UVar a) where
   type Order (UVar a) = Order a
 
-instance
-  ( ResidueField a
-  , Eq a
-  , Conditional (BooleanOf (IntegralOf a)) (Maybe (IntegralOf a))
-  , Conditional (BooleanOf (IntegralOf a)) (UVar a)
-  )
-  => ResidueField (UVar a)
-  where
-  type IntegralOf (UVar a) = Maybe (IntegralOf a)
-  fromIntegral (Just x) = ConstUVar (fromIntegral x)
-  fromIntegral Nothing = More
-  toIntegral (ConstUVar c) = Just (toIntegral c)
-  toIntegral _ = Nothing
+instance (PrimeField a, Eq a, BooleanOf a ~ Bool) => PrimeField (UVar a) where
+  type IntegralOf (UVar a) = Partial (IntegralOf a)
+  toIntegral (ConstUVar c) = Known (toIntegral c)
+  toIntegral _ = Unknown
+
+data Partial a = Known a | Unknown
+  deriving Functor
+  deriving
+    ( AdditiveGroup
+    , AdditiveSemigroup
+    , BoolType
+    , IsOrdering
+    , Monoid
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , Semigroup
+    , Zero
+    )
+    via (ApplicativeAlgebra Partial a)
+
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    FromConstant c a => FromConstant c (Partial a)
+
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    Scale k a => Scale k (Partial a)
+
+deriving via
+  (ApplicativeAlgebra Partial a)
+  instance
+    AdditiveMonoid a => AdditiveMonoid (Partial a)
+
+instance Applicative Partial where
+  pure = Known
+  Known f <*> Known x = Known (f x)
+  _ <*> _ = Unknown
+
+instance Conditional b a => Conditional (Partial b) (Partial a) where
+  bool = liftA3 bool
+
+instance Conditional b a => Conditional (Partial b) (UVar a) where
+  bool (ConstUVar x) (ConstUVar y) (Known b) = ConstUVar (bool x y b)
+  bool _ _ _ = More
+
+instance ZkFold.Eq a => ZkFold.Eq (Partial a) where
+  type BooleanOf (Partial a) = Partial (BooleanOf a)
+  (==) = liftA2 (ZkFold.==)
+  (/=) = liftA2 (ZkFold./=)
+
+instance Ord a => Ord (Partial a) where
+  type OrderingOf (Partial a) = Partial (OrderingOf a)
+  ordering x y z w = liftA3 ordering x y z <*> w
+  compare = liftA2 compare
+  (<) = liftA2 (<)
+  (<=) = liftA2 (<=)
+  (>=) = liftA2 (>=)
+  (>) = liftA2 (>)
+
+instance {-# OVERLAPPING #-} FromConstant (Partial a) (Partial a)
+
+instance Exponent a e => Exponent (Partial a) e where
+  x ^ p = fmap (^ p) x
+
+instance {-# OVERLAPPING #-} MultiplicativeSemigroup a => Scale (Partial a) (Partial a)
+
+instance Semiring a => Semiring (Partial a)
+
+instance Ring a => Ring (Partial a)
+
+instance SemiEuclidean a => SemiEuclidean (Partial a) where
+  div = liftA2 div
+  mod = liftA2 mod
+
+instance Euclidean a => Euclidean (Partial a) where
+  gcd = liftA2 gcd
+  bezoutL = liftA2 bezoutL
+  bezoutR = liftA2 bezoutR

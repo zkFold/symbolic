@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -41,6 +41,7 @@ import ZkFold.Algebra.Polynomial.Univariate
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Binary
 import ZkFold.Data.Eq
+import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (iterate', log2ceiling)
 import Prelude (Integer)
 import qualified Prelude as Haskell
@@ -75,6 +76,8 @@ instance KnownNat p => Haskell.Eq (Zp p) where
 
 instance KnownNat p => Haskell.Ord (Zp p) where
   Zp a <= Zp b = residue @p a Haskell.<= residue @p b
+
+deriving via (HaskellEqOrd (Zp n)) instance KnownNat n => Ord (Zp n)
 
 instance KnownNat p => Haskell.Enum (Zp p) where
   succ = (+ one)
@@ -167,6 +170,10 @@ inv a p =
   egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
    where
     q = x `div` x'
+
+instance (Finite (Zp p), Prime p) => PrimeField (Zp p) where
+  type IntegralOf (Zp p) = Integer
+  toIntegral = fromConstant . toConstant
 
 instance Prime p => BinaryExpansion (Zp p) where
   type Bits (Zp p) = [Zp p]

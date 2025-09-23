@@ -28,7 +28,7 @@ import ZkFold.Symbolic.MonadCircuit
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
 type Arithmetic a =
-  ( ResidueField a
+  ( PrimeField a
   , IntegralOf a ~ Integer
   , ToConstant a
   , Const a ~ Natural
@@ -64,7 +64,7 @@ class
   , Package c
   , HNFData c
   , Arithmetic (BaseField c)
-  , ResidueField (WitnessField c)
+  , PrimeField (WitnessField c)
   , FromConstant (BaseField c) (WitnessField c)
   , Scale (BaseField c) (WitnessField c)
   , NFData (WitnessField c)

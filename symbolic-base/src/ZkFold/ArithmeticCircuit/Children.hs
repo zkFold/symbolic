@@ -3,7 +3,7 @@
 module ZkFold.ArithmeticCircuit.Children where
 
 import Data.Function (const, flip, id, (.))
-import Data.Monoid (Monoid, mempty)
+import Data.Monoid (Monoid, mconcat, mempty)
 import Data.Ord (Ord)
 import Data.Semigroup (Semigroup, (<>))
 import Data.Set (Set, empty, singleton)
@@ -13,9 +13,9 @@ import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
+import qualified ZkFold.Data.Ord as ZkFold
 
-children :: forall a v. (Finite a, Ord v) => WitnessF a v -> Set v
+children :: forall a v. (PrimeField a, Ord v) => WitnessF a v -> Set v
 children = runC @a . flip runWitnessF (C . singleton)
 
 newtype Children a v = C {runC :: Set v}
@@ -42,6 +42,11 @@ instance Ord v => BoolType (Children a v) where
   (||) = (<>)
   xor = (<>)
 
+instance Ord v => ZkFold.IsOrdering (Children a v) where
+  lt = mempty
+  eq = mempty
+  gt = mempty
+
 instance Ord v => Conditional (Children a v) (Children a v) where
   bool x y b = x <> y <> b
 
@@ -49,6 +54,11 @@ instance Ord v => Eq (Children a v) where
   type BooleanOf (Children a v) = Children a v
   (==) = (<>)
   (/=) = (<>)
+
+instance Ord v => ZkFold.Ord (Children a v) where
+  type OrderingOf (Children a v) = Children a v
+  ordering x y z o = mconcat [x, y, z, o]
+  compare = (<>)
 
 instance Finite a => Finite (Children a v) where
   type Order (Children a v) = Order a
@@ -86,7 +96,6 @@ instance Ord v => Euclidean (Children a v) where
 instance Ord v => Field (Children a v) where
   finv = id
 
-instance (Ord v, Finite a) => ResidueField (Children a v) where
+instance (Ord v, PrimeField a) => PrimeField (Children a v) where
   type IntegralOf (Children a v) = Children a v
-  fromIntegral = id
   toIntegral = id

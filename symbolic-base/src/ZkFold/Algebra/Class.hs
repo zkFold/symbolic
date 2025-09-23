@@ -6,25 +6,27 @@
 
 module ZkFold.Algebra.Class where
 
-import Control.Applicative (Applicative (..))
-import Data.Bool (Bool (..), otherwise, (&&))
+import Control.Applicative (Applicative, liftA2, liftA3, pure)
+import Data.Bool (Bool (..), otherwise)
 import Data.Foldable (Foldable (foldl', foldl1, foldr))
 import Data.Function (const, flip, id, ($), (.))
 import Data.Functor (Functor (..))
-import Data.Functor.Constant (Constant (..))
 import Data.Kind (Type)
 import Data.List (map, repeat, (++))
 import Data.Maybe (Maybe (..))
-import Data.Ord (Ord (..))
+import Data.Monoid (Monoid, mempty)
 import Data.Ratio (Rational)
+import Data.Semigroup (Semigroup, (<>))
 import Data.Type.Equality (type (~))
 import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
 import Prelude (Integer)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Number
-import ZkFold.Control.Conditional (Conditional)
+import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
+import ZkFold.Data.Ord (IsOrdering (..), Ord)
 import ZkFold.Prelude (length, replicate, zipWith')
 
 infixl 7 .*, *., *, /
@@ -229,7 +231,7 @@ intPow :: MultiplicativeGroup a => a -> Integer -> a
 -- exponentiation and @'invert'@ so doesn't loop via an @'Exponent' Integer a@
 -- instance.
 intPow !a !n
-  | n < 0 = invert a ^ naturalFromInteger (-n)
+  | n Haskell.< 0 = invert a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
 
 --------------------------------------------------------------------------------
@@ -306,7 +308,7 @@ intScale :: AdditiveGroup a => Integer -> a -> a
 -- | A default implementation for integer scaling. Uses only natural scaling and
 -- @'negate'@ so doesn't loop via a @'Scale' Integer a@ instance.
 intScale !n !a
-  | n < 0 = naturalFromInteger (-n) `scale` negate a
+  | n Haskell.< 0 = naturalFromInteger (-n) `scale` negate a
   | otherwise = naturalFromInteger n `scale` a
 
 --------------------------------------------------------------------------------
@@ -329,7 +331,7 @@ class (AdditiveMonoid a, MultiplicativeMonoid a, FromConstant Natural a) => Semi
 -- given @a@ and @b@.
 --
 -- This is a generalization of a notion of Euclidean domains to semirings.
-class Semiring a => SemiEuclidean a where
+class (Semiring a, Ord a, Conditional (BooleanOf a) a) => SemiEuclidean a where
   {-# MINIMAL divMod | (div, mod) #-}
 
   divMod :: a -> a -> (a, a)
@@ -423,7 +425,7 @@ class (Ring a, Exponent a Integer, Eq a, Conditional (BooleanOf a) a) => Field a
 -- instance.
 intPowF :: Field a => a -> Integer -> a
 intPowF !a !n
-  | n < 0 = finv a ^ naturalFromInteger (-n)
+  | n Haskell.< 0 = finv a ^ naturalFromInteger (-n)
   | otherwise = a ^ naturalFromInteger n
 
 -- | Class of finite structures. @Order a@ should be the actual number of
@@ -447,7 +449,23 @@ type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 
 type FiniteField a = (Finite a, Field a)
 
-type PrimeField a = (FiniteField a, Prime (Order a))
+--------------------------------------------------------------------------------
+
+-- | Class of prime fields. Here we take advantage of the fact that all (proper)
+-- finite fields of prime order are isomorphic to Z_p for some prime p, hence
+-- there is a ring homomorphism into it from euclidean domain of integers
+-- which has a right inverse (which is decidedly not a homomorphism).
+class
+  ( FiniteField a
+  , Prime (Order a)
+  , Euclidean (IntegralOf a)
+  , BooleanOf a ~ BooleanOf (IntegralOf a)
+  , FromConstant (IntegralOf a) a
+  ) =>
+  PrimeField a
+  where
+  type IntegralOf a :: Type
+  toIntegral :: a -> IntegralOf a
 
 --------------------------------------------------------------------------------
 
@@ -758,129 +776,74 @@ instance Ring a => Ring (p -> a)
 
 --------------------------------------------------------------------------------
 
-instance {-# OVERLAPPING #-} FromConstant (Constant a f) (Constant a f)
+newtype ApplicativeAlgebra f a
+  = ApplicativeAlgebra {runApplicativeAlgebra :: f a}
+  deriving newtype (Applicative, Eq, Functor, Ord)
 
-instance FromConstant a b => FromConstant a (Constant b f) where
-  fromConstant = Constant . fromConstant
+instance
+  (Applicative f, Conditional b a)
+  => Conditional (ApplicativeAlgebra f b) (ApplicativeAlgebra f a)
+  where
+  bool = liftA3 bool
 
-instance Scale b a => Scale b (Constant a f) where
-  scale c (Constant x) = Constant (scale c x)
+instance (Applicative f, BoolType a) => BoolType (ApplicativeAlgebra f a) where
+  true = pure true
+  false = pure false
+  not = fmap not
+  (&&) = liftA2 (&&)
+  (||) = liftA2 (||)
+  xor = liftA2 xor
 
-instance (MultiplicativeSemigroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeSemigroup (Constant a f) where
-  Constant x * Constant y = Constant (x * y)
+instance (Applicative f, Semigroup a) => Semigroup (ApplicativeAlgebra f a) where
+  (<>) = liftA2 (<>)
 
-instance Exponent a b => Exponent (Constant a f) b where
-  Constant x ^ y = Constant (x ^ y)
+instance (Applicative f, Monoid a) => Monoid (ApplicativeAlgebra f a) where
+  mempty = pure mempty
 
-instance (MultiplicativeMonoid a, Scale (Constant a f) (Constant a f)) => MultiplicativeMonoid (Constant a f) where
-  one = Constant one
+instance (Applicative f, IsOrdering a) => IsOrdering (ApplicativeAlgebra f a) where
+  lt = pure lt
+  eq = pure eq
+  gt = pure gt
 
-instance (MultiplicativeGroup a, Scale (Constant a f) (Constant a f)) => MultiplicativeGroup (Constant a f) where
-  Constant x / Constant y = Constant (x / y)
+instance (Functor f, Exponent a p) => Exponent (ApplicativeAlgebra f a) p where
+  as ^ p = fmap (^ p) as
 
-  invert (Constant x) = Constant (invert x)
+instance
+  {-# INCOHERENT #-}
+  (Applicative f, FromConstant c a)
+  => FromConstant c (ApplicativeAlgebra f a)
+  where
+  fromConstant = pure . fromConstant
 
-instance AdditiveSemigroup a => AdditiveSemigroup (Constant a f) where
-  Constant x + Constant y = Constant (x + y)
+instance {-# INCOHERENT #-} FromConstant (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
-instance Zero a => Zero (Constant a f) where
-  zero = Constant zero
+instance (Functor f, Scale k a) => Scale k (ApplicativeAlgebra f a) where
+  scale k = fmap (scale k)
 
-instance AdditiveMonoid a => AdditiveMonoid (Constant a f)
+instance
+  {-# OVERLAPPING #-}
+  (Applicative f, MultiplicativeSemigroup a)
+  => Scale (ApplicativeAlgebra f a) (ApplicativeAlgebra f a)
 
-instance AdditiveGroup a => AdditiveGroup (Constant a f) where
-  Constant x - Constant y = Constant (x - y)
+instance (Applicative f, Zero a) => Zero (ApplicativeAlgebra f a) where
+  zero = pure zero
 
-  negate (Constant x) = Constant (negate x)
-
-instance (Semiring a, Scale (Constant a f) (Constant a f)) => Semiring (Constant a f)
-
-instance (SemiEuclidean a, Scale (Constant a f) (Constant a f)) => SemiEuclidean (Constant a f) where
-  divMod (Constant x) (Constant y) = (Constant q, Constant r)
-   where
-    (q, r) = divMod x y
-
-  div (Constant x) (Constant y) = Constant (div x y)
-
-  mod (Constant x) (Constant y) = Constant (mod x y)
-
-instance (Ring a, Scale (Constant a f) (Constant a f)) => Ring (Constant a f)
-
---------------------------------------------------------------------------------
-
-instance Finite a => Finite (Maybe a) where
-  type Order (Maybe a) = Order a
-
-instance FromConstant Integer a => FromConstant Integer (Maybe a) where
-  fromConstant = Just . fromConstant
-
-instance FromConstant Natural a => FromConstant Natural (Maybe a) where
-  fromConstant = Just . fromConstant
-
-instance AdditiveSemigroup a => AdditiveSemigroup (Maybe a) where
-  (+) :: Maybe a -> Maybe a -> Maybe a
+instance (Applicative f, AdditiveSemigroup a) => AdditiveSemigroup (ApplicativeAlgebra f a) where
   (+) = liftA2 (+)
 
-instance MultiplicativeSemigroup a => MultiplicativeSemigroup (Maybe a) where
-  (*) :: Maybe a -> Maybe a -> Maybe a
-  (*) = liftA2 (*)
+instance (Applicative f, AdditiveMonoid a) => AdditiveMonoid (ApplicativeAlgebra f a)
 
-instance Scale Natural a => Scale Natural (Maybe a) where
-  scale = fmap . scale
-
-instance Scale Integer a => Scale Integer (Maybe a) where
-  scale = fmap . scale
-
-instance Zero a => Zero (Maybe a) where
-  zero = Just zero
-
-instance AdditiveMonoid a => AdditiveMonoid (Maybe a)
-
-instance Exponent a Natural => Exponent (Maybe a) Natural where
-  (^) :: Maybe a -> Natural -> Maybe a
-  (^) m n = liftA2 (^) m (Just n)
-
-instance Exponent a Integer => Exponent (Maybe a) Integer where
-  (^) :: Maybe a -> Integer -> Maybe a
-  (^) m n = liftA2 (^) m (Just n)
-
-instance MultiplicativeMonoid a => MultiplicativeMonoid (Maybe a) where
-  one :: Maybe a
-  one = Just one
-
-instance Semiring a => Semiring (Maybe a)
-
-instance AdditiveGroup a => AdditiveGroup (Maybe a) where
-  negate :: Maybe a -> Maybe a
+instance (Applicative f, AdditiveGroup a) => AdditiveGroup (ApplicativeAlgebra f a) where
   negate = fmap negate
 
-instance Ring a => Ring (Maybe a)
+instance
+  (Applicative f, MultiplicativeSemigroup a)
+  => MultiplicativeSemigroup (ApplicativeAlgebra f a)
+  where
+  (*) = liftA2 (*)
 
-instance (Field a, Conditional (BooleanOf a) (Maybe a)) => Field (Maybe a) where
-  finv :: Maybe a -> Maybe a
-  finv = fmap finv
-
-  rootOfUnity :: Natural -> Maybe (Maybe a)
-  rootOfUnity = Just . rootOfUnity @a
-
-instance ToConstant a => ToConstant (Maybe a) where
-  type Const (Maybe a) = Maybe (Const a)
-  toConstant :: Maybe a -> Maybe (Const a)
-  toConstant = fmap toConstant
-
-instance Scale a a => Scale a (Maybe a) where
-  scale s = fmap (scale s)
-
-instance FromConstant a (Maybe a) where
-  fromConstant = Just
-
-instance FromConstant Natural a => FromConstant (Maybe Natural) (Maybe a) where
-  fromConstant = fmap fromConstant
-
-instance SemiEuclidean a => SemiEuclidean (Maybe a) where
-  divMod (Just a) (Just b) = let (d, m) = divMod a b in (Just d, Just m)
-  divMod _ _ = (Nothing, Nothing)
-
-instance Euclidean a => Euclidean (Maybe a) where
-  eea (Just x) (Just y) = let (g, s, t) = eea x y in (Just g, Just s, Just t)
-  eea _ _ = (Nothing, Nothing, Nothing)
+instance
+  (Applicative f, MultiplicativeMonoid a)
+  => MultiplicativeMonoid (ApplicativeAlgebra f a)
+  where
+  one = pure one

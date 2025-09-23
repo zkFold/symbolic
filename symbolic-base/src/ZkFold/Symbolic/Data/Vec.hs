@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Data.Vec where
 
 import Control.DeepSeq (NFData, NFData1)
-import Data.Functor (fmap)
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1)
 import Data.Functor.Rep
 import Data.Kind (Type)
@@ -12,6 +12,7 @@ import Data.Traversable (Traversable (..))
 import Data.Tuple (fst)
 import qualified GHC.Generics as G
 import GHC.Num (Natural)
+import Test.QuickCheck (Arbitrary (arbitrary))
 import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell
 
@@ -47,6 +48,12 @@ instance
   fromConstant = Vec . embed . tabulate . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (Vec f c) (Vec f c)
+
+instance
+  (Symbolic c, Arbitrary (f (BaseField c)), Functor f)
+  => Arbitrary (Vec f c)
+  where
+  arbitrary = Vec . embed <$> arbitrary
 
 instance
   (Symbolic c, Traversable f, Representable f)

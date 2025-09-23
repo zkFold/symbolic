@@ -77,7 +77,7 @@ import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (replicate, replicateA, (!!))
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -198,6 +198,10 @@ reverseEndianness
      )
   => ByteString n c -> ByteString n c
 reverseEndianness (ByteString v) = ByteString $ hmap (reverseEndianness' @wordSize @k) v
+
+instance (Symbolic c, KnownNat n) => Conditional (ByteString n c) (ByteString n c) where
+  bool onFalse onTrue condition =
+    (condition && onTrue) || (not condition && onFalse)
 
 instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
   false = fromConstant (0 :: Natural)

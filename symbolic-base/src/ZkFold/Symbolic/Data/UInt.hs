@@ -290,8 +290,7 @@ cast n =
 -- If the algorithm is only used to find @gcd(a, b)@ (i.e. @s@ and @t@ will be discarded), @a@ and @b@ can be arbitrary integers.
 eea
   :: forall n c r
-   . Symbolic c
-  => SemiEuclidean (UInt n r c)
+   . SemiEuclidean (UInt n r c)
   => KnownNat n
   => AdditiveGroup (UInt n r c)
   => UInt n r c -> UInt n r c -> (UInt n r c, UInt n r c, UInt n r c)
@@ -454,7 +453,7 @@ register
   -> Zp (NumberOfRegisters (BaseField c) n r)
   -> WitnessField c
 register c i =
-  fromIntegral ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
+  fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
  where
   rs = registerSize @(BaseField c) @n @r
   base = fromConstant (2 ^ rs :: Natural)
@@ -1040,13 +1039,13 @@ circuitDelta l r = do
     -- This is exactly the opposite of what @f1@ should be.
     f1 <-
       newRanged one $
-        let q = fromIntegral (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
+        let q = fromConstant (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
          in one - q // q
 
     -- f2 is one if and only if y > x and zero otherwise
     f2 <-
       newRanged one $
-        let q = fromIntegral (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
+        let q = fromConstant (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
          in one - q // q
 
     dxy <- newAssigned (\p -> p x - p y)

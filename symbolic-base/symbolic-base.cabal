@@ -13,6 +13,7 @@ license-file:       LICENSE
 build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
+    data/midnight_powers_of_tau_2e18
 extra-source-files:
   rust-wrapper/*.toml
   rust-wrapper/src/*.rs
@@ -145,7 +146,6 @@ library
       ZkFold.ArithmeticCircuit.Context
       ZkFold.ArithmeticCircuit.Desugaring
       ZkFold.ArithmeticCircuit.Experimental
-      ZkFold.ArithmeticCircuit.Lookup
       ZkFold.ArithmeticCircuit.MerkleHash
       ZkFold.ArithmeticCircuit.Optimization
       ZkFold.ArithmeticCircuit.Var
@@ -157,10 +157,12 @@ library
       ZkFold.Data.Binary
       ZkFold.Data.Empty
       ZkFold.Data.Eq
+      ZkFold.Data.FromList
       ZkFold.Data.HFunctor
       ZkFold.Data.HFunctor.Classes
       ZkFold.Data.List.Infinite
       ZkFold.Data.Matrix
+      ZkFold.Data.Ord
       ZkFold.Data.Orphans
       ZkFold.Data.Package
       ZkFold.Data.Product
@@ -207,6 +209,7 @@ library
       ZkFold.Protocol.Plonkup.Prover.Secret
       ZkFold.Protocol.Plonkup.Prover.Setup
       ZkFold.Protocol.Plonkup.Relation
+      ZkFold.Protocol.Plonkup.Relation.LookupVector
       ZkFold.Protocol.Plonkup.Setup
       ZkFold.Protocol.Plonkup.Testing
       ZkFold.Protocol.Plonkup.Update
@@ -217,6 +220,7 @@ library
       ZkFold.Protocol.Plonkup.Witness
       ZkFold.Protocol.NonInteractiveProof
       ZkFold.Protocol.NonInteractiveProof.Class
+      ZkFold.Protocol.NonInteractiveProof.TrustedSetup
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Protocol.Halo2
@@ -261,6 +265,7 @@ library
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Sum
@@ -284,6 +289,12 @@ library
     if arch(javascript) || arch(wasm32)
       js-sources:
         js-src/blake2b.js
+
+    other-modules:
+      Paths_symbolic_base
+
+    autogen-modules:
+      Paths_symbolic_base
 
     if arch(wasm32)
       build-depends:
@@ -414,6 +425,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
       Tests.FFI.RustBLS
