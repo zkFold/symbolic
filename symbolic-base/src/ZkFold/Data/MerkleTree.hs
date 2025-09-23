@@ -33,10 +33,6 @@ import qualified ZkFold.Data.Vector as V
 import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
 import ZkFold.Symbolic.Data.Combinators (Iso (from))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, ResidueField)
-
--- TODO: ResidueField and related types should properly become a part of our base type hierarchy.
--- Currently, its use here is a bit awkward.
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
@@ -74,7 +70,7 @@ hashWithSibling current (bit, sibling) =
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve'
   :: forall d h
-   . (ResidueField h, KnownNat (d - 1))
+   . (PrimeField h, KnownNat (d - 1))
   => MerkleTree d h -> IntegralOf h -> Vector (d - 1) h
 merkleProve' (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves

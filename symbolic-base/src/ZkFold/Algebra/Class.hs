@@ -449,7 +449,23 @@ type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 
 type FiniteField a = (Finite a, Field a)
 
-type PrimeField a = (FiniteField a, Prime (Order a))
+--------------------------------------------------------------------------------
+
+-- | Class of prime fields. Here we take advantage of the fact that all (proper)
+-- finite fields of prime order are isomorphic to Z_p for some prime p, hence
+-- there is a ring homomorphism into it from euclidean domain of integers
+-- which has a right inverse (which is decidedly not a homomorphism).
+class
+  ( FiniteField a
+  , Prime (Order a)
+  , Euclidean (IntegralOf a)
+  , BooleanOf a ~ BooleanOf (IntegralOf a)
+  , FromConstant (IntegralOf a) a
+  ) =>
+  PrimeField a
+  where
+  type IntegralOf a :: Type
+  toIntegral :: a -> IntegralOf a
 
 --------------------------------------------------------------------------------
 

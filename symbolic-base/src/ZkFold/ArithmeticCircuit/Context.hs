@@ -1,26 +1,26 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
 
 module ZkFold.ArithmeticCircuit.Context where
 
-import Control.Applicative (liftA2, pure)
+import Control.Applicative (liftA2, pure, (<*>))
 import Control.DeepSeq (NFData, NFData1, liftRnf, rnf, rwhnf)
 import Control.Monad.State (State, modify, runState, state)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.Types as Aeson
 import Data.Binary (Binary)
-import Data.Bool (Bool (..), otherwise, (&&))
+import Data.Bool (Bool (..), (&&))
 import Data.ByteString (ByteString)
 import Data.Either (Either (..))
-import Data.Eq ((==))
+import Data.Eq (Eq, (==))
 import Data.Foldable (Foldable, fold, foldl', for_, toList)
 import Data.Function (flip, ($), (.))
 import Data.Functor (Functor, fmap, (<$>), (<&>))
 import Data.Functor.Classes (Show1, liftShowList, liftShowsPrec)
 import Data.Functor.Rep
-import Data.Kind (Type)
 import Data.List.Infinite (Infinite)
 import qualified Data.List.Infinite as I
 import Data.Map (Map)
@@ -38,23 +38,21 @@ import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
-import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import Optics (over, set, zoom)
 import Text.Show
-import qualified Type.Reflection as R
 import Prelude (error, seq)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate (Poly, var)
-import ZkFold.ArithmeticCircuit.Lookup (FunctionId (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
 import ZkFold.ArithmeticCircuit.Var
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.ArithmeticCircuit.WitnessEstimation (Partial (..), UVar (..))
 import ZkFold.Control.HApplicative (HApplicative, hliftA2, hpure)
 import ZkFold.Data.Binary (fromByteString, toByteString)
+import ZkFold.Data.FromList (FromList, fromList)
 import ZkFold.Data.HFunctor (HFunctor, hmap)
 import ZkFold.Data.HFunctor.Classes
 import ZkFold.Data.Package (Package, packWith, unpackWith)
@@ -90,10 +88,8 @@ data CircuitFold a
 instance NFData a => NFData (CircuitFold a) where
   rnf CircuitFold {..} = rnf foldCount `seq` liftRnf rnf foldSeed
 
-data LookupFunction a
-  = forall f g.
-    (Representable f, Traversable g, Typeable f, Typeable g, Binary (Rep f)) =>
-    LookupFunction (forall x. ResidueField x => f x -> g x)
+newtype LookupFunction a = LookupFunction
+  {runLookupFunction :: forall x. (PrimeField x, Algebra a x) => [x] -> [x]}
 
 instance NFData (LookupFunction a) where
   rnf = rwhnf
@@ -102,31 +98,34 @@ type FunctionRegistry a = Map ByteString (LookupFunction a)
 
 appendFunction
   :: forall f g a
-   . (Representable f, Typeable f, Binary (Rep f))
-  => (Traversable g, Typeable g, Arithmetic a)
-  => (forall x. ResidueField x => f x -> g x)
+   . (Representable f, FromList f, Binary (Rep f))
+  => (Foldable g, Arithmetic a, Binary a)
+  => (forall x. (PrimeField x, Algebra a x) => f x -> g x)
   -> FunctionRegistry a
-  -> (FunctionId (f a -> g a), FunctionRegistry a)
+  -> (ByteString, FunctionRegistry a)
 appendFunction f r =
   let functionId = runHash @(Just (Order a)) $ sum (f $ tabulate merkleHash)
-   in (FunctionId functionId, M.insert functionId (LookupFunction f) r)
+   in (functionId, M.insert functionId (LookupFunction (toList . \x -> f $ fromList x)) r)
 
-lookupFunction
-  :: forall f g (a :: Type)
-   . (Typeable f, Typeable g)
-  => FunctionRegistry a
-  -> FunctionId (f a -> g a)
-  -> (forall x. ResidueField x => f x -> g x)
-lookupFunction m (FunctionId i) = case m M.! i of
-  LookupFunction f -> cast1 . f . cast1
- where
-  cast1 :: forall h k b. (Typeable h, Typeable k) => h b -> k b
-  cast1 x
-    | Just R.HRefl <- th `R.eqTypeRep` tk = x
-    | otherwise = error "types are not equal"
-   where
-    th = R.typeRep :: R.TypeRep h
-    tk = R.typeRep :: R.TypeRep k
+data LookupType a
+  = LTRanges (Set (a, a))
+  | LTProduct (LookupType a) (LookupType a)
+  | LTPlot ByteString (LookupType a)
+  deriving
+    ( Aeson.FromJSON
+    , Aeson.FromJSONKey
+    , Aeson.ToJSON
+    , Aeson.ToJSONKey
+    , Eq
+    , Generic
+    , NFData
+    , Ord
+    , Show
+    )
+
+asRange :: LookupType a -> Maybe (Set (a, a))
+asRange (LTRanges rs) = Just rs
+asRange _ = Nothing
 
 -- | Circuit context in the form of a system of polynomial constraints.
 data CircuitContext a o = CircuitContext
@@ -352,10 +351,10 @@ instance
             zoom #acSystem . modify $
               M.insert (witToVar (p at)) (p $ evalVar var)
 
-  lookupConstraint vars lt = do
+  lookupConstraint vars ltable = do
     vs <- traverse prepare (toList vars)
-    zoom #acLookup . modify $
-      MM.insertWith S.union (LookupType lt) (S.singleton vs)
+    lt <- lookupType ltable
+    zoom #acLookup . modify $ MM.insertWith S.union lt (S.singleton vs)
     pure ()
    where
     prepare (LinVar k x b) | k == one && b == zero = pure x
@@ -367,7 +366,16 @@ instance
       constraint (($ toVar v) - ($ src))
       pure v
 
-  registerFunction f = zoom #acLookupFunction $ state (appendFunction f)
+-- | Translates a lookup table into a lookup type,
+-- storing all lookup functions in a circuit.
+lookupType
+  :: (Arithmetic a, Binary a)
+  => LookupTable a f -> State (CircuitContext a o) (LookupType a)
+lookupType (Ranges rs) = pure (LTRanges rs)
+lookupType (Product t u) = LTProduct <$> lookupType t <*> lookupType u
+lookupType (Plot f t) = do
+  funcId <- zoom #acLookupFunction $ state (appendFunction f)
+  LTPlot funcId <$> lookupType t
 
 -- | Generates new variable index given a witness for it.
 --
@@ -390,7 +398,10 @@ instance
 --
 -- 5. Thus the result of running the witness with 'MerkleHash' as a
 --    'WitnessField' is a root hash of a Merkle tree for a witness.
-witToVar :: forall a. (Finite a, Binary a) => WitnessF a NewVar -> ByteString
+witToVar
+  :: forall a
+   . (Finite a, Prime (Order a), Binary a)
+  => WitnessF a NewVar -> ByteString
 witToVar (WitnessF w) = runHash @(Just (Order a)) $ w $ \case
   EqVar eqV -> M eqV
   FoldLVar fldID fldV -> merkleHash (fldID, False, fldV)

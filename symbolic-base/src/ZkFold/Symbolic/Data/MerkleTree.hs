@@ -55,7 +55,6 @@ import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
 data MerkleTree d c = MerkleTree
