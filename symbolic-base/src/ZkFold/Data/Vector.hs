@@ -128,6 +128,9 @@ enumerate = mapWithIx (,)
 mapMWithIx :: forall n m a b. (KnownNat n, Monad m) => (Natural -> a -> m b) -> Vector n a -> m (Vector n b)
 mapMWithIx f (Vector !l) = Vector <$> V.zipWithM f (V.enumFromTo 0 (value @n -! 1)) l
 
+replicateM :: forall n m a. (KnownNat n, Monad m) => m a -> m (Vector n a)
+replicateM act = Vector <$> V.replicateM (P.fromIntegral $ value @n) act
+
 -- TODO: Check that n <= size?
 take :: forall n size a. KnownNat n => Vector size a -> Vector n a
 take (Vector !lst) = Vector (V.take (integral @n) lst)

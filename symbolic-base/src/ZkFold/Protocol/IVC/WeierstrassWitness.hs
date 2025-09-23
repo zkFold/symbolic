@@ -27,7 +27,7 @@ import ZkFold.Protocol.IVC.Oracle (OracleSource (..))
 import ZkFold.Symbolic.Class (Symbolic (..), embedW)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, MonadCircuit (unconstrained), ResidueField (..))
+import ZkFold.Symbolic.MonadCircuit (unconstrained)
 
 newtype WeierstrassWitness ctx
   = WeierstrassWitness (Weierstrass "BLS12-381-G1" (Point (ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx)))))
@@ -43,12 +43,12 @@ instance
 instance SymbolicData WeierstrassWitness where
   type Layout WeierstrassWitness _ = Vector 5
   type Payload WeierstrassWitness _ = U1
-  arithmetize (WeierstrassWitness (Weierstrass (Point a b isInf))) =
-    let a1 = fromIntegral $ toIntegral a `mod` fromConstant (value @BLS12_381_Scalar)
-        a2 = fromIntegral $ toIntegral a `div` fromConstant (value @BLS12_381_Scalar)
-        b1 = fromIntegral $ toIntegral b `mod` fromConstant (value @BLS12_381_Scalar)
-        b2 = fromIntegral $ toIntegral b `div` fromConstant (value @BLS12_381_Scalar)
-        isInf1 = fromIntegral $ bool zero one isInf
+  arithmetize (WeierstrassWitness (Weierstrass (Point a b isInf)) :: WeierstrassWitness c) =
+    let a1 = fromConstant $ toIntegral a `mod` fromConstant (value @BLS12_381_Scalar)
+        a2 = fromConstant $ toIntegral a `div` fromConstant (value @BLS12_381_Scalar)
+        b1 = fromConstant $ toIntegral b `mod` fromConstant (value @BLS12_381_Scalar)
+        b2 = fromConstant $ toIntegral b `div` fromConstant (value @BLS12_381_Scalar)
+        isInf1 = fromConstant @(IntegralOf (WitnessField c)) $ bool zero one isInf
      in fromCircuitF hunit $ \_ -> traverse unconstrained (unsafeToVector @5 [a1, a2, b1, b2, isInf1])
 
   payload _ = U1
@@ -58,9 +58,9 @@ instance SymbolicData WeierstrassWitness where
      in WeierstrassWitness
           ( Weierstrass
               ( Point
-                  (fromIntegral $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar))
-                  (fromIntegral $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar))
-                  (fromIntegral @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
+                  (fromConstant $ toIntegral (v !! 0) + toIntegral (v !! 1) * fromConstant (value @BLS12_381_Scalar))
+                  (fromConstant $ toIntegral (v !! 2) + toIntegral (v !! 3) * fromConstant (value @BLS12_381_Scalar))
+                  (fromConstant @_ @(ForeignField BLS12_381_Base (IntegralOf (WitnessField ctx))) (toIntegral $ v !! 4) == one)
               )
           )
   interpolate _ _ = error "Interpolation is not defined for WeierstrassWitness"
@@ -197,4 +197,4 @@ instance
     two = one + one
     n = toIntegral $ unPar1 $ witnessF $ fromFieldElement f
     n' = n `div` two
-    f' = FieldElement $ embedW $ Par1 $ fromIntegral n'
+    f' = FieldElement $ embedW $ Par1 $ fromConstant n'

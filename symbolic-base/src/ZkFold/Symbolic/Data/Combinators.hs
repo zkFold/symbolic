@@ -214,7 +214,7 @@ type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
 
 ---------------------------------------------------------------
 
-type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
+type NextPow2 n = 2 ^ Log2 (2 * n - 1)
 
 nextPow2 :: Natural -> Natural
 nextPow2 n = 2 ^ nextNBits n
@@ -222,7 +222,7 @@ nextPow2 n = 2 ^ nextNBits n
 nextNBits :: Natural -> Natural
 nextNBits n = ilog2 (2 * n -! 1)
 
-withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
+withNextNBits' :: forall n. KnownNat n :- KnownNat (Log2 (2 * n - 1))
 withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
 
 withNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1)) => r) -> r
@@ -236,7 +236,7 @@ secondNextPow2 n = 2 ^ secondNextNBits n
 secondNextNBits :: Natural -> Natural
 secondNextNBits n = ilog2 (2 * n -! 1) + 1
 
-withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
+withSecondNextNBits' :: forall n. KnownNat n :- KnownNat (Log2 (2 * n - 1) + 1)
 withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
 
 withSecondNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
@@ -303,9 +303,9 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
   wordSize :: Natural
   wordSize = 2 ^ value @r
 
-  repr :: ResidueField x => Natural -> x -> x
+  repr :: PrimeField x => Natural -> x -> x
   repr j =
-    fromIntegral
+    fromConstant
       . (`mod` fromConstant wordSize)
       . (`div` fromConstant (wordSize ^ j))
       . toIntegral
@@ -336,14 +336,14 @@ splitExpansion n1 n2 k = do
       partH = drop (n1 `div` 16) words
 
   (l, h) <- case (n1 `mod` 16, partH) of
-    (0, _) -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
-    (m, (h0 : rest)) -> do
+    (0, _) -> (,) <$> hornerW @16 partL <*> hornerW @16 partH
+    (m, h0 : rest) -> do
       (hl, hh) <- splitExpansion16 m h0
       ls <- hornerW @16 (partL <> [hl])
       hs' <- hornerW @16 rest
       hs <- newAssigned $ \p -> scale (2 ^ (16 -! m) :: Natural) (p hs') + p hh
       pure (ls, hs)
-    _ -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
+    _ -> (,) <$> hornerW @16 partL <*> hornerW @16 partH
 
   constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
   return (l, h)
@@ -358,13 +358,13 @@ splitExpansion16 n1 k = do
   constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
   return (l, h)
  where
-  lower :: ResidueField a => a -> a
+  lower :: PrimeField a => a -> a
   lower =
-    fromIntegral . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
+    fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
 
-  upper :: ResidueField a => a -> a
+  upper :: PrimeField a => a -> a
   upper =
-    fromIntegral
+    fromConstant
       . (`mod` fromConstant @Natural (2 ^ (16 -! n1)))
       . (`div` fromConstant @Natural (2 ^ n1))
       . toIntegral
