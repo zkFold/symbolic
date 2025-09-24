@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Algorithm.Mithril where
@@ -8,12 +9,11 @@ import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
 import GHC.TypeLits (KnownNat)
-
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
+import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
 import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
@@ -44,7 +44,7 @@ mithril stakeDist messageHash (r, s) =
   let
    in foldl'
         ( \acc (point, stake) ->
-            if ecdsaVerify @n @point point messageHash (r :*: s)
+            if ecdsaVerifyMessageHash @n point messageHash (r :*: s)
               then acc + stake
               else acc
         )
