@@ -37,9 +37,6 @@ import GHC.IsList (IsList (..))
 import System.Random (Random (..))
 import Test.QuickCheck (Arbitrary (..), Arbitrary1 (..), arbitrary1)
 import Text.Show (Show)
-import Prelude (Integer)
-import qualified Prelude as P
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
@@ -47,6 +44,8 @@ import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 import ZkFold.Prelude (length)
+import Prelude (Integer)
+import qualified Prelude as P
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
@@ -174,17 +173,17 @@ a .: (Vector !lst) = Vector (a `V.cons` lst)
 append :: Vector m a -> Vector n a -> Vector (m + n) a
 append (Vector !l) (Vector !r) = Vector (l <> r)
 
-concat :: Vector m (Vector n a) -> Vector (m * n) a
+concat :: Vector m (Vector n a) -> Vector (m (*) n) a
 concat = Vector . V.concatMap toV . toV
 
-unsafeConcat :: forall m n a. [Vector n a] -> Vector (m * n) a
+unsafeConcat :: forall m n a. [Vector n a] -> Vector (m (*) n) a
 unsafeConcat = concat . unsafeToVector @m
 
 -- | Map a function over a vector and concatenate the results.
-concatMap :: forall m n a b. (a -> Vector n b) -> Vector m a -> Vector (m * n) b
+concatMap :: forall m n a b. (a -> Vector n b) -> Vector m a -> Vector (m (*) n) b
 concatMap f (Vector v) = Vector $ V.concatMap (toV . f) v
 
-chunks :: forall m n a. KnownNat n => Vector (m * n) a -> Vector m (Vector n a)
+chunks :: forall m n a. KnownNat n => Vector (m (*) n) a -> Vector m (Vector n a)
 chunks (Vector vectors) = unsafeToVector (Vector <$> V.chunksOf (P.fromIntegral $ value @n) vectors)
 
 -- | Slice a vector of size @size@, starting at index @i@, and taking @n@ elements.
@@ -264,5 +263,3 @@ instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (Vector n a) where
   negate = fmap negate
 
   (-) = zipWith (-)
-
---
