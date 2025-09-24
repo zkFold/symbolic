@@ -39,6 +39,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Foldable (Foldable)
 import Data.Functor (Functor)
 import Data.Kind (Type)
+import Data.OpenApi (ToSchema (..))
 import Data.Semialign (Semialign (..), Zip (..))
 import Data.String (fromString)
 import Data.These (These (..))
@@ -516,6 +517,8 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
+instance (ToSchema field, BooleanOf field ~ Prelude.Bool) => ToSchema (Point field)
+
 instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
 
@@ -534,7 +537,9 @@ data JacobianPoint field = JacobianPoint
   , _y :: field
   , _z :: field
   }
-  deriving Generic
+  deriving (FromJSON, Generic, ToJSON)
+
+instance ToSchema f => ToSchema (JacobianPoint f)
 
 deriving instance NFData field => NFData (JacobianPoint field)
 
