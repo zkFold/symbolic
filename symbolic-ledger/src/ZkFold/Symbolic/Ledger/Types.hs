@@ -3,69 +3,54 @@
 module ZkFold.Symbolic.Ledger.Types (
   module ZkFold.Symbolic.Ledger.Types.Address,
   module ZkFold.Symbolic.Ledger.Types.Hash,
-  module ZkFold.Symbolic.Ledger.Types.Interval,
-  module ZkFold.Symbolic.Ledger.Types.Output,
+  module ZkFold.Symbolic.Ledger.Types.State,
   module ZkFold.Symbolic.Ledger.Types.Transaction,
-  module ZkFold.Symbolic.Ledger.Types.Root,
-  module ZkFold.Symbolic.Ledger.Types.Datum,
   module ZkFold.Symbolic.Ledger.Types.Value,
-  module ZkFold.Symbolic.Ledger.Types.DataAvailability,
-  module ZkFold.Symbolic.Ledger.Types.Circuit,
-  Signature,
+  SignatureTransaction,
+  SignatureTransactionBatch,
+  SignatureState,
 ) where
 
--- Re-exports
-
-import GHC.Generics ((:*:))
-import GHC.TypeLits (KnownNat)
+import GHC.Generics ((:.:))
+import GHC.TypeNats (KnownNat, type (-))
+import ZkFold.Data.MerkleTree (MerkleTreeSize)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  KnownRegisters,
-  RegisterSize (Auto),
- )
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
-import ZkFold.Symbolic.Data.UInt (OrdWord)
-import ZkFold.Symbolic.Fold (SymbolicFold)
 
 import ZkFold.Symbolic.Ledger.Types.Address
-import ZkFold.Symbolic.Ledger.Types.Circuit
-import ZkFold.Symbolic.Ledger.Types.DataAvailability
-import ZkFold.Symbolic.Ledger.Types.Datum
 import ZkFold.Symbolic.Ledger.Types.Hash
-import ZkFold.Symbolic.Ledger.Types.Interval
-import ZkFold.Symbolic.Ledger.Types.Output
-import ZkFold.Symbolic.Ledger.Types.Root
+import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
 
-{-
-    zkFold's ledger is a UTXO-based ledger. The architecture of the ledger is mostly similar to the Cardano ledger with some key differences:
+type SignatureTransaction ud i o a context =
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  , KnownNat i
+  , KnownNat a
+  , KnownNat (ud - 1)
+  , KnownNat (MerkleTreeSize ud)
+  , Hashable (HashSimple context) (Transaction i o a context)
+  , forall s. Hashable (HashSimple s) (Transaction i o a s)
+  , Hashable (HashSimple context) (UTxO a context)
+  , forall s. Hashable (HashSimple s) (UTxO a s)
+  )
 
-    - Some transaction data is private and is kept off-chain by the concerned parties.
+type SignatureTransactionBatch ud i o a t context =
+  ( SignatureTransaction ud i o a context
+  , Hashable (HashSimple context) (TransactionBatch i o a t context)
+  , forall s. Hashable (HashSimple s) (TransactionBatch i o a t s)
+  )
 
-    - All UTXOs are locked by contracts.
-
-    - Stake delegation and governance is implemented through contracts.
--}
-
-type Signature context =
-  ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
-  , SymbolicFold context
-  , KnownNat (Ceil (GetRegisterSize (BaseField context) 11 Auto) OrdWord)
-  , -- TODO: Can we derive 'Hashable h' based on constituents (using generic)?
-    -- TODO: Remove @ImpredicativeTypes@ extension from symbolic-ledger once above 'Hashable' issue is sorted.
-    Hashable (HashSimple context) (AssetValues context)
-  , Hashable (HashSimple context) (Transaction context)
-  , Hashable (HashSimple context) (TransactionBatch context)
-  , Hashable (HashSimple context) (TransactionBatchData context)
-  , Hashable (HashSimple context) ((Circuit :*: DAIndex :*: DAType) context)
-  , forall s. Hashable (HashSimple s) (AssetValues s)
-  , forall s. Hashable (HashSimple s) (Transaction s)
-  , forall s. Hashable (HashSimple s) (TransactionBatch s)
-  , forall s. Hashable (HashSimple s) (TransactionBatchData s)
-  , forall s. Hashable (HashSimple s) ((Circuit :*: DAIndex :*: DAType) s)
+type SignatureState bi bo ud a context =
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  , Hashable (HashSimple context) (State bi bo ud a context)
+  , forall s. Hashable (HashSimple s) (State bi bo ud a s)
+  , Hashable (HashSimple context) ((Vector bi :.: Output a) context)
+  , Hashable (HashSimple context) ((Vector bo :.: Output a) context)
+  , Hashable (HashSimple context) (FieldElement context)
+  , forall s. Hashable (HashSimple s) (FieldElement s)
   )
