@@ -1,10 +1,9 @@
 # Symbolic framework
+
 This repository contains the zkFold Symbolic framework. Contents:
 - `symbolic-base`: The core package of the framework, providing the Symbolic compiler and the base symbolic data types;
 - `symbolic-examples`: A collection of symbolic code examples for benchmarking and testing;
 - `symbolic-ledger`: An implementation of the zkFold Ledger written in Symbolic;
-- `symbolic-apps`: Applications and smart contracts built with the framework by the zkFold team;
-- `symbolic-cardano`: A package for interfacing with the Cardano blockchain;
 - `symbolic-uplc`: A transpiler from UPLC to Symbolic.
 
 # Documentation
@@ -15,7 +14,7 @@ User documentation can be found at [docs.zkfold.io](https://docs.zkfold.io/symbo
 If you want to contribute to the project or find out how it works "under the hood", check out [package documentation](https://hackage.haskell.org/package/symbolic-base-0.1.0.0/candidate "zkFold Symbolic Base package") on Hackage.
 
 # Build
-The package compiles with GHC 9.12.1 and Cabal 3.14.1.1. To build all packages, execute
+The package compiles with GHC 9.12.2 and Cabal 3.14.2.0. To build all packages, execute
 ```bash
 cabal build all
 ```

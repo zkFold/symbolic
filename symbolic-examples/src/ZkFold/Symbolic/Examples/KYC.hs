@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Apps.KYC where
+module ZkFold.Symbolic.Examples.KYC where
 
 import Data.Aeson
 import Data.Functor ((<$>))

@@ -1,7 +1,0 @@
-cradle:
-  cabal:
-    - path: "./src"
-      component: "lib:symbolic-apps"
-
-    - path: "./test"
-      component: "symbolic-apps:test:symbolic-apps-test"
