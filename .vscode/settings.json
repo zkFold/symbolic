@@ -6,5 +6,16 @@
     "ghc": "9.6.7",
     "stack": null
   },
-  "haskell.formattingProvider": "fourmolu",
+  "haskell.formattingProvider": "none",
+  "[haskell]": {
+    "editor.formatOnSave": false
+  },
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\.hs$",
+        "cmd": "fourmolu --mode inplace ${file}"
+      }
+    ]
+  }
 }

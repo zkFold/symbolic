@@ -375,6 +375,7 @@ library
         vector                               < 0.14,
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
+        openapi3                                    ,
     hs-source-dirs: src
     if arch(wasm32)
         ghc-options: 
