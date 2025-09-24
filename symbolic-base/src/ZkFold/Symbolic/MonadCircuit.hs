@@ -8,11 +8,11 @@ import Data.Functor (Functor)
 import Data.Set (singleton)
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
+import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.V2 (LookupTable (..))
-import Numeric.Natural (Natural)
 
 -- | A type of witness builders. @i@ is a type of variables.
 --

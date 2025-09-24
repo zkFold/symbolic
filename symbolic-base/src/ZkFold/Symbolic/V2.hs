@@ -2,15 +2,16 @@
 
 module ZkFold.Symbolic.V2 where
 
-import Data.Set (Set)
-import GHC.Generics (Par1, (:*:))
-import Data.Functor.Rep (Representable, Rep)
-import ZkFold.Data.FromList (FromList)
+import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.Foldable (Foldable)
-import ZkFold.Algebra.Class (PrimeField, Algebra)
+import Data.Functor.Rep (Rep, Representable)
+import Data.Set (Set)
+import GHC.Generics (Par1, (:*:))
 import Numeric.Natural (Natural)
-import Control.DeepSeq (NFData)
+
+import ZkFold.Algebra.Class (Algebra, PrimeField)
+import ZkFold.Data.FromList (FromList)
 
 -- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
 -- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
@@ -23,7 +24,8 @@ data LookupTable f where
   Plot
     :: (Representable f, FromList f, Binary (Rep f), Foldable g)
     => (forall w. PrimeField w => f w -> g w)
-    -> LookupTable f -> LookupTable (f :*: g)
+    -> LookupTable f
+    -> LookupTable (f :*: g)
 
 data Constraint a where
   Polynomial :: (forall b. Algebra a b => b) -> Constraint a

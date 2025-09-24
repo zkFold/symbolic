@@ -95,8 +95,10 @@ newtype Polynomial a v = MkPolynomial
 
 --------------- Type-preserving lookup constraint representation ---------------
 
-data LookupEntry v = forall f. (Functor f, Foldable f, NFData1 f, Typeable f) =>
-  LEntry (f v) (LookupTable f)
+data LookupEntry v
+  = forall f.
+    (Functor f, Foldable f, NFData1 f, Typeable f) =>
+    LEntry (f v) (LookupTable f)
 
 ------------- Box of constraints supporting efficient concatenation ------------
 

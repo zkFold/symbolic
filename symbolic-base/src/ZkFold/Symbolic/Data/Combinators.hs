@@ -58,7 +58,7 @@ class Resize a b where
 
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 toBits
-  :: (MonadCircuit v a w m)
+  :: MonadCircuit v a w m
   => [v]
   -> Natural
   -> Natural
@@ -325,7 +325,7 @@ horner :: MonadCircuit i a w m => [i] -> m i
 -- Horner's scheme.
 horner = hornerW @1
 
-splitExpansion :: (MonadCircuit i a w m) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: MonadCircuit i a w m => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
@@ -351,7 +351,7 @@ splitExpansion n1 n2 k = do
   numWords = (n1 + n2 + 15) `div` 16
 
 -- | Same as @splitExpansion@ but only for variables of exactly 16 bits
-splitExpansion16 :: (MonadCircuit i a w m) => Natural -> i -> m (i, i)
+splitExpansion16 :: MonadCircuit i a w m => Natural -> i -> m (i, i)
 splitExpansion16 n1 k = do
   l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower (at k)
   h <- newRanged (fromConstant @Natural $ 2 ^ (16 -! n1) -! 1) $ upper (at k)

@@ -11,6 +11,7 @@ import Control.DeepSeq (NFData, NFData1, liftRnf, rnf, rwhnf)
 import Control.Monad.State (State, modify, runState, state)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.Types as Aeson
+import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Bool (Bool (..), (&&))
 import Data.ByteString (ByteString)
@@ -61,7 +62,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
 import ZkFold.Symbolic.V2 (LookupTable (..))
-import Data.Bifunctor (bimap)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural

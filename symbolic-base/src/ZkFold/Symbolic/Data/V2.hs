@@ -1,24 +1,25 @@
 {-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.V2 where
 
+import Data.Binary (Binary)
+import Data.Constraint (Constraint)
+import Data.Function ((.))
+import Data.Functor (fmap, (<$>))
+import Data.Functor.Rep (Rep, Representable, pureRep)
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty)
+import Data.Semialign (Semialign)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
-import Data.Constraint (Constraint)
-import Data.Functor.Rep (Representable, Rep, pureRep)
-import Data.Binary (Binary)
-import ZkFold.Symbolic.V2 (Symbolic)
-import Data.Function ((.))
-import Data.List.NonEmpty (NonEmpty)
-import Data.Functor (fmap, (<$>))
+import Numeric.Natural (Natural)
+
 import ZkFold.Algebra.Class (zero)
 import ZkFold.Data.Product (fstP, sndP)
-import Data.Semialign (Semialign)
-import Numeric.Natural (Natural)
 import ZkFold.Symbolic.Algorithm.Interpolation (pushInterpolation)
+import ZkFold.Symbolic.V2 (Symbolic)
 
 type RepFunctor f = (Representable f, Binary (Rep f))
 
@@ -36,7 +37,7 @@ class (forall c. HasRep f c => RepData f c) => SymbolicData (f :: Type -> Type) 
   arithmetize :: Symbolic c => f c -> Layout f c c
   default arithmetize
     :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
-    => (Layout f c ~ Layout (G.Rep1 f) c)
+    => Layout f c ~ Layout (G.Rep1 f) c
     => f c -> Layout f c c
   arithmetize = arithmetize . G.from1
 
@@ -49,7 +50,7 @@ class (forall c. HasRep f c => RepData f c) => SymbolicData (f :: Type -> Type) 
   restore :: Symbolic c => Layout f c c -> f c
   default restore
     :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
-    => (Layout f c ~ Layout (G.Rep1 f) c)
+    => Layout f c ~ Layout (G.Rep1 f) c
     => Layout f c c -> f c
   restore = G.to1 . restore
 
