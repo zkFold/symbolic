@@ -13,7 +13,7 @@
 module ZkFold.Symbolic.Compat where
 
 import Control.Applicative (pure)
-import Control.DeepSeq (NFData, rnf)
+import Control.DeepSeq (NFData (..), NFData1, liftRnf)
 import Control.Monad.State (State, modify', runState)
 import Data.Bifunctor (bimap)
 import Data.Foldable (foldr)
@@ -53,10 +53,12 @@ instance
   restore (layout :*: payload) = CompatData $ Old.restore (CompatContext layout, payload)
 
 newtype CompatContext c f = CompatContext {compatContext :: f c}
-  deriving NFData
+
+instance (NFData c, NFData1 f) => NFData (CompatContext c f) where
+  rnf = hliftRnf liftRnf
 
 instance NFData c => HNFData (CompatContext c) where
-  hliftRnf liftRnf (CompatContext f) = liftRnf rnf f
+  hliftRnf lift (CompatContext f) = lift rnf f
 
 instance HFunctor (CompatContext c) where
   hmap f = CompatContext . f . compatContext
