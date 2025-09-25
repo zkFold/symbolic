@@ -108,6 +108,12 @@ jobs:
     - name: Benchmark Lagrange basis computation
       run: cabal bench bench-lagrange-basis
 
+    - name: Benchmark Rust code
+      run: |
+        cd symbolic-base/rust-wrapper
+        cabal bench
+        cd ../..
+
     - name: Check cabal files
       run: |
         cd symbolic-base
