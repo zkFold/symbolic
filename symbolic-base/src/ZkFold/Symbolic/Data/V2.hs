@@ -34,12 +34,12 @@ class (forall c. HasRep f c => RepData f c) => SymbolicData (f :: Type -> Type) 
   type HasRep f (c :: Type) :: Constraint
   type HasRep f c = HasRep (G.Rep1 f) c
 
-  arithmetize :: Symbolic c => f c -> Layout f c c
-  default arithmetize
+  toLayout :: Symbolic c => f c -> Layout f c c
+  default toLayout
     :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
     => Layout f c ~ Layout (G.Rep1 f) c
     => f c -> Layout f c c
-  arithmetize = arithmetize . G.from1
+  toLayout = toLayout . G.from1
 
   interpolate :: Symbolic c => c -> NonEmpty (Natural, f c) -> f c
   default interpolate
@@ -47,49 +47,49 @@ class (forall c. HasRep f c => RepData f c) => SymbolicData (f :: Type -> Type) 
     => c -> NonEmpty (Natural, f c) -> f c
   interpolate v = G.to1 . interpolate v . fmap (fmap G.from1)
 
-  restore :: Symbolic c => Layout f c c -> f c
-  default restore
+  fromLayout :: Symbolic c => Layout f c c -> f c
+  default fromLayout
     :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
     => Layout f c ~ Layout (G.Rep1 f) c
     => Layout f c c -> f c
-  restore = G.to1 . restore
+  fromLayout = G.to1 . fromLayout
 
 dummy :: (SymbolicData f, HasRep f c, Symbolic c) => f c
-dummy = restore (pureRep zero)
+dummy = fromLayout (pureRep zero)
 
 instance SymbolicData G.U1 where
   type Layout G.U1 _ = G.U1
   type HasRep G.U1 _ = ()
-  arithmetize u = u
+  toLayout u = u
   interpolate _ _ = G.U1
-  restore u = u
+  fromLayout u = u
 
 instance (SymbolicData f, SymbolicData g) => SymbolicData (f G.:*: g) where
   type Layout (f G.:*: g) c = Layout f c G.:*: Layout g c
   type HasRep (f G.:*: g) c = (HasRep f c, HasRep g c)
-  arithmetize (f G.:*: g) = arithmetize f G.:*: arithmetize g
+  toLayout (f G.:*: g) = toLayout f G.:*: toLayout g
   interpolate c bs =
     interpolate c (fmap fstP <$> bs) G.:*: interpolate c (fmap sndP <$> bs)
-  restore (f G.:*: g) = restore f G.:*: restore g
+  fromLayout (f G.:*: g) = fromLayout f G.:*: fromLayout g
 
 instance (Semialign f, SymbolicData g) => SymbolicData (f G.:.: g) where
   type Layout (f G.:.: g) c = f G.:.: Layout g c
   type HasRep (f G.:.: g) c = (RepFunctor f, HasRep g c)
-  arithmetize = G.Comp1 . fmap arithmetize . G.unComp1
+  toLayout = G.Comp1 . fmap toLayout . G.unComp1
   interpolate c =
     G.Comp1 . fmap (interpolate c) . pushInterpolation . fmap (G.unComp1 <$>)
-  restore = G.Comp1 . fmap restore . G.unComp1
+  fromLayout = G.Comp1 . fmap fromLayout . G.unComp1
 
 instance SymbolicData f => SymbolicData (G.M1 i d f) where
   type Layout (G.M1 i d f) c = Layout f c
   type HasRep (G.M1 i d f) c = HasRep f c
-  arithmetize = arithmetize . G.unM1
+  toLayout = toLayout . G.unM1
   interpolate c = G.M1 . interpolate c . fmap (G.unM1 <$>)
-  restore = G.M1 . restore
+  fromLayout = G.M1 . fromLayout
 
 instance SymbolicData f => SymbolicData (G.Rec1 f) where
   type Layout (G.Rec1 f) c = Layout f c
   type HasRep (G.Rec1 f) c = HasRep f c
-  arithmetize = arithmetize . G.unRec1
+  toLayout = toLayout . G.unRec1
   interpolate c = G.Rec1 . interpolate c . fmap (G.unRec1 <$>)
-  restore = G.Rec1 . restore
+  fromLayout = G.Rec1 . fromLayout

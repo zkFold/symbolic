@@ -45,12 +45,13 @@ instance
   where
   type Layout (CompatData f) c = Old.Layout f (Order c) :*: Old.Payload f (Order c)
   type HasRep (CompatData f) c = Old.HasRep f (CompatContext c)
-  arithmetize (CompatData f) = compatContext (Old.arithmetize f) :*: Old.payload f
+  toLayout (CompatData f) = compatContext (Old.arithmetize f) :*: Old.payload f
   interpolate c bs =
     CompatData $
       Old.interpolate (bimap fromConstant compatData <$> bs) $
         CompatContext (Par1 c)
-  restore (layout :*: payload) = CompatData $ Old.restore (CompatContext layout, payload)
+  fromLayout (layout :*: payload) =
+    CompatData $ Old.restore (CompatContext layout, payload)
 
 newtype CompatContext c f = CompatContext {compatContext :: f c}
 
