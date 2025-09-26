@@ -9,6 +9,8 @@ module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
 import GHC.TypeLits (KnownNat)
+import qualified Prelude as P
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algorithm.Hash.Poseidon as Poseidon
@@ -20,7 +22,6 @@ import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, Reg
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
 import ZkFold.Symbolic.Data.UInt (UInt)
-import qualified Prelude as P
 
 -- Verify ECDSA where a caller-provided hash function maps a message to it's hash.
 ecdsaVerify

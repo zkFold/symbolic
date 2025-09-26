@@ -35,8 +35,9 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import ZkFold.Symbolic.Ledger.Types
 import qualified Prelude as P
+
+import ZkFold.Symbolic.Ledger.Types
 
 type BaseField = FFA Jubjub_Base 'Auto
 
@@ -254,8 +255,7 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
-             )
+          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
     )
     false
     (unComp1 (oAssets output))
