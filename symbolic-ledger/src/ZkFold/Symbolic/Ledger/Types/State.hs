@@ -14,10 +14,11 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
+import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State bi bo ud a context = State
