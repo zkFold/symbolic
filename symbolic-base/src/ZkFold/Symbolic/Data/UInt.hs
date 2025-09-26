@@ -950,7 +950,7 @@ instance
 
 --------------------------------------------------------------------------------
 
-fullAdder :: (Arithmetic a, MonadCircuit i a w m) => Natural -> i -> i -> i -> m (i, i)
+fullAdder :: MonadCircuit i a w m => Natural -> i -> i -> i -> m (i, i)
 fullAdder r xk yk c = fullAdded xk yk c >>= splitExpansion r 1
 
 fullAdded :: MonadCircuit i a w m => i -> i -> i -> m i
@@ -958,7 +958,7 @@ fullAdded i j c = do
   k <- newAssigned (\v -> v i + v j)
   newAssigned (\v -> v k + v c)
 
-fullSub :: (Arithmetic a, MonadCircuit i a w m) => Natural -> i -> i -> i -> m (i, i)
+fullSub :: MonadCircuit i a w m => Natural -> i -> i -> i -> m (i, i)
 fullSub r xk yk b = do
   d <- newAssigned (\v -> v xk - v yk)
   s <- newAssigned (\v -> v d + v b + (one + one) ^ r - one)
@@ -999,7 +999,7 @@ bitwiseGE xs ys = Bool
   $ \is js -> Par1 <$> blueprintGE @r is js
 
 blueprintGE
-  :: forall r i a w m f. (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
+  :: forall r i a w m f. (MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
 blueprintGE xs ys = do
   (_, hasNegOne) <- circuitDelta @r xs ys
   newAssigned $ \p -> one - p hasNegOne
@@ -1017,7 +1017,7 @@ bitwiseGT xs ys = Bool
 
 -- | Compare two sets of r-bit words lexicographically
 circuitDelta
-  :: forall r i a w m f. (Arithmetic a, MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
+  :: forall r i a w m f. (MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
 circuitDelta l r = do
   z1 <- newAssigned (Haskell.const zero)
   z2 <- newAssigned (Haskell.const zero)

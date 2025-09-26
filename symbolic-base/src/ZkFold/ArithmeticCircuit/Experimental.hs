@@ -66,7 +66,8 @@ import ZkFold.Symbolic.Data.Class (
   restore,
  )
 import ZkFold.Symbolic.Data.Input (isValid)
-import ZkFold.Symbolic.MonadCircuit (LookupTable, MonadCircuit (..), Witness (..))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import ZkFold.Symbolic.V2 (LookupTable)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -94,16 +95,16 @@ newtype Polynomial a v = MkPolynomial
 
 --------------- Type-preserving lookup constraint representation ---------------
 
-data LookupEntry a v
+data LookupEntry v
   = forall f.
     (Functor f, Foldable f, NFData1 f, Typeable f) =>
-    LEntry (f v) (LookupTable a f)
+    LEntry (f v) (LookupTable f)
 
 ------------- Box of constraints supporting efficient concatenation ------------
 
 data ConstraintBox a v = MkCBox
   { cbPolyCon :: AppList (Polynomial a v)
-  , cbLookups :: AppList (LookupEntry a v)
+  , cbLookups :: AppList (LookupEntry v)
   }
   deriving (Generic, NFData)
   deriving (Monoid, Semigroup) via (GenericSemigroupMonoid (ConstraintBox a v))

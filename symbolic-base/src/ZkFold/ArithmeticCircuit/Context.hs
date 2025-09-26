@@ -11,6 +11,7 @@ import Control.DeepSeq (NFData, NFData1, liftRnf, rnf, rwhnf)
 import Control.Monad.State (State, modify, runState, state)
 import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.Types as Aeson
+import Data.Bifunctor (bimap)
 import Data.Binary (Binary)
 import Data.Bool (Bool (..), (&&))
 import Data.ByteString (ByteString)
@@ -60,6 +61,7 @@ import ZkFold.Prelude (take)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.V2 (LookupTable (..))
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural
@@ -370,8 +372,8 @@ instance
 -- storing all lookup functions in a circuit.
 lookupType
   :: (Arithmetic a, Binary a)
-  => LookupTable a f -> State (CircuitContext a o) (LookupType a)
-lookupType (Ranges rs) = pure (LTRanges rs)
+  => LookupTable f -> State (CircuitContext a o) (LookupType a)
+lookupType (Ranges rs) = pure $ LTRanges (S.map (bimap fromConstant fromConstant) rs)
 lookupType (Product t u) = LTProduct <$> lookupType t <*> lookupType u
 lookupType (Plot f t) = do
   funcId <- zoom #acLookupFunction $ state (appendFunction f)
