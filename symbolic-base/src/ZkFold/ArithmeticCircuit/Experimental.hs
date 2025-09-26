@@ -6,33 +6,33 @@
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Data.Maybe (Maybe (..))
-import Data.Type.Equality (type (~))
-
-import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Compiler ()
-import ZkFold.Symbolic.V2 (Constraint, Symbolic (..))
-import Numeric.Natural (Natural)
+import Control.DeepSeq (NFData (..), rwhnf)
+import Data.Binary (Binary)
 import Data.ByteString (ByteString)
-import GHC.TypeNats (KnownNat)
-import ZkFold.Algebra.Number (Prime)
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.Bool (BoolType (..))
-import ZkFold.Control.Conditional (Conditional (..))
-import GHC.Err (error)
-import GHC.Integer (Integer)
-import Data.Function (($), const, (.))
-import ZkFold.Data.Ord (Ord (..), IsOrdering (..))
+import Data.Function (const, ($), (.))
+import Data.Functor.Rep (Rep)
+import Data.Kind (Type)
+import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
 import Data.Semigroup (Semigroup (..))
-import Control.DeepSeq (NFData (..), rwhnf)
+import Data.Type.Equality (type (~))
+import GHC.Err (error)
 import GHC.Generics (U1, (:*:) (..))
-import Data.Kind (Type)
+import GHC.Integer (Integer)
+import GHC.TypeNats (KnownNat)
+import Numeric.Natural (Natural)
+
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number (Prime)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
-import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (HasRep))
+import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
-import Data.Binary (Binary)
-import Data.Functor.Rep (Rep)
+import ZkFold.Symbolic.Compiler ()
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (HasRep))
+import ZkFold.Symbolic.V2 (Constraint, Symbolic (..))
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -49,7 +49,11 @@ data Op (size :: Size) where
   OpFrom :: Node Nothing -> Op (Just n)
   OpTo :: Node (Just n) -> Op Nothing
   OpCompare :: Node Nothing -> Node Nothing -> Op (Just 3)
-  OpDiv, OpMod, OpGcd, OpBezoutL, OpBezoutR
+  OpDiv
+    , OpMod
+    , OpGcd
+    , OpBezoutL
+    , OpBezoutR
     :: Node Nothing -> Node Nothing -> Op Nothing
   OpInv :: Node (Just n) -> Op (Just n)
   OpEq, OpNEq :: Node size -> Node size -> Op (Just 2)
@@ -106,7 +110,8 @@ instance Ord (Node Nothing) where
 
 instance
   (KnownNat p, KnownNat (NumberOfBits (Node (Just p))))
-  => Finite (Node (Just p)) where
+  => Finite (Node (Just p))
+  where
   type Order (Node (Just p)) = p
 
 instance FromConstant Natural (Node s) where
@@ -165,13 +170,15 @@ instance Prime p => Field (Node (Just p)) where
 
 instance
   (Prime p, KnownNat (NumberOfBits (Node (Just p))))
-  => PrimeField (Node (Just p)) where
+  => PrimeField (Node (Just p))
+  where
   type IntegralOf (Node (Just p)) = Node Nothing
   toIntegral x = apply (OpTo x)
 
 instance
   (Prime p, KnownNat (NumberOfBits (Node (Just p))))
-  => Symbolic (Node (Just p)) where
+  => Symbolic (Node (Just p))
+  where
   constrain c x = NodeConstrain c x (error "TODO")
 
 ------------------------- Optimized compilation function -----------------------
@@ -185,17 +192,19 @@ type family Output (f :: Type) where
   Output (o a) = o
 
 class
-  (SymbolicData (Input f), SymbolicData (Output f))
-  => SymbolicFunction (a :: Type) (f :: Type) | f -> a where
+  (SymbolicData (Input f), SymbolicData (Output f)) =>
+  SymbolicFunction (a :: Type) (f :: Type)
+    | f -> a
+  where
   symApply :: f -> Input f a -> Output f a
 
 instance
   (SymbolicData (Input (o a)), SymbolicData o, Output (o a) ~ o)
-  => SymbolicFunction a (o a) where
+  => SymbolicFunction a (o a)
+  where
   symApply = const
 
-instance
-  (SymbolicData i, SymbolicFunction a f) => SymbolicFunction a (i a -> f) where
+instance (SymbolicData i, SymbolicFunction a f) => SymbolicFunction a (i a -> f) where
   symApply f (x :*: y) = symApply (f x) y
 
 compile
@@ -203,8 +212,8 @@ compile
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
 compile =
   optimize
-  . solder
-  . \f l -> _
+    . solder
+    . \f l -> _
 
 -- compile
 --  :: forall a s f n
@@ -219,7 +228,7 @@ compile =
 --     , n ~ Order a
 --     )
 --  => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
---compile =
+-- compile =
 --  optimize . solder . \f (p :*: l) ->
 --    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
 --        Bool b = isValid input
