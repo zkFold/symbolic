@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt, fromUInt) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -400,7 +400,8 @@ fromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 fromInt
   :: (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
-  => Int n r c -> FFA p r c
+  => Int n r c
+  -> FFA p r c
 fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
 
 toUInt

@@ -24,6 +24,7 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -91,13 +92,16 @@ instance
   )
   => Eq (UTxO a context)
 
+instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
+  hasher = Poseidon.hash
+
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
 nullUTxO = UTxO {uRef = nullOutputRef, uOutput = nullOutput}
 
 -- | Null UTxO's hash.
 nullUTxOHash
-  :: forall a context. (Symbolic context, KnownNat a, Hashable (HashSimple context) (UTxO a context)) => HashSimple context
+  :: forall a context. (Symbolic context, KnownNat a) => HashSimple context
 nullUTxOHash = hash (nullUTxO @a @context) & Base.hHash
 
 -- | Transaction in our symbolic ledger.
@@ -120,12 +124,13 @@ instance
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)
 
+instance Symbolic context => Hashable (HashSimple context) (Transaction i o a context) where
+  hasher = Poseidon.hash
+
 -- | Obtain transaction hash.
 txId
   :: forall i o a context
-   . ( Symbolic context
-     , Hashable (HashSimple context) (Transaction i o a context)
-     )
+   . Symbolic context
   => Transaction i o a context
   -> TransactionId i o a context
 txId = hash

@@ -22,8 +22,12 @@ import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import qualified ZkFold.Data.Vector as Vector
 import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
+import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Combinators (Iso (..))
+import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
@@ -35,7 +39,7 @@ import ZkFold.Symbolic.Ledger.Types
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
-  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a)) context
+  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
@@ -56,7 +60,7 @@ validateTransaction
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo) -> utxo.uOutput.oAssets)
+    inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
     outputsAssets = unComp1 tx.outputs & P.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
     -- We check if all output assets are covered by inputs.
     (outAssetsWithinInputs :*: finalInputAssets) =
@@ -162,7 +166,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: updatedUTxOTreeForInputs) =
       foldl'
-        ( \(isInsValidAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo)) ->
+        ( \(isInsValidAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
             let
               utxoHash :: HashSimple context = hash utxo & Base.hHash
               isValid' =
@@ -170,6 +174,14 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
                   && (acc `MerkleTree.contains` merkleEntry)
+                  && Poseidon.hash publicKey
+                  == utxo.uOutput.oAddress
+                  && eddsaVerify
+                    ( \rPoint' publicKey' m -> fromUInt (from (Poseidon.poseidonHashDefault [Poseidon.hash rPoint', Poseidon.hash publicKey', m]))
+                    )
+                    publicKey
+                    txId'
+                    (rPoint :*: s)
              in
               ( isValid'
                   :*: MerkleTree.replace
