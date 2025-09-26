@@ -13,14 +13,15 @@ module ZkFold.Symbolic.Ledger.Types (
 
 import GHC.Generics ((:.:))
 import GHC.TypeNats (KnownNat, type (-))
+import ZkFold.Algebra.Class (NumberOfBits)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
+import ZkFold.Symbolic.Data.FFA (KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Ledger.Types.Address
@@ -42,6 +43,8 @@ type SignatureTransaction ud i o a context =
   , forall s. Hashable (HashSimple s) (UTxO a s)
   , KnownFFA Jubjub_Base 'Auto context
   , CyclicGroup (Jubjub_Point context)
+  , KnownFFA Jubjub_Scalar 'Auto context
+  , KnownNat (GetRegisterSize (BaseField context) (NumberOfBits (BaseField context)) 'Auto)
   )
 
 type SignatureTransactionBatch ud i o a t context =

@@ -27,9 +27,9 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
+import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (FFA)
+import ZkFold.Symbolic.Data.FFA (FFA, fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
@@ -183,7 +183,12 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && (acc `MerkleTree.contains` merkleEntry)
                   && Poseidon.hash publicKey
                   == utxo.uOutput.oAddress
-                  && eddsaVerify P.undefined publicKey txId' (rPoint :*: s)
+                  && eddsaVerify
+                    ( \rPoint' publicKey' m -> fromUInt (from (Poseidon.poseidonHashDefault [Poseidon.hash rPoint', Poseidon.hash publicKey', m]))
+                    )
+                    publicKey
+                    txId'
+                    (rPoint :*: s)
              in
               ( isValid'
                   :*: MerkleTree.replace
