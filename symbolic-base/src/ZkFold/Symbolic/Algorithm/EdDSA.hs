@@ -16,8 +16,11 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
+import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
+import ZkFold.Symbolic.Data.FFA
 
 -- | Verify EdDSA signature on a Twisted Edwards curve.
 --
@@ -27,16 +30,14 @@ import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 --   - (R, s) is the signature; R is a point, s is a scalar
 --   - H is a caller-provided hash-to-scalar function
 eddsaVerify
-  :: forall message point curve baseField scalarField ctx
-   . ( point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
+  :: forall message point curve p q baseField scalarField ctx
+   . ( S.Symbolic ctx
+     , baseField ~ FFA q 'Auto
+     , scalarField ~ FFA p 'Auto
+     , point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
-     , Zero (scalarField ctx)
-     , Eq (scalarField ctx)
-     , BooleanOf (scalarField ctx) ~ Bool ctx
-     , Semiring (baseField ctx)
-     , Eq (baseField ctx)
-     , BooleanOf (baseField ctx) ~ Bool ctx
+     , KnownFFA q 'Auto ctx
      )
   => ( point
        -> point
