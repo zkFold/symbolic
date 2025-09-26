@@ -27,7 +27,6 @@ import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.State
@@ -59,8 +58,6 @@ type SignatureTransactionBatch ud i o a t context =
 type SignatureState bi bo ud a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
-  , Hashable (HashSimple context) (State bi bo ud a context)
-  , forall s. Hashable (HashSimple s) (State bi bo ud a s)
   , Hashable (HashSimple context) ((Vector bi :.: Output a) context)
   , Hashable (HashSimple context) ((Vector bo :.: Output a) context)
   , Hashable (HashSimple context) (FieldElement context)
