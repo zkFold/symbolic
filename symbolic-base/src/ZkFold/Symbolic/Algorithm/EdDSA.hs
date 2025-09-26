@@ -11,6 +11,7 @@ module ZkFold.Symbolic.Algorithm.EdDSA (
 import Data.Coerce (coerce)
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
+
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic

@@ -9,6 +9,7 @@ import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
 import GHC.TypeLits (KnownNat)
+
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
