@@ -24,6 +24,7 @@ import Data.Function (const, id, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.List ((++))
 import Data.Maybe (Maybe (..))
+import Data.OpenApi (ToSchema)
 import Data.Semigroup ((<>))
 import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
@@ -51,7 +52,7 @@ import ZkFold.Prelude (iterate', log2ceiling)
 
 newtype Zp (p :: Natural) = Zp Integer
   deriving Generic
-  deriving newtype (FromJSONKey, NFData, ToJSONKey)
+  deriving newtype (FromJSONKey, NFData, ToJSONKey, ToSchema)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
