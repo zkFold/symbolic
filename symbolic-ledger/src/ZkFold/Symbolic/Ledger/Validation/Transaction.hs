@@ -36,6 +36,12 @@ import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
 
+type BaseField = FFA Jubjub_Base 'Auto
+
+type ScalarField = FFA Jubjub_Scalar 'Auto
+
+type Point = Jubjub_Point
+
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint)) context
