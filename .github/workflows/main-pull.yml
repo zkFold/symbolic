@@ -111,7 +111,7 @@ jobs:
     - name: Benchmark Rust code
       run: |
         cd symbolic-base/rust-wrapper
-        cabal bench
+        cargo bench
         cd ../..
 
     - name: Check cabal files
