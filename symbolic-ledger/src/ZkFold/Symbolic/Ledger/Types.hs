@@ -1,6 +1,9 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 
 module ZkFold.Symbolic.Ledger.Types (
+  EdDSABaseField,
+  EdDSAScalarField,
+  EdDSAPoint,
   module ZkFold.Symbolic.Ledger.Types.Address,
   module ZkFold.Symbolic.Ledger.Types.Hash,
   module ZkFold.Symbolic.Ledger.Types.State,
@@ -21,15 +24,20 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (KnownFFA)
+import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
-
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
+
+type EdDSABaseField = FFA Jubjub_Base 'Auto
+
+type EdDSAScalarField = FFA Jubjub_Scalar 'Auto
+
+type EdDSAPoint = Jubjub_Point
 
 type SignatureTransaction ud i o a context =
   ( Symbolic context
@@ -38,10 +46,6 @@ type SignatureTransaction ud i o a context =
   , KnownNat a
   , KnownNat (ud - 1)
   , KnownNat (MerkleTreeSize ud)
-  , Hashable (HashSimple context) (Transaction i o a context)
-  , forall s. Hashable (HashSimple s) (Transaction i o a s)
-  , Hashable (HashSimple context) (UTxO a context)
-  , forall s. Hashable (HashSimple s) (UTxO a s)
   , KnownFFA Jubjub_Base 'Auto context
   , CyclicGroup (Jubjub_Point context)
   , KnownFFA Jubjub_Scalar 'Auto context
@@ -50,8 +54,6 @@ type SignatureTransaction ud i o a context =
 
 type SignatureTransactionBatch ud i o a t context =
   ( SignatureTransaction ud i o a context
-  , Hashable (HashSimple context) (TransactionBatch i o a t context)
-  , forall s. Hashable (HashSimple s) (TransactionBatch i o a t s)
   )
 
 type SignatureState bi bo ud a context =

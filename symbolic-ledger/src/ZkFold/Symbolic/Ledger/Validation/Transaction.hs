@@ -16,7 +16,6 @@ import ZkFold.Algebra.Class (
   MultiplicativeMonoid (..),
   Zero (..),
  )
-import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord ((>=))
@@ -27,27 +26,19 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
-import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (FFA, fromUInt)
+import ZkFold.Symbolic.Data.Combinators (Iso (..))
+import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
 import ZkFold.Symbolic.Ledger.Types
-
-type BaseField = FFA Jubjub_Base 'Auto
-
-type ScalarField = FFA Jubjub_Scalar 'Auto
-
-type Point = Jubjub_Point
+import qualified Prelude as P
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
-  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: Point :*: ScalarField :*: Point)) context
+  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
@@ -255,7 +246,8 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))
