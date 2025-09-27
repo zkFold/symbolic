@@ -218,11 +218,11 @@ pub unsafe fn r_r2h_point_vec(var: *mut c_char, out_ptr: *mut c_char) {
     r2h_ptr::<Vec<G1Affine>>(var, out_ptr, |x| x.iter().flat_map(unpack_point).collect());
 }
 
-unsafe fn peek<'a, T>(ptr: *mut c_char) -> &'a mut T {
+pub unsafe fn peek<'a, T>(ptr: *mut c_char) -> &'a mut T {
     &mut *(ptr as *mut T)
 }
 
-unsafe fn poke<T>(b: T) -> *mut c_char {
+pub unsafe fn poke<T>(b: T) -> *mut c_char {
     Box::into_raw(Box::new(b)) as *mut c_char
 }
 

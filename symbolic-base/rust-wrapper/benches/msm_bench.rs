@@ -1,36 +1,33 @@
+use ark_bls12_381::Fr as ScalarField;
 use ark_bls12_381::G1Affine;
-use ark_ff::BigInteger;
-use ark_msm::utils::generate_msm_inputs;
-use ark_serialize::CanonicalSerialize;
+use ark_ff::UniformRand;
+
+use ark_poly::{univariate::DensePolynomial, DenseUVPolynomial};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use rust_wrapper::scale::msm;
+use rust_wrapper::utils::r_g1_free;
+use rust_wrapper::utils::r_point_vec_free;
+use rust_wrapper::utils::r_scalar_poly_free;
+use rust_wrapper::{msm::r_msm, utils::poke};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("msm");
     group.sample_size(10);
     for size in 10..=20 {
-        let (point_vec, scalar_vec) = generate_msm_inputs::<G1Affine>(1 << size);
+        let length = 1 << size;
+        let mut rng = &mut ark_std::test_rng();
 
-        let points_bytes_vec: Vec<u8> = point_vec
-            .iter()
-            .flat_map(|a| {
-                let mut vec = Vec::new();
-                let _ = a.serialize_uncompressed(&mut vec);
-                let point_size = 96;
-                vec[0..(point_size >> 1)].reverse();
-                vec[(point_size >> 1)..point_size].reverse();
-                vec
-            })
-            .collect();
-
-        let scalars_bytes_vec: Vec<u8> = scalar_vec
-            .iter()
-            .flat_map(BigInteger::to_bytes_le)
-            .collect();
+        let scalars: DensePolynomial<ScalarField> =
+            DensePolynomial::<ScalarField>::rand(length, &mut rng);
+        let points: Vec<G1Affine> = (0..length).map(|_| G1Affine::rand(rng)).collect();
 
         group.bench_with_input(BenchmarkId::new("ArkMSM", size), &size, |b, _size| {
-            b.iter(|| {
-                msm(&scalars_bytes_vec, &points_bytes_vec);
+            b.iter(|| unsafe {
+                let points = poke(points.clone());
+                let scalars = poke(scalars.clone());
+                let res = r_msm(points, scalars);
+                r_g1_free(res);
+                r_scalar_poly_free(scalars);
+                r_point_vec_free(points);
             })
         });
     }
