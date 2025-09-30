@@ -1,6 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction (
   TransactionWitness (..),
@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 ) where
 
 import Data.Function ((&))
-import GHC.Generics ((:*:) (..), (:.:) (..), Generic1, Generic)
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
@@ -27,6 +27,7 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
 import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -37,7 +38,6 @@ import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
 import qualified Prelude as P
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -50,7 +50,8 @@ data EdDSAHashData context = EdDSAHashData
   { eddsaHashDataRPoint :: EdDSAPoint context
   , eddsaHashDataPublicKey :: EdDSAPoint context
   , eddsaHashDataMessage :: FieldElement context
-  } deriving stock (Generic, Generic1)
+  }
+  deriving stock (Generic, Generic1)
   deriving anyclass SymbolicData
 
 -- | Validate transaction. See note [State validation] for details.
@@ -189,10 +190,9 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && eddsaVerify
                     ( \rPoint' publicKey' m ->
                         fromUInt
-                              ( from
-                                  (Poseidon.hash (EdDSAHashData rPoint' publicKey' m))
-
-                              )
+                          ( from
+                              (Poseidon.hash (EdDSAHashData rPoint' publicKey' m))
+                          )
                     )
                     publicKey
                     txId'
