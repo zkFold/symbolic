@@ -13,6 +13,7 @@ import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
 import ZkFold.Algebra.Class
 import ZkFold.Data.MerkleTree (Leaves)
 
+-- | Update ledger state.
 updateLedgerState
   :: forall bi bo ud a i o t context.
   SignatureState bi bo ud a context
@@ -20,7 +21,7 @@ updateLedgerState
   => State bi bo ud a context 
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
-  -- ^ UTxO set (preimage of leaves of the merkle tree)
+  -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the previous state's UTxO set
   -> (Vector bi :.: Output a) context
   -- ^ Bridged in outputs.
   -> TransactionBatch i o a t context
