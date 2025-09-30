@@ -7,15 +7,17 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
-import Data.Function ((&))
+import Data.Function (($), (&), (.))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
+  NumberOfBits,
   Zero (..),
  )
+import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord ((>=))
@@ -24,18 +26,19 @@ import qualified ZkFold.Data.Vector as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import ZkFold.Symbolic.Data.FFA (fromUInt)
+import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
+import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
+import ZkFold.Symbolic.Data.FFA (fromUInt, toUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
-
+import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Ledger.Types
+import qualified Prelude as P
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -177,7 +180,15 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && Poseidon.hash publicKey
                   == utxo.uOutput.oAddress
                   && eddsaVerify
-                    ( \rPoint' publicKey' m -> fromUInt (from (Poseidon.poseidonHashDefault [Poseidon.hash rPoint', Poseidon.hash publicKey', m]))
+                    ( \rPoint' publicKey' m ->
+                        let Elliptic.AffinePoint rPointx rPointy = affinePoint rPoint'
+                            Elliptic.AffinePoint publicKeyx publicKeyy = affinePoint publicKey'
+                         in fromUInt
+                              ( toUInt
+                                  ( Poseidon.poseidonHashDefault [rPointx, rPointy, publicKeyx, publicKeyy, fromUInt . from $ m]
+                                  )
+                                  :: UInt (NumberOfBits (BaseField context)) Auto context
+                              )
                     )
                     publicKey
                     txId'
@@ -247,7 +258,8 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))
