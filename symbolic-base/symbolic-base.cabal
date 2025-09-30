@@ -240,6 +240,7 @@ library
       ZkFold.Symbolic.Algorithm.FFT
       ZkFold.Symbolic.Algorithm.Interpolation
       ZkFold.Symbolic.Class
+      ZkFold.Symbolic.Compat
       ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
@@ -272,11 +273,13 @@ library
       ZkFold.Symbolic.Data.Sum
       ZkFold.Symbolic.Data.UInt
       ZkFold.Symbolic.Data.UTCTime
+      ZkFold.Symbolic.Data.V2
       ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Data.Vec
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
+      ZkFold.Symbolic.V2
       ZkFold.Symbolic.WitnessContext
     if arch(wasm32)
       exposed-modules:
@@ -373,6 +376,7 @@ library
         vector                               < 0.14,
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
+        openapi3                                    ,
     hs-source-dirs: src
     if arch(wasm32)
         ghc-options: 
