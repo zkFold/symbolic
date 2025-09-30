@@ -1,5 +1,6 @@
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Ledger.Validation.Transaction (
   TransactionWitness (..),
@@ -7,17 +8,15 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
-import Data.Function (($), (&), (.))
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import Data.Function ((&))
+import GHC.Generics ((:*:) (..), (:.:) (..), Generic1, Generic)
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
-  NumberOfBits,
   Zero (..),
  )
-import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord ((>=))
@@ -28,24 +27,31 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
-import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
-import ZkFold.Symbolic.Data.FFA (fromUInt, toUInt)
+import ZkFold.Symbolic.Data.Combinators (Iso (..))
+import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import ZkFold.Symbolic.Data.UInt (UInt)
 import qualified Prelude as P
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
+
+-- | Data for hashing in EdDSA signature verification.
+data EdDSAHashData context = EdDSAHashData
+  { eddsaHashDataRPoint :: EdDSAPoint context
+  , eddsaHashDataPublicKey :: EdDSAPoint context
+  , eddsaHashDataMessage :: FieldElement context
+  } deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
@@ -182,12 +188,10 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   == utxo.uOutput.oAddress
                   && eddsaVerify
                     ( \rPoint' publicKey' m ->
-                        let Elliptic.AffinePoint rPointx rPointy = affinePoint rPoint'
-                            Elliptic.AffinePoint publicKeyx publicKeyy = affinePoint publicKey'
-                         in fromUInt
-                              ( toUInt
-                                  (Poseidon.poseidonHashDefault [rPointx, rPointy, publicKeyx, publicKeyy, fromUInt . from $ m])
-                                  :: UInt (NumberOfBits (BaseField context)) Auto context
+                        fromUInt
+                              ( from
+                                  (Poseidon.hash (EdDSAHashData rPoint' publicKey' m))
+
                               )
                     )
                     publicKey

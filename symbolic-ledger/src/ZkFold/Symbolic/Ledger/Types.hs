@@ -22,7 +22,7 @@ import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -50,7 +50,6 @@ type SignatureTransaction ud i o a context =
   , KnownFFA Jubjub_Base 'Auto context
   , CyclicGroup (Jubjub_Point context)
   , KnownFFA Jubjub_Scalar 'Auto context
-  , KnownNat (NumberOfRegisters (BaseField context) (NumberOfBits (BaseField context)) Auto)
   , KnownNat
       (GetRegisterSize (BaseField context) (NumberOfBits (BaseField context)) 'Auto)
   )
