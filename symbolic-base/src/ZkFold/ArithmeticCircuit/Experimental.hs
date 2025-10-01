@@ -1,58 +1,59 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE OverloadedLabels #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {- HLINT ignore "Use record patterns" -}
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
+import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), rwhnf)
+import Control.Monad ((>>=))
+import Control.Monad.State (State, gets, runState)
 import Data.Binary (Binary)
+import Data.Bool (Bool (..))
 import Data.ByteString (ByteString)
-import Data.Function (const, ($), (.), flip)
+import qualified Data.Eq as Prelude
+import Data.Function (const, flip, ($), (.))
+import Data.Functor (fmap)
 import Data.Kind (Type)
+import Data.Map (Map)
+import qualified Data.Map as M
 import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
+import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
+import Data.Set (Set)
+import qualified Data.Set as S
+import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
-import GHC.Generics (U1, (:*:) (..), Generic)
+import GHC.Generics (Generic, U1, (:*:) (..))
 import GHC.Integer (Integer)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
+import Optics (zoom)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
+import ZkFold.Algebra.Polynomial.Multivariate.Maps (evalPoly, traversePoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
+import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler ()
-import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout, fromLayout), HasRep)
+import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
-import ZkFold.ArithmeticCircuit.Context (emptyContext, crown, CircuitContext)
-import Control.Monad.State (runState, State, gets)
-import Data.Traversable (traverse, Traversable)
-import Data.Functor (fmap)
-import ZkFold.ArithmeticCircuit.Witness (EuclideanF, BooleanF, OrderingF)
-import Data.Map (Map)
-import qualified Data.Map as M
-import Data.Set (Set)
-import qualified Data.Set as S
-import Control.Applicative (pure)
-import Data.Bool (Bool(..))
-import Control.Monad ((>>=))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit(lookupConstraint, constraint))
-import Optics (zoom)
-import ZkFold.Algebra.Polynomial.Multivariate.Maps (traversePoly, evalPoly)
-import qualified Data.Eq as Prelude
-import qualified Data.Ord as Prelude
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -228,9 +229,14 @@ type family OutputF (f :: Type) where
   OutputF (o a) = o
 
 class
-  ( SymbolicData (Input f), HasRep (Input f) a
-  , SymbolicData (Output f), Traversable (Layout (Output f) a)
-  ) => SymbolicFunction (a :: Type) (f :: Type) | f -> a where
+  ( SymbolicData (Input f)
+  , HasRep (Input f) a
+  , SymbolicData (Output f)
+  , Traversable (Layout (Output f) a)
+  ) =>
+  SymbolicFunction (a :: Type) (f :: Type)
+    | f -> a
+  where
   type Input f :: Type -> Type
   type Input f = InputF f
   type Output f :: Type -> Type
@@ -239,12 +245,14 @@ class
 
 instance
   (SymbolicData o, Traversable (Layout o a), Input (o a) ~ U1, Output (o a) ~ o)
-  => SymbolicFunction a (o a) where
+  => SymbolicFunction a (o a)
+  where
   symApply = const
 
 instance
   (SymbolicData i, HasRep i a, SymbolicFunction a f)
-  => SymbolicFunction a (i a -> f) where
+  => SymbolicFunction a (i a -> f)
+  where
   symApply f (x :*: y) = symApply (f x) y
 
 data Compiler a = Compiler
@@ -254,14 +262,15 @@ data Compiler a = Compiler
   , booleans :: Map Hash (BooleanF a Hash)
   , orders :: Map Hash (OrderingF a Hash)
   }
-  deriving (Generic)
+  deriving Generic
 
 makeCompiler :: Compiler a
 makeCompiler = Compiler emptyContext S.empty M.empty M.empty M.empty
 
-compileNode ::
-  forall a. (Arithmetic a, Binary a) =>
-  Node (Just (Order a)) -> State (Compiler a) (Var a)
+compileNode
+  :: forall a
+   . (Arithmetic a, Binary a)
+  => Node (Just (Order a)) -> State (Compiler a) (Var a)
 compileNode (NodeInput v) = pure $ pure (EqVar v)
 compileNode (NodeConstrain c n h) = do
   gets (S.member h . seenConstraint) >>= \case
@@ -274,6 +283,7 @@ compileNode (NodeConstrain c n h) = do
         poly <- traversePoly @_ @a compileNode p
         zoom #circuitContext $ constraint (evalPoly poly)
   compileNode n
+
 --    (Just w, EqVar bs) -> do
 --      isDone <- gets (M.member bs . acWitness)
 --      unless isDone do
@@ -307,12 +317,16 @@ compile
   :: forall a c f
    . (Arithmetic a, Binary a, c ~ Node (Just (Order a)), SymbolicFunction c f)
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
-compile = optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
-  let (output, compiler) = flip runState makeCompiler . traverse compileNode
-                           . toLayout . symApply f
-                           $ fromLayout (fmap fromNewVar l)
-   in compileOutput compiler output
-  where
-    fromNewVar :: NewVar -> Node (Just size)
-    fromNewVar (EqVar v) = NodeInput v
-    fromNewVar _ = error "folding not supported"
+compile =
+  optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
+    let (output, compiler) =
+          flip runState makeCompiler
+            . traverse compileNode
+            . toLayout
+            . symApply f
+            $ fromLayout (fmap fromNewVar l)
+     in compileOutput compiler output
+ where
+  fromNewVar :: NewVar -> Node (Just size)
+  fromNewVar (EqVar v) = NodeInput v
+  fromNewVar _ = error "folding not supported"
