@@ -3,21 +3,23 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE OverloadedLabels #-}
+{- HLINT ignore "Use record patterns" -}
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
 import Control.DeepSeq (NFData (..), rwhnf)
 import Data.Binary (Binary)
 import Data.ByteString (ByteString)
-import Data.Function (const, ($), (.))
-import Data.Functor.Rep (Rep)
+import Data.Function (const, ($), (.), flip)
 import Data.Kind (Type)
 import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
 import Data.Semigroup (Semigroup (..))
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
-import GHC.Generics (U1, (:*:) (..))
+import GHC.Generics (U1, (:*:) (..), Generic)
 import GHC.Integer (Integer)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
@@ -31,8 +33,26 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler ()
-import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (HasRep))
-import ZkFold.Symbolic.V2 (Constraint, Symbolic (..))
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout, fromLayout), HasRep)
+import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
+import ZkFold.ArithmeticCircuit.Context (emptyContext, crown, CircuitContext)
+import Control.Monad.State (runState, State, gets)
+import Data.Traversable (traverse, Traversable)
+import Data.Functor (fmap)
+import ZkFold.ArithmeticCircuit.Witness (EuclideanF, BooleanF, OrderingF)
+import Data.Map (Map)
+import qualified Data.Map as M
+import Data.Set (Set)
+import qualified Data.Set as S
+import Control.Applicative (pure)
+import Data.Bool (Bool(..))
+import Control.Monad ((>>=))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit(lookupConstraint, constraint))
+import Optics (zoom)
+import ZkFold.Algebra.Polynomial.Multivariate.Maps (traversePoly, evalPoly)
+import qualified Data.Eq as Prelude
+import qualified Data.Ord as Prelude
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -62,9 +82,25 @@ data Op (size :: Size) where
   OpOrder :: Node size -> Node size -> Node size -> Node (Just 3) -> Op size
 
 data Node (size :: Size) where
+  NodeInput :: Hash -> Node (Just s)
   NodeApply :: Op size -> Hash -> Node size
   NodeConstrain
     :: s ~ Just size => Constraint (Node s) -> Node s -> Hash -> Node s
+
+instance Prelude.Eq (Node s) where
+  NodeInput h == NodeInput h' = h Prelude.== h'
+  NodeApply _ h == NodeApply _ h' = h Prelude.== h'
+  NodeConstrain _ _ h == NodeConstrain _ _ h' = h Prelude.== h'
+  _ == _ = False
+
+instance Prelude.Ord (Node s) where
+  NodeInput h `compare` NodeInput h' = h `Prelude.compare` h'
+  NodeInput _ `compare` _ = Prelude.LT
+  NodeApply _ _ `compare` NodeInput _ = Prelude.GT
+  NodeApply _ h `compare` NodeApply _ h' = h `Prelude.compare` h'
+  NodeApply _ _ `compare` NodeConstrain _ _ _ = Prelude.LT
+  NodeConstrain _ _ h `compare` NodeConstrain _ _ h' = h `Prelude.compare` h'
+  NodeConstrain _ _ _ `compare` _ = Prelude.GT
 
 instance NFData (Node s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
@@ -183,67 +219,61 @@ instance
 
 ------------------------- Optimized compilation function -----------------------
 
-type family Input (f :: Type) where
-  Input (i a -> f) = i :*: Input f
-  Input (o a) = U1
+type family InputF (f :: Type) where
+  InputF (i a -> f) = i :*: Input f
+  InputF (o a) = U1
 
-type family Output (f :: Type) where
-  Output (i a -> f) = Output f
-  Output (o a) = o
+type family OutputF (f :: Type) where
+  OutputF (i a -> f) = Output f
+  OutputF (o a) = o
 
 class
-  (SymbolicData (Input f), SymbolicData (Output f)) =>
-  SymbolicFunction (a :: Type) (f :: Type)
-    | f -> a
-  where
+  ( SymbolicData (Input f), HasRep (Input f) a
+  , SymbolicData (Output f), Traversable (Layout (Output f) a)
+  ) => SymbolicFunction (a :: Type) (f :: Type) | f -> a where
+  type Input f :: Type -> Type
+  type Input f = InputF f
+  type Output f :: Type -> Type
+  type Output f = OutputF f
   symApply :: f -> Input f a -> Output f a
 
 instance
-  (SymbolicData (Input (o a)), SymbolicData o, Output (o a) ~ o)
-  => SymbolicFunction a (o a)
-  where
+  (SymbolicData o, Traversable (Layout o a), Input (o a) ~ U1, Output (o a) ~ o)
+  => SymbolicFunction a (o a) where
   symApply = const
 
-instance (SymbolicData i, SymbolicFunction a f) => SymbolicFunction a (i a -> f) where
+instance
+  (SymbolicData i, HasRep i a, SymbolicFunction a f)
+  => SymbolicFunction a (i a -> f) where
   symApply f (x :*: y) = symApply (f x) y
 
-compile
-  :: (Arithmetic a, Binary a, Binary (Rep (Layout (Input f) c)), c ~ Node (Just (Order a)), SymbolicFunction c f)
-  => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
-compile =
-  optimize
-    . solder
-    . \f l -> _
+data Compiler a = Compiler
+  { circuitContext :: CircuitContext a U1
+  , seenConstraint :: Set Hash
+  , integers :: Map Hash (EuclideanF a Hash)
+  , booleans :: Map Hash (BooleanF a Hash)
+  , orders :: Map Hash (OrderingF a Hash)
+  }
+  deriving (Generic)
 
--- compile
---  :: forall a s f n
---   . ( SymbolicFunction f
---     , Context f ~ AC a
---     , Domain f ~ s
---     , Representable (Layout s n)
---     , Representable (Payload s n)
---     , Binary (Rep (Layout s n))
---     , Binary (Rep (Payload s n))
---     , Binary a
---     , n ~ Order a
---     )
---  => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
--- compile =
---  optimize . solder . \f (p :*: l) ->
---    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
---        Bool b = isValid input
---        output = apply f input
---        MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
---          constraint (one - ($ i))
---          pure r
---        (vars, circuit) = runState (traverse work constrained) emptyContext
---     in crown circuit vars
--- where
---  work :: Elem a -> State (CircuitContext a U1) (Var a)
---  work el = case (elWitness el, elHash el) of
---    (Nothing, v) -> pure (pure v) -- input variable
---    (_, FoldPVar _ _) -> error "TODO: fold constraints"
---    (_, FoldLVar _ _) -> error "TODO: fold constraints"
+makeCompiler :: Compiler a
+makeCompiler = Compiler emptyContext S.empty M.empty M.empty M.empty
+
+compileNode ::
+  forall a. (Arithmetic a, Binary a) =>
+  Node (Just (Order a)) -> State (Compiler a) (Var a)
+compileNode (NodeInput v) = pure $ pure (EqVar v)
+compileNode (NodeConstrain c n h) = do
+  gets (S.member h . seenConstraint) >>= \case
+    True -> pure ()
+    False -> case c of
+      Lookup lkp ns -> do
+        vs <- traverse compileNode ns
+        zoom #circuitContext (lookupConstraint vs lkp)
+      Polynomial p -> do
+        poly <- traversePoly @_ @a compileNode p
+        zoom #circuitContext $ constraint (evalPoly poly)
+  compileNode n
 --    (Just w, EqVar bs) -> do
 --      isDone <- gets (M.member bs . acWitness)
 --      unless isDone do
@@ -269,3 +299,20 @@ compile =
 --            for_ l work
 --        for_ (children w) work
 --      pure $ pure (elHash el)
+
+compileOutput :: Compiler a -> o (Var a) -> CircuitContext a o
+compileOutput Compiler {..} = crown circuitContext
+
+compile
+  :: forall a c f
+   . (Arithmetic a, Binary a, c ~ Node (Just (Order a)), SymbolicFunction c f)
+  => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
+compile = optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
+  let (output, compiler) = flip runState makeCompiler . traverse compileNode
+                           . toLayout . symApply f
+                           $ fromLayout (fmap fromNewVar l)
+   in compileOutput compiler output
+  where
+    fromNewVar :: NewVar -> Node (Just size)
+    fromNewVar (EqVar v) = NodeInput v
+    fromNewVar _ = error "folding not supported"

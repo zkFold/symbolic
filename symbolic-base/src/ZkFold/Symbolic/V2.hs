@@ -7,6 +7,7 @@ import Data.Binary (Binary)
 import Data.Foldable (Foldable)
 import Data.Functor.Rep (Rep, Representable)
 import Data.Set (Set)
+import Data.Traversable (Traversable)
 import GHC.Generics (Par1, (:*:))
 import Numeric.Natural (Natural)
 
@@ -29,7 +30,7 @@ data LookupTable f where
 
 data Constraint a where
   Polynomial :: (forall b. Algebra a b => b) -> Constraint a
-  Lookup :: LookupTable f -> f a -> Constraint a
+  Lookup :: Traversable f => LookupTable f -> f a -> Constraint a
 
 -- TODO: Get rid of NFData constraint
 class (NFData c, PrimeField c) => Symbolic c where

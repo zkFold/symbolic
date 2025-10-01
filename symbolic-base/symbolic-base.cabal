@@ -131,6 +131,7 @@ library
       ZkFold.Algebra.EllipticCurve.Secp256k1
       ZkFold.Algebra.Polynomial.Multivariate
       ZkFold.Algebra.Polynomial.Multivariate.Groebner
+      ZkFold.Algebra.Polynomial.Multivariate.Maps
       ZkFold.Algebra.Polynomial.Multivariate.Monomial
       ZkFold.Algebra.Polynomial.Multivariate.Internal
       ZkFold.Algebra.Polynomial.Univariate
