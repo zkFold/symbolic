@@ -204,7 +204,7 @@ data ZKProofBytes = ZKProofBytes
   , z2_xi'_int :: !Integer
   , h1_xi'_int :: !Integer
   , h2_xi_int :: !Integer
-  , l_xi :: !ZKF
+  , l_xi :: ![ZKF]
   , l1_xi :: !ZKF
   }
   deriving stock (Generic, Show)
@@ -214,7 +214,7 @@ mkProof :: forall i (n :: Natural). Proof (PlonkupTs i n ByteString) -> ZKProofB
 mkProof PlonkupProof {..} =
   case l_xi of
     [] -> error "mkProof: empty inputs"
-    (xi : _) ->
+    xs ->
       ZKProofBytes
         { cmA_bytes = ByteStringFromHex $ convertG1 cmA
         , cmB_bytes = ByteStringFromHex $ convertG1 cmB
@@ -241,8 +241,8 @@ mkProof PlonkupProof {..} =
         , z2_xi'_int = convertZp z2_xi'
         , h1_xi'_int = convertZp h1_xi'
         , h2_xi_int = convertZp h2_xi
-        , l_xi = ZKF $ convertZp l1_xi
-        , l1_xi = ZKF $ convertZp xi
+        , l_xi = (ZKF . convertZp) <$> xs
+        , l1_xi = ZKF $ convertZp l1_xi
         }
 
 type ExpModCircuitGates = 2 ^ 18
