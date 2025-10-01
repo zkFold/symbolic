@@ -251,7 +251,7 @@ type ExpModLayout = (Vector 17 :*: Par1)
 
 type ExpModCompiledInput = ((U1 :*: U1) :*: U1) :*: (ExpModLayout :*: U1)
 
-type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput Par1
+type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput (Par1 :*: Par1)
 
 data ExpModInput c
   = ExpModInput
@@ -264,7 +264,18 @@ deriving instance SymbolicData ExpModInput
 
 deriving instance SymbolicInput ExpModInput
 
-type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
+data ExpModOutput c
+  = ExpModOutput
+  { emoHash :: FieldElement c
+  , emoTokenName :: FieldElement c
+  }
+  deriving (Generic, Generic1)
+
+deriving instance SymbolicData ExpModOutput
+
+deriving instance SymbolicInput ExpModOutput
+
+type PlonkupTs i n t = Plonkup i (Par1 :*: Par1) n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
@@ -280,8 +291,8 @@ expModContract
   => KnownNat (Ceil (GetRegisterSize (BaseField c) 4096 Auto) OrdWord)
   => RSA.PublicKey 2048 c
   -> ExpModInput c
-  -> FieldElement c
-expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) = hashAsFE * tokenNameAsFE
+  -> ExpModOutput c
+expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) = ExpModOutput hashAsFE tokenNameAsFE
  where
   msgHash :: UInt 2048 Auto c
   msgHash = exp65537Mod @c @2048 @2048 sig pubN
@@ -365,21 +376,21 @@ expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
 
 type ExpModCircuitGatesMock = 2 ^ 10
 
-identityCircuit :: ArithmeticCircuit Fr Par1 Par1
+identityCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
 identityCircuit = AC.idCircuit
 
 expModSetupMock
   :: forall t
    . TranscriptConstraints t
   => TrustedSetup (ExpModCircuitGatesMock + 6)
-  -> SetupVerify (PlonkupTs Par1 ExpModCircuitGatesMock t)
+  -> SetupVerify (PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t)
 expModSetupMock TrustedSetup {..} = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
   plonkup = Plonkup omega k1 k2 identityCircuit g2_1 g1s
-  setupV = setupVerify @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
+  setupV = setupVerify @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t) plonkup
 
-nativeSolution :: ExpModProofInput -> Fr
+nativeSolution :: ExpModProofInput -> (Fr, Fr)
 nativeSolution ExpModProofInput {..} = input
  where
   expm :: Natural
@@ -388,8 +399,8 @@ nativeSolution ExpModProofInput {..} = input
   hash :: Natural
   hash = expm `P.mod` (2 P.^ (256 :: Natural))
 
-  input :: Fr
-  input = toZp (fromIntegral hash) * toZp (fromIntegral piTokenName)
+  input :: (Fr, Fr)
+  input = (toZp (fromIntegral hash), toZp (fromIntegral piTokenName))
 
 expModProofMock
   :: forall t
@@ -400,23 +411,23 @@ expModProofMock
   -> (Input (PlonkupTs Par1 ExpModCircuitGatesMock t), Proof (PlonkupTs Par1 ExpModCircuitGatesMock t))
 expModProofMock TrustedSetup {..} ps empi = (proofInput, proof)
  where
-  input :: Fr
+  input :: (Fr, Fr)
   input = nativeSolution empi
 
-  witnessInputs :: Par1 Fr
-  witnessInputs = Par1 input
+  witnessInputs :: (Par1 :*: Par1) Fr
+  witnessInputs = Par1 (fst input) :*: Par1 (snd input)
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
   plonkup = Plonkup omega k1 k2 identityCircuit g2_1 g1s
-  setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
-  witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
-  (proofInput, proof) = prove @(PlonkupTs Par1 ExpModCircuitGatesMock t) setupP witness
+  setupP = setupProve @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t) plonkup
+  witness = (PlonkupWitnessInput @(Par1 :*: Par1) @BLS12_381_G1_JacobianPoint witnessInputs, ps)
+  (proofInput, proof) = prove @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t) setupP witness
 
 -- A meaningless function with range and polynomial constraints for debugging
 -- The number of constraints depends on ExpModCircuitGatesMock
 --
-debugFun :: forall c. Symbolic c => Vec Par1 c -> Vec Par1 c
-debugFun (Vec cp) = Vec $ fromCircuitF cp $ \(Par1 i) -> do
+debugFun :: forall c. Symbolic c => Vec (Par1 :*: Par1) c -> Vec (Par1 :*: Par1) c
+debugFun (Vec cp) = Vec $ fromCircuitF cp $ \(Par1 i :*: _) -> do
   o <- newAssigned $ \p -> p i + fromConstant @Natural 42
   o' <- newAssigned $ \p -> p o * p i
   let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
@@ -426,9 +437,9 @@ debugFun (Vec cp) = Vec $ fromCircuitF cp $ \(Par1 i) -> do
   a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
   out' <- newAssigned $ \p -> p a + p i
   out <- newAssigned $ \p -> p out' - p a
-  pure $ Par1 out
+  pure $ (Par1 out :*: Par1 out)
 
-debugCircuit :: ArithmeticCircuit Fr Par1 Par1
+debugCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
 debugCircuit = runVec $ C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
 
 expModProofDebug
@@ -437,19 +448,19 @@ expModProofDebug
   => TrustedSetup (ExpModCircuitGatesMock + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> ExpModProofInput
-  -> Proof (PlonkupTs Par1 ExpModCircuitGatesMock t)
+  -> Proof (PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t)
 expModProofDebug TrustedSetup {..} ps _ = proof
  where
   input :: Fr
   input = toZp (-42)
 
-  witnessInputs :: Par1 Fr
-  witnessInputs = Par1 input
+  witnessInputs :: (Par1 :*: Par1) Fr
+  witnessInputs = Par1 input :*: Par1 input
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGatesMock)
   plonkup = Plonkup omega k1 k2 debugCircuit g2_1 g1s
-  setupP = setupProve @(PlonkupTs Par1 ExpModCircuitGatesMock t) plonkup
-  witness = (PlonkupWitnessInput @Par1 @BLS12_381_G1_JacobianPoint witnessInputs, ps)
+  setupP = setupProve @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGatesMock t) plonkup
+  witness = (PlonkupWitnessInput @(Par1 :*: Par1) @BLS12_381_G1_JacobianPoint witnessInputs, ps)
   (proof, _) = rustPlonkupProve setupP witness
 
 foreign export ccall mkProofBytesWasm :: CString -> CString -> IO CString
