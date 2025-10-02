@@ -44,6 +44,15 @@ import Tests.Symbolic.Data.List (specList)
 import qualified Tests.Symbolic.Data.MerkleTree as Symbolic
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
+import ZkFold.Algebra.EllipticCurve.BLS12_381
+import ZkFold.Algebra.EllipticCurve.Class
+import ZkFold.Algebra.Class
+import ZkFold.FFI.Rust.Halo2
+import ZkFold.FFI.Rust.Types
+import Foreign (withForeignPtr)
+import ZkFold.FFI.Rust.Conversion
+import ZkFold.Protocol.Halo2
+
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
@@ -94,4 +103,10 @@ spec gen = do
     specRustBLS
 
 main :: IO ()
-main = hspec . spec =<< initStdGen
+main = do
+  -- hspec . spec =<< initStdGen
+  let a = [one, one + one] :: [ScalarFieldOf BLS12_381_G1_Point]
+  withForeignPtr (rawData $ rawPlonkupWitnessData $ h2r $ PlonkupWitnessData a a a) $ \ptr -> 
+    r_halo2_prove ptr 
+  pure ()
+
