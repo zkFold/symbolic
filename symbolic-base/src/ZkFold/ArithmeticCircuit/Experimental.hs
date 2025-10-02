@@ -24,6 +24,7 @@ import Data.Functor (Functor, fmap, (<$>), (<&>))
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as M
+import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
 import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
@@ -38,6 +39,7 @@ import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 import Optics (zoom)
+import Unsafe.Coerce (unsafeCoerce)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
@@ -55,8 +57,6 @@ import ZkFold.Symbolic.Compiler ()
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import Data.Maybe (Maybe(..))
-import Unsafe.Coerce (unsafeCoerce)
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -321,18 +321,22 @@ compileNode (NodeConstrain c n h) = do
       poly <- traversePoly @_ @a (fmap toVar . compileNode) p
       zoom #circuitContext $ constraint (evalPoly poly)
   compileNode n
-compileNode (NodeApply op h) = gets (request op . witnessExtractor) >>= \case
-  Just w -> pure w
-  Nothing -> do
-    w <- traverseOp compileNode op >>= \case
-      OpConst c -> _
-    zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
-    pure w
-  where
-    request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
-    request _ m = (m M.!? h) <&> \case
+compileNode (NodeApply op h) =
+  gets (request op . witnessExtractor) >>= \case
+    Just w -> pure w
+    Nothing -> do
+      w <-
+        traverseOp compileNode op >>= \case
+          OpConst c -> _
+      zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
+      pure w
+ where
+  request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
+  request _ m =
+    (m M.!? h) <&> \case
       SomeWitness s -> unsafeCoerce s
-      -- ^ safe assuming no collisions
+
+-- \^ safe assuming no collisions
 
 --    (Just w, EqVar bs) -> do
 --      isDone <- gets (M.member bs . acWitness)
