@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module ZkFold.Symbolic.Ledger.Offchain.State.Update (
 
 ) where
@@ -9,14 +11,21 @@ import ZkFold.Symbolic.Ledger.Types
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness)
+import Data.Function ((&))
 import ZkFold.Data.Vector
 import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
+import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Algebra.Class
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Symbolic.Data.Bool (true, false, (||), (&&), BoolType (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Prelude (foldl')
 import ZkFold.Data.Eq ((==))
+import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, KnownMerkleTree)
+
+-- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
 
 -- | Update ledger state.
 updateLedgerState
@@ -39,6 +48,9 @@ updateLedgerState
 updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial = 
   
   let 
+    newLen = previousState.sLength + one
+    bridgeInHash :: HashSimple context
+    bridgeInHash = newLen & hash & Base.hHash
     emptyBoVec :: (Vector bo :.: Output a) context
     emptyBoVec = Comp1 (P.pure (nullOutput @a @context))
 
@@ -63,10 +75,26 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
                   outs
        in foldl' step emptyBoVec txs
 
+    -- Apply bridge-in outputs to UTxO tree by replacing null leaves
+    biOuts = unComp1 bridgedInOutputs
+    stepBridgeIn (ix :*: tree) out =
+      let isNullOut = out == nullOutput @a @context
+          entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
+          tree' =
+            ifThenElse
+              isNullOut
+              tree
+              ( let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
+                    utxoHash = hash utxo & Base.hHash
+                 in MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree
+              )
+       in (ix + one) :*: tree'
+    (_ :*: utxoAfterBridgeIn) = foldl' stepBridgeIn (zero :*: previousState.sUTxO) (fromVector biOuts)
+
     newState = State {
       sPreviousStateHash = hasher previousState,
-      sUTxO = P.undefined,
-      sLength = previousState.sLength + one,
+      sUTxO = utxoAfterBridgeIn,
+      sLength = newLen,
       sBridgeIn = hash bridgedInOutputs,
       sBridgeOut = hash bridgedOutOutputs
     }
