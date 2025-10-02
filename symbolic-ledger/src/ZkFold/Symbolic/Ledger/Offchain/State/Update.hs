@@ -10,7 +10,7 @@ import qualified Prelude as P
 import ZkFold.Symbolic.Ledger.Types
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat)
-import ZkFold.Symbolic.Ledger.Validation.State (StateWitness)
+import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import Data.Function ((&))
 import ZkFold.Data.Vector
 import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
@@ -23,7 +23,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Prelude (foldl')
 import ZkFold.Data.Eq ((==))
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, KnownMerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 
 -- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
 
@@ -32,7 +32,7 @@ updateLedgerState
   :: forall bi bo ud a i o t context.
   SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
-  => KnownNat bo
+  => (KnownNat bo, KnownNat bi)
   => State bi bo ud a context 
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
@@ -78,11 +78,10 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
     -- Apply bridge-in outputs to UTxO tree by replacing null leaves
     biOuts = unComp1 bridgedInOutputs
     stepBridgeIn (ix :*: tree) out =
-      let isNullOut = out == nullOutput @a @context
-          entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
+      let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           tree' =
             ifThenElse
-              isNullOut
+              (out == nullOutput @a @context)
               tree
               ( let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
                     utxoHash = hash utxo & Base.hHash
@@ -98,7 +97,6 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
       sBridgeIn = hash bridgedInOutputs,
       sBridgeOut = hash bridgedOutOutputs
     }
-    
     
     in newState :*: P.undefined
   
