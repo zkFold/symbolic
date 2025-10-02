@@ -14,7 +14,7 @@ import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
 import ZkFold.Algebra.Class
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Bool (true, false, (||), (&&))
+import ZkFold.Symbolic.Data.Bool (true, false, (||), (&&), BoolType (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Data.Eq ((==))
 
@@ -46,13 +46,14 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
     insertFirstNull acc out =
       let v = unComp1 acc
           isEmpty = (\x -> x == nullOutput @a @context) P.<$> v
-          prefixUsed = scanl (\u e -> u || e) false isEmpty
+          prefixUsed = scanl (||) false isEmpty
           usedBefore = take @bo prefixUsed
-          shouldIns = zipWith (\u e -> (ifThenElse u false true) && e) usedBefore isEmpty
+          -- We want only one entry inside `shouldIns` to be true.
+          shouldIns = zipWith (\u e -> not u && e) usedBefore isEmpty
           v' = mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) out old) v
        in Comp1 v'
 
-    txs = fromVector (action.tbTransactions)
+    txs = fromVector action.tbTransactions
     bridgedOutOutputs =
       let step acc tx =
             let outs = fromVector (unComp1 tx.outputs)
