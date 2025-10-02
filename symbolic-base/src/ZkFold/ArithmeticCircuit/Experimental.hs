@@ -10,20 +10,19 @@
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (pure)
+import Control.Applicative (pure, Applicative, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
-import Control.Monad ((>>=))
-import Control.Monad.State (State, gets, runState)
+import Control.Monad (unless)
+import Control.Monad.State (State, gets, runState, modify')
 import Data.Binary (Binary)
 import Data.Bool (Bool (..))
 import Data.ByteString (ByteString)
 import qualified Data.Eq as Prelude
 import Data.Function (const, flip, ($), (.))
-import Data.Functor (fmap)
+import Data.Functor (fmap, (<$>), Functor)
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as M
-import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
 import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
@@ -40,7 +39,7 @@ import Optics (zoom)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
-import ZkFold.Algebra.Polynomial.Multivariate.Maps (evalPoly, traversePoly)
+import ZkFold.Algebra.Polynomial.Multivariate.Maps (evalPoly, traversePoly, Polynomial)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
@@ -54,47 +53,67 @@ import ZkFold.Symbolic.Compiler ()
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import GHC.IsList (toList, fromList)
+import Data.Bifunctor (first)
 
 ------------------- Experimental single-output circuit type --------------------
 
 type Hash = ByteString
 
-type Size = Maybe Natural
+data Sort = ZZp | ZZ | BB | Ordering
 
-data Op (size :: Size) where
-  OpConst :: Integer -> Op size
-  OpScale :: Integer -> Node size -> Op size
-  OpAdd, OpMul :: Node size -> Node size -> Op size
-  OpNeg :: Node size -> Op size
-  OpExp :: Node size -> Natural -> Op size
-  OpFrom :: Node Nothing -> Op (Just n)
-  OpTo :: Node (Just n) -> Op Nothing
-  OpCompare :: Node Nothing -> Node Nothing -> Op (Just 3)
-  OpDiv
-    , OpMod
-    , OpGcd
-    , OpBezoutL
-    , OpBezoutR
-    :: Node Nothing -> Node Nothing -> Op Nothing
-  OpInv :: Node (Just n) -> Op (Just n)
-  OpEq, OpNEq :: Node size -> Node size -> Op (Just 2)
-  OpOr :: Node (Just 2) -> Node (Just 2) -> Op (Just 2)
-  OpBool :: Node size -> Node size -> Node (Just 2) -> Op size
-  OpOrder :: Node size -> Node size -> Node size -> Node (Just 3) -> Op size
+data Op f (s :: Sort) where
+  OpConst :: Integer -> Op f s
+  OpScale :: Integer -> f s -> Op f s
+  OpAdd, OpMul :: f s -> f s -> Op f s
+  OpNeg :: f s -> Op f s
+  OpExp :: f s -> Natural -> Op f s
+  OpFrom :: f ZZ -> Op f ZZp
+  OpTo :: f ZZp -> Op f ZZ
+  OpCompare :: f ZZ -> f ZZ -> Op f Ordering
+  OpDiv, OpMod, OpGcd, OpBezoutL, OpBezoutR :: f ZZ -> f ZZ -> Op f ZZ
+  OpInv :: f ZZp -> Op f ZZp
+  OpEq, OpNEq :: f s -> f s -> Op f BB
+  OpOr :: f BB -> f BB -> Op f BB
+  OpBool :: f s -> f s -> f BB -> Op f s
+  OpOrder :: f s -> f s -> f s -> f Ordering -> Op f s
 
-data Node (size :: Size) where
-  NodeInput :: Hash -> Node (Just s)
-  NodeApply :: Op size -> Hash -> Node size
-  NodeConstrain
-    :: s ~ Just size => Constraint (Node s) -> Node s -> Hash -> Node s
+traverseOp ::
+  Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
+traverseOp f = \case
+  OpConst i -> pure (OpConst i)
+  OpScale i x -> OpScale i <$> f x
+  OpAdd x y -> OpAdd <$> f x <*> f y
+  OpMul x y -> OpMul <$> f x <*> f y
+  OpNeg x -> OpNeg <$> f x
+  OpExp x e -> (`OpExp` e) <$> f x
+  OpFrom x -> OpFrom <$> f x
+  OpTo x -> OpTo <$> f x
+  OpCompare x y -> OpCompare <$> f x <*> f y
+  OpDiv x y -> OpDiv <$> f x <*> f y
+  OpMod x y -> OpMod <$> f x <*> f y
+  OpGcd x y -> OpGcd <$> f x <*> f y
+  OpBezoutL x y -> OpBezoutL <$> f x <*> f y
+  OpBezoutR x y -> OpBezoutR <$> f x <*> f y
+  OpInv x -> OpInv <$> f x
+  OpEq x y -> OpEq <$> f x <*> f y
+  OpNEq x y -> OpNEq <$> f x <*> f y
+  OpOr x y -> OpOr <$> f x <*> f y
+  OpBool x y z -> OpBool <$> f x <*> f y <*> f z
+  OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w
 
-instance Prelude.Eq (Node s) where
+data Node p (s :: Sort) where
+  NodeInput :: Hash -> Node p ZZp
+  NodeApply :: Op (Node p) s -> Hash -> Node p s
+  NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Hash -> Node p ZZp
+
+instance Prelude.Eq (Node p s) where
   NodeInput h == NodeInput h' = h Prelude.== h'
   NodeApply _ h == NodeApply _ h' = h Prelude.== h'
   NodeConstrain _ _ h == NodeConstrain _ _ h' = h Prelude.== h'
   _ == _ = False
 
-instance Prelude.Ord (Node s) where
+instance Prelude.Ord (Node p s) where
   NodeInput h `compare` NodeInput h' = h `Prelude.compare` h'
   NodeInput _ `compare` _ = Prelude.LT
   NodeApply _ _ `compare` NodeInput _ = Prelude.GT
@@ -103,16 +122,16 @@ instance Prelude.Ord (Node s) where
   NodeConstrain _ _ h `compare` NodeConstrain _ _ h' = h `Prelude.compare` h'
   NodeConstrain _ _ _ `compare` _ = Prelude.GT
 
-instance NFData (Node s) where
+instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
 
-apply :: Op size -> Node size
+apply :: Op (Node p) s -> Node p s
 apply op = NodeApply op (error "TODO")
 
-instance Conditional (Node (Just 2)) (Node size) where
+instance Conditional (Node p BB) (Node p s) where
   bool onFalse onTrue condition = apply (OpBool onFalse onTrue condition)
 
-instance BoolType (Node (Just 2)) where
+instance BoolType (Node p BB) where
   true = one
   false = zero
   not = negate
@@ -120,24 +139,24 @@ instance BoolType (Node (Just 2)) where
   xor = (+)
   x || y = apply (OpOr x y)
 
-instance Semigroup (Node (Just 3)) where
+instance Semigroup (Node p Ordering) where
   x <> y = apply (OpOrder x y x x)
 
-instance Monoid (Node (Just 3)) where
+instance Monoid (Node p Ordering) where
   mempty = zero
 
-instance IsOrdering (Node (Just 3)) where
+instance IsOrdering (Node p Ordering) where
   lt = fromConstant ((-1) :: Integer)
   eq = zero
   gt = one
 
-instance Eq (Node s) where
-  type BooleanOf (Node s) = Node (Just 2)
+instance Eq (Node p s) where
+  type BooleanOf (Node p s) = Node p BB
   x == y = apply (OpEq x y)
   x /= y = apply (OpNEq x y)
 
-instance Ord (Node Nothing) where
-  type OrderingOf (Node Nothing) = Node (Just 3)
+instance Ord (Node p ZZ) where
+  type OrderingOf (Node p ZZ) = Node p Ordering
   compare x y = apply (OpCompare x y)
   ordering x y z o = apply (OpOrder x y z o)
   x < y = compare x y == lt
@@ -146,76 +165,72 @@ instance Ord (Node Nothing) where
   x > y = compare x y == gt
 
 instance
-  (KnownNat p, KnownNat (NumberOfBits (Node (Just p))))
-  => Finite (Node (Just p))
+  (KnownNat p, KnownNat (NumberOfBits (Node p ZZp)))
+  => Finite (Node p ZZp)
   where
-  type Order (Node (Just p)) = p
+  type Order (Node p ZZp) = p
 
-instance FromConstant Natural (Node s) where
+instance FromConstant Natural (Node p s) where
   fromConstant x = apply $ OpConst (fromConstant x)
 
-instance FromConstant Integer (Node s) where
+instance FromConstant Integer (Node p s) where
   fromConstant x = apply (OpConst x)
 
-instance FromConstant (Node Nothing) (Node (Just n)) where
+instance FromConstant (Node p ZZ) (Node p ZZp) where
   fromConstant x = apply (OpFrom x)
 
-instance Scale Natural (Node s) where
+instance Scale Natural (Node p s) where
   scale k x = apply (OpScale (fromConstant k) x)
 
-instance Scale Integer (Node s) where
+instance Scale Integer (Node p s) where
   scale k x = apply (OpScale k x)
 
-instance Exponent (Node s) Natural where
+instance Exponent (Node p s) Natural where
   x ^ p = apply (OpExp x p)
 
-instance Prime p => Exponent (Node (Just p)) Integer where
+instance Prime p => Exponent (Node p ZZp) Integer where
   (^) = intPowF
 
-instance Zero (Node s) where
+instance Zero (Node p s) where
   zero = apply (OpConst 0)
 
-instance AdditiveSemigroup (Node s) where
+instance AdditiveSemigroup (Node p s) where
   x + y = apply (OpAdd x y)
 
-instance AdditiveMonoid (Node s)
+instance AdditiveMonoid (Node p s)
 
-instance AdditiveGroup (Node s) where
+instance AdditiveGroup (Node p s) where
   negate x = apply (OpNeg x)
 
-instance MultiplicativeSemigroup (Node s) where
+instance MultiplicativeSemigroup (Node p s) where
   x * y = apply (OpMul x y)
 
-instance MultiplicativeMonoid (Node s) where
+instance MultiplicativeMonoid (Node p s) where
   one = apply (OpConst 1)
 
-instance Semiring (Node s)
+instance Semiring (Node p s)
 
-instance Ring (Node s)
+instance Ring (Node p s)
 
-instance SemiEuclidean (Node Nothing) where
+instance SemiEuclidean (Node p ZZ) where
   div x y = apply (OpDiv x y)
   mod x y = apply (OpMod x y)
 
-instance Euclidean (Node Nothing) where
+instance Euclidean (Node p ZZ) where
   gcd x y = apply (OpGcd x y)
   bezoutL x y = apply (OpBezoutL x y)
   bezoutR x y = apply (OpBezoutR x y)
 
-instance Prime p => Field (Node (Just p)) where
+instance Prime p => Field (Node p ZZp) where
   finv x = apply (OpInv x)
 
 instance
-  (Prime p, KnownNat (NumberOfBits (Node (Just p))))
-  => PrimeField (Node (Just p))
+  (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p ZZp)
   where
-  type IntegralOf (Node (Just p)) = Node Nothing
+  type IntegralOf (Node p ZZp) = Node p ZZ
   toIntegral x = apply (OpTo x)
 
-instance
-  (Prime p, KnownNat (NumberOfBits (Node (Just p))))
-  => Symbolic (Node (Just p))
-  where
+instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
   constrain c x = NodeConstrain c x (error "TODO")
 
 ------------------------- Optimized compilation function -----------------------
@@ -255,34 +270,54 @@ instance
   where
   symApply f (x :*: y) = symApply (f x) y
 
+data Witness a s where
+  FieldVar :: Var a -> Witness a ZZp
+  IntWitness :: EuclideanF a (Var a) -> Witness a ZZ
+  BoolWitness :: BooleanF a (Var a) -> Witness a BB
+  OrdWitness :: OrderingF a (Var a) -> Witness a Ordering
+
+toVar :: Witness a ZZp -> Var a
+toVar (FieldVar v) = v
+
+data SomeWitness a = forall s. SomeWitness (Witness a s)
+
 data Compiler a = Compiler
-  { circuitContext :: CircuitContext a U1
-  , seenConstraint :: Set Hash
-  , integers :: Map Hash (EuclideanF a Hash)
-  , booleans :: Map Hash (BooleanF a Hash)
-  , orders :: Map Hash (OrderingF a Hash)
+  { circuitContext   :: CircuitContext a U1
+  , constraintLog    :: Set Hash
+  , witnessExtractor :: Map Hash (SomeWitness a)
   }
   deriving Generic
 
 makeCompiler :: Compiler a
-makeCompiler = Compiler emptyContext S.empty M.empty M.empty M.empty
+makeCompiler = Compiler emptyContext S.empty M.empty
+
+instance {-# OVERLAPPING #-}
+  (AdditiveMonoid a, Prelude.Eq a, Prelude.Ord v)
+  => Scale v (Polynomial a v) where
+  scale x = fromList . fmap (first ((x, 1) :)) . toList
+
+instance {-# OVERLAPPING #-}
+  (Semiring a, Prelude.Eq a, Prelude.Ord v)
+  => FromConstant v (Polynomial a v) where
+  fromConstant x = fromList [([(x, 1)], one)]
 
 compileNode
-  :: forall a
-   . (Arithmetic a, Binary a)
-  => Node (Just (Order a)) -> State (Compiler a) (Var a)
-compileNode (NodeInput v) = pure $ pure (EqVar v)
+  :: forall a s. (Arithmetic a, Binary a)
+  => Node (Order a) s -> State (Compiler a) (Witness a s)
+compileNode (NodeInput v) = pure $ FieldVar $ pure (EqVar v)
 compileNode (NodeConstrain c n h) = do
-  gets (S.member h . seenConstraint) >>= \case
-    True -> pure ()
-    False -> case c of
-      Lookup lkp ns -> do
-        vs <- traverse compileNode ns
-        zoom #circuitContext (lookupConstraint vs lkp)
-      Polynomial p -> do
-        poly <- traversePoly @_ @a compileNode p
-        zoom #circuitContext $ constraint (evalPoly poly)
+  isDone <- gets (S.member h . constraintLog)
+  zoom #constraintLog $ modify' (S.insert h)
+  unless isDone case c of
+    Lookup lkp ns -> do
+      vs <- traverse (fmap toVar . compileNode) ns
+      zoom #circuitContext (lookupConstraint vs lkp)
+    Polynomial p -> do
+      poly <- traversePoly @_ @a (fmap toVar . compileNode) p
+      zoom #circuitContext $ constraint (evalPoly poly)
   compileNode n
+compileNode (NodeApply op h) = do
+  _
 
 --    (Just w, EqVar bs) -> do
 --      isDone <- gets (M.member bs . acWitness)
@@ -310,12 +345,13 @@ compileNode (NodeConstrain c n h) = do
 --        for_ (children w) work
 --      pure $ pure (elHash el)
 
-compileOutput :: Compiler a -> o (Var a) -> CircuitContext a o
-compileOutput Compiler {..} = crown circuitContext
+compileOutput
+  :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
+compileOutput Compiler {..} = crown circuitContext . fmap toVar
 
 compile
   :: forall a c f
-   . (Arithmetic a, Binary a, c ~ Node (Just (Order a)), SymbolicFunction c f)
+   . (Arithmetic a, Binary a, c ~ Node (Order a) ZZp, SymbolicFunction c f)
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
 compile =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
@@ -327,6 +363,6 @@ compile =
             $ fromLayout (fmap fromNewVar l)
      in compileOutput compiler output
  where
-  fromNewVar :: NewVar -> Node (Just size)
+  fromNewVar :: NewVar -> Node (Order a) ZZp
   fromNewVar (EqVar v) = NodeInput v
   fromNewVar _ = error "folding not supported"
