@@ -10,16 +10,17 @@
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (pure, Applicative, (<*>))
+import Control.Applicative (Applicative, pure, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless)
-import Control.Monad.State (State, gets, runState, modify')
+import Control.Monad.State (State, gets, modify', runState)
+import Data.Bifunctor (first)
 import Data.Binary (Binary)
 import Data.Bool (Bool (..))
 import Data.ByteString (ByteString)
 import qualified Data.Eq as Prelude
 import Data.Function (const, flip, ($), (.))
-import Data.Functor (fmap, (<$>), Functor)
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -33,13 +34,14 @@ import Data.Type.Equality (type (~))
 import GHC.Err (error)
 import GHC.Generics (Generic, U1, (:*:) (..))
 import GHC.Integer (Integer)
+import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 import Optics (zoom)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
-import ZkFold.Algebra.Polynomial.Multivariate.Maps (evalPoly, traversePoly, Polynomial)
+import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traversePoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
@@ -53,8 +55,6 @@ import ZkFold.Symbolic.Compiler ()
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import GHC.IsList (toList, fromList)
-import Data.Bifunctor (first)
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -78,8 +78,8 @@ data Op f (s :: Sort) where
   OpBool :: f s -> f s -> f BB -> Op f s
   OpOrder :: f s -> f s -> f s -> f Ordering -> Op f s
 
-traverseOp ::
-  Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
+traverseOp
+  :: Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
 traverseOp f = \case
   OpConst i -> pure (OpConst i)
   OpScale i x -> OpScale i <$> f x
@@ -224,9 +224,7 @@ instance Euclidean (Node p ZZ) where
 instance Prime p => Field (Node p ZZp) where
   finv x = apply (OpInv x)
 
-instance
-  (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p ZZp)
-  where
+instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p ZZp) where
   type IntegralOf (Node p ZZp) = Node p ZZ
   toIntegral x = apply (OpTo x)
 
@@ -282,8 +280,8 @@ toVar (FieldVar v) = v
 data SomeWitness a = forall s. SomeWitness (Witness a s)
 
 data Compiler a = Compiler
-  { circuitContext   :: CircuitContext a U1
-  , constraintLog    :: Set Hash
+  { circuitContext :: CircuitContext a U1
+  , constraintLog :: Set Hash
   , witnessExtractor :: Map Hash (SomeWitness a)
   }
   deriving Generic
@@ -291,18 +289,23 @@ data Compiler a = Compiler
 makeCompiler :: Compiler a
 makeCompiler = Compiler emptyContext S.empty M.empty
 
-instance {-# OVERLAPPING #-}
+instance
+  {-# OVERLAPPING #-}
   (AdditiveMonoid a, Prelude.Eq a, Prelude.Ord v)
-  => Scale v (Polynomial a v) where
+  => Scale v (Polynomial a v)
+  where
   scale x = fromList . fmap (first ((x, 1) :)) . toList
 
-instance {-# OVERLAPPING #-}
+instance
+  {-# OVERLAPPING #-}
   (Semiring a, Prelude.Eq a, Prelude.Ord v)
-  => FromConstant v (Polynomial a v) where
+  => FromConstant v (Polynomial a v)
+  where
   fromConstant x = fromList [([(x, 1)], one)]
 
 compileNode
-  :: forall a s. (Arithmetic a, Binary a)
+  :: forall a s
+   . (Arithmetic a, Binary a)
   => Node (Order a) s -> State (Compiler a) (Witness a s)
 compileNode (NodeInput v) = pure $ FieldVar $ pure (EqVar v)
 compileNode (NodeConstrain c n h) = do
