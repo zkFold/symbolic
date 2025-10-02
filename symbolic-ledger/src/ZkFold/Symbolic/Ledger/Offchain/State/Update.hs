@@ -75,9 +75,9 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
                   outs
        in foldl' step emptyBoVec txs
 
-    -- Apply bridge-in outputs to UTxO tree by replacing null leaves
-    biOuts = unComp1 bridgedInOutputs
-    stepBridgeIn (ix :*: tree) out =
+    -- Apply bridge-in outputs to UTxO tree by replacing null leaves and collect witness entries
+    biOutsList = fromVector (unComp1 bridgedInOutputs)
+    stepBridgeIn (ix, entries, tree) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           tree' =
             ifThenElse
@@ -87,8 +87,11 @@ updateLedgerState previousState utxoSet bridgedInOutputs action _sigMaterial =
                     utxoHash = hash utxo & Base.hHash
                  in MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree
               )
-       in (ix + one) :*: tree'
-    (_ :*: utxoAfterBridgeIn) = foldl' stepBridgeIn (zero :*: previousState.sUTxO) (fromVector biOuts)
+          ix' = ix + one
+          entries' = entry : entries
+       in (ix', entries', tree')
+    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn) = foldl' stepBridgeIn (zero, [], previousState.sUTxO) biOutsList
+    swAddBridgeIn = Comp1 (unsafeToVector @bi (P.reverse biEntriesRev))
 
     newState = State {
       sPreviousStateHash = hasher previousState,
