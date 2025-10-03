@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Examples.ECDSA (exampleECDSA) where
 import GHC.Generics ((:*:))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
-import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerify)
+import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
 import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
@@ -22,4 +22,4 @@ exampleECDSA
   -> FFA FqModulus 'Auto ctx
   -> (FFA FqModulus 'Auto :*: FFA FqModulus 'Auto) ctx
   -> Bool ctx
-exampleECDSA = ecdsaVerify @256
+exampleECDSA = ecdsaVerifyMessageHash @256

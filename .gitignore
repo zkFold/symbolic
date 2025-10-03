@@ -34,3 +34,4 @@ a.out
 ghc_wasm_jsffi.js
 proof.wasm
 Cargo.lock
+todo.md
