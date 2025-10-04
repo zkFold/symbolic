@@ -24,6 +24,7 @@ import Data.Function (const, id, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.List ((++))
 import Data.Maybe (Maybe (..))
+import Data.OpenApi (ToSchema)
 import Data.Semigroup ((<>))
 import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
@@ -51,7 +52,7 @@ import ZkFold.Prelude (iterate', log2ceiling)
 
 newtype Zp (p :: Natural) = Zp Integer
   deriving Generic
-  deriving newtype (FromJSONKey, NFData, ToJSONKey)
+  deriving newtype (FromJSONKey, NFData, ToJSONKey, ToSchema)
 
 {-# INLINE fromZp #-}
 fromZp :: Zp p -> Natural
@@ -171,6 +172,10 @@ inv a p =
   egcd (x, y) (x', y') = egcd (x', y') (x - q * x', y - q * y')
    where
     q = x `div` x'
+
+instance (Finite (Zp p), Prime p) => PrimeField (Zp p) where
+  type IntegralOf (Zp p) = Integer
+  toIntegral = fromConstant . toConstant
 
 instance Prime p => BinaryExpansion (Zp p) where
   type Bits (Zp p) = [Zp p]

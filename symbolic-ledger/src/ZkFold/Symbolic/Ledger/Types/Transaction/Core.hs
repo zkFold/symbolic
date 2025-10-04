@@ -1,130 +1,136 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
-  Transaction (txInputs, txOutputs, txValidityInterval, txOwner),
-  mkTransaction,
+  OutputRef (..),
+  nullOutputRef,
+  Output (..),
+  nullOutput,
+  UTxO (..),
+  nullUTxO,
+  nullUTxOHash,
+  Transaction (..),
   TransactionId,
   txId,
-  OutputIndex,
-  KnownRegistersOutputIndex,
-  OutputRef (..),
-  Input (..),
 ) where
 
-import GHC.Generics (Generic, Generic1, type (:*:) (..))
-import ZkFold.Control.Conditional (ifThenElse)
+import Data.Function ((&))
+import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
+import GHC.TypeNats (KnownNat)
+import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
-import ZkFold.Symbolic.Data.List (List)
-import qualified ZkFold.Symbolic.Data.List as Symbolic.List
-import ZkFold.Symbolic.Data.Maybe (Maybe, just, nothing)
+import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.UInt (UInt)
-import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
-import qualified Prelude as Haskell hiding ((||))
+import Prelude qualified as Haskell hiding ((||))
 
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
+import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
-import ZkFold.Symbolic.Ledger.Types.Interval (Interval)
-import ZkFold.Symbolic.Ledger.Types.Output (Output (..))
-import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 
--- TODO: Use POSIXTime instead of UTCTime?
-
--- | Transaction in our symbolic ledger.
-data Transaction context = Transaction
-  { txInputs :: List Input context
-  -- ^ A list of inputs to the transaction.
-  , txOutputs :: List Output context
-  -- ^ A list of outputs of the transaction.
-  , txValidityInterval :: Interval context
-  -- ^ The validity interval of the transaction. The bounds are inclusive.
-  , txOwner :: Address context
-  -- ^ Inputs belonging to this address are considered spent whereas others are considered to be only referenced by this transaction.
+-- | An output's reference.
+data OutputRef context = OutputRef
+  { orTxId :: HashSimple context
+  -- ^ Transaction ID which created this output.
+  , orIndex :: UInt 32 Auto context
+  -- ^ Index of the output in the transaction.
+  -- TODO: Restrict to represent 'o' outputs instead of 2^32?
   }
   deriving stock (Generic, Generic1)
   deriving anyclass SymbolicData
 
 instance
-  ( KnownRegistersAssetQuantity context
-  , KnownRegistersOutputIndex context
-  , KnownRegisters context 11 Auto
-  , Symbolic context
-  )
-  => Eq (Transaction context)
+  Symbolic context
+  => Eq (OutputRef context)
 
--- | Builds a 'Transaction' validating that there is at least one input belonging to the "owner".
-mkTransaction
-  :: forall context
-   . ( SymbolicFold context
+-- | Null output reference.
+nullOutputRef :: Symbolic context => OutputRef context
+nullOutputRef = OutputRef {orTxId = zero, orIndex = zero}
+
+-- | An output of a transaction.
+data Output a context = Output
+  { oAddress :: Address context
+  -- ^ Address of the output.
+  , oAssets :: (Vector a :.: AssetValue) context
+  -- ^ Assets of the output.
+  }
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
+
+instance
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  )
+  => Eq (Output a context)
+
+-- | Null output.
+nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
+nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
+
+-- | A UTxO.
+data UTxO a context = UTxO
+  { uRef :: OutputRef context
+  , uOutput :: Output a context
+  }
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
+
+instance
+  ( Symbolic context
+  , KnownRegistersAssetQuantity context
+  )
+  => Eq (UTxO a context)
+
+instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
+  hasher = Poseidon.hash
+
+-- | Null UTxO.
+nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
+nullUTxO = UTxO {uRef = nullOutputRef, uOutput = nullOutput}
+
+-- | Null UTxO's hash.
+nullUTxOHash
+  :: forall a context. (Symbolic context, KnownNat a) => HashSimple context
+nullUTxOHash = hash (nullUTxO @a @context) & Base.hHash
+
+-- | Transaction in our symbolic ledger.
+data Transaction i o a context = Transaction
+  { inputs :: (Vector i :.: OutputRef) context
+  -- ^ Inputs.
+  , outputs :: (Vector o :.: (Output a :*: Bool)) context
+  -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
+  }
+  deriving stock (Generic, Generic1)
+  deriving anyclass SymbolicData
+
+instance
+  forall i o a context
+   . ( Symbolic context
      , KnownRegistersAssetQuantity context
-     , KnownRegistersOutputIndex context
-     , KnownRegisters context 11 Auto
      )
-  => List Input context
-  -> List Output context
-  -> Interval context
-  -> Address context
-  -> Maybe Transaction context
-mkTransaction inputs outputs validityInterval owner =
-  let (hasOwnerInput :*: _) =
-        Symbolic.List.foldl
-          (\(accBool :*: owner') x -> (accBool || txoAddress (txiOutput x) == owner') :*: owner')
-          ((false :: Bool context) :*: owner)
-          inputs
-   in ifThenElse
-        hasOwnerInput
-        nothing
-        ( just $
-            Transaction
-              { txInputs = inputs
-              , txOutputs = outputs
-              , txValidityInterval = validityInterval
-              , txOwner = owner
-              }
-        )
+  => Eq (Transaction i o a context)
 
 -- | Transaction hash.
-type TransactionId = Hash Transaction
+type TransactionId i o a = Hash (Transaction i o a)
 
+instance Symbolic context => Hashable (HashSimple context) (Transaction i o a context) where
+  hasher = Poseidon.hash
+
+-- | Obtain transaction hash.
 txId
-  :: ( Symbolic context
-     , Hashable (HashSimple context) (Transaction context)
-     )
-  => Transaction context -> TransactionId context
+  :: forall i o a context
+   . Symbolic context
+  => Transaction i o a context
+  -> TransactionId i o a context
 txId = hash
-
--- | Index of an output in the transaction's output list.
-type OutputIndex = UInt 32 Auto
-
-type KnownRegistersOutputIndex context = KnownRegisters context 32 Auto
-
--- | Reference to a transaction output.
-data OutputRef context = OutputRef
-  { refId :: HashSimple context
-  -- ^ The transaction id of the transaction that produced the output.
-  , refIdx :: OutputIndex context
-  -- ^ The index of the output in the transaction's output list.
-  }
-  deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
-
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (OutputRef context)
-
--- | Input to a transaction.
-data Input context = Input
-  { txiOutputRef :: OutputRef context
-  -- ^ Reference to the output being spent.
-  , txiOutput :: Output context
-  -- ^ The output being spent.
-  }
-  deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
-
-instance (KnownRegistersAssetQuantity context, KnownRegistersOutputIndex context, Symbolic context) => Eq (Input context)

@@ -10,15 +10,13 @@ module ZkFold.ArithmeticCircuit.Experimental where
 import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
 import Control.Monad (unless)
-import Control.Monad.State (State, gets, modify', runState, state)
+import Control.Monad.State (State, gets, modify', runState)
 import Data.Binary (Binary)
-import Data.ByteString (ByteString)
 import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
 import Data.Function (flip, on, ($), (.))
 import Data.Functor (Functor, fmap)
 import Data.Functor.Rep (Rep, Representable)
-import Data.Map (Map)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..))
@@ -40,16 +38,14 @@ import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Children (children)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext,
-  LookupFunction (LookupFunction),
   acLookup,
   acSystem,
   acWitness,
-  appendFunction,
   crown,
   emptyContext,
+  lookupType,
   witToVar,
  )
-import ZkFold.ArithmeticCircuit.Lookup (LookupTable, LookupType (..))
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
 import ZkFold.Control.HApplicative (HApplicative (..))
@@ -71,6 +67,7 @@ import ZkFold.Symbolic.Data.Class (
  )
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import ZkFold.Symbolic.V2 (LookupTable)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -98,20 +95,16 @@ newtype Polynomial a v = MkPolynomial
 
 --------------- Type-preserving lookup constraint representation ---------------
 
-data LookupEntry a v
+data LookupEntry v
   = forall f.
     (Functor f, Foldable f, NFData1 f, Typeable f) =>
-    LEntry (f v) (LookupTable a f)
+    LEntry (f v) (LookupTable f)
 
 ------------- Box of constraints supporting efficient concatenation ------------
 
--- After #573, can be made even more declarative
--- by getting rid of 'cbLkpFuns' field.
--- Can then be used for new public Symbolic API (see 'constrain' below)!
 data ConstraintBox a v = MkCBox
   { cbPolyCon :: AppList (Polynomial a v)
-  , cbLkpFuns :: Map ByteString (LookupFunction a)
-  , cbLookups :: AppList (LookupEntry a v)
+  , cbLookups :: AppList (LookupEntry v)
   }
   deriving (Generic, NFData)
   deriving (Monoid, Semigroup) via (GenericSemigroupMonoid (ConstraintBox a v))
@@ -192,9 +185,6 @@ instance
   where
   unconstrained = pure . fromConstant
   constraint c = modify' \cb -> cb {cbPolyCon = MkPolynomial c `app` cbPolyCon cb}
-  registerFunction f = state \(!cb) ->
-    let (i, r') = appendFunction f (cbLkpFuns cb)
-     in (i, cb {cbLkpFuns = r'})
   lookupConstraint c t = modify' \cb -> cb {cbLookups = LEntry c t `app` cbLookups cb}
 
 ------------------------- Optimized compilation function -----------------------
@@ -240,14 +230,12 @@ compile =
           unless isDone' do
             constraint (\x -> runPolynomial c (x . pure . elHash))
             for_ (children asWitness) work
-        for_ cbLkpFuns \(LookupFunction f) -> do
-          _ <- registerFunction f
-          pure ()
         for_ cbLookups \(LEntry l t) -> do
+          lt <- lookupType t
           isDone' <-
             gets
               ( any (S.member $ toList $ fmap elHash l)
-                  . (MM.!? LookupType t)
+                  . (MM.!? lt)
                   . acLookup
               )
           unless isDone' do

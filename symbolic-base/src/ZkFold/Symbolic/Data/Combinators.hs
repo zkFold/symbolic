@@ -35,7 +35,7 @@ import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
-import ZkFold.Symbolic.Class (Arithmetic, BaseField)
+import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
 
@@ -58,7 +58,7 @@ class Resize a b where
 
 -- | Convert an @ArithmeticCircuit@ to bits and return their corresponding variables.
 toBits
-  :: (MonadCircuit v a w m, Arithmetic a)
+  :: MonadCircuit v a w m
   => [v]
   -> Natural
   -> Natural
@@ -214,7 +214,7 @@ type family Length' (s :: Haskell.Maybe (Haskell.Char, Symbol)) :: Natural where
 
 ---------------------------------------------------------------
 
-type NextPow2 n = 2 ^ (Log2 (2 * n - 1))
+type NextPow2 n = 2 ^ Log2 (2 * n - 1)
 
 nextPow2 :: Natural -> Natural
 nextPow2 n = 2 ^ nextNBits n
@@ -222,7 +222,7 @@ nextPow2 n = 2 ^ nextNBits n
 nextNBits :: Natural -> Natural
 nextNBits n = ilog2 (2 * n -! 1)
 
-withNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1))
+withNextNBits' :: forall n. KnownNat n :- KnownNat (Log2 (2 * n - 1))
 withNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1)) (unsafeSNat (nextNBits (value @n))) Dict
 
 withNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1)) => r) -> r
@@ -236,7 +236,7 @@ secondNextPow2 n = 2 ^ secondNextNBits n
 secondNextNBits :: Natural -> Natural
 secondNextNBits n = ilog2 (2 * n -! 1) + 1
 
-withSecondNextNBits' :: forall n. (KnownNat n) :- KnownNat (Log2 (2 * n - 1) + 1)
+withSecondNextNBits' :: forall n. KnownNat n :- KnownNat (Log2 (2 * n - 1) + 1)
 withSecondNextNBits' = Sub $ withKnownNat @(Log2 (2 * n - 1) + 1) (unsafeSNat (secondNextNBits (value @n))) Dict
 
 withSecondNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1) + 1) => r) -> r
@@ -278,23 +278,23 @@ padSecondNextPow2 v = do
 
 ---------------------------------------------------------------
 
-expansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
+expansion :: MonadCircuit i a w m => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion = expansionW @1
 
-expansionW :: forall r i a w m. (KnownNat r, MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
+expansionW :: forall r i a w m. (KnownNat r, MonadCircuit i a w m) => Natural -> i -> m [i]
 expansionW n k = do
   words <- wordsOf @r n k
   k' <- hornerW @r words
   constraint (\x -> x k - x k')
   return words
 
-bitsOf :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
+bitsOf :: MonadCircuit i a w m => Natural -> i -> m [i]
 -- ^ @bitsOf n k@ creates @n@ bits and sets their witnesses equal to @n@ smaller
 -- bits of @k@.
 bitsOf = wordsOf @1
 
-wordsOf :: forall r i a w m. (KnownNat r, MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m [i]
+wordsOf :: forall r i a w m. (KnownNat r, MonadCircuit i a w m) => Natural -> i -> m [i]
 -- ^ @wordsOf n k@ creates @n@ r-bit words and sets their witnesses equal to @n@ smaller
 -- words of @k@.
 wordsOf n k = for [0 .. n -! 1] $ \j ->
@@ -303,9 +303,9 @@ wordsOf n k = for [0 .. n -! 1] $ \j ->
   wordSize :: Natural
   wordSize = 2 ^ value @r
 
-  repr :: ResidueField x => Natural -> x -> x
+  repr :: PrimeField x => Natural -> x -> x
   repr j =
-    fromIntegral
+    fromConstant
       . (`mod` fromConstant wordSize)
       . (`div` fromConstant (wordSize ^ j))
       . toIntegral
@@ -325,7 +325,7 @@ horner :: MonadCircuit i a w m => [i] -> m i
 -- Horner's scheme.
 horner = hornerW @1
 
-splitExpansion :: (MonadCircuit i a w m, Arithmetic a) => Natural -> Natural -> i -> m (i, i)
+splitExpansion :: MonadCircuit i a w m => Natural -> Natural -> i -> m (i, i)
 -- ^ @splitExpansion n1 n2 k@ computes two values @(l, h)@ such that
 -- @k = 2^n1 h + l@, @l@ fits in @n1@ bits and @h@ fits in n2 bits (if such
 -- values exist).
@@ -336,14 +336,14 @@ splitExpansion n1 n2 k = do
       partH = drop (n1 `div` 16) words
 
   (l, h) <- case (n1 `mod` 16, partH) of
-    (0, _) -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
-    (m, (h0 : rest)) -> do
+    (0, _) -> (,) <$> hornerW @16 partL <*> hornerW @16 partH
+    (m, h0 : rest) -> do
       (hl, hh) <- splitExpansion16 m h0
       ls <- hornerW @16 (partL <> [hl])
       hs' <- hornerW @16 rest
       hs <- newAssigned $ \p -> scale (2 ^ (16 -! m) :: Natural) (p hs') + p hh
       pure (ls, hs)
-    _ -> (,) <$> (hornerW @16 partL) <*> hornerW @16 partH
+    _ -> (,) <$> hornerW @16 partL <*> hornerW @16 partH
 
   constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
   return (l, h)
@@ -351,20 +351,20 @@ splitExpansion n1 n2 k = do
   numWords = (n1 + n2 + 15) `div` 16
 
 -- | Same as @splitExpansion@ but only for variables of exactly 16 bits
-splitExpansion16 :: (MonadCircuit i a w m, Arithmetic a) => Natural -> i -> m (i, i)
+splitExpansion16 :: MonadCircuit i a w m => Natural -> i -> m (i, i)
 splitExpansion16 n1 k = do
   l <- newRanged (fromConstant @Natural $ 2 ^ n1 -! 1) $ lower (at k)
   h <- newRanged (fromConstant @Natural $ 2 ^ (16 -! n1) -! 1) $ upper (at k)
   constraint (\x -> x k - x l - scale (2 ^ n1 :: Natural) (x h))
   return (l, h)
  where
-  lower :: ResidueField a => a -> a
+  lower :: PrimeField a => a -> a
   lower =
-    fromIntegral . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
+    fromConstant . (`mod` fromConstant @Natural (2 ^ n1)) . toIntegral
 
-  upper :: ResidueField a => a -> a
+  upper :: PrimeField a => a -> a
   upper =
-    fromIntegral
+    fromConstant
       . (`mod` fromConstant @Natural (2 ^ (16 -! n1)))
       . (`div` fromConstant @Natural (2 ^ n1))
       . toIntegral

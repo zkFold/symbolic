@@ -28,7 +28,6 @@ import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
 import ZkFold.Protocol.IVC.Oracle
 import ZkFold.Protocol.IVC.Predicate (Compilable, Predicate)
 import ZkFold.Symbolic.Data.Class (LayoutFunctor, SymbolicData)
-import ZkFold.Symbolic.MonadCircuit (ResidueField (..))
 
 -- import Prelude hiding (length, pi)
 
@@ -84,7 +83,7 @@ instance ToConstant (AccumulatorInstance' k i c f ctx) where
 
 makeLenses ''AccumulatorInstance
 
-instance (ResidueField f, Compilable i, Eq c, BooleanOf (IntegralOf f) ~ BooleanOf c) => Eq (AccumulatorInstance k i c f) where
+instance (PrimeField f, Compilable i, Eq c, BooleanOf (IntegralOf f) ~ BooleanOf c) => Eq (AccumulatorInstance k i c f) where
   type BooleanOf (AccumulatorInstance k i c f) = BooleanOf (IntegralOf f)
   acc1 == acc2 =
     and (mzipWithRep (==) (toIntegral <$> _pi acc1) (toIntegral <$> _pi acc2))

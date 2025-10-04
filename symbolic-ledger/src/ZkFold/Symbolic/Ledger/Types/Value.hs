@@ -5,9 +5,12 @@
 
 module ZkFold.Symbolic.Ledger.Types.Value (
   AssetPolicy,
+  adaPolicy,
   AssetName,
+  adaName,
   AssetQuantity,
   AssetValue (..),
+  nullAssetValue,
   AssetValues,
   KnownRegistersAssetQuantity,
 
@@ -33,6 +36,7 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import qualified ZkFold.Symbolic.Data.List as Symbolic.List
@@ -54,19 +58,24 @@ import Prelude hiding (
   (||),
  )
 
-import ZkFold.Symbolic.Ledger.Types.Address (Address)
-import ZkFold.Symbolic.Ledger.Types.Datum (Datum)
+-- | Asset policy.
+type AssetPolicy context = FieldElement context
 
--- | Asset policy is the address of the initial UTxO that contains the asset.
-type AssetPolicy context = Address context
-
--- | Name of the asset. It's the datum of the initial UTxO that contains the asset.
-type AssetName context = Datum context
+-- | Name of the asset.
+type AssetName context = FieldElement context
 
 -- | Quantity of an asset.
 type AssetQuantity context = Int 128 Auto context
 
 type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
+
+-- TODO: Replace with actual value, once we finalize how policy names are represented.
+adaPolicy :: AssetPolicy context
+adaPolicy = undefined
+
+-- TODO: Replace with actual value, once we finalize how asset names are represented.
+adaName :: AssetName context
+adaName = undefined
 
 -- | A value represents the details of an asset that is contained in a transaction output.
 data AssetValue context = AssetValue
@@ -78,6 +87,13 @@ data AssetValue context = AssetValue
   deriving anyclass SymbolicData
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
+
+-- | Null asset value.
+nullAssetValue :: Symbolic context => AssetValue context
+nullAssetValue = AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
+
+instance Symbolic context => Zero (AssetValue context) where
+  zero = nullAssetValue
 
 -- | Denotes multiple assets.
 newtype AssetValues context = UnsafeAssetValues (List AssetValue context)

@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt, fromUInt) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -50,7 +50,7 @@ import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), ResidueField (..), Witness (..))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -174,7 +174,7 @@ layoutFFA
   => IntegralOf w
   -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) w
 layoutFFA c =
-  Par1 (fromIntegral c)
+  Par1 (fromConstant c)
     :*: tabulate (register @c @(FFAUIntSize p (Order a)) @r c)
 
 fromFFA
@@ -271,7 +271,7 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
             )
             \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
               traverse unconstrained $
-                Par1 (fromIntegral ((a + b) `div` p))
+                Par1 (fromConstant ((a + b) `div` p))
                   :*: layoutFFA @p @r @c ((a + b) `mod` p)
         , U1 :*: (U1 :*: U1)
         )
@@ -400,7 +400,8 @@ fromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 fromInt
   :: (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
-  => Int n r c -> FFA p r c
+  => Int n r c
+  -> FFA p r c
 fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
 
 toUInt

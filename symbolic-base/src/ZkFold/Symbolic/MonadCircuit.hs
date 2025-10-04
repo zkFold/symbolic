@@ -1,53 +1,24 @@
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-
 module ZkFold.Symbolic.MonadCircuit where
 
 import Control.DeepSeq (NFData1)
 import Control.Monad (Monad (return))
-import Data.Binary (Binary)
 import Data.Foldable (Foldable)
 import Data.Function (($), (.))
 import Data.Functor (Functor)
-import Data.Functor.Rep (Rep, Representable)
-import Data.Kind (Type)
 import Data.Set (singleton)
-import Data.Traversable (Traversable)
-import Data.Type.Equality (type (~))
 import Data.Typeable (Typeable)
 import GHC.Generics (Par1 (..))
-import Prelude (Integer)
+import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field (Zp)
-import ZkFold.ArithmeticCircuit.Lookup
-import ZkFold.Data.Eq (BooleanOf)
 import ZkFold.Data.Orphans ()
-
--- | A 'ResidueField' is a 'FiniteField'
--- backed by a 'Euclidean' integral type.
-class
-  ( FiniteField a
-  , Euclidean (IntegralOf a)
-  , BooleanOf a ~ BooleanOf (IntegralOf a)
-  ) =>
-  ResidueField a
-  where
-  type IntegralOf a :: Type
-  fromIntegral :: IntegralOf a -> a
-  toIntegral :: a -> IntegralOf a
-
-instance PrimeField (Zp p) => ResidueField (Zp p) where
-  type IntegralOf (Zp p) = Integer
-  fromIntegral = fromConstant
-  toIntegral = fromConstant . toConstant
+import ZkFold.Symbolic.V2 (LookupTable (..))
 
 -- | A type of witness builders. @i@ is a type of variables.
 --
 -- Witness builders should support all the operations of witnesses,
 -- and in addition there should be a corresponding builder for each variable.
-class ResidueField w => Witness i w | i -> w where
+class PrimeField w => Witness i w | i -> w where
   -- | @at x@ is a witness builder whose value is equal to the value of @x@.
   at :: i -> w
 
@@ -61,18 +32,6 @@ class ResidueField w => Witness i w | i -> w where
 -- NOTE: the property above is correct by construction for each function of a
 -- suitable type, you don't have to check it yourself.
 type ClosedPoly var a = forall x. Algebra a x => (var -> x) -> x
-
--- | A type of constraints for new variables.
--- @var@ is a type of variables, @a@ is a base field.
---
--- A function is a constraint for a new variable if, given an arbitrary algebra
--- @x@ over @a@, a function mapping known variables to their witnesses in that
--- algebra and a new variable, it computes the value of a constraint polynomial
--- in that algebra.
---
--- NOTE: the property above is correct by construction for each function of a
--- suitable type, you don't have to check it yourself.
-type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 
 -- | A monadic DSL for constructing arithmetic circuits.
 -- @var@ is a type of variables, @a@ is a base field, @w@ is a type of witnesses
@@ -114,13 +73,6 @@ class
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   constraint :: ClosedPoly var a -> m ()
 
-  -- | Registers new lookup function in the system to be used in lookup tables
-  --   (see 'lookupConstraint').
-  registerFunction
-    :: (Representable f, Binary (Rep f), Typeable f, Traversable g, Typeable g)
-    => (forall x. ResidueField x => f x -> g x)
-    -> m (FunctionId (f a -> g a))
-
   -- | Adds new lookup constraint to the system.
   --   For examples of lookup constraints, see 'rangeConstraint'.
   --
@@ -128,7 +80,7 @@ class
   lookupConstraint
     :: (NFData1 f, Foldable f, Functor f, Typeable f)
     => f var
-    -> LookupTable a f
+    -> LookupTable f
     -> m ()
 
   -- | Creates new variable given a polynomial witness
@@ -149,7 +101,7 @@ class
 --
 -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
 -- For now, this is handled partially with the help of 'desugarRanges' function.
-rangeConstraint :: (AdditiveMonoid a, MonadCircuit var a w m) => var -> a -> m ()
+rangeConstraint :: MonadCircuit var a w m => var -> Natural -> m ()
 rangeConstraint v upperBound =
   lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
@@ -158,11 +110,23 @@ rangeConstraint v upperBound =
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
 -- NOTE: this adds a range constraint to the system.
-newRanged :: (AdditiveMonoid a, MonadCircuit var a w m) => a -> w -> m var
+newRanged :: MonadCircuit var a w m => Natural -> w -> m var
 newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
   return v
+
+-- | A type of constraints for new variables.
+-- @var@ is a type of variables, @a@ is a base field.
+--
+-- A function is a constraint for a new variable if, given an arbitrary algebra
+-- @x@ over @a@, a function mapping known variables to their witnesses in that
+-- algebra and a new variable, it computes the value of a constraint polynomial
+-- in that algebra.
+--
+-- NOTE: the property above is correct by construction for each function of a
+-- suitable type, you don't have to check it yourself.
+type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 
 -- | Creates new variable from witness constrained by a polynomial.
 -- E.g., @'newConstrained' (\\x i -> x i * (x i - one)) (\\x -> x j - one)@

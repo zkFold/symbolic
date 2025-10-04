@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
   emptyTree,
   fromLeaves,
   toLeaves,
+  MerklePath,
   merklePath,
   rootOnReplace,
   MerkleEntry (..),
@@ -54,7 +55,6 @@ import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
-import ZkFold.Symbolic.MonadCircuit (IntegralOf, toIntegral)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
 data MerkleTree d c = MerkleTree
@@ -112,7 +112,9 @@ type Index d = Vector (d - 1) :.: Bool
 
 merklePath
   :: (Symbolic c, KnownNat (d - 1))
-  => MerkleTree d c -> Index d c -> MerklePath d c
+  => MerkleTree d c
+  -> Index d c
+  -> MerklePath d c
 merklePath MerkleTree {..} position =
   let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
       path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
@@ -131,7 +133,9 @@ data MerkleEntry d c = MerkleEntry
 contains
   :: forall d c
    . (Symbolic c, KnownNat (d - 1))
-  => MerkleTree d c -> MerkleEntry d c -> Bool c
+  => MerkleTree d c
+  -> MerkleEntry d c
+  -> Bool c
 tree `contains` MerkleEntry {..} =
   rootOnReplace (merklePath tree position) value == mHash tree
 
@@ -140,7 +144,9 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 (!!)
   :: forall d c
    . (Symbolic c, KnownNat (d - 1))
-  => MerkleTree d c -> Index d c -> FieldElement c
+  => MerkleTree d c
+  -> Index d c
+  -> FieldElement c
 tree !! position =
   assert (\value -> tree `contains` MerkleEntry {..}) $
     fromBaseHash $
@@ -173,7 +179,9 @@ search pred tree =
   recSearch
     :: forall n b a
      . (BoolType b, Conditional b a)
-    => (a -> b) -> Vector (2 ^ n) a -> (b, Vector n b, a)
+    => (a -> b)
+    -> Vector (2 ^ n) a
+    -> (b, Vector n b, a)
   recSearch p d =
     let (b, i, x) = doSearch (toV d)
      in (b, unsafeToVector i, x)
@@ -229,7 +237,9 @@ elemIndex elem = findIndex (== elem)
 
 lookup
   :: (Symbolic c, KnownNat (d - 1))
-  => MerkleTree d c -> Index d c -> FieldElement c
+  => MerkleTree d c
+  -> Index d c
+  -> FieldElement c
 lookup = (!!)
 
 search'
@@ -243,7 +253,9 @@ type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
 
 replace
   :: (Symbolic c, KnownMerkleTree d)
-  => MerkleEntry d c -> MerkleTree d c -> MerkleTree d c
+  => MerkleEntry d c
+  -> MerkleTree d c
+  -> MerkleTree d c
 replace entry@MerkleEntry {..} =
   assert (`contains` entry)
     . unconstrainedFromLeaves
@@ -253,12 +265,18 @@ replace entry@MerkleEntry {..} =
  where
   replacer
     :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
-    => (i, a) -> n -> a -> a
+    => (i, a)
+    -> n
+    -> a
+    -> a
   replacer (i, a') n = ifThenElse (i == fromConstant n) a'
 
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
-  => Index d c -> FieldElement c -> MerkleTree d c -> MerkleTree d c
+  => Index d c
+  -> FieldElement c
+  -> MerkleTree d c
+  -> MerkleTree d c
 replaceAt position value = replace MerkleEntry {..}
 
 ---------------------------- conversion functions ------------------------------
