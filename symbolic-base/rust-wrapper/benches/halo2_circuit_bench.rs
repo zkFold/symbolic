@@ -93,8 +93,6 @@ fn bench_halo2_proving(c: &mut Criterion) {
         1 << 14, // 16,384 constraints
         1 << 15, // 32,768 constraints
         1 << 16, // 65,536 constraints
-        1 << 17, // 131,072 constraints
-        1 << 18, // 262,144 constraints
     ];
 
     for &num_constraints in &constraint_counts {

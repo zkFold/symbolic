@@ -9,8 +9,9 @@ use rust_wrapper::{
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("fft");
+    group.sample_size(10);
 
-    for size in 10..=20 {
+    for size in 10..=18 {
         let degree = 1 << size;
 
         let mut rng = &mut ark_std::test_rng();

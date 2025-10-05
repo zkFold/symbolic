@@ -12,7 +12,8 @@ use rust_wrapper::{msm::r_msm, utils::poke};
 fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("msm");
     group.sample_size(10);
-    for size in 10..=20 {
+
+    for size in 10..=18 {
         let length = 1 << size;
         let mut rng = &mut ark_std::test_rng();
 
