@@ -3,11 +3,14 @@ module ZkFold.ArithmeticCircuit.Witness where
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (Monad (..), ap)
+import Data.Bool (Bool)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
 import Data.Monoid (Monoid (..))
+import Data.Ord (Ordering (..))
 import Data.Semigroup (Semigroup (..))
 import GHC.Integer (Integer)
+import GHC.Real (odd)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
@@ -15,9 +18,6 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import Data.Bool (Bool)
-import GHC.Real (odd)
-import Data.Ord (Ordering (..))
 
 type IsWitness a w = (Scale a w, FromConstant a w, PrimeField w)
 
@@ -190,9 +190,9 @@ instance FromConstant Ordering (OrderingF a v) where
 
 intToOrdering :: Integer -> Ordering
 intToOrdering x = case x `mod` 3 of
-    0 -> EQ
-    1 -> GT
-    _ -> LT
+  0 -> EQ
+  1 -> GT
+  _ -> LT
 
 instance FromConstant Integer (OrderingF a v) where
   fromConstant = fromConstant . intToOrdering
