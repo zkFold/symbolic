@@ -227,6 +227,7 @@ library
       ZkFold.Protocol.Halo2
       ZkFold.Prelude
       ZkFold.Symbolic.Algorithm.ECDSA.ECDSA
+      ZkFold.Symbolic.Algorithm.EdDSA
       ZkFold.Symbolic.Algorithm.Hash.Blake2b
       ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants
       ZkFold.Symbolic.Algorithm.Hash.Keccak
