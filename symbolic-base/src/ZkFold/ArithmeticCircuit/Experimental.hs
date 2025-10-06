@@ -24,7 +24,6 @@ import Data.Functor (Functor, fmap, (<$>), (<&>))
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as M
-import Data.Maybe (Maybe (..))
 import Data.Monoid (Monoid (..))
 import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
@@ -39,7 +38,6 @@ import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 import Optics (zoom)
-import Unsafe.Coerce (unsafeCoerce)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
@@ -55,30 +53,54 @@ import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compiler ()
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint, unconstrained), at)
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import Data.Maybe (Maybe(..))
+import Unsafe.Coerce (unsafeCoerce)
 
 ------------------- Experimental single-output circuit type --------------------
 
 type Hash = ByteString
 
-data Sort = ZZp | ZZ | BB | Ordering
+data Sort = ZZp | ZZ | BB | OO
+
+data SortSing (s :: Sort) where
+  ZZpSing :: SortSing ZZp
+  ZZSing :: SortSing ZZ
+  BBSing :: SortSing BB
+  OOSing :: SortSing OO
+
+class KnownSort (s :: Sort) where
+  knownSort :: SortSing s
+
+instance KnownSort ZZp where
+  knownSort = ZZpSing
+
+instance KnownSort ZZ where
+  knownSort = ZZSing
+
+instance KnownSort BB where
+  knownSort = BBSing
+
+instance KnownSort OO where
+  knownSort = OOSing
 
 data Op f (s :: Sort) where
-  OpConst :: Integer -> Op f s
+  OpConst :: KnownSort s => Integer -> Op f s
   OpScale :: Integer -> f s -> Op f s
   OpAdd, OpMul :: f s -> f s -> Op f s
   OpNeg :: f s -> Op f s
   OpExp :: f s -> Natural -> Op f s
   OpFrom :: f ZZ -> Op f ZZp
   OpTo :: f ZZp -> Op f ZZ
-  OpCompare :: f ZZ -> f ZZ -> Op f Ordering
+  OpCompare :: f ZZ -> f ZZ -> Op f OO
   OpDiv, OpMod, OpGcd, OpBezoutL, OpBezoutR :: f ZZ -> f ZZ -> Op f ZZ
   OpInv :: f ZZp -> Op f ZZp
   OpEq, OpNEq :: f s -> f s -> Op f BB
   OpOr :: f BB -> f BB -> Op f BB
   OpBool :: f s -> f s -> f BB -> Op f s
-  OpOrder :: f s -> f s -> f s -> f Ordering -> Op f s
+  OpAppend :: f OO -> f OO -> Op f OO
+  OpOrder :: f ZZ -> f ZZ -> f ZZ -> f OO -> Op f ZZ
 
 traverseOp
   :: Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
@@ -102,7 +124,25 @@ traverseOp f = \case
   OpNEq x y -> OpNEq <$> f x <*> f y
   OpOr x y -> OpOr <$> f x <*> f y
   OpBool x y z -> OpBool <$> f x <*> f y <*> f z
+  OpAppend x y -> OpAppend <$> f x <*> f y
   OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w
+
+data FieldUniverse f s where
+  FU :: f -> FieldUniverse f ZZp
+  IU :: IntegralOf f -> FieldUniverse f ZZ
+  BU :: BooleanOf f -> FieldUniverse f BB
+  OU :: OrderingOf (IntegralOf f) -> FieldUniverse f OO
+
+instance
+  (KnownSort s, PrimeField f) => FromConstant Integer (FieldUniverse f s) where
+  fromConstant c = case knownSort @s of
+    ZZpSing -> FU (fromConstant c)
+    ZZSing -> IU (fromConstant c)
+    BBSing -> BU (fromConstant c)
+
+runOp :: (forall t . f t -> FieldUniverse a t) -> Op f s -> FieldUniverse a s
+runOp f = \case
+  OpConst x -> fromConstant x
 
 data Node p (s :: Sort) where
   NodeInput :: Hash -> Node p ZZp
@@ -128,7 +168,8 @@ instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
 
 apply :: Op (Node p) s -> Node p s
-apply op = NodeApply op (error "TODO")
+apply op = NodeApply op case op of
+  OpConst c -> _
 
 instance Conditional (Node p BB) (Node p s) where
   bool onFalse onTrue condition = apply (OpBool onFalse onTrue condition)
@@ -141,13 +182,13 @@ instance BoolType (Node p BB) where
   xor = (+)
   x || y = apply (OpOr x y)
 
-instance Semigroup (Node p Ordering) where
-  x <> y = apply (OpOrder x y x x)
+instance Semigroup (Node p OO) where
+  x <> y = apply (OpAppend x y)
 
-instance Monoid (Node p Ordering) where
+instance Monoid (Node p OO) where
   mempty = zero
 
-instance IsOrdering (Node p Ordering) where
+instance IsOrdering (Node p OO) where
   lt = fromConstant ((-1) :: Integer)
   eq = zero
   gt = one
@@ -158,7 +199,7 @@ instance Eq (Node p s) where
   x /= y = apply (OpNEq x y)
 
 instance Ord (Node p ZZ) where
-  type OrderingOf (Node p ZZ) = Node p Ordering
+  type OrderingOf (Node p ZZ) = Node p OO
   compare x y = apply (OpCompare x y)
   ordering x y z o = apply (OpOrder x y z o)
   x < y = compare x y == lt
@@ -172,17 +213,17 @@ instance
   where
   type Order (Node p ZZp) = p
 
-instance FromConstant Natural (Node p s) where
+instance KnownSort s => FromConstant Natural (Node p s) where
   fromConstant x = apply $ OpConst (fromConstant x)
 
-instance FromConstant Integer (Node p s) where
+instance KnownSort s => FromConstant Integer (Node p s) where
   fromConstant x = apply (OpConst x)
 
 instance FromConstant (Node p ZZ) (Node p ZZp) where
   fromConstant x = apply (OpFrom x)
 
 instance Scale Natural (Node p s) where
-  scale k x = apply (OpScale (fromConstant k) x)
+  scale k = apply . OpScale (fromConstant k)
 
 instance Scale Integer (Node p s) where
   scale k x = apply (OpScale k x)
@@ -193,26 +234,26 @@ instance Exponent (Node p s) Natural where
 instance Prime p => Exponent (Node p ZZp) Integer where
   (^) = intPowF
 
-instance Zero (Node p s) where
-  zero = apply (OpConst 0)
+instance KnownSort s => Zero (Node p s) where
+  zero = fromConstant (0 :: Integer)
 
 instance AdditiveSemigroup (Node p s) where
   x + y = apply (OpAdd x y)
 
-instance AdditiveMonoid (Node p s)
+instance KnownSort s => AdditiveMonoid (Node p s)
 
-instance AdditiveGroup (Node p s) where
+instance KnownSort s => AdditiveGroup (Node p s) where
   negate x = apply (OpNeg x)
 
 instance MultiplicativeSemigroup (Node p s) where
   x * y = apply (OpMul x y)
 
-instance MultiplicativeMonoid (Node p s) where
-  one = apply (OpConst 1)
+instance KnownSort s => MultiplicativeMonoid (Node p s) where
+  one = fromConstant (1 :: Integer)
 
-instance Semiring (Node p s)
+instance KnownSort s => Semiring (Node p s)
 
-instance Ring (Node p s)
+instance KnownSort s => Ring (Node p s)
 
 instance SemiEuclidean (Node p ZZ) where
   div x y = apply (OpDiv x y)
@@ -270,14 +311,36 @@ instance
   where
   symApply f (x :*: y) = symApply (f x) y
 
-data Witness a s where
+data Witness a (s :: Sort) where
   FieldVar :: Var a -> Witness a ZZp
-  IntWitness :: EuclideanF a (Var a) -> Witness a ZZ
-  BoolWitness :: BooleanF a (Var a) -> Witness a BB
-  OrdWitness :: OrderingF a (Var a) -> Witness a Ordering
+  IntWitness :: EuclideanF a NewVar -> Witness a ZZ
+  BoolWitness :: BooleanF a NewVar -> Witness a BB
+  OrdWitness :: OrderingF a NewVar -> Witness a OO
 
 toVar :: Witness a ZZp -> Var a
 toVar (FieldVar v) = v
+
+instance (KnownSort s, FromConstant Integer a) => FromConstant Integer (Witness a s) where
+  fromConstant = case knownSort @s of
+    ZZpSing -> FieldVar . fromConstant
+    ZZSing -> IntWitness . fromConstant
+    BBSing -> BoolWitness . fromConstant
+    OOSing -> OrdWitness . fromConstant
+
+instance Scale Integer a => Scale Integer (Witness a s) where
+  scale k = \case
+    FieldVar v -> FieldVar (scale k v)
+    IntWitness w -> IntWitness (scale k w)
+    BoolWitness w -> BoolWitness (fromConstant k && w)
+    OrdWitness w -> OrdWitness (fromConstant k <> w) -- TODO: wrong but unused
+
+instance PrimeField a => Eq (Witness a s) where
+  type BooleanOf (Witness a s) = BooleanF a NewVar
+  FieldVar u == FieldVar v = at u == at v
+  IntWitness v == IntWitness w = v == w
+  BoolWitness v == BoolWitness w = not (xor v w)
+  OrdWitness _ == OrdWitness _ = error "not implemented"
+  x /= y = not (x == y)
 
 data SomeWitness a = forall s. SomeWitness (Witness a s)
 
@@ -321,48 +384,66 @@ compileNode (NodeConstrain c n h) = do
       poly <- traversePoly @_ @a (fmap toVar . compileNode) p
       zoom #circuitContext $ constraint (evalPoly poly)
   compileNode n
-compileNode (NodeApply op h) =
-  gets (request op . witnessExtractor) >>= \case
-    Just w -> pure w
-    Nothing -> do
-      w <-
-        traverseOp compileNode op >>= \case
-          OpConst c -> _
-      zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
-      pure w
- where
-  request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
-  request _ m =
-    (m M.!? h) <&> \case
+compileNode (NodeApply op h) = gets (request op . witnessExtractor) >>= \case
+  Just w -> pure w
+  Nothing -> do
+    w <- traverseOp compileNode op >>= \case
+      OpConst c -> pure (fromConstant c)
+      OpScale k w -> pure (scale k w)
+      OpAdd (FieldVar u) (FieldVar v) ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (at u + at v)
+      OpAdd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v + w)
+      OpAdd (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v `xor` w)
+      OpAdd (OrdWitness v) (OrdWitness w) ->
+        pure $ OrdWitness (v <> w) -- TODO wrong but unused
+      OpMul (FieldVar u) (FieldVar v) ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (at u * at v)
+      OpMul (IntWitness v) (IntWitness w) -> pure $ IntWitness (v * w)
+      OpMul (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v && w)
+      OpMul (OrdWitness v) (OrdWitness w) ->
+        pure $ OrdWitness (v <> w) -- TODO wrong but unused
+      OpNeg w -> pure (scale (-1 :: Integer) w)
+      OpExp (FieldVar v) p ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (at v ^ p)
+      OpExp (IntWitness w) p -> pure $ IntWitness (w ^ p)
+      OpExp (BoolWitness w) p -> pure $ BoolWitness (fromConstant (p == 0) || w)
+      OpExp (OrdWitness w) _ -> pure (OrdWitness w) -- TODO wrong but unused
+      OpFrom (IntWitness w) ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (fromConstant w)
+      OpTo (FieldVar v) -> pure $ IntWitness $ toIntegral (at v)
+      OpCompare (IntWitness v) (IntWitness w) ->
+        pure $ OrdWitness (v `compare` w)
+      OpDiv (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `div` w)
+      OpMod (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `mod` w)
+      OpGcd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `gcd` w)
+      OpBezoutL (IntWitness v) (IntWitness w) ->
+        pure $ IntWitness (v `bezoutL` w)
+      OpBezoutR (IntWitness v) (IntWitness w) ->
+        pure $ IntWitness (v `bezoutR` w)
+      OpInv (FieldVar v) ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (at v)
+      OpEq x y -> pure $ BoolWitness (x == y)
+      OpNEq x y -> pure $ BoolWitness (x /= y)
+      OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
+      OpBool (FieldVar u) (FieldVar v) (BoolWitness w) ->
+        zoom #circuitContext $ FieldVar <$> unconstrained (bool (at u) (at v) w)
+      OpBool (IntWitness v) (IntWitness w) (BoolWitness b) ->
+        pure $ IntWitness (bool v w b)
+      OpBool (BoolWitness v) (BoolWitness w) (BoolWitness b) ->
+        pure $ BoolWitness (bool v w b)
+      OpBool (OrdWitness _) (OrdWitness _) (BoolWitness _) ->
+        pure $ OrdWitness (error "not implemented")
+      OpAppend (OrdWitness v) (OrdWitness w) -> pure $ OrdWitness (v <> w)
+      OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
+        pure $ IntWitness (ordering u v w o)
+    zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
+    pure w
+  where
+    request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
+    request _ m = (m M.!? h) <&> \case
       SomeWitness s -> unsafeCoerce s
 
 -- \^ safe assuming no collisions
-
---    (Just w, EqVar bs) -> do
---      isDone <- gets (M.member bs . acWitness)
---      unless isDone do
---        zoom #acWitness $ modify' $ M.insert bs (fmap elHash w)
---        let MkCBox {..} = elConstraints el
---        for_ cbPolyCon \c -> do
---          let asWitness = WitnessF @a (runPolynomial c)
---              cId = witToVar (fmap elHash asWitness)
---          isDone' <- gets (M.member cId . acSystem)
---          unless isDone' do
---            constraint (\x -> runPolynomial c (x . pure . elHash))
---            for_ (children asWitness) work
---        for_ cbLookups \(LEntry l t) -> do
---          lt <- lookupType t
---          isDone' <-
---            gets
---              ( any (S.member $ toList $ fmap elHash l)
---                  . (MM.!? lt)
---                  . acLookup
---              )
---          unless isDone' do
---            lookupConstraint (fmap (pure . elHash) l) t
---            for_ l work
---        for_ (children w) work
---      pure $ pure (elHash el)
 
 compileOutput
   :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
