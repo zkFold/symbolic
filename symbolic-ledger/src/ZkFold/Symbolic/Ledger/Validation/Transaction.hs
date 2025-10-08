@@ -45,15 +45,6 @@ data TransactionWitness ud i o a context = TransactionWitness
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
--- | Data for hashing in EdDSA signature verification.
-data EdDSAHashData context = EdDSAHashData
-  { eddsaHashDataRPoint :: EdDSAPoint context
-  , eddsaHashDataPublicKey :: EdDSAPoint context
-  , eddsaHashDataMessage :: FieldElement context
-  }
-  deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
-
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
@@ -191,7 +182,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     ( \rPoint' publicKey' m ->
                         fromUInt
                           ( from
-                              (Poseidon.hash (EdDSAHashData rPoint' publicKey' m))
+                              (Poseidon.hash (rPoint' :*: publicKey' :*: m))
                           )
                     )
                     publicKey
