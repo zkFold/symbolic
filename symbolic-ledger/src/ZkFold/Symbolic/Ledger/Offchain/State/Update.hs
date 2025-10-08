@@ -13,19 +13,20 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
-import Data.Function ((&))
+import Data.Function ((&), ($))
 import ZkFold.Data.Vector
 import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
 import qualified ZkFold.Symbolic.Data.Hash as Base
 import ZkFold.Algebra.Class
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Bool (true, false, (||), (&&), BoolType (..))
+import ZkFold.Symbolic.Data.Bool (false, (||), (&&), BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Prelude (foldl')
 import ZkFold.Data.Eq ((==))
 import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
+import ZkFold.Symbolic.WitnessContext (toWitnessContext)
+import ZkFold.Symbolic.Data.Maybe (Maybe(..))
 
 -- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
 
@@ -113,7 +114,9 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               let isHere = u.uRef == ref
                in (isHere || found, ifThenElse isHere u picked)
             (_foundU, utxo) = foldl' pick (false, nullUTxO @a @context) pairs
-            me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeIn
+            utxoHash :: FieldElement context = hash utxo & Base.hHash
+            utxoHashWC = toWitnessContext utxoHash
+            me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash @a @context}) treeIn
            in ( (me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn')
         (insRev, treeAfterIns) = foldl' stepIn ([], tree) (P.zip inRefs sigsList)
