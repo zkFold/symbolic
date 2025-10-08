@@ -13,8 +13,8 @@ import ZkFold.Data.HFunctor
 import ZkFold.Data.HFunctor.Classes (HNFData, hliftRnf)
 import ZkFold.Data.Package
 import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter
-import ZkFold.Symbolic.Data.Class (SymbolicData(..))
 
 newtype WitnessContext c f = WC {runWC :: f (WitnessField c)}
   deriving (HApplicative, HFunctor) via (Interpreter (WitnessField c))

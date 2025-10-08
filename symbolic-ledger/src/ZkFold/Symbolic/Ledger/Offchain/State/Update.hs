@@ -1,39 +1,41 @@
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+
 module ZkFold.Symbolic.Ledger.Offchain.State.Update (
- updateLedgerState,
+  updateLedgerState,
 ) where
 
-import qualified Prelude as P
-import ZkFold.Symbolic.Ledger.Types
+import Data.Function (($), (&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat)
+import ZkFold.Algebra.Class
+import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Eq ((==))
+import ZkFold.Data.MerkleTree (Leaves)
+import ZkFold.Data.Vector
+import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (&&), (||))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
+import qualified ZkFold.Symbolic.Data.Hash as Base
+import ZkFold.Symbolic.Data.Maybe (Maybe (..))
+import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
+import ZkFold.Symbolic.WitnessContext (toWitnessContext)
+import qualified Prelude as P
+
+import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
-import Data.Function ((&), ($))
-import ZkFold.Data.Vector
-import ZkFold.Symbolic.Data.Hash (Hashable(..), hash)
-import qualified ZkFold.Symbolic.Data.Hash as Base
-import ZkFold.Algebra.Class
-import ZkFold.Data.MerkleTree (Leaves)
-import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Symbolic.Data.Bool (false, (||), (&&), BoolType (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Prelude (foldl')
-import ZkFold.Data.Eq ((==))
-import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import ZkFold.Symbolic.WitnessContext (toWitnessContext)
-import ZkFold.Symbolic.Data.Maybe (Maybe(..))
 
 -- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
 
 -- | Update ledger state.
 updateLedgerState
-  :: forall bi bo ud a i o t context.
-  SignatureState bi bo ud a context
+  :: forall bi bo ud a i o t context
+   . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
   => (KnownNat bo, KnownNat bi, KnownNat i, KnownNat o, KnownNat t)
   => State bi bo ud a context
@@ -49,7 +51,6 @@ updateLedgerState
   -> (State bi bo ud a :*: StateWitness bi bo ud a i o t) context
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
-
   let
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
@@ -118,7 +119,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash @a @context}) treeIn
-           in ( (me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn')
+           in
+            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn')
         (insRev, treeAfterIns) = foldl' stepIn ([], tree) (P.zip inRefs sigsList)
         twInputs = Comp1 (unsafeToVector' @i (P.reverse insRev))
 
@@ -138,20 +140,23 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         (outsRev, _outIxEnd, treeAfterOuts) = foldl' stepOut ([], zero, treeAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
         tw = TransactionWitness {twInputs, twOutputs}
-       in (treeAfterOuts, tw : witsAcc)
+       in
+        (treeAfterOuts, tw : witsAcc)
 
     (utxoFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, []) (P.zip txsList sigsPerTx)
     tbwTransactions = Comp1 (unsafeToVector' @t (P.reverse txWitsRev))
 
-    newState = State {
-      sPreviousStateHash = hasher previousState,
-      sUTxO = utxoFinal,
-      sLength = newLen,
-      sBridgeIn = hash bridgedInOutputs,
-      sBridgeOut = hash bridgedOutOutputs
-    }
-
-    in newState :*: StateWitness { swAddBridgeIn = swAddBridgeIn, swTransactionBatch = TransactionBatchWitness { tbwTransactions } }
+    newState =
+      State
+        { sPreviousStateHash = hasher previousState
+        , sUTxO = utxoFinal
+        , sLength = newLen
+        , sBridgeIn = hash bridgedInOutputs
+        , sBridgeOut = hash bridgedOutOutputs
+        }
+   in
+    newState
+      :*: StateWitness {swAddBridgeIn = swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
 
 -- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
 unsafeToVector' :: forall size a. KnownNat size => [a] -> Vector size a

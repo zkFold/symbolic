@@ -176,20 +176,22 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
                   && (acc `MerkleTree.contains` merkleEntry)
-                  && ifThenElse (utxoHash == nullUTxOHash') true (
-                    Poseidon.hash publicKey
-                    == utxo.uOutput.oAddress
-                    && eddsaVerify
-                      ( \rPoint' publicKey' m ->
-                          fromUInt
-                            ( from
-                                (Poseidon.hash (rPoint' :*: publicKey' :*: m))
-                            )
-                      )
-                      publicKey
-                      txId'
-                      (rPoint :*: s)
-                  )
+                  && ifThenElse
+                    (utxoHash == nullUTxOHash')
+                    true
+                    ( Poseidon.hash publicKey
+                        == utxo.uOutput.oAddress
+                        && eddsaVerify
+                          ( \rPoint' publicKey' m ->
+                              fromUInt
+                                ( from
+                                    (Poseidon.hash (rPoint' :*: publicKey' :*: m))
+                                )
+                          )
+                          publicKey
+                          txId'
+                          (rPoint :*: s)
+                    )
              in
               ( isValid'
                   :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
@@ -244,7 +246,10 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
-    (bouts :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
+    ( bouts
+        :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed)
+        :*: updatedUTxOTreeForOutputs
+    )
 
 -- | Check if output has at least one ada.
 outputHasAtLeastOneAda
