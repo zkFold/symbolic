@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 ) where
 
 import Data.Function ((&))
-import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
@@ -27,7 +27,6 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
 import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -166,39 +165,43 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         true
         (unComp1 finalInputAssets)
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
-    (isInsValid :*: updatedUTxOTreeForInputs) =
+    (isInsValid :*: consumedAtleastOneInput :*: updatedUTxOTreeForInputs) =
       foldl'
-        ( \(isInsValidAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
+        ( \(isInsValidAcc :*: consumedAtleastOneAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
             let
+              nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
               isValid' =
                 isInsValidAcc
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
                   && (acc `MerkleTree.contains` merkleEntry)
-                  && Poseidon.hash publicKey
-                  == utxo.uOutput.oAddress
-                  && eddsaVerify
-                    ( \rPoint' publicKey' m ->
-                        fromUInt
-                          ( from
-                              (Poseidon.hash (rPoint' :*: publicKey' :*: m))
-                          )
-                    )
-                    publicKey
-                    txId'
-                    (rPoint :*: s)
+                  && ifThenElse (utxoHash == nullUTxOHash') true (
+                    Poseidon.hash publicKey
+                    == utxo.uOutput.oAddress
+                    && eddsaVerify
+                      ( \rPoint' publicKey' m ->
+                          fromUInt
+                            ( from
+                                (Poseidon.hash (rPoint' :*: publicKey' :*: m))
+                            )
+                      )
+                      publicKey
+                      txId'
+                      (rPoint :*: s)
+                  )
              in
               ( isValid'
+                  :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
                   :*: MerkleTree.replace
                     ( merkleEntry
-                        { MerkleTree.value = nullUTxOHash @a @context
+                        { MerkleTree.value = nullUTxOHash'
                         }
                     )
                     acc
               )
         )
-        ((true :: Bool context) :*: utxoTree)
+        ((true :: Bool context) :*: (false :: Bool context) :*: utxoTree)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
     (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
@@ -241,7 +244,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
-    (bouts :*: (outsValid && isInsValid && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
+    (bouts :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed) :*: updatedUTxOTreeForOutputs)
 
 -- | Check if output has at least one ada.
 outputHasAtLeastOneAda
