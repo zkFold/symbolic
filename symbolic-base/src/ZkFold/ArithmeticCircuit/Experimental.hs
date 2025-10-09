@@ -10,7 +10,7 @@
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (Applicative, pure, (<*>))
+import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless, (>>=))
 import Control.Monad.State (State, gets, modify', runState)
@@ -33,7 +33,7 @@ import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
-import GHC.Generics (Generic, U1, (:*:) (..))
+import GHC.Generics (Generic, U1, (:*:) (..), Par1 (..))
 import GHC.Integer (Integer)
 import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
@@ -47,90 +47,36 @@ import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traver
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
-import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF)
+import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler ()
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint, unconstrained), at)
-import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..), LookupTable (..))
+import ZkFold.ArithmeticCircuit.Op (Sort (..), Op (..), KnownSort, SortSing (..), knownSort, traverseOp, opToBinary)
+import Crypto.Hash.SHA256 (hash)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Data.Binary (toByteString)
+import Data.Foldable (foldMap)
+import ZkFold.Symbolic.Compat (CompatContext (..))
+import qualified ZkFold.Symbolic.Compiler as Old
+import qualified ZkFold.Symbolic.Data.Class as Old
 
 ------------------- Experimental single-output circuit type --------------------
 
 type Hash = ByteString
 
-data Sort = ZZp | ZZ | BB | OO
-
-data SortSing (s :: Sort) where
-  ZZpSing :: SortSing ZZp
-  ZZSing :: SortSing ZZ
-  BBSing :: SortSing BB
-  OOSing :: SortSing OO
-
-class KnownSort (s :: Sort) where
-  knownSort :: SortSing s
-
-instance KnownSort ZZp where
-  knownSort = ZZpSing
-
-instance KnownSort ZZ where
-  knownSort = ZZSing
-
-instance KnownSort BB where
-  knownSort = BBSing
-
-instance KnownSort OO where
-  knownSort = OOSing
-
-data Op f (s :: Sort) where
-  OpConst :: KnownSort s => Integer -> Op f s
-  OpScale :: Integer -> f s -> Op f s
-  OpAdd, OpMul :: f s -> f s -> Op f s
-  OpNeg :: f s -> Op f s
-  OpExp :: f s -> Natural -> Op f s
-  OpFrom :: f ZZ -> Op f ZZp
-  OpTo :: f ZZp -> Op f ZZ
-  OpCompare :: f ZZ -> f ZZ -> Op f OO
-  OpDiv, OpMod, OpGcd, OpBezoutL, OpBezoutR :: f ZZ -> f ZZ -> Op f ZZ
-  OpInv :: f ZZp -> Op f ZZp
-  OpEq, OpNEq :: f s -> f s -> Op f BB
-  OpOr :: f BB -> f BB -> Op f BB
-  OpBool :: f s -> f s -> f BB -> Op f s
-  OpAppend :: f OO -> f OO -> Op f OO
-  OpOrder :: f ZZ -> f ZZ -> f ZZ -> f OO -> Op f ZZ
-
-traverseOp
-  :: Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
-traverseOp f = \case
-  OpConst i -> pure (OpConst i)
-  OpScale i x -> OpScale i <$> f x
-  OpAdd x y -> OpAdd <$> f x <*> f y
-  OpMul x y -> OpMul <$> f x <*> f y
-  OpNeg x -> OpNeg <$> f x
-  OpExp x e -> (`OpExp` e) <$> f x
-  OpFrom x -> OpFrom <$> f x
-  OpTo x -> OpTo <$> f x
-  OpCompare x y -> OpCompare <$> f x <*> f y
-  OpDiv x y -> OpDiv <$> f x <*> f y
-  OpMod x y -> OpMod <$> f x <*> f y
-  OpGcd x y -> OpGcd <$> f x <*> f y
-  OpBezoutL x y -> OpBezoutL <$> f x <*> f y
-  OpBezoutR x y -> OpBezoutR <$> f x <*> f y
-  OpInv x -> OpInv <$> f x
-  OpEq x y -> OpEq <$> f x <*> f y
-  OpNEq x y -> OpNEq <$> f x <*> f y
-  OpOr x y -> OpOr <$> f x <*> f y
-  OpBool x y z -> OpBool <$> f x <*> f y <*> f z
-  OpAppend x y -> OpAppend <$> f x <*> f y
-  OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w
-
 data Node p (s :: Sort) where
   NodeInput :: Hash -> Node p ZZp
   NodeApply :: Op (Node p) s -> Hash -> Node p s
   NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Hash -> Node p ZZp
+
+fromNewVar :: NewVar -> Node n ZZp
+fromNewVar (EqVar v) = NodeInput v
+fromNewVar _ = error "folding not supported"
 
 instance Prelude.Eq (Node p s) where
   NodeInput h == NodeInput h' = h Prelude.== h'
@@ -151,8 +97,13 @@ instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
 
 apply :: Op (Node p) s -> Node p s
-apply op = NodeApply op case op of
-  OpConst c -> _
+apply op = NodeApply op $ hash $ opToBinary getHash op
+
+getHash :: Node p s -> Hash
+getHash = \case
+  NodeInput h -> h
+  NodeApply _ h -> h
+  NodeConstrain _ _ h -> h
 
 instance Conditional (Node p BB) (Node p s) where
   bool onFalse onTrue condition = apply (OpBool onFalse onTrue condition)
@@ -254,8 +205,21 @@ instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p Z
   type IntegralOf (Node p ZZp) = Node p ZZ
   toIntegral x = apply (OpTo x)
 
-instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
-  constrain c x = NodeConstrain c x (error "TODO")
+instance
+  (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
+  constrain c x = NodeConstrain c x $ hash (constrToByteString c <> getHash x)
+    where
+      constrToByteString (Polynomial p) =
+        toByteString $ first (first getHash <$>)
+        <$> toList @(Polynomial (Zp p) (Node p ZZp)) p
+      constrToByteString (Lookup tb xs) = lookupToByteString tb xs
+      lookupToByteString :: LookupTable f -> f (Node p ZZp) -> ByteString
+      lookupToByteString (Ranges rs) (Par1 i) =
+        foldMap toByteString rs <> getHash i
+      lookupToByteString (Product t u) (i :*: j) =
+        lookupToByteString t i <> lookupToByteString u j
+      lookupToByteString (Plot f t) (i :*: j) =
+        lookupToByteString t i <> foldMap getHash j <> foldMap getHash (f i)
 
 ------------------------- Optimized compilation function -----------------------
 
@@ -319,7 +283,7 @@ instance Scale Integer a => Scale Integer (Witness a s) where
 
 instance PrimeField a => Eq (Witness a s) where
   type BooleanOf (Witness a s) = BooleanF a NewVar
-  FieldVar u == FieldVar v = at u == at v
+  FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
   IntWitness v == IntWitness w = v == w
   BoolWitness v == BoolWitness w = not (xor v w)
   OrdWitness _ == OrdWitness _ = error "not implemented"
@@ -395,7 +359,8 @@ compileNode (NodeApply op h) =
           OpExp (OrdWitness w) _ -> pure (OrdWitness w) -- TODO wrong but unused
           OpFrom (IntWitness w) ->
             zoom #circuitContext $ FieldVar <$> unconstrained (fromConstant w)
-          OpTo (FieldVar v) -> pure $ IntWitness $ toIntegral (at v)
+          OpTo (FieldVar v) ->
+            pure $ IntWitness $ toIntegral @(WitnessF a NewVar) (at v)
           OpCompare (IntWitness v) (IntWitness w) ->
             pure $ OrdWitness (v `compare` w)
           OpDiv (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `div` w)
@@ -433,11 +398,27 @@ compileOutput
   :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
 compileOutput Compiler {..} = crown circuitContext . fmap toVar
 
-compile
+compileV1
+  :: forall a f n d
+   . ( Arithmetic a, Binary a, Old.SymbolicFunction f, Order a ~ n
+     , Old.Context f ~ CompatContext (Node n ZZp), Old.Domain f ~ d)
+  => f -> ArithmeticCircuit a (Old.Layout d n :*: Old.Payload d n)
+                              (Old.Layout (Old.Range f) n)
+compileV1 = optimize . solder . \f (l :*: p) ->
+  let (output, compiler) =
+        flip runState makeCompiler
+          . traverse compileNode
+          . compatContext
+          . Old.arithmetize
+          . Old.apply f
+          $ Old.restore (CompatContext (fromNewVar <$> l), fromNewVar <$> p)
+   in compileOutput compiler output
+
+compileV2
   :: forall a c f
    . (Arithmetic a, Binary a, c ~ Node (Order a) ZZp, SymbolicFunction c f)
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
-compile =
+compileV2 =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
     let (output, compiler) =
           flip runState makeCompiler
@@ -446,7 +427,3 @@ compile =
             . symApply f
             $ fromLayout (fmap fromNewVar l)
      in compileOutput compiler output
- where
-  fromNewVar :: NewVar -> Node (Order a) ZZp
-  fromNewVar (EqVar v) = NodeInput v
-  fromNewVar _ = error "folding not supported"

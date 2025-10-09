@@ -11,11 +11,11 @@ import Data.Traversable (Traversable)
 import GHC.Generics (Par1, (:*:))
 import Numeric.Natural (Natural)
 
-import ZkFold.Algebra.Class (Algebra, PrimeField)
+import ZkFold.Algebra.Class (Algebra, PrimeField, (-))
 import ZkFold.Data.FromList (FromList)
 
--- | @LookupTable a f@ is a type of compact lookup table descriptions using ideas from relational algebra.
--- @a@ is a base field type, @f@ is a functor such that @f a@ is a type whose subset this lookup table describes.
+-- | @LookupTable f@ is a type of compact @f@-ary lookup table descriptions
+-- using ideas from relational algebra.
 data LookupTable f where
   -- | @Ranges@ describes a set of disjoint segments of the base field.
   Ranges :: Set (Natural, Natural) -> LookupTable Par1
@@ -28,9 +28,14 @@ data LookupTable f where
     -> LookupTable f
     -> LookupTable (f :*: g)
 
+type Poly a = forall b. Algebra a b => b
+
 data Constraint a where
-  Polynomial :: (forall b. Algebra a b => b) -> Constraint a
+  Polynomial :: Poly a -> Constraint a
   Lookup :: Traversable f => LookupTable f -> f a -> Constraint a
+
+(=!=) :: Poly a -> Poly a -> Constraint a
+p =!= q = Polynomial (p - q)
 
 -- TODO: Get rid of NFData constraint
 class (NFData c, PrimeField c) => Symbolic c where
