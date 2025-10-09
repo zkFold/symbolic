@@ -1,4 +1,3 @@
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Value (
