@@ -56,7 +56,7 @@ type SignatureTransaction ud i o a context =
   )
 
 type SignatureTransactionBatch ud i o a t context =
-  (SignatureTransaction ud i o a context
+  ( SignatureTransaction ud i o a context
   , KnownNat t
   )
 
