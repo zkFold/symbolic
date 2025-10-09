@@ -10,7 +10,7 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
-import ZkFold.Data.MerkleTree (Leaves)
+import ZkFold.Data.MerkleTree (Leaves, MerkleTreeSize)
 import ZkFold.Data.Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (&&), (||))
@@ -48,6 +48,39 @@ updateLedgerState
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
+    -- Replace the first null UTxO in the vector with provided one
+    replaceFirstNull
+      :: forall d'
+       . (KnownNat (MerkleTreeSize d'))
+      => Leaves d' (UTxO a context)
+      -> UTxO a context
+      -> Leaves d' (UTxO a context)
+    replaceFirstNull vec newU =
+      let v = vec
+          isEmpty = (\u -> u == nullUTxO @a @context) P.<$> v
+          prefixUsed = scanl (||) false isEmpty
+          usedBefore = take @(MerkleTreeSize d') prefixUsed
+          shouldIns = zipWith (\u e -> not u && e) usedBefore isEmpty
+          v' = mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) newU old) v
+       in v'
+
+    -- Replace the first element whose reference matches, with provided element
+    replaceFirstRef
+      :: forall d'
+       . (KnownNat (MerkleTreeSize d'))
+      => Leaves d' (UTxO a context)
+      -> OutputRef context
+      -> UTxO a context
+      -> Leaves d' (UTxO a context)
+    replaceFirstRef vec ref newU =
+      let v = vec
+          matches = (\u -> u.uRef == ref) P.<$> v
+          prefixUsed = scanl (||) false matches
+          usedBefore = take @(MerkleTreeSize d') prefixUsed
+          shouldRep = zipWith (\u m -> not u && m) usedBefore matches
+          v' = mapWithIx (\ix old -> ifThenElse (shouldRep !! ix) newU old) v
+       in v'
+
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
     bridgeInHash = newLen & hash & Base.hHash
@@ -77,7 +110,9 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
 
     -- Apply bridge-in outputs to UTxO tree by replacing null leaves and collect witness entries
     biOutsList = fromVector (unComp1 bridgedInOutputs)
-    stepBridgeIn (ix, entries, tree) out =
+    -- Maintain a local preimage vector of UTxOs in parallel with the Merkle tree
+    utxoPreimage0 = utxoSet
+    stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           tree' =
             ifThenElse
@@ -89,24 +124,28 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               )
           ix' = ix + one
           entries' = entry : entries
-       in (ix', entries', tree')
-    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn) = foldl' stepBridgeIn (zero, [], previousState.sUTxO) biOutsList
+          pre' =
+            let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
+                gatedUtxo = ifThenElse (out == nullOutput @a @context) (nullUTxO @a @context) utxo
+             in replaceFirstNull @ud pre gatedUtxo
+       in (ix', entries', tree', pre')
+    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
 
     -- Build transaction witnesses and apply batch updates to UTxO tree
     sigsPerTx = fromVector (unComp1 sigMaterial)
     txsList = fromVector action.tbTransactions
 
-    buildTx (tree, witsAcc) (tx, sigs) =
+    buildTx (tree, pre, witsAcc) (tx, sigs) =
       let
         txId' = txId tx & Base.hHash
         -- Inputs witnesses
         inRefs = fromVector (unComp1 tx.inputs)
         sigsList = fromVector (unComp1 sigs)
-        stepIn (insAcc, treeIn) (ref, rPoint :*: s :*: publicKey) =
+        stepIn (insAcc, treeIn, preIn) (ref, rPoint :*: s :*: publicKey) =
           let
-            -- Find UTxO by reference in provided set
-            utxoSetList = fromVector utxoSet
+            -- Find UTxO by reference in evolving preimage set
+            utxoSetList = fromVector preIn
             pick (found, picked) u =
               let isHere = u.uRef == ref
                in (isHere || found, ifThenElse isHere u picked)
@@ -115,14 +154,15 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash @a @context}) treeIn
+            preIn'' = replaceFirstRef @ud preIn ref (nullUTxO @a @context)
            in
-            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn')
-        (insRev, treeAfterIns) = foldl' stepIn ([], tree) (P.zip inRefs sigsList)
+            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn'')
+        (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
         twInputs = Comp1 (unsafeToVector' @i (P.reverse insRev))
 
         -- Outputs witnesses and apply outputs (skip bridge-outs)
         outs = fromVector (unComp1 tx.outputs)
-        stepOut (outsAcc, outIx, treeOut) (out :*: bout) =
+        stepOut (outsAcc, outIx, treeOut, preOut) (out :*: bout) =
           let me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeOut
               treeOut' =
                 ifThenElse
@@ -132,14 +172,18 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                         utxoHash = hash utxo & Base.hHash
                      in MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut
                   )
-           in (me : outsAcc, outIx + one, treeOut')
-        (outsRev, _outIxEnd, treeAfterOuts) = foldl' stepOut ([], zero, treeAfterIns) outs
+              preOut' =
+                let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
+                    gatedUtxo = ifThenElse bout (nullUTxO @a @context) utxo
+                 in replaceFirstNull @ud preOut gatedUtxo
+           in (me : outsAcc, outIx + one, treeOut', preOut')
+        (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
         tw = TransactionWitness {twInputs, twOutputs}
        in
-        (treeAfterOuts, tw : witsAcc)
+        (treeAfterOuts, preAfterOuts, tw : witsAcc)
 
-    (utxoFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, []) (P.zip txsList sigsPerTx)
+    (utxoFinal, _utxoPreimageFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, utxoPreimageAfterBI, []) (P.zip txsList sigsPerTx)
     tbwTransactions = Comp1 (unsafeToVector' @t (P.reverse txWitsRev))
 
     newState =
