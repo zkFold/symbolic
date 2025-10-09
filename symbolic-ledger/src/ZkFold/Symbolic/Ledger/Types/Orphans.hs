@@ -9,15 +9,15 @@ import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Data.Vector (Vector)
-import GHC.Generics ((:.:) (..), Generic1, Generic)
+import GHC.Generics ((:.:) (..))
 import Data.Kind (Type)
 import Prelude (($), (<$>))
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import GHC.IsList (IsList(..))
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 
+-- Alternative way to define Hashable instance for Vector taking context.
 -- newtype VectorTakingCtx (n) (a :: Ctx -> Type) c = VectorTakingCtx ( (Vector n :.: a) c)
 --   deriving stock (Generic, Generic1)
 --   deriving anyclass SymbolicData
