@@ -127,22 +127,6 @@ traverseOp f = \case
   OpAppend x y -> OpAppend <$> f x <*> f y
   OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w
 
-data FieldUniverse f s where
-  FU :: f -> FieldUniverse f ZZp
-  IU :: IntegralOf f -> FieldUniverse f ZZ
-  BU :: BooleanOf f -> FieldUniverse f BB
-  OU :: OrderingOf (IntegralOf f) -> FieldUniverse f OO
-
-instance (KnownSort s, PrimeField f) => FromConstant Integer (FieldUniverse f s) where
-  fromConstant c = case knownSort @s of
-    ZZpSing -> FU (fromConstant c)
-    ZZSing -> IU (fromConstant c)
-    BBSing -> BU (fromConstant c)
-
-runOp :: (forall t. f t -> FieldUniverse a t) -> Op f s -> FieldUniverse a s
-runOp f = \case
-  OpConst x -> fromConstant x
-
 data Node p (s :: Sort) where
   NodeInput :: Hash -> Node p ZZp
   NodeApply :: Op (Node p) s -> Hash -> Node p s
@@ -443,9 +427,7 @@ compileNode (NodeApply op h) =
   request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
   request _ m =
     (m M.!? h) <&> \case
-      SomeWitness s -> unsafeCoerce s
-
--- \^ safe assuming no collisions
+      SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
 
 compileOutput
   :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
