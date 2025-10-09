@@ -62,7 +62,7 @@ import ZkFold.Symbolic.Compat (CompatContext (..))
 import qualified ZkFold.Symbolic.Compiler as Old
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (constraint, lookupConstraint, unconstrained, at)
+import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable (..), Symbolic (..))
 
 ------------------- Experimental single-output circuit type --------------------
@@ -340,8 +340,9 @@ compileOutput Compiler {..} = crown circuitContext . fmap toVar
 data SomeWitness a = forall s. SomeWitness (Witness a s)
 
 request :: Op f t -> Hash -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
-request _ h m = (m M.!? h) <&> \case
-  SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
+request _ h m =
+  (m M.!? h) <&> \case
+    SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
 
 data Witness a (s :: Sort) where
   FieldVar :: Var a -> Witness a ZZp
@@ -375,7 +376,8 @@ instance PrimeField a => Eq (Witness a s) where
   x /= y = not (x == y)
 
 opToWitness
-  :: forall a s. (Arithmetic a, Binary a)
+  :: forall a s
+   . (Arithmetic a, Binary a)
   => Op (Witness a) s -> State (Compiler a) (Witness a s)
 opToWitness = \case
   OpConst c -> pure (fromConstant c)
