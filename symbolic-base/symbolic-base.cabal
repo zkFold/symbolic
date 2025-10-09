@@ -147,6 +147,7 @@ library
       ZkFold.ArithmeticCircuit.Desugaring
       ZkFold.ArithmeticCircuit.Experimental
       ZkFold.ArithmeticCircuit.MerkleHash
+      ZkFold.ArithmeticCircuit.Op
       ZkFold.ArithmeticCircuit.Optimization
       ZkFold.ArithmeticCircuit.Var
       ZkFold.ArithmeticCircuit.Witness
