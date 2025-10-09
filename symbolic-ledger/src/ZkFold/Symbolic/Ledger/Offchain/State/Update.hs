@@ -51,7 +51,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     -- Replace the first null UTxO in the vector with provided one
     replaceFirstNull
       :: forall d'
-       . (KnownNat (MerkleTreeSize d'))
+       . KnownNat (MerkleTreeSize d')
       => Leaves d' (UTxO a context)
       -> UTxO a context
       -> Leaves d' (UTxO a context)
@@ -67,7 +67,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     -- Replace the first element whose reference matches, with provided element
     replaceFirstRef
       :: forall d'
-       . (KnownNat (MerkleTreeSize d'))
+       . KnownNat (MerkleTreeSize d')
       => Leaves d' (UTxO a context)
       -> OutputRef context
       -> UTxO a context
