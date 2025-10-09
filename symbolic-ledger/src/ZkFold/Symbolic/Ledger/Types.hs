@@ -1,5 +1,3 @@
-{-# LANGUAGE ImpredicativeTypes #-}
-
 module ZkFold.Symbolic.Ledger.Types (
   EdDSABaseField,
   EdDSAScalarField,
