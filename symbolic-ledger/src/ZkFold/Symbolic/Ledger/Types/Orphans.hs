@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Symbolic.Ledger.Types.Orphans 
 (

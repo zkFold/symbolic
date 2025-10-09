@@ -50,6 +50,7 @@ common options
       DeriveFunctor,
       DeriveGeneric,
       DerivingStrategies,
+      DerivingVia,
       DeriveTraversable,
       ExistentialQuantification,
       FlexibleContexts,
