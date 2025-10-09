@@ -22,7 +22,10 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
 import ZkFold.ArithmeticCircuit qualified as Circuit
+import ZkFold.ArithmeticCircuit.Experimental (Node, compileV1)
+import ZkFold.ArithmeticCircuit.Op (Sort (ZZp))
 import ZkFold.Data.Binary (Binary, toByteString)
+import ZkFold.Symbolic.Compat (CompatContext)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
@@ -31,9 +34,6 @@ import Prelude (toInteger)
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.UInt (exampleUIntExpMod)
-import ZkFold.Symbolic.Compat (CompatContext)
-import ZkFold.ArithmeticCircuit.Experimental (Node, compileV1)
-import ZkFold.ArithmeticCircuit.Op (Sort(ZZp))
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
