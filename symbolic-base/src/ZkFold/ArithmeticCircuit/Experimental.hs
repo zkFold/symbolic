@@ -49,7 +49,7 @@ import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traversePoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
-import ZkFold.ArithmeticCircuit.Op (KnownSort, Op (..), Sort (..), SortSing (..), knownSort, opToBinary, traverseOp)
+import ZkFold.ArithmeticCircuit.Op
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
@@ -62,7 +62,7 @@ import ZkFold.Symbolic.Compat (CompatContext (..))
 import qualified ZkFold.Symbolic.Compiler as Old
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint, unconstrained), at)
+import ZkFold.Symbolic.MonadCircuit (constraint, lookupConstraint, unconstrained, at)
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable (..), Symbolic (..))
 
 ------------------- Experimental single-output circuit type --------------------
@@ -258,146 +258,6 @@ instance
   where
   symApply f (x :*: y) = symApply (f x) y
 
-data Witness a (s :: Sort) where
-  FieldVar :: Var a -> Witness a ZZp
-  IntWitness :: EuclideanF a NewVar -> Witness a ZZ
-  BoolWitness :: BooleanF a NewVar -> Witness a BB
-  OrdWitness :: OrderingF a NewVar -> Witness a OO
-
-toVar :: Witness a ZZp -> Var a
-toVar (FieldVar v) = v
-
-instance (KnownSort s, FromConstant Integer a) => FromConstant Integer (Witness a s) where
-  fromConstant = case knownSort @s of
-    ZZpSing -> FieldVar . fromConstant
-    ZZSing -> IntWitness . fromConstant
-    BBSing -> BoolWitness . fromConstant
-    OOSing -> OrdWitness . fromConstant
-
-instance Scale Integer a => Scale Integer (Witness a s) where
-  scale k = \case
-    FieldVar v -> FieldVar (scale k v)
-    IntWitness w -> IntWitness (scale k w)
-    BoolWitness w -> BoolWitness (fromConstant k && w)
-    OrdWitness w -> OrdWitness (fromConstant k <> w) -- TODO: wrong but unused
-
-instance PrimeField a => Eq (Witness a s) where
-  type BooleanOf (Witness a s) = BooleanF a NewVar
-  FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
-  IntWitness v == IntWitness w = v == w
-  BoolWitness v == BoolWitness w = not (xor v w)
-  OrdWitness _ == OrdWitness _ = error "not implemented"
-  x /= y = not (x == y)
-
-data SomeWitness a = forall s. SomeWitness (Witness a s)
-
-data Compiler a = Compiler
-  { circuitContext :: CircuitContext a U1
-  , constraintLog :: Set Hash
-  , witnessExtractor :: Map Hash (SomeWitness a)
-  }
-  deriving Generic
-
-makeCompiler :: Compiler a
-makeCompiler = Compiler emptyContext S.empty M.empty
-
-instance
-  {-# OVERLAPPING #-}
-  (AdditiveMonoid a, Prelude.Eq a, Prelude.Ord v)
-  => Scale v (Polynomial a v)
-  where
-  scale x = fromList . fmap (first ((x, 1) :)) . toList
-
-instance
-  {-# OVERLAPPING #-}
-  (Semiring a, Prelude.Eq a, Prelude.Ord v)
-  => FromConstant v (Polynomial a v)
-  where
-  fromConstant x = fromList [([(x, 1)], one)]
-
-compileNode
-  :: forall a s
-   . (Arithmetic a, Binary a)
-  => Node (Order a) s -> State (Compiler a) (Witness a s)
-compileNode (NodeInput v) = pure $ FieldVar $ pure (EqVar v)
-compileNode (NodeConstrain c n h) = do
-  isDone <- gets (S.member h . constraintLog)
-  zoom #constraintLog $ modify' (S.insert h)
-  unless isDone case c of
-    Lookup lkp ns -> do
-      vs <- traverse (fmap toVar . compileNode) ns
-      zoom #circuitContext (lookupConstraint vs lkp)
-    Polynomial p -> do
-      poly <- traversePoly @_ @a (fmap toVar . compileNode) p
-      zoom #circuitContext $ constraint (evalPoly poly)
-  compileNode n
-compileNode (NodeApply op h) =
-  gets (request op . witnessExtractor) >>= \case
-    Just w -> pure w
-    Nothing -> do
-      w <-
-        traverseOp compileNode op >>= \case
-          OpConst c -> pure (fromConstant c)
-          OpScale k w -> pure (scale k w)
-          OpAdd (FieldVar u) (FieldVar v) ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (at u + at v)
-          OpAdd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v + w)
-          OpAdd (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v `xor` w)
-          OpAdd (OrdWitness v) (OrdWitness w) ->
-            pure $ OrdWitness (v <> w) -- TODO wrong but unused
-          OpMul (FieldVar u) (FieldVar v) ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (at u * at v)
-          OpMul (IntWitness v) (IntWitness w) -> pure $ IntWitness (v * w)
-          OpMul (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v && w)
-          OpMul (OrdWitness v) (OrdWitness w) ->
-            pure $ OrdWitness (v <> w) -- TODO wrong but unused
-          OpNeg w -> pure (scale (-1 :: Integer) w)
-          OpExp (FieldVar v) p ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (at v ^ p)
-          OpExp (IntWitness w) p -> pure $ IntWitness (w ^ p)
-          OpExp (BoolWitness w) p -> pure $ BoolWitness (fromConstant (p == 0) || w)
-          OpExp (OrdWitness w) _ -> pure (OrdWitness w) -- TODO wrong but unused
-          OpFrom (IntWitness w) ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (fromConstant w)
-          OpTo (FieldVar v) ->
-            pure $ IntWitness $ toIntegral @(WitnessF a NewVar) (at v)
-          OpCompare (IntWitness v) (IntWitness w) ->
-            pure $ OrdWitness (v `compare` w)
-          OpDiv (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `div` w)
-          OpMod (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `mod` w)
-          OpGcd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `gcd` w)
-          OpBezoutL (IntWitness v) (IntWitness w) ->
-            pure $ IntWitness (v `bezoutL` w)
-          OpBezoutR (IntWitness v) (IntWitness w) ->
-            pure $ IntWitness (v `bezoutR` w)
-          OpInv (FieldVar v) ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (at v)
-          OpEq x y -> pure $ BoolWitness (x == y)
-          OpNEq x y -> pure $ BoolWitness (x /= y)
-          OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
-          OpBool (FieldVar u) (FieldVar v) (BoolWitness w) ->
-            zoom #circuitContext $ FieldVar <$> unconstrained (bool (at u) (at v) w)
-          OpBool (IntWitness v) (IntWitness w) (BoolWitness b) ->
-            pure $ IntWitness (bool v w b)
-          OpBool (BoolWitness v) (BoolWitness w) (BoolWitness b) ->
-            pure $ BoolWitness (bool v w b)
-          OpBool (OrdWitness _) (OrdWitness _) (BoolWitness _) ->
-            pure $ OrdWitness (error "not implemented")
-          OpAppend (OrdWitness v) (OrdWitness w) -> pure $ OrdWitness (v <> w)
-          OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
-            pure $ IntWitness (ordering u v w o)
-      zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
-      pure w
- where
-  request :: Op f t -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
-  request _ m =
-    (m M.!? h) <&> \case
-      SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
-
-compileOutput
-  :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
-compileOutput Compiler {..} = crown circuitContext . fmap toVar
-
 compileV1
   :: forall a f n d
    . ( Arithmetic a
@@ -436,3 +296,148 @@ compileV2 =
             . symApply f
             $ fromLayout (fmap fromNewVar l)
      in compileOutput compiler output
+
+------------------------- Compilation internals --------------------------------
+
+data Compiler a = Compiler
+  { circuitContext :: CircuitContext a U1
+  , constraintLog :: Set Hash
+  , witnessExtractor :: Map Hash (SomeWitness a)
+  }
+  deriving Generic
+
+makeCompiler :: Compiler a
+makeCompiler = Compiler emptyContext S.empty M.empty
+
+compileNode
+  :: forall a s
+   . (Arithmetic a, Binary a)
+  => Node (Order a) s -> State (Compiler a) (Witness a s)
+compileNode (NodeInput v) = pure $ FieldVar $ pure (EqVar v)
+compileNode (NodeConstrain c n h) = do
+  isDone <- gets (S.member h . constraintLog)
+  zoom #constraintLog $ modify' (S.insert h)
+  unless isDone case c of
+    Lookup lkp ns -> do
+      vs <- traverse (fmap toVar . compileNode) ns
+      zoom #circuitContext (lookupConstraint vs lkp)
+    Polynomial p -> do
+      poly <- traversePoly @_ @a (fmap toVar . compileNode) p
+      zoom #circuitContext $ constraint (evalPoly poly)
+  compileNode n
+compileNode (NodeApply op h) =
+  gets (request op h . witnessExtractor) >>= \case
+    Just w -> pure w
+    Nothing -> do
+      w <- traverseOp compileNode op >>= opToWitness
+      zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
+      pure w
+
+compileOutput
+  :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
+compileOutput Compiler {..} = crown circuitContext . fmap toVar
+
+data SomeWitness a = forall s. SomeWitness (Witness a s)
+
+request :: Op f t -> Hash -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
+request _ h m = (m M.!? h) <&> \case
+  SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
+
+data Witness a (s :: Sort) where
+  FieldVar :: Var a -> Witness a ZZp
+  IntWitness :: EuclideanF a NewVar -> Witness a ZZ
+  BoolWitness :: BooleanF a NewVar -> Witness a BB
+  OrdWitness :: OrderingF a NewVar -> Witness a OO
+
+toVar :: Witness a ZZp -> Var a
+toVar (FieldVar v) = v
+
+instance (KnownSort s, FromConstant Integer a) => FromConstant Integer (Witness a s) where
+  fromConstant = case knownSort @s of
+    ZZpSing -> FieldVar . fromConstant
+    ZZSing -> IntWitness . fromConstant
+    BBSing -> BoolWitness . fromConstant
+    OOSing -> OrdWitness . fromConstant
+
+instance Scale Integer a => Scale Integer (Witness a s) where
+  scale k = \case
+    FieldVar v -> FieldVar (scale k v)
+    IntWitness w -> IntWitness (scale k w)
+    BoolWitness w -> BoolWitness (fromConstant k && w)
+    OrdWitness w -> OrdWitness (fromConstant k <> w) -- TODO: wrong but unused
+
+instance PrimeField a => Eq (Witness a s) where
+  type BooleanOf (Witness a s) = BooleanF a NewVar
+  FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
+  IntWitness v == IntWitness w = v == w
+  BoolWitness v == BoolWitness w = not (xor v w)
+  OrdWitness _ == OrdWitness _ = error "not implemented"
+  x /= y = not (x == y)
+
+opToWitness
+  :: forall a s. (Arithmetic a, Binary a)
+  => Op (Witness a) s -> State (Compiler a) (Witness a s)
+opToWitness = \case
+  OpConst c -> pure (fromConstant c)
+  OpScale k w -> pure (scale k w)
+  OpAdd (FieldVar u) (FieldVar v) ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (at u + at v)
+  OpAdd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v + w)
+  OpAdd (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v `xor` w)
+  OpAdd (OrdWitness v) (OrdWitness w) ->
+    pure $ OrdWitness (v <> w) -- TODO wrong but unused
+  OpMul (FieldVar u) (FieldVar v) ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (at u * at v)
+  OpMul (IntWitness v) (IntWitness w) -> pure $ IntWitness (v * w)
+  OpMul (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v && w)
+  OpMul (OrdWitness v) (OrdWitness w) ->
+    pure $ OrdWitness (v <> w) -- TODO wrong but unused
+  OpNeg w -> pure (scale (-1 :: Integer) w)
+  OpExp (FieldVar v) p ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (at v ^ p)
+  OpExp (IntWitness w) p -> pure $ IntWitness (w ^ p)
+  OpExp (BoolWitness w) p -> pure $ BoolWitness (fromConstant (p == 0) || w)
+  OpExp (OrdWitness w) _ -> pure (OrdWitness w) -- TODO wrong but unused
+  OpFrom (IntWitness w) ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (fromConstant w)
+  OpTo (FieldVar v) ->
+    pure $ IntWitness $ toIntegral @(WitnessF a NewVar) (at v)
+  OpCompare (IntWitness v) (IntWitness w) ->
+    pure $ OrdWitness (v `compare` w)
+  OpDiv (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `div` w)
+  OpMod (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `mod` w)
+  OpGcd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v `gcd` w)
+  OpBezoutL (IntWitness v) (IntWitness w) ->
+    pure $ IntWitness (v `bezoutL` w)
+  OpBezoutR (IntWitness v) (IntWitness w) ->
+    pure $ IntWitness (v `bezoutR` w)
+  OpInv (FieldVar v) ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (at v)
+  OpEq x y -> pure $ BoolWitness (x == y)
+  OpNEq x y -> pure $ BoolWitness (x /= y)
+  OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
+  OpBool (FieldVar u) (FieldVar v) (BoolWitness w) ->
+    zoom #circuitContext $ FieldVar <$> unconstrained (bool (at u) (at v) w)
+  OpBool (IntWitness v) (IntWitness w) (BoolWitness b) ->
+    pure $ IntWitness (bool v w b)
+  OpBool (BoolWitness v) (BoolWitness w) (BoolWitness b) ->
+    pure $ BoolWitness (bool v w b)
+  OpBool (OrdWitness _) (OrdWitness _) (BoolWitness _) ->
+    pure $ OrdWitness (error "not implemented")
+  OpAppend (OrdWitness v) (OrdWitness w) -> pure $ OrdWitness (v <> w)
+  OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
+    pure $ IntWitness (ordering u v w o)
+
+instance
+  {-# OVERLAPPING #-}
+  (AdditiveMonoid a, Prelude.Eq a, Prelude.Ord v)
+  => Scale v (Polynomial a v)
+  where
+  scale x = fromList . fmap (first ((x, 1) :)) . toList
+
+instance
+  {-# OVERLAPPING #-}
+  (Semiring a, Prelude.Eq a, Prelude.Ord v)
+  => FromConstant v (Polynomial a v)
+  where
+  fromConstant x = fromList [([(x, 1)], one)]
