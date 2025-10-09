@@ -368,7 +368,6 @@ expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
   plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
   witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
-  -- (_, proof) = prove @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) setupP witness
   (proof, _) = rustPlonkupProve setupP witness
 
 -------------------------------------------------------------------------------------------------------------------
