@@ -74,6 +74,9 @@ instance
   )
   => Eq (Output a context)
 
+instance (Symbolic context) => Hashable (HashSimple context) (Output a context) where
+  hasher = Poseidon.hash
+
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
 nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}

@@ -14,13 +14,12 @@ module ZkFold.Symbolic.Ledger.Types (
   SignatureState,
 ) where
 
-import GHC.Generics ((:.:))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (NumberOfBits)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
-import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
@@ -65,8 +64,6 @@ type SignatureState bi bo ud a context =
   , KnownRegistersAssetQuantity context
   , KnownNat bi
   , KnownNat bo
-  , Hashable (HashSimple context) ((Vector bi :.: Output a) context)
-  , Hashable (HashSimple context) ((Vector bo :.: Output a) context)
   , Hashable (HashSimple context) (FieldElement context)
   , forall s. Hashable (HashSimple s) (FieldElement s)
   )
