@@ -37,7 +37,7 @@ updateLedgerState
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
-  => (KnownNat bo, KnownNat bi, KnownNat i, KnownNat o, KnownNat t)
+  => (KnownNat bo, KnownNat bi, KnownNat o, KnownNat t)
   => State bi bo ud a context
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
@@ -156,7 +156,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         }
    in
     newState
-      :*: StateWitness {swAddBridgeIn = swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
+      :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
 
 -- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
 unsafeToVector' :: forall size a. KnownNat size => [a] -> Vector size a
