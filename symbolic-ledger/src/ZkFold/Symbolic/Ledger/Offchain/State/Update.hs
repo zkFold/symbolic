@@ -106,11 +106,11 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         stepIn (insAcc, treeIn) (ref, rPoint :*: s :*: publicKey) =
           let
             -- Find UTxO by reference in provided set
-            pairs = fromVector (enumerate utxoSet)
-            pick (found, picked) (_ix, u) =
+            utxoSetList = fromVector utxoSet
+            pick (found, picked) u =
               let isHere = u.uRef == ref
                in (isHere || found, ifThenElse isHere u picked)
-            (_foundU, utxo) = foldl' pick (false, nullUTxO @a @context) pairs
+            (_foundU, utxo) = foldl' pick (false, nullUTxO @a @context) utxoSetList
             utxoHash :: FieldElement context = hash utxo & Base.hHash
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
