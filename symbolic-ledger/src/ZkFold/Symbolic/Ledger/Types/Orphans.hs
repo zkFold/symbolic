@@ -18,6 +18,7 @@ import Prelude (($), (<$>))
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import GHC.IsList (IsList(..))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 
 
 -- newtype VectorTakingCtx (n) (a :: Ctx -> Type) c = VectorTakingCtx ( (Vector n :.: a) c)
@@ -31,3 +32,6 @@ import ZkFold.Symbolic.Data.Class (SymbolicData)
 
 instance forall context n (a :: Ctx -> Type). (Symbolic context, Hashable (HashSimple context) (a context)) => Hashable (HashSimple context) ((Vector n :.: a) context) where
   hasher (Comp1 x) = Poseidon.poseidonHashDefault $ Base.hasher <$> toList x
+
+instance Symbolic context => Hashable (HashSimple context) (FieldElement context) where
+  hasher = Poseidon.hash

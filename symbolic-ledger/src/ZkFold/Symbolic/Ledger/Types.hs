@@ -24,8 +24,6 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Hash (Hashable)
 
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
@@ -64,6 +62,4 @@ type SignatureState bi bo ud a context =
   , KnownRegistersAssetQuantity context
   , KnownNat bi
   , KnownNat bo
-  , Hashable (HashSimple context) (FieldElement context)
-  , forall s. Hashable (HashSimple s) (FieldElement s)
   )
