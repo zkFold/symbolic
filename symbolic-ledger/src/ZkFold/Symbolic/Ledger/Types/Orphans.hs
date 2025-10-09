@@ -1,6 +1,5 @@
 {-# LANGUAGE PolyKinds #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 
 module ZkFold.Symbolic.Ledger.Types.Orphans 
