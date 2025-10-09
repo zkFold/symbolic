@@ -44,6 +44,7 @@ type SignatureTransaction ud i o a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
   , KnownNat i
+  , KnownNat o
   , KnownNat a
   , KnownNat (ud - 1)
   , KnownNat (MerkleTreeSize ud)
@@ -55,11 +56,15 @@ type SignatureTransaction ud i o a context =
   )
 
 type SignatureTransactionBatch ud i o a t context =
-  (SignatureTransaction ud i o a context)
+  (SignatureTransaction ud i o a context
+  , KnownNat t
+  )
 
 type SignatureState bi bo ud a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
+  , KnownNat bi
+  , KnownNat bo
   , Hashable (HashSimple context) ((Vector bi :.: Output a) context)
   , Hashable (HashSimple context) ((Vector bo :.: Output a) context)
   , Hashable (HashSimple context) (FieldElement context)

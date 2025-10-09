@@ -37,7 +37,6 @@ updateLedgerState
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
-  => (KnownNat bo, KnownNat bi, KnownNat o, KnownNat t)
   => State bi bo ud a context
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
