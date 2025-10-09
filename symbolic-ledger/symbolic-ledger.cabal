@@ -56,6 +56,7 @@ common options
       FunctionalDependencies,
       GADTs,
       GeneralizedNewtypeDeriving,
+      ImportQualifiedPost,
       InstanceSigs,
       KindSignatures,
       LambdaCase,
@@ -92,6 +93,7 @@ library
       ZkFold.Symbolic.Ledger.Types
       ZkFold.Symbolic.Ledger.Types.Address
       ZkFold.Symbolic.Ledger.Types.Hash
+      ZkFold.Symbolic.Ledger.Types.Orphans
       ZkFold.Symbolic.Ledger.Types.State
       ZkFold.Symbolic.Ledger.Types.Transaction
       ZkFold.Symbolic.Ledger.Types.Transaction.Batch
