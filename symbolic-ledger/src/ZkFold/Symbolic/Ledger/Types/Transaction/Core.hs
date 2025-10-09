@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
