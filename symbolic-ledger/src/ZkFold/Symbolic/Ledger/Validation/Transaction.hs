@@ -1,4 +1,3 @@
-
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
