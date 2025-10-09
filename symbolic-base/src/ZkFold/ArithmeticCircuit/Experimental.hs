@@ -14,11 +14,13 @@ import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless, (>>=))
 import Control.Monad.State (State, gets, modify', runState)
+import Crypto.Hash.SHA256 (hash)
 import Data.Bifunctor (first)
 import Data.Binary (Binary)
 import Data.Bool (Bool (..))
 import Data.ByteString (ByteString)
 import qualified Data.Eq as Prelude
+import Data.Foldable (foldMap)
 import Data.Function (const, flip, ($), (.))
 import Data.Functor (Functor, fmap, (<$>), (<&>))
 import Data.Kind (Type)
@@ -33,7 +35,7 @@ import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
-import GHC.Generics (Generic, U1, (:*:) (..), Par1 (..))
+import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
 import GHC.Integer (Integer)
 import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
@@ -42,28 +44,26 @@ import Optics (zoom)
 import Unsafe.Coerce (unsafeCoerce)
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traversePoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
+import ZkFold.ArithmeticCircuit.Op (KnownSort, Op (..), Sort (..), SortSing (..), knownSort, opToBinary, traverseOp)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint, unconstrained), at)
-import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..), LookupTable (..))
-import ZkFold.ArithmeticCircuit.Op (Sort (..), Op (..), KnownSort, SortSing (..), knownSort, traverseOp, opToBinary)
-import Crypto.Hash.SHA256 (hash)
-import ZkFold.Algebra.Field (Zp)
-import ZkFold.Data.Binary (toByteString)
-import Data.Foldable (foldMap)
 import ZkFold.Symbolic.Compat (CompatContext (..))
 import qualified ZkFold.Symbolic.Compiler as Old
 import qualified ZkFold.Symbolic.Data.Class as Old
+import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (constraint, lookupConstraint, unconstrained), at)
+import ZkFold.Symbolic.V2 (Constraint (..), LookupTable (..), Symbolic (..))
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -205,21 +205,21 @@ instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p Z
   type IntegralOf (Node p ZZp) = Node p ZZ
   toIntegral x = apply (OpTo x)
 
-instance
-  (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
+instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
   constrain c x = NodeConstrain c x $ hash (constrToByteString c <> getHash x)
-    where
-      constrToByteString (Polynomial p) =
-        toByteString $ first (first getHash <$>)
-        <$> toList @(Polynomial (Zp p) (Node p ZZp)) p
-      constrToByteString (Lookup tb xs) = lookupToByteString tb xs
-      lookupToByteString :: LookupTable f -> f (Node p ZZp) -> ByteString
-      lookupToByteString (Ranges rs) (Par1 i) =
-        foldMap toByteString rs <> getHash i
-      lookupToByteString (Product t u) (i :*: j) =
-        lookupToByteString t i <> lookupToByteString u j
-      lookupToByteString (Plot f t) (i :*: j) =
-        lookupToByteString t i <> foldMap getHash j <> foldMap getHash (f i)
+   where
+    constrToByteString (Polynomial p) =
+      toByteString $
+        first (first getHash <$>)
+          <$> toList @(Polynomial (Zp p) (Node p ZZp)) p
+    constrToByteString (Lookup tb xs) = lookupToByteString tb xs
+    lookupToByteString :: LookupTable f -> f (Node p ZZp) -> ByteString
+    lookupToByteString (Ranges rs) (Par1 i) =
+      foldMap toByteString rs <> getHash i
+    lookupToByteString (Product t u) (i :*: j) =
+      lookupToByteString t i <> lookupToByteString u j
+    lookupToByteString (Plot f t) (i :*: j) =
+      lookupToByteString t i <> foldMap getHash j <> foldMap getHash (f i)
 
 ------------------------- Optimized compilation function -----------------------
 
@@ -400,19 +400,28 @@ compileOutput Compiler {..} = crown circuitContext . fmap toVar
 
 compileV1
   :: forall a f n d
-   . ( Arithmetic a, Binary a, Old.SymbolicFunction f, Order a ~ n
-     , Old.Context f ~ CompatContext (Node n ZZp), Old.Domain f ~ d)
-  => f -> ArithmeticCircuit a (Old.Layout d n :*: Old.Payload d n)
-                              (Old.Layout (Old.Range f) n)
-compileV1 = optimize . solder . \f (l :*: p) ->
-  let (output, compiler) =
-        flip runState makeCompiler
-          . traverse compileNode
-          . compatContext
-          . Old.arithmetize
-          . Old.apply f
-          $ Old.restore (CompatContext (fromNewVar <$> l), fromNewVar <$> p)
-   in compileOutput compiler output
+   . ( Arithmetic a
+     , Binary a
+     , Old.SymbolicFunction f
+     , Order a ~ n
+     , Old.Context f ~ CompatContext (Node n ZZp)
+     , Old.Domain f ~ d
+     )
+  => f
+  -> ArithmeticCircuit
+       a
+       (Old.Layout d n :*: Old.Payload d n)
+       (Old.Layout (Old.Range f) n)
+compileV1 =
+  optimize . solder . \f (l :*: p) ->
+    let (output, compiler) =
+          flip runState makeCompiler
+            . traverse compileNode
+            . compatContext
+            . Old.arithmetize
+            . Old.apply f
+            $ Old.restore (CompatContext (fromNewVar <$> l), fromNewVar <$> p)
+     in compileOutput compiler output
 
 compileV2
   :: forall a c f

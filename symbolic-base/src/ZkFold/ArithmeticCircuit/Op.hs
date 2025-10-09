@@ -1,12 +1,13 @@
 module ZkFold.ArithmeticCircuit.Op where
 
+import Control.Applicative (Applicative, pure, (<*>))
+import Data.ByteString (ByteString, cons)
+import Data.Functor ((<$>))
+import Data.Semigroup ((<>))
 import GHC.Integer (Integer)
 import GHC.Natural (Natural)
-import Control.Applicative (Applicative, pure, (<*>))
-import Data.Functor ((<$>))
-import Data.ByteString (ByteString, cons)
+
 import ZkFold.Data.Binary (toByteString)
-import Data.Semigroup ((<>))
 
 data Sort = ZZp | ZZ | BB | OO
 
