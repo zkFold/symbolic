@@ -70,7 +70,7 @@ instance
   )
   => Eq (Output a context)
 
-instance (Symbolic context) => Hashable (HashSimple context) (Output a context) where
+instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = Poseidon.hash
 
 -- | Null output.

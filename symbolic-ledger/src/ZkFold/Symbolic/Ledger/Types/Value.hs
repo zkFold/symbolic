@@ -36,7 +36,7 @@ import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
-import qualified ZkFold.Symbolic.Data.List as Symbolic.List
+import ZkFold.Symbolic.Data.List qualified as Symbolic.List
 import ZkFold.Symbolic.Fold (SymbolicFold)
 import Prelude hiding (
   Bool,

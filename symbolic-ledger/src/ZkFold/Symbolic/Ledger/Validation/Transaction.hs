@@ -19,20 +19,20 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
-import qualified ZkFold.Data.Vector as Vector
+import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
-import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Combinators (Iso (..))
 import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
-import qualified ZkFold.Symbolic.Data.Hash as Base
+import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
-import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
-import qualified Prelude as P
+import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
 

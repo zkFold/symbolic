@@ -16,11 +16,11 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (&&), (||))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
-import qualified ZkFold.Symbolic.Data.Hash as Base
+import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Maybe (Maybe (..))
-import qualified ZkFold.Symbolic.Data.MerkleTree as MerkleTree
+import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.WitnessContext (toWitnessContext)
-import qualified Prelude as P
+import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
