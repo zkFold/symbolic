@@ -1,4 +1,3 @@
-{-# LANGUAGE PolyKinds #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE DerivingVia #-}
 

@@ -1,6 +1,4 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 module ZkFold.Symbolic.Ledger.Offchain.State.Update (
   updateLedgerState,
