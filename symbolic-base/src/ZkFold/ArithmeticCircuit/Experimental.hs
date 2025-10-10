@@ -22,7 +22,7 @@ import Data.ByteString (ByteString)
 import qualified Data.Eq as Prelude
 import Data.Foldable (foldMap)
 import Data.Function (const, flip, ($), (.))
-import Data.Functor (Functor, fmap, (<$>), (<&>))
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Kind (Type)
 import Data.Map (Map)
 import qualified Data.Map as M
@@ -40,8 +40,7 @@ import GHC.Integer (Integer)
 import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
-import Optics (zoom)
-import Unsafe.Coerce (unsafeCoerce)
+import Optics (zoom, over)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
@@ -71,7 +70,7 @@ type Hash = ByteString
 
 data Node p (s :: Sort) where
   NodeInput :: Hash -> Node p ZZp
-  NodeApply :: Op (Node p) s -> Hash -> Node p s
+  NodeApply :: KnownSort s => Op (Node p) s -> Hash -> Node p s
   NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Hash -> Node p ZZp
 
 fromNewVar :: NewVar -> Node n ZZp
@@ -96,7 +95,7 @@ instance Prelude.Ord (Node p s) where
 instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
 
-apply :: Op (Node p) s -> Node p s
+apply :: KnownSort s => Op (Node p) s -> Node p s
 apply op = NodeApply op $ hash $ opToBinary getHash op
 
 getHash :: Node p s -> Hash
@@ -105,7 +104,7 @@ getHash = \case
   NodeApply _ h -> h
   NodeConstrain _ _ h -> h
 
-instance Conditional (Node p BB) (Node p s) where
+instance KnownSort s => Conditional (Node p BB) (Node p s) where
   bool onFalse onTrue condition = apply (OpBool onFalse onTrue condition)
 
 instance BoolType (Node p BB) where
@@ -156,13 +155,13 @@ instance KnownSort s => FromConstant Integer (Node p s) where
 instance FromConstant (Node p ZZ) (Node p ZZp) where
   fromConstant x = apply (OpFrom x)
 
-instance Scale Natural (Node p s) where
+instance KnownSort s => Scale Natural (Node p s) where
   scale k = apply . OpScale (fromConstant k)
 
-instance Scale Integer (Node p s) where
+instance KnownSort s => Scale Integer (Node p s) where
   scale k x = apply (OpScale k x)
 
-instance Exponent (Node p s) Natural where
+instance KnownSort s => Exponent (Node p s) Natural where
   x ^ p = apply (OpExp x p)
 
 instance Prime p => Exponent (Node p ZZp) Integer where
@@ -171,7 +170,7 @@ instance Prime p => Exponent (Node p ZZp) Integer where
 instance KnownSort s => Zero (Node p s) where
   zero = fromConstant (0 :: Integer)
 
-instance AdditiveSemigroup (Node p s) where
+instance KnownSort s => AdditiveSemigroup (Node p s) where
   x + y = apply (OpAdd x y)
 
 instance KnownSort s => AdditiveMonoid (Node p s)
@@ -179,7 +178,7 @@ instance KnownSort s => AdditiveMonoid (Node p s)
 instance KnownSort s => AdditiveGroup (Node p s) where
   negate x = apply (OpNeg x)
 
-instance MultiplicativeSemigroup (Node p s) where
+instance KnownSort s => MultiplicativeSemigroup (Node p s) where
   x * y = apply (OpMul x y)
 
 instance KnownSort s => MultiplicativeMonoid (Node p s) where
@@ -302,12 +301,12 @@ compileV2 =
 data Compiler a = Compiler
   { circuitContext :: CircuitContext a U1
   , constraintLog :: Set Hash
-  , witnessExtractor :: Map Hash (SomeWitness a)
+  , witnessExtractor :: WitnessExtractor a
   }
   deriving Generic
 
 makeCompiler :: Compiler a
-makeCompiler = Compiler emptyContext S.empty M.empty
+makeCompiler = Compiler emptyContext S.empty makeExtractor
 
 compileNode
   :: forall a s
@@ -326,23 +325,43 @@ compileNode (NodeConstrain c n h) = do
       zoom #circuitContext $ constraint (evalPoly poly)
   compileNode n
 compileNode (NodeApply op h) =
-  gets (request op h . witnessExtractor) >>= \case
+  gets (request h . witnessExtractor) >>= \case
     Just w -> pure w
     Nothing -> do
       w <- traverseOp compileNode op >>= opToWitness
-      zoom #witnessExtractor $ modify' $ M.insert h (SomeWitness w)
+      zoom #witnessExtractor $ modify' $ insertWitness h w
       pure w
 
 compileOutput
   :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
 compileOutput Compiler {..} = crown circuitContext . fmap toVar
 
-data SomeWitness a = forall s. SomeWitness (Witness a s)
+data WitnessExtractor a = WitnessExtractor
+  { weVars :: Map Hash (Var a)
+  , weInts :: Map Hash (EuclideanF a NewVar)
+  , weBool :: Map Hash (BooleanF a NewVar)
+  , weOrds :: Map Hash (OrderingF a NewVar)
+  }
+  deriving Generic
 
-request :: Op f t -> Hash -> Map Hash (SomeWitness a) -> Maybe (Witness a t)
-request _ h m =
-  (m M.!? h) <&> \case
-    SomeWitness s -> unsafeCoerce s -- safe assuming no collisions
+makeExtractor :: WitnessExtractor a
+makeExtractor = WitnessExtractor M.empty M.empty M.empty M.empty
+
+insertWitness :: Hash -> Witness a s -> WitnessExtractor a -> WitnessExtractor a
+insertWitness h = \case
+  FieldVar v -> over #weVars (M.insert h v)
+  IntWitness w -> over #weInts (M.insert h w)
+  BoolWitness w -> over #weBool (M.insert h w)
+  OrdWitness w -> over #weOrds (M.insert h w)
+
+request
+  :: forall a s. KnownSort s
+  => Hash -> WitnessExtractor a -> Maybe (Witness a s)
+request h WitnessExtractor {..} = case knownSort @s of
+  ZZpSing -> FieldVar <$> weVars M.!? h
+  ZZSing -> IntWitness <$> weInts M.!? h
+  BBSing -> BoolWitness <$> weBool M.!? h
+  OOSing -> OrdWitness <$> weOrds M.!? h
 
 data Witness a (s :: Sort) where
   FieldVar :: Var a -> Witness a ZZp
