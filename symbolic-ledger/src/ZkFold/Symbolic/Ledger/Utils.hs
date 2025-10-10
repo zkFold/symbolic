@@ -37,6 +37,7 @@ replaceFirstMatchWith'
   -> Vector n (a context)
   -- ^ Vector with the first match replaced.
 replaceFirstMatchWith' v mF new =
+  -- The function definition is slightly contrived as we don't have normal Haskell equality for symbolic data types.
   let isMatch = mF P.<$> v
       prefixUsed = scanl (||) false isMatch
       usedBefore = take @n prefixUsed
