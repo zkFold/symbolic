@@ -86,8 +86,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             ifThenElse
               (out == nullOutput')
               (tree :*: nullUTxO')
-              ( MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree :*: utxo
-              )
+              (MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree :*: utxo)
           ix' = ix + one
           entries' = entry : entries
           pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
@@ -133,8 +132,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                 ifThenElse
                   bout
                   (treeOut :*: nullUTxO')
-                  ( MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo
-                  )
+                  (MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo)
               preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
