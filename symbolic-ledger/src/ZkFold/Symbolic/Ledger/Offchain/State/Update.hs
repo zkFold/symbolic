@@ -74,10 +74,10 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                   outs
        in foldl' step emptyBoVec txs
 
-    -- Apply bridge-in outputs to UTxO tree by replacing null leaves and collect witness entries
     biOutsList = fromVector (unComp1 bridgedInOutputs)
     -- Maintain a local preimage vector of UTxOs in parallel with the Merkle tree
-    utxoPreimage0 = utxoSet
+    utxoPreimageInit = utxoSet
+    -- Apply bridge-in outputs.
     stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
@@ -91,7 +91,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           entries' = entry : entries
           pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
-    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
+    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimageInit) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
 
     -- Build transaction witnesses and apply batch updates to UTxO tree
