@@ -13,6 +13,7 @@ import ZkFold.Data.HFunctor
 import ZkFold.Data.HFunctor.Classes (HNFData, hliftRnf)
 import ZkFold.Data.Package
 import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter
 
 newtype WitnessContext c f = WC {runWC :: f (WitnessField c)}
@@ -38,3 +39,7 @@ instance Symbolic c => Symbolic (WitnessContext c) where
     WC $
       runIdentity
         <$> runWitnesses @(BaseField c) @(WitnessField c) (g $ Identity <$> f)
+
+toWitnessContext :: forall c x. Symbolic c => SymbolicData x => x c -> x (WitnessContext c)
+toWitnessContext x =
+  restore (embedW $ witnessF $ arithmetize x, payload x)

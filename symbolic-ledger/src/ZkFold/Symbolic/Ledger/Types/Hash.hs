@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
 ) where
 
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import qualified ZkFold.Symbolic.Data.Hash as Symbolic.Hash
+import ZkFold.Symbolic.Data.Hash qualified as Symbolic.Hash
 
 -- | Hash type used in the zkFold ledger.
 type Hash = Symbolic.Hash.Hash HashSimple
