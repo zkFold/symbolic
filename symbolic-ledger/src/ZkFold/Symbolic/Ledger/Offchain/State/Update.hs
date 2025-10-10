@@ -51,6 +51,8 @@ updateLedgerState
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
     nullOutput' = nullOutput @a @context
+    nullUTxO' = nullUTxO @a @context
+    nullUTxOHash' = nullUTxOHash @a @context
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
     bridgeInHash = newLen & hash & Base.hHash
@@ -90,8 +92,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           entries' = entry : entries
           pre' =
             let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
-                gatedUtxo = ifThenElse (out == nullOutput') (nullUTxO @a @context) utxo
-             in replaceFirstMatchWith pre (nullUTxO @a @context) gatedUtxo
+                gatedUtxo = ifThenElse (out == nullOutput') nullUTxO' utxo
+             in replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
     (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
@@ -113,12 +115,12 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             pick (found, picked) u =
               let isHere = u.uRef == ref
                in (isHere || found, ifThenElse isHere u picked)
-            (_foundU, utxo) = foldl' pick (false, nullUTxO @a @context) utxoSetList
+            (_foundU, utxo) = foldl' pick (false, nullUTxO') utxoSetList
             utxoHash :: FieldElement context = hash utxo & Base.hHash
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
-            treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash @a @context}) treeIn
-            preIn'' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) (nullUTxO @a @context)
+            treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash'}) treeIn
+            preIn'' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
            in
             ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn'')
         (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
@@ -138,8 +140,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                   )
               preOut' =
                 let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
-                    gatedUtxo = ifThenElse bout (nullUTxO @a @context) utxo
-                 in replaceFirstMatchWith preOut (nullUTxO @a @context) gatedUtxo
+                    gatedUtxo = ifThenElse bout nullUTxO' utxo
+                 in replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
