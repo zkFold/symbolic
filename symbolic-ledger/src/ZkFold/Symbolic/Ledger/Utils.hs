@@ -1,19 +1,19 @@
 module ZkFold.Symbolic.Ledger.Utils (
   replaceFirstMatchWith,
-  replaceFirstMatchWith'
+  replaceFirstMatchWith',
 ) where
 
 import GHC.TypeNats (KnownNat)
-import ZkFold.Data.Eq
-import qualified Prelude as P
-import ZkFold.Data.Vector
-import ZkFold.Data.Bool
 import ZkFold.Control.Conditional
+import ZkFold.Data.Bool
+import ZkFold.Data.Eq
+import ZkFold.Data.Vector
+import Prelude qualified as P
 
 -- Replace the first match in the vector with provided one.
 replaceFirstMatchWith
   :: forall n a context
-    . (Eq (a context), KnownNat n, Conditional (BooleanOf (a context)) (a context))
+   . (Eq (a context), KnownNat n, Conditional (BooleanOf (a context)) (a context))
   => Vector n (a context)
   -- ^ Vector to replace the first match in.
   -> a context
@@ -27,7 +27,7 @@ replaceFirstMatchWith v match = replaceFirstMatchWith' v (== match)
 -- Replace the first match (given the predicate function) in the vector with provided one.
 replaceFirstMatchWith'
   :: forall n a context
-    . (Eq (a context), KnownNat n, Conditional (BooleanOf (a context)) (a context))
+   . (Eq (a context), KnownNat n, Conditional (BooleanOf (a context)) (a context))
   => Vector n (a context)
   -- ^ Vector to replace the first match in.
   -> (a context -> BooleanOf (a context))
@@ -41,4 +41,4 @@ replaceFirstMatchWith' v mF new =
       prefixUsed = scanl (||) false isMatch
       usedBefore = take @n prefixUsed
       shouldIns = zipWith (\u m -> not u && m) usedBefore isMatch
-    in mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) new old) v
+   in mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) new old) v
