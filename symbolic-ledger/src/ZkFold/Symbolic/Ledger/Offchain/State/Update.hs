@@ -50,11 +50,12 @@ updateLedgerState
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
+    nullOutput' = nullOutput @a @context
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
     bridgeInHash = newLen & hash & Base.hHash
     emptyBoVec :: (Vector bo :.: Output a) context
-    emptyBoVec = Comp1 (P.pure (nullOutput @a @context))
+    emptyBoVec = Comp1 (P.pure nullOutput')
 
     txs = fromVector action.tbTransactions
     bridgedOutOutputs =
@@ -64,7 +65,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                   ( \acc' (out :*: bout) ->
                       ifThenElse
                         bout
-                        (Comp1 $ replaceFirstMatchWith (unComp1 acc') (nullOutput @a @context) out)
+                        (Comp1 $ replaceFirstMatchWith (unComp1 acc') nullOutput' out)
                         acc'
                   )
                   acc
@@ -79,7 +80,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           tree' =
             ifThenElse
-              (out == nullOutput @a @context)
+              (out == nullOutput')
               tree
               ( let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
                     utxoHash = hash utxo & Base.hHash
@@ -89,7 +90,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           entries' = entry : entries
           pre' =
             let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
-                gatedUtxo = ifThenElse (out == nullOutput @a @context) (nullUTxO @a @context) utxo
+                gatedUtxo = ifThenElse (out == nullOutput') (nullUTxO @a @context) utxo
              in replaceFirstMatchWith pre (nullUTxO @a @context) gatedUtxo
        in (ix', entries', tree', pre')
     (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
