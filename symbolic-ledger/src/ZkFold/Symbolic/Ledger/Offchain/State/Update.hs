@@ -80,9 +80,12 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
       let step acc tx =
             let outs = fromVector (unComp1 tx.outputs)
              in foldl'
-                  (\acc' (out :*: bout) -> 
-                    ifThenElse bout 
-                      (Comp1 $ replaceFirstMatchWith (unComp1 acc') (nullOutput @a @context) out) acc')
+                  ( \acc' (out :*: bout) ->
+                      ifThenElse
+                        bout
+                        (Comp1 $ replaceFirstMatchWith (unComp1 acc') (nullOutput @a @context) out)
+                        acc'
+                  )
                   acc
                   outs
        in foldl' step emptyBoVec txs
