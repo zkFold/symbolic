@@ -117,9 +117,9 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash'}) treeIn
-            preIn'' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
+            preIn' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
            in
-            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn'')
+            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn')
         (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
         twInputs = Comp1 (unsafeToVector' @i (P.reverse insRev))
 
