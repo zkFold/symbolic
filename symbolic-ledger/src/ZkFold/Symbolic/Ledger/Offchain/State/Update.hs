@@ -81,12 +81,12 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
+          utxoHash = hash utxo & Base.hHash
           tree' :*: gatedUtxo =
             ifThenElse
               (out == nullOutput')
               (tree :*: nullUTxO')
-              ( let utxoHash = hash utxo & Base.hHash
-                 in MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree :*: utxo
+              ( MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree :*: utxo
               )
           ix' = ix + one
           entries' = entry : entries
@@ -128,12 +128,12 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         stepOut (outsAcc, outIx, treeOut, preOut) (out :*: bout) =
           let me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeOut
               utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
+              utxoHash = hash utxo & Base.hHash
               treeOut' :*: gatedUtxo =
                 ifThenElse
                   bout
                   (treeOut :*: nullUTxO')
-                  ( let utxoHash = hash utxo & Base.hHash
-                     in MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo
+                  ( MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo
                   )
               preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
