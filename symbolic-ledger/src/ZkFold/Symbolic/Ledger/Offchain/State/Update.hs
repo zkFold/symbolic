@@ -59,16 +59,6 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
       -> Leaves d' (UTxO a context)
     replaceFirstNull vec = replaceFirstMatchWith vec (nullUTxO @a @context)
 
-    -- Replace the first element whose reference matches, with provided element
-    replaceFirstRef
-      :: forall d'
-       . KnownNat (MerkleTreeSize d')
-      => Leaves d' (UTxO a context)
-      -> OutputRef context
-      -> UTxO a context
-      -> Leaves d' (UTxO a context)
-    replaceFirstRef vec ref = replaceFirstMatchWith' vec (\u -> u.uRef == ref)
-
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
     bridgeInHash = newLen & hash & Base.hHash
@@ -136,7 +126,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash @a @context}) treeIn
-            preIn'' = replaceFirstRef @ud preIn ref (nullUTxO @a @context)
+            preIn'' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) (nullUTxO @a @context)
            in
             ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn'')
         (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
