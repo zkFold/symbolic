@@ -50,14 +50,6 @@ updateLedgerState
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
-    -- Replace the first null UTxO in the vector with provided one
-    replaceFirstNull
-      :: forall d'
-       . KnownNat (MerkleTreeSize d')
-      => Leaves d' (UTxO a context)
-      -> UTxO a context
-      -> Leaves d' (UTxO a context)
-    replaceFirstNull vec = replaceFirstMatchWith vec (nullUTxO @a @context)
 
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
@@ -99,7 +91,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           pre' =
             let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
                 gatedUtxo = ifThenElse (out == nullOutput @a @context) (nullUTxO @a @context) utxo
-             in replaceFirstNull @ud pre gatedUtxo
+             in replaceFirstMatchWith pre (nullUTxO @a @context) gatedUtxo
        in (ix', entries', tree', pre')
     (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
@@ -147,7 +139,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               preOut' =
                 let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
                     gatedUtxo = ifThenElse bout (nullUTxO @a @context) utxo
-                 in replaceFirstNull @ud preOut gatedUtxo
+                 in replaceFirstMatchWith preOut (nullUTxO @a @context) gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
