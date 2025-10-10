@@ -12,7 +12,6 @@ module ZkFold.ArithmeticCircuit.Experimental where
 import Control.Applicative (pure, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless, (>>=))
-import Data.Bifunctor (first)
 import Data.Binary (Binary)
 import qualified Data.Eq as Prelude
 import Data.Function (const, flip, ($), (.))
@@ -20,20 +19,18 @@ import Data.Functor (fmap, (<$>))
 import Data.Kind (Type)
 import Data.Maybe (Maybe (..), isJust)
 import Data.Monoid (Monoid (..))
-import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
 import GHC.Generics (U1, (:*:) (..))
 import GHC.Integer (Integer)
-import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
-import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traversePoly)
+import ZkFold.Algebra.Polynomial.Multivariate.Lists (Polynomial, evalPoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Op
@@ -50,7 +47,7 @@ import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import System.Mem.StableName (StableName, makeStableName, hashStableName)
+import System.Mem.StableName (StableName, makeStableName)
 import System.IO.Unsafe (unsafePerformIO)
 import System.IO (IO)
 import Data.HashTable.IO (BasicHashTable)
@@ -65,18 +62,6 @@ data Node p (s :: Sort) where
   NodeInput :: NewVar -> Node p ZZp
   NodeApply :: KnownSort s => Op (Node p) s -> Node p s
   NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Node p ZZp
-
-instance Prelude.Eq (Node p s) where
-  !m == !n = unsafePerformIO do
-    snm <- makeStableName m
-    snn <- makeStableName n
-    pure (snm Prelude.== snn)
-
-instance Prelude.Ord (Node p s) where
-  !m `compare` !n = unsafePerformIO do
-    snm <- makeStableName m
-    snn <- makeStableName n
-    pure (hashStableName snm `Prelude.compare` hashStableName snn)
 
 instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
@@ -291,8 +276,8 @@ compileNode (NodeConstrain !c n) = do
       vs <- traverse (fmap toVar . compileNode) ns
       state $ runState (lookupConstraint vs lkp)
     Polynomial p -> do
-      poly <- traversePoly @_ @a (fmap toVar . compileNode) p
-      state . runState $ constraint (evalPoly poly)
+      poly <- traverse (fmap toVar . compileNode) p
+      state . runState $ constraint (evalPoly @a poly)
   compileNode n
 compileNode (NodeApply !op) = do
   sno <- liftIO (makeStableName op)
@@ -418,16 +403,7 @@ opToWitness = \case
   OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
     pure $ IntWitness (ordering u v w o)
 
-instance
-  {-# OVERLAPPING #-}
-  (AdditiveMonoid a, Prelude.Eq a, Prelude.Ord v)
-  => Scale v (Polynomial a v)
-  where
-  scale x = fromList . fmap (first ((x, 1) :)) . toList
+instance {-# OVERLAPPING #-} (Ring a, Prelude.Eq a) => Scale v (Polynomial a v)
 
-instance
-  {-# OVERLAPPING #-}
-  (Semiring a, Prelude.Eq a, Prelude.Ord v)
-  => FromConstant v (Polynomial a v)
-  where
-  fromConstant x = fromList [([(x, 1)], one)]
+instance {-# OVERLAPPING #-} (Ring a, Prelude.Eq a) => FromConstant v (Polynomial a v) where
+  fromConstant = pure
