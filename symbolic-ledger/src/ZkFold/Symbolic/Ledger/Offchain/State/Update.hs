@@ -127,18 +127,15 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         outs = fromVector (unComp1 tx.outputs)
         stepOut (outsAcc, outIx, treeOut, preOut) (out :*: bout) =
           let me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeOut
-              treeOut' =
+              utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
+              treeOut' :*: gatedUtxo =
                 ifThenElse
                   bout
-                  treeOut
-                  ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
-                        utxoHash = hash utxo & Base.hHash
-                     in MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut
+                  (treeOut :*: nullUTxO')
+                  ( let utxoHash = hash utxo & Base.hHash
+                     in MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo
                   )
-              preOut' =
-                let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
-                    gatedUtxo = ifThenElse bout nullUTxO' utxo
-                 in replaceFirstMatchWith preOut nullUTxO' gatedUtxo
+              preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
