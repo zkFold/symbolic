@@ -75,15 +75,14 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     emptyBoVec :: (Vector bo :.: Output a) context
     emptyBoVec = Comp1 (P.pure (nullOutput @a @context))
 
-    insertFirstNull :: (Vector bo :.: Output a) context -> Output a context -> (Vector bo :.: Output a) context
-    insertFirstNull (Comp1 acc) = Comp1 P.. replaceFirstMatchWith acc (nullOutput @a @context)
-
     txs = fromVector action.tbTransactions
     bridgedOutOutputs =
       let step acc tx =
             let outs = fromVector (unComp1 tx.outputs)
              in foldl'
-                  (\acc' (out :*: bout) -> ifThenElse bout (insertFirstNull acc' out) acc')
+                  (\acc' (out :*: bout) -> 
+                    ifThenElse bout 
+                      (Comp1 $ replaceFirstMatchWith (unComp1 acc') (nullOutput @a @context) out) acc')
                   acc
                   outs
        in foldl' step emptyBoVec txs
