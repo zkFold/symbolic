@@ -50,7 +50,6 @@ updateLedgerState
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
-
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
     bridgeInHash = newLen & hash & Base.hHash
