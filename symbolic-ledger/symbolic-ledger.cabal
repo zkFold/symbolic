@@ -105,6 +105,7 @@ library
       ZkFold.Symbolic.Ledger.Validation.Transaction
       ZkFold.Symbolic.Ledger.Validation.TransactionBatch
       ZkFold.Symbolic.Ledger.Offchain.State.Update
+      ZkFold.Symbolic.Ledger.Utils
     build-depends:
       base                          >= 4.9 && < 5,
       symbolic-base                              ,

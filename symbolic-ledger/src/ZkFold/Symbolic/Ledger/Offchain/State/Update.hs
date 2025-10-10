@@ -26,6 +26,7 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
+import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWith')
 
 -- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
 
@@ -55,14 +56,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
       => Leaves d' (UTxO a context)
       -> UTxO a context
       -> Leaves d' (UTxO a context)
-    replaceFirstNull vec newU =
-      let v = vec
-          isEmpty = (\u -> u == nullUTxO @a @context) P.<$> v
-          prefixUsed = scanl (||) false isEmpty
-          usedBefore = take @(MerkleTreeSize d') prefixUsed
-          shouldIns = zipWith (\u e -> not u && e) usedBefore isEmpty
-          v' = mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) newU old) v
-       in v'
+    replaceFirstNull vec = replaceFirstMatchWith vec (nullUTxO @a @context)
 
     -- Replace the first element whose reference matches, with provided element
     replaceFirstRef
@@ -72,14 +66,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
       -> OutputRef context
       -> UTxO a context
       -> Leaves d' (UTxO a context)
-    replaceFirstRef vec ref newU =
-      let v = vec
-          matches = (\u -> u.uRef == ref) P.<$> v
-          prefixUsed = scanl (||) false matches
-          usedBefore = take @(MerkleTreeSize d') prefixUsed
-          shouldRep = zipWith (\u m -> not u && m) usedBefore matches
-          v' = mapWithIx (\ix old -> ifThenElse (shouldRep !! ix) newU old) v
-       in v'
+    replaceFirstRef vec ref = replaceFirstMatchWith' vec (\u -> u.uRef == ref)
 
     newLen = previousState.sLength + one
     bridgeInHash :: HashSimple context
