@@ -80,20 +80,17 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     utxoPreimage0 = utxoSet
     stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
-          tree' =
+          utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
+          tree' :*: gatedUtxo =
             ifThenElse
               (out == nullOutput')
-              tree
-              ( let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
-                    utxoHash = hash utxo & Base.hHash
-                 in MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree
+              (tree :*: nullUTxO')
+              ( let utxoHash = hash utxo & Base.hHash
+                 in MerkleTree.replace (entry {MerkleTree.value = utxoHash}) tree :*: utxo
               )
           ix' = ix + one
           entries' = entry : entries
-          pre' =
-            let utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
-                gatedUtxo = ifThenElse (out == nullOutput') nullUTxO' utxo
-             in replaceFirstMatchWith pre nullUTxO' gatedUtxo
+          pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
     (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimage0) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
