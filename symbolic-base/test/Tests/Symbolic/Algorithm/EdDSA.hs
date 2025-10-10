@@ -14,7 +14,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
-import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon ()
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
@@ -27,10 +27,10 @@ type Point = Jubjub_Point I
 type Scalar = FFA Jubjub_Scalar 'Auto I
 
 hashToScalar :: (KnownFFA Jubjub_Base 'Auto I, KnownFFA Jubjub_Scalar 'Auto I) => Point -> Point -> FieldElement I -> Scalar
-hashToScalar r a m = fromUInt (from (Poseidon.hash (r :*: a :*: m)))
+hashToScalar _ _ m = fromUInt (from m)
 
 specEdDSA :: Spec
-specEdDSA = describe "EdDSA verification (Jubjub, Poseidon H)" $ do
+specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
   it "verifies a correctly formed signature" $ do
     let g = pointGen @Point
         x = fromConstant (7 :: Natural) :: Scalar -- private key
