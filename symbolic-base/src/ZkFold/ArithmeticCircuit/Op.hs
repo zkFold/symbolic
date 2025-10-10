@@ -1,13 +1,9 @@
 module ZkFold.ArithmeticCircuit.Op where
 
 import Control.Applicative (Applicative, pure, (<*>))
-import Data.ByteString (ByteString, cons)
 import Data.Functor ((<$>))
-import Data.Semigroup ((<>))
 import GHC.Integer (Integer)
 import GHC.Natural (Natural)
-
-import ZkFold.Data.Binary (toByteString)
 
 data Sort = ZZp | ZZ | BB | OO
 
@@ -73,27 +69,3 @@ traverseOp f = \case
   OpBool x y z -> OpBool <$> f x <*> f y <*> f z
   OpAppend x y -> OpAppend <$> f x <*> f y
   OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w
-
-opToBinary :: forall f s. (forall t. f t -> ByteString) -> Op f s -> ByteString
-opToBinary to = \case
-  OpConst x -> 0 `cons` toByteString x
-  OpScale k x -> 1 `cons` toByteString k <> to x
-  OpAdd x y -> 2 `cons` to x <> to y
-  OpMul x y -> 3 `cons` to x <> to y
-  OpNeg x -> 4 `cons` to x
-  OpExp x p -> 5 `cons` to x <> toByteString p
-  OpFrom x -> 6 `cons` to x
-  OpTo x -> 7 `cons` to x
-  OpCompare x y -> 8 `cons` to x <> to y
-  OpDiv x y -> 9 `cons` to x <> to y
-  OpMod x y -> 10 `cons` to x <> to y
-  OpGcd x y -> 11 `cons` to x <> to y
-  OpBezoutL x y -> 12 `cons` to x <> to y
-  OpBezoutR x y -> 13 `cons` to x <> to y
-  OpInv x -> 14 `cons` to x
-  OpEq x y -> 15 `cons` to x <> to y
-  OpNEq x y -> 16 `cons` to x <> to y
-  OpOr x y -> 17 `cons` to x <> to y
-  OpBool x y z -> 18 `cons` to x <> to y <> to z
-  OpAppend x y -> 19 `cons` to x <> to y
-  OpOrder x y z w -> 20 `cons` to x <> to y <> to z <> to w

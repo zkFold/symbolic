@@ -1,6 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -10,40 +9,29 @@
 
 module ZkFold.ArithmeticCircuit.Experimental where
 
-import Control.Applicative (pure)
+import Control.Applicative (pure, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless, (>>=))
-import Control.Monad.State (State, gets, modify', runState)
-import Crypto.Hash.SHA256 (hash)
 import Data.Bifunctor (first)
 import Data.Binary (Binary)
-import Data.Bool (Bool (..))
-import Data.ByteString (ByteString)
 import qualified Data.Eq as Prelude
-import Data.Foldable (foldMap)
 import Data.Function (const, flip, ($), (.))
-import Data.Functor (Functor, fmap, (<$>))
+import Data.Functor (fmap, (<$>))
 import Data.Kind (Type)
-import Data.Map (Map)
-import qualified Data.Map as M
-import Data.Maybe (Maybe (..))
+import Data.Maybe (Maybe (..), isJust)
 import Data.Monoid (Monoid (..))
 import qualified Data.Ord as Prelude
 import Data.Semigroup (Semigroup (..))
-import Data.Set (Set)
-import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Err (error)
-import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
+import GHC.Generics (U1, (:*:) (..))
 import GHC.Integer (Integer)
 import GHC.IsList (fromList, toList)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
-import Optics (zoom, over)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Multivariate.Maps (Polynomial, evalPoly, traversePoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
@@ -52,7 +40,6 @@ import ZkFold.ArithmeticCircuit.Op
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
-import ZkFold.Data.Binary (toByteString)
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
@@ -62,50 +49,40 @@ import qualified ZkFold.Symbolic.Compiler as Old
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
-import ZkFold.Symbolic.V2 (Constraint (..), LookupTable (..), Symbolic (..))
+import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import System.Mem.StableName (StableName, makeStableName, hashStableName)
+import System.IO.Unsafe (unsafePerformIO)
+import System.IO (IO)
+import Data.HashTable.IO (BasicHashTable)
+import qualified Data.HashTable.IO as T
+import Control.Monad.Reader (ReaderT (runReaderT), asks)
+import Control.Monad.State (StateT, MonadState, runStateT, state, runState)
+import Control.Monad.IO.Class (liftIO)
 
 ------------------- Experimental single-output circuit type --------------------
 
-type Hash = ByteString
-
 data Node p (s :: Sort) where
-  NodeInput :: Hash -> Node p ZZp
-  NodeApply :: KnownSort s => Op (Node p) s -> Hash -> Node p s
-  NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Hash -> Node p ZZp
-
-fromNewVar :: NewVar -> Node n ZZp
-fromNewVar (EqVar v) = NodeInput v
-fromNewVar _ = error "folding not supported"
+  NodeInput :: NewVar -> Node p ZZp
+  NodeApply :: KnownSort s => Op (Node p) s -> Node p s
+  NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Node p ZZp
 
 instance Prelude.Eq (Node p s) where
-  NodeInput h == NodeInput h' = h Prelude.== h'
-  NodeApply _ h == NodeApply _ h' = h Prelude.== h'
-  NodeConstrain _ _ h == NodeConstrain _ _ h' = h Prelude.== h'
-  _ == _ = False
+  !m == !n = unsafePerformIO do
+    snm <- makeStableName m
+    snn <- makeStableName n
+    pure (snm Prelude.== snn)
 
 instance Prelude.Ord (Node p s) where
-  NodeInput h `compare` NodeInput h' = h `Prelude.compare` h'
-  NodeInput _ `compare` _ = Prelude.LT
-  NodeApply _ _ `compare` NodeInput _ = Prelude.GT
-  NodeApply _ h `compare` NodeApply _ h' = h `Prelude.compare` h'
-  NodeApply _ _ `compare` NodeConstrain _ _ _ = Prelude.LT
-  NodeConstrain _ _ h `compare` NodeConstrain _ _ h' = h `Prelude.compare` h'
-  NodeConstrain _ _ _ `compare` _ = Prelude.GT
+  !m `compare` !n = unsafePerformIO do
+    snm <- makeStableName m
+    snn <- makeStableName n
+    pure (hashStableName snm `Prelude.compare` hashStableName snn)
 
 instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
 
-apply :: KnownSort s => Op (Node p) s -> Node p s
-apply op = NodeApply op $ hash $ opToBinary getHash op
-
-getHash :: Node p s -> Hash
-getHash = \case
-  NodeInput h -> h
-  NodeApply _ h -> h
-  NodeConstrain _ _ h -> h
-
 instance KnownSort s => Conditional (Node p BB) (Node p s) where
-  bool onFalse onTrue condition = apply (OpBool onFalse onTrue condition)
+  bool onFalse onTrue condition = NodeApply (OpBool onFalse onTrue condition)
 
 instance BoolType (Node p BB) where
   true = one
@@ -113,10 +90,10 @@ instance BoolType (Node p BB) where
   not = negate
   (&&) = (*)
   xor = (+)
-  x || y = apply (OpOr x y)
+  x || y = NodeApply (OpOr x y)
 
 instance Semigroup (Node p OO) where
-  x <> y = apply (OpAppend x y)
+  x <> y = NodeApply (OpAppend x y)
 
 instance Monoid (Node p OO) where
   mempty = zero
@@ -128,13 +105,13 @@ instance IsOrdering (Node p OO) where
 
 instance Eq (Node p s) where
   type BooleanOf (Node p s) = Node p BB
-  x == y = apply (OpEq x y)
-  x /= y = apply (OpNEq x y)
+  x == y = NodeApply (OpEq x y)
+  x /= y = NodeApply (OpNEq x y)
 
 instance Ord (Node p ZZ) where
   type OrderingOf (Node p ZZ) = Node p OO
-  compare x y = apply (OpCompare x y)
-  ordering x y z o = apply (OpOrder x y z o)
+  compare x y = NodeApply (OpCompare x y)
+  ordering x y z o = NodeApply (OpOrder x y z o)
   x < y = compare x y == lt
   x <= y = compare x y /= gt
   x >= y = compare x y /= lt
@@ -147,22 +124,22 @@ instance
   type Order (Node p ZZp) = p
 
 instance KnownSort s => FromConstant Natural (Node p s) where
-  fromConstant x = apply $ OpConst (fromConstant x)
+  fromConstant x = NodeApply $ OpConst (fromConstant x)
 
 instance KnownSort s => FromConstant Integer (Node p s) where
-  fromConstant x = apply (OpConst x)
+  fromConstant x = NodeApply (OpConst x)
 
 instance FromConstant (Node p ZZ) (Node p ZZp) where
-  fromConstant x = apply (OpFrom x)
+  fromConstant x = NodeApply (OpFrom x)
 
 instance KnownSort s => Scale Natural (Node p s) where
-  scale k = apply . OpScale (fromConstant k)
+  scale k = NodeApply . OpScale (fromConstant k)
 
 instance KnownSort s => Scale Integer (Node p s) where
-  scale k x = apply (OpScale k x)
+  scale k x = NodeApply (OpScale k x)
 
 instance KnownSort s => Exponent (Node p s) Natural where
-  x ^ p = apply (OpExp x p)
+  x ^ p = NodeApply (OpExp x p)
 
 instance Prime p => Exponent (Node p ZZp) Integer where
   (^) = intPowF
@@ -171,15 +148,15 @@ instance KnownSort s => Zero (Node p s) where
   zero = fromConstant (0 :: Integer)
 
 instance KnownSort s => AdditiveSemigroup (Node p s) where
-  x + y = apply (OpAdd x y)
+  x + y = NodeApply (OpAdd x y)
 
 instance KnownSort s => AdditiveMonoid (Node p s)
 
 instance KnownSort s => AdditiveGroup (Node p s) where
-  negate x = apply (OpNeg x)
+  negate = NodeApply . OpNeg
 
 instance KnownSort s => MultiplicativeSemigroup (Node p s) where
-  x * y = apply (OpMul x y)
+  x * y = NodeApply (OpMul x y)
 
 instance KnownSort s => MultiplicativeMonoid (Node p s) where
   one = fromConstant (1 :: Integer)
@@ -189,36 +166,23 @@ instance KnownSort s => Semiring (Node p s)
 instance KnownSort s => Ring (Node p s)
 
 instance SemiEuclidean (Node p ZZ) where
-  div x y = apply (OpDiv x y)
-  mod x y = apply (OpMod x y)
+  div x y = NodeApply (OpDiv x y)
+  mod x y = NodeApply (OpMod x y)
 
 instance Euclidean (Node p ZZ) where
-  gcd x y = apply (OpGcd x y)
-  bezoutL x y = apply (OpBezoutL x y)
-  bezoutR x y = apply (OpBezoutR x y)
+  gcd x y = NodeApply (OpGcd x y)
+  bezoutL x y = NodeApply (OpBezoutL x y)
+  bezoutR x y = NodeApply (OpBezoutR x y)
 
 instance Prime p => Field (Node p ZZp) where
-  finv x = apply (OpInv x)
+  finv = NodeApply . OpInv
 
 instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p ZZp) where
   type IntegralOf (Node p ZZp) = Node p ZZ
-  toIntegral x = apply (OpTo x)
+  toIntegral = NodeApply . OpTo
 
 instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
-  constrain c x = NodeConstrain c x $ hash (constrToByteString c <> getHash x)
-   where
-    constrToByteString (Polynomial p) =
-      toByteString $
-        first (first getHash <$>)
-          <$> toList @(Polynomial (Zp p) (Node p ZZp)) p
-    constrToByteString (Lookup tb xs) = lookupToByteString tb xs
-    lookupToByteString :: LookupTable f -> f (Node p ZZp) -> ByteString
-    lookupToByteString (Ranges rs) (Par1 i) =
-      foldMap toByteString rs <> getHash i
-    lookupToByteString (Product t u) (i :*: j) =
-      lookupToByteString t i <> lookupToByteString u j
-    lookupToByteString (Plot f t) (i :*: j) =
-      lookupToByteString t i <> foldMap getHash j <> foldMap getHash (f i)
+  constrain = NodeConstrain
 
 ------------------------- Optimized compilation function -----------------------
 
@@ -273,14 +237,16 @@ compileV1
        (Old.Layout (Old.Range f) n)
 compileV1 =
   optimize . solder . \f (l :*: p) ->
-    let (output, compiler) =
-          flip runState makeCompiler
+    let (output, circuit) = unsafePerformIO do
+          compiler <- makeCompiler
+          flip runStateT emptyContext
+            . flip runReaderT compiler
             . traverse compileNode
             . compatContext
             . Old.arithmetize
             . Old.apply f
-            $ Old.restore (CompatContext (fromNewVar <$> l), fromNewVar <$> p)
-     in compileOutput compiler output
+            $ Old.restore (CompatContext (NodeInput <$> l), NodeInput <$> p)
+     in crown circuit (toVar <$> output)
 
 compileV2
   :: forall a c f
@@ -288,80 +254,83 @@ compileV2
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
 compileV2 =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
-    let (output, compiler) =
-          flip runState makeCompiler
+    let (output, circuit) = unsafePerformIO do
+          compiler <- makeCompiler
+          flip runStateT emptyContext
+            . flip runReaderT compiler
             . traverse compileNode
             . toLayout
             . symApply f
-            $ fromLayout (fmap fromNewVar l)
-     in compileOutput compiler output
+            $ fromLayout (fmap NodeInput l)
+     in crown circuit (toVar <$> output)
 
 ------------------------- Compilation internals --------------------------------
 
+type StableTable k v = BasicHashTable (StableName k) v
+
 data Compiler a = Compiler
-  { circuitContext :: CircuitContext a U1
-  , constraintLog :: Set Hash
+  { constraintLog :: StableTable (Constraint (Node (Order a) ZZp)) ()
   , witnessExtractor :: WitnessExtractor a
   }
-  deriving Generic
 
-makeCompiler :: Compiler a
-makeCompiler = Compiler emptyContext S.empty makeExtractor
+type CompilerM a = ReaderT (Compiler a) (StateT (CircuitContext a U1) IO)
+
+makeCompiler :: IO (Compiler a)
+makeCompiler = Compiler <$> T.new <*> makeExtractor
 
 compileNode
-  :: forall a s
-   . (Arithmetic a, Binary a)
-  => Node (Order a) s -> State (Compiler a) (Witness a s)
-compileNode (NodeInput v) = pure $ FieldVar $ pure (EqVar v)
-compileNode (NodeConstrain c n h) = do
-  isDone <- gets (S.member h . constraintLog)
-  zoom #constraintLog $ modify' (S.insert h)
+  :: forall a s . (Arithmetic a, Binary a)
+  => Node (Order a) s -> CompilerM a (Witness a s)
+compileNode (NodeInput v) = pure $ FieldVar (pure v)
+compileNode (NodeConstrain !c n) = do
+  snc <- liftIO (makeStableName c)
+  isDone <- asks constraintLog >>= liftIO . \log -> T.mutate log snc \x ->
+    (Just (), isJust x)
   unless isDone case c of
     Lookup lkp ns -> do
       vs <- traverse (fmap toVar . compileNode) ns
-      zoom #circuitContext (lookupConstraint vs lkp)
+      state $ runState (lookupConstraint vs lkp)
     Polynomial p -> do
       poly <- traversePoly @_ @a (fmap toVar . compileNode) p
-      zoom #circuitContext $ constraint (evalPoly poly)
+      state . runState $ constraint (evalPoly poly)
   compileNode n
-compileNode (NodeApply op h) =
-  gets (request h . witnessExtractor) >>= \case
+compileNode (NodeApply !op) = do
+  sno <- liftIO (makeStableName op)
+  asks witnessExtractor >>= liftIO . request sno >>= \case
     Just w -> pure w
     Nothing -> do
       w <- traverseOp compileNode op >>= opToWitness
-      zoom #witnessExtractor $ modify' $ insertWitness h w
+      asks witnessExtractor >>= liftIO . insertWitness sno w
       pure w
 
-compileOutput
-  :: Functor o => Compiler a -> o (Witness a ZZp) -> CircuitContext a o
-compileOutput Compiler {..} = crown circuitContext . fmap toVar
-
 data WitnessExtractor a = WitnessExtractor
-  { weVars :: Map Hash (Var a)
-  , weInts :: Map Hash (EuclideanF a NewVar)
-  , weBool :: Map Hash (BooleanF a NewVar)
-  , weOrds :: Map Hash (OrderingF a NewVar)
+  { weVars :: StableTable (Op (Node (Order a)) ZZp) (Var a)
+  , weInts :: StableTable (Op (Node (Order a)) ZZ) (EuclideanF a NewVar)
+  , weBool :: StableTable (Op (Node (Order a)) BB) (BooleanF a NewVar)
+  , weOrds :: StableTable (Op (Node (Order a)) OO) (OrderingF a NewVar)
   }
-  deriving Generic
 
-makeExtractor :: WitnessExtractor a
-makeExtractor = WitnessExtractor M.empty M.empty M.empty M.empty
+makeExtractor :: IO (WitnessExtractor a)
+makeExtractor = WitnessExtractor <$> T.new <*> T.new <*> T.new <*> T.new
 
-insertWitness :: Hash -> Witness a s -> WitnessExtractor a -> WitnessExtractor a
-insertWitness h = \case
-  FieldVar v -> over #weVars (M.insert h v)
-  IntWitness w -> over #weInts (M.insert h w)
-  BoolWitness w -> over #weBool (M.insert h w)
-  OrdWitness w -> over #weOrds (M.insert h w)
+insertWitness
+  :: StableName (Op (Node (Order a)) s)
+  -> Witness a s -> WitnessExtractor a -> IO ()
+insertWitness sn witness WitnessExtractor {..} = case witness of
+  FieldVar v -> T.insert weVars sn v
+  IntWitness w -> T.insert weInts sn w
+  BoolWitness w -> T.insert weBool sn w
+  OrdWitness w -> T.insert weOrds sn w
 
 request
   :: forall a s. KnownSort s
-  => Hash -> WitnessExtractor a -> Maybe (Witness a s)
-request h WitnessExtractor {..} = case knownSort @s of
-  ZZpSing -> FieldVar <$> weVars M.!? h
-  ZZSing -> IntWitness <$> weInts M.!? h
-  BBSing -> BoolWitness <$> weBool M.!? h
-  OOSing -> OrdWitness <$> weOrds M.!? h
+  => StableName (Op (Node (Order a)) s)
+  -> WitnessExtractor a -> IO (Maybe (Witness a s))
+request sn WitnessExtractor {..} = case knownSort @s of
+  ZZpSing -> fmap FieldVar <$> T.lookup weVars sn
+  ZZSing -> fmap IntWitness <$> T.lookup weInts sn
+  BBSing -> fmap BoolWitness <$> T.lookup weBool sn
+  OOSing -> fmap OrdWitness <$> T.lookup weOrds sn
 
 data Witness a (s :: Sort) where
   FieldVar :: Var a -> Witness a ZZp
@@ -395,32 +364,32 @@ instance PrimeField a => Eq (Witness a s) where
   x /= y = not (x == y)
 
 opToWitness
-  :: forall a s
-   . (Arithmetic a, Binary a)
-  => Op (Witness a) s -> State (Compiler a) (Witness a s)
+  :: forall a s m
+   . (Arithmetic a, Binary a, MonadState (CircuitContext a U1) m)
+  => Op (Witness a) s -> m (Witness a s)
 opToWitness = \case
   OpConst c -> pure (fromConstant c)
   OpScale k w -> pure (scale k w)
   OpAdd (FieldVar u) (FieldVar v) ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (at u + at v)
+    state . runState $ FieldVar <$> unconstrained (at u + at v)
   OpAdd (IntWitness v) (IntWitness w) -> pure $ IntWitness (v + w)
   OpAdd (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v `xor` w)
   OpAdd (OrdWitness v) (OrdWitness w) ->
     pure $ OrdWitness (v <> w) -- TODO wrong but unused
   OpMul (FieldVar u) (FieldVar v) ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (at u * at v)
+    state . runState $ FieldVar <$> unconstrained (at u * at v)
   OpMul (IntWitness v) (IntWitness w) -> pure $ IntWitness (v * w)
   OpMul (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v && w)
   OpMul (OrdWitness v) (OrdWitness w) ->
     pure $ OrdWitness (v <> w) -- TODO wrong but unused
   OpNeg w -> pure (scale (-1 :: Integer) w)
   OpExp (FieldVar v) p ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (at v ^ p)
+    state . runState $ FieldVar <$> unconstrained (at v ^ p)
   OpExp (IntWitness w) p -> pure $ IntWitness (w ^ p)
   OpExp (BoolWitness w) p -> pure $ BoolWitness (fromConstant (p == 0) || w)
   OpExp (OrdWitness w) _ -> pure (OrdWitness w) -- TODO wrong but unused
   OpFrom (IntWitness w) ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (fromConstant w)
+    state . runState $ FieldVar <$> unconstrained (fromConstant w)
   OpTo (FieldVar v) ->
     pure $ IntWitness $ toIntegral @(WitnessF a NewVar) (at v)
   OpCompare (IntWitness v) (IntWitness w) ->
@@ -433,12 +402,12 @@ opToWitness = \case
   OpBezoutR (IntWitness v) (IntWitness w) ->
     pure $ IntWitness (v `bezoutR` w)
   OpInv (FieldVar v) ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (at v)
+    state . runState $ FieldVar <$> unconstrained (at v)
   OpEq x y -> pure $ BoolWitness (x == y)
   OpNEq x y -> pure $ BoolWitness (x /= y)
   OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
   OpBool (FieldVar u) (FieldVar v) (BoolWitness w) ->
-    zoom #circuitContext $ FieldVar <$> unconstrained (bool (at u) (at v) w)
+    state . runState $ FieldVar <$> unconstrained (bool (at u) (at v) w)
   OpBool (IntWitness v) (IntWitness w) (BoolWitness b) ->
     pure $ IntWitness (bool v w b)
   OpBool (BoolWitness v) (BoolWitness w) (BoolWitness b) ->

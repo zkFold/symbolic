@@ -34,6 +34,7 @@ import Prelude (toInteger)
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.UInt (exampleUIntExpMod)
+import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_256)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
@@ -86,5 +87,13 @@ main =
             bench "evaluation" . nf (`eval` tabulate fromBinary)
         , goldenVsString "golden stats" "stats/Experimental.ExpMod" do
             return $ metrics "Experimental.ExpMod" (compileV1 @A expMod)
+        ]
+    , testGroup
+        "Blake2b_256"
+        [ bench "compilation" $ nf (compileV1 @A) (exampleBlake2b_256 @64)
+        , env (return $ force $ compileV1 @A $ exampleBlake2b_256 @64) $
+            bench "evaluation" . nf (`eval` tabulate fromBinary)
+        , goldenVsString "golden stats" "stats/Experimental.Blake2b" do
+            return $ metrics "Experimental.Blake2b" $ compileV1 @A (exampleBlake2b_256 @64)
         ]
     ]
