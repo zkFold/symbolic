@@ -28,10 +28,9 @@ import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
 
--- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
--- OR the same validateStateUpdate function could be used here.
-
 -- | Update ledger state.
+--
+-- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
@@ -60,6 +59,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     emptyBoVec = Comp1 (P.pure nullOutput')
 
     txs = fromVector action.tbTransactions
+    -- Compute bridged out outputs list.
     bridgedOutOutputs =
       let step acc tx =
             let outs = fromVector (unComp1 tx.outputs)
@@ -77,7 +77,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     biOutsList = fromVector (unComp1 bridgedInOutputs)
     -- Maintain a local preimage vector of UTxOs in parallel with the Merkle tree
     utxoPreimageInit = utxoSet
-    -- Apply bridge-in outputs.
+    -- Apply bridge-in outputs to the UTxO set and collect witness entries.
     stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
