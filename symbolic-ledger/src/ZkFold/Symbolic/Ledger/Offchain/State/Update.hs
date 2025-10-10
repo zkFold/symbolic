@@ -10,10 +10,10 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
-import ZkFold.Data.MerkleTree (Leaves, MerkleTreeSize)
+import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector
 import ZkFold.Prelude (foldl')
-import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (&&), (||))
+import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (||))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
