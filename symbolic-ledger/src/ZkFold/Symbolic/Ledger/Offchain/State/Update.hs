@@ -75,15 +75,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     emptyBoVec = Comp1 (P.pure (nullOutput @a @context))
 
     insertFirstNull :: (Vector bo :.: Output a) context -> Output a context -> (Vector bo :.: Output a) context
-    insertFirstNull acc out =
-      let v = unComp1 acc
-          isEmpty = (\x -> x == nullOutput @a @context) P.<$> v
-          prefixUsed = scanl (||) false isEmpty
-          usedBefore = take @bo prefixUsed
-          -- We want only one entry inside `shouldIns` to be true.
-          shouldIns = zipWith (\u e -> not u && e) usedBefore isEmpty
-          v' = mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) out old) v
-       in Comp1 v'
+    insertFirstNull (Comp1 acc) = Comp1 P.. replaceFirstMatchWith acc (nullOutput @a @context)
 
     txs = fromVector action.tbTransactions
     bridgedOutOutputs =
