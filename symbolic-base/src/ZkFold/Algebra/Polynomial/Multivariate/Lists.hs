@@ -3,18 +3,18 @@
 module ZkFold.Algebra.Polynomial.Multivariate.Lists (Polynomial, evalPoly) where
 
 import Control.Applicative (Applicative (..))
+import Data.Bifunctor (first)
 import Data.Bool (otherwise)
 import Data.Eq (Eq, (/=))
-import Data.Function ((.), ($))
-import Data.Functor (fmap, Functor)
+import Data.Foldable (Foldable (foldr))
+import Data.Function (($), (.))
+import Data.Functor (Functor, fmap)
+import Data.Monoid (Monoid (..))
 import Data.Semigroup (Semigroup (..))
-import Data.Traversable (traverse, Traversable)
+import Data.Traversable (Traversable, traverse)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
-import Data.Monoid (Monoid (..))
-import Data.Foldable (Foldable (foldr))
-import Data.Bifunctor (first)
 
 newtype Bag a = Bag (forall c. (a -> c -> c) -> c -> c)
   deriving Functor
@@ -39,7 +39,7 @@ instance Applicative Bag where
   Bag fs <*> Bag xs = Bag \h -> fs \f -> xs (h . f)
 
 newtype Polynomial a v = Polynomial {polynomial :: Bag (a, Bag (v, Natural))}
-  deriving (Functor, Foldable, Traversable)
+  deriving (Foldable, Functor, Traversable)
 
 evalPoly :: Algebra a b => Polynomial a v -> (v -> b) -> b
 evalPoly (Polynomial p) x =
@@ -49,7 +49,7 @@ evalPoly (Polynomial p) x =
     p
 
 instance (Ring a, Eq a) => Applicative (Polynomial a) where
-  pure = Polynomial . pure . (one,) . pure . (, one)
+  pure = Polynomial . pure . (one,) . pure . (,one)
   fs <*> xs = evalPoly fs (`fmap` xs)
 
 instance Zero (Polynomial a v) where
