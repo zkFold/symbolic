@@ -29,6 +29,7 @@ import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
 
 -- TODO: Should this function also check if inputs are valid in the sense, that say outputs contain at least one ada? We could return "Maybe" result.
+-- OR the same validateStateUpdate function could be used here.
 
 -- | Update ledger state.
 updateLedgerState
