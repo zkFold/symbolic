@@ -12,10 +12,15 @@ module ZkFold.ArithmeticCircuit.Experimental where
 import Control.Applicative (pure, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless, (>>=))
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ReaderT (runReaderT), asks)
+import Control.Monad.State (MonadState, StateT, runState, runStateT, state)
 import Data.Binary (Binary)
 import qualified Data.Eq as Prelude
 import Data.Function (const, flip, ($), (.))
 import Data.Functor (fmap, (<$>))
+import Data.HashTable.IO (BasicHashTable)
+import qualified Data.HashTable.IO as T
 import Data.Kind (Type)
 import Data.Maybe (Maybe (..), isJust)
 import Data.Monoid (Monoid (..))
@@ -27,6 +32,9 @@ import GHC.Generics (U1, (:*:) (..))
 import GHC.Integer (Integer)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
+import System.IO (IO)
+import System.IO.Unsafe (unsafePerformIO)
+import System.Mem.StableName (StableName, makeStableName)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
@@ -47,14 +55,6 @@ import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import System.Mem.StableName (StableName, makeStableName)
-import System.IO.Unsafe (unsafePerformIO)
-import System.IO (IO)
-import Data.HashTable.IO (BasicHashTable)
-import qualified Data.HashTable.IO as T
-import Control.Monad.Reader (ReaderT (runReaderT), asks)
-import Control.Monad.State (StateT, MonadState, runStateT, state, runState)
-import Control.Monad.IO.Class (liftIO)
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -264,13 +264,16 @@ makeCompiler :: IO (Compiler a)
 makeCompiler = Compiler <$> T.new <*> makeExtractor
 
 compileNode
-  :: forall a s . (Arithmetic a, Binary a)
+  :: forall a s
+   . (Arithmetic a, Binary a)
   => Node (Order a) s -> CompilerM a (Witness a s)
 compileNode (NodeInput v) = pure $ FieldVar (pure v)
 compileNode (NodeConstrain !c n) = do
   snc <- liftIO (makeStableName c)
-  isDone <- asks constraintLog >>= liftIO . \log -> T.mutate log snc \x ->
-    (Just (), isJust x)
+  isDone <-
+    asks constraintLog
+      >>= liftIO . \log -> T.mutate log snc \x ->
+        (Just (), isJust x)
   unless isDone case c of
     Lookup lkp ns -> do
       vs <- traverse (fmap toVar . compileNode) ns
@@ -300,7 +303,9 @@ makeExtractor = WitnessExtractor <$> T.new <*> T.new <*> T.new <*> T.new
 
 insertWitness
   :: StableName (Op (Node (Order a)) s)
-  -> Witness a s -> WitnessExtractor a -> IO ()
+  -> Witness a s
+  -> WitnessExtractor a
+  -> IO ()
 insertWitness sn witness WitnessExtractor {..} = case witness of
   FieldVar v -> T.insert weVars sn v
   IntWitness w -> T.insert weInts sn w
@@ -308,9 +313,11 @@ insertWitness sn witness WitnessExtractor {..} = case witness of
   OrdWitness w -> T.insert weOrds sn w
 
 request
-  :: forall a s. KnownSort s
+  :: forall a s
+   . KnownSort s
   => StableName (Op (Node (Order a)) s)
-  -> WitnessExtractor a -> IO (Maybe (Witness a s))
+  -> WitnessExtractor a
+  -> IO (Maybe (Witness a s))
 request sn WitnessExtractor {..} = case knownSort @s of
   ZZpSing -> fmap FieldVar <$> T.lookup weVars sn
   ZZSing -> fmap IntWitness <$> T.lookup weInts sn

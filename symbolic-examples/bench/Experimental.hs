@@ -31,10 +31,10 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude (toInteger)
 
+import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.UInt (exampleUIntExpMod)
-import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_256)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
