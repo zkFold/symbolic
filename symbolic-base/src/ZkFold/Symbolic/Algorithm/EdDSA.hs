@@ -6,6 +6,7 @@
 
 module ZkFold.Symbolic.Algorithm.EdDSA (
   eddsaVerify,
+  eddsaSign,
 ) where
 
 import Data.Coerce (coerce)
@@ -22,6 +23,7 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
+import Prelude (undefined)
 
 -- | Verify EdDSA signature on a Twisted Edwards curve.
 --
@@ -70,3 +72,34 @@ eddsaVerify hashFn publicKey message (rPoint :*: s) =
 
   isIdentity :: point -> Bool ctx
   isIdentity p = unwrap p == Elliptic.pointXY zero one
+
+
+-- | Sign EdDSA signature on a Twisted Edwards curve.
+eddsaSign
+  :: forall message point curve p q baseField scalarField ctx
+   . ( baseField ~ FFA q 'Auto
+     , scalarField ~ FFA p 'Auto
+     , point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
+     , ScalarFieldOf point ~ scalarField ctx
+     , CyclicGroup point
+     )
+  => ( point
+       -> point
+       -> message
+       -> scalarField ctx
+     )
+  -> scalarField ctx
+  -- ^ private key
+  -> message
+  -- ^ message M
+  -> (SymAffine.AffinePoint (TwistedEdwards curve) baseField :*: scalarField) ctx
+  -- ^ signature (R, s)
+eddsaSign hashFn privKey message =
+   rPoint :*: s
+ where
+  g = pointGen @point
+  publicKey = privKey `scale` g
+  r :: scalarField ctx = undefined
+  s = r + h * privKey
+  rPoint = r `scale` g
+  h = hashFn rPoint publicKey message
