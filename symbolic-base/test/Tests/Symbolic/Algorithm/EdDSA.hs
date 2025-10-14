@@ -45,7 +45,7 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
         msg = zero :: FieldElement I
         privKey = one
         pubKey = privKey `scale` g
-        r = one
+        r = one + one
         rPoint = r `scale` g
         hprivKey = h * privKey
         hpubKey' = hprivKey `scale` g
@@ -56,14 +56,14 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
         -- h :: Scalar = one + one + one
         h = hashToScalar rPoint pubKey msg
         rhs = (rPoint :: Point) + (h `scale` pubKey)
-        ok = SymAffine.affinePoint hpubKey' == SymAffine.affinePoint hpubKey
+        -- ok = SymAffine.affinePoint hpubKey' == SymAffine.affinePoint hpubKey
+        ok = SymAffine.affinePoint lhs == SymAffine.affinePoint rhs
         -- ok = eddsaVerify hashToScalar pubKey msg (rPoint :*: s)
     counterexample ("g = " <> show (SymAffine.affinePoint g) <> "\nprivKey = " <> show privKey <> "\npubKey = " <> show (SymAffine.affinePoint pubKey) <> "\nr = " <> show r <> "\nrPoint = " <> show (SymAffine.affinePoint rPoint) <> "\ns = " <> show s <> "\nlhs = " <> show (SymAffine.affinePoint lhs) <> "\nrhs = " <> show (SymAffine.affinePoint rhs) <> "\nok = " <> show ok <> "\nhpubKey' = " <> show (SymAffine.affinePoint hpubKey') <> "\nhpubKey = " <> show (SymAffine.affinePoint hpubKey) <> "\nh = " <> show h) $ evalBool (ok) === one
   it "verifies a correctly formed signature" $ do
     let g = pointGen @Point
         p = value @Jubjub_Scalar
     forAll (fromConstant <$> toss p) $ \(privKey :: Scalar) -> do
-      -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature.
       let msg = zero :: FieldElement I
           (rPoint :*: s) = eddsaSign hashToScalar privKey msg
           pubKey = privKey `scale` g
