@@ -2,6 +2,7 @@ module Main where
 
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
+import Tests.Symbolic.Algorithm.ScaleIssue (specScaleIssue)
 import Prelude hiding (
   Bool,
   Fractional (..),
@@ -44,7 +45,6 @@ import Tests.Symbolic.Data.List (specList)
 import qualified Tests.Symbolic.Data.MerkleTree as Symbolic
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
-import Tests.Symbolic.Algorithm.ScaleIssue (specScaleIssue)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
