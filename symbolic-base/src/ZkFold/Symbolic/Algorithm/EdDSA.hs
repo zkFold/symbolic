@@ -23,7 +23,8 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
-import Prelude (undefined)
+
+-- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
 -- | Verify EdDSA signature on a Twisted Edwards curve.
 --
@@ -99,7 +100,7 @@ eddsaSign hashFn privKey message =
  where
   g = pointGen @point
   publicKey = privKey `scale` g
-  r :: scalarField ctx = undefined
+  r :: scalarField ctx = one + one -- TODO: generate a random scalar
   s = r + h * privKey
   rPoint = r `scale` g
   h = hashFn rPoint publicKey message
