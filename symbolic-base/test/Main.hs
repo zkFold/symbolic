@@ -44,6 +44,7 @@ import Tests.Symbolic.Data.List (specList)
 import qualified Tests.Symbolic.Data.MerkleTree as Symbolic
 import Tests.Symbolic.Data.Sum (specSum)
 import Tests.Symbolic.Data.UInt (specUInt)
+import Tests.Symbolic.Algorithm.ScaleIssue (specScaleIssue)
 
 spec :: RandomGen g => g -> Spec
 spec gen = do
@@ -92,6 +93,8 @@ spec gen = do
   describe "symbolic-base-test (Rust FFI)" $ do
     specRustPlonkup
     specRustBLS
+
+  specScaleIssue
 
 main :: IO ()
 main = hspec . spec =<< initStdGen
