@@ -16,7 +16,6 @@ import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
-import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
@@ -56,9 +55,7 @@ eddsaVerify
   -- ^ signature (R, s)
   -> Bool ctx
 eddsaVerify hashFn publicKey message (rPoint :*: s) =
-  if isIdentity rPoint || s == zero
-    then false
-    else unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
+   unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
  where
   g = pointGen @point
 
@@ -70,10 +67,6 @@ eddsaVerify hashFn publicKey message (rPoint :*: s) =
 
   unwrap :: point -> Elliptic.AffinePoint (baseField ctx)
   unwrap = coerce
-
-  isIdentity :: point -> Bool ctx
-  isIdentity p = unwrap p == Elliptic.pointXY zero one
-
 
 -- | Sign EdDSA signature on a Twisted Edwards curve.
 eddsaSign
