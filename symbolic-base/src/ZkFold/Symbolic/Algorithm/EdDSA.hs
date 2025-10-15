@@ -20,6 +20,17 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Data.Combinators (
+  Ceil,
+  GetRegisterSize,
+  Iso (..),
+  KnownRegisterSize,
+  KnownRegisters,
+  NumberOfRegisters,
+  Resize (..),
+ )
+import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
+import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
@@ -106,4 +117,10 @@ scalarFieldFromFE
   :: forall p c
    . (Symbolic c, KnownFFA p 'Auto c, KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) 'Auto))
   => FieldElement c -> FFA p 'Auto c
-scalarFieldFromFE = fromUInt . from
+scalarFieldFromFE fe =
+  let
+      u ::  UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
+      uWide = resize u
+      m     = fromConstant (value @p) :: UInt (FFAMaxBits p c) 'Auto c
+      (_, rmd) = divMod uWide m
+  in fromUInt rmd
