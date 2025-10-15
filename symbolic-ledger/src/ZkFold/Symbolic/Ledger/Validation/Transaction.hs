@@ -180,12 +180,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     ( Poseidon.hash publicKey
                         == utxo.uOutput.oAddress
                         && eddsaVerify
-                          ( \rPoint' publicKey' m ->
-                              fromUInt
-                                ( from
-                                    (Poseidon.hash (rPoint' :*: publicKey' :*: m))
-                                )
-                          )
+                          Poseidon.hash
                           publicKey
                           txId'
                           (rPoint :*: s)

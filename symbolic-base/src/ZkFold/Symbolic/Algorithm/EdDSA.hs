@@ -38,7 +38,7 @@ import GHC.TypeNats (KnownNat)
 --   - (R, s) is the signature; R is a point, s is a scalar
 --   - H is a caller-provided hash-to-scalar function
 eddsaVerify
-  :: forall message point curve p q baseField scalarField ctx
+  :: forall point curve p q baseField scalarField ctx
    . ( S.Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
@@ -46,15 +46,14 @@ eddsaVerify
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
      , KnownFFA q 'Auto ctx
+     , KnownFFA p 'Auto ctx
+     , KnownNat (GetRegisterSize (BaseField ctx) (NumberOfBits (BaseField ctx)) 'Auto)
      )
-  => ( point
-       -> point
-       -> message
-       -> scalarField ctx
-     )
+  => (forall x. (SymbolicData x) => x ctx -> FieldElement ctx)
+  -- ^ hash function
   -> point
   -- ^ public key A
-  -> message
+  -> FieldElement ctx
   -- ^ message M
   -> (SymAffine.AffinePoint (TwistedEdwards curve) baseField :*: scalarField) ctx
   -- ^ signature (R, s)
@@ -64,7 +63,7 @@ eddsaVerify hashFn publicKey message (rPoint :*: s) =
  where
   g = pointGen @point
 
-  h = hashFn rPoint publicKey message
+  h :: scalarField ctx = scalarFieldFromFE $ hashFn (rPoint :*: publicKey :*: message)
 
   lhs = s `scale` g
 

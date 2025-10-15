@@ -67,7 +67,7 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
       let msg = zero :: FieldElement I
           (rPoint :*: s) = eddsaSign MiMC.hash privKey msg
           pubKey = privKey `scale` g
-          ok = eddsaVerify hashToScalar pubKey msg (rPoint :*: s)
+          ok = eddsaVerify MiMC.hash pubKey msg (rPoint :*: s)
           rAffine = SymAffine.affinePoint rPoint
       counterexample ("\nrPoint = " <> show rAffine <> "\ns = " <> show s) $ evalBool ok === one
 
@@ -82,8 +82,8 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
             h = hashToScalar r a m
             s = k + h * x
             wrongS = s + one
-            badWrongS = eddsaVerify hashToScalar a m (r :*: wrongS)
-            badSZero = eddsaVerify hashToScalar a m (r :*: zero)
+            badWrongS = eddsaVerify MiMC.hash a m (r :*: wrongS)
+            badSZero = eddsaVerify MiMC.hash a m (r :*: zero)
         evalBool badWrongS === zero .&. evalBool badSZero === zero
 
 
