@@ -12,23 +12,22 @@ module ZkFold.Symbolic.Algorithm.EdDSA (
 import Data.Coerce (coerce)
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
-import GHC.TypeNats (KnownNat)
-import Prelude (($), (.))
+import Prelude (($))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
-import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
+import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters, NumberOfRegisters, RegisterSize (..), Resize (..))
+import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), Resize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
+import ZkFold.Symbolic.Data.UInt (UInt (..))
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -49,7 +48,6 @@ eddsaVerify
      , CyclicGroup point
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
-     , KnownNat (GetRegisterSize (BaseField ctx) (NumberOfBits (BaseField ctx)) 'Auto)
      )
   => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
@@ -84,7 +82,6 @@ eddsaSign
      , CyclicGroup point
      , Symbolic ctx
      , KnownFFA p 'Auto ctx
-     , KnownNat (GetRegisterSize (BaseField ctx) (NumberOfBits (BaseField ctx)) 'Auto)
      )
   => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
@@ -106,10 +103,11 @@ eddsaSign hashFn privKey message =
 
 scalarFieldFromFE
   :: forall p c
-   . (Symbolic c, KnownFFA p 'Auto c, KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) 'Auto))
+   . (Symbolic c, KnownFFA p 'Auto c)
   => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE fe =
   let
+    -- TODO: Confirm if the number of bits here is good enough.
     u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
     uWide = resize u
     m = fromConstant (value @p) :: UInt (FFAMaxBits p c) 'Auto c
