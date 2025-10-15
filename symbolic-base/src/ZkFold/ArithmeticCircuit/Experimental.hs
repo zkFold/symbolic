@@ -16,7 +16,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT (runReaderT), asks)
 import Control.Monad.State (MonadState, StateT, runState, runStateT, state)
 import Data.Binary (Binary)
-import qualified Data.Eq as Prelude
 import Data.Function (const, flip, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.HashTable.IO (BasicHashTable)
@@ -38,7 +37,7 @@ import System.Mem.StableName (StableName, makeStableName)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
-import ZkFold.Algebra.Polynomial.Multivariate.Lists (Polynomial, evalPoly)
+import ZkFold.Algebra.Polynomial.Multivariate.Expression (Polynomial, evalPoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Op
@@ -410,7 +409,7 @@ opToWitness = \case
   OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
     pure $ IntWitness (ordering u v w o)
 
-instance {-# OVERLAPPING #-} (Ring a, Prelude.Eq a) => Scale v (Polynomial a v)
+instance {-# OVERLAPPING #-} Ring a => Scale v (Polynomial a v)
 
-instance {-# OVERLAPPING #-} (Ring a, Prelude.Eq a) => FromConstant v (Polynomial a v) where
+instance {-# OVERLAPPING #-} Ring a => FromConstant v (Polynomial a v) where
   fromConstant = pure
