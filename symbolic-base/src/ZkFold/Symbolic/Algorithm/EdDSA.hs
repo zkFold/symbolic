@@ -49,7 +49,7 @@ eddsaVerify
      , KnownFFA p 'Auto ctx
      , KnownNat (GetRegisterSize (BaseField ctx) (NumberOfBits (BaseField ctx)) 'Auto)
      )
-  => (forall x. (SymbolicData x) => x ctx -> FieldElement ctx)
+  => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
   -> point
   -- ^ public key A

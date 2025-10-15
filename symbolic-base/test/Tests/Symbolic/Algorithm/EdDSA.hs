@@ -86,8 +86,8 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
           <> show (SymAffine.affinePoint hpubKey)
           <> "\nh = "
           <> show h
-      ) $
-      evalBool (ok) === one
+      )
+      $ evalBool (ok) === one
   it "verifies a correctly formed signature" $ do
     let g = pointGen @Point
         p = value @Jubjub_Scalar
