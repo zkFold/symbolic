@@ -10,6 +10,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
@@ -40,14 +41,14 @@ instance
   => Scale (FFA Jubjub_Scalar 'Auto ctx) (Jubjub_Point ctx)
   where
   scale ffa x =
-    sum $
-      Prelude.zipWith
-        (\b p -> bool @(Bool ctx) zero p (isSet bits b))
-        [upper, upper -! 1 .. 0]
-        (Prelude.iterate (\e -> e + e) x)
+    Prelude.foldl step zero [0 .. upper]
    where
-    bits :: ByteString (FFAMaxBits Jubjub_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits Jubjub_Scalar ctx) ffa)
+    bits :: ByteString (NumberOfBits (Zp Jubjub_Scalar)) ctx
+    bits = from (toUInt @(NumberOfBits (Zp Jubjub_Scalar)) ffa)
 
     upper :: Natural
-    upper = value @(FFAMaxBits Jubjub_Scalar ctx) -! 1
+    upper = value @(NumberOfBits (Zp Jubjub_Scalar)) -! 1
+
+    step acc i =
+      let acc2 = acc + acc
+       in bool @(Bool ctx) acc2 (acc2 + x) (isSet bits i)

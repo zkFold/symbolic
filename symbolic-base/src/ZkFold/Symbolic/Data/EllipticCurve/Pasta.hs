@@ -11,6 +11,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number
+import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
@@ -45,15 +46,15 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
-        [upper, upper -! 1 .. 0]
+        (\i p -> bool zero p (isSet bits (upper -! i)))
+        [0 .. upper]
         (Prelude.iterate (\e -> e + e) x)
    where
-    bits :: ByteString (FFAMaxBits FqModulus ctx) ctx
-    bits = from (toUInt @(FFAMaxBits FqModulus ctx) ffa)
+    bits :: ByteString (NumberOfBits (Zp FqModulus)) ctx
+    bits = from (toUInt @(NumberOfBits (Zp FqModulus)) ffa)
 
     upper :: Natural
-    upper = value @(FFAMaxBits FqModulus ctx) -! 1
+    upper = value @(NumberOfBits (Zp FqModulus)) -! 1
 
 instance
   ( Symbolic ctx
@@ -78,12 +79,12 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
-        [upper, upper -! 1 .. 0]
+        (\i p -> bool zero p (isSet bits (upper -! i)))
+        [0 .. upper]
         (Prelude.iterate (\e -> e + e) x)
    where
-    bits :: ByteString (FFAMaxBits FpModulus ctx) ctx
-    bits = from (toUInt @(FFAMaxBits FpModulus ctx) ffa)
+    bits :: ByteString (NumberOfBits (Zp FpModulus)) ctx
+    bits = from (toUInt @(NumberOfBits (Zp FpModulus)) ffa)
 
     upper :: Natural
-    upper = value @(FFAMaxBits FpModulus ctx) -! 1
+    upper = value @(NumberOfBits (Zp FpModulus)) -! 1

@@ -10,6 +10,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
@@ -42,12 +43,12 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
-        [upper, upper -! 1 .. 0]
+        (\i p -> bool zero p (isSet bits (upper -! i)))
+        [0 .. upper]
         (Prelude.iterate (\e -> e + e) x)
    where
-    bits :: ByteString (FFAMaxBits Ed25519_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits Ed25519_Scalar ctx) ffa)
+    bits :: ByteString (NumberOfBits (Zp Ed25519_Scalar)) ctx
+    bits = from (toUInt @(NumberOfBits (Zp Ed25519_Scalar)) ffa)
 
     upper :: Natural
-    upper = value @(FFAMaxBits Ed25519_Scalar ctx) -! 1
+    upper = value @(NumberOfBits (Zp Ed25519_Scalar)) -! 1

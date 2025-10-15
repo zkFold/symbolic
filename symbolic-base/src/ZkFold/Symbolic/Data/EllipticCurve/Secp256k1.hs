@@ -42,8 +42,8 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
-        [upper, upper -! 1 .. 0]
+        (\i p -> bool zero p (isSet bits (upper -! i)))
+        [0 .. upper]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits Secp256k1_Scalar ctx) ctx
