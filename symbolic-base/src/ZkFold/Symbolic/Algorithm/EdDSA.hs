@@ -12,21 +12,21 @@ module ZkFold.Symbolic.Algorithm.EdDSA (
 import Data.Coerce (coerce)
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
+import GHC.TypeNats (KnownNat)
+import Prelude (($), (.))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Data.Eq
+import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (..), Iso (..), GetRegisterSize)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, Iso (..), RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import Prelude (($), (.))
-import GHC.TypeNats (KnownNat)
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -60,7 +60,7 @@ eddsaVerify
   -- ^ signature (R, s)
   -> Bool ctx
 eddsaVerify hashFn publicKey message (rPoint :*: s) =
-   unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
+  unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
  where
   g = pointGen @point
 
@@ -85,7 +85,7 @@ eddsaSign
      , KnownFFA p 'Auto ctx
      , KnownNat (GetRegisterSize (BaseField ctx) (NumberOfBits (BaseField ctx)) 'Auto)
      )
-  => (forall x. (SymbolicData x) => x ctx -> FieldElement ctx)
+  => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
   -> scalarField ctx
   -- ^ private key
@@ -94,7 +94,7 @@ eddsaSign
   -> (SymAffine.AffinePoint (TwistedEdwards curve) baseField :*: scalarField) ctx
   -- ^ signature (R, s)
 eddsaSign hashFn privKey message =
-   rPoint :*: s
+  rPoint :*: s
  where
   g = pointGen @point
   publicKey = privKey `scale` g
@@ -103,5 +103,8 @@ eddsaSign hashFn privKey message =
   rPoint = r `scale` g
   h = scalarFieldFromFE $ hashFn (rPoint :*: publicKey :*: message)
 
-scalarFieldFromFE :: forall p c. (Symbolic c, KnownFFA p 'Auto c, KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) 'Auto)) => FieldElement c -> FFA p 'Auto c
+scalarFieldFromFE
+  :: forall p c
+   . (Symbolic c, KnownFFA p 'Auto c, KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (BaseField c)) 'Auto))
+  => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE = fromUInt . from
