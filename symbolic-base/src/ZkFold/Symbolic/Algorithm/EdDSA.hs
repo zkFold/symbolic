@@ -18,26 +18,17 @@ import Prelude (($), (.))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
+import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisterSize,
-  KnownRegisters,
-  NumberOfRegisters,
-  Resize (..),
- )
-import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, Iso (..), RegisterSize (..))
+import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisterSize, KnownRegisters, NumberOfRegisters, RegisterSize (..), Resize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -119,8 +110,9 @@ scalarFieldFromFE
   => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE fe =
   let
-      u ::  UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
-      uWide = resize u
-      m     = fromConstant (value @p) :: UInt (FFAMaxBits p c) 'Auto c
-      (_, rmd) = divMod uWide m
-  in fromUInt rmd
+    u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
+    uWide = resize u
+    m = fromConstant (value @p) :: UInt (FFAMaxBits p c) 'Auto c
+    (_, rmd) = divMod uWide m
+   in
+    fromUInt rmd
