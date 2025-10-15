@@ -65,7 +65,7 @@ specEdDSA = describe "EdDSA verification (Jubjub, Poseidon Hash)" $ do
         p = value @Jubjub_Scalar
     forAll (fromConstant <$> toss p) $ \(privKey :: Scalar) -> do
       let msg = zero :: FieldElement I
-          (rPoint :*: s) = eddsaSign hashToScalar privKey msg
+          (rPoint :*: s) = eddsaSign MiMC.hash privKey msg
           pubKey = privKey `scale` g
           ok = eddsaVerify hashToScalar pubKey msg (rPoint :*: s)
           rAffine = SymAffine.affinePoint rPoint
