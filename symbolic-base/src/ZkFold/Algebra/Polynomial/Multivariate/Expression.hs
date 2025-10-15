@@ -12,10 +12,11 @@ import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 
 data Polynomial a v
-  = PVar v | PConst a
+  = PVar v
+  | PConst a
   | Polynomial a v :+ Polynomial a v
   | Polynomial a v :* Polynomial a v
-  deriving (Functor, Foldable, Traversable)
+  deriving (Foldable, Functor, Traversable)
 
 evalPoly :: Algebra a b => Polynomial a v -> (v -> b) -> b
 evalPoly (PVar i) x = x i
