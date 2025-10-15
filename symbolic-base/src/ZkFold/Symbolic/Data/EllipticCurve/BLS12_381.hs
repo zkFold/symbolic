@@ -12,7 +12,6 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Haskell
 import ZkFold.Algebra.Number
-import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
@@ -58,12 +57,12 @@ instance
   scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar 'Auto ctx)) x =
     sum $
       Prelude.zipWith
-        (\i p -> bool zero p (isSet bits (upper -! i)))
-        [0 .. upper]
+        (\b p -> bool zero p (isSet bits b))
+        [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
-    bits :: ByteString (NumberOfBits (Zp BLS12_381_Scalar)) ctx
-    bits = from (toUInt @(NumberOfBits (Zp BLS12_381_Scalar)) ffa)
+    bits :: ByteString (FFAMaxBits BLS12_381_Scalar ctx) ctx
+    bits = from (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
 
     upper :: Natural
-    upper = value @(NumberOfBits (Zp BLS12_381_Scalar)) -! 1
+    upper = value @(FFAMaxBits BLS12_381_Scalar ctx) -! 1

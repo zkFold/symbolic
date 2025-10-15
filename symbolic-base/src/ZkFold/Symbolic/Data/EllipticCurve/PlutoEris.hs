@@ -46,8 +46,8 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\i p -> bool zero p (isSet bits (upper -! i)))
-        [0 .. upper]
+        (\b p -> bool zero p (isSet bits b))
+        [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits PlutoEris_q ctx) ctx
@@ -79,8 +79,8 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\i p -> bool zero p (isSet bits (upper -! i)))
-        [0 .. upper]
+        (\b p -> bool zero p (isSet bits b))
+        [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits PlutoEris_p ctx) ctx
