@@ -7,6 +7,7 @@
 module ZkFold.Symbolic.Algorithm.EdDSA (
   eddsaVerify,
   eddsaSign,
+  scalarFieldFromFE,
 ) where
 
 import Data.Coerce (coerce)
