@@ -1,5 +1,3 @@
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module ZkFold.Symbolic.Ledger.Validation.State (
@@ -35,6 +33,7 @@ For validating transactions, we should check:
 \* Bridged out outputs are checked to be same as in bridge out list.
 \* Outputs must have at least one ada.
 \* Transaction is balanced.
+\* Transaction must have at least one input.
 
 For validating batch, we simply apply transaction validation check iteratively.
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.State (
@@ -8,7 +7,7 @@ module ZkFold.Symbolic.Ledger.Types.State (
 import GHC.Generics (Generic, Generic1, (:.:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
-import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
