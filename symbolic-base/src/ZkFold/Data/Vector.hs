@@ -29,6 +29,7 @@ import Data.These (These (..))
 import Data.Traversable (Traversable, sequenceA, traverse)
 import Data.Tuple (fst, snd, uncurry)
 import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as MV
 import Data.Vector.Binary ()
 import qualified Data.Vector.Split as V
 import Data.Zip (Semialign (..), Unzip (..), Zip (..))
@@ -47,6 +48,8 @@ import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 import ZkFold.Prelude (length)
+import Control.Monad.ST (runST)
+import Control.Monad (void)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
@@ -264,3 +267,26 @@ instance (AdditiveGroup a, KnownNat n) => AdditiveGroup (Vector n a) where
   negate = fmap negate
 
   (-) = zipWith (-)
+
+-- -- | Replace the first match with the new value.
+-- --
+-- -- >>> replaceFirstMatchWith (unsafeToVector [1, 2, 3]) 2 4
+-- -- Vector {toV = [1,4,3]}
+-- replaceFirstMatchWith :: P.Eq a => Vector n a -> a -> a -> Vector n a
+-- replaceFirstMatchWith (toV -> vec) match new =
+--   Vector $ replaceFirstMatchWith' vec match new
+
+-- replaceFirstMatchWith' :: (P.Eq a) => V.Vector a -> a -> a -> V.Vector a
+-- replaceFirstMatchWith' vec match new =
+--   runST $ do
+--     mvec <- V.thaw vec
+--     let n = V.length vec
+--     let go i
+--           | i P.>= n    = P.return ()
+--           | otherwise = do
+--               x <- MV.read mvec i
+--               if x P.== match
+--                 then MV.write mvec i new
+--                 else go (i P.+ 1)
+--     void $ go 0
+--     V.freeze mvec
