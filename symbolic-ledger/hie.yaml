@@ -2,3 +2,5 @@ cradle:
   cabal:
     - path: "./src"
       component: "lib:symbolic-ledger"
+    - path: "./test"
+      component: "test:symbolic-ledger-test"
