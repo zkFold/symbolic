@@ -8,7 +8,7 @@ import Control.Applicative (pure)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Symbolic.Data.Hash (hash)
-import ZkFold.Symbolic.Data.Bool (false)
+import ZkFold.Symbolic.Data.Bool (false, true)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree qualified as SymMerkle
 import ZkFold.Symbolic.Interpreter (Interpreter)
@@ -23,6 +23,7 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup(..))
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 import Data.Function ((&))
 import qualified ZkFold.Symbolic.Data.Hash as Base
+import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdate)
 
 type I = Interpreter Fr
 
@@ -85,8 +86,9 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
           in
           Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
 
-        newState :*: _witness = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+        newState :*: witness = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
-    -- sUTxO newState `shouldBe` emptyTree
+    -- TODO: Hard code new state.
     sLength newState `shouldBe` (one :: FieldElement I)
+    validateStateUpdate prevState batch newState witness `shouldBe` true
 
