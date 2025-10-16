@@ -104,8 +104,9 @@ eddsaSign hashFn privKey message =
 
 scalarFieldFromFE
   :: forall p c
-   . (Symbolic c, KnownFFA p 'Auto c
-   )
+   . ( Symbolic c
+     , KnownFFA p 'Auto c
+     )
   => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE fe =
   let
