@@ -1,7 +1,4 @@
 module ZkFold.Symbolic.Ledger.Types (
-  EdDSABaseField,
-  EdDSAScalarField,
-  EdDSAPoint,
   module ZkFold.Symbolic.Ledger.Types.Address,
   module ZkFold.Symbolic.Ledger.Types.Hash,
   module ZkFold.Symbolic.Ledger.Types.State,

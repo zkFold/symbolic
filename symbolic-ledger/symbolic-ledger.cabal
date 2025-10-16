@@ -1,112 +1,133 @@
-cabal-version:      3.0
-
-name:               symbolic-ledger
-version:            0.1.0.0
-tested-with:        GHC == 9.12.1
-synopsis:           Symbolic Ledger
-homepage:           https://zkfold.io/
-category:           Blockchain, Cryptography, DSL, Math, Symbolic Computation
-author:             Vladimir Sinyakov, Sourabh Aggarwal, Pavel Sokolov, Vladimir Morozov, Eitan Chatav
-maintainer:         vlasin@zkfold.io
-license:            MIT
-license-file:       LICENSE
-build-type:         Simple
-
+cabal-version: 3.0
+name: symbolic-ledger
+version: 0.1.0.0
+tested-with: ghc ==9.12.1
+synopsis: Symbolic Ledger
+homepage: https://zkfold.io/
+category: Blockchain, Cryptography, DSL, Math, Symbolic Computation
+author: Vladimir Sinyakov, Sourabh Aggarwal, Pavel Sokolov, Vladimir Morozov, Eitan Chatav
+maintainer: vlasin@zkfold.io
+license: MIT
+license-file: LICENSE
+build-type: Simple
 description:
   This package contains the definitions related to the zkFold Ledger.
 
-Flag Pedantic
-    Description: Enable pedantic build with -Werror
-    Manual: True
-    Default: False
+flag Pedantic
+  description: Enable pedantic build with -Werror
+  manual: True
+  default: False
 
 common options
-    default-language: Haskell2010
+  default-language: Haskell2010
+  ghc-options:
+    -fwarn-redundant-constraints
+    -Wall
+    -Wcompat
+    -Widentities
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wnoncanonical-monad-instances
+    -Wpartial-fields
+    -Wredundant-constraints
+    -Wunused-packages
+    -O2
+    -threaded
+
+  if flag(pedantic)
     ghc-options:
-      -fwarn-redundant-constraints
-      -Wall
-      -Wcompat
-      -Widentities
-      -Wincomplete-record-updates
-      -Wincomplete-uni-patterns
-      -Wnoncanonical-monad-instances
-      -Wpartial-fields
-      -Wredundant-constraints
-      -Wunused-packages
-      -O2
-      -threaded
-    if flag(pedantic)
-      ghc-options:
-        -Werror
-    default-extensions:
-      BangPatterns,
-      BinaryLiterals,
-      ConstraintKinds,
-      DataKinds,
-      DefaultSignatures,
-      DeriveAnyClass,
-      DeriveDataTypeable,
-      DeriveFoldable,
-      DeriveFunctor,
-      DeriveGeneric,
-      DerivingStrategies,
-      DerivingVia,
-      DeriveTraversable,
-      ExistentialQuantification,
-      FlexibleContexts,
-      FlexibleInstances,
-      FunctionalDependencies,
-      GADTs,
-      GeneralizedNewtypeDeriving,
-      ImportQualifiedPost,
-      InstanceSigs,
-      KindSignatures,
-      LambdaCase,
-      MultiParamTypeClasses,
-      MultiWayIf,
-      NamedFieldPuns,
-      NoImplicitPrelude,
-      NoStarIsType,
-      NumericUnderscores,
-      OverloadedStrings,
-      OverloadedLabels,
-      PolyKinds,
-      RankNTypes,
-      RecordWildCards,
-      ScopedTypeVariables,
-      StandaloneDeriving,
-      StandaloneKindSignatures,
-      TupleSections,
-      TypeApplications,
-      TypeFamilies,
-      TypeOperators,
-      ViewPatterns
+      -Werror
+  default-extensions:
+    BangPatterns
+    BinaryLiterals
+    ConstraintKinds
+    DataKinds
+    DefaultSignatures
+    DeriveAnyClass
+    DeriveDataTypeable
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveTraversable
+    DerivingStrategies
+    DerivingVia
+    ExistentialQuantification
+    FlexibleContexts
+    FlexibleInstances
+    FunctionalDependencies
+    GADTs
+    GeneralizedNewtypeDeriving
+    ImportQualifiedPost
+    InstanceSigs
+    KindSignatures
+    LambdaCase
+    MultiParamTypeClasses
+    MultiWayIf
+    NamedFieldPuns
+    NoImplicitPrelude
+    NoStarIsType
+    NumericUnderscores
+    OverloadedLabels
+    OverloadedStrings
+    PolyKinds
+    RankNTypes
+    RecordWildCards
+    ScopedTypeVariables
+    StandaloneDeriving
+    StandaloneKindSignatures
+    TupleSections
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    ViewPatterns
 
 common options-exe
-    import: options
-    ghc-options:
-      -rtsopts
-    ghc-prof-options:
-      -with-rtsopts=-pj
+  import: options
+  ghc-options:
+    -rtsopts
+
+  ghc-prof-options:
+    -with-rtsopts=-pj
 
 library
-    import: options
-    exposed-modules:
-      ZkFold.Symbolic.Ledger.Types
-      ZkFold.Symbolic.Ledger.Types.Address
-      ZkFold.Symbolic.Ledger.Types.Hash
-      ZkFold.Symbolic.Ledger.Types.Orphans
-      ZkFold.Symbolic.Ledger.Types.State
-      ZkFold.Symbolic.Ledger.Types.Transaction
-      ZkFold.Symbolic.Ledger.Types.Transaction.Batch
-      ZkFold.Symbolic.Ledger.Types.Transaction.Core
-      ZkFold.Symbolic.Ledger.Types.Value
-      ZkFold.Symbolic.Ledger.Validation.State
-      ZkFold.Symbolic.Ledger.Validation.Transaction
-      ZkFold.Symbolic.Ledger.Validation.TransactionBatch
-      ZkFold.Symbolic.Ledger.Offchain.State.Update
-      ZkFold.Symbolic.Ledger.Utils
-    build-depends:
-      base                          >= 4.9 && < 5,
-      symbolic-base                              ,
-    hs-source-dirs: src
+  import: options
+  exposed-modules:
+    ZkFold.Symbolic.Ledger.Offchain.State.Update
+    ZkFold.Symbolic.Ledger.Types
+    ZkFold.Symbolic.Ledger.Types.Address
+    ZkFold.Symbolic.Ledger.Types.Hash
+    ZkFold.Symbolic.Ledger.Types.Orphans
+    ZkFold.Symbolic.Ledger.Types.State
+    ZkFold.Symbolic.Ledger.Types.Transaction
+    ZkFold.Symbolic.Ledger.Types.Transaction.Batch
+    ZkFold.Symbolic.Ledger.Types.Transaction.Core
+    ZkFold.Symbolic.Ledger.Types.Value
+    ZkFold.Symbolic.Ledger.Utils
+    ZkFold.Symbolic.Ledger.Validation.State
+    ZkFold.Symbolic.Ledger.Validation.Transaction
+    ZkFold.Symbolic.Ledger.Validation.TransactionBatch
+
+  build-depends:
+    base >=4.9 && <5,
+    symbolic-base,
+
+  hs-source-dirs: src
+
+test-suite symbolic-ledger-test
+  import: options-exe
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  hs-source-dirs: test
+  ghc-options:
+    -threaded
+    "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
+
+  other-modules:
+    Main
+    Tests.Symbolic.Ledger.Update
+
+  build-depends:
+    base,
+    hspec <2.12,
+    symbolic-base,
+    symbolic-ledger,

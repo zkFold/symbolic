@@ -67,12 +67,12 @@ type AssetQuantity context = Int 128 Auto context
 type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
 
 -- TODO: Replace with actual value, once we finalize how policy names are represented.
-adaPolicy :: AssetPolicy context
-adaPolicy = undefined
+adaPolicy :: Symbolic context => AssetPolicy context
+adaPolicy = zero
 
 -- TODO: Replace with actual value, once we finalize how asset names are represented.
-adaName :: AssetName context
-adaName = undefined
+adaName :: Symbolic context => AssetName context
+adaName = zero
 
 -- | A value represents the details of an asset that is contained in a transaction output.
 data AssetValue context = AssetValue
