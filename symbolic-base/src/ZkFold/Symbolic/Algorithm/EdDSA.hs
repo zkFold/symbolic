@@ -13,6 +13,7 @@ module ZkFold.Symbolic.Algorithm.EdDSA (
 import Data.Coerce (coerce)
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
+import GHC.TypeNats (KnownNat)
 import Prelude (($))
 
 import ZkFold.Algebra.Class
@@ -24,12 +25,11 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), GetRegisterSize, Ceil, KnownRegisters)
+import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, Iso (..), KnownRegisters, RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.UInt (UInt (..), OrdWord)
-import GHC.TypeNats (KnownNat)
+import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..))
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -113,12 +113,13 @@ eddsaSign hashFn privKey message =
 
 scalarFieldFromFE
   :: forall p c n
-   . (Symbolic c, KnownFFA p 'Auto c
+   . ( Symbolic c
+     , KnownFFA p 'Auto c
      , n ~ NumberOfBits (BaseField c)
      , KnownRegisters c n 'Auto
      , KnownNat (GetRegisterSize (BaseField c) n 'Auto)
      , KnownNat (Ceil (GetRegisterSize (BaseField c) n 'Auto) OrdWord)
-   )
+     )
   => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE fe =
   let
