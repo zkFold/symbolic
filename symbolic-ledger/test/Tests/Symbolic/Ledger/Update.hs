@@ -18,6 +18,9 @@ import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import GHC.IsList (IsList(..))
+import GHC.Natural (Natural)
+import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup(..))
+import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
 
 type I = Interpreter Fr
 
@@ -49,9 +52,15 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
 
         utxoPreimage :: Leaves Ud (UTxO A I)
         utxoPreimage = pure (nullUTxO @A @I)
+        privateKey :: PrivateKey I
+        privateKey = fromConstant (1 :: Natural)
+        publicKey :: PublicKey I
+        publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
+
+        address = Poseidon.hash publicKey
         
-        adaAsset = Comp1 $ fromList [AssetValue {assetPolicy = undefined, assetName = undefined, assetQuantity = undefined}]
-        bridgeInOutput = Output {oAddress = undefined, oAssets = adaAsset}
+        adaAsset = Comp1 $ fromList [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1 :: Natural)}]
+        bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
         -- We bridge in an output and refer to it in transaction.
         bridgedIn :: (Vector Bi :.: Output A) I
         bridgedIn = Comp1 (fromList [bridgeInOutput])
@@ -70,9 +79,9 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
         batch = TransactionBatch {tbTransactions = pure tx}
 
         sigs = 
-          let rPoint :*: s = signTransaction tx undefined
+          let rPoint :*: s = signTransaction tx privateKey
           in
-          Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: undefined])])
+          Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
 
         newState :*: _witness = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
