@@ -20,7 +20,7 @@ import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
+import ZkFold.Symbolic.Data.FFA (KnownFFA)
 
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
@@ -28,12 +28,6 @@ import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
-
-type EdDSABaseField = FFA Jubjub_Base 'Auto
-
-type EdDSAScalarField = FFA Jubjub_Scalar 'Auto
-
-type EdDSAPoint = Jubjub_Point
 
 type SignatureTransaction ud i o a context =
   ( Symbolic context

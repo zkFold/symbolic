@@ -12,6 +12,12 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   Transaction (..),
   TransactionId,
   txId,
+  EdDSABaseField,
+  EdDSAScalarField,
+  EdDSAPoint,
+  PrivateKey,
+  PublicKey,
+  signTransaction,
 ) where
 
 import Data.Function ((&))
@@ -34,6 +40,10 @@ import Prelude qualified as Haskell hiding ((||))
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
+import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
+import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
+import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -133,3 +143,22 @@ txId
   => Transaction i o a context
   -> TransactionId i o a context
 txId = hash
+
+type EdDSABaseField = FFA Jubjub_Base 'Auto
+
+type EdDSAScalarField = FFA Jubjub_Scalar 'Auto
+
+type EdDSAPoint = Jubjub_Point
+
+type PrivateKey = EdDSAScalarField
+
+type PublicKey = EdDSAPoint
+
+signTransaction :: forall i o a context. 
+  Symbolic context => 
+  KnownFFA Jubjub_Scalar 'Auto context =>
+  KnownFFA Jubjub_Base 'Auto context =>
+  Transaction i o a context -> 
+  PrivateKey context ->
+  (EdDSAPoint :*: EdDSAScalarField) context
+signTransaction tx privateKey = eddsaSign Poseidon.hash privateKey (txId tx & Base.hHash)
