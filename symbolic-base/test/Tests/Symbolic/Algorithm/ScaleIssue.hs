@@ -21,7 +21,7 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
-import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, fromUInt, FFAMaxBits)
+import ZkFold.Symbolic.Data.FFA (FFA, FFAMaxBits, KnownFFA, fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
@@ -42,7 +42,7 @@ scalarFieldFromFE fe =
   let
     u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
     uWide = resize u
-    m  :: UInt (FFAMaxBits p c) 'Auto c = fromConstant (value @p)
+    m :: UInt (FFAMaxBits p c) 'Auto c = fromConstant (value @p)
    in
     fromUInt $ mod uWide m
 
