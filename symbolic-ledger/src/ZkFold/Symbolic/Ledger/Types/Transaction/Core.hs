@@ -24,13 +24,17 @@ import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
+import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
+import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
+import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.UInt (UInt)
@@ -40,10 +44,6 @@ import Prelude qualified as Haskell hiding ((||))
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
-import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
-import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
-import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -154,11 +154,12 @@ type PrivateKey = EdDSAScalarField
 
 type PublicKey = EdDSAPoint
 
-signTransaction :: forall i o a context. 
-  Symbolic context => 
-  KnownFFA Jubjub_Scalar 'Auto context =>
-  KnownFFA Jubjub_Base 'Auto context =>
-  Transaction i o a context -> 
-  PrivateKey context ->
-  (EdDSAPoint :*: EdDSAScalarField) context
+signTransaction
+  :: forall i o a context
+   . Symbolic context
+  => KnownFFA Jubjub_Scalar 'Auto context
+  => KnownFFA Jubjub_Base 'Auto context
+  => Transaction i o a context
+  -> PrivateKey context
+  -> (EdDSAPoint :*: EdDSAScalarField) context
 signTransaction tx privateKey = eddsaSign Poseidon.hash privateKey (txId tx & Base.hHash)
