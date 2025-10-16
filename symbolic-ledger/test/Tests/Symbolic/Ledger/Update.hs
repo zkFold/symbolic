@@ -2,7 +2,7 @@ module Tests.Symbolic.Ledger.Update (specUpdateLedgerState) where
 
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import Test.Hspec (Spec, describe, it, shouldBe)
-import Prelude (($), undefined)
+import Prelude (($))
 
 import Control.Applicative (pure)
 import ZkFold.Algebra.Class
@@ -21,6 +21,8 @@ import GHC.IsList (IsList(..))
 import GHC.Natural (Natural)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup(..))
 import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as Poseidon
+import Data.Function ((&))
+import qualified ZkFold.Symbolic.Data.Hash as Base
 
 type I = Interpreter Fr
 
@@ -66,7 +68,7 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
         bridgedIn = Comp1 (fromList [bridgeInOutput])
         
         bridgeInHash :: HashSimple I
-        bridgeInHash = undefined
+        bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
         tx :: Transaction Ixs Oxs A I
         tx =
