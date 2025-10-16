@@ -43,7 +43,7 @@ updateLedgerState
   -- ^ Bridged in outputs.
   -> TransactionBatch i o a t context
   -- ^ Transaction batch.
-  -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint))) context
+  -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
   -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
   -> (State bi bo ud a :*: StateWitness bi bo ud a i o t) context
   -- ^ New state and witness.
