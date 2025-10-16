@@ -24,12 +24,11 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), GetRegisterSize, Ceil, KnownRegisters)
+import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), Resize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.UInt (UInt (..), OrdWord)
-import GHC.TypeNats (KnownNat)
+import ZkFold.Symbolic.Data.UInt (UInt (..))
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -41,7 +40,7 @@ import GHC.TypeNats (KnownNat)
 --   - (R, s) is the signature; R is a point, s is a scalar
 --   - H is a caller-provided hash-to-scalar function
 eddsaVerify
-  :: forall point curve p q baseField scalarField ctx n
+  :: forall point curve p q baseField scalarField ctx
    . ( S.Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
@@ -50,10 +49,6 @@ eddsaVerify
      , CyclicGroup point
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
-     , n ~ NumberOfBits (BaseField ctx)
-     , KnownRegisters ctx n 'Auto
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
-     , KnownNat (Ceil (GetRegisterSize (BaseField ctx) n 'Auto) OrdWord)
      )
   => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
@@ -80,7 +75,7 @@ eddsaVerify hashFn publicKey message (rPoint :*: s) =
 
 -- | Sign EdDSA signature on a Twisted Edwards curve.
 eddsaSign
-  :: forall point curve p q baseField scalarField ctx n
+  :: forall point curve p q baseField scalarField ctx
    . ( baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
      , point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
@@ -88,10 +83,6 @@ eddsaSign
      , CyclicGroup point
      , Symbolic ctx
      , KnownFFA p 'Auto ctx
-     , n ~ NumberOfBits (BaseField ctx)
-     , KnownRegisters ctx n 'Auto
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
-     , KnownNat (Ceil (GetRegisterSize (BaseField ctx) n 'Auto) OrdWord)
      )
   => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
   -- ^ hash function
@@ -112,17 +103,14 @@ eddsaSign hashFn privKey message =
   h = scalarFieldFromFE $ hashFn (rPoint :*: publicKey :*: message)
 
 scalarFieldFromFE
-  :: forall p c n
+  :: forall p c
    . (Symbolic c, KnownFFA p 'Auto c
-     , n ~ NumberOfBits (BaseField c)
-     , KnownRegisters c n 'Auto
-     , KnownNat (GetRegisterSize (BaseField c) n 'Auto)
-     , KnownNat (Ceil (GetRegisterSize (BaseField c) n 'Auto) OrdWord)
    )
   => FieldElement c -> FFA p 'Auto c
 scalarFieldFromFE fe =
   let
     u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
-    m = fromConstant (value @p)
+    uWide = resize u
+    m :: UInt (FFAMaxBits p c) 'Auto c = fromConstant (value @p)
    in
-    fromUInt $ mod u m
+    fromUInt $ mod uWide m
