@@ -9,11 +9,10 @@ import Test.Hspec (Spec, it, shouldBe)
 import Text.Show (show)
 import Prelude (putStrLn, unlines, (<>))
 
-import Tests.Common (evalBool)
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
+import ZkFold.Algebra.EllipticCurve.Jubjub
+    ( Jubjub_Base, Jubjub_Scalar, Fl )
 import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Eq
 import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
@@ -25,8 +24,9 @@ import ZkFold.Symbolic.Data.FFA (FFA, FFAMaxBits, KnownFFA, fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Data.Bool (BoolType(..))
 
-type I = Interpreter Fr
+type I = Interpreter Fl
 
 type Point = Jubjub_Point I
 
@@ -50,6 +50,10 @@ hashToScalar
   :: (KnownFFA Jubjub_Base 'Auto I, KnownFFA Jubjub_Scalar 'Auto I) => Point -> Point -> FieldElement I -> Scalar
 hashToScalar rPoint pubKey m = scalarFieldFromFE (MiMC.hash (rPoint :*: pubKey :*: m))
 
+hashToScalar'
+  :: Point -> Point -> FieldElement I -> FieldElement I
+hashToScalar' rPoint pubKey m = MiMC.hash (rPoint :*: pubKey :*: m)
+
 specScaleIssue :: Spec
 specScaleIssue =
   it "specScaleIssue" $ do
@@ -57,12 +61,14 @@ specScaleIssue =
         msg = zero :: FieldElement I
         privKey = one
         pubKey = privKey `scale` g
-        r :: Scalar = one + one -- Works for `r = one`.
+        r :: Scalar = one -- + one -- Works for `r = one`.
         rPoint = r `scale` g
         h = hashToScalar rPoint pubKey msg
+        h' = hashToScalar' rPoint pubKey msg
         hpubKey' = (h * privKey) `scale` g
         hpubKey = h `scale` pubKey -- `hpubKey` and `hpubKey'` should both be equal.
         ok = SymAffine.affinePoint hpubKey == SymAffine.affinePoint hpubKey'
+        ok' = toConstant h' == toConstant h
     putStrLn $
       unlines
         [ "g = " <> show (SymAffine.affinePoint g)
@@ -74,6 +80,7 @@ specScaleIssue =
         , "hpubKey' = " <> show (SymAffine.affinePoint hpubKey')
         , "hpubKey = " <> show (SymAffine.affinePoint hpubKey)
         , "h = " <> show h
+        , "h' = " <> show h'
         ]
-
-    evalBool ok `shouldBe` one
+    ok' `shouldBe` true
+    ok `shouldBe` true
