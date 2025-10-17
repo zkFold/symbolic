@@ -11,9 +11,13 @@ import Prelude (putStrLn, unlines, (<>))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub
-    ( Jubjub_Base, Jubjub_Scalar, Fl )
+import ZkFold.Algebra.EllipticCurve.Jubjub (
+  Fl,
+  Jubjub_Base,
+  Jubjub_Scalar,
+ )
 import ZkFold.Algebra.Number (value)
+import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq
 import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
 import ZkFold.Symbolic.Class
@@ -24,7 +28,6 @@ import ZkFold.Symbolic.Data.FFA (FFA, FFAMaxBits, KnownFFA, fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import ZkFold.Data.Bool (BoolType(..))
 
 type I = Interpreter Fl
 
