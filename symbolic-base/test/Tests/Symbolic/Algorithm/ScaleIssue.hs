@@ -7,8 +7,10 @@ import Prelude (putStrLn, unlines, (<>))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub
-    ( Jubjub_Scalar, Fl )
+import ZkFold.Algebra.EllipticCurve.Jubjub (
+  Fl,
+  Jubjub_Scalar,
+ )
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
