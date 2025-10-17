@@ -7,7 +7,7 @@
 
 {- HLINT ignore "Use record patterns" -}
 
-module ZkFold.ArithmeticCircuit.Experimental where
+module ZkFold.ArithmeticCircuit.Node where
 
 import Control.Applicative (pure, (<*>))
 import Control.DeepSeq (NFData (..), rwhnf)
