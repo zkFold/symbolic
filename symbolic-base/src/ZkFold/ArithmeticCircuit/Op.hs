@@ -5,14 +5,23 @@ import Data.Functor ((<$>))
 import GHC.Integer (Integer)
 import GHC.Natural (Natural)
 
+-- | A 'PrimeField' class describes operations available between 4 types:
+-- * finite field itself
+-- * backing integral type
+-- * booleans associated with both
+-- * ordering associated with integers
+--
+-- 'Sort' is a set of labels for differentiating between them.
 data Sort = ZZp | ZZ | BB | OO
 
+-- | A way to store type-level 'Sort' on the term-level.
 data SortSing (s :: Sort) where
   ZZpSing :: SortSing ZZp
   ZZSing :: SortSing ZZ
   BBSing :: SortSing BB
   OOSing :: SortSing OO
 
+-- | A class for communicating between term-level and type-level 'Sort's.
 class KnownSort (s :: Sort) where
   knownSort :: SortSing s
 
@@ -28,6 +37,10 @@ instance KnownSort BB where
 instance KnownSort OO where
   knownSort = OOSing
 
+-- | 'Op f s' describes operations available in the 'PrimeField' class
+-- where 's' is a sort of the result of an operation
+-- and 'f' is a @Sort -> Type@ functor which, given a sort,
+-- would return an argument to the operation of the type labeled with this sort.
 data Op f (s :: Sort) where
   OpConst :: KnownSort s => Integer -> Op f s
   OpScale :: Integer -> f s -> Op f s
@@ -45,6 +58,8 @@ data Op f (s :: Sort) where
   OpAppend :: f OO -> f OO -> Op f OO
   OpOrder :: f ZZ -> f ZZ -> f ZZ -> f OO -> Op f ZZ
 
+-- | Replacement of a @Sort -> Type@ functor in 'Op',
+-- possibly with side-effects.
 traverseOp
   :: Applicative m => (forall t. f t -> m (g t)) -> Op f s -> m (Op g s)
 traverseOp f = \case

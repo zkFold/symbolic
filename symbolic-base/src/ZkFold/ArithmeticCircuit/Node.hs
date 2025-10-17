@@ -57,9 +57,14 @@ import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
 
 ------------------- Experimental single-output circuit type --------------------
 
+-- | @Node p s@ is a node in 'Symbolic' computation graph
+-- where @p@ is a size of a base field and @s@ is a 'Sort' of a node.
 data Node p (s :: Sort) where
+  -- | An input node
   NodeInput :: NewVar -> Node p ZZp
+  -- | An application of an operation from 'PrimeField' class.
   NodeApply :: KnownSort s => Op (Node p) s -> Node p s
+  -- | An application of a 'constrain' function from 'Symbolic' class.
   NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Node p ZZp
 
 instance NFData (Node p s) where
