@@ -25,7 +25,7 @@ import Data.Ord (Ord (..))
 import Data.Semigroup (Semigroup, (<>))
 import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
 import qualified Data.Set as S
-import Data.Traversable (traverse, Traversable)
+import Data.Traversable (Traversable, traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))

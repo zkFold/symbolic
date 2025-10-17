@@ -27,6 +27,7 @@ import ZkFold.ArithmeticCircuit qualified as Circuit
 import ZkFold.ArithmeticCircuit.Elem (compile)
 import ZkFold.ArithmeticCircuit.Node (compileV1)
 import ZkFold.Data.Binary (Binary, toByteString)
+import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
@@ -35,7 +36,6 @@ import Prelude (toInteger)
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.UInt (exampleUIntExpMod)
-import ZkFold.Symbolic.Class (Symbolic, BaseField)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
@@ -57,9 +57,9 @@ type A = Zp BLS12_381_Scalar
 fib100 :: Symbolic c => FieldElement c -> FieldElement c
 fib100 = exampleFibonacciMod 100
 
-expMod ::
-  (Symbolic c, BaseField c ~ A) =>
-  UInt 32 Auto c -> UInt 16 Auto c -> UInt 64 Auto c -> UInt 64 Auto c
+expMod
+  :: (Symbolic c, BaseField c ~ A)
+  => UInt 32 Auto c -> UInt 16 Auto c -> UInt 64 Auto c -> UInt 64 Auto c
 expMod = exampleUIntExpMod
 
 main :: IO ()
