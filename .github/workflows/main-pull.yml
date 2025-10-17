@@ -99,6 +99,9 @@ jobs:
     - name: Benchmark compiler performance
       run: cabal bench bench-compiler-performance
 
+    - name: Benchmark experimental compiler performance
+      run: cabal bench experimental-backend
+
     - name: Benchmark polynomial multiplication
       run: cabal bench bench-poly-mul
 
