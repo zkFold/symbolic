@@ -2,7 +2,6 @@ module Main where
 
 import System.Random (RandomGen, initStdGen)
 import Test.Hspec (Spec, describe, hspec)
-import Tests.Symbolic.Algorithm.ScaleIssue (specScaleIssue)
 import Prelude hiding (
   Bool,
   Fractional (..),
@@ -35,6 +34,7 @@ import Tests.Symbolic.Algorithm.Keccak (specKeccak)
 import Tests.Symbolic.Algorithm.Poseidon (specPoseidon)
 import Tests.Symbolic.Algorithm.RSA (specRSA)
 import Tests.Symbolic.Algorithm.SHA2 (specSHA2, specSHA2Natural)
+import Tests.Symbolic.Algorithm.ScaleIssue (specScaleIssue)
 import Tests.Symbolic.ArithmeticCircuit (specArithmeticCircuit)
 import Tests.Symbolic.Compiler (specCompiler)
 import Tests.Symbolic.Data.ByteString (specByteString)
