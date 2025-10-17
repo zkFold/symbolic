@@ -1,12 +1,9 @@
 module ZkFold.Symbolic.MonadCircuit where
 
-import Control.DeepSeq (NFData1)
 import Control.Monad (Monad (return))
-import Data.Foldable (Foldable)
 import Data.Function (($), (.))
-import Data.Functor (Functor)
 import Data.Set (singleton)
-import Data.Typeable (Typeable)
+import Data.Traversable (Traversable)
 import GHC.Generics (Par1 (..))
 import Numeric.Natural (Natural)
 
@@ -77,11 +74,7 @@ class
   --   For examples of lookup constraints, see 'rangeConstraint'.
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-  lookupConstraint
-    :: (NFData1 f, Foldable f, Functor f, Typeable f)
-    => f var
-    -> LookupTable f
-    -> m ()
+  lookupConstraint :: Traversable f => f var -> LookupTable f -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.
