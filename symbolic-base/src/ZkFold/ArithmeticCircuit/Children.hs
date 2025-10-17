@@ -1,0 +1,101 @@
+{-# LANGUAGE DerivingStrategies #-}
+
+module ZkFold.ArithmeticCircuit.Children where
+
+import Data.Function (const, flip, id, (.))
+import Data.Monoid (Monoid, mconcat, mempty)
+import Data.Ord (Ord)
+import Data.Semigroup (Semigroup, (<>))
+import Data.Set (Set, empty, singleton)
+
+import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
+import ZkFold.Control.Conditional (Conditional (..))
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.Eq (Eq (..))
+import qualified ZkFold.Data.Ord as ZkFold
+
+children :: forall a v. (PrimeField a, Ord v) => WitnessF a v -> Set v
+children = runC @a . flip runWitnessF (C . singleton)
+
+newtype Children a v = C {runC :: Set v}
+  deriving newtype (Monoid, Semigroup)
+
+instance {-# OVERLAPPABLE #-} Ord v => FromConstant c (Children a v) where
+  fromConstant = const mempty
+
+instance {-# OVERLAPPING #-} FromConstant (Children a v) (Children a v)
+
+instance {-# OVERLAPPABLE #-} Scale c (Children a v) where
+  scale = const id
+
+instance {-# OVERLAPPING #-} Ord v => Scale (Children a v) (Children a v)
+
+instance Exponent (Children a v) b where
+  (^) = const
+
+instance Ord v => BoolType (Children a v) where
+  true = mempty
+  false = mempty
+  not = id
+  (&&) = (<>)
+  (||) = (<>)
+  xor = (<>)
+
+instance Ord v => ZkFold.IsOrdering (Children a v) where
+  lt = mempty
+  eq = mempty
+  gt = mempty
+
+instance Ord v => Conditional (Children a v) (Children a v) where
+  bool x y b = x <> y <> b
+
+instance Ord v => Eq (Children a v) where
+  type BooleanOf (Children a v) = Children a v
+  (==) = (<>)
+  (/=) = (<>)
+
+instance Ord v => ZkFold.Ord (Children a v) where
+  type OrderingOf (Children a v) = Children a v
+  ordering x y z o = mconcat [x, y, z, o]
+  compare = (<>)
+
+instance Finite a => Finite (Children a v) where
+  type Order (Children a v) = Order a
+
+instance Ord v => AdditiveSemigroup (Children a v) where
+  (+) = (<>)
+
+instance Zero (Children a v) where
+  zero = C empty
+
+instance Ord v => AdditiveMonoid (Children a v)
+
+instance Ord v => AdditiveGroup (Children a v) where
+  negate = id
+
+instance Ord v => MultiplicativeSemigroup (Children a v) where
+  (*) = (<>)
+
+instance Ord v => MultiplicativeMonoid (Children a v) where
+  one = mempty
+
+instance Ord v => Semiring (Children a v)
+
+instance Ord v => Ring (Children a v)
+
+instance Ord v => SemiEuclidean (Children a v) where
+  div = (<>)
+  mod = (<>)
+
+instance Ord v => Euclidean (Children a v) where
+  gcd = (<>)
+  bezoutL = (<>)
+  bezoutR = (<>)
+
+instance Ord v => Field (Children a v) where
+  finv = id
+
+instance (Ord v, PrimeField a) => PrimeField (Children a v) where
+  type IntegralOf (Children a v) = Children a v
+  toIntegral = id

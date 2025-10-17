@@ -143,9 +143,10 @@ library
       ZkFold.Algorithm.Hash.Poseidon.Constants
       ZkFold.ArithmeticCircuit
       ZkFold.ArithmeticCircuit.Arbitrary
+      ZkFold.ArithmeticCircuit.Children
       ZkFold.ArithmeticCircuit.Context
       ZkFold.ArithmeticCircuit.Desugaring
-      ZkFold.ArithmeticCircuit.Experimental
+      ZkFold.ArithmeticCircuit.Elem
       ZkFold.ArithmeticCircuit.MerkleHash
       ZkFold.ArithmeticCircuit.Node
       ZkFold.ArithmeticCircuit.Op
