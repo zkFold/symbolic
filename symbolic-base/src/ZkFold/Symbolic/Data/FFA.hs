@@ -172,7 +172,7 @@ valueFFA (Par1 ni :*: ui) =
       bez = bezoutR twoPowS (fromConstant (order @a))
       diff = (u - n) `mod` fromConstant twoPowS
       k = (diff * fromConstant bez) `mod` fromConstant twoPowS
-    in k * fromConstant (order @a) + n
+   in k * fromConstant (order @a) + n
 
 layoutFFA
   :: forall p r c a w
