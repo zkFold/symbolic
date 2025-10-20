@@ -115,13 +115,6 @@ instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
 
 deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
-bezoutFFA
-  :: forall p n. (KnownNat p, KnownNat (FFAUIntSize p n)) => Integer
-bezoutFFA =
-  bezoutR
-    (1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n)))
-    (fromConstant $ value @p)
-
 instance
   (Arithmetic a, KnownFFA p r (Interpreter a))
   => ToConstant (FFA p r (Interpreter a))
@@ -132,8 +125,15 @@ instance
         u = fromConstant (toConstant ux) :: Integer
         -- x = k|a| + n = l*2^s + u
         -- k|a| - l*2^s = u - n
-        k = (u - n) * bezoutFFA @p @(Order a)
-     in fromConstant (k * fromConstant (order @a) + n)
+        -- We need k such that k*|a| ≡ (u - n) (mod 2^s), i.e. multiply by inv(|a|) mod 2^s
+        sBits = Prelude.fromIntegral (value @(FFAUIntSize p (Order a)))
+        twoPowS = 1 `shiftL` sBits
+        aOrder :: Integer
+        aOrder = fromConstant (order @a)
+        invA = bezoutR twoPowS aOrder
+        diff = (u - n) `Prelude.mod` twoPowS
+        k = (diff * invA) `Prelude.mod` twoPowS
+     in fromConstant (k * aOrder + n)
 
 instance
   (Symbolic c, KnownFFA p r c, FromConstant a (Zp p))
@@ -165,8 +165,14 @@ valueFFA
 valueFFA (Par1 ni :*: ui) =
   let n = toIntegral (at ni :: WitnessField c)
       u = natural @c @(FFAUIntSize p (Order a)) @r ui
-      k = (u - n) * fromConstant (bezoutFFA @p @(Order a))
-   in k * fromConstant (order @a) + n
+      -- k*|a| ≡ (u - n) (mod 2^s) with 2^s where s = FFAUIntSize p (Order a)
+      sBits = Prelude.fromIntegral (value @(FFAUIntSize p (Order a)))
+      twoPowS = 1 `shiftL` sBits
+      bez :: Integer
+      bez = bezoutR twoPowS (fromConstant (order @a))
+      diff = (u - n) `mod` fromConstant twoPowS
+      k = (diff * fromConstant bez) `mod` fromConstant twoPowS
+    in k * fromConstant (order @a) + n
 
 layoutFFA
   :: forall p r c a w
