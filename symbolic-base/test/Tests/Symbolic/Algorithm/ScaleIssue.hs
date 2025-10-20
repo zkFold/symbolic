@@ -45,7 +45,7 @@ specScaleIssue =
         hashResultMod = toConstant hashResultUIntMod -- I verified that it equals to the value computed manually.
         hashResultModFFA :: Scalar = fromUInt hashResultUIntMod
         hashResultModFFAConstant = toConstant hashResultModFFA -- Should be same as 'hashResultMod' but is not!
-        hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant  -- Also not same as hashResultModFFA.
+        hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant -- Also not same as hashResultModFFA.
         -- hpubKey' = (hashResultModFFA * privKey) `scale` g
         -- hpubKey = hashResultModFFA `scale` pubKey
         two :: Scalar = one + one
@@ -71,5 +71,7 @@ specScaleIssue =
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
     SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
     SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
-    SymAffine.affinePoint ((three * three * three * three) `scale` g) `shouldBe` SymAffine.affinePoint (nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG)
-    -- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
+    SymAffine.affinePoint ((three * three * three * three) `scale` g)
+      `shouldBe` SymAffine.affinePoint (nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG)
+
+-- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
