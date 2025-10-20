@@ -8,7 +8,8 @@ import Prelude (putStrLn, unlines, (<>))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (TwistedEdwards (..), pointGen)
 import ZkFold.Algebra.EllipticCurve.Jubjub (
-  Jubjub_Scalar, Fq,
+  Fq,
+  Jubjub_Scalar,
  )
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
