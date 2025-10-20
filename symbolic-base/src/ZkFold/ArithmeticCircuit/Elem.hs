@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.ArithmeticCircuit.Experimental where
+module ZkFold.ArithmeticCircuit.Elem where
 
 import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
@@ -25,10 +25,9 @@ import Data.Ord (Ord (..))
 import Data.Semigroup (Semigroup, (<>))
 import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
 import qualified Data.Set as S
-import Data.Traversable (traverse)
+import Data.Traversable (Traversable, traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
-import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
 import Optics (zoom)
 import Prelude (error)
@@ -95,10 +94,7 @@ newtype Polynomial a v = MkPolynomial
 
 --------------- Type-preserving lookup constraint representation ---------------
 
-data LookupEntry v
-  = forall f.
-    (Functor f, Foldable f, NFData1 f, Typeable f) =>
-    LEntry (f v) (LookupTable f)
+data LookupEntry v = forall f. Traversable f => LEntry (f v) (LookupTable f)
 
 ------------- Box of constraints supporting efficient concatenation ------------
 

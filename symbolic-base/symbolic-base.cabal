@@ -130,6 +130,7 @@ library
       ZkFold.Algebra.EllipticCurve.PlutoEris
       ZkFold.Algebra.EllipticCurve.Secp256k1
       ZkFold.Algebra.Polynomial.Multivariate
+      ZkFold.Algebra.Polynomial.Multivariate.Expression
       ZkFold.Algebra.Polynomial.Multivariate.Groebner
       ZkFold.Algebra.Polynomial.Multivariate.Monomial
       ZkFold.Algebra.Polynomial.Multivariate.Internal
@@ -145,8 +146,10 @@ library
       ZkFold.ArithmeticCircuit.Children
       ZkFold.ArithmeticCircuit.Context
       ZkFold.ArithmeticCircuit.Desugaring
-      ZkFold.ArithmeticCircuit.Experimental
+      ZkFold.ArithmeticCircuit.Elem
       ZkFold.ArithmeticCircuit.MerkleHash
+      ZkFold.ArithmeticCircuit.Node
+      ZkFold.ArithmeticCircuit.Op
       ZkFold.ArithmeticCircuit.Optimization
       ZkFold.ArithmeticCircuit.Var
       ZkFold.ArithmeticCircuit.Witness
@@ -319,6 +322,7 @@ library
         deepseq                          <= 1.6.0.0,
         distributive                               ,
         generic-random                        < 1.6,
+        hashtables                                 ,
         infinite-list                              ,
         lens                                       ,
         monoidal-containers                        ,
@@ -357,6 +361,7 @@ library
         deepseq                          <= 1.6.0.0,
         distributive                               ,
         generic-random                        < 1.6,
+        hashtables                                 ,
         infinite-list                              ,
         lens                                       ,
         monoidal-containers                        ,
@@ -376,7 +381,7 @@ library
         vector                               < 0.14,
         vector-binary-instances               < 0.3,
         vector-split                          < 1.1,
-        openapi3                                    ,
+        openapi3                                   ,
     hs-source-dirs: src
     if arch(wasm32)
         ghc-options: 
