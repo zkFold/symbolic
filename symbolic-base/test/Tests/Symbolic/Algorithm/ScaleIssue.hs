@@ -8,7 +8,6 @@ import Prelude (putStrLn, unlines, (<>))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen, TwistedEdwards (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (
-  Fl,
   Jubjub_Scalar, Fq,
  )
 import ZkFold.Symbolic.Data.Combinators
@@ -29,6 +28,7 @@ specScaleIssue =
     let g = pointGen @Point
         privKey :: Scalar = one
         pubKey :: Point = privKey `scale` g
+        coef = order @Scalar
     putStrLn $
       unlines
         [ "g = " <> show (SymAffine.affinePoint g)
@@ -37,3 +37,4 @@ specScaleIssue =
         ]
     SymAffine.affinePoint pubKey `shouldBe` SymAffine.affinePoint g
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
+    SymAffine.affinePoint (coef `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
