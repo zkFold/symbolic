@@ -48,9 +48,6 @@ specScaleIssue =
         hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant -- Also not same as hashResultModFFA.
         -- hpubKey' = (hashResultModFFA * privKey) `scale` g
         -- hpubKey = hashResultModFFA `scale` pubKey
-        two :: Scalar = one + one
-        three :: Scalar = two + one
-        nineG = g + g + g + g + g + g + g + g + g
     putStrLn $
       unlines
         [ "g = " <> show (SymAffine.affinePoint g)
@@ -71,7 +68,3 @@ specScaleIssue =
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
     SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
     SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
-    SymAffine.affinePoint ((three * three * three * three) `scale` g)
-      `shouldBe` SymAffine.affinePoint (nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG)
-
--- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
