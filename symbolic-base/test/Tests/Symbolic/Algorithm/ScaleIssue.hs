@@ -11,15 +11,15 @@ import ZkFold.Algebra.EllipticCurve.Jubjub (
   Fq,
   Jubjub_Scalar,
  )
+import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA (FFA, fromUInt)
-import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
-import ZkFold.Symbolic.Class (Symbolic(..))
 import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.Interpreter (Interpreter)
 
 type I = Interpreter Fq
 
@@ -65,4 +65,5 @@ specScaleIssue =
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
     SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
     SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
-    -- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
+
+-- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
