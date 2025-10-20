@@ -39,14 +39,18 @@ specScaleIssue =
         -- orderFFAViaUInt :: Scalar = fromUInt (fromConstant orderNatural)
         hashResult :: FieldElement I = MiMC.hash g
         hashResultUInt :: UInt (NumberOfBits (BaseField I)) 'Auto I = from hashResult
-        hashResultUIntMod = hashResultUInt `mod` orderUInt
         hashResultC1 = toConstant hashResult
-        hashResultC2 = toConstant hashResultUInt -- 'hashResultC1' is same as 'hashResultC2' and is also equal to the actual value computed manually, so UInt <-> FE conversation is likely correct.
-        hashResultMod = toConstant hashResultUIntMod
+        hashResultC2 = toConstant hashResultUInt -- 'hashResultC1' is same as 'hashResultC2', so UInt <-> FE conversation is likely correct.
+        hashResultUIntMod = hashResultUInt `mod` orderUInt
+        hashResultMod = toConstant hashResultUIntMod -- I verified that it equals to the value computed manually.
         hashResultModFFA :: Scalar = fromUInt hashResultUIntMod
-        hashResultModFFAConstant = toConstant hashResultModFFA -- Should be same as 'hashResultMod'
+        hashResultModFFAConstant = toConstant hashResultModFFA -- Should be same as 'hashResultMod' but is not!
+        hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant  -- Also not same as hashResultModFFA.
         -- hpubKey' = (hashResultModFFA * privKey) `scale` g
         -- hpubKey = hashResultModFFA `scale` pubKey
+        two :: Scalar = one + one
+        three :: Scalar = two + one
+        nineG = g + g + g + g + g + g + g + g + g
     putStrLn $
       unlines
         [ "g = " <> show (SymAffine.affinePoint g)
@@ -60,9 +64,12 @@ specScaleIssue =
         , "hashResultC2 = " <> show hashResultC2
         , "hashResultMod = " <> show hashResultMod
         , "hashResultModFFAConstant = " <> show hashResultModFFAConstant -- Not same as 'hashResultMod'!
+        , "hashResultModFFA " <> show hashResultModFFA
+        , "hashResultModFFART " <> show hashResultModFFART
         ]
     SymAffine.affinePoint pubKey `shouldBe` SymAffine.affinePoint g
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
     SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
     SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
+    SymAffine.affinePoint ((three * three * three * three) `scale` g) `shouldBe` SymAffine.affinePoint (nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG + nineG)
     -- SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
