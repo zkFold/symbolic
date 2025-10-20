@@ -28,12 +28,17 @@ specScaleIssue =
     let g = pointGen @Point
         privKey :: Scalar = one
         pubKey :: Point = privKey `scale` g
+        orderNatural = order @Scalar
+        orderFFA :: Scalar = fromConstant orderNatural
     putStrLn $
       unlines
         [ "g = " <> show (SymAffine.affinePoint g)
         , "privKey = " <> show privKey
         , "pubKey = " <> show (SymAffine.affinePoint pubKey)
+        , "orderNatural = " <> show orderNatural
+        , "orderFFA = " <> show orderFFA
         ]
     SymAffine.affinePoint pubKey `shouldBe` SymAffine.affinePoint g
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
-    SymAffine.affinePoint ((order @Scalar) `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
+    SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
+    SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
