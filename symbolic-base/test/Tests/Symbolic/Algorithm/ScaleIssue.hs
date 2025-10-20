@@ -6,10 +6,10 @@ import Text.Show (show)
 import Prelude (putStrLn, unlines, (<>))
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.Class (pointGen)
+import ZkFold.Algebra.EllipticCurve.Class (pointGen, TwistedEdwards (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (
   Fl,
-  Jubjub_Scalar,
+  Jubjub_Scalar, Fq,
  )
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
@@ -17,7 +17,7 @@ import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA (FFA)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 
-type I = Interpreter Fl -- The test works for `Fq` but fails for `Fl`.
+type I = Interpreter Fq
 
 type Point = Jubjub_Point I
 
@@ -36,3 +36,4 @@ specScaleIssue =
         , "pubKey = " <> show (SymAffine.affinePoint pubKey)
         ]
     SymAffine.affinePoint pubKey `shouldBe` SymAffine.affinePoint g
+    SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
