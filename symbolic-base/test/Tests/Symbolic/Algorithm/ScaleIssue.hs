@@ -44,8 +44,8 @@ specScaleIssue =
         hashResultUIntMod = hashResultUInt `mod` orderUInt
         hashResultMod = toConstant hashResultUIntMod -- I verified that it equals to the value computed manually.
         hashResultModFFA :: Scalar = fromUInt hashResultUIntMod
-        hashResultModFFAConstant = toConstant hashResultModFFA -- Should be same as 'hashResultMod' but is not!
-        hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant -- Also not same as hashResultModFFA.
+        hashResultModFFAConstant = toConstant hashResultModFFA -- Should be same as 'hashResultMod'. But was not until the accompanying change in ZkFold.Symbolic.Data.FFA module.
+        hashResultModFFART :: Scalar = fromConstant hashResultModFFAConstant -- Likewise, round-trip was failing earlier.
         hpubKey' = (hashResultModFFA * privKey) `scale` g
         hpubKey = hashResultModFFA `scale` pubKey
     putStrLn $
@@ -70,4 +70,5 @@ specScaleIssue =
     SymAffine.affinePoint (((one :: Scalar) + one + one) `scale` g) `shouldBe` SymAffine.affinePoint (g + g + g)
     SymAffine.affinePoint (orderNatural `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
     SymAffine.affinePoint (orderFFA `scale` g) `shouldBe` SymAffine.affinePoint (zero :: Point)
-    SymAffine.affinePoint (hpubKey) `shouldBe` SymAffine.affinePoint (hpubKey')
+    hashResultModFFA `shouldBe` hashResultModFFART
+    SymAffine.affinePoint hpubKey `shouldBe` SymAffine.affinePoint hpubKey'
