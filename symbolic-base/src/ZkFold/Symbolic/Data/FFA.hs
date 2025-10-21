@@ -115,25 +115,26 @@ instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
 
 deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
+integralFromFFA
+  :: forall p n f
+   . (PrimeField f, KnownNat (FFAUIntSize p n))
+  => f -> IntegralOf f -> IntegralOf f
+integralFromFFA (toIntegral -> n) u =
+  let -- x = k |f| + n = l * 2^s + u
+      -- k |f| - l * 2^s = u - n
+      -- k = (u - n) * |f|^(-1) (mod 2^s)
+      intSize = 1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n))
+      aInv = bezoutR @Integer intSize $ fromConstant (order @f)
+      k = ((u - n) * fromConstant aInv) `mod` fromConstant intSize
+   in k * fromConstant (order @f) + n
+
 instance
   (Arithmetic a, KnownFFA p r (Interpreter a))
   => ToConstant (FFA p r (Interpreter a))
   where
   type Const (FFA p r (Interpreter a)) = Zp p
-  toConstant (FFA nx (UIntFFA ux)) =
-    let n = fromConstant (toConstant (toConstant nx))
-        u = fromConstant (toConstant ux) :: Integer
-        -- x = k|a| + n = l*2^s + u
-        -- k|a| - l*2^s = u - n
-        -- We need k such that k*|a| ≡ (u - n) (mod 2^s), i.e. multiply by inv(|a|) mod 2^s
-        sBits = Prelude.fromIntegral (value @(FFAUIntSize p (Order a)))
-        twoPowS = 1 `shiftL` sBits
-        aOrder :: Integer
-        aOrder = fromConstant (order @a)
-        invA = bezoutR twoPowS aOrder
-        diff = (u - n) `Prelude.mod` twoPowS
-        k = (diff * invA) `Prelude.mod` twoPowS
-     in fromConstant (k * aOrder + n)
+  toConstant (FFA (toConstant -> nx) (UIntFFA (toConstant -> ux))) =
+    fromConstant $ integralFromFFA @p @(Order a) nx (fromConstant ux)
 
 instance
   (Symbolic c, KnownFFA p r c, FromConstant a (Zp p))
@@ -162,17 +163,8 @@ valueFFA
    . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c)
   => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i
   -> IntegralOf (WitnessField c)
-valueFFA (Par1 ni :*: ui) =
-  let n = toIntegral (at ni :: WitnessField c)
-      u = natural @c @(FFAUIntSize p (Order a)) @r ui
-      -- k*|a| ≡ (u - n) (mod 2^s) with 2^s where s = FFAUIntSize p (Order a)
-      sBits = Prelude.fromIntegral (value @(FFAUIntSize p (Order a)))
-      twoPowS = 1 `shiftL` sBits
-      bez :: Integer
-      bez = bezoutR twoPowS (fromConstant (order @a))
-      diff = (u - n) `mod` fromConstant twoPowS
-      k = (diff * fromConstant bez) `mod` fromConstant twoPowS
-   in k * fromConstant (order @a) + n
+valueFFA (Par1 (at -> ni) :*: (natural @c @(FFAUIntSize p (Order a)) @r -> ui)) =
+  integralFromFFA @p @(Order a) ni ui
 
 layoutFFA
   :: forall p r c a w
