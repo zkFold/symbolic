@@ -1,8 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
@@ -73,6 +69,9 @@ instance
   , KnownRegistersAssetQuantity context
   )
   => Eq (Output a context)
+
+instance Symbolic context => Hashable (HashSimple context) (Output a context) where
+  hasher = Poseidon.hash
 
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
