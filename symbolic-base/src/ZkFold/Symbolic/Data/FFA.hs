@@ -120,13 +120,15 @@ integralFromFFA
    . (PrimeField f, KnownNat (FFAUIntSize p n))
   => f -> IntegralOf f -> IntegralOf f
 integralFromFFA (toIntegral -> n) u =
-  let -- x = k |f| + n = l * 2^s + u
-      -- k |f| - l * 2^s = u - n
-      -- k = (u - n) * |f|^(-1) (mod 2^s)
-      intSize = 1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n))
-      aInv = bezoutR @Integer intSize $ fromConstant (order @f)
-      k = ((u - n) * fromConstant aInv) `mod` fromConstant intSize
-   in k * fromConstant (order @f) + n
+  let
+    -- x = k |f| + n = l * 2^s + u
+    -- k |f| - l * 2^s = u - n
+    -- k = (u - n) * |f|^(-1) (mod 2^s)
+    intSize = 1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n))
+    aInv = bezoutR @Integer intSize $ fromConstant (order @f)
+    k = ((u - n) * fromConstant aInv) `mod` fromConstant intSize
+   in
+    k * fromConstant (order @f) + n
 
 instance
   (Arithmetic a, KnownFFA p r (Interpreter a))
