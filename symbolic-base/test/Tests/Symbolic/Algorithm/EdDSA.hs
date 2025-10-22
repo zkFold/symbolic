@@ -40,8 +40,8 @@ specEdDSA = describe "EdDSA verification (Jubjub, MiMC Hash)" $ do
       forAll (fromConstant <$> toss (value @Jubjub_Base)) $ \(msg :: FieldElement I) -> do
         let (rPoint :*: s) = eddsaSign MiMC.hash privKey msg
             pubKey = privKey `scale` g
-            ok = eddsaVerify MiMC.hash pubKey msg (rPoint :*: s)
             rAffine = SymAffine.affinePoint rPoint
         counterexample ("\nrPoint = " <> show rAffine <> "\ns = " <> show s) $
-          ok === true
+          eddsaVerify MiMC.hash pubKey msg (rPoint :*: s) === true
             .&. eddsaVerify MiMC.hash pubKey msg (rPoint :*: (s + one)) === false
+            .&. eddsaVerify MiMC.hash pubKey (msg + one) (rPoint :*: s) === false
