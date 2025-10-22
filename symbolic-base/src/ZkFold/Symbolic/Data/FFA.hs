@@ -401,14 +401,14 @@ unsafeFromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 fromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
-  => (KnownNat n)
+  => KnownNat n
   => UInt n r c
   -> FFA p r c
 fromUInt ux =
   let
     uWide = resize ux
     m :: UInt (FFAMaxBits p c) r c = fromConstant (value @p)
-  in
+   in
     unsafeFromUInt $ mod uWide m
 
 -- | __NOTE__: This function assumes that the given 'Int' is in the range of the field. Use 'fromInt' instead if you need to perform a modulo operation (by order of field) on the 'Int'.
@@ -419,16 +419,16 @@ unsafeFromInt
   -> FFA p r c
 unsafeFromInt ix =
   let uxFFA = unsafeFromUInt (uint ix)
-  in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 fromInt
   :: (Symbolic c, KnownFFA p r c)
-  => (KnownNat n)
+  => KnownNat n
   => Int n r c
   -> FFA p r c
-fromInt ix = 
+fromInt ix =
   let uxFFA = fromUInt (uint ix)
-  in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 toUInt
   :: forall n p r c

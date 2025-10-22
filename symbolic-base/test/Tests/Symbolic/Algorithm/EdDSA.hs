@@ -13,8 +13,9 @@ import Prelude ((<>))
 import Tests.Common (it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Scalar, Fq)
+import ZkFold.Algebra.EllipticCurve.Jubjub (Fq, Jubjub_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign, eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
@@ -23,7 +24,6 @@ import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA (FFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (Interpreter)
-import ZkFold.Data.Bool (BoolType(..))
 
 type I = Interpreter Fq
 
