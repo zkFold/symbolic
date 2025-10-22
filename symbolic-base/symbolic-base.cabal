@@ -383,6 +383,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Algorithm.EdDSA
       Tests.Symbolic.Algorithm.Poseidon
       Tests.Symbolic.Algorithm.RSA
+      Tests.Symbolic.Algorithm.ScaleIssue
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit
       Tests.Symbolic.Compiler
