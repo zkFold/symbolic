@@ -13,7 +13,7 @@ import Prelude ((<>))
 import Tests.Common (it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub (Fq, Jubjub_Scalar)
+import ZkFold.Algebra.EllipticCurve.Jubjub (Fq, Jubjub_Scalar, Jubjub_Base)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign, eddsaVerify)
@@ -36,13 +36,12 @@ specEdDSA :: Spec
 specEdDSA = describe "EdDSA verification (Jubjub, MiMC Hash)" $ do
   it "verifies a correctly formed signature, and denies tampered signatures" $ do
     let g = pointGen @Point
-        p = value @Jubjub_Scalar
-    forAll (fromConstant <$> toss p) $ \(privKey :: Scalar) -> do
-      let msg = zero :: FieldElement I
-          (rPoint :*: s) = eddsaSign MiMC.hash privKey msg
-          pubKey = privKey `scale` g
-          ok = eddsaVerify MiMC.hash pubKey msg (rPoint :*: s)
-          rAffine = SymAffine.affinePoint rPoint
-      counterexample ("\nrPoint = " <> show rAffine <> "\ns = " <> show s) $
-        ok === true
-          .&. eddsaVerify MiMC.hash pubKey msg (rPoint :*: (s + one)) === false
+    forAll (fromConstant <$> toss (value @Jubjub_Scalar)) $ \(privKey :: Scalar) -> do
+      forAll (fromConstant <$> toss (value @Jubjub_Base)) $ \(msg :: FieldElement I) -> do
+        let (rPoint :*: s) = eddsaSign MiMC.hash privKey msg
+            pubKey = privKey `scale` g
+            ok = eddsaVerify MiMC.hash pubKey msg (rPoint :*: s)
+            rAffine = SymAffine.affinePoint rPoint
+        counterexample ("\nrPoint = " <> show rAffine <> "\ns = " <> show s) $
+          ok === true
+            .&. eddsaVerify MiMC.hash pubKey msg (rPoint :*: (s + one)) === false
