@@ -13,7 +13,7 @@ import Prelude ((<>))
 import Tests.Common (it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (pointGen)
-import ZkFold.Algebra.EllipticCurve.Jubjub (Fq, Jubjub_Scalar, Jubjub_Base)
+import ZkFold.Algebra.EllipticCurve.Jubjub (Fq, Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign, eddsaVerify)
