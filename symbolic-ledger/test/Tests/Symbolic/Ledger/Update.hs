@@ -22,7 +22,7 @@ import GHC.Natural (Natural)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup(..))
 import Data.Function ((&))
 import qualified ZkFold.Symbolic.Data.Hash as Base
-import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdate)
+import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateEither)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 
 type I = Interpreter Fq
@@ -88,8 +88,9 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
 
         newState :*: witness = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
-    Haskell.print $ Haskell.show newState
+    Haskell.putStrLn $ "prevState: " Haskell.<> Haskell.show prevState
+    Haskell.putStrLn $ "newState: " Haskell.<> Haskell.show newState
     -- TODO: Hard code new state.
     sLength newState `shouldBe` (one :: FieldElement I)
-    -- validateStateUpdate prevState batch newState witness `shouldBe` true
+    validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
 
