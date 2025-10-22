@@ -22,7 +22,6 @@ import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -175,10 +174,10 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && ifThenElse
                     (utxoHash == nullUTxOHash')
                     true
-                    ( Poseidon.hash publicKey
+                    ( hashFn publicKey
                         == utxo.uOutput.oAddress
                         && eddsaVerify
-                          Poseidon.hash
+                          hashFn
                           publicKey
                           txId'
                           (rPoint :*: s)

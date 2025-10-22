@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Hash where
 
@@ -15,6 +17,8 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.MonadCircuit (constraint)
+import ZkFold.Data.HFunctor.Classes (HShow)
+import qualified Prelude as Haskell
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;
@@ -36,6 +40,8 @@ data Hash h a c = Hash
 instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
 instance (Symbolic c, SymbolicEq h c) => Eq (Hash h a c)
+
+deriving stock instance (Haskell.Show (h c), HShow c, Haskell.Show (Payloaded Identity a c)) => Haskell.Show (Hash h a c)
 
 -- | Restorably hash the data.
 hash :: (Hashable (h c) (a c), SymbolicData a, Symbolic c) => a c -> Hash h a c

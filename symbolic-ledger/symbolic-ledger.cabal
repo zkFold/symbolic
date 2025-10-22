@@ -123,7 +123,6 @@ test-suite symbolic-ledger-test
     "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
 
   other-modules:
-    Main
     Tests.Symbolic.Ledger.Update
 
   build-depends:
