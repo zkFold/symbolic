@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt, fromUInt) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -115,25 +115,28 @@ instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
 
 deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
 
-bezoutFFA
-  :: forall p n. (KnownNat p, KnownNat (FFAUIntSize p n)) => Integer
-bezoutFFA =
-  bezoutR
-    (1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n)))
-    (fromConstant $ value @p)
+integralFromFFA
+  :: forall p n f
+   . (PrimeField f, KnownNat (FFAUIntSize p n))
+  => f -> IntegralOf f -> IntegralOf f
+integralFromFFA (toIntegral -> n) u =
+  let
+    -- x = k |f| + n = l * 2^s + u
+    -- k |f| - l * 2^s = u - n
+    -- k = (u - n) * |f|^(-1) (mod 2^s)
+    intSize = 1 `shiftL` Prelude.fromIntegral (value @(FFAUIntSize p n))
+    aInv = bezoutR @Integer intSize $ fromConstant (order @f)
+    k = ((u - n) * fromConstant aInv) `mod` fromConstant intSize
+   in
+    k * fromConstant (order @f) + n
 
 instance
   (Arithmetic a, KnownFFA p r (Interpreter a))
   => ToConstant (FFA p r (Interpreter a))
   where
   type Const (FFA p r (Interpreter a)) = Zp p
-  toConstant (FFA nx (UIntFFA ux)) =
-    let n = fromConstant (toConstant (toConstant nx))
-        u = fromConstant (toConstant ux) :: Integer
-        -- x = k|a| + n = l*2^s + u
-        -- k|a| - l*2^s = u - n
-        k = (u - n) * bezoutFFA @p @(Order a)
-     in fromConstant (k * fromConstant (order @a) + n)
+  toConstant (FFA (toConstant -> nx) (UIntFFA (toConstant -> ux))) =
+    fromConstant $ integralFromFFA @p @(Order a) nx (fromConstant ux)
 
 instance
   (Symbolic c, KnownFFA p r c, FromConstant a (Zp p))
@@ -162,11 +165,8 @@ valueFFA
    . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c)
   => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i
   -> IntegralOf (WitnessField c)
-valueFFA (Par1 ni :*: ui) =
-  let n = toIntegral (at ni :: WitnessField c)
-      u = natural @c @(FFAUIntSize p (Order a)) @r ui
-      k = (u - n) * fromConstant (bezoutFFA @p @(Order a))
-   in k * fromConstant (order @a) + n
+valueFFA (Par1 (at -> ni) :*: (natural @c @(FFAUIntSize p (Order a)) @r -> ui)) =
+  integralFromFFA @p @(Order a) ni ui
 
 layoutFFA
   :: forall p r c a w
@@ -387,22 +387,48 @@ instance Finite (Zp p) => Finite (FFA p r c) where
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c
   binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
-  fromBinary = fromUInt @(NumberOfBits (Zp p)) . from
+  fromBinary = unsafeFromUInt @(NumberOfBits (Zp p)) . from
 
-fromUInt
+-- | __NOTE__: This function assumes that the given 'UInt' is in the range of the field. Use 'fromUInt' instead if you need to perform a modulo operation (by order of field) on the 'UInt'.
+unsafeFromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => UInt n r c
   -> FFA p r c
-fromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
+unsafeFromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 
-fromInt
+fromUInt
+  :: forall n p r c
+   . (Symbolic c, KnownFFA p r c)
+  => KnownNat n
+  => UInt n r c
+  -> FFA p r c
+fromUInt ux =
+  let
+    uWide = resize ux
+    m :: UInt (FFAMaxBits p c) r c = fromConstant (value @p)
+   in
+    unsafeFromUInt $ mod uWide m
+
+-- | __NOTE__: This function assumes that the given 'Int' is in the range of the field. Use 'fromInt' instead if you need to perform a modulo operation (by order of field) on the 'Int'.
+unsafeFromInt
   :: (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => Int n r c
   -> FFA p r c
-fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
+unsafeFromInt ix =
+  let uxFFA = unsafeFromUInt (uint ix)
+   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+
+fromInt
+  :: (Symbolic c, KnownFFA p r c)
+  => KnownNat n
+  => Int n r c
+  -> FFA p r c
+fromInt ix =
+  let uxFFA = fromUInt (uint ix)
+   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 toUInt
   :: forall n p r c
@@ -432,7 +458,7 @@ toUInt x = uy
   -- \| Constraints:
   -- \* UInt registers are indeed registers;
   -- \* casting back yields source residues.
-  Bool ck = isValid us && fromUInt us == x
+  Bool ck = isValid us && unsafeFromUInt us == x
   -- \| Sew constraints into result.
   uy =
     restore

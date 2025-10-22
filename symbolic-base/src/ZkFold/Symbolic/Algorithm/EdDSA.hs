@@ -7,7 +7,6 @@
 module ZkFold.Symbolic.Algorithm.EdDSA (
   eddsaVerify,
   eddsaSign,
-  scalarFieldFromFE,
 ) where
 
 import Data.Coerce (coerce)
@@ -18,13 +17,12 @@ import Prelude (($))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
-import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Class (Symbolic (..))
 import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), Resize (..))
+import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -102,6 +100,7 @@ eddsaSign hashFn privKey message =
   rPoint = r `scale` g
   h = scalarFieldFromFE $ hashFn (rPoint :*: publicKey :*: message)
 
+-- | __NOTE__: This function assumes that the given field element is in base field.
 scalarFieldFromFE
   :: forall p c
    . ( Symbolic c
@@ -111,7 +110,5 @@ scalarFieldFromFE
 scalarFieldFromFE fe =
   let
     u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
-    uWide = resize u
-    m :: UInt (FFAMaxBits p c) 'Auto c = fromConstant (value @p)
    in
-    fromUInt $ mod uWide m
+    fromUInt u
