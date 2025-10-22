@@ -25,8 +25,6 @@ import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (Iso (..))
-import ZkFold.Symbolic.Data.FFA (fromUInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
@@ -38,7 +36,7 @@ import ZkFold.Symbolic.Ledger.Types
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
-  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: EdDSAPoint)) context
+  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
@@ -180,12 +178,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     ( Poseidon.hash publicKey
                         == utxo.uOutput.oAddress
                         && eddsaVerify
-                          ( \rPoint' publicKey' m ->
-                              fromUInt
-                                ( from
-                                    (Poseidon.hash (rPoint' :*: publicKey' :*: m))
-                                )
-                          )
+                          Poseidon.hash
                           publicKey
                           txId'
                           (rPoint :*: s)
