@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 module Tests.Symbolic.Algorithm.EdDSA (specEdDSA) where
 
 import Data.Function (($))
