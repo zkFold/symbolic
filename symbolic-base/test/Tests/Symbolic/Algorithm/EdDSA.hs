@@ -44,4 +44,5 @@ specEdDSA = describe "EdDSA verification (Jubjub, MiMC Hash)" $ do
         counterexample ("\nrPoint = " <> show rAffine <> "\ns = " <> show s) $
           eddsaVerify MiMC.hash pubKey msg (rPoint :*: s) === true
             .&. eddsaVerify MiMC.hash pubKey msg (rPoint :*: (s + one)) === false
+            .&. eddsaVerify MiMC.hash pubKey msg (((one + one :: Scalar) `scale` rPoint) :*: s) === false
             .&. eddsaVerify MiMC.hash pubKey (msg + one) (rPoint :*: s) === false
