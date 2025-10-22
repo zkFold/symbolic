@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.MerkleTree (
   MerkleTree,
@@ -47,7 +48,7 @@ import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType, Conditional, assert, bool, (||))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
@@ -130,6 +131,8 @@ data MerkleEntry d c = MerkleEntry
   }
   deriving (Generic1, SymbolicData, SymbolicInput)
 
+deriving stock instance (HShow c) => P.Show (MerkleEntry d c)
+
 contains
   :: forall d c
    . (Symbolic c, KnownNat (d - 1))
@@ -193,9 +196,10 @@ search pred tree =
           let (l, r) = bisect v
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
+              goRight = ifThenElse isL false isR
            in ( isL || isR
-              , isR : zipWith (ifThenElse isR) ri li
-              , ifThenElse isR rx lx
+              , goRight : zipWith (ifThenElse goRight) ri li
+              , ifThenElse goRight rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
