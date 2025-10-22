@@ -5,6 +5,7 @@
 //!
 //! Run with: `cargo bench --bench halo2_circuit_bench`
 
+use blake2b_simd::{Params, State};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use halo2_proofs::{
     plonk::{create_proof, keygen_pk, keygen_vk_with_k},
@@ -13,7 +14,6 @@ use halo2_proofs::{
 };
 use halo2curves::bls12381::{Bls12381, Fr};
 use halo2curves::ff::FromUniformBytes;
-use blake2b_simd::{Params, State};
 use rand::rngs::OsRng;
 use rust_wrapper::halo2::PlonkupCircuit;
 
@@ -24,7 +24,7 @@ fn hash_to_field(data: &[u8]) -> Fr {
         .to_state()
         .update(data)
         .finalize();
-    
+
     // Convert hash to field element
     Fr::from_uniform_bytes(hash.as_array())
 }
@@ -47,26 +47,26 @@ fn create_test_circuit(num_constraints: usize) -> PlonkupCircuit<Fr> {
             // Subsequent rows: w1[i] = w3[i-1]
             circuit.witness.w3[i - 1]
         };
-        
+
         let w2 = hash_to_field(seed_b.as_bytes());
         let constant = hash_to_field(seed_const.as_bytes());
         let w3 = w1 * w2 + constant; // Multiplication result plus constant
-        
+
         circuit.witness.w1[i] = w1;
         circuit.witness.w2[i] = w2;
         circuit.witness.w3[i] = w3;
-        
+
         // Set selectors for multiplication gate with constant: qM * w1 * w2 + qO * w3 + qC = 0
-        circuit.selectors.q_mul[i] = Fr::from(1);        // Enable multiplication
-        circuit.selectors.q_output[i] = -Fr::from(1);    // Subtract output
-        circuit.selectors.q_const[i] = constant;         // Constant term
-        
+        circuit.selectors.q_mul[i] = Fr::from(1); // Enable multiplication
+        circuit.selectors.q_output[i] = -Fr::from(1); // Subtract output
+        circuit.selectors.q_const[i] = constant; // Constant term
+
         // Add copy constraint for rows 1 and onwards: w3[i-1] = w1[i]
         if i > 0 {
             circuit.add_copy_constraint(2, i - 1, 0, i);
         }
     }
-    
+
     circuit
 }
 
@@ -76,7 +76,7 @@ fn calculate_k_parameter(circuit_size: usize) -> u32 {
     let blinding_overhead = 8; // 7 blinding_factors
     let min_total_rows = circuit_size + blinding_overhead;
     let k = (min_total_rows as f64).log2().ceil() as u32;
-    
+
     // Ensure minimum k=4 (16 usable rows)
     k.max(4)
 }
@@ -85,35 +85,33 @@ fn calculate_k_parameter(circuit_size: usize) -> u32 {
 fn bench_halo2_proving(c: &mut Criterion) {
     let mut group = c.benchmark_group("halo2_proving");
     group.sample_size(10); // Minimum sample size required by Criterion
-    
+
     // Test realistic circuit sizes: 2^12 to 2^18 constraints
     let constraint_counts = vec![
-        1 << 12,  // 4,096 constraints
-        1 << 13,  // 8,192 constraints  
-        1 << 14,  // 16,384 constraints
-        1 << 15,  // 32,768 constraints
-        1 << 16,  // 65,536 constraints
-        1 << 17,  // 131,072 constraints
-        1 << 18,  // 262,144 constraints
+        1 << 12, // 4,096 constraints
+        1 << 13, // 8,192 constraints
+        1 << 14, // 16,384 constraints
+        1 << 15, // 32,768 constraints
+        1 << 16, // 65,536 constraints
     ];
-    
+
     for &num_constraints in &constraint_counts {
         group.throughput(Throughput::Elements(num_constraints as u64));
-        
+
         group.bench_with_input(
             BenchmarkId::new("constraints", num_constraints),
             &num_constraints,
             |b, &size| {
                 let circuit = create_test_circuit(size);
                 let k = calculate_k_parameter(size);
-                
+
                 // Setup phase (not measured)
                 let params = ParamsKZG::<Bls12381>::unsafe_setup(k, OsRng);
-                let vk = keygen_vk_with_k::<_, KZGCommitmentScheme<Bls12381>, _>(&params, &circuit, k)
-                    .expect("Failed to generate verification key");
-                let pk = keygen_pk(vk.clone(), &circuit)
-                    .expect("Failed to generate proving key");
-                
+                let vk =
+                    keygen_vk_with_k::<_, KZGCommitmentScheme<Bls12381>, _>(&params, &circuit, k)
+                        .expect("Failed to generate verification key");
+                let pk = keygen_pk(vk.clone(), &circuit).expect("Failed to generate proving key");
+
                 b.iter(|| {
                     // Create proof
                     let mut transcript = CircuitTranscript::<State>::init();
@@ -125,20 +123,18 @@ fn bench_halo2_proving(c: &mut Criterion) {
                         &[&empty_instances[..]],
                         OsRng,
                         &mut transcript,
-                    ).expect("Failed to create proof");
+                    )
+                    .expect("Failed to create proof");
                     let proof = transcript.finalize();
                     black_box(proof);
                 });
             },
         );
     }
-    
+
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_halo2_proving
-);
+criterion_group!(benches, bench_halo2_proving);
 
 criterion_main!(benches);

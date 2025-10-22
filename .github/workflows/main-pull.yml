@@ -99,6 +99,9 @@ jobs:
     - name: Benchmark compiler performance
       run: cabal bench bench-compiler-performance
 
+    - name: Benchmark experimental compiler performance
+      run: cabal bench experimental-backend
+
     - name: Benchmark polynomial multiplication
       run: cabal bench bench-poly-mul
 
@@ -107,6 +110,12 @@ jobs:
 
     - name: Benchmark Lagrange basis computation
       run: cabal bench bench-lagrange-basis
+
+    - name: Benchmark Rust code
+      run: |
+        cd symbolic-base/rust-wrapper
+        cargo bench
+        cd ../..
 
     - name: Check cabal files
       run: |

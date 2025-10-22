@@ -3,11 +3,14 @@ module ZkFold.ArithmeticCircuit.Witness where
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (Monad (..), ap)
+import Data.Bool (Bool)
 import Data.Function (const, (.))
 import Data.Functor (Functor)
 import Data.Monoid (Monoid (..))
+import Data.Ord (Ordering (..))
 import Data.Semigroup (Semigroup (..))
 import GHC.Integer (Integer)
+import GHC.Real (odd)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
@@ -103,6 +106,10 @@ instance BoolType (BooleanF a v) where
   BooleanF f || BooleanF g = BooleanF (\x -> f x || g x)
   BooleanF f `xor` BooleanF g = BooleanF (\x -> f x `xor` g x)
 
+instance FromConstant Bool (BooleanF a v) where fromConstant = bool false true
+
+instance FromConstant Integer (BooleanF a v) where fromConstant x = fromConstant (odd x)
+
 newtype EuclideanF a v = EuclideanF {euclideanF :: forall w. IsWitness a w => (v -> w) -> IntegralOf w}
 
 instance FromConstant Natural (EuclideanF a v) where fromConstant x = EuclideanF (fromConstant x)
@@ -174,3 +181,18 @@ instance IsOrdering (OrderingF a v) where
   lt = OrderingF (const lt)
   eq = OrderingF (const eq)
   gt = OrderingF (const gt)
+
+instance FromConstant Ordering (OrderingF a v) where
+  fromConstant = \case
+    LT -> lt
+    EQ -> eq
+    GT -> gt
+
+intToOrdering :: Integer -> Ordering
+intToOrdering x = case x `mod` 3 of
+  0 -> EQ
+  1 -> GT
+  _ -> LT
+
+instance FromConstant Integer (OrderingF a v) where
+  fromConstant = fromConstant . intToOrdering
