@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, fromInt, fromUInt) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -387,22 +387,48 @@ instance Finite (Zp p) => Finite (FFA p r c) where
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c
   binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
-  fromBinary = fromUInt @(NumberOfBits (Zp p)) . from
+  fromBinary = unsafeFromUInt @(NumberOfBits (Zp p)) . from
 
-fromUInt
+-- | __NOTE__: This function assumes that the given 'UInt' is in the range of the field. Use 'fromUInt' instead if you need to perform a modulo operation (by order of field) on the 'UInt'.
+unsafeFromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => UInt n r c
   -> FFA p r c
-fromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
+unsafeFromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 
-fromInt
+fromUInt
+  :: forall n p r c
+   . (Symbolic c, KnownFFA p r c)
+  => (KnownNat n)
+  => UInt n r c
+  -> FFA p r c
+fromUInt ux =
+  let
+    uWide = resize ux
+    m :: UInt (FFAMaxBits p c) r c = fromConstant (value @p)
+  in
+    unsafeFromUInt $ mod uWide m
+
+-- | __NOTE__: This function assumes that the given 'Int' is in the range of the field. Use 'fromInt' instead if you need to perform a modulo operation (by order of field) on the 'Int'.
+unsafeFromInt
   :: (Symbolic c, KnownFFA p r c)
   => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
   => Int n r c
   -> FFA p r c
-fromInt ix = ifThenElse (isNegative ix) (negate (fromUInt (uint ix))) (fromUInt (uint ix))
+unsafeFromInt ix =
+  let uxFFA = unsafeFromUInt (uint ix)
+  in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+
+fromInt
+  :: (Symbolic c, KnownFFA p r c)
+  => (KnownNat n)
+  => Int n r c
+  -> FFA p r c
+fromInt ix = 
+  let uxFFA = fromUInt (uint ix)
+  in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 toUInt
   :: forall n p r c
@@ -432,7 +458,7 @@ toUInt x = uy
   -- \| Constraints:
   -- \* UInt registers are indeed registers;
   -- \* casting back yields source residues.
-  Bool ck = isValid us && fromUInt us == x
+  Bool ck = isValid us && unsafeFromUInt us == x
   -- \| Sew constraints into result.
   uy =
     restore

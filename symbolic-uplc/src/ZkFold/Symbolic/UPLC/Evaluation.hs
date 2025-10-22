@@ -34,7 +34,7 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), all, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString, dropN, reverseEndianness, truncate)
 import ZkFold.Symbolic.Data.Class (SymbolicData (HasRep))
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FFA (fromInt)
+import ZkFold.Symbolic.Data.FFA (unsafeFromInt)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Int (Int (..), isNegative, isNotNegative, quot, rem)
 import ZkFold.Symbolic.Data.List qualified as L
@@ -516,7 +516,7 @@ evalMono (BMFCurve fun) = case fun of
       FSat $ Symbolic.just @c (p + q)
     Bls12_381_G1_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G1_scalarMul -> fromConstant \i p ->
-      Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
+      Symbolic.just @c (unsafeFromInt @c @BLS12_381_Scalar i `scale` p)
     Bls12_381_G1_equal -> FLam \p -> FLam \q -> FSat $ Symbolic.just @c (p Symbolic.== q)
     Bls12_381_G1_hashToGroup -> error "TODO: hash to G1"
     Bls12_381_G1_compress -> error "TODO: compress G1"
@@ -525,7 +525,7 @@ evalMono (BMFCurve fun) = case fun of
     Bls12_381_G2_add -> fromConstant \p q -> Symbolic.just @c (p + q)
     Bls12_381_G2_neg -> fromConstant (Symbolic.just @c . negate)
     Bls12_381_G2_scalarMul -> fromConstant \i p ->
-      Symbolic.just @c (fromInt @c @BLS12_381_Scalar i `scale` p)
+      Symbolic.just @c (unsafeFromInt @c @BLS12_381_Scalar i `scale` p)
     Bls12_381_G2_equal -> FLam \p -> FLam \q ->
       FSat $ Symbolic.just (p Symbolic.== q)
     Bls12_381_G2_hashToGroup -> error "TODO: hash to G2"
