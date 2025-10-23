@@ -101,20 +101,20 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
     -- Now let's try to use this newly created output.
-    let 
-        tx2 :: Transaction Ixs Oxs A I
-        tx2 =
-          Transaction
-            { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
-            , outputs = Comp1 (fromList [bridgeInOutput :*: false])
-            }
-        bridgedIn2 :: (Vector Bi :.: Output A) I
-        bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
-        batch2 :: TransactionBatch Ixs Oxs A TxCount I
-        batch2 = TransactionBatch {tbTransactions = pure tx2}
-        sigs2 =
-          let rPoint :*: s = signTransaction tx2 privateKey
-          in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
-        newState2 :*: witness2 :*: _utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+    let
+      tx2 :: Transaction Ixs Oxs A I
+      tx2 =
+        Transaction
+          { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
+          , outputs = Comp1 (fromList [bridgeInOutput :*: false])
+          }
+      bridgedIn2 :: (Vector Bi :.: Output A) I
+      bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
+      batch2 :: TransactionBatch Ixs Oxs A TxCount I
+      batch2 = TransactionBatch {tbTransactions = pure tx2}
+      sigs2 =
+        let rPoint :*: s = signTransaction tx2 privateKey
+         in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+      newState2 :*: witness2 :*: _utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
 
     validateStateUpdateEither newState batch2 newState2 witness2 `shouldBe` Haskell.pure true

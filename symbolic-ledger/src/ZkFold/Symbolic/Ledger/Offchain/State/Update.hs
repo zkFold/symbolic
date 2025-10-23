@@ -9,9 +9,11 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector
 import ZkFold.Prelude (foldl', trace)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (||))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
@@ -19,6 +21,7 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Maybe (Maybe (..))
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.WitnessContext (toWitnessContext)
+import Prelude qualified as Haskell
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
@@ -26,9 +29,6 @@ import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWit
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
-import qualified Prelude as Haskell
-import ZkFold.Data.HFunctor.Classes (HShow)
-import ZkFold.Symbolic.Class (Symbolic(..))
 
 -- | Update ledger state.
 --
