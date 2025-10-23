@@ -8,19 +8,19 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:.:))
 import GHC.TypeNats (KnownNat)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
@@ -39,7 +39,7 @@ data State bi bo ud a context = State
   -- ^ Denotes outputs that are bridged out of the ledger.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
 instance
   forall bi bo ud a context
@@ -48,18 +48,20 @@ instance
      )
   => Eq (State bi bo ud a context)
 
-deriving stock instance (HShow context, Show (WitnessField context)) => Haskell.Show (State bi bo ud a context)
+deriving stock instance Haskell.Show context => Haskell.Show (State bi bo ud a context)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (State bi bo ud a c)
 
 instance Symbolic context => Hashable (HashSimple context) (State bi bo ud a context) where
   hasher = hashFn
 
 deriving anyclass instance
-  forall bi bo ud a. KnownMerkleTree ud => ToJSON (State bi bo ud a RollupBFInterpreter)
+  forall bi bo ud a. KnownMerkleTree ud => ToJSON (State bi bo ud a RollupBF)
 
 deriving anyclass instance
-  forall bi bo ud a. KnownMerkleTree ud => FromJSON (State bi bo ud a RollupBFInterpreter)
+  forall bi bo ud a. KnownMerkleTree ud => FromJSON (State bi bo ud a RollupBF)
 
 deriving anyclass instance
   forall bi bo ud a
    . (KnownNat bi, KnownNat bo, KnownNat ud, KnownNat a)
-  => ToSchema (State bi bo ud a RollupBFInterpreter)
+  => ToSchema (State bi bo ud a RollupBF)

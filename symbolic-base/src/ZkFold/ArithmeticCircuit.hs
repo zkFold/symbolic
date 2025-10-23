@@ -14,6 +14,13 @@ module ZkFold.ArithmeticCircuit (
   idCircuit,
   naturalCircuit,
 
+  -- * Old Symbolic functions
+  witnessF,
+  fromCircuitF,
+  hmap,
+  packWith,
+  unpackWith,
+
   -- * Circuit transformers
   optimize,
   desugarRanges,
@@ -67,15 +74,13 @@ import ZkFold.ArithmeticCircuit.Context (CircuitContext (..))
 import qualified ZkFold.ArithmeticCircuit.Context as Context
 import qualified ZkFold.ArithmeticCircuit.Desugaring as Desugaring
 import qualified ZkFold.ArithmeticCircuit.Optimization as Optimization
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), evalVar, toVar)
-import ZkFold.Control.HApplicative (HApplicative)
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), evalVar, toVar, CircuitWitness, Var)
 import ZkFold.Data.Binary (fromByteString, toByteString)
-import ZkFold.Data.HFunctor (HFunctor)
-import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
-import ZkFold.Data.Package (Package (..))
 import ZkFold.Data.Product (fromPair)
 import ZkFold.Prelude (length)
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..))
+import ZkFold.Symbolic.Class (Arithmetic)
+import Control.Monad.State (State)
+import qualified ZkFold.ArithmeticCircuit.Context as CC
 
 -- | Arithmetic circuit in the form of a system of polynomial constraints.
 newtype ArithmeticCircuit a (i :: Type -> Type) o
@@ -83,10 +88,6 @@ newtype ArithmeticCircuit a (i :: Type -> Type) o
   deriving Generic
   deriving newtype
     ( FromJSON
-    , HApplicative
-    , HFunctor
-    , HNFData
-    , HShow
     , NFData
     , Show
     , ToJSON
@@ -108,22 +109,30 @@ instance
    where
     allInputs = toList $ tabulate @i (EqVar . toByteString)
 
-instance Ord a => Package (ArithmeticCircuit a i) where
-  unpack = fmap ArithmeticCircuit . unpack . acContext
-  unpackWith f = fmap ArithmeticCircuit . unpackWith f . acContext
-  pack = ArithmeticCircuit . pack . fmap acContext
-  packWith f = ArithmeticCircuit . packWith f . fmap acContext
+hmap
+  :: (forall i. f i -> g i)
+  -> ArithmeticCircuit a j f -> ArithmeticCircuit a j g
+hmap f = ArithmeticCircuit . CC.hmap f . acContext
 
-instance (Arithmetic a, Binary a) => Symbolic (ArithmeticCircuit a i) where
-  type BaseField (ArithmeticCircuit a i) = BaseField (CircuitContext a)
-  type WitnessField (ArithmeticCircuit a i) = WitnessField (CircuitContext a)
-  witnessF = witnessF . acContext
-  fromCircuitF (acContext -> ctx) m = ArithmeticCircuit (fromCircuitF ctx m)
-  sanityF (acContext -> ctx) f =
-    ArithmeticCircuit
-      . sanityF ctx f
-      . (acContext .)
-      . (. ArithmeticCircuit)
+unpackWith
+  :: Functor g => (forall i. f i -> g (h i))
+  -> ArithmeticCircuit a j f -> g (ArithmeticCircuit a j h)
+unpackWith f = fmap ArithmeticCircuit . CC.unpackWith f . acContext
+
+packWith
+  :: (Ord a, Foldable f, Functor f) => (forall i. f (g i) -> h i)
+  -> f (ArithmeticCircuit a j g) -> ArithmeticCircuit a j h
+packWith f = ArithmeticCircuit . CC.packWith f . fmap acContext
+
+witnessF :: Functor o => ArithmeticCircuit a i o -> o (CircuitWitness a)
+witnessF = CC.witnessF . acContext
+
+fromCircuitF
+  :: ArithmeticCircuit a i j
+  -> (j (Var a) -> State (CircuitContext a U1) (o (Var a)))
+  -> ArithmeticCircuit a i o
+fromCircuitF (acContext -> ctx) m =
+  ArithmeticCircuit (CC.fromCircuitF ctx m)
 
 -------------------------- Constructors from context ---------------------------
 

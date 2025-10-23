@@ -57,6 +57,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
 import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
@@ -649,6 +650,8 @@ deriving instance NFData1 AffinePoint
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 
 instance Eq field => Eq (AffinePoint field)
+
+instance Collect m field => Collect m (AffinePoint field)
 
 instance Prelude.Show field => Prelude.Show (AffinePoint field) where
   show (AffinePoint x y) =

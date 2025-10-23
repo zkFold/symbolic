@@ -19,24 +19,22 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData)
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Class (Symbolic)
 
 data Point curve f c = Point
   { px :: f c
   , py :: f c
   , pIsInf :: Bool c
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
 
 -- TODO: Add 'isOnCurve' check to 'isValid'
 
-deriving instance (HNFData c, NFData (f c)) => NFData (Point curve f c)
+deriving instance (NFData c, NFData (f c)) => NFData (Point curve f c)
 
-deriving instance (HEq c, Haskell.Eq (f c)) => Haskell.Eq (Point curve f c)
+deriving instance (Haskell.Eq c, Haskell.Eq (f c)) => Haskell.Eq (Point curve f c)
 
 instance
   BooleanOf (f c) ~ Bool c
@@ -49,7 +47,7 @@ instance BooleanOf (f c) ~ Bool c => ToConstant (Point curve f c) where
   toConstant Point {..} = Elliptic.Point {_x = px, _y = py, _zBit = pIsInf}
 
 instance
-  (Symbolic c, SymbolicEq f c)
+  (Symbolic c, BooleanOf (f c) ~ Bool c)
   => Conditional (Bool c) (Elliptic.Point (f c))
   where
   bool (fromConstant -> e) (fromConstant -> t) b =
@@ -64,7 +62,11 @@ type Base n c f d = n c (Elliptic.Point (f d))
 
 viaBase
   :: forall n c f d e p g
-   . (e ~ Base n c f d, p ~ Point (n c) f d, Functor g, BooleanOf (f d) ~ Bool d)
+   . ( e ~ Base n c f d
+     , p ~ Point (n c) f d
+     , Functor g
+     , BooleanOf (f d) ~ Bool d
+     )
   => Coercible e (Elliptic.Point (f d))
   => (g e -> e) -> g p -> p
 viaBase f =
@@ -77,7 +79,11 @@ instance (Symbolic c, Semiring (f c)) => HasPointInf (Point curve f c) where
   pointInf = Point zero one true
 
 instance
-  (Symbolic c, MultiplicativeSemigroup (f c), SymbolicEq f c)
+  ( Symbolic c
+  , MultiplicativeSemigroup (f c)
+  , Eq (f c)
+  , BooleanOf (f c) ~ Bool c
+  )
   => Eq (Point curve f c)
   where
   type BooleanOf (Point curve f c) = Bool c

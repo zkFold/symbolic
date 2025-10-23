@@ -29,7 +29,7 @@ import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Type.Equality (type (~))
 import Data.Word (Word8)
-import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
+import GHC.Generics (Generic, Generic1, U1 (..), (:*:) (..))
 import GHC.Natural (Natural, naturalToInteger)
 import GHC.TypeNats (KnownNat, type (+), type (^))
 import ZkFold.Algebra.Class
@@ -62,22 +62,19 @@ import ZkFold.Protocol.Plonkup.Utils (getParams)
 import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
-import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Compiler qualified as C
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hash (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
-import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
-import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Validation.State
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
+import Data.Function (id)
 
 -- $setup
 --
@@ -96,14 +93,16 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   , lciStateWitness :: StateWitness bi bo ud a i o t c
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
 deriving anyclass instance
-  forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBF)
 
 deriving anyclass instance
   forall bi bo ud a i o t
-   . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+   . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBF)
+
+type FE = FieldElement
 
 -- |
 -- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
@@ -133,15 +132,15 @@ deriving anyclass instance
 deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
-  => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  => ToSchema (LedgerContractInput bi bo ud a i o t RollupBF)
 
 type LedgerContractOutput =
-  (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
-    :*: (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
-    :*: Bool
+  (FE :*: FE :*: FE :*: FE :*: FE)
+  :*: (FE :*: FE :*: FE :*: FE :*: FE)
+  :*: Bool
 
 ledgerContract
-  :: forall bi bo ud a i o t c
+  :: forall c bi bo ud a i o t
    . SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput c
@@ -164,35 +163,21 @@ ledgerContract LedgerContractInput {..} =
 type LedgerCircuitGates = 2 ^ 18
 
 type LedgerContractInputLayout bi bo ud a i o t =
-  Layout
-    (LedgerContractInput bi bo ud a i o t :*: U1)
-    (Order RollupBF)
+  Layout (LedgerContractInput bi bo ud a i o t :*: U1) RollupBF
 
-type LedgerContractInputPayload bi bo ud a i o t =
-  Payload
-    (LedgerContractInput bi bo ud a i o t :*: U1)
-    (Order RollupBF)
-
-type LedgerContractCompiledInput bi bo ud a i o t =
-  LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
-
-type LedgerContractOutputLayout =
-  ( (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
-      :*: (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
-      :*: Par1
-  )
+type LedgerContractOutputLayout = Layout LedgerContractOutput RollupBF
 
 type LedgerCircuit bi bo ud a i o t =
-  ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a i o t) LedgerContractOutputLayout
+  ArithmeticCircuit RollupBF (LedgerContractInputLayout bi bo ud a i o t) LedgerContractOutputLayout
 
 ledgerCircuit
   :: forall bi bo ud a i o t c
    . SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => -- Since we are hardcoding @RollupBF@ at some places in this file, it is important that it is the same as the base field of the context.
-  RollupBF ~ BaseField c
+  Order RollupBF ~ Order c
   => LedgerCircuit bi bo ud a i o t
-ledgerCircuit = runVec $ C.compile @RollupBF ledgerContract
+ledgerCircuit = compile @RollupBF id (ledgerContract @(Elem RollupBF))
 
 type PlonkupTs i n t =
   Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec RollupBF)
@@ -211,36 +196,39 @@ ledgerSetup
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
   -> LedgerCircuit bi bo ud a i o t
-  -> SetupVerify (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+  -> SetupVerify (PlonkupTs (LedgerContractInputLayout bi bo ud a i o t) LedgerCircuitGates tc)
 ledgerSetup TrustedSetup {..} ac = setupV
  where
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
   plonkup = Plonkup omega k1 k2 ac g2_1 g1s
-  setupV = setupVerify @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+  setupV = setupVerify @(PlonkupTs (LedgerContractInputLayout bi bo ud a i o t) LedgerCircuitGates tc) plonkup
 
 ledgerProof
-  :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc, c ~ Interpreter RollupBF)
-  => SignatureState bi bo ud a c
-  => SignatureTransactionBatch ud i o a t c
+  :: forall tc bi bo ud a i o t
+   . TranscriptConstraints tc
+  => SignatureState bi bo ud a RollupBF
+  => SignatureTransactionBatch ud i o a t RollupBF
   => TrustedSetup (LedgerCircuitGates + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> LedgerCircuit bi bo ud a i o t
-  -> LedgerContractInput bi bo ud a i o t c
-  -> Proof (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+  -> LedgerContractInput bi bo ud a i o t RollupBF
+  -> Proof (PlonkupTs (LedgerContractInputLayout bi bo ud a i o t) LedgerCircuitGates tc)
 ledgerProof TrustedSetup {..} ps ac input = proof
  where
-  witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order RollupBF)) RollupBF
-  witnessInputs = runInterpreter $ arithmetize input
+  witnessInputs :: Layout (LedgerContractInput bi bo ud a i o t) RollupBF RollupBF
+  witnessInputs = toLayout input
 
-  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t RollupBF
-  paddedWitnessInputs = (payload input :*: U1) :*: (witnessInputs :*: U1)
+  paddedWitnessInputs :: LedgerContractInputLayout bi bo ud a i o t RollupBF
+  paddedWitnessInputs = witnessInputs :*: U1
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
-  plonkup = Plonkup omega k1 k2 ac g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
-  setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+  plonkup = Plonkup omega k1 k2 ac g2_1 g1s :: PlonkupTs (LedgerContractInputLayout bi bo ud a i o t) LedgerCircuitGates tc
+  setupP = setupProve @(PlonkupTs (LedgerContractInputLayout bi bo ud a i o t) LedgerCircuitGates tc) plonkup
   witness =
-    ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a i o t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs
+    ( PlonkupWitnessInput
+        @(LedgerContractInputLayout bi bo ud a i o t)
+        @BLS12_381_G1_JacobianPoint
+        paddedWitnessInputs
     , ps
     )
   (proof, _) = rustPlonkupProve setupP witness

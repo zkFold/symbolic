@@ -13,17 +13,16 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
-import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Class (Symbolic)
 
 -- Verify ECDSA where a caller-provided hash function maps a message to it's hash.
 ecdsaVerify
   :: forall message n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
+   . ( Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
      , point ~ Point (Weierstrass curve) baseField ctx
@@ -32,8 +31,8 @@ ecdsaVerify
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownRegisters ctx n 'Auto
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => (message -> scalarField ctx)
   -> point
@@ -60,7 +59,7 @@ ecdsaVerify hashFn publicKey message (r :*: s) =
 -- | Variant of 'ecdsaVerify' where the message is already hashed.
 ecdsaVerifyMessageHash
   :: forall n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
+   . ( Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
      , point ~ Point (Weierstrass curve) baseField ctx
@@ -69,8 +68,8 @@ ecdsaVerifyMessageHash
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownRegisters ctx n 'Auto
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => point
   -> scalarField ctx

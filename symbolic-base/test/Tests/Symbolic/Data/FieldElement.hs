@@ -8,13 +8,7 @@ import Test.Hspec (Spec, describe)
 import Test.QuickCheck (arbitrary)
 import Prelude (Integer)
 
-import Tests.Symbolic.Data.Common (
-  specConstantRoundtrip,
-  specSymbolicFunction0,
-  specSymbolicFunction1,
-  specSymbolicFunction1WithPar,
-  specSymbolicFunction2,
- )
+import Tests.Symbolic.Data.Common
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)

@@ -24,7 +24,7 @@ import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
-instance FromConstant c a => FromConstant c (UVar a) where
+instance {-# INCOHERENT #-} FromConstant c a => FromConstant c (UVar a) where
   fromConstant = ConstUVar . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)

@@ -13,6 +13,7 @@ module ZkFold.Algebra.Number (
   Div,
   value,
   integral,
+  ilog2,
   type (<=),
   type (*),
   type (+),
@@ -24,6 +25,8 @@ import GHC.Exts (proxy#)
 import GHC.Real (Integral)
 import qualified GHC.Real as Integral
 import GHC.TypeNats
+import GHC.Num.Natural (naturalLog2)
+import Data.Function ((.))
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
@@ -37,3 +40,6 @@ integral = Integral.fromIntegral (value @size)
 instance Prime 2
 
 instance Prime 3
+
+ilog2 :: Natural -> Natural
+ilog2 = Integral.fromIntegral . naturalLog2

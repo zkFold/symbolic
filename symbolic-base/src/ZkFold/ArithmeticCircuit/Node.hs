@@ -39,21 +39,16 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Multivariate.Expression (Polynomial, evalPoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
+import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext, lookupConstraint, constraint, unconstrained)
 import ZkFold.ArithmeticCircuit.Op
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
+import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var, at)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compat (CompatContext (..))
-import qualified ZkFold.Symbolic.Compiler as Old
-import qualified ZkFold.Symbolic.Data.Class as Old
-import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
-import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import ZkFold.Symbolic.Class (Arithmetic, Constraint(..), Symbolic(..))
+import ZkFold.Symbolic.Data.Class (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -175,13 +170,13 @@ instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp
 
 ------------------------- Optimized compilation function -----------------------
 
-type family InputF (f :: Type) where
-  InputF (i a -> f) = i :*: Input f
-  InputF (o a) = U1
+type family Input (f :: Type) :: Type -> Type where
+  Input (i a -> f) = i :*: Input f
+  Input (o a) = U1
 
-type family OutputF (f :: Type) where
-  OutputF (i a -> f) = Output f
-  OutputF (o a) = o
+type family Output (f :: Type) :: Type -> Type where
+  Output (i a -> f) = Output f
+  Output (o a) = o
 
 class
   ( SymbolicData (Input f)
@@ -192,56 +187,25 @@ class
   SymbolicFunction (a :: Type) (f :: Type)
     | f -> a
   where
-  type Input f :: Type -> Type
-  type Input f = InputF f
-  type Output f :: Type -> Type
-  type Output f = OutputF f
-  symApply :: f -> Input f a -> Output f a
+  apply :: f -> Input f a -> Output f a
 
 instance
   (SymbolicData o, Traversable (Layout o a), Input (o a) ~ U1, Output (o a) ~ o)
   => SymbolicFunction a (o a)
   where
-  symApply = const
+  apply = const
 
 instance
   (SymbolicData i, HasRep i a, SymbolicFunction a f)
   => SymbolicFunction a (i a -> f)
   where
-  symApply f (x :*: y) = symApply (f x) y
+  apply f (x :*: y) = apply (f x) y
 
-compileV1
-  :: forall a f n d
-   . ( Arithmetic a
-     , Binary a
-     , Old.SymbolicFunction f
-     , Order a ~ n
-     , Old.Context f ~ CompatContext (Node n ZZp)
-     , Old.Domain f ~ d
-     )
-  => f
-  -> ArithmeticCircuit
-       a
-       (Old.Layout d n :*: Old.Payload d n)
-       (Old.Layout (Old.Range f) n)
-compileV1 =
-  optimize . solder . \f (l :*: p) ->
-    let (output, circuit) = unsafePerformIO do
-          compiler <- makeCompiler
-          flip runStateT emptyContext
-            . flip runReaderT compiler
-            . traverse compileNode
-            . compatContext
-            . Old.arithmetize
-            . Old.apply f
-            $ Old.restore (CompatContext (NodeInput <$> l), NodeInput <$> p)
-     in crown circuit (toVar <$> output)
-
-compileV2
+compile
   :: forall a c f
    . (Arithmetic a, Binary a, c ~ Node (Order a) ZZp, SymbolicFunction c f)
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
-compileV2 =
+compile =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
     let (output, circuit) = unsafePerformIO do
           compiler <- makeCompiler
@@ -249,7 +213,7 @@ compileV2 =
             . flip runReaderT compiler
             . traverse compileNode
             . toLayout
-            . symApply f
+            . apply f
             $ fromLayout (fmap NodeInput l)
      in crown circuit (toVar <$> output)
 
@@ -353,7 +317,7 @@ instance Scale Integer a => Scale Integer (Witness a s) where
 
 instance PrimeField a => Eq (Witness a s) where
   type BooleanOf (Witness a s) = BooleanF a NewVar
-  FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
+  FieldVar u == FieldVar v = at u == at v
   IntWitness v == IntWitness w = v == w
   BoolWitness v == BoolWitness w = not (xor v w)
   OrdWitness _ == OrdWitness _ = error "not implemented"
