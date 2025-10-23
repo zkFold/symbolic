@@ -8,17 +8,17 @@ import Control.Monad (return)
 import Data.Function (($))
 import Data.Functor.Identity (Identity (Identity))
 import qualified GHC.Generics as G
+import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Symbolic.Class (Symbolic, fromCircuit2F)
 import ZkFold.Symbolic.Data.Bool (Bool (..), SymbolicEq)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.MonadCircuit (constraint)
-import ZkFold.Data.HFunctor.Classes (HShow)
-import qualified Prelude as Haskell
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;
@@ -41,7 +41,8 @@ instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
 instance (Symbolic c, SymbolicEq h c) => Eq (Hash h a c)
 
-deriving stock instance (Haskell.Show (h c), HShow c, Haskell.Show (Payloaded Identity a c)) => Haskell.Show (Hash h a c)
+deriving stock instance
+  (Haskell.Show (h c), HShow c, Haskell.Show (Payloaded Identity a c)) => Haskell.Show (Hash h a c)
 
 -- | Restorably hash the data.
 hash :: (Hashable (h c) (a c), SymbolicData a, Symbolic c) => a c -> Hash h a c

@@ -11,6 +11,7 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
@@ -18,13 +19,12 @@ import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
-import qualified Prelude as Haskell
-import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
-import ZkFold.Data.HFunctor.Classes (HShow)
 
 {- Note [State validation]
 
@@ -57,7 +57,7 @@ data StateWitness bi bo ud a i o t context = StateWitness
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
 
-deriving stock instance (HShow context) => Haskell.Show (StateWitness bi bo ud a i o t context)
+deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
@@ -132,9 +132,10 @@ validateStateUpdateEither previousState action newState sw =
     bridgedOutOutputs = preimage newState.sBridgeOut
     (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
-    unsafeToVector' [
-      newState.sPreviousStateHash == hasher previousState, 
-      newState.sLength == previousState.sLength + one, 
-      isWitBridgeInValid, 
-      isBatchValid, 
-      utxoTree == newState.sUTxO]
+    unsafeToVector'
+      [ newState.sPreviousStateHash == hasher previousState
+      , newState.sLength == previousState.sLength + one
+      , isWitBridgeInValid
+      , isBatchValid
+      , utxoTree == newState.sUTxO
+      ]

@@ -17,6 +17,7 @@ import ZkFold.Algebra.Class (
  )
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import ZkFold.Data.Vector qualified as Vector
@@ -32,7 +33,6 @@ import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Data.HFunctor.Classes (HShow)
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -40,7 +40,7 @@ data TransactionWitness ud i o a context = TransactionWitness
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
 
-deriving stock instance (HShow context) => Haskell.Show (TransactionWitness ud i o a context)
+deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
@@ -254,7 +254,13 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @Haskell.Integer 1_000_000)
+          || ( asset.assetPolicy
+                 == adaPolicy
+                 && asset.assetName
+                 == adaName
+                 && asset.assetQuantity
+                 >= fromConstant @Haskell.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))

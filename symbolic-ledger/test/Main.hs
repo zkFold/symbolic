@@ -7,5 +7,3 @@ import Tests.Symbolic.Ledger.Update (specUpdateLedgerState)
 
 main :: IO ()
 main = hspec specUpdateLedgerState
-
-

@@ -29,6 +29,7 @@ import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.HFunctor.Classes
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -54,8 +55,7 @@ import Prelude hiding (
   (==),
   (||),
  )
-import ZkFold.Data.HFunctor.Classes
-import qualified Prelude as Haskell
+import Prelude qualified as Haskell
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
@@ -87,7 +87,7 @@ data AssetValue context = AssetValue
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
-deriving stock instance (HShow context) => Haskell.Show (AssetValue context)
+deriving stock instance HShow context => Haskell.Show (AssetValue context)
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context

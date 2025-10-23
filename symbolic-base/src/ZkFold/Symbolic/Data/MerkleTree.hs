@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.MerkleTree (
   MerkleTree,
@@ -131,7 +131,7 @@ data MerkleEntry d c = MerkleEntry
   }
   deriving (Generic1, SymbolicData, SymbolicInput)
 
-deriving stock instance (HShow c) => P.Show (MerkleEntry d c)
+deriving stock instance HShow c => P.Show (MerkleEntry d c)
 
 contains
   :: forall d c

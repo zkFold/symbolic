@@ -26,6 +26,7 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -43,7 +44,6 @@ import Prelude qualified as Haskell hiding ((||))
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import ZkFold.Data.HFunctor.Classes (HShow)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -60,7 +60,7 @@ instance
   Symbolic context
   => Eq (OutputRef context)
 
-deriving stock instance (HShow context) => Haskell.Show (OutputRef context)
+deriving stock instance HShow context => Haskell.Show (OutputRef context)
 
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
@@ -82,7 +82,7 @@ instance
   )
   => Eq (Output a context)
 
-deriving stock instance (HShow context) => Haskell.Show (Output a context)
+deriving stock instance HShow context => Haskell.Show (Output a context)
 
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = hashFn
@@ -105,7 +105,7 @@ instance
   )
   => Eq (UTxO a context)
 
-deriving stock instance (HShow context) => Haskell.Show (UTxO a context)
+deriving stock instance HShow context => Haskell.Show (UTxO a context)
 
 instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
   hasher = hashFn

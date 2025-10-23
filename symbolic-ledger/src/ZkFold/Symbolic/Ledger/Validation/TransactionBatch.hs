@@ -9,23 +9,23 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
-import ZkFold.Data.HFunctor.Classes (HShow)
-import qualified Prelude as Haskell
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
-  
-deriving stock instance (HShow context) => Haskell.Show (TransactionBatchWitness ud i o a t context)
+
+deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch

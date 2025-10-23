@@ -4,11 +4,11 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
   hashFn,
 ) where
 
+import ZkFold.Symbolic.Algorithm.Hash.MiMC qualified as MiMC
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash qualified as Symbolic.Hash
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
 
 -- | Hash type used in the zkFold ledger.
 type Hash = Symbolic.Hash.Hash HashSimple
