@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
@@ -18,22 +19,20 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import Data.Function ((.))
+import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1)
 import Prelude (foldr)
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
+import ZkFold.Symbolic.Data.Class (HasRep, SymbolicData, dummy)
 
 data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
   deriving (Generic, Generic1, SymbolicData)
 
-deriving stock instance (HEq c, Haskell.Eq (x c)) => Haskell.Eq (Maybe x c)
-
-instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
+instance (Symbolic c, Eq (x c), BooleanOf (x c) ~ Bool c) => Eq (Maybe x c)
 
 just :: Symbolic c => x c -> Maybe x c
 just = Maybe true

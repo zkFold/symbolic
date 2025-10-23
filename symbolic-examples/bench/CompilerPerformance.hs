@@ -1,23 +1,25 @@
+{-# LANGUAGE TypeOperators #-}
+
 module Main where
 
-import Control.DeepSeq (NFData, force)
+import Control.DeepSeq (NFData, NFData1, force)
 import Control.Monad (return)
 import Data.Binary (Binary)
 import Data.ByteString (foldr)
-import Data.Function (($), (.))
+import Data.Function (id, ($), (.))
 import Data.Functor.Rep (Representable (..))
 import Data.String (String)
+import Data.Type.Equality (type (~))
 import System.IO (IO)
 import Test.Tasty.Bench
-import ZkFold.Algebra.Class (Order, Ring, fromConstant, zero, (+))
+import ZkFold.Algebra.Class (Ring, fromConstant, zero, (+))
 import ZkFold.ArithmeticCircuit (eval)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
+import ZkFold.ArithmeticCircuit.Node (Output, SymbolicFunction)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Data.Class (HasRep, Layout, RepData, SymbolicData)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.Vec (Vec, runVec)
 import Prelude (toInteger)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
@@ -30,17 +32,19 @@ benchmark
    . ( Arithmetic a
      , Binary a
      , SymbolicInput i
-     , HasRep i (CircuitContext a)
-     , RepData i (CircuitContext a)
-     , SymbolicData o
-     , NFData (Layout o (Order a) a)
+     , HasRep i (Elem a)
+     , Output (o (Elem a)) ~ o
+     , SymbolicFunction (Elem a) (o (Elem a))
+     , NFData1 (Layout o (Elem a))
+     , NFData (Layout o (Elem a) a)
+     , Representable (Layout i (Elem a))
      )
-  => String -> (i (CircuitContext a) -> o (CircuitContext a)) -> Benchmark
+  => String -> (i (Elem a) -> o (Elem a)) -> Benchmark
 benchmark name fun =
   bgroup
     name
-    [ bench "compilation" $ nf (compile @_ @(Vec _)) fun
-    , env (return $ force $ runVec $ compile fun) $ \c ->
+    [ bench "compilation" $ nf (compile @a id) fun
+    , env (return $ force $ compile @a id fun) $ \c ->
         bench "evaluation" $ nf (`eval` tabulate fromBinary) c
     ]
 

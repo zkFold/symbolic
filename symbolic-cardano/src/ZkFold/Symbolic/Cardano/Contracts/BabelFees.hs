@@ -2,12 +2,13 @@ module ZkFold.Symbolic.Cardano.Contracts.BabelFees (babelFees) where
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (from)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
-import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.ByteString (resize)
 import ZkFold.Symbolic.Data.Maybe
+import ZkFold.Symbolic.Data.UInt hiding (resize)
 import Prelude (($))
 
 import ZkFold.Symbolic.Cardano.Types
@@ -26,7 +27,7 @@ babelFees
 babelFees tx1 tx2 = consumesLiability && consumesOutput
  where
   tx1Hash :: ByteString 256 context
-  tx1Hash = resize $ ByteString $ binaryExpansion $ hash tx1
+  tx1Hash = resize $ from $ hash @context tx1
 
   consumesLiability :: Bool context
   consumesLiability =

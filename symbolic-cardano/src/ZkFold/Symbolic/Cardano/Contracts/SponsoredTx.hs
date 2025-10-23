@@ -2,12 +2,13 @@ module ZkFold.Symbolic.Cardano.Contracts.SponsoredTx (sponsoredTx) where
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (from)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
-import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.ByteString (resize)
 import ZkFold.Symbolic.Data.Maybe
+import ZkFold.Symbolic.Data.UInt (KnownRegisters, RegisterSize (..))
 import Prelude (($))
 
 import ZkFold.Symbolic.Cardano.Types
@@ -28,7 +29,7 @@ sponsoredTx tx1 tx2 = noExchange && consumesLiability && consumesOutput
   noExchange :: Bool context
   noExchange = amount lLiability /= zero && amount lBabel == zero -- There is a liability but no reward. Another party is expected to cover it
   tx1Hash :: ByteString 256 context
-  tx1Hash = resize $ ByteString $ binaryExpansion $ hash tx1
+  tx1Hash = resize $ from (hash @context tx1)
 
   consumesLiability :: Bool context
   consumesLiability =

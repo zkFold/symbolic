@@ -1,6 +1,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{- HLINT ignore "Use camelCase" -}
+
 module ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point) where
 
 import Data.Function (($))
@@ -10,12 +12,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Data.Iso (Iso (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 type Jubjub_Point = AffinePoint (TwistedEdwards "jubjub") (FFA Jubjub_Base 'Auto)
 
@@ -42,12 +45,12 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool @(Bool ctx) zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits Jubjub_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits Jubjub_Scalar ctx) ffa)
+    bits = from $ toUInt @(FFAMaxBits Jubjub_Scalar ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits Jubjub_Scalar ctx) -! 1

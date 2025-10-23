@@ -1,7 +1,7 @@
 module ZkFold.ArithmeticCircuit.Desugaring (desugarRanges) where
 
 import Control.Monad (foldM, return)
-import Control.Monad.State (execState)
+import Control.Monad.State (State, execState)
 import Data.Binary (Binary)
 import Data.Bool (otherwise)
 import Data.Either (Either (..), partitionEithers)
@@ -16,20 +16,20 @@ import Data.Tuple (fst, uncurry)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit.Context (CircuitContext, acLookup, asRange)
-import ZkFold.ArithmeticCircuit.Var (toVar)
+import ZkFold.ArithmeticCircuit.Context
+import ZkFold.ArithmeticCircuit.Var (Var, toVar)
 import ZkFold.Prelude (assert, length)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Data.Combinators (expansion)
-import ZkFold.Symbolic.MonadCircuit
 
-desugarRange :: (Arithmetic a, MonadCircuit i a w m) => i -> (a, a) -> m ()
-desugarRange i (a, b)
+desugarRange
+  :: (Arithmetic a, Binary a)
+  => Var a -> (a, a) -> State (CircuitContext a o) ()
+desugarRange _i (a, b)
   | a /= zero = error "non-zero lower bound not supported yet"
   | b == negate one = return ()
   | otherwise = do
       let bs = binaryExpansion (toConstant b)
-      is <- expansion (length bs) i
+      is <- error "TODO" -- expansion (length bs) i
       case dropWhile ((== one) . fst) (zip bs is) of
         [] -> return ()
         ((_, k0) : ds) -> do

@@ -12,12 +12,12 @@ module ZkFold.Symbolic.Cardano.Types.Output (
 
 import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Number
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.UInt (KnownRegisters, RegisterSize (..))
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
 
@@ -29,18 +29,22 @@ data Liability context = Liability
   { lLiability :: SingleAsset context -- Liability in native tokens
   , lBabel :: SingleAsset context -- Offer in any other tokens
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (Liability context)
+deriving instance Haskell.Eq context => Haskell.Eq (Liability context)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (Liability c)
 
 data Output tokens datum context = Output
   { txoAddress :: Address context
   , txoTokens :: Value tokens context
   , txoDatumHash :: DatumHash context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (Output tokens datum context)
+deriving instance Haskell.Eq context => Haskell.Eq (Output tokens datum context)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (Output t d c)
 
 instance
   ( Symbolic context

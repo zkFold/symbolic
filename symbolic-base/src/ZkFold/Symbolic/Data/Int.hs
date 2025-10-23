@@ -1,13 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module ZkFold.Symbolic.Data.Int where
 
 import Control.DeepSeq
 import qualified Data.Bool as Haskell
-import Data.Kind (Type)
-import GHC.Generics (Generic, Par1 (..), type (:*:) (..))
+import GHC.Err (error)
+import GHC.Generics (Generic, type (:*:) (..))
 import Test.QuickCheck (Arbitrary (..))
 import Prelude (Integer, ($), (.))
 import qualified Prelude as Haskell hiding ((-))
@@ -15,45 +16,49 @@ import qualified Prelude as Haskell hiding ((-))
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import ZkFold.Data.Vector (fromVector)
-import ZkFold.Symbolic.Class
+import ZkFold.Data.Iso (Iso (..))
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
 
-newtype Int (n :: Natural) (r :: RegisterSize) (c :: (Type -> Type) -> Type) = Int {uint :: UInt n r c}
+newtype Int n r c = Int {uint :: UInt n r c}
+  deriving
+    ( AdditiveGroup
+    , AdditiveMonoid
+    , AdditiveSemigroup
+    , Arbitrary
+    , Eq
+    , FromConstant Integer
+    , FromConstant Natural
+    , Generic
+    , Haskell.Eq
+    , Haskell.Show
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , NFData
+    , Scale Integer
+    , Scale Natural
+    , Semiring
+    , SymbolicData
+    , SymbolicInput
+    , Zero
+    )
 
-deriving instance Generic (Int n r c)
-
-deriving instance HNFData c => NFData (Int n r c)
-
-deriving instance HEq c => Haskell.Eq (Int n r c)
-
-deriving instance HShow c => Haskell.Show (Int n r c)
-
-deriving instance SymbolicData (Int n r)
-
-deriving instance (KnownNat n, KnownRegisterSize r) => SymbolicInput (Int n r)
-
-deriving instance Symbolic c => Eq (Int n r c)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Natural (Int n r c)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => FromConstant Integer (Int n r c)
+deriving newtype instance
+  (Haskell.Monoid m, Collect m (UInt n r c)) => Collect m (Int n r c)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Exponent (Int n r c) Natural where
   (^) = natPow
 
 ------------------------------------------------------------------------------
 
-instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r (Interpreter a)) where
-  type Const (Int n r (Interpreter a)) = Integer
+instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r a) where
+  type Const (Int n r a) = Integer
   toConstant i@(Int u) =
     withGetRegisterSize @n @r @a $
       Haskell.bool
@@ -61,48 +66,29 @@ instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r 
         (negate . Haskell.toInteger . toConstant $ negate u)
         (isNegative i Haskell.== true)
 
-isNegative :: forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Bool c
-isNegative (Int (UInt u)) = Bool $ fromCircuitF u $ \regs -> do
-  let hd = Haskell.last $ fromVector regs
-  (_, h) <- splitExpansion (highRegisterSize @(BaseField c) @n @r -! 1) 1 hd
-  Haskell.return $ Par1 h
+isNegative
+  :: forall n r c
+   . (Symbolic c, KnownNat n, KnownRegisterSize r)
+  => Int n r c -> Bool c
+isNegative (Int (UInt _)) = Bool $ error "TODO" -- fromCircuitF u $ \regs -> do
+-- let hd = Haskell.last $ fromVector regs
+-- (_, h) <- splitExpansion (highRegisterSize @c @n @r -! 1) 1 hd
+-- Haskell.return $ Par1 h
 
-isNotNegative :: forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Bool c
+isNotNegative
+  :: forall n r c
+   . (Symbolic c, KnownNat n, KnownRegisterSize r)
+  => Int n r c -> Bool c
 isNotNegative i = not (isNegative i)
 
 abs :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Int n r c
-abs i = withNumberOfRegisters @n @r @(BaseField c) $ bool i (negate i) (isNegative i)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeMonoid (Int n r c)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Zero (Int n r c)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveMonoid (Int n r c)
-
-deriving newtype instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Arbitrary (Int n r c)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Natural (Int n r c)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Scale Integer (Int n r c)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Semiring (Int n r c)
+abs i = withNumberOfRegisters @n @r @c $ bool i (negate i) (isNegative i)
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (Int n r c) (UInt n r c) where
   from (Int u) = u
 
 instance (Symbolic c, KnownNat n, KnownRegisterSize r) => Iso (UInt n r c) (Int n r c) where
   from = Int
-
-------------------------------------------------------------------------------
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveSemigroup (Int n r c) where
-  Int u1 + Int u2 = Int (u1 + u2)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => AdditiveGroup (Int n r c) where
-  Int u1 - Int u2 = Int (u1 - u2)
-  negate (Int u) = Int (negate u)
-
-instance (Symbolic c, KnownNat n, KnownRegisterSize r) => MultiplicativeSemigroup (Int n r c) where
-  Int x * Int y = Int $ x * y
 
 instance
   ( Symbolic c
@@ -118,8 +104,8 @@ instance
 
     (Int u1, Int u2) = (abs i1, abs i2)
     (d, m) =
-      withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
+      withGetRegisterSize @n @r @c $
+        withCeilRegSize @(GetRegisterSize c n r) @OrdWord $
           divMod u1 u2
 
     ite_nn = ifThenElse (isNegative i1 && isNegative i2) dm_mm ite_np
@@ -165,8 +151,8 @@ quotRem i1 i2 = (r1, r2)
 
   (Int u1, Int u2) = (abs i1, abs i2)
   (d, m) =
-    withGetRegisterSize @n @r @(BaseField c) $
-      withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
+    withGetRegisterSize @n @r @c $
+      withCeilRegSize @(GetRegisterSize c n r) @OrdWord $
         divMod u1 u2
 
   ite_tf = ifThenElse (isNegative i1 && isNotNegative i2) dm_mp ite_pm
@@ -218,17 +204,16 @@ instance
   i1 >= i2 = (isNotNegative i1 && isNegative i2) || (ub && not (xor (isNegative i1) (isNegative i2)))
    where
     ub =
-      withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
+      withGetRegisterSize @n @r @c $
+        withCeilRegSize @(GetRegisterSize c n r) @OrdWord $
           uint i1 >= uint i2
 
   i1 > i2 = (isNotNegative i1 && isNegative i2) || (ub && not (xor (isNegative i1) (isNegative i2)))
    where
     ub =
-      withGetRegisterSize @n @r @(BaseField c) $
-        withCeilRegSize @(GetRegisterSize (BaseField c) n r) @OrdWord $
+      withGetRegisterSize @n @r @c $
+        withCeilRegSize @(GetRegisterSize c n r) @OrdWord $
           uint i1 > uint i2
 
-  max x y = bool @(Bool c) x y $ x < y
-
-  min x y = bool @(Bool c) x y $ x > y
+  max x y = bool x y $ x < y
+  min x y = bool x y $ x > y

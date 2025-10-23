@@ -15,17 +15,17 @@ import Data.Kind (Type)
 import Data.List (zipWith)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Proxy (Proxy (..))
+import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1)
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Eq (Eq)
-import ZkFold.Symbolic.Class (Ctx, Symbolic)
-import ZkFold.Symbolic.Data.Bool (SymbolicEq)
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.FieldElement (FieldElement, fromFieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Data.Eq (Eq (BooleanOf))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..), dummy)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 ------------------------------ Product & Eithers -------------------------------
 
@@ -66,9 +66,12 @@ data OneOf ts c = OneOf
 
 instance SymbolicData (Product ts) => SymbolicData (OneOf ts)
 
-instance SymbolicInput (Product ts) => SymbolicInput (OneOf ts)
-
-instance (Symbolic c, SymbolicEq (Product ts) c) => Eq (OneOf ts c)
+instance
+  ( Symbolic c
+  , Eq (Product ts c)
+  , BooleanOf (Product ts c) ~ Bool c
+  )
+  => Eq (OneOf ts c)
 
 embedOneOf
   :: forall ts c. (Embed ts c, Symbolic c) => Eithers ts c -> OneOf ts c
@@ -86,12 +89,14 @@ matchOneOf OneOf {..} f =
     [(0 :: Natural) ..]
     (enum @ts Proxy branches) of
     [] -> dummy
-    (b : bs) -> interpolate (b :| bs) (fromFieldElement discriminant)
+    (b : bs) ->
+      let FieldElement d = discriminant
+       in interpolate d (b :| bs)
 
 ---------------- Sum-of-Products form of a Symbolic datatype -------------------
 
 class Embed (SOP f '[]) c => Injects f c where
-  type SOP f (acc :: [Ctx -> Type]) :: [Ctx -> Type]
+  type SOP f (acc :: [Type -> Type]) :: [Type -> Type]
   sumFrom :: f c -> Proxy ts -> Eithers (SOP f ts) c
   sumSkip :: Proxy '(ts, f) -> Eithers ts c -> Eithers (SOP f ts) c
   sumTo :: Proxy ts -> Eithers (SOP f ts) c -> Either (f c) (Eithers ts c)
@@ -149,9 +154,12 @@ newtype Sum a c = Sum {sumOf :: OneOf (Cons a) c}
 
 deriving newtype instance SymbolicData (Prod a) => SymbolicData (Sum a)
 
-deriving newtype instance SymbolicInput (Prod a) => SymbolicInput (Sum a)
-
-deriving newtype instance (SymbolicEq (Prod a) c, Symbolic c) => Eq (Sum a c)
+deriving newtype instance
+  ( Symbolic c
+  , Eq (Prod a c)
+  , BooleanOf (Prod a c) ~ Bool c
+  )
+  => Eq (Sum a c)
 
 inject :: (Generic1 a, Injects (G.Rep1 a) c, Symbolic c) => a c -> Sum a c
 inject = Sum . embedOneOf . sopify . G.from1

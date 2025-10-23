@@ -16,11 +16,10 @@ import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), crown, getAllVars)
-import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, toVar)
+import ZkFold.ArithmeticCircuit.Context
+import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, at, toVar)
 import ZkFold.Prelude (elementsRep, replicateA)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.MonadCircuit
 
 ------------------------------------- Instances -------------------------------------
 
@@ -49,7 +48,7 @@ arbitraryPolynomialConstraint inVars ac = do
   let vars = inVars ++ getAllVars ac
   l <- toVar <$> elements vars
   r <- toVar <$> elements vars
-  let p :: ClosedPoly (Var a) a
+  let p :: forall b. Algebra a b => (Var a -> b) -> b
       p x = scale qm (x l * x r) + scale ql (x l) + scale qr (x r) + fromConstant qc
   return $ flip execState ac do
     newConstrained

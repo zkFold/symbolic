@@ -12,8 +12,8 @@ module ZkFold.Symbolic.Examples.FFA (
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Pasta
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Fixed))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 type Prime256_1 = FpModulus
 
