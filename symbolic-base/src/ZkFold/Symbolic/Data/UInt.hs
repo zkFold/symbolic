@@ -242,8 +242,12 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     )
     \ar br mr ->
       (liftA2 (:*:) `on` traverse unconstrained)
-        (tabulate $ register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
-        (tabulate $ register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
+        ( tabulate $
+            register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr)
+        )
+        ( tabulate $
+            register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr)
+        )
 
   -- \| Unconstrained @div@ part.
   dv = hmap fstP source
@@ -447,7 +451,8 @@ natural =
 
 -- | @register n i@ returns @i@-th register of @n@.
 register
-  :: forall f n r a . (PrimeField f, KnownNat n, KnownRegisterSize r, Finite a)
+  :: forall f n r a
+   . (PrimeField f, KnownNat n, KnownRegisterSize r, Finite a)
   => IntegralOf f -> Zp (NumberOfRegisters a n r) -> f
 register c i =
   fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)

@@ -16,31 +16,31 @@ import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), NFData1, liftRnf)
 import Control.Monad.State (State, modify', runState)
 import Data.Bifunctor (bimap)
+import qualified Data.Eq as Prelude
 import Data.Foldable (foldr)
-import Data.Function (flip, ($), (.), on)
+import Data.Function (flip, on, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
+import Data.Functor.Identity (Identity (Identity, runIdentity), runIdentity)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..), (:*:) (..))
+import GHC.TypeLits (KnownNat)
 import Numeric.Natural (Natural)
+import Text.Show (Show (showList, showsPrec))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Control.HApplicative (HApplicative (..))
+import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor (HFunctor (..))
-import ZkFold.Data.HFunctor.Classes (HNFData (..), HShow (..), HEq (..))
+import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
 import ZkFold.Data.Package (Package (..))
 import qualified ZkFold.Symbolic.Class as Old
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), Conditional (..))
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
+import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
-import Text.Show (Show (showsPrec, showList))
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), Conditional (..))
-import Data.Functor.Identity (Identity (Identity, runIdentity), runIdentity)
-import qualified Data.Eq as Prelude
-import GHC.TypeLits (KnownNat)
-import ZkFold.Symbolic.Interpreter (Interpreter)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -67,7 +67,8 @@ deriving instance
 deriving instance
   AdditiveGroup (f (CompatContext c)) => AdditiveGroup (CompatData f c)
 
-instance {-# OVERLAPPING #-}
+instance
+  {-# OVERLAPPING #-}
   MultiplicativeSemigroup (f (CompatContext c))
   => Scale (CompatData f c) (CompatData f c)
 
@@ -96,24 +97,31 @@ deriving instance Ring (f (CompatContext c)) => Ring (CompatData f c)
 deriving instance
   ( Field (f (CompatContext c))
   , BooleanOf (f (CompatContext c)) ~ Bool (CompatContext c)
-  ) => Field (CompatData f c)
+  )
+  => Field (CompatData f c)
 
 instance
   ( KnownNat (Order (f (CompatContext c)))
   , KnownNat (NumberOfBits (f (CompatContext c)))
-  ) => Finite (CompatData f c) where
+  )
+  => Finite (CompatData f c)
+  where
   type Order (CompatData f c) = Order (f (CompatContext c))
 
 instance (Old.Arithmetic a, Old.SymbolicData f, ToConstant (f (Interpreter a))) => ToConstant (CompatData f a) where
   type Const (CompatData f a) = Const (f (Interpreter a))
   toConstant =
     toConstant @(f (Interpreter a))
-    . mapContext
-    . compatData
+      . mapContext
+      . compatData
 
 mapContext
-  :: ( Old.SymbolicData f, Old.Symbolic c, Old.Symbolic d
-     , Old.BaseField c ~ Old.BaseField d) => f c -> f d
+  :: ( Old.SymbolicData f
+     , Old.Symbolic c
+     , Old.Symbolic d
+     , Old.BaseField c ~ Old.BaseField d
+     )
+  => f c -> f d
 mapContext = _
 
 instance
@@ -133,14 +141,17 @@ instance
     CompatData $ Old.restore (CompatContext layout, payload)
 
 instance
-  Conditional (b (CompatContext c)) (f (CompatContext c)) =>
-  Conditional (CompatData b c) (CompatData f c) where
+  Conditional (b (CompatContext c)) (f (CompatContext c))
+  => Conditional (CompatData b c) (CompatData f c)
+  where
   bool (CompatData x) (CompatData y) (CompatData b) = CompatData (bool x y b)
 
 instance
   ( Eq (f (CompatContext c))
   , BooleanOf (f (CompatContext c)) ~ Bool (CompatContext c)
-  ) => Eq (CompatData f c) where
+  )
+  => Eq (CompatData f c)
+  where
   type BooleanOf (CompatData f c) = CompatData Bool c
   CompatData x == CompatData y = CompatData (x == y)
   CompatData x /= CompatData y = CompatData (x /= y)
