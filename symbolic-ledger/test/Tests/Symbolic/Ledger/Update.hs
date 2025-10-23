@@ -119,4 +119,3 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
 
     validateStateUpdateEither newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
     unComp1 utxoPreimage3 `shouldBe` pure (nullUTxO @A @I)
-
