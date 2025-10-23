@@ -60,11 +60,11 @@ monoAdd = Sub unsafeAxiom
 oneReg :: forall n c. Dict (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) ~ 1)
 oneReg = unsafeAxiom -- @BufLen n@ is always greater than 2
 
-knownOneReg' :: forall n c. Dict (KnownRegisters c (BufLen n) ('Fixed (BufLen n)))
+knownOneReg' :: forall n c. Dict (KnownRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)))
 knownOneReg' = withKnownNat @(NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
 
 knownOneReg
-  :: forall n c {r}. (KnownRegisters c (BufLen n) ('Fixed (BufLen n)) => r) -> r
+  :: forall n c {r}. (KnownRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) => r) -> r
 knownOneReg = withDict (knownOneReg' @n @c)
 
 knownNumWords'

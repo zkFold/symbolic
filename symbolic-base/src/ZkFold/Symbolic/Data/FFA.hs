@@ -29,12 +29,9 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes (HNFData, HShow)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..), fromCircuit2F, symbolicF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (
   Ceil,
   GetRegisterSize,
@@ -51,69 +48,62 @@ import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
+import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compat (CompatData (compatData, CompatData))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
   FFAUIntSize p q = NumberOfBits (Zp (Ceil (p * p) q))
 
 isNative :: forall p c. (Symbolic c, KnownNat p) => Prelude.Bool
-isNative = value @p == value @(Order (BaseField c))
+isNative = value @p == value @(Order c)
 
 newtype UIntFFA p r c = UIntFFA
-  {uintFFA :: UInt (FFAUIntSize p (Order (BaseField c))) r c}
+  {uintFFA :: CompatData (UInt (FFAUIntSize p (Order c)) r) c}
   deriving (Eq, NFData, Prelude.Eq, Show)
 
 instance SymbolicData (UIntFFA p r) where
-  type Layout (UIntFFA p r) k = Layout (UInt (FFAUIntSize p k) r) k
-  type Payload (UIntFFA p r) k = Payload (UInt (FFAUIntSize p k) r) k
+  type Layout (UIntFFA p r) c = Layout (CompatData (UInt (FFAUIntSize p (Order c)) r)) c
   type HasRep (UIntFFA p r) c = KnownFFA p r c
-  arithmetize = arithmetize . uintFFA
-  payload = payload . uintFFA
-  interpolate (fmap (uintFFA <$>) -> bs) = UIntFFA . interpolate bs
-  restore = UIntFFA . restore
-
-instance SymbolicInput (UIntFFA p r) where
-  isValid = isValid . uintFFA
+  toLayout = toLayout . uintFFA
+  interpolate b = UIntFFA . interpolate b . fmap (uintFFA <$>)
+  fromLayout = UIntFFA . fromLayout
 
 data FFA p r c = FFA
-  { nativeResidue :: FieldElement c
+  { nativeResidue :: CompatData FieldElement c
   , uintResidue :: UIntFFA p r c
   }
   deriving (Generic, Generic1)
 
 type FFAMaxValue p q = q * (2 ^ FFAUIntSize p q)
 
-type FFAMaxBits p c = NumberOfBits (Zp (FFAMaxValue p (Order (BaseField c))))
+type FFAMaxBits p c = NumberOfBits (Zp (FFAMaxValue p (Order c)))
 
 type KnownFFA p r c =
-  ( KnownNat (FFAUIntSize p (Order (BaseField c)))
+  ( KnownNat (FFAUIntSize p (Order c))
   , KnownNat p
   , KnownRegisterSize r
-  , KnownRegisters c (FFAUIntSize p (Order (BaseField c))) r
+  , KnownRegisters c (FFAUIntSize p (Order c)) r
   , KnownNat (FFAMaxBits p c)
-  , KnownNat (GetRegisterSize (BaseField c) (FFAMaxBits p c) r)
+  , KnownNat (GetRegisterSize c (FFAMaxBits p c) r)
   , KnownRegisters c (FFAMaxBits p c) r
-  , KnownNat (Ceil (GetRegisterSize (BaseField c) (FFAMaxBits p c) r) OrdWord)
+  , KnownNat (Ceil (GetRegisterSize c (FFAMaxBits p c) r) OrdWord)
   , KnownRegisters c (NumberOfBits (Zp p)) r
-  , KnownNat (GetRegisterSize (BaseField c) (NumberOfBits (Zp p)) r)
+  , KnownNat (GetRegisterSize c (NumberOfBits (Zp p)) r)
   , KnownNat (NumberOfBits (Zp p))
   )
 
 instance SymbolicData (FFA p r)
 
-instance (KnownNat p, KnownRegisterSize r) => SymbolicInput (FFA p r) where
-  isValid ffa@(FFA _ ux :: FFA p r c) =
-    if isNative @p @c
-      then true
-      else isValid ux && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
+instance NFData c => NFData (FFA p r c)
 
-instance HNFData c => NFData (FFA p r c)
-
-deriving stock instance HShow c => Show (FFA p r c)
+deriving stock instance Show c => Show (FFA p r c)
 
 instance (Symbolic c, KnownFFA p r c) => Eq (FFA p r c)
 
-deriving instance Arithmetic a => Haskell.Eq (FFA p r (Interpreter a))
+deriving instance Arithmetic a => Haskell.Eq (FFA p r a)
 
 integralFromFFA
   :: forall p n f
@@ -130,11 +120,8 @@ integralFromFFA (toIntegral -> n) u =
    in
     k * fromConstant (order @f) + n
 
-instance
-  (Arithmetic a, KnownFFA p r (Interpreter a))
-  => ToConstant (FFA p r (Interpreter a))
-  where
-  type Const (FFA p r (Interpreter a)) = Zp p
+instance (Arithmetic a, KnownFFA p r a) => ToConstant (FFA p r a) where
+  type Const (FFA p r a) = Zp p
   toConstant (FFA (toConstant -> nx) (UIntFFA (toConstant -> ux))) =
     fromConstant $ integralFromFFA @p @(Order a) nx (fromConstant ux)
 
@@ -148,8 +135,8 @@ instance
 
 instance
   {-# OVERLAPPING #-}
-  (Symbolic c, Order (BaseField c) ~ p, KnownRegisterSize r)
-  => FromConstant (FieldElement c) (FFA p r c)
+  (Symbolic c, Order c ~ p, KnownRegisterSize r)
+  => FromConstant (CompatData FieldElement c) (FFA p r c)
   where
   fromConstant nx = FFA nx (UIntFFA zero)
 
@@ -160,26 +147,18 @@ instance {-# OVERLAPPING #-} (Symbolic c, KnownFFA p r c) => Scale (FFA p r c) (
 instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
   uniformM = fmap fromConstant . uniformM @(Zp p)
 
-valueFFA
-  :: forall p r c i a
-   . (Symbolic c, KnownFFA p r c, Witness i (WitnessField c), a ~ BaseField c)
-  => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) i
-  -> IntegralOf (WitnessField c)
-valueFFA (Par1 (at -> ni) :*: (natural @c @(FFAUIntSize p (Order a)) @r -> ui)) =
-  integralFromFFA @p @(Order a) ni ui
-
 layoutFFA
-  :: forall p r c a w
-   . (Symbolic c, KnownFFA p r c, a ~ BaseField c, w ~ WitnessField c)
-  => IntegralOf w
-  -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) w
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c)
+  => IntegralOf c
+  -> (Par1 :*: Vector (NumberOfRegisters c (FFAUIntSize p (Order c)) r)) c
 layoutFFA c =
   Par1 (fromConstant c)
-    :*: tabulate (register @c @(FFAUIntSize p (Order a)) @r c)
+    :*: tabulate (register @c @(FFAUIntSize p (Order c)) @r c)
 
 fromFFA
   :: forall p r a
-   . (Arithmetic a, KnownFFA p r (Interpreter a))
+   . (Arithmetic a, KnownFFA p r a)
   => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
   -> Integer
 fromFFA (Par1 x :*: v) =
@@ -190,12 +169,12 @@ fromFFA (Par1 x :*: v) =
 
 toFFA
   :: forall p r a
-   . (Arithmetic a, KnownFFA p r (Interpreter a))
+   . (Arithmetic a, KnownFFA p r a)
   => Integer
   -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
 toFFA n =
   let FFA (FieldElement (Interpreter x)) (UIntFFA (UInt (Interpreter v))) =
-        fromConstant n :: FFA p r (Interpreter a)
+        fromConstant n :: FFA p r a
    in x :*: v
 
 instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) where
@@ -207,7 +186,7 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     p :: FromConstant Natural a => a
     p = fromConstant (value @p)
     -- \| Computes unconstrained \(d = ab div p\) and \(m = ab mod p\)
-    nd, nm :: FieldElement c
+    nd, nm :: CompatData FieldElement c
     ud, um :: UIntFFA p r c
     (nd :*: ud) :*: (nm :*: um) =
       restore
@@ -258,8 +237,8 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
     p = fromConstant (value @p)
     -- \| Computes unconstrained \(d = ab div p\) and \(m = ab mod p\).
     -- \(d\) must be {0, 1} as addition can only overflow so much.
-    d :: Bool c
-    nm :: FieldElement c
+    d :: CompatData Bool c
+    nm :: CompatData FieldElement c
     um :: UIntFFA p r c
     d :*: nm :*: um =
       restore
@@ -339,53 +318,53 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
     p :: FromConstant Natural a => a
     p = fromConstant (value @p)
     -- \| Computes unconstrained Bezout coefficients.
-    nl, nr :: FieldElement c
+    nl, nr :: CompatData FieldElement c
     ul, ur :: UIntFFA p r c
-    (nl :*: ul) :*: (nr :*: ur) =
-      restore
-        ( symbolicF
-            (arithmetize (nx :*: ux))
-            ( \(fromFFA @p @r -> x) ->
-                let l0 = negate (bezoutL p x)
-                    r0 = bezoutR p x
-                    (l, r) = if r0 Prelude.< 0 then (l0 + x, r0 + p) else (l0, r0)
-                 in toFFA @p @r l :*: toFFA @p @r r
-            )
-            \(valueFFA @p @r @c -> x) -> do
-              let l0 = negate (bezoutL p x)
-                  r0 = bezoutR p x
-                  s = r0 `div` p -- -1 when negative, 0 when positive
-                  l = l0 - s * x
-                  r = r0 - s * p
-              traverse unconstrained $
-                layoutFFA @p @r @c l :*: layoutFFA @p @r @c r
-        , (U1 :*: U1) :*: (U1 :*: U1)
-        )
+    (nl :*: ul) :*: (nr :*: ur) = _
+      -- restore
+      --  ( symbolicF
+      --      (arithmetize (nx :*: ux))
+      --      ( \(fromFFA @p @r -> x) ->
+      --          let l0 = negate (bezoutL p x)
+      --              r0 = bezoutR p x
+      --              (l, r) = if r0 Prelude.< 0 then (l0 + x, r0 + p) else (l0, r0)
+      --           in toFFA @p @r l :*: toFFA @p @r r
+      --      )
+      --      \(valueFFA @p @r @c -> x) -> do
+      --        let l0 = negate (bezoutL p x)
+      --            r0 = bezoutR p x
+      --            s = r0 `div` p -- -1 when negative, 0 when positive
+      --            l = l0 - s * x
+      --            r = r0 - s * p
+      --        traverse unconstrained $
+      --          layoutFFA @p @r @c l :*: layoutFFA @p @r @c r
+      --  , (U1 :*: U1) :*: (U1 :*: U1)
+      --  )
     -- \| Constraints:
     -- \* UInt registers are indeed registers;
     -- \* r < p;
     -- \* equation holds modulo basefield;
     -- \* equation holds modulo 2^k.
-    ck =
-      isValid (ur :*: FFA @p nl ul)
-        && (nr * nx == nl * p + one)
-        && (uintFFA ur * uintFFA ux == uintFFA ul * p + one)
+    ck = _
+      -- isValid (ur :*: FFA @p nl ul)
+      --  && (nr * nx == nl * p + one)
+      --  && (uintFFA ur * uintFFA ux == uintFFA ul * p + one)
     -- \| Sew constraints into result.
-    ny :*: uy =
-      restore
-        ( fromCircuitF
-            (arithmetize (nr :*: ur :*: ck))
-            \(ni :*: ui :*: Par1 b) -> do
-              constraint (($ b) - one)
-              return (ni :*: ui)
-        , U1 :*: U1
-        )
+    ny :*: uy = _
+      -- restore
+      --  ( fromCircuitF
+      --      (arithmetize (nr :*: ur :*: ck))
+      --      \(ni :*: ui :*: Par1 b) -> do
+      --        constraint (($ b) - one)
+      --        return (ni :*: ui)
+      --  , U1 :*: U1
+      --  )
 
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
-  type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c
+  type Bits (FFA p r c) = CompatData (ByteString (NumberOfBits (Zp p))) c
   binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
   fromBinary = unsafeFromUInt @(NumberOfBits (Zp p)) . from
 
@@ -393,8 +372,8 @@ instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
 unsafeFromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
-  => UInt n r c
+  => (KnownNat n, KnownNat (GetRegisterSize c n r))
+  => CompatData (UInt n r) c
   -> FFA p r c
 unsafeFromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
 
@@ -402,59 +381,59 @@ fromUInt
   :: forall n p r c
    . (Symbolic c, KnownFFA p r c)
   => KnownNat n
-  => UInt n r c
+  => CompatData (UInt n r) c
   -> FFA p r c
 fromUInt ux =
   let
     uWide = resize ux
-    m :: UInt (FFAMaxBits p c) r c = fromConstant (value @p)
+    m :: CompatData (UInt (FFAMaxBits p c) r) c = fromConstant (value @p)
    in
     unsafeFromUInt $ mod uWide m
 
 -- | __NOTE__: This function assumes that the given 'Int' is in the range of the field. Use 'fromInt' instead if you need to perform a modulo operation (by order of field) on the 'Int'.
 unsafeFromInt
   :: (Symbolic c, KnownFFA p r c)
-  => (KnownNat n, KnownNat (GetRegisterSize (BaseField c) n r))
-  => Int n r c
+  => (KnownNat n, KnownNat (GetRegisterSize c n r))
+  => CompatData (Int n r) c
   -> FFA p r c
-unsafeFromInt ix =
-  let uxFFA = unsafeFromUInt (uint ix)
+unsafeFromInt (CompatData ix) =
+  let uxFFA = unsafeFromUInt $ CompatData (uint ix)
    in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 fromInt
   :: (Symbolic c, KnownFFA p r c)
   => KnownNat n
-  => Int n r c
+  => CompatData (Int n r) c
   -> FFA p r c
-fromInt ix =
-  let uxFFA = fromUInt (uint ix)
+fromInt (CompatData ix) =
+  let uxFFA = fromUInt $ CompatData (uint ix)
    in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
 
 toUInt
   :: forall n p r c
    . Symbolic c
-  => (KnownFFA p r c, KnownNat n, KnownNat (NumberOfRegisters (BaseField c) n r))
-  => KnownNat (GetRegisterSize (BaseField c) n r)
+  => (KnownFFA p r c, KnownNat n, KnownNat (NumberOfRegisters c n r))
+  => KnownNat (GetRegisterSize c n r)
   => FFA p r c
-  -> UInt n r c
+  -> CompatData (UInt n r) c
 toUInt x = uy
  where
   -- \| Computes unconstrained UInt value
-  us :: UInt n r c
-  us =
-    restore
-      ( symbolicF
-          (arithmetize x)
-          ( \(fromFFA @p @r -> v) ->
-              let UInt (Interpreter f) =
-                    fromConstant v
-                      :: UInt n r (Interpreter (BaseField c))
-               in f
-          )
-          \(valueFFA @p @r @c -> v) ->
-            traverse unconstrained $ tabulate (register @c @n @r v)
-      , U1
-      )
+  us :: CompatData (UInt n r) c
+  us = _
+    -- restore
+    --   ( symbolicF
+    --       (arithmetize x)
+    --       ( \(fromFFA @p @r -> v) ->
+    --           let UInt (Interpreter f) =
+    --                fromConstant v
+    --                  :: UInt n r (Interpreter c)
+    --           in f
+    --      )
+    --      \(valueFFA @p @r @c -> v) ->
+    --        traverse unconstrained $ tabulate (register @c @n @r v)
+    --  , U1
+    --  )
   -- \| Constraints:
   -- \* UInt registers are indeed registers;
   -- \* casting back yields source residues.
