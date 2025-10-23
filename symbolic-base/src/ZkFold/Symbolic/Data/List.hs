@@ -292,7 +292,7 @@ singleton x = x .: emptyList
 (!!)
   :: forall x c n
    . (SymbolicData x, HasRep x c, SymbolicFold c)
-  => (KnownNat n, KnownRegisters c n Auto)
+  => (KnownNat n, KnownRegisters (BaseField c) n Auto)
   => List x c
   -> UInt n Auto c
   -> x c
@@ -328,7 +328,7 @@ concat = concatMap id
 findIndex
   :: forall x c n
    . (SymbolicData x, HasRep x c, SymbolicFold c, KnownNat n)
-  => KnownRegisters c n Auto
+  => KnownRegisters (BaseField c) n Auto
   => (forall d. SymbolicFold d => x d -> Bool d)
   -> List x c
   -> UInt n Auto c
@@ -344,7 +344,7 @@ insert
      , HasRep x c
      , SymbolicFold c
      , KnownNat n
-     , KnownRegisters c n Auto
+     , KnownRegisters (BaseField c) n Auto
      )
   => List x c
   -> UInt n Auto c

@@ -103,7 +103,7 @@ deriving instance HShow context => Haskell.Show (UInt n r context)
 instance SymbolicData (UInt n r) where
   type Layout (UInt n r) k = Vector (NumberOfRegistersN k n r)
   type Payload (UInt n r) _ = U1
-  type HasRep (UInt n r) c = KnownRegisters c n r
+  type HasRep (UInt n r) c = KnownRegisters (BaseField c) n r
 
   arithmetize (UInt l) = l
   payload _ = U1
@@ -147,7 +147,7 @@ expMod
   => KnownNat n
   => KnownNat m
   => KnownNat (2 * m)
-  => KnownRegisters c (2 * m) r
+  => KnownRegisters (BaseField c) (2 * m) r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
   => UInt n r c
   -> UInt p r c
@@ -175,7 +175,7 @@ exp65537Mod
   => KnownNat n
   => KnownNat m
   => KnownNat (2 * m)
-  => KnownRegisters c (2 * m) r
+  => KnownRegisters (BaseField c) (2 * m) r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
   => UInt n r c
   -> UInt m r c
@@ -197,7 +197,7 @@ bitsPow
   => KnownRegisterSize r
   => KnownNat n
   => KnownNat p
-  => KnownRegisters c n r
+  => KnownRegisters (BaseField c) n r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
   => Natural
   -> ByteString p c
@@ -217,7 +217,7 @@ productMod
    . Symbolic c
   => KnownRegisterSize r
   => KnownNat n
-  => KnownRegisters c n r
+  => KnownRegisters (BaseField c) n r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
   => UInt n r c
   -> UInt n r c
@@ -242,8 +242,8 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     )
     \ar br mr ->
       (liftA2 (:*:) `on` traverse unconstrained)
-        (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
-        (tabulate $ register @c @n @r ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
+        (tabulate $ register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr))
+        (tabulate $ register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr))
 
   -- \| Unconstrained @div@ part.
   dv = hmap fstP source
@@ -447,15 +447,12 @@ natural =
 
 -- | @register n i@ returns @i@-th register of @n@.
 register
-  :: forall c n r
-   . (Symbolic c, KnownNat n, KnownRegisterSize r)
-  => IntegralOf (WitnessField c)
-  -> Zp (NumberOfRegisters (BaseField c) n r)
-  -> WitnessField c
+  :: forall f n r a . (PrimeField f, KnownNat n, KnownRegisterSize r, Finite a)
+  => IntegralOf f -> Zp (NumberOfRegisters a n r) -> f
 register c i =
   fromConstant ((c `div` fromConstant (2 ^ shift :: Natural)) `mod` base)
  where
-  rs = registerSize @(BaseField c) @n @r
+  rs = registerSize @a @n @r
   base = fromConstant (2 ^ rs :: Natural)
   shift = Haskell.fromIntegral (toConstant i) * rs
 
@@ -463,7 +460,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
+  , KnownRegisters (BaseField c) n r
   , regSize ~ GetRegisterSize (BaseField c) n r
   , KnownNat (Ceil regSize OrdWord)
   )
@@ -485,8 +482,8 @@ instance
       )
       \n d ->
         (liftA2 (:*:) `on` traverse unconstrained)
-          (tabulate $ register @c @n @r (natural @c @n @r n `div` natural @c @n @r d))
-          (tabulate $ register @c @n @r (natural @c @n @r n `mod` natural @c @n @r d))
+          (tabulate $ register @(WitnessField c) @n @r @(BaseField c) (natural @c @n @r n `div` natural @c @n @r d))
+          (tabulate $ register @(WitnessField c) @n @r @(BaseField c) (natural @c @n @r n `mod` natural @c @n @r d))
 
     -- \| Unconstrained @div@ part.
     dv = hmap fstP source
@@ -529,7 +526,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
+  , KnownRegisters (BaseField c) n r
   , regSize ~ GetRegisterSize (BaseField c) n r
   , KnownNat (Ceil regSize OrdWord)
   )

@@ -24,11 +24,12 @@ import ZkFold.Data.HFunctor.Classes (HNFData)
 import ZkFold.Data.Package (Package (pack))
 import ZkFold.Data.Product (uncurryP)
 import ZkFold.Symbolic.MonadCircuit
+import qualified ZkFold.Symbolic.V2 as V2
 
 -- | Field of residues with decidable equality and ordering
 -- is called an ``arithmetic'' field.
 type Arithmetic a =
-  ( PrimeField a
+  ( V2.Symbolic a
   , IntegralOf a ~ Integer
   , ToConstant a
   , Const a ~ Natural

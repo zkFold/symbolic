@@ -151,7 +151,7 @@ type Keccak algorithm context k =
   , -- So that we are dealing with "byte"strings.
     Mod k 8 ~ 0
   , Symbolic context
-  , KnownRegisters context (NumberOfBits (BaseField context)) Auto
+  , KnownRegisters (BaseField context) (NumberOfBits (BaseField context)) Auto
   , KnownNat
       ( Ceil
           ( GetRegisterSize
