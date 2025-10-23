@@ -10,6 +10,7 @@ import ZkFold.Symbolic.Data.JWT.Google
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.VarByteString
 import Prelude (($))
+import ZkFold.Symbolic.Compat (CompatData (..))
 
 type PublicInput ctx = ByteString 256 ctx
 
@@ -23,11 +24,15 @@ zkLogin
   -> ByteString 256 ctx
   -> Certificate ctx
   -> PublicInput ctx
-  -> Bool ctx
+  -> CompatData Bool ctx
 zkLogin jHeader jPayload jSignature amount recipient certificate pi = tokenValid && piValid
  where
   (tokenValid, tokenHash) = verifyJWT @"RS256" jHeader jPayload jSignature certificate
-  truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
+  truePi = sha2Var @"SHA256" $
+    plEmail jPayload @+
+    fromByteString tokenHash @+
+    fromByteString amount @+
+    fromByteString recipient
   piValid = truePi == pi
 
 zkLoginNoSig
@@ -41,11 +46,15 @@ zkLoginNoSig
   -> ByteString 256 ctx
   -> Certificate ctx
   -> PublicInput ctx
-  -> Bool ctx
+  -> CompatData Bool ctx
 zkLoginNoSig jHeader jPayload _ amount recipient _ pi = piValid
  where
   tokenHash = sha2Var @"SHA256" $ tokenBits jHeader jPayload
-  truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
+  truePi = sha2Var @"SHA256" $
+    plEmail jPayload @+
+    fromByteString tokenHash @+
+    fromByteString amount @+
+    fromByteString recipient
   piValid = truePi == pi
 
 exampleZkLoginNoSig
@@ -59,5 +68,5 @@ exampleZkLoginNoSig
   -> ByteString 256 ctx
   -> Certificate ctx
   -> PublicInput ctx
-  -> Bool ctx
+  -> CompatData Bool ctx
 exampleZkLoginNoSig = zkLoginNoSig

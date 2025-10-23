@@ -10,6 +10,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (false, true)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
@@ -23,7 +24,7 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
 
-type I = RollupBFInterpreter
+type Fq = RollupBF
 
 -- Small sizes for simplicity
 type Bi = 1
@@ -45,25 +46,25 @@ specE2EOne :: Spec
 specE2EOne =
   it "E2E One" $ do
     let
-      emptyTree :: SymMerkle.MerkleTree Ud I
-      emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
+      emptyTree :: SymMerkle.MerkleTree Ud Fq
+      emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @Fq))
 
-      prevState :: State Bi Bo Ud A I
+      prevState :: State Bi Bo Ud A Fq
       prevState =
         State
           { sPreviousStateHash = zero
           , sUTxO = emptyTree
           , sLength = zero
-          , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
-          , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
+          , sBridgeIn = hash (Comp1 (pure (nullOutput @A @Fq)))
+          , sBridgeOut = hash (Comp1 (pure (nullOutput @A @Fq)))
           }
 
-      utxoPreimage :: Leaves Ud (UTxO A I)
-      utxoPreimage = pure (nullUTxO @A @I)
-      privateKey :: PrivateKey I
+      utxoPreimage :: Leaves Ud (UTxO A Fq)
+      utxoPreimage = pure (nullUTxO @A @Fq)
+      privateKey :: PrivateKey Fq
       privateKey = fromConstant (1 :: Natural)
-      publicKey :: PublicKey I
-      publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
+      publicKey :: PublicKey Fq
+      publicKey = privateKey `scale` pointGen @(EdDSAPoint Fq)
 
       address = hashFn publicKey
 
@@ -73,20 +74,20 @@ specE2EOne =
             [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}]
       bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
       -- We bridge in an output and refer to it in transaction.
-      bridgedIn :: (Vector Bi :.: Output A) I
+      bridgedIn :: (Vector Bi :.: Output A) Fq
       bridgedIn = Comp1 (fromList [bridgeInOutput])
 
-      bridgeInHash :: HashSimple I
-      bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
+      bridgeInHash :: HashSimple Fq
+      bridgeInHash = (one :: CompatData FieldElement Fq) & hash & Base.hHash
 
-      tx :: Transaction Ixs Oxs A I
+      tx :: Transaction Ixs Oxs A Fq
       tx =
         Transaction
           { inputs = Comp1 (fromList [OutputRef {orTxId = bridgeInHash, orIndex = zero}])
           , outputs = Comp1 (fromList [bridgeInOutput :*: false])
           }
 
-      batch :: TransactionBatch Ixs Oxs A TxCount I
+      batch :: TransactionBatch Ixs Oxs A TxCount Fq
       batch = TransactionBatch {tbTransactions = pure tx}
 
       sigs =
@@ -95,19 +96,19 @@ specE2EOne =
 
       newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
-    sLength newState `shouldBe` (one :: FieldElement I)
+    sLength newState `shouldBe` (one :: CompatData FieldElement Fq)
     validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
     -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
     let
-      tx2 :: Transaction Ixs Oxs A I
+      tx2 :: Transaction Ixs Oxs A Fq
       tx2 =
         Transaction
           { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
           , outputs = Comp1 (fromList [bridgeInOutput :*: true])
           }
-      bridgedIn2 :: (Vector Bi :.: Output A) I
-      bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
-      batch2 :: TransactionBatch Ixs Oxs A TxCount I
+      bridgedIn2 :: (Vector Bi :.: Output A) Fq
+      bridgedIn2 = Comp1 (fromList [nullOutput @A @Fq])
+      batch2 :: TransactionBatch Ixs Oxs A TxCount Fq
       batch2 = TransactionBatch {tbTransactions = pure tx2}
       sigs2 =
         let rPoint :*: s = signTransaction tx2 privateKey
@@ -115,4 +116,4 @@ specE2EOne =
       newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
 
     validateStateUpdateIndividualChecks newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
-    unComp1 utxoPreimage3 `shouldBe` pure (nullUTxO @A @I)
+    unComp1 utxoPreimage3 `shouldBe` pure (nullUTxO @A @Fq)

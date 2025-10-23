@@ -35,7 +35,6 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Vector (Vector (..), fromVector, reverse, unsafeToVector)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants (
   sha224InitialHashes,
@@ -47,8 +46,8 @@ import ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants (
   word32RoundConstants,
   word64RoundConstants,
  )
-import ZkFold.Symbolic.Class (BaseField, Symbolic, fromCircuitF)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
+import ZkFold.Symbolic.Class (fromCircuitF)
+import ZkFold.Symbolic.Data.Bool (BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (
   ByteString (..),
   ShiftBits (..),
@@ -70,6 +69,8 @@ import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData), CompatContext (..))
 
 -- | SHA2 is a family of hashing functions with almost identical implementations but different constants and parameters.
 -- This class links these varying parts with the appropriate algorithm.
@@ -81,7 +82,7 @@ class
   , Div (ChunkSize algorithm) (WordSize algorithm) * WordSize algorithm ~ ChunkSize algorithm
   , (Div (8 * (WordSize algorithm)) (WordSize algorithm)) * (WordSize algorithm) ~ 8 * (WordSize algorithm)
   ) =>
-  AlgorithmSetup (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
+  AlgorithmSetup (algorithm :: Symbol) (context :: Type)
   where
   type WordSize algorithm :: Natural
   -- ^ The length of words the algorithm operates internally, in bits.
@@ -99,7 +100,9 @@ class
   roundConstants :: V.Vector (ByteString (WordSize algorithm) context)
   -- ^ Constants used in the internal loop, one per each round.
 
-  truncateResult :: ByteString (8 * WordSize algorithm) context -> ByteString (ResultSize algorithm) context
+  truncateResult
+    :: ByteString (8 * WordSize algorithm) context
+    -> ByteString (ResultSize algorithm) context
   -- ^ A function to postprocess the hash. For example, SHA224 requires dropping the last 32 bits of a SHA256 hash.
 
   sigmaShifts :: (Natural, Natural, Natural, Natural, Natural, Natural)
@@ -236,10 +239,12 @@ sha2
   :: forall (algorithm :: Symbol) context k {d}
    . SHA2 algorithm context k
   => d ~ Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)
-  => ByteString k context -> ByteString (ResultSize algorithm) context
+  => ByteString k context
+  -> ByteString (ResultSize algorithm) context
 sha2 messageBits = sha2Blocks @algorithm @context (fromVector chunks)
  where
-  paddedMessage :: ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context
+  paddedMessage
+    :: ByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context
   paddedMessage =
     withDict (timesNat @2 @(WordSize algorithm)) $
       withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $
@@ -250,17 +255,19 @@ sha2 messageBits = sha2Blocks @algorithm @context (fromVector chunks)
   chunks =
     withModPaddedLength @k @algorithm $
       withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
-        toWords @d @(ChunkSize algorithm) paddedMessage
+          toWords @d @(ChunkSize algorithm) paddedMessage
 
 sha2Var
   :: forall (algorithm :: Symbol) context k {d}
    . SHA2 algorithm context k
   => KnownNat (Log2 (ChunkSize algorithm))
   => d ~ Div (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) (ChunkSize algorithm)
-  => VarByteString k context -> ByteString (ResultSize algorithm) context
+  => VarByteString k context
+  -> ByteString (ResultSize algorithm) context
 sha2Var messageBits = sha2BlocksVar @algorithm @context bsLength (fromVector chunks)
  where
-  paddedMessage :: VarByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context
+  paddedMessage
+    :: VarByteString (PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) context
   paddedMessage =
     withDict (timesNat @2 @(WordSize algorithm)) $
       withPaddedLength @k @(ChunkSize algorithm) @(2 * WordSize algorithm) $
@@ -273,7 +280,7 @@ sha2Var messageBits = sha2BlocksVar @algorithm @context bsLength (fromVector chu
   chunks =
     withModPaddedLength @k @algorithm $
       withDivisibleDiv @(PaddedLength k (ChunkSize algorithm) (2 * WordSize algorithm)) @(ChunkSize algorithm) $
-        toWords @d @(ChunkSize algorithm) bsBuffer
+          toWords @d @(ChunkSize algorithm) bsBuffer
 
 -- | Pad the input bytestring according to the rules described in @PaddedLength@
 sha2Pad
@@ -308,34 +315,42 @@ sha2PadVar
   => KnownNat lenBits
   => VarByteString k context
   -> VarByteString (PaddedLength k padTo lenBits) context
-sha2PadVar VarByteString {..} = VarByteString paddedLengthFe $ withPaddedLength @k @padTo @lenBits $ grown || lenBits
+sha2PadVar VarByteString {..} =
+  VarByteString paddedLengthFe $
+    withPaddedLength @k @padTo @lenBits (grown || lenBits)
  where
   -- Number of bits in a chunk.
   chunkBits :: Natural
   chunkBits = ilog2 $ value @padTo
 
   numWords :: Natural
-  numWords = (value @(NumberOfBits (BaseField context)) + chunkBits -! 1) `div` chunkBits
+  numWords = (value @(NumberOfBits context) + chunkBits -! 1) `div` chunkBits
 
-  getNextChunk :: FieldElement context -> FieldElement context
-  getNextChunk (FieldElement fe) = FieldElement $ fromCircuitF fe $ \(Par1 e) -> do
-    feWords <- expansionW @(Log2 padTo) numWords e
-    d <- newAssigned $ \p -> fromConstant (value @padTo) - p (P.head feWords)
-    dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@
-    res <- newAssigned $ \p -> p e + p (P.head dWords)
-    pure $ Par1 res
+  getNextChunk :: CompatData FieldElement context -> CompatData FieldElement context
+  getNextChunk (CompatData (FieldElement fe)) = CompatData $ FieldElement $
+    fromCircuitF fe $ \(Par1 e) -> do
+      feWords <- expansionW @(Log2 padTo) numWords e
+      d <- newAssigned $ \p -> fromConstant (value @padTo) - p (P.head feWords)
+      dWords <- expansionW @(Log2 padTo) 2 d -- unset the most significant bit if feWords was divisible by @padTo@
+      res <- newAssigned $ \p -> p e + p (P.head dWords)
+      pure $ Par1 res
 
-  nextChunk :: FieldElement context
+  nextChunk :: CompatData FieldElement context
   nextChunk = getNextChunk bsLength
 
-  paddedLengthFe :: FieldElement context
-  paddedLengthFe = bool nextChunk (nextChunk + fromConstant (value @padTo)) (nextChunk <= bsLength + fromConstant (value @lenBits))
+  paddedLengthFe :: CompatData FieldElement context
+  paddedLengthFe =
+    bool nextChunk
+      (nextChunk + fromConstant (value @padTo))
+      (nextChunk <= bsLength + fromConstant (value @lenBits))
 
-  diff :: FieldElement context
+  diff :: CompatData FieldElement context
   diff = paddedLengthFe - bsLength
 
   lenBits :: ByteString (PaddedLength k padTo lenBits) context
-  lenBits = withPaddedLength @k @padTo @lenBits $ resize . ByteString . hmap reverse $ binaryExpansion bsLength
+  lenBits = withPaddedLength @k @padTo @lenBits $
+     resize $ ByteString $ reverse $ compatContext $
+       binaryExpansion (compatData bsLength)
 
   paddedL :: Natural
   paddedL = withPaddedLength @k @padTo @lenBits $ value @(PaddedLength k padTo lenBits)
@@ -343,9 +358,8 @@ sha2PadVar VarByteString {..} = VarByteString paddedLengthFe $ withPaddedLength 
   grown :: ByteString (PaddedLength k padTo lenBits) context
   grown =
     let resized = withPaddedLength @k @padTo @lenBits $ resize bsBuffer
-     in withPaddedLength @k @padTo @lenBits $
-          (`VB.shiftL` (diff - one)) . P.flip set (paddedL -! 1) . (`shiftBitsL` 1) $
-            resized
+     in withPaddedLength @k @padTo @lenBits $ (`VB.shiftL` (diff - one)) $
+          set (resized `shiftBitsL` 1) (paddedL -! 1)
 
 -- | This allows us to calculate hash of a bytestring represented by a Natural number.
 -- This is only useful for testing when the length of the test string is unknown at compile time.
@@ -366,8 +380,7 @@ type SHA2N algorithm context = AlgorithmSetup algorithm context
 -- | Same as @sha2@ but accepts a Natural number and length of message in bits instead of a ByteString.
 -- Only used for testing.
 sha2Natural
-  :: forall (algorithm :: Symbol) (context :: (Type -> Type) -> Type)
-   . SHA2N algorithm context
+  :: forall algorithm context. SHA2N algorithm context
   => Natural -> Natural -> ByteString (ResultSize algorithm) context
 sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
  where
@@ -399,10 +412,12 @@ sha2Natural numBits messageBits = sha2Blocks @algorithm @context chunks
 -- A note on @force@: it is really necessary, otherwise the algorithm keeps piling up thunks.
 -- Even 16 GB of RAM is not enough.
 sha2Blocks
-  :: forall algorithm (context :: (Type -> Type) -> Type)
+  :: forall algorithm (context :: Type)
    . AlgorithmSetup algorithm context
-  => [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
-sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize algorithm) $ unsafeToVector @8 $ V.toList hashParts
+  => [ByteString (ChunkSize algorithm) context]
+  -> ByteString (ResultSize algorithm) context
+sha2Blocks chunks = truncateResult @algorithm @context $
+  concat @8 @(WordSize algorithm) $ unsafeToVector @8 $ V.toList hashParts
  where
   hashParts :: V.Vector (ByteString (WordSize algorithm) context)
   hashParts = V.create $ do
@@ -415,10 +430,14 @@ sha2Blocks chunks = truncateResult @algorithm @context $ concat @8 @(WordSize al
 -- | Same as @sha2Blocks@ but ignores unassigned blocks of a VarByteString
 -- The current length of the VarByteString being processed is stored in the FieldElement
 sha2BlocksVar
-  :: forall algorithm (context :: (Type -> Type) -> Type)
+  :: forall algorithm (context :: Type)
    . AlgorithmSetup algorithm context
-  => FieldElement context -> [ByteString (ChunkSize algorithm) context] -> ByteString (ResultSize algorithm) context
-sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(WordSize algorithm) $ Vector @8 hashParts
+  => CompatData FieldElement context
+  -> [ByteString (ChunkSize algorithm) context]
+  -> ByteString (ResultSize algorithm) context
+sha2BlocksVar len chunks =
+  truncateResult @algorithm @context $
+    concat @8 @(WordSize algorithm) $ Vector @8 hashParts
  where
   chunkSize :: Natural
   chunkSize = value @(ChunkSize algorithm)
@@ -436,7 +455,7 @@ sha2BlocksVar len chunks = truncateResult @algorithm @context $ concat @8 @(Word
   varStep hn (ix, chunk) =
     toV $
       unComp1 $
-        bool @(Bool context)
+        bool
           (Comp1 $ Vector @8 hn)
           (Comp1 $ Vector @8 $ processChunkPure @algorithm @context hn chunk)
           (len > fromConstant (ix * chunkSize))
@@ -455,14 +474,15 @@ processChunkPure hn chunk = runST $ do
 processChunk
   :: forall algorithm context s
    . AlgorithmSetup algorithm context
-  => V.MVector (VM.PrimState (ST s)) (ByteString (WordSize algorithm) context)
+  => V.MVector (VM.PrimState (ST s))
+               (ByteString (WordSize algorithm) context)
   -> ByteString (ChunkSize algorithm) context
-  -> ST s (V.MVector (VM.PrimState (ST s)) (ByteString (WordSize algorithm) context))
+  -> ST s (V.MVector (VM.PrimState (ST s))
+          (ByteString (WordSize algorithm) context))
 processChunk hn chunk = do
-  let words =
-        fromVector $
-          withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $
-            toWords @(Div (ChunkSize algorithm) (WordSize algorithm)) @(WordSize algorithm) chunk
+  let words = fromVector $
+        withDivisibleDiv @(ChunkSize algorithm) @(WordSize algorithm) $
+          toWords @(Div (ChunkSize algorithm) (WordSize algorithm)) @(WordSize algorithm) chunk
 
   messageSchedule <- VM.unsafeNew @_ @(ByteString (WordSize algorithm) context) rounds
   forM_ (zip [0 ..] words) $ P.uncurry (VM.write messageSchedule)
@@ -502,13 +522,14 @@ processChunk hn chunk = do
     let (sh0, sh1, sh2, sh3, sh4, sh5) = sumShifts @algorithm @context
         s1 = force $ (e `rotateBitsR` sh3) `xor` (e `rotateBitsR` sh4) `xor` (e `rotateBitsR` sh5)
         ch = force $ (e && f) `xor` (not e && g)
+        temp1 :: ByteString (WordSize algorithm) context
         temp1 =
           force $ from (from h + from s1 + from ch + from ki + from wi :: UInt (WordSize algorithm) Auto context)
-            :: ByteString (WordSize algorithm) context
         s0 = force $ (a `rotateBitsR` sh0) `xor` (a `rotateBitsR` sh1) `xor` (a `rotateBitsR` sh2)
         maj = force $ (a && b) `xor` (a && c) `xor` (b && c)
+        temp2 :: ByteString (WordSize algorithm) context
         temp2 =
-          force $ from (from s0 + from maj :: UInt (WordSize algorithm) Auto context) :: ByteString (WordSize algorithm) context
+          force $ from (from s0 + from maj :: UInt (WordSize algorithm) Auto context)
 
     ST.writeSTRef hRef g
     ST.writeSTRef gRef f

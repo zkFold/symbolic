@@ -14,19 +14,18 @@ import Prelude (Eq (..), ($))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import ZkFold.Algebra.Field (Zp)
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval1)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
 import qualified ZkFold.Data.Eq as ZkFold
-import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_512)
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Data.Vec (runVec)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compat (CompatData)
+import ZkFold.ArithmeticCircuit.Elem (compileV2, Elem)
+import ZkFold.Symbolic.V2 (Symbolic)
 
-blake2bNumeric :: forall c. (Symbolic c, HEq c) => Spec
+blake2bNumeric :: forall c. Arithmetic c => Spec
 blake2bNumeric =
   let a = blake2b_512 @0 @c $ fromConstant (0 :: Natural)
       c = hash 64 BI.empty BI.empty
@@ -44,7 +43,7 @@ Appendix A.  Example of BLAKE2b Computation
                         18 D3 8A A8 DB F1 92 5A B9 23 86 ED D4 00 99 23
 -}
 
-blake2bExampleRfc :: forall c. (Symbolic c, HEq c) => Spec
+blake2bExampleRfc :: forall c. Arithmetic c => Spec
 blake2bExampleRfc =
   let abc' = blake2b_512 @3 @c $ fromConstant $ fromString @BI.ByteString "abc"
       abc = fromConstant @_ @(ByteString 512 _) $ hash 64 BI.empty "abc"
@@ -55,19 +54,18 @@ equalityBlake
    . Symbolic c
   => BI.ByteString
   -> ByteString 24 c
-  -> Bool c
+  -> CompatData Bool c
 equalityBlake target input = fromConstant target ZkFold.== blake2b_224 @3 @c input
 
 blake2bSymbolic :: Spec
 blake2bSymbolic =
-  let ac :: ArithmeticCircuit Fr ((U1 :*: U1) :*: Vector 24 :*: U1) Par1
-      ac = runVec $ compile @Fr $ equalityBlake $ hash 28 BI.empty "abc"
-      ByteString bs = fromConstant @_ @(ByteString 24 (Interpreter Fr)) $ fromString @BI.ByteString "abc"
-      input = runInterpreter bs
-   in it "simple test with cardano-crypto " $ eval1 ac ((U1 :*: U1) :*: input :*: U1) == 1
+  let ac :: ArithmeticCircuit Fr (Vector 24) (Par1 :*: U1)
+      ac = compileV2 @Fr (\x -> (x :*: U1) :*: U1) $ equalityBlake @(Elem Fr) $ hash 28 BI.empty "abc"
+      ByteString input = fromConstant @_ @(ByteString 24 Fr) $ fromString @BI.ByteString "abc"
+   in it "simple test with cardano-crypto " $ eval ac input == (Par1 1 :*: U1)
 
 specBlake2b :: Spec
 specBlake2b = describe "BLAKE2b self-test validation" $ do
-  blake2bNumeric @(Interpreter (Zp BLS12_381_Scalar))
-  blake2bExampleRfc @(Interpreter (Zp BLS12_381_Scalar))
+  blake2bNumeric @(Zp BLS12_381_Scalar)
+  blake2bExampleRfc @(Zp BLS12_381_Scalar)
   blake2bSymbolic

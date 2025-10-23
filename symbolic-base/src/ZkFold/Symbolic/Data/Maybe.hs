@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Maybe (
@@ -18,22 +19,23 @@ module ZkFold.Symbolic.Data.Maybe (
 ) where
 
 import Data.Function ((.))
+import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1)
 import Prelude (foldr)
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
+import ZkFold.Symbolic.Data.V2 (HasRep, SymbolicData, dummy)
+import ZkFold.Symbolic.V2 (Symbolic)
 
-data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
+data Maybe x c = Maybe {isJust :: CompatData Bool c, fromJust :: x c}
   deriving (Generic, Generic1, SymbolicData)
 
-deriving stock instance (HEq c, Haskell.Eq (x c)) => Haskell.Eq (Maybe x c)
+deriving stock instance (Haskell.Eq c, Haskell.Eq (x c)) => Haskell.Eq (Maybe x c)
 
-instance (SymbolicEq x c, Symbolic c) => Eq (Maybe x c)
+instance (Symbolic c, Eq (x c), BooleanOf (x c) ~ CompatData Bool c) => Eq (Maybe x c)
 
 just :: Symbolic c => x c -> Maybe x c
 just = Maybe true
@@ -41,16 +43,16 @@ just = Maybe true
 nothing :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => Maybe x c
 nothing = Maybe false dummy
 
-guard :: Bool c -> x c -> Maybe x c
+guard :: CompatData Bool c -> x c -> Maybe x c
 guard = Maybe
 
-fromMaybe :: forall c x. Conditional (Bool c) (x c) => x c -> Maybe x c -> x c
+fromMaybe :: forall c x. Conditional (CompatData Bool c) (x c) => x c -> Maybe x c -> x c
 fromMaybe a (Maybe j t) = bool a t j
 
-isNothing :: Symbolic c => Maybe x c -> Bool c
+isNothing :: Symbolic c => Maybe x c -> CompatData Bool c
 isNothing = not . isJust
 
-maybe :: forall a b c. Conditional (Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
+maybe :: forall a b c. Conditional (CompatData Bool c) (b c) => b c -> (a c -> b c) -> Maybe a c -> b c
 maybe d h = fromMaybe d . mmap h
 
 mmap :: (a c -> b c) -> Maybe a c -> Maybe b c
@@ -59,7 +61,7 @@ mmap f (Maybe b a) = Maybe b (f a)
 find
   :: forall a c t
    . (SymbolicData a, HasRep a c, Symbolic c, Haskell.Foldable t)
-  => (a c -> Bool c)
+  => (a c -> CompatData Bool c)
   -> t (a c)
   -> Maybe a c
 find p =

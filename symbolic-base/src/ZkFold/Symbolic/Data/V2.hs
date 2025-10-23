@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Data.V2 where
 import Data.Binary (Binary)
 import Data.Constraint (Constraint)
 import Data.Function ((.))
-import Data.Functor (fmap, (<$>))
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Rep (Rep, Representable, pureRep)
 import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
@@ -16,10 +16,18 @@ import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
 
-import ZkFold.Algebra.Class (zero)
+import ZkFold.Algebra.Class (Order, zero)
 import ZkFold.Data.Product (fstP, sndP)
 import ZkFold.Symbolic.Algorithm.Interpolation (pushInterpolation)
 import ZkFold.Symbolic.V2 (Symbolic)
+
+class Functor (Layout f c) => LayoutData f c
+
+instance Functor (Layout f c) => LayoutData f c
+
+class Layout f c ~ Layout f d => EquivData f c d
+
+instance Layout f c ~ Layout f d => EquivData f c d
 
 type RepFunctor f = (Representable f, Binary (Rep f))
 
@@ -27,7 +35,13 @@ class RepFunctor (Layout f c) => RepData f c
 
 instance RepFunctor (Layout f c) => RepData f c
 
-class (forall c. HasRep f c => RepData f c) => SymbolicData (f :: Type -> Type) where
+class
+  ( forall c. LayoutData f c
+  , forall c d. Order c ~ Order d => EquivData f c d
+  , forall c. HasRep f c => RepData f c
+  ) =>
+  SymbolicData (f :: Type -> Type)
+  where
   type Layout f (c :: Type) :: Type -> Type
   type Layout f c = Layout (G.Rep1 f) c
 

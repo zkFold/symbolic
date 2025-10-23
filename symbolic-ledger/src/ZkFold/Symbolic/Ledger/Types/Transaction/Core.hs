@@ -27,25 +27,26 @@ import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import ZkFold.Symbolic.Data.V2 (SymbolicData)
+import ZkFold.Symbolic.V2 (Symbolic)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
@@ -59,21 +60,21 @@ data OutputRef context = OutputRef
   -- TODO: Restrict to represent 'o' outputs instead of 2^32?
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
-instance
-  Symbolic context
-  => Eq (OutputRef context)
+instance Symbolic context => Eq (OutputRef context)
 
-deriving stock instance HEq context => Haskell.Eq (OutputRef context)
+instance Symbolic c => Collect (ConstrainedDatum c) (OutputRef c)
 
-deriving stock instance HShow context => Haskell.Show (OutputRef context)
+deriving stock instance Haskell.Eq context => Haskell.Eq (OutputRef context)
 
-deriving anyclass instance ToJSON (OutputRef RollupBFInterpreter)
+deriving stock instance Haskell.Show context => Haskell.Show (OutputRef context)
 
-deriving anyclass instance FromJSON (OutputRef RollupBFInterpreter)
+deriving anyclass instance ToJSON (OutputRef RollupBF)
 
-deriving anyclass instance ToSchema (OutputRef RollupBFInterpreter)
+deriving anyclass instance FromJSON (OutputRef RollupBF)
+
+deriving anyclass instance ToSchema (OutputRef RollupBF)
 
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
@@ -87,7 +88,9 @@ data Output a context = Output
   -- ^ Assets of the output.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (Output a c)
 
 instance
   ( Symbolic context
@@ -95,18 +98,18 @@ instance
   )
   => Eq (Output a context)
 
-deriving stock instance HEq context => Haskell.Eq (Output a context)
+deriving stock instance Haskell.Eq context => Haskell.Eq (Output a context)
 
-deriving stock instance HShow context => Haskell.Show (Output a context)
+deriving stock instance Haskell.Show context => Haskell.Show (Output a context)
 
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = hashFn
 
-deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
+deriving anyclass instance ToJSON (Output a RollupBF)
 
-deriving anyclass instance FromJSON (Output a RollupBFInterpreter)
+deriving anyclass instance FromJSON (Output a RollupBF)
 
-deriving anyclass instance forall a. KnownNat a => ToSchema (Output a RollupBFInterpreter)
+deriving anyclass instance forall a. KnownNat a => ToSchema (Output a RollupBF)
 
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
@@ -118,7 +121,7 @@ data UTxO a context = UTxO
   , uOutput :: Output a context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
 instance
   ( Symbolic context
@@ -126,18 +129,20 @@ instance
   )
   => Eq (UTxO a context)
 
-deriving stock instance HEq context => Haskell.Eq (UTxO a context)
+instance Symbolic c => Collect (ConstrainedDatum c) (UTxO a c)
 
-deriving stock instance HShow context => Haskell.Show (UTxO a context)
+deriving stock instance Haskell.Eq context => Haskell.Eq (UTxO a context)
+
+deriving stock instance Haskell.Show context => Haskell.Show (UTxO a context)
 
 instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
   hasher = hashFn
 
-deriving anyclass instance ToJSON (UTxO a RollupBFInterpreter)
+deriving anyclass instance ToJSON (UTxO a RollupBF)
 
-deriving anyclass instance FromJSON (UTxO a RollupBFInterpreter)
+deriving anyclass instance FromJSON (UTxO a RollupBF)
 
-deriving anyclass instance forall a. KnownNat a => ToSchema (UTxO a RollupBFInterpreter)
+deriving anyclass instance forall a. KnownNat a => ToSchema (UTxO a RollupBF)
 
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
@@ -152,11 +157,11 @@ nullUTxOHash = hash (nullUTxO @a @context) & Base.hHash
 data Transaction i o a context = Transaction
   { inputs :: (Vector i :.: OutputRef) context
   -- ^ Inputs.
-  , outputs :: (Vector o :.: (Output a :*: Bool)) context
+  , outputs :: (Vector o :.: (Output a :*: CompatData Bool)) context
   -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
 instance
   forall i o a context
@@ -165,12 +170,14 @@ instance
      )
   => Eq (Transaction i o a context)
 
-deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
+deriving anyclass instance ToJSON (Transaction i o a RollupBF)
 
-deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
+deriving anyclass instance FromJSON (Transaction i o a RollupBF)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (Transaction i o a c)
 
 deriving anyclass instance
-  forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter)
+  forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBF)
 
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)

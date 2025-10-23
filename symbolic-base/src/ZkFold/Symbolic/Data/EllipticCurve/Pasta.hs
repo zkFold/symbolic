@@ -1,6 +1,7 @@
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{- HLINT ignore "Use camelCase" -}
 
 module ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point, Vesta_Point) where
 
@@ -11,12 +12,12 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.V2 (Symbolic)
 
 type Pallas_Point = Point (Weierstrass "Pasta") (FFA FpModulus 'Auto)
 
@@ -45,12 +46,12 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits FqModulus ctx) ctx
-    bits = from (toUInt @(FFAMaxBits FqModulus ctx) ffa)
+    bits = from $ toUInt @(FFAMaxBits FqModulus ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits FqModulus ctx) -! 1
@@ -78,12 +79,12 @@ instance
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits FpModulus ctx) ctx
-    bits = from (toUInt @(FFAMaxBits FpModulus ctx) ffa)
+    bits = from $ toUInt @(FFAMaxBits FpModulus ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits FpModulus ctx) -! 1

@@ -9,7 +9,7 @@ import Test.QuickCheck (arbitrary, withMaxSuccess, (.&.), (===))
 import Prelude (pure)
 import qualified Prelude as P
 
-import Tests.Common (evalBool, it, toss)
+import Tests.Common (it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.Number
@@ -19,9 +19,12 @@ import ZkFold.Symbolic.Data.JWT.Google
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Twitch
 import ZkFold.Symbolic.Data.VarByteString (VarByteString, fromNatural)
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Compat (CompatData (..), CompatContext (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..))
+import GHC.Generics (Par1 (..))
 
-type I = Interpreter Fr
+evalBool :: CompatData Bool a -> a
+evalBool (CompatData (Bool (CompatContext (Par1 b)))) = b
 
 specJWT :: Spec
 specJWT = do
@@ -34,12 +37,12 @@ specJWT = do
           (R.PublicKey {..}, R.PrivateKey {..}, _) = generateKeyPair gen 2048
           prvkey = PrivateKey (fromConstant private_d) (fromConstant private_n)
           pubkey = PublicKey (fromConstant public_e) (fromConstant public_n)
-          kid = fromNatural 320 kidBits :: VarByteString 320 I
+          kid = fromNatural 320 kidBits :: VarByteString 320 Fr
           skey = SigningKey kid prvkey
           cert = Certificate kid pubkey
 
-      (payloadG :: GooglePayload I) <- arbitrary
-      (payloadT :: TwitchPayload I) <- arbitrary
+      (payloadG :: GooglePayload Fr) <- arbitrary
+      (payloadT :: TwitchPayload Fr) <- arbitrary
 
       let (headerG, sigG) = signPayload @"RS256" payloadG skey
           (checkG, _) = verifyJWT @"RS256" headerG payloadG sigG cert

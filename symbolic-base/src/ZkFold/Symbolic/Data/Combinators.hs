@@ -7,11 +7,11 @@
 module ZkFold.Symbolic.Data.Combinators where
 
 import Control.Applicative (Applicative)
-import Control.Monad (mapM)
+import Control.Monad (mapM, foldM)
 import Data.Constraint
 import Data.Constraint.Nat
 import Data.Constraint.Unsafe
-import Data.Foldable (foldlM)
+import Data.Foldable (foldlM, Foldable)
 import Data.Functor.Rep (Representable, mzipWithRep)
 import Data.Kind (Type)
 import Data.List (find, splitAt)
@@ -35,14 +35,74 @@ import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
-import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
+import qualified Data.Zip as Z
 
 mzipWithMRep
   :: (Representable f, Traversable f, Applicative m)
   => (a -> b -> m c) -> f a -> f b -> m (f c)
 mzipWithMRep f x y = sequenceA (mzipWithRep f x y)
+
+blueprintGE
+  :: forall r i a w m f. (MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m i
+blueprintGE xs ys = do
+  (_, hasNegOne) <- circuitDelta @r xs ys
+  newAssigned $ \p -> one - p hasNegOne
+
+-- | Compare two sets of r-bit words lexicographically
+circuitDelta
+  :: forall r i a w m f. (MonadCircuit i a w m, Z.Zip f, Foldable f, KnownNat r) => f i -> f i -> m (i, i)
+circuitDelta l r = do
+  z1 <- newAssigned (Haskell.const zero)
+  z2 <- newAssigned (Haskell.const zero)
+  foldM update (z1, z2) $ Z.zip l r
+ where
+  bound = scale ((2 ^ value @r) -! 1) one
+
+  -- \| If @z1@ is set, there was an index i where @xs[i] == 1@ and @ys[i] == 0@ and @xs[j] == ys[j]@ for all j < i.
+  -- In this case, no matter what bit states are after this index, @z1@ and @z2@ are not updated.
+  --
+  --   If @z2@ is set, there was an index i where @xs[i] == 0@ and @ys[i] == 1@ and @xs[j] == ys[j]@ for all j < i.
+  -- In the same manner, @z1@ and @z2@ won't be updated afterwards.
+  update :: (i, i) -> (i, i) -> m (i, i)
+  update (z1, z2) (x, y) = do
+    -- @f1@ is one if and only if @x > y@ and zero otherwise.
+    -- @(y + 1) `div` (x + 1)@ is zero if and only if @y < x@ regardless of whether @x@ is zero.
+    -- @x@ and @y@ are expected to be of at most @r@ bits where @r << NumberOfBits a@, so @x + 1@ will not be zero either.
+    -- Because of our laws for @finv@, @q // q@ is 1 if @q@ is not zero, and zero otherwise.
+    -- This is exactly the opposite of what @f1@ should be.
+    f1 <-
+      newRanged one $
+        let q = fromConstant (toIntegral (at y + one @w) `div` toIntegral (at x + one @w))
+         in one - q // q
+
+    -- f2 is one if and only if y > x and zero otherwise
+    f2 <-
+      newRanged one $
+        let q = fromConstant (toIntegral (at x + one @w) `div` toIntegral (at y + one @w))
+         in one - q // q
+
+    dxy <- newAssigned (\p -> p x - p y)
+
+    d1 <- newAssigned (\p -> p f1 * p dxy - p f1)
+    d1' <- newAssigned (\p -> (one - p f1) * negate (p dxy))
+    rangeConstraint d1 bound
+    rangeConstraint d1' bound
+
+    d2 <- newAssigned (\p -> p f2 * (negate one - p dxy))
+    d2' <- newAssigned (\p -> p dxy - p f2 * p dxy)
+    rangeConstraint d2 bound
+    rangeConstraint d2' bound
+
+    bothZero <- newAssigned $ \p -> (one - p z1) * (one - p z2)
+
+    f1z <- newAssigned $ \p -> p bothZero * p f1
+    f2z <- newAssigned $ \p -> p bothZero * p f2
+
+    z1' <- newAssigned $ \p -> p z1 + p f1z
+    z2' <- newAssigned $ \p -> p z2 + p f2z
+
+    Haskell.return (z1', z2')
 
 --------------------------------------------------------------------------------------------------
 
@@ -114,7 +174,7 @@ type family GetRegisterSizeN n b r :: Natural where
   GetRegisterSizeN _ _ (Fixed rs) = rs
   GetRegisterSizeN n b Auto = Ceil b (NumberOfRegistersN n b Auto)
 
-type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
+type KnownRegisters c bits r = KnownNat (NumberOfRegisters c bits r)
 
 type NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize) =
   NumberOfRegistersN (Order a) bits r
@@ -243,11 +303,11 @@ withSecondNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1) +
 withSecondNextNBits = withDict (withSecondNextNBits' @n)
 
 withNumberOfRegisters'
-  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters (Interpreter a) n r
+  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters a n r
 withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
 
 withNumberOfRegisters
-  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters (Interpreter a) n r => k) -> k
+  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters a n r => k) -> k
 withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
 
 withCeilRegSize' :: forall rs ow. (KnownNat rs, KnownNat ow) :- KnownNat (Ceil rs ow)

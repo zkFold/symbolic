@@ -4,7 +4,6 @@ module Tests.Symbolic.Data.FFA (specFFA) where
 
 import Data.Function (($))
 import Data.List ((++))
-import GHC.Generics (U1)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, (===))
 import Text.Show (show)
@@ -16,12 +15,12 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Prime, value)
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec)
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
+import ZkFold.Symbolic.Compat (CompatContext (..), CompatData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.FFA (FFA (FFA), KnownFFA, UIntFFA (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
-import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
 
 type Prime256_1 = FpModulus
 
@@ -34,13 +33,13 @@ specFFA = do
   specFFA' @BLS12_381_Scalar @Prime256_1 @(Fixed 16)
   specFFA' @BLS12_381_Scalar @Prime256_2 @(Fixed 16)
 
-specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Interpreter (Zp p))) => Spec
+specFFA' :: forall p q r. (PrimeField (Zp p), Prime q, KnownFFA q r (Zp p)) => Spec
 specFFA' = do
   let q = value @q
   let r = regSize @r
   describe ("FFA " ++ show q ++ " " ++ show r ++ " specification") $ do
     it "FFA(Zp) embeds Zq" $ \(x :: Zp q) ->
-      toConstant (fromConstant x :: FFA q r (Interpreter (Zp p))) === x
+      toConstant (fromConstant x :: FFA q r (Zp p)) === x
     it "FFA(AC) embeds Zq" $ \(x :: Zp q) ->
       execAcFFA @p @q @r (fromConstant x) === x
     it "has zero" $ execAcFFA @p @q @r zero === execZpFFA @p @q @r zero
@@ -56,17 +55,15 @@ specFFA' = do
 
 execAcFFA
   :: forall p q r
-   . (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
-  => FFA q r (ArithmeticCircuit (Zp p) U1) -> Zp q
-execAcFFA (FFA (FieldElement nv) (UIntFFA (UInt uv))) =
+   . (PrimeField (Zp p), KnownFFA q r (Zp p))
+  => FFA q r (Elem (Zp p)) -> Zp q
+execAcFFA (FFA (CompatData (FieldElement nv)) (UIntFFA (UInt uv))) =
   execZpFFA $
     FFA
-      (FieldElement $ Interpreter $ exec nv)
-      (UIntFFA $ UInt @_ @r $ Interpreter $ exec uv)
+      (CompatData $ FieldElement $ CompatContext $ exec nv)
+      (UIntFFA $ UInt @_ @r $ exec $ CompatContext uv)
 
-execZpFFA
-  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
-  => FFA q r (Interpreter (Zp p)) -> Zp q
+execZpFFA :: (PrimeField (Zp p), KnownFFA q r (Zp p)) => FFA q r (Zp p) -> Zp q
 execZpFFA = toConstant
 
 type Binary a = a -> a -> a
@@ -74,8 +71,8 @@ type Binary a = a -> a -> a
 type Predicate a = a -> a -> Property
 
 isHom
-  :: (PrimeField (Zp p), KnownFFA q r (Interpreter (Zp p)))
-  => Binary (FFA q r (Interpreter (Zp p)))
-  -> Binary (FFA q r (ArithmeticCircuit (Zp p) U1))
+  :: (PrimeField (Zp p), KnownFFA q r (Zp p))
+  => Binary (FFA q r (Zp p))
+  -> Binary (FFA q r (Elem (Zp p)))
   -> Predicate (Zp q)
 isHom f g x y = execAcFFA (fromConstant x `g` fromConstant y) === execZpFFA (fromConstant x `f` fromConstant y)

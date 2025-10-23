@@ -6,12 +6,12 @@
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import GHC.Generics (Generic, Generic1)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import ZkFold.Symbolic.Data.V2 (SymbolicData)
+import ZkFold.Symbolic.V2 (Symbolic)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
 
@@ -25,9 +25,11 @@ data OutputRef context = OutputRef
   { outputRefId :: TxRefId context
   , outputRefIndex :: TxRefIndex context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (OutputRef context)
+deriving instance Haskell.Eq context => Haskell.Eq (OutputRef context)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (OutputRef c)
 
 instance
   (Symbolic context, KnownRegisters context 32 Auto)
