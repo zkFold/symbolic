@@ -6,13 +6,12 @@ module ZkFold.Symbolic.Ledger.Offchain.State.Update (
 
 import Data.Function (($), (&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector
-import ZkFold.Prelude (foldl')
+import ZkFold.Prelude (foldl', trace)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (||))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
@@ -23,18 +22,22 @@ import ZkFold.Symbolic.WitnessContext (toWitnessContext)
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWith')
+import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWith', unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
+import qualified Prelude as Haskell
+import ZkFold.Data.HFunctor.Classes (HShow)
+import ZkFold.Symbolic.Class (Symbolic(..))
 
 -- | Update ledger state.
 --
 -- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
   :: forall bi bo ud a i o t context
-   . SignatureState bi bo ud a context
+   . (SignatureState bi bo ud a context, Haskell.Show (WitnessField context))
   => SignatureTransactionBatch ud i o a t context
+  => HShow context
   => State bi bo ud a context
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
@@ -45,7 +48,7 @@ updateLedgerState
   -- ^ Transaction batch.
   -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
   -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a i o t) context
+  -> (State bi bo ud a :*: StateWitness bi bo ud a i o t :*: (Leaves ud :.: UTxO a)) context
   -- ^ New state and witness.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
@@ -80,6 +83,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     -- Apply bridge-in outputs to the UTxO set and collect witness entries.
     stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
+          !_ = trace ("entry " Haskell.<> Haskell.show entry) ()
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
           utxoHash = hash utxo & Base.hHash
           tree' :*: gatedUtxo =
@@ -92,6 +96,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
     (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimageInit) biOutsList
+    !_ = trace ("utxoAfterBridgeIn " Haskell.<> Haskell.show utxoAfterBridgeIn) ()
+    !_ = trace ("utxoPreimageAfterBI " Haskell.<> Haskell.show utxoPreimageAfterBI) ()
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
 
     -- Build transaction witnesses and apply batch updates to UTxO tree
@@ -108,10 +114,12 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           let
             -- Find UTxO by reference in evolving preimage set
             utxoSetList = fromVector preIn
-            pick (found, picked) u =
+            pick (ix, found, picked) u =
               let isHere = u.uRef == ref
-               in (isHere || found, ifThenElse isHere u picked)
-            (_foundU, utxo) = foldl' pick (false, nullUTxO') utxoSetList
+               in (ifThenElse (isHere || found) ix (ix + one), isHere || found, ifThenElse isHere u picked)
+            (_ix, _foundU, utxo) = foldl' pick (zero :: FieldElement context, false, nullUTxO') utxoSetList
+            !_ = trace ("utxo " Haskell.<> Haskell.show utxo) ()
+            !_ = trace ("ix " Haskell.<> Haskell.show _ix) ()
             utxoHash :: FieldElement context = hash utxo & Base.hHash
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
@@ -121,11 +129,16 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn')
         (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
         twInputs = Comp1 (unsafeToVector' @i (P.reverse insRev))
+        !_ = trace ("treeAfterIns " Haskell.<> Haskell.show treeAfterIns) ()
+        !_ = trace ("preAfterIns " Haskell.<> Haskell.show preAfterIns) ()
 
         -- Outputs witnesses and apply outputs (skip bridge-outs)
         outs = fromVector (unComp1 tx.outputs)
         stepOut (outsAcc, outIx, treeOut, preOut) (out :*: bout) =
           let me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeOut
+              !_ = trace ("me " Haskell.<> Haskell.show me) ()
+              !_ = trace ("treeOut " Haskell.<> Haskell.show treeOut) ()
+              !_ = trace ("nullUTxOHash' " Haskell.<> Haskell.show nullUTxOHash') ()
               utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
               utxoHash = hash utxo & Base.hHash
               treeOut' :*: gatedUtxo =
@@ -133,6 +146,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
                   bout
                   (treeOut :*: nullUTxO')
                   (MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo)
+              !_ = trace ("treeOut' " Haskell.<> Haskell.show treeOut') ()
               preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
@@ -141,8 +155,9 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
        in
         (treeAfterOuts, preAfterOuts, tw : witsAcc)
 
-    (utxoFinal, _utxoPreimageFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, utxoPreimageAfterBI, []) (P.zip txsList sigsPerTx)
+    (utxoFinal, utxoPreimageFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, utxoPreimageAfterBI, []) (P.zip txsList sigsPerTx)
     tbwTransactions = Comp1 (unsafeToVector' @t (P.reverse txWitsRev))
+    !_ = trace ("utxoPreimageFinal " Haskell.<> Haskell.show utxoPreimageFinal) ()
 
     newState =
       State
@@ -155,9 +170,4 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
    in
     newState
       :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
-
--- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
-unsafeToVector' :: forall size a. KnownNat size => [a] -> Vector size a
-unsafeToVector' as = case toVector as of
-  P.Nothing -> P.error "unsafeToVector': toVector failed"
-  P.Just v -> v
+      :*: Comp1 utxoPreimageFinal
