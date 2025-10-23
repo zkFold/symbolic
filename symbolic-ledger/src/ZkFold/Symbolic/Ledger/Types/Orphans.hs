@@ -14,7 +14,7 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 
-newtype VectorTakingCtx (n) (a :: Ctx -> Type) c = VectorTakingCtx ( (Vector n :.: a) c)
+newtype VectorTakingCtx n (a :: Ctx -> Type) c = VectorTakingCtx ( (Vector n :.: a) c)
   deriving stock (Generic, Generic1)
   deriving anyclass SymbolicData
 
