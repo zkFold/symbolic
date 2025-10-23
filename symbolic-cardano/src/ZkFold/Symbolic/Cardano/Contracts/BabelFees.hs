@@ -3,14 +3,15 @@ module ZkFold.Symbolic.Cardano.Contracts.BabelFees (babelFees) where
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
-import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Data.UInt hiding (resize)
 import ZkFold.Symbolic.Data.Maybe
+import ZkFold.Symbolic.Class (Symbolic)
 import Prelude (($))
 
 import ZkFold.Symbolic.Cardano.Types
+import ZkFold.Data.Iso (from)
+import ZkFold.Symbolic.Data.ByteString (resize)
 
 -- | The original paper: https://arxiv.org/pdf/2106.01161
 -- It introduces a babel fee output holding a liability and a reward for covering it.
@@ -26,7 +27,7 @@ babelFees
 babelFees tx1 tx2 = consumesLiability && consumesOutput
  where
   tx1Hash :: ByteString 256 context
-  tx1Hash = resize $ ByteString $ binaryExpansion $ hash tx1
+  tx1Hash = resize $ from $ hash @context tx1
 
   consumesLiability :: Bool context
   consumesLiability =

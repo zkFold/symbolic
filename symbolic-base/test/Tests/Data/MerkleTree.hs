@@ -23,7 +23,7 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Data.MerkleTree
 import ZkFold.Data.Vector (Vector (..), (!!))
-import ZkFold.Symbolic.Data.Combinators (Iso (..))
+import ZkFold.Data.Iso (Iso(..))
 
 testId
   :: forall d h

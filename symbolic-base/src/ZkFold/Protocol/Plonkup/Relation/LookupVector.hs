@@ -81,16 +81,10 @@ instance Conditional b a => Conditional (LookupVector b) (LookupVector a) where
 instance Eq a => Eq (LookupVector a) where
   type BooleanOf (LookupVector a) = LookupVector (BooleanOf a)
   (==) = liftA2 (==)
-  (/=) = liftA2 (/=)
 
 instance Ord a => Ord (LookupVector a) where
   type OrderingOf (LookupVector a) = LookupVector (OrderingOf a)
-  ordering x y z w = liftA3 ordering x y z <*> w
   compare = liftA2 compare
-  (<) = liftA2 (<)
-  (<=) = liftA2 (<=)
-  (>=) = liftA2 (>=)
-  (>) = liftA2 (>)
 
 instance Exponent a p => Exponent (LookupVector a) p where
   a ^ p = fmap (^ p) a
