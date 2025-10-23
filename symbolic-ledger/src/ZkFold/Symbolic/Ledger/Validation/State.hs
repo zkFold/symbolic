@@ -23,7 +23,8 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 import qualified Prelude as Haskell
-import GHC.IsList (IsList(..))
+import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
+import ZkFold.Data.HFunctor.Classes (HShow)
 
 {- Note [State validation]
 
@@ -55,6 +56,8 @@ data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
+
+deriving stock instance (HShow context) => Haskell.Show (StateWitness bi bo ud a i o t context)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
@@ -128,10 +131,10 @@ validateStateUpdateEither previousState action newState sw =
         bridgedInAssetsWithWitness
     bridgedOutOutputs = preimage newState.sBridgeOut
     (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
-    condHash = newState.sPreviousStateHash == hasher previousState
-    condLen  = newState.sLength == previousState.sLength + one
-    condBridgeIn = isWitBridgeInValid
-    condBatch = isBatchValid
-    condUTxO = utxoTree == newState.sUTxO
    in
-    fromList [condHash, condLen, condBridgeIn, condBatch, condUTxO]
+    unsafeToVector' [
+      newState.sPreviousStateHash == hasher previousState, 
+      newState.sLength == previousState.sLength + one, 
+      isWitBridgeInValid, 
+      isBatchValid, 
+      utxoTree == newState.sUTxO]

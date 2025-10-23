@@ -29,15 +29,18 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import Prelude qualified as P
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Data.HFunctor.Classes (HShow)
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
+
+deriving stock instance (HShow context) => Haskell.Show (TransactionWitness ud i o a context)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
@@ -56,8 +59,8 @@ validateTransaction
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
-    outputsAssets = unComp1 tx.outputs & P.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
+    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
+    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
     -- We check if all output assets are covered by inputs.
     (outAssetsWithinInputs :*: finalInputAssets) =
       foldl'
@@ -251,7 +254,7 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @Haskell.Integer 1_000_000)
     )
     false
     (unComp1 (oAssets output))

@@ -17,11 +17,15 @@ import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
+import ZkFold.Data.HFunctor.Classes (HShow)
+import qualified Prelude as Haskell
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
+  
+deriving stock instance (HShow context) => Haskell.Show (TransactionBatchWitness ud i o a t context)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch

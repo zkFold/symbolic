@@ -62,7 +62,7 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
 
         address = hashFn publicKey
         
-        adaAsset = Comp1 $ fromList [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1 :: Natural)}]
+        adaAsset = Comp1 $ fromList [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}]
         bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
         -- We bridge in an output and refer to it in transaction.
         bridgedIn :: (Vector Bi :.: Output A) I
@@ -90,6 +90,7 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
 
     Haskell.putStrLn $ "prevState: " Haskell.<> Haskell.show prevState
     Haskell.putStrLn $ "newState: " Haskell.<> Haskell.show newState
+    Haskell.putStrLn $ "witness: " Haskell.<> Haskell.show witness
     -- TODO: Hard code new state.
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
