@@ -30,6 +30,8 @@ import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData))
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Combinators (
@@ -46,12 +48,10 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
+import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compat (CompatData (compatData, CompatData))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -321,44 +321,45 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
     nl, nr :: CompatData FieldElement c
     ul, ur :: UIntFFA p r c
     (nl :*: ul) :*: (nr :*: ur) = _
-      -- restore
-      --  ( symbolicF
-      --      (arithmetize (nx :*: ux))
-      --      ( \(fromFFA @p @r -> x) ->
-      --          let l0 = negate (bezoutL p x)
-      --              r0 = bezoutR p x
-      --              (l, r) = if r0 Prelude.< 0 then (l0 + x, r0 + p) else (l0, r0)
-      --           in toFFA @p @r l :*: toFFA @p @r r
-      --      )
-      --      \(valueFFA @p @r @c -> x) -> do
-      --        let l0 = negate (bezoutL p x)
-      --            r0 = bezoutR p x
-      --            s = r0 `div` p -- -1 when negative, 0 when positive
-      --            l = l0 - s * x
-      --            r = r0 - s * p
-      --        traverse unconstrained $
-      --          layoutFFA @p @r @c l :*: layoutFFA @p @r @c r
-      --  , (U1 :*: U1) :*: (U1 :*: U1)
-      --  )
+    -- restore
+    --  ( symbolicF
+    --      (arithmetize (nx :*: ux))
+    --      ( \(fromFFA @p @r -> x) ->
+    --          let l0 = negate (bezoutL p x)
+    --              r0 = bezoutR p x
+    --              (l, r) = if r0 Prelude.< 0 then (l0 + x, r0 + p) else (l0, r0)
+    --           in toFFA @p @r l :*: toFFA @p @r r
+    --      )
+    --      \(valueFFA @p @r @c -> x) -> do
+    --        let l0 = negate (bezoutL p x)
+    --            r0 = bezoutR p x
+    --            s = r0 `div` p -- -1 when negative, 0 when positive
+    --            l = l0 - s * x
+    --            r = r0 - s * p
+    --        traverse unconstrained $
+    --          layoutFFA @p @r @c l :*: layoutFFA @p @r @c r
+    --  , (U1 :*: U1) :*: (U1 :*: U1)
+    --  )
     -- \| Constraints:
     -- \* UInt registers are indeed registers;
     -- \* r < p;
     -- \* equation holds modulo basefield;
     -- \* equation holds modulo 2^k.
     ck = _
-      -- isValid (ur :*: FFA @p nl ul)
-      --  && (nr * nx == nl * p + one)
-      --  && (uintFFA ur * uintFFA ux == uintFFA ul * p + one)
+    -- isValid (ur :*: FFA @p nl ul)
+    --  && (nr * nx == nl * p + one)
+    --  && (uintFFA ur * uintFFA ux == uintFFA ul * p + one)
     -- \| Sew constraints into result.
     ny :*: uy = _
-      -- restore
-      --  ( fromCircuitF
-      --      (arithmetize (nr :*: ur :*: ck))
-      --      \(ni :*: ui :*: Par1 b) -> do
-      --        constraint (($ b) - one)
-      --        return (ni :*: ui)
-      --  , U1 :*: U1
-      --  )
+
+-- restore
+--  ( fromCircuitF
+--      (arithmetize (nr :*: ur :*: ck))
+--      \(ni :*: ui :*: Par1 b) -> do
+--        constraint (($ b) - one)
+--        return (ni :*: ui)
+--  , U1 :*: U1
+--  )
 
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
@@ -421,19 +422,19 @@ toUInt x = uy
   -- \| Computes unconstrained UInt value
   us :: CompatData (UInt n r) c
   us = _
-    -- restore
-    --   ( symbolicF
-    --       (arithmetize x)
-    --       ( \(fromFFA @p @r -> v) ->
-    --           let UInt (Interpreter f) =
-    --                fromConstant v
-    --                  :: UInt n r (Interpreter c)
-    --           in f
-    --      )
-    --      \(valueFFA @p @r @c -> v) ->
-    --        traverse unconstrained $ tabulate (register @c @n @r v)
-    --  , U1
-    --  )
+  -- restore
+  --   ( symbolicF
+  --       (arithmetize x)
+  --       ( \(fromFFA @p @r -> v) ->
+  --           let UInt (Interpreter f) =
+  --                fromConstant v
+  --                  :: UInt n r (Interpreter c)
+  --           in f
+  --      )
+  --      \(valueFFA @p @r @c -> v) ->
+  --        traverse unconstrained $ tabulate (register @c @n @r v)
+  --  , U1
+  --  )
   -- \| Constraints:
   -- \* UInt registers are indeed registers;
   -- \* casting back yields source residues.
