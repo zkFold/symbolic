@@ -87,6 +87,8 @@ data AssetValue context = AssetValue
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
+deriving stock instance HEq context => Haskell.Eq (AssetValue context)
+
 deriving stock instance HShow context => Haskell.Show (AssetValue context)
 
 -- | Null asset value.

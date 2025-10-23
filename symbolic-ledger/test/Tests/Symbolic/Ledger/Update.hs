@@ -100,13 +100,13 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
     Haskell.putStrLn $ "witness: " Haskell.<> Haskell.show witness
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
-    -- Now let's try to use this newly created output.
+    -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
     let
       tx2 :: Transaction Ixs Oxs A I
       tx2 =
         Transaction
           { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
-          , outputs = Comp1 (fromList [bridgeInOutput :*: false])
+          , outputs = Comp1 (fromList [bridgeInOutput :*: true])
           }
       bridgedIn2 :: (Vector Bi :.: Output A) I
       bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
@@ -115,6 +115,8 @@ specUpdateLedgerState = describe "updateLedgerState" $ do
       sigs2 =
         let rPoint :*: s = signTransaction tx2 privateKey
          in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
-      newState2 :*: witness2 :*: _utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+      newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
 
     validateStateUpdateEither newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
+    unComp1 utxoPreimage3 `shouldBe` pure (nullUTxO @A @I)
+

@@ -26,7 +26,7 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes (HShow)
+import ZkFold.Data.HFunctor.Classes (HShow, HEq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -60,6 +60,8 @@ instance
   Symbolic context
   => Eq (OutputRef context)
 
+deriving stock instance HEq context => Haskell.Eq (OutputRef context)
+
 deriving stock instance HShow context => Haskell.Show (OutputRef context)
 
 -- | Null output reference.
@@ -81,6 +83,8 @@ instance
   , KnownRegistersAssetQuantity context
   )
   => Eq (Output a context)
+
+deriving stock instance HEq context => Haskell.Eq (Output a context)
 
 deriving stock instance HShow context => Haskell.Show (Output a context)
 
@@ -104,6 +108,8 @@ instance
   , KnownRegistersAssetQuantity context
   )
   => Eq (UTxO a context)
+
+deriving stock instance HEq context => Haskell.Eq (UTxO a context)
 
 deriving stock instance HShow context => Haskell.Show (UTxO a context)
 
