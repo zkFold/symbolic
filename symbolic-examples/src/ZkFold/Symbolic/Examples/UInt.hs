@@ -1,8 +1,8 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module ZkFold.Symbolic.Examples.UInt (
   exampleUIntMul,
-  exampleUIntProductMod,
   exampleUIntDivMod,
   exampleUIntExpMod,
   exampleUIntStrictAdd,
@@ -11,86 +11,48 @@ module ZkFold.Symbolic.Examples.UInt (
   exampleUIntLeq,
 ) where
 
-import Data.Type.Equality (type (~))
 import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (KnownNat, type (*))
-import ZkFold.Symbolic.Class (Symbolic (BaseField))
+import ZkFold.Algebra.Number (type (*))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  KnownRegisterSize,
-  KnownRegisters,
-  NumberOfRegisters,
-  resize,
- )
 import ZkFold.Symbolic.Data.Ord ((<=))
-import ZkFold.Symbolic.Data.UInt (OrdWord, StrictNum (..), UInt, expMod, productMod)
+import ZkFold.Symbolic.Data.UInt
 
 exampleUIntMul
-  :: (KnownNat n, KnownRegisterSize r, Symbolic c)
-  => UInt n r c -> UInt n r c -> UInt n r c
+  :: (KnownUInt n c, Symbolic c) => UInt n c -> UInt n c -> UInt n c
 exampleUIntMul = (*)
 
-exampleUIntProductMod
-  :: KnownNat n
-  => KnownRegisterSize r
-  => KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
-  => KnownNat (NumberOfRegisters (BaseField c) n r)
-  => Symbolic c
-  => UInt n r c -> UInt n r c -> UInt n r c -> (UInt n r :*: UInt n r) c
-exampleUIntProductMod x y z = let (p, m) = productMod x y z in p :*: m
-
 exampleUIntDivMod
-  :: ( KnownNat n
-     , KnownRegisterSize r
-     , Symbolic c
-     , NumberOfRegisters (BaseField c) n r ~ k
-     , KnownNat k
-     , KnownNat (Ceil (GetRegisterSize (BaseField c) n r) OrdWord)
-     )
-  => UInt n r c -> UInt n r c -> (UInt n r :*: UInt n r) c
+  :: (KnownUInt n c, Symbolic c)
+  => UInt n c
+  -> UInt n c
+  -> (UInt n :*: UInt n) c
 exampleUIntDivMod x y = let (d, m) = divMod x y in d :*: m
 
 exampleUIntExpMod
-  :: forall n p m r c
-   . Symbolic c
-  => KnownRegisterSize r
-  => KnownNat p
-  => KnownNat n
-  => KnownNat m
-  => KnownNat (2 * m)
-  => KnownRegisters c (2 * m) r
-  => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
-  => UInt n r c
-  -> UInt p r c
-  -> UInt m r c
-  -> UInt m r c
-exampleUIntExpMod = expMod @c @n @p @m @r
+  :: forall n p m c
+   . (Symbolic c, KnownUInt n c, KnownUInt p c, KnownUInt m c)
+  => KnownUInt (2 * m) c
+  => UInt n c
+  -> UInt p c
+  -> UInt m c
+  -> UInt m c
+exampleUIntExpMod = expMod
 
 exampleUIntStrictAdd
-  :: (KnownNat n, KnownRegisterSize r, Symbolic c)
-  => UInt n r c -> UInt n r c -> UInt n r c
-exampleUIntStrictAdd = strictAdd
+  :: (KnownUInt n c, Symbolic c) => UInt n c -> UInt n c -> UInt n c
+exampleUIntStrictAdd = (+!)
 
 exampleUIntStrictMul
-  :: (KnownNat n, KnownRegisterSize r, Symbolic c)
-  => UInt n r c -> UInt n r c -> UInt n r c
-exampleUIntStrictMul = strictMul
+  :: (KnownUInt n c, Symbolic c) => UInt n c -> UInt n c -> UInt n c
+exampleUIntStrictMul = (*!)
 
 exampleUIntResize
-  :: (KnownNat n, KnownNat k, KnownRegisterSize r, Symbolic c)
-  => UInt n r c -> UInt k r c
-exampleUIntResize = resize
+  :: forall n k c
+   . (KnownUInt n c, KnownUInt k c, Symbolic c)
+  => UInt n c -> UInt k c
+exampleUIntResize = resizeUInt
 
-exampleUIntLeq
-  :: ( KnownNat n
-     , KnownRegisterSize r
-     , Symbolic c
-     , KnownRegisters c n r
-     , regSize ~ GetRegisterSize (BaseField c) n r
-     , KnownNat (Ceil regSize OrdWord)
-     )
-  => UInt n r c -> UInt n r c -> Bool c
+exampleUIntLeq :: (KnownUInt n c, Symbolic c) => UInt n c -> UInt n c -> Bool c
 exampleUIntLeq = (<=)

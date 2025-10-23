@@ -26,13 +26,11 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
-import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Sum
-import ZkFold.Symbolic.Data.UInt (UInt)
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Data.UInt
 
 instance {-# OVERLAPPING #-} Q.Arbitrary (f a) => Q.Arbitrary ((f :+: V1) a) where
   arbitrary = L1 <$> Q.arbitrary
@@ -47,16 +45,15 @@ instance Q.Function (U1 a)
 
 instance (Q.Function (f a), Q.Function (g a)) => Q.Function ((f :+: g) a)
 
-instance Arithmetic a => Q.Function (FieldElement (Interpreter a)) where
+instance Arithmetic a => Q.Function (FieldElement a) where
   function = Q.functionMap (toConstant . toConstant) fromConstant
 
-instance (Arithmetic a, KnownNat n) => Q.Function (ByteString n (Interpreter a)) where
+instance (Arithmetic a, KnownNat n) => Q.Function (ByteString n a) where
   function = Q.functionMap toConstant fromConstant
 
-instance
-  (Arithmetic a, KnownNat n, KnownRegisterSize r)
-  => Q.Function (UInt n r (Interpreter a))
-  where
+instance Q.Function (Zp p)
+
+instance (Arithmetic a, KnownUInt n a) => Q.Function (UInt n a) where
   function = Q.functionMap toConstant fromConstant
 
 instance Q.CoArbitrary (V1 a) where
@@ -66,71 +63,72 @@ instance Q.CoArbitrary (U1 a)
 
 instance (Q.CoArbitrary (f a), Q.CoArbitrary (g a)) => Q.CoArbitrary ((f :+: g) a)
 
-instance Arithmetic a => Q.CoArbitrary (FieldElement (Interpreter a)) where
+instance Arithmetic a => Q.CoArbitrary (FieldElement a) where
   coarbitrary = Q.coarbitrary . toConstant . toConstant
 
-instance Arithmetic a => Q.CoArbitrary (ByteString n (Interpreter a)) where
+instance Arithmetic a => Q.CoArbitrary (ByteString n a) where
   coarbitrary = Q.coarbitrary . toConstant
 
-instance
-  (Arithmetic a, KnownNat n, KnownRegisterSize r)
-  => Q.CoArbitrary (UInt n r (Interpreter a))
-  where
+instance Q.CoArbitrary (Zp p)
+
+instance (Arithmetic a, KnownUInt n a) => Q.CoArbitrary (UInt n a) where
   coarbitrary = Q.coarbitrary . toConstant
 
 specOneOf'
   :: forall a ts
-   . ( Arithmetic a
+   . ( Q.Arbitrary a
+     , Arithmetic a
      , Show a
      , Typeable a
-     , Q.Arbitrary a
      , Typeable ts
-     , Embed ts (Interpreter a)
-     , Show (Eithers ts (Interpreter a))
-     , Q.Arbitrary (Eithers ts (Interpreter a))
-     , Q.CoArbitrary (Eithers ts (Interpreter a))
-     , Q.Function (Eithers ts (Interpreter a))
+     , Embed ts a
+     , Show (Eithers ts a)
+     , Q.Arbitrary (Eithers ts a)
+     , Q.CoArbitrary (Eithers ts a)
+     , Q.Function (Eithers ts a)
      )
   => Spec
-specOneOf' = describe (show (typeAt @(OneOf ts (Interpreter a))) <> " spec") do
+specOneOf' = describe (show (typeAt @(OneOf ts a)) <> " spec") do
   it "preserves sum" \(Q.Fn f) e ->
-    matchOneOf @FieldElement @ts @(Interpreter a) (embedOneOf e) f Q.=== f e
+    fromFieldElement
+      (matchOneOf @FieldElement @ts @a (embedOneOf e) (FieldElement . f))
+      Q.=== f e
 
-type TestFun t a = t (Interpreter a) -> FieldElement (Interpreter a)
+type TestFun t a = t a -> a
 
 specSumOf'
   :: forall a t
-   . ( Arithmetic a
+   . ( Q.Arbitrary a
+     , Arithmetic a
      , Show a
      , Typeable a
-     , Q.Arbitrary a
      , Generic1 t
-     , Show (t (Interpreter a))
+     , Show (t a)
      , Typeable t
-     , Q.Arbitrary (t (Interpreter a))
-     , Q.CoArbitrary (t (Interpreter a))
-     , Q.Function (t (Interpreter a))
-     , Injects (Rep1 t) (Interpreter a)
+     , Q.Arbitrary (t a)
+     , Q.CoArbitrary (t a)
+     , Q.Function (t a)
+     , Injects (Rep1 t) a
      )
   => Spec
-specSumOf' = describe (show (typeAt @(Sum t (Interpreter a))) <> " spec") do
+specSumOf' = describe (show (typeAt @(Sum t a)) <> " spec") do
   it "preserves sum" \(Q.Fn (f :: TestFun t a)) t ->
-    match (inject t) f Q.=== f t
+    fromFieldElement (match (inject t) (FieldElement . f)) Q.=== f t
 
 specOneOf
   :: forall a
-   . ( Arithmetic a
+   . ( Q.Arbitrary a
+     , Arithmetic a
      , Show a
      , Typeable a
-     , Q.Arbitrary a
-     , KnownNat (NumberOfRegisters a 32 Auto)
+     , KnownUInt 32 a
      )
   => Spec
 specOneOf = do
   specOneOf' @a @'[FieldElement]
   specOneOf' @a @'[U1, FieldElement]
   specOneOf' @a @'[FieldElement, ByteString 16]
-  specOneOf' @a @'[ByteString 16, FieldElement, UInt 32 Auto]
+  specOneOf' @a @'[ByteString 16, FieldElement, UInt 32]
 
 newtype Only f c = Only {runOnly :: f c}
   deriving stock (Generic, Generic1, Show)
@@ -144,19 +142,28 @@ data Might b c = Indeed (b c) | None
 instance Q.Arbitrary (b c) => Q.Arbitrary (Might b c) where
   arbitrary = Q.oneof [Indeed <$> Q.arbitrary, pure None]
 
-data OneOf3 c = BS (ByteString 16 c) | FE (FieldElement c) | UD (UInt 32 Auto c)
+data OneOf3 c
+  = BS (ByteString 16 c)
+  | FE (FieldElement c)
+  | UD (UInt 32 c)
   deriving (Generic, Generic1, Show)
 
-instance (Symbolic c, Q.Arbitrary (BaseField c)) => Q.Arbitrary (OneOf3 c) where
+instance (Symbolic c, Q.Arbitrary c, KnownUInt 32 c) => Q.Arbitrary (OneOf3 c) where
   arbitrary = Q.oneof [BS <$> Q.arbitrary, FE <$> Q.arbitrary, UD <$> Q.arbitrary]
 
-instance Arithmetic a => Q.CoArbitrary (OneOf3 (Interpreter a))
+instance (Arithmetic a, KnownUInt 32 a) => Q.CoArbitrary (OneOf3 a)
 
-instance Arithmetic a => Q.Function (OneOf3 (Interpreter a))
+instance (Arithmetic a, KnownUInt 32 a) => Q.Function (OneOf3 a)
 
 specSumOf
   :: forall a
-   . (Arithmetic a, Show a, Typeable a, Q.Arbitrary a, KnownNat (NumberOfRegisters a 32 Auto)) => Spec
+   . ( Q.Arbitrary a
+     , Arithmetic a
+     , Show a
+     , Typeable a
+     , KnownUInt 32 a
+     )
+  => Spec
 specSumOf = do
   specSumOf' @a @(Only FieldElement)
   specSumOf' @a @(Might FieldElement)

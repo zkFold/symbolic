@@ -41,7 +41,7 @@ import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field
 
-type I = RollupBFInterpreter
+type I = RollupBF
 
 -- Small sizes for simplicity
 type Bi = 1

@@ -29,41 +29,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, keccak, keccakVar)
+import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, Rate, keccak, keccakVar, ResultSizeInBits)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString
-import ZkFold.Symbolic.Interpreter (Interpreter)
-
--- | Adds following obvious constraints.
-withConstraints
-  :: forall n {r}
-   . KnownNat n
-  => ( ( Mod (n * 8) 8 ~ 0
-       , KnownNat (n * 8)
-       )
-       => r
-     )
-  -> r
-withConstraints =
-  withDict (timesNat @n @8) $
-    withDict (withConstraints' @n)
-
-withConstraints'
-  :: forall n
-   . KnownNat n
-    :- (Mod (n * 8) 8 ~ 0)
-withConstraints' =
-  Sub $
-    withDict
-      (unsafeAxiom @(Mod (n * 8) 8 ~ 0))
-      Dict
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 type Element = Zp BLS12_381_Scalar
-
--- | Symbolic context.
-type Context = Interpreter Element
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
@@ -150,12 +122,35 @@ testAlgorithm file = do
       case someNatVal numBytes of
         SomeNat (_ :: Proxy bytes) ->
           it bitMsgN $
-            ( withConstraints @bytes $
-                let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
-                    inBSVar :: VarByteString 500_000 Context = fromNatural (value @(bytes * 8)) input
-                 in (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS, toConstant $ keccakVar @algorithm @Context @500_000 inBSVar)
-            )
-              `shouldBe` (hash, hash)
+            withDict (timesNat @bytes @8) $
+              let inBS = fromConstant @Natural @(ByteString (bytes * 8) Element) input
+                  inBSVar :: VarByteString 500_000 Element =
+                    fromNatural (value @(bytes * 8)) input
+               in ( toConstant @(ByteString (ResultSizeInBits (Rate algorithm)) Element)
+                      (keccak @algorithm @Element @(bytes * 8) inBS
+                        \\ unsafeAxiom
+                          @( Mod (bytes * 8) 8 ~ 0
+                           , 1
+                               <= ( Div (bytes * 8) 8
+                                      + ( Div (Rate algorithm) 8
+                                            - Mod (Div (bytes * 8) 8) (Div (Rate algorithm) 8)
+                                        )
+                                  )
+                               * 8
+                           ))
+                  , toConstant @(ByteString (ResultSizeInBits (Rate algorithm)) Element)
+                      (keccakVar @algorithm @Element @500_000 inBSVar
+                        \\ unsafeAxiom
+                          @( 1
+                               <= ( 62500
+                                      + ( Div (Rate algorithm) 8
+                                            - Mod 62500 (Div (Rate algorithm) 8)
+                                        )
+                                  )
+                               * 8
+                           ))
+                  )
+                    `shouldBe` (hash, hash)
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file

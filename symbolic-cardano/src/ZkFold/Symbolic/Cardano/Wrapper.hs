@@ -2,12 +2,11 @@ module ZkFold.Symbolic.Cardano.Wrapper where
 
 import ZkFold.Data.Eq (Eq ((==)))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import Prelude hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
 
 import ZkFold.Symbolic.Cardano.Types
 
-type TxHash context = UInt 64 Auto context
+type TxHash context = UInt 64 context
 
 -- TODO: implement transaction hashing
 hashFunction :: Transaction inputs rinputs outputs tokens mint datum context -> TxHash context

@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeOperators #-}
+
+{- HLINT ignore "Use concatMap" -}
 
 -- Code is largely based on [`keccak`](https://github.com/aupiff/keccak) Haskell library.
 
@@ -42,7 +43,6 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (fromZp)
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
-import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Vector (
   Vector (..),
   backpermute,
@@ -58,19 +58,12 @@ import ZkFold.Data.Vector (
  )
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.Hash.Keccak.Constants
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisters,
-  RegisterSize (..),
- )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Ord
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
+import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
@@ -115,6 +108,7 @@ class
   , KnownNat (Div (Capacity (Rate algorithm)) 16 * 8)
   , (ResultSizeInBits (Rate algorithm) <=? SqueezeLanesToExtract algorithm * 64) ~ 'P.True
   , KnownNat (Div ((Div (Capacity (Rate algorithm)) 16 + 8) - 1) 8)
+  , KnownNat (CeilDiv (ResultSizeInBytes (Rate algorithm)) (Div LaneWidth 8))
   ) =>
   AlgorithmSetup (algorithm :: Symbol)
   where
@@ -151,23 +145,16 @@ type Keccak algorithm context k =
   , -- So that we are dealing with "byte"strings.
     Mod k 8 ~ 0
   , Symbolic context
-  , KnownRegisters context (NumberOfBits (BaseField context)) Auto
-  , KnownNat
-      ( Ceil
-          ( GetRegisterSize
-              (BaseField context)
-              (NumberOfBits (BaseField context))
-              Auto
-          )
-          OrdWord
-      )
+  , KnownUInt (NumberOfBits context) context
+  , 1 <= PaddedLengthBits k (Rate algorithm)
   )
 
 -- | Main function to obtain the hash of a given message.
 keccak
   :: forall algorithm context k
    . Keccak algorithm context k
-  => ByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
+  => ByteString k context
+  -> ByteString (ResultSizeInBits (Rate algorithm)) context
 keccak bs =
   padding @algorithm @context @k bs
     & toBlocks @algorithm @context @k
@@ -180,7 +167,8 @@ keccak bs =
 keccakVar
   :: forall algorithm context k
    . Keccak algorithm context k
-  => VarByteString k context -> ByteString (ResultSizeInBits (Rate algorithm)) context
+  => VarByteString k context
+  -> ByteString (ResultSizeInBits (Rate algorithm)) context
 keccakVar msg =
   let VarByteString {..} = paddingVar @algorithm @context @k msg
    in toBlocks @algorithm @context @k bsBuffer
@@ -257,7 +245,8 @@ withMessageLengthConstraints' =
 padding
   :: forall algorithm context k
    . Keccak algorithm context k
-  => ByteString k context -> ByteString (PaddedLengthBits k (Rate algorithm)) context
+  => ByteString k context
+  -> ByteString (PaddedLengthBits k (Rate algorithm)) context
 padding msg =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let msgBytes = value @k `div` 8
@@ -273,23 +262,22 @@ padding msg =
 paddingVar
   :: forall algorithm context k
    . Keccak algorithm context k
-  => VarByteString k context -> VarByteString (PaddedLengthBits k (Rate algorithm)) context
-paddingVar VarByteString {..} =
+  => VarByteString k context
+  -> VarByteString (PaddedLengthBits k (Rate algorithm)) context
+paddingVar (VarByteString {..}) =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let
       rateN = value @(Rate algorithm)
-      bsLengthModRate = from @_ @(UInt (NumberOfBits (BaseField context)) Auto context) bsLength `mod` fromConstant rateN
-      padLengthBits = fromConstant rateN - from bsLengthModRate
+      bsLengthModRate :: UInt (NumberOfBits context) context
+      bsLengthModRate = feToUInt bsLength `mod` fromConstant rateN
+      padLengthBits = fromConstant rateN - uintToFE bsLengthModRate
       paddedLengthBits = bsLength + padLengthBits
       padBS =
         let bs1 = fromConstant (0x80 :: Natural)
             bs2 = fromConstant (P.fromIntegral (padByte @algorithm) :: Natural)
          in (bs2 `VB.shiftL` (padLengthBits - fromConstant (8 :: Natural))) || bs1
       grown :: ByteString (PaddedLengthBits k (Rate algorithm)) context
-      grown =
-        let resized = resize bsBuffer
-         in resized
-              & (`VB.shiftL` padLengthBits)
+      grown = resize bsBuffer & (`VB.shiftL` padLengthBits)
      in
       VarByteString paddedLengthBits (grown || padBS)
 
@@ -300,7 +288,12 @@ toBlocks
   -> Vector (NumBlocks k (Rate algorithm)) (ByteString LaneWidth context)
 toBlocks msg =
   withMessageLengthConstraints @k @(Rate algorithm) $
-    let byteWords = (toWords msg :: Vector (PaddedLengthBytesFromBits k (Rate algorithm)) (ByteString 8 context))
+    let byteWords =
+          ( toWords msg
+              :: Vector
+                   (PaddedLengthBytesFromBits k (Rate algorithm))
+                   (ByteString 8 context)
+          )
         byteWordsBitReversed = reverseBits <$> byteWords
      in reverseBits <$> toWords (concat byteWordsBitReversed)
 
@@ -311,13 +304,17 @@ type AbsorbChunkSize' rateBits = Div rateBits LaneWidth
 absorbBlocks
   :: forall (algorithm :: Symbol) context k
    . Keccak algorithm context k
-  => Vector (NumBlocks k (Rate algorithm)) (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Vector (NumBlocks k (Rate algorithm)) (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 absorbBlocks blocks =
   withMessageLengthConstraints @k @(Rate algorithm) $
     let blockChunks
           :: Vector
                (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))
-               (Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context)) = chunks blocks
+               ( Vector
+                   (AbsorbChunkSize algorithm)
+                   (ByteString LaneWidth context)
+               ) = chunks blocks
      in foldl'
           ( \accState chunk ->
               keccakF @context (updateStateInAbsorption @algorithm @context chunk threshold accState)
@@ -357,11 +354,14 @@ absorbBlocksVar paddedMsgLen blocks =
     let blockChunks
           :: Vector
                (Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))
-               (Vector (AbsorbChunkSize algorithm) (ByteString LaneWidth context)) = chunks blocks
+               ( Vector
+                   (AbsorbChunkSize algorithm)
+                   (ByteString LaneWidth context)
+               ) = chunks blocks
         actualChunksCount :: FieldElement context =
           let absorbChunkSize = fromConstant $ value @(AbsorbChunkSize algorithm)
-              numBlocks = from @_ @(UInt (NumberOfBits (BaseField context)) Auto context) paddedMsgLen `div` fromConstant (value @LaneWidth)
-           in from $ numBlocks `div` absorbChunkSize
+              numBlocks = feToUInt paddedMsgLen `div` fromConstant (value @LaneWidth)
+           in uintToFE $ numBlocks `div` absorbChunkSize
         numChunksToDrop = fromConstant (value @(Div (NumBlocks k (Rate algorithm)) (AbsorbChunkSize algorithm))) - actualChunksCount
      in -- In this case, we need to drop first few chunks.
         foldl'
@@ -385,7 +385,8 @@ absorbBlocksVar paddedMsgLen blocks =
 keccakF
   :: forall context
    . Symbolic context
-  => Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 keccakF state =
   P.snd $ P.foldl1 (.) (P.replicate (P.fromIntegral numRounds) f) (0, state)
  where
@@ -395,17 +396,15 @@ keccakF state =
 theta
   :: forall context
    . Symbolic context
-  => Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 theta state =
   concatMap @5 @5
     ( \(i, e) ->
-        P.fmap
-          (xor e)
-          ( case someNatVal i of
-              SomeNat (_ :: Proxy i) ->
-                withDict (timesNat @i @5) $
-                  slice @(i * 5) @5 state
-          )
+        xor e <$> case someNatVal i of
+          SomeNat (_ :: Proxy i) ->
+            withDict (timesNat @i @5) $
+              slice @(i * 5) @5 state
     )
     $ enumerate d
  where
@@ -422,27 +421,32 @@ theta state =
       )
   d :: Vector 5 (ByteString LaneWidth context) =
     tabulate
-      ( \(fromZp -> i) -> c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5) `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1
+      ( \(fromZp -> i) ->
+          (c !! P.fromIntegral (((P.fromIntegral i :: P.Integer) - 1) `mod` 5))
+            `xor` rotateBitsL (c !! ((i + 1) `mod` 5)) 1
       )
 
 {-# INLINE rho #-}
 rho
   :: forall context
    . Symbolic context
-  => Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 rho = zipWith (flip rotateBitsL) rotationConstants
 
 {-# INLINE pi #-}
 pi
   :: forall context
-   . Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+   . Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 pi state = backpermute state piConstants
 
 {-# INLINE chi #-}
 chi
   :: forall context
    . Symbolic context
-  => Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 chi b = mapWithIx subChi b
  where
   subChi z el = el `xor` (not (b !! mod (z + 5) 25) && (b !! mod (z + 10) 25))
@@ -451,10 +455,10 @@ chi b = mapWithIx subChi b
 iota
   :: forall context
    . Symbolic context
-  => Natural -> Vector NumLanes (ByteString LaneWidth context) -> Vector NumLanes (ByteString LaneWidth context)
+  => Natural
+  -> Vector NumLanes (ByteString LaneWidth context)
+  -> Vector NumLanes (ByteString LaneWidth context)
 iota roundNumber state = modify (\v -> VM.write v 0 $ xor (roundConstants !! roundNumber) (head state)) state
-
-type CeilDiv n d = Div (n + d - 1) d
 
 type SqueezeLanesToExtract algorithm = CeilDiv (ResultSizeInBytes (Rate algorithm)) (Div LaneWidth 8)
 
@@ -462,7 +466,8 @@ squeeze
   :: forall algorithm context
    . AlgorithmSetup algorithm
   => Symbolic context
-  => Vector NumLanes (ByteString LaneWidth context) -> ByteString (ResultSizeInBits (Rate algorithm)) context
+  => Vector NumLanes (ByteString LaneWidth context)
+  -> ByteString (ResultSizeInBits (Rate algorithm)) context
 squeeze state =
   truncate
     . concat
@@ -482,5 +487,5 @@ modify :: (forall s. V.MVector s a -> ST s ()) -> Vector n a -> Vector n a
 modify f (Vector v) = Vector $ V.modify f v
 
 {-# INLINE reverseBits #-}
-reverseBits :: forall n context. Symbolic context => ByteString n context -> ByteString n context
-reverseBits (ByteString cbs) = ByteString $ hmap reverse cbs
+reverseBits :: forall n context. ByteString n context -> ByteString n context
+reverseBits (ByteString cbs) = ByteString (reverse cbs)

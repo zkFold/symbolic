@@ -15,82 +15,44 @@ module ZkFold.Symbolic.Algorithm.RSA (
   Signature,
 ) where
 
-import Control.DeepSeq (NFData, force)
 import GHC.Generics (Generic, Generic1)
 import Prelude (($))
-import qualified Prelude as P
 
-import ZkFold.Algebra.Number
+import ZkFold.Algebra.Number (type (*), type (<=))
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisters,
-  RegisterSize (..),
-  Resize (..),
- )
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
+import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
 
 type Signature keyLen ctx = ByteString keyLen ctx
 
 data PrivateKey keyLen ctx
   = PrivateKey
-  { prvD :: UInt keyLen 'Auto ctx
-  , prvN :: UInt keyLen 'Auto ctx
+  { prvD :: UInt keyLen ctx
+  , prvN :: UInt keyLen ctx
   }
-
-deriving instance Generic (PrivateKey keyLen context)
-
-deriving instance Generic1 (PrivateKey keyLen)
-
-deriving instance HNFData context => NFData (PrivateKey keyLen context)
-
-deriving instance HEq context => P.Eq (PrivateKey keyLen context)
-
-deriving instance HShow context => P.Show (PrivateKey keyLen context)
-
-deriving instance SymbolicData (PrivateKey keyLen)
-
-deriving instance KnownNat keyLen => SymbolicInput (PrivateKey keyLen)
+  deriving (Generic, Generic1, SymbolicData)
 
 type PubExponentSize = 18
 
 data PublicKey keyLen ctx
   = PublicKey
-  { pubE :: UInt PubExponentSize 'Auto ctx
-  , pubN :: UInt keyLen 'Auto ctx
+  { pubE :: UInt PubExponentSize ctx
+  , pubN :: UInt keyLen ctx
   }
-
-deriving instance Generic (PublicKey keyLen context)
-
-deriving instance Generic1 (PublicKey keyLen)
-
-deriving instance HNFData context => NFData (PublicKey keyLen context)
-
-deriving instance HEq context => P.Eq (PublicKey keyLen context)
-
-deriving instance HShow context => P.Show (PublicKey keyLen context)
-
-deriving instance SymbolicData (PublicKey keyLen)
-
-deriving instance KnownNat keyLen => SymbolicInput (PublicKey keyLen)
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 type RSA keyLen msgLen ctx =
   ( SHA2 "SHA256" ctx msgLen
-  , KnownNat keyLen
-  , KnownNat (2 * keyLen)
-  , KnownRegisters ctx keyLen 'Auto
-  , KnownRegisters ctx (2 * keyLen) 'Auto
-  , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
+  , KnownUInt keyLen ctx
+  , KnownUInt (2 * keyLen) ctx
+  , KnownUInt PubExponentSize ctx
+  , KnownUInt 256 ctx
+  , 1 <= PaddedLength msgLen (ChunkSize "SHA256") (2 * WordSize "SHA256")
   )
 
 sign
@@ -99,13 +61,13 @@ sign
   => ByteString msgLen ctx
   -> PrivateKey keyLen ctx
   -> Signature keyLen ctx
-sign msg PrivateKey {..} = force $ from $ expMod msgI prvD prvN
+sign msg PrivateKey {..} = uintToBSbe $ expMod msgI prvD prvN
  where
   h :: ByteString 256 ctx
   h = sha2 @"SHA256" msg
 
-  msgI :: UInt 256 'Auto ctx
-  msgI = from h
+  msgI :: UInt 256 ctx
+  msgI = beBSToUInt h
 
 verify
   :: forall keyLen msgLen ctx
@@ -119,11 +81,11 @@ verify msg sig PublicKey {..} = target == input
   h :: ByteString 256 ctx
   h = sha2 @"SHA256" msg
 
-  target :: UInt keyLen 'Auto ctx
-  target = force $ expMod (from sig :: UInt keyLen 'Auto ctx) pubE pubN
+  target :: UInt keyLen ctx
+  target = expMod (beBSToUInt sig) pubE pubN
 
-  input :: UInt keyLen 'Auto ctx
-  input = force $ resize (from h :: UInt 256 'Auto ctx)
+  input :: UInt keyLen ctx
+  input = resizeUInt (beBSToUInt h)
 
 signVar
   :: forall keyLen msgLen ctx
@@ -131,13 +93,13 @@ signVar
   => VarByteString msgLen ctx
   -> PrivateKey keyLen ctx
   -> Signature keyLen ctx
-signVar msg PrivateKey {..} = force $ from $ expMod msgI prvD prvN
+signVar msg PrivateKey {..} = uintToBSbe $ expMod msgI prvD prvN
  where
   h :: ByteString 256 ctx
   h = sha2Var @"SHA256" msg
 
-  msgI :: UInt 256 'Auto ctx
-  msgI = from h
+  msgI :: UInt 256 ctx
+  msgI = beBSToUInt h
 
 verifyVar
   :: forall keyLen msgLen ctx
@@ -151,8 +113,8 @@ verifyVar msg sig PublicKey {..} = (target == input, h)
   h :: ByteString 256 ctx
   h = sha2Var @"SHA256" msg
 
-  target :: UInt keyLen 'Auto ctx
-  target = force $ expMod (from sig :: UInt keyLen 'Auto ctx) pubE pubN
+  target :: UInt keyLen ctx
+  target = expMod (beBSToUInt sig) pubE pubN
 
-  input :: UInt keyLen 'Auto ctx
-  input = force $ resize (from h :: UInt 256 'Auto ctx)
+  input :: UInt keyLen ctx
+  input = resizeUInt (beBSToUInt h)

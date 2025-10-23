@@ -6,34 +6,30 @@ module ZkFold.Symbolic.Algorithm.ECDSA.ECDSA where
 
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
-import GHC.TypeLits (KnownNat)
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import qualified ZkFold.Symbolic.Class as S
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
-import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.Data.UInt
 
 -- Verify ECDSA where a caller-provided hash function maps a message to it's hash.
 ecdsaVerify
   :: forall message n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
-     , baseField ~ FFA q 'Auto
-     , scalarField ~ FFA p 'Auto
+   . ( Symbolic ctx
+     , baseField ~ FFA q
+     , scalarField ~ FFA p
      , point ~ Point (Weierstrass curve) baseField ctx
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
-     , KnownFFA q 'Auto ctx
-     , KnownFFA p 'Auto ctx
-     , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownFFA q ctx
+     , KnownFFA p ctx
+     , KnownUInt n ctx
      )
   => (message -> scalarField ctx)
   -> point
@@ -45,7 +41,7 @@ ecdsaVerify hashFn publicKey message (r :*: s) =
     (Point x _ isInf) ->
       if isInf || r == zero || s == zero
         then false
-        else (toUInt r :: UInt n 'Auto ctx) == toUInt x
+        else (toUInt r :: UInt n ctx) == toUInt x
  where
   g = pointGen @point
 
@@ -60,17 +56,15 @@ ecdsaVerify hashFn publicKey message (r :*: s) =
 -- | Variant of 'ecdsaVerify' where the message is already hashed.
 ecdsaVerifyMessageHash
   :: forall n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
-     , baseField ~ FFA q 'Auto
-     , scalarField ~ FFA p 'Auto
+   . ( Symbolic ctx
+     , baseField ~ FFA q
+     , scalarField ~ FFA p
      , point ~ Point (Weierstrass curve) baseField ctx
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
-     , KnownFFA q 'Auto ctx
-     , KnownFFA p 'Auto ctx
-     , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownFFA q ctx
+     , KnownFFA p ctx
+     , KnownUInt n ctx
      )
   => point
   -> scalarField ctx

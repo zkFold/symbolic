@@ -26,7 +26,7 @@ import ZkFold.Algebra.Polynomial.Multivariate (
   variables,
  )
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial (mapVar)
-import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
+import ZkFold.ArithmeticCircuit.Var (LinVar (..), Var, toVar)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Prelude (length, take)
 
@@ -49,7 +49,7 @@ instance (Ord a, Arbitrary a, Binary a, Semiring a) => Arbitrary (PlonkConstrain
     qr <- arbitrary
     qo <- arbitrary
     qc <- arbitrary
-    let arbitraryNewVar = toVar . EqVar . toByteString @a <$> arbitrary
+    let arbitraryNewVar = toVar . toByteString @a <$> arbitrary
     xs <- sort <$> replicateM 3 arbitraryNewVar
     let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
     return $ PlonkConstraint qm ql qr qo qc x1 x2 x3

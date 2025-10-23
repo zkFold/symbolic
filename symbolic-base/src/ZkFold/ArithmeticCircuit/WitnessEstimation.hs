@@ -24,7 +24,7 @@ import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
 
 data UVar a = ConstUVar a | LinUVar a NewVar a | More deriving Functor
 
-instance FromConstant c a => FromConstant c (UVar a) where
+instance {-# INCOHERENT #-} FromConstant c a => FromConstant c (UVar a) where
   fromConstant = ConstUVar . fromConstant
 
 instance {-# OVERLAPPING #-} FromConstant (UVar a) (UVar a)
@@ -86,7 +86,6 @@ instance Eq a => ZkFold.Eq (UVar a) where
   type BooleanOf (UVar a) = Partial Bool
   ConstUVar c == ConstUVar d = Known (c == d)
   _ == _ = Unknown
-  u /= v = not (u ZkFold.== v)
 
 instance (Field a, Eq a) => Field (UVar a) where
   finv (ConstUVar c) = ConstUVar (finv c)
@@ -145,16 +144,10 @@ instance Conditional b a => Conditional (Partial b) (UVar a) where
 instance ZkFold.Eq a => ZkFold.Eq (Partial a) where
   type BooleanOf (Partial a) = Partial (BooleanOf a)
   (==) = liftA2 (ZkFold.==)
-  (/=) = liftA2 (ZkFold./=)
 
 instance Ord a => Ord (Partial a) where
   type OrderingOf (Partial a) = Partial (OrderingOf a)
-  ordering x y z w = liftA3 ordering x y z <*> w
   compare = liftA2 compare
-  (<) = liftA2 (<)
-  (<=) = liftA2 (<=)
-  (>=) = liftA2 (>=)
-  (>) = liftA2 (>)
 
 instance {-# OVERLAPPING #-} FromConstant (Partial a) (Partial a)
 

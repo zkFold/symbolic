@@ -149,6 +149,7 @@ generatePlonkupCircuit
   :: forall i o n a pv
    . ( KnownNat n
      , Arithmetic a
+     , Binary a
      , Binary (Rep i)
      , UnivariateRingPolyVec a pv
      , Representable i

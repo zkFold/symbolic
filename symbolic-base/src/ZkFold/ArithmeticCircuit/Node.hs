@@ -38,24 +38,29 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName (StableName, makeStableName)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (Prime)
-import ZkFold.Algebra.Polynomial.Multivariate.Expression (Polynomial, evalPoly)
+import ZkFold.Algebra.Field (Zp, fromZp)
+import ZkFold.Algebra.Number (Prime, type (<=))
+import ZkFold.Algebra.Polynomial.Multivariate.Expression (evalPoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
+import ZkFold.ArithmeticCircuit.Context (
+  CircuitContext,
+  constraint,
+  crown,
+  emptyContext,
+  lookupConstraint,
+  unconstrained,
+ )
 import ZkFold.ArithmeticCircuit.Op
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
+import ZkFold.ArithmeticCircuit.Var (NewVar, Var, at)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compat (CompatContext (..))
-import qualified ZkFold.Symbolic.Compiler as Old
-import qualified ZkFold.Symbolic.Data.Class as Old
-import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
-import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
-import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
+import ZkFold.Symbolic.Class (Arithmetic, Constraint (..), Symbolic (..), (=!=))
+import ZkFold.Symbolic.Data.Bool (Bool (fromBool))
+import ZkFold.Symbolic.Data.Class (HasRep, Layout, SymbolicData (fromLayout, toLayout))
+import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 
 ------------------- Experimental single-output circuit type --------------------
 
@@ -98,16 +103,10 @@ instance IsOrdering (Node p OO) where
 instance Eq (Node p s) where
   type BooleanOf (Node p s) = Node p BB
   x == y = NodeApply (OpEq x y)
-  x /= y = NodeApply (OpNEq x y)
 
 instance Ord (Node p ZZ) where
   type OrderingOf (Node p ZZ) = Node p OO
   compare x y = NodeApply (OpCompare x y)
-  ordering x y z o = NodeApply (OpOrder x y z o)
-  x < y = compare x y == lt
-  x <= y = compare x y /= gt
-  x >= y = compare x y /= lt
-  x > y = compare x y == gt
 
 instance
   (KnownNat p, KnownNat (NumberOfBits (Node p ZZp)))
@@ -168,26 +167,30 @@ instance Euclidean (Node p ZZ) where
 
 instance Prime p => Field (Node p ZZp) where
   finv = NodeApply . OpInv
+  rootOfUnity = fmap (fromConstant . fromZp) . rootOfUnity @(Zp p)
 
 instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p ZZp) where
   type IntegralOf (Node p ZZp) = Node p ZZ
   toIntegral = NodeApply . OpTo
 
-instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
+instance
+  (Prime p, 3 <= p, KnownNat (NumberOfBits (Node p ZZp)))
+  => Symbolic (Node p ZZp)
+  where
   constrain = NodeConstrain callStack
 
 ------------------------- Optimized compilation function -----------------------
 
-type family InputF (f :: Type) where
-  InputF (i a -> f) = i :*: Input f
-  InputF (o a) = U1
+type family Input (f :: Type) :: Type -> Type where
+  Input (i a -> f) = i :*: Input f
+  Input (o a) = U1
 
-type family OutputF (f :: Type) where
-  OutputF (i a -> f) = Output f
-  OutputF (o a) = o
+type family Output (f :: Type) :: Type -> Type where
+  Output (i a -> f) = Output f
+  Output (o a) = o
 
 class
-  ( SymbolicData (Input f)
+  ( SymbolicInput (Input f)
   , HasRep (Input f) a
   , SymbolicData (Output f)
   , Traversable (Layout (Output f) a)
@@ -195,65 +198,34 @@ class
   SymbolicFunction (a :: Type) (f :: Type)
     | f -> a
   where
-  type Input f :: Type -> Type
-  type Input f = InputF f
-  type Output f :: Type -> Type
-  type Output f = OutputF f
-  symApply :: f -> Input f a -> Output f a
+  apply :: f -> Input f a -> Output f a
 
 instance
   (SymbolicData o, Traversable (Layout o a), Input (o a) ~ U1, Output (o a) ~ o)
   => SymbolicFunction a (o a)
   where
-  symApply = const
+  apply = const
 
 instance
-  (SymbolicData i, HasRep i a, SymbolicFunction a f)
+  (SymbolicInput i, HasRep i a, SymbolicFunction a f)
   => SymbolicFunction a (i a -> f)
   where
-  symApply f (x :*: y) = symApply (f x) y
+  apply f (x :*: y) = apply (f x) y
 
-compileV1
-  :: forall a f n d
-   . ( Arithmetic a
-     , Binary a
-     , Old.SymbolicFunction f
-     , Order a ~ n
-     , Old.Context f ~ CompatContext (Node n ZZp)
-     , Old.Domain f ~ d
-     )
-  => f
-  -> ArithmeticCircuit
-       a
-       (Old.Layout d n :*: Old.Payload d n)
-       (Old.Layout (Old.Range f) n)
-compileV1 =
-  optimize . solder . \f (l :*: p) ->
-    let (output, circuit) = unsafePerformIO do
-          compiler <- makeCompiler
-          flip runStateT emptyContext
-            . flip runReaderT compiler
-            . traverse compileNode
-            . compatContext
-            . Old.arithmetize
-            . Old.apply f
-            $ Old.restore (CompatContext (NodeInput <$> l), NodeInput <$> p)
-     in crown circuit (toVar <$> output)
-
-compileV2
+compile
   :: forall a c f
    . (Arithmetic a, Binary a, c ~ Node (Order a) ZZp, SymbolicFunction c f)
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
-compileV2 =
+compile =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
     let (output, circuit) = unsafePerformIO do
           compiler <- makeCompiler
+          let input = fromLayout (fmap NodeInput l)
+              constr = ($ fromBool (isValid input)) =!= one
           flip runStateT emptyContext
             . flip runReaderT compiler
-            . traverse compileNode
-            . toLayout
-            . symApply f
-            $ fromLayout (fmap NodeInput l)
+            . traverse (compileNode . constrain constr)
+            $ toLayout (apply f input)
      in crown circuit (toVar <$> output)
 
 ------------------------- Compilation internals --------------------------------
@@ -287,7 +259,7 @@ compileNode (NodeConstrain stack !c n) = do
       let ?callStack = stack
        in state $ runState (lookupConstraint vs lkp)
     Polynomial p -> do
-      poly <- traverse (fmap toVar . compileNode) p
+      poly <- traverse (fmap toVar . compileNode) (p pure)
       let ?callStack = stack
        in state . runState $ constraint (evalPoly @a poly)
   compileNode n
@@ -358,11 +330,10 @@ instance Scale Integer a => Scale Integer (Witness a s) where
 
 instance PrimeField a => Eq (Witness a s) where
   type BooleanOf (Witness a s) = BooleanF a NewVar
-  FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
+  FieldVar u == FieldVar v = at u == at v
   IntWitness v == IntWitness w = v == w
   BoolWitness v == BoolWitness w = not (xor v w)
   OrdWitness _ == OrdWitness _ = error "not implemented"
-  x /= y = not (x == y)
 
 opToWitness
   :: forall a s m
@@ -405,7 +376,6 @@ opToWitness = \case
   OpInv (FieldVar v) ->
     state . runState $ FieldVar <$> unconstrained (finv $ at v)
   OpEq x y -> pure $ BoolWitness (x == y)
-  OpNEq x y -> pure $ BoolWitness (x /= y)
   OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
   OpBool (FieldVar u) (FieldVar v) (BoolWitness w) ->
     state . runState $ FieldVar <$> unconstrained (bool (at u) (at v) w)
@@ -416,10 +386,3 @@ opToWitness = \case
   OpBool (OrdWitness _) (OrdWitness _) (BoolWitness _) ->
     pure $ OrdWitness (error "not implemented")
   OpAppend (OrdWitness v) (OrdWitness w) -> pure $ OrdWitness (v <> w)
-  OpOrder (IntWitness u) (IntWitness v) (IntWitness w) (OrdWitness o) ->
-    pure $ IntWitness (ordering u v w o)
-
-instance {-# OVERLAPPING #-} Ring a => Scale v (Polynomial a v)
-
-instance {-# OVERLAPPING #-} Ring a => FromConstant v (Polynomial a v) where
-  fromConstant = pure

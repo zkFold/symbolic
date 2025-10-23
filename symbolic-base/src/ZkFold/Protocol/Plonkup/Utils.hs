@@ -26,7 +26,6 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Algebra.Number
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Prelude (iterateN', log2ceiling)
-import ZkFold.Symbolic.Class (Arithmetic)
 
 getParams :: forall a. (Ord a, FiniteField a) => Natural -> (a, a, a)
 getParams n = findK' 0
@@ -53,7 +52,6 @@ getParams n = findK' 0
 getSecretParams
   :: forall n g1 g2
    . ( KnownNat (n + 6)
-     , Arithmetic (ScalarFieldOf g1)
      , CyclicGroup g1
      , CyclicGroup g2
      , Scale (ScalarFieldOf g1) g2

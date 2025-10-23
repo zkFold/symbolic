@@ -1,12 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeOperators #-}
--- Avoid reduction overflow error caused by NumberOfRegisters
-{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_256, blake2b_512) where
 
-import Data.Bool (bool)
+import Data.Bool (Bool (..), bool)
 import Data.Constraint (Dict, withDict)
 import Data.Constraint.Nat (
   minusNat,
@@ -18,27 +15,20 @@ import Data.Constraint.Nat (
   zeroLe,
  )
 import Data.Constraint.Unsafe (unsafeAxiom)
+import Data.Eq ((==))
+import Data.Function (flip, ($), (.))
+import Data.Functor (fmap)
+import Data.Int (Int)
+import Data.List (foldl', map, (++))
+import Data.Ord ((>))
 import Data.Ratio ((%))
+import Data.Tuple (fst, snd)
+import Data.Type.Equality (type (~))
 import Data.Vector ((!), (//))
 import qualified Data.Vector as V
-#if __GLASGOW_HASKELL__ < 912
-import           Data.List                                         (foldl')
-#endif
 import GHC.IsList (IsList (..))
 import qualified GHC.Num as GHC
-import Prelude hiding (
-  Num (..),
-  concat,
-  divMod,
-  length,
-  mod,
-  replicate,
-  splitAt,
-  truncate,
-  (!!),
-  (&&),
-  (^),
- )
+import GHC.Real (ceiling)
 
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
@@ -66,8 +56,7 @@ import ZkFold.Symbolic.Data.ByteString (
   toWords,
   truncate,
  )
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
-import ZkFold.Symbolic.Data.UInt (UInt (..))
+import ZkFold.Symbolic.Data.UInt (KnownUInt, UInt (..), beBSToUInt, uintToBSbe)
 
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
@@ -104,24 +93,31 @@ r4 = 63
 pow2 :: forall a. FromConstant Natural a => Natural -> a
 pow2 = fromConstant @Natural . (2 ^)
 
-shiftUIntR :: forall b. Symbolic b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
-shiftUIntR u n = from @_ @(UInt 64 Auto b) $ from @_ @(ByteString 64 b) u `shiftBitsR` n
+shiftUIntR
+  :: forall b. (Symbolic b, KnownUInt 64 b) => UInt 64 b -> Natural -> UInt 64 b
+shiftUIntR u n = beBSToUInt $ uintToBSbe u `shiftBitsR` n
 
-shiftUIntL :: forall b. Symbolic b => UInt 64 Auto b -> Natural -> UInt 64 Auto b
+shiftUIntL
+  :: forall b. (Symbolic b, KnownUInt 64 b) => UInt 64 b -> Natural -> UInt 64 b
 shiftUIntL u n = u * pow2 n
 
-xorUInt :: forall c. Symbolic c => UInt 64 Auto c -> UInt 64 Auto c -> UInt 64 Auto c
-xorUInt u1 u2 = from @(ByteString 64 c) @(UInt 64 Auto c) $ from u1 `xor` from u2
+xorUInt
+  :: forall c
+   . (Symbolic c, KnownUInt 64 c)
+  => UInt 64 c -> UInt 64 c -> UInt 64 c
+xorUInt u1 u2 = beBSToUInt $ uintToBSbe u1 `xor` uintToBSbe u2
 
 -- | state context
 data Blake2bCtx c = Blake2bCtx
-  { h :: V.Vector (UInt 64 Auto c) -- chained state 8
-  , m :: V.Vector (UInt 64 Auto c) -- input buffer 16
+  { h :: V.Vector (UInt 64 c) -- chained state 8
+  , m :: V.Vector (UInt 64 c) -- input buffer 16
   , t :: (Natural, Natural) -- total number of bytes
   }
 
 -- | Cyclic right rotation.
-rotr64 :: Symbolic c => (UInt 64 Auto c, Natural) -> UInt 64 Auto c
+rotr64
+  :: (Symbolic c, KnownUInt 64 c)
+  => (UInt 64 c, Natural) -> UInt 64 c
 rotr64 (x, y) = (x `shiftUIntR` y) `xorUInt` (x `shiftUIntL` (64 -! y))
 
 {-
@@ -149,8 +145,10 @@ rotr64 (x, y) = (x `shiftUIntR` y) `xorUInt` (x `shiftUIntL` (64 -! y))
 -- | Little-endian byte access.
 b2b_g
   :: forall c
-   . Symbolic c
-  => V.Vector (UInt 64 Auto c) -> (Int, Int, Int, Int, UInt 64 Auto c, UInt 64 Auto c) -> V.Vector (UInt 64 Auto c)
+   . (Symbolic c, KnownUInt 64 c)
+  => V.Vector (UInt 64 c)
+  -> (Int, Int, Int, Int, UInt 64 c, UInt 64 c)
+  -> V.Vector (UInt 64 c)
 b2b_g v (a, b, c, d, x, y) = v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
  where
   va1 = (v ! a) + (v ! b) + x -- v[a] = v[a] + v[b] + x;
@@ -211,7 +209,10 @@ b2b_g v (a, b, c, d, x, y) = v // [(a, va2), (b, vb2), (c, vc2), (d, vd2)]
 -}
 
 -- | Compression function. "last" flag indicates the last block.
-blake2b_compress :: forall c. Symbolic c => Blake2bCtx c -> Bool -> V.Vector (UInt 64 Auto c)
+blake2b_compress
+  :: forall c
+   . (Symbolic c, KnownUInt 64 c)
+  => Blake2bCtx c -> Bool -> V.Vector (UInt 64 c)
 blake2b_compress Blake2bCtx {h, m, t} lastBlock =
   let v' = h V.++ blake2b_iv -- init work variables
       v'' =
@@ -270,12 +271,13 @@ blake2b_compress Blake2bCtx {h, m, t} lastBlock =
 blake2b'
   :: forall bb' kk' ll' nn' c
    . ( Symbolic c
+     , KnownUInt 64 c
      , KnownNat bb'
      , KnownNat kk'
      , KnownNat ll'
      , KnownNat nn'
      )
-  => [V.Vector (UInt 64 Auto c)] -> ByteString (8 * nn') c
+  => [V.Vector (UInt 64 c)] -> ByteString (8 * nn') c
 blake2b' d =
   let bb = value @bb'
       ll = value @ll'
@@ -286,7 +288,7 @@ blake2b' d =
       toOffset :: forall x. FromConstant Natural x => Natural -> (x, x)
       toOffset x = let (hi, lo) = x `divMod` pow2 64 in (fromConstant lo, fromConstant hi)
 
-      h = blake2b_iv :: V.Vector (UInt 64 Auto c)
+      h = blake2b_iv :: V.Vector (UInt 64 c)
 
       -- Parameter block p[0]
       h' =
@@ -310,8 +312,14 @@ blake2b' d =
           then blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll)) True
           else blake2b_compress (Blake2bCtx h'' (d !! (dd -! 1)) (toOffset @Natural $ ll + bb)) True
 
-      bs = reverseEndianness @64 $ concat @8 @64 $ Vec.unsafeToVector @8 $ map from $ toList h''' :: ByteString (64 * 8) c
-   in withDict (timesNLe512 @nn') $ with8n @nn' (truncate bs)
+      bs :: ByteString (64 * 8) c
+      bs =
+        reverseEndianness @64 $
+          concat @8 @64 $
+            Vec.unsafeToVector @8 $
+              map uintToBSbe $
+                toList h'''
+   in withDict (timesNLe512 @nn') $ with8n @nn' $ truncate bs
 
 type ExtensionBits inputLen = 8 * (128 - Mod inputLen 128)
 
@@ -368,25 +376,27 @@ nLeInput = unsafeAxiom
 blake2b
   :: forall keyLen inputLen outputLen c n
    . ( Symbolic c
+     , KnownUInt 64 c
      , KnownNat keyLen
      , KnownNat inputLen
      , KnownNat outputLen
      , n ~ (8 * inputLen + ExtensionBits inputLen)
      )
-  => Natural -> ByteString (8 * inputLen) c -> ByteString (8 * outputLen) c
+  => Natural
+  -> ByteString (8 * inputLen) c
+  -> ByteString (8 * outputLen) c
 blake2b key input =
   let input' =
         withConstraints @inputLen $
           withDict (nLeInput @n @inputLen) $
-            from
-              <$> ( toWords @(Div n 64) @64 $
-                      reverseEndianness @64 $
-                        flip rotateBitsL (value @(ExtensionBits inputLen)) $
-                          truncate @_ @(ExtendedInputByteString inputLen) input
-                  )
-          :: Vec.Vector (Div n 64) (UInt 64 Auto c)
+            fmap beBSToUInt $
+              toWords @(Div n 64) @64 $
+                reverseEndianness @64 $
+                  flip rotateBitsL (value @(ExtensionBits inputLen)) $
+                    truncate @_ @(ExtendedInputByteString inputLen) input
+          :: Vec.Vector (Div n 64) (UInt 64 c)
 
-      key' = fromConstant @_ key :: UInt 64 Auto c
+      key' = fromConstant @_ key :: UInt 64 c
       input'' =
         if value @keyLen > 0
           then key' : Vec.fromVector input'
@@ -420,26 +430,20 @@ blake2b key input =
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
 blake2b_224
   :: forall inputLen c
-   . ( Symbolic c
-     , KnownNat inputLen
-     )
+   . (Symbolic c, KnownNat inputLen, KnownUInt 64 c)
   => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 0
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
 blake2b_256
   :: forall inputLen c
-   . ( Symbolic c
-     , KnownNat inputLen
-     )
+   . (Symbolic c, KnownNat inputLen, KnownUInt 64 c)
   => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 0
 
 -- | Hash a `ByteString` using the Blake2b-512 hash function.
 blake2b_512
   :: forall inputLen c
-   . ( Symbolic c
-     , KnownNat inputLen
-     )
+   . (Symbolic c, KnownNat inputLen, KnownUInt 64 c)
   => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0

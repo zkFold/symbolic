@@ -34,7 +34,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Algebra.Permutation (Permutation, fromCycles, mkIndexPartition)
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, var)
 import ZkFold.Algebra.Polynomial.Univariate (UnivariateRingPolyVec (..), toPolyVec)
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, witnessGenerator)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..), acSizeN, desugarRanges, witnessGenerator)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext (..), LookupFunction (..), LookupType (..))
 import ZkFold.ArithmeticCircuit.Var (Var, evalVar, toVar)
 import ZkFold.Prelude (length, replicate, uncurry3)
@@ -111,6 +111,7 @@ instance
   , Representable o
   , Foldable o
   , Arithmetic a
+  , Binary a
   , Binary (Rep i)
   , Arbitrary (ArithmeticCircuit a i o)
   )
@@ -118,10 +119,14 @@ instance
   where
   arbitrary = fromJust . toPlonkupRelation @i @o @n @a @pv <$> arbitrary
 
+regSize :: Natural
+regSize = 2 ^ (16 :: Natural) -! 1
+
 toPlonkupRelation
   :: forall i o n a pv
    . ( KnownNat n
      , Arithmetic a
+     , Binary a
      , Binary (Rep i)
      , UnivariateRingPolyVec a pv
      , Representable i
@@ -130,7 +135,7 @@ toPlonkupRelation
      )
   => ArithmeticCircuit a i o
   -> Maybe (PlonkupRelation i o n a pv)
-toPlonkupRelation !ac =
+toPlonkupRelation (desugarRanges (Just regSize) -> !ac) =
   let !n = value @n
 
       !xPub = acOutput (acContext ac)

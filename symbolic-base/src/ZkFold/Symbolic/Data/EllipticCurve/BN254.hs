@@ -10,23 +10,23 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BN254 (BN254_Base, BN254_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.UInt (uintToBSbe)
 
-type BN254_G1_Point = Point (Weierstrass "BN254_G1") (FFA BN254_Base 'Auto)
+type BN254_G1_Point = Point (Weierstrass "BN254_G1") (FFA BN254_Base)
 
 instance
   ( Symbolic ctx
-  , KnownFFA BN254_Base 'Auto ctx
-  , KnownFFA BN254_Scalar 'Auto ctx
+  , KnownFFA BN254_Base ctx
+  , KnownFFA BN254_Scalar ctx
   )
   => CyclicGroup (BN254_G1_Point ctx)
   where
-  type ScalarFieldOf (BN254_G1_Point ctx) = FFA BN254_Scalar 'Auto ctx
+  type ScalarFieldOf (BN254_G1_Point ctx) = FFA BN254_Scalar ctx
   pointGen =
     pointXY
       (fromConstant (1 :: Natural))
@@ -34,20 +34,20 @@ instance
 
 instance
   ( Symbolic ctx
-  , KnownFFA BN254_Base 'Auto ctx
-  , KnownFFA BN254_Scalar 'Auto ctx
+  , KnownFFA BN254_Base ctx
+  , KnownFFA BN254_Scalar ctx
   )
-  => Scale (FFA BN254_Scalar 'Auto ctx) (BN254_G1_Point ctx)
+  => Scale (FFA BN254_Scalar ctx) (BN254_G1_Point ctx)
   where
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits BN254_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits BN254_Scalar ctx) ffa)
+    bits = uintToBSbe $ toUInt @(FFAMaxBits BN254_Scalar ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits BN254_Scalar ctx) -! 1

@@ -1,4 +1,6 @@
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Ledger.E2E.Two (
   specE2ETwo,
@@ -6,7 +8,6 @@ module Tests.Symbolic.Ledger.E2E.Two (
   batch,
   witness,
   newState,
-  I,
   Bi,
   Bo,
   Ud,
@@ -18,11 +19,13 @@ module Tests.Symbolic.Ledger.E2E.Two (
 
 import Control.Applicative (pure)
 import Data.Function ((&))
+import Data.Type.Equality (type (~))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.Natural (Natural)
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Data.Bool (false, true)
@@ -39,7 +42,14 @@ import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
 
-type I = RollupBFInterpreter
+instance
+  {-# OVERLAPPABLE #-}
+  (Eq a, ToConstant (BooleanOf a), Const (BooleanOf a) ~ Haskell.Bool)
+  => Haskell.Eq a
+  where
+  x == y = toConstant (x == y)
+
+type Fq = RollupBF
 
 type Bi = 3
 
@@ -55,39 +65,39 @@ type Oxs = 3
 
 type TxCount = 3
 
-emptyTree :: SymMerkle.MerkleTree Ud I
-emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
+emptyTree :: SymMerkle.MerkleTree Ud Fq
+emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @Fq))
 
-prevState :: State Bi Bo Ud A I
+prevState :: State Bi Bo Ud A Fq
 prevState =
   State
     { sPreviousStateHash = zero
     , sUTxO = emptyTree
     , sLength = zero
-    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
-    , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
+    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @Fq)))
+    , sBridgeOut = hash (Comp1 (pure (nullOutput @A @Fq)))
     }
 
-utxoPreimage :: Leaves Ud (UTxO A I)
-utxoPreimage = pure (nullUTxO @A @I)
+utxoPreimage :: Leaves Ud (UTxO A Fq)
+utxoPreimage = pure (nullUTxO @A @Fq)
 
-privateKey :: PrivateKey I
+privateKey :: PrivateKey Fq
 privateKey = fromConstant (1 :: Natural)
 
-privateKey2 :: PrivateKey I
+privateKey2 :: PrivateKey Fq
 privateKey2 = fromConstant (2 :: Natural)
 
-privateKey3 :: PrivateKey I
+privateKey3 :: PrivateKey Fq
 privateKey3 = fromConstant (3 :: Natural)
 
-publicKey :: PublicKey I
-publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
+publicKey :: PublicKey Fq
+publicKey = privateKey `scale` pointGen @(EdDSAPoint Fq)
 
-publicKey2 :: PublicKey I
-publicKey2 = privateKey2 `scale` pointGen @(EdDSAPoint I)
+publicKey2 :: PublicKey Fq
+publicKey2 = privateKey2 `scale` pointGen @(EdDSAPoint Fq)
 
-publicKey3 :: PublicKey I
-publicKey3 = privateKey3 `scale` pointGen @(EdDSAPoint I)
+publicKey3 :: PublicKey Fq
+publicKey3 = privateKey3 `scale` pointGen @(EdDSAPoint Fq)
 
 address = hashFn publicKey
 
@@ -95,13 +105,13 @@ address2 = hashFn publicKey2
 
 address3 = hashFn publicKey3
 
-asset2Policy :: AssetPolicy I = one + one
+asset2Policy :: AssetPolicy Fq = one + one
 
-asset2Name :: AssetName I = adaName -- same as ADA.
+asset2Name :: AssetName Fq = adaName -- same as ADA.
 
-asset3Policy :: AssetPolicy I = one + one + one
+asset3Policy :: AssetPolicy Fq = one + one + one
 
-asset3Name :: AssetName I = one + one + one
+asset3Name :: AssetName Fq = one + one + one
 
 bridgeInOutput =
   Output
@@ -116,9 +126,9 @@ bridgeInOutput =
     }
 
 -- "address" has 10 ADA and 100 asset2
-bridgeInOutput2 :: Output A I = nullOutput
+bridgeInOutput2 :: Output A Fq = nullOutput
 
-bridgeInOutput3 :: Output A I =
+bridgeInOutput3 :: Output A Fq =
   Output
     { oAddress = address3
     , oAssets =
@@ -132,17 +142,17 @@ bridgeInOutput3 :: Output A I =
 
 -- "address3" has 10 ADA and 50 asset2 and 50 asset3.
 -- We bridge in an output and refer to it in transaction.
-bridgedIn :: (Vector Bi :.: Output A) I
+bridgedIn :: (Vector Bi :.: Output A) Fq
 bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput, bridgeInOutput2, bridgeInOutput3])
 
 -- Total 2 UTxOs.
 
-bridgeInHash :: HashSimple I
-bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
+bridgeInHash :: HashSimple Fq
+bridgeInHash = (one :: FieldElement Fq) & hash & Base.hHash
 
 two = one + one
 
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction Ixs Oxs A Fq
 tx1 =
   Transaction
     { inputs = Comp1 (unsafeToVector' [nullOutputRef, OutputRef {orTxId = bridgeInHash, orIndex = two}, nullOutputRef])
@@ -183,7 +193,7 @@ tx1 =
 -- Total 3 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction Ixs Oxs A Fq
 tx2 =
   Transaction
     { inputs =
@@ -239,7 +249,7 @@ tx2 =
 -- Total 3 UTxOs.
 tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
+tx3 :: Transaction Ixs Oxs A Fq
 tx3 =
   Transaction
     { inputs =
@@ -295,7 +305,7 @@ tx3 =
 
 -- Spent all UTxOs and bridged out all created outputs.
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch Ixs Oxs A TxCount Fq
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2, tx3]}
 
 sigs =
@@ -357,6 +367,6 @@ specE2ETwo :: Spec
 specE2ETwo =
   it "E2E Two" $ do
     let
-    sLength newState `shouldBe` (one :: FieldElement I)
+    sLength newState `shouldBe` (one :: FieldElement Fq)
     validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
-    unComp1 utxoPreimage2 `shouldBe` pure (nullUTxO @A @I)
+    unComp1 utxoPreimage2 `shouldBe` pure (nullUTxO @A @Fq)

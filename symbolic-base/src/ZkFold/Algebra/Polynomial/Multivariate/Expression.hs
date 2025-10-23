@@ -8,6 +8,7 @@ import Data.Function ((.))
 import Data.Functor (Functor, (<$>))
 import Data.Traversable (Traversable)
 import Numeric.Natural (Natural)
+import Text.Show (Show)
 
 import ZkFold.Algebra.Class
 
@@ -16,7 +17,7 @@ data Polynomial a v
   | PConst a
   | Polynomial a v :+ Polynomial a v
   | Polynomial a v :* Polynomial a v
-  deriving (Foldable, Functor, Traversable)
+  deriving (Foldable, Functor, Show, Traversable)
 
 evalPoly :: Algebra a b => Polynomial a v -> (v -> b) -> b
 evalPoly (PVar i) x = x i

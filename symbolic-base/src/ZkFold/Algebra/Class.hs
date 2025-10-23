@@ -18,7 +18,7 @@ import Data.Monoid (Monoid, mempty)
 import Data.Ratio (Rational)
 import Data.Semigroup (Semigroup, (<>))
 import Data.Type.Equality (type (~))
-import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
+import GHC.Natural (andNatural, naturalFromInteger, shiftLNatural, shiftRNatural)
 import Prelude (Integer)
 import qualified Prelude as Haskell
 
@@ -26,12 +26,12 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (BooleanOf, Eq (..))
-import ZkFold.Data.Ord (IsOrdering (..), Ord)
+import ZkFold.Data.Ord (IsOrdering (..), Ord, OrderingOf)
 import ZkFold.Prelude (length, replicate, zipWith')
 
-infixl 7 .*, *., *, /
+infixl 7 .*, *., *, /, *!
 
-infixl 6 +, -, -!
+infixl 6 +, -, +!, -!
 
 class Bilinear p s g where
   -- | Bilinear function. Should satisfy the following:
@@ -467,6 +467,18 @@ class
   type IntegralOf a :: Type
   toIntegral :: a -> IntegralOf a
 
+-- | Numeric prime fields have decidable equality and ordering.
+type Decidable a =
+  ( IntegralOf a ~ Integer
+  , ToConstant a
+  , Const a ~ Natural
+  , BooleanOf a ~ Haskell.Bool
+  , OrderingOf a ~ Haskell.Ordering
+  , Haskell.Eq a
+  , Haskell.Ord a
+  , Haskell.Enum a
+  )
+
 --------------------------------------------------------------------------------
 
 -- | Class of semirings where a binary expansion of elements can be computed.
@@ -483,7 +495,7 @@ class Semiring a => BinaryExpansion a where
   binaryExpansion :: a -> Bits a
 
   fromBinary :: Bits a -> a
-  default fromBinary :: Bits a ~ [a] => Bits a -> a
+  default fromBinary :: (Bits a ~ f a, Foldable f) => Bits a -> a
   fromBinary = foldr (\(!x) (!y) -> x + y + y) zero
 
 padBits :: forall a. AdditiveMonoid a => Natural -> [a] -> [a]
@@ -495,6 +507,9 @@ castBits (x : xs)
   | x Haskell.== zero = zero : castBits xs
   | x Haskell.== one = one : castBits xs
   | Haskell.otherwise = Haskell.error "castBits: impossible bit value"
+
+class StrictNum a where
+  (+!), (-!), (*!) :: a -> a -> a
 
 --------------------------------------------------------------------------------
 
@@ -522,7 +537,11 @@ instance MultiplicativeSemigroup Natural where
   (*) = (Haskell.*)
 
 instance Exponent Natural Natural where
-  (^) = (Haskell.^)
+  _ ^ 0 = 1
+  0 ^ _ = 0
+  1 ^ _ = 1
+  2 ^ p = shiftLNatural 1 (Haskell.fromIntegral p)
+  x ^ p = x Haskell.^ p
 
 instance MultiplicativeMonoid Natural where
   one = 1
@@ -545,8 +564,10 @@ instance BinaryExpansion Natural where
   binaryExpansion 0 = []
   binaryExpansion !x = (x `mod` 2) : binaryExpansion (x `div` 2)
 
-(-!) :: Natural -> Natural -> Natural
-(-!) = (Haskell.-)
+instance StrictNum Natural where
+  (+!) = (+)
+  (-!) = (Haskell.-)
+  (*!) = (*)
 
 --------------------------------------------------------------------------------
 
@@ -685,16 +706,18 @@ instance Ring Bool
 
 instance BinaryExpansion Bool where
   type Bits Bool = [Bool]
-
   binaryExpansion = (: [])
 
   fromBinary [] = False
-  fromBinary [x] = x
-  fromBinary _ = Haskell.error "fromBits: This should never happen."
+  fromBinary (x : _) = x
 
 instance MultiplicativeMonoid a => Exponent a Bool where
   _ ^ False = one
   x ^ True = x
+
+instance ToConstant Bool where
+  type Const Bool = Bool
+  toConstant = id
 
 --------------------------------------------------------------------------------
 
@@ -800,7 +823,7 @@ instance (Applicative f, Semigroup a) => Semigroup (ApplicativeAlgebra f a) wher
 instance (Applicative f, Monoid a) => Monoid (ApplicativeAlgebra f a) where
   mempty = pure mempty
 
-instance (Applicative f, IsOrdering a) => IsOrdering (ApplicativeAlgebra f a) where
+instance (Applicative f, IsOrdering a, Eq (f a)) => IsOrdering (ApplicativeAlgebra f a) where
   lt = pure lt
   eq = pure eq
   gt = pure gt

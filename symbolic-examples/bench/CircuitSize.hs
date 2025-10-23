@@ -2,7 +2,7 @@ module Main where
 
 import Control.Applicative (Applicative (..))
 import Data.ByteString.Lazy (ByteString)
-import Data.Function (($))
+import Data.Function (id, ($))
 import Data.Semigroup (Semigroup (..))
 import Data.String (String)
 import qualified Data.String as String
@@ -12,8 +12,7 @@ import qualified Test.Tasty.Golden as Golden
 import Text.Show (Show (..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.ArithmeticCircuit as Circuit
-import ZkFold.Symbolic.Compiler (compile)
-import ZkFold.Symbolic.Data.Vec (runVec)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..))
 import qualified ZkFold.Symbolic.Examples as Examples
@@ -36,6 +35,6 @@ main =
     Tasty.testGroup
       "Compiler golden tests"
       [ Golden.goldenVsString name ("stats/" <> name) $ pure (metrics name circuit)
-      | (name, ExampleOutput cf) <- Examples.examples
-      , let circuit = runVec $ compile cf
+      | (name, ExampleOutput (cf :: i (Elem a) -> o (Elem a))) <- Examples.examples
+      , let circuit = compile @a id cf
       ]

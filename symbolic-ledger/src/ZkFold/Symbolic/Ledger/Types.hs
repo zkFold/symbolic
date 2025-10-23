@@ -14,10 +14,10 @@ import ZkFold.Algebra.Class (NumberOfBits)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
-import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (KnownFFA)
+import ZkFold.Symbolic.Data.UInt (KnownUInt)
 
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash
@@ -28,17 +28,17 @@ import ZkFold.Symbolic.Ledger.Types.Value
 
 type SignatureTransaction ud i o a context =
   ( Symbolic context
-  , KnownRegistersAssetQuantity context
+  , KnownUInt (NumberOfBits context) context
+  , KnownUInt 64 context
+  , KnownUInt 32 context
   , KnownNat i
   , KnownNat o
   , KnownNat a
   , KnownNat (ud - 1)
   , KnownNat (MerkleTreeSize ud)
-  , KnownFFA Jubjub_Base 'Auto context
+  , KnownFFA Jubjub_Base context
   , CyclicGroup (Jubjub_Point context)
-  , KnownFFA Jubjub_Scalar 'Auto context
-  , KnownNat
-      (GetRegisterSize (BaseField context) (NumberOfBits (BaseField context)) 'Auto)
+  , KnownFFA Jubjub_Scalar context
   )
 
 type SignatureTransactionBatch ud i o a t context =
@@ -48,7 +48,6 @@ type SignatureTransactionBatch ud i o a t context =
 
 type SignatureState bi bo ud a context =
   ( Symbolic context
-  , KnownRegistersAssetQuantity context
   , KnownNat bi
   , KnownNat bo
   )

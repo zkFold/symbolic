@@ -1,5 +1,5 @@
 UInt.ExpMod.256.64.1024.Auto
-Number of polynomial constraints: 436110
-Number of variables: 571715
-Number of lookup constraints: 222546
-Number of lookup tables: 6
+Number of polynomial constraints: 488457
+Number of variables: 519205
+Number of lookup constraints: 21843
+Number of lookup tables: 25

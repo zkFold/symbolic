@@ -1,34 +1,26 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE UndecidableInstances #-}
--- Avoid reduction overflow error caused by NumberOfRegisters
-{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module ZkFold.Symbolic.Cardano.Types.OutputRef where
 
 import GHC.Generics (Generic, Generic1)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-import qualified Prelude as Haskell
 
 import ZkFold.Symbolic.Cardano.Types.Basic
 
 type TxRefId context = ByteString 256 context
 
-type TxRefIndex context = UInt 32 Auto context
+type TxRefIndex context = UInt 32 context
 
 data OutputRef context = OutputRef
   { outputRefId :: TxRefId context
   , outputRefIndex :: TxRefIndex context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Eq, Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (OutputRef context)
-
-instance
-  (Symbolic context, KnownRegisters context 32 Auto)
-  => Eq (OutputRef context)
+instance Symbolic c => Collect (ConstrainedDatum c) (OutputRef c)

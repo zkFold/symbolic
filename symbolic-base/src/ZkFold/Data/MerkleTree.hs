@@ -16,7 +16,7 @@ import Data.Functor.Rep (tabulate)
 import Data.Maybe (Maybe (..))
 import Data.String (fromString)
 import Data.Type.Equality (type (~))
-import qualified Data.Vector as V
+import qualified Data.Vector as UV
 import Data.Zip (zip)
 import GHC.Generics hiding (Rep, UInt, from)
 import GHC.TypeNats
@@ -28,11 +28,11 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Control.Conditional (Conditional, ifThenElse)
 import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.Data.Iso (Iso (from))
 import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Data.Combinators (Iso (from))
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 
@@ -146,7 +146,7 @@ find
    . (h -> Bool)
   -> MerkleTree d h
   -> Maybe h
-find p (MerkleTree _ (Vector leaves)) = V.find p leaves
+find p (MerkleTree _ (Vector leaves)) = UV.find p leaves
 
 -- | Finds an index of an element satisfying the constraint
 findIndex
@@ -155,7 +155,7 @@ findIndex
   => (h -> Bool)
   -> MerkleTree d h
   -> Maybe (Zp (MerkleTreeSize d))
-findIndex p (MerkleTree _ (Vector leaves)) = toZp . fromIntegral <$> V.findIndex p leaves
+findIndex p (MerkleTree _ (Vector leaves)) = toZp . fromIntegral <$> UV.findIndex p leaves
 
 -- | Returns the index of the first occurrence of an element in the Merkle tree
 elemIndex
@@ -185,7 +185,7 @@ replaceAt
 replaceAt idx newLeaf (MerkleTree _ leaves) =
   MerkleTree root' leaves'
  where
-  leaves' = Vector $ toV leaves V.// [(fromIntegral $ fromZp idx, newLeaf)]
+  leaves' = Vector $ toV leaves UV.// [(fromIntegral $ fromZp idx, newLeaf)]
   root' = computeRoot leaves'
 
 ------------------------------- Utilities -------------------------------

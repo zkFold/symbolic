@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.ArithmeticCircuit.Optimization (optimize, isInputVar) where
 
@@ -23,20 +22,18 @@ import Data.Semigroup ((<>))
 import Data.Set (Set, findMin)
 import qualified Data.Set as S
 import Data.Tuple (fst)
-import GHC.Generics ((:*:))
 import Prelude (error)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, lt, poly, var, variables)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
-  CircuitFold (..),
   Constraint,
   LookupType,
   asRange,
   witToVar,
  )
-import ZkFold.ArithmeticCircuit.Var (NewVar (..))
+import ZkFold.ArithmeticCircuit.Var (NewVar)
 import ZkFold.Data.Binary (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 
@@ -52,7 +49,7 @@ optimize
   => (NewVar -> Bool)
   -> CircuitContext a o
   -> CircuitContext a o
-optimize keep (CircuitContext s lf lc w f o) =
+optimize keep (CircuitContext s lf lc w o) =
   let (newSystem, consts) = varsToReplace (s, M.empty)
       prune :: (Monad e, FromConstant a (e NewVar)) => e NewVar -> e NewVar
       prune = (>>= \v -> maybe (pure v) fromConstant (consts M.!? v))
@@ -60,9 +57,7 @@ optimize keep (CircuitContext s lf lc w f o) =
         { acSystem = newSystem <> inputConstraints consts
         , acLookupFunction = lf
         , acLookup = optRanges consts lc
-        , acWitness =
-            prune <$> filterKeys ((`M.notMember` consts) . EqVar) w
-        , acFold = optimizeFold <$> f
+        , acWitness = prune <$> filterKeys (`M.notMember` consts) w
         , acOutput = prune <$> o
         }
  where
@@ -94,18 +89,8 @@ optimize keep (CircuitContext s lf lc w f o) =
   inInterval :: Set (a, a) -> a -> Bool
   inInterval si v = any (\(l', r') -> (l' <= v) && (v <= r')) si
 
-  optimizeFold :: CircuitFold a -> CircuitFold a
-  optimizeFold CircuitFold {..} =
-    CircuitFold
-      { foldStep = \(i :: (p :*: s :*: j) NewVar) ->
-          let (ctx, pl) = foldStep i
-           in (optimize (isInputVar @(p :*: s :*: j)) ctx, pl)
-      , ..
-      }
-
 isInputVar :: forall i. Binary (Rep i) => NewVar -> Bool
-isInputVar (EqVar v) = isJust (fromByteString v :: Maybe (Rep i))
-isInputVar _ = False
+isInputVar v = isJust (fromByteString v :: Maybe (Rep i))
 
 filterKeys :: (k -> Bool) -> Map k v -> Map k v
 filterKeys f = M.filterWithKey (const . f)

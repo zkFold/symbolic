@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
-
 module ZkFold.Symbolic.Examples.Ed25519 (
   exampleEd25519Scale,
 ) where
@@ -7,16 +5,12 @@ module ZkFold.Symbolic.Examples.Ed25519 (
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_Scalar)
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Ed25519
 import ZkFold.Symbolic.Data.FFA
 
 exampleEd25519Scale
-  :: ( Symbolic ctx
-     , KnownFFA Ed25519_Base 'Auto ctx
-     , KnownFFA Ed25519_Scalar 'Auto ctx
-     )
+  :: (Symbolic ctx, KnownFFA Ed25519_Base ctx, KnownFFA Ed25519_Scalar ctx)
   => ScalarFieldOf (Ed25519_Point ctx)
   -> Ed25519_Point ctx
   -> Ed25519_Point ctx

@@ -8,34 +8,31 @@ module ZkFold.Symbolic.Algorithm.Mithril where
 import Data.Foldable (foldl')
 import Data.Type.Equality
 import GHC.Generics ((:*:) (..))
-import GHC.TypeLits (KnownNat)
 
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
-import ZkFold.Symbolic.Class (BaseField, Symbolic)
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.UInt
 
 type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx
    . ( Symbolic ctx
-     , baseField ~ FFA q 'Auto
-     , scalarField ~ FFA p 'Auto ctx
+     , baseField ~ FFA q
+     , scalarField ~ FFA p ctx
      , point ~ Point (Weierstrass curve) baseField ctx
      , ScalarFieldOf point ~ scalarField
      , CyclicGroup point
-     , KnownFFA q 'Auto ctx
-     , KnownFFA p 'Auto ctx
-     , KnownNat n
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
+     , KnownFFA q ctx
+     , KnownFFA p ctx
+     , KnownUInt n ctx
      )
   => StakeDistribution m point ctx
   -> scalarField
