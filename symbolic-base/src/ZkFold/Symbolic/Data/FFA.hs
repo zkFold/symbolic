@@ -8,16 +8,14 @@
 module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt) where
 
 import Control.DeepSeq (NFData)
-import Control.Monad (Monad (..))
 import Data.Bits (shiftL)
 import Data.Bool (otherwise)
 import qualified Data.Eq as Haskell
 import Data.Function (($), (.))
-import Data.Functor (fmap, ($>), (<$>))
+import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Representable (..))
-import Data.Traversable (Traversable (..))
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), type (:*:) (..))
+import GHC.Generics (Generic, Generic1, Par1 (..), type (:*:) (..))
 import Numeric.Natural (Natural)
 import System.Random.Stateful (Uniform (..))
 import Text.Show (Show)
@@ -31,7 +29,7 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData))
+import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData), CompatContext (..))
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Combinators (
@@ -44,7 +42,6 @@ import ZkFold.Symbolic.Data.Combinators (
   Resize (..),
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
@@ -154,18 +151,19 @@ layoutFFA
   -> (Par1 :*: Vector (NumberOfRegisters c (FFAUIntSize p (Order c)) r)) c
 layoutFFA c =
   Par1 (fromConstant c)
-    :*: tabulate (register @c @(FFAUIntSize p (Order c)) @r c)
+    :*: tabulate (register @c @(FFAUIntSize p (Order c)) @r @c c)
 
 fromFFA
   :: forall p r a
    . (Arithmetic a, KnownFFA p r a)
   => (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
   -> Integer
-fromFFA (Par1 x :*: v) =
+fromFFA (x :*: v) =
   fromConstant $
     toConstant $
       toConstant $
-        FFA @p @r (fromConstant x) (UIntFFA (UInt (Interpreter v)))
+        FFA @p @r (CompatData (FieldElement (CompatContext x)))
+                  (UIntFFA (CompatData (UInt (CompatContext v))))
 
 toFFA
   :: forall p r a
@@ -173,7 +171,8 @@ toFFA
   => Integer
   -> (Par1 :*: Vector (NumberOfRegisters a (FFAUIntSize p (Order a)) r)) a
 toFFA n =
-  let FFA (FieldElement (Interpreter x)) (UIntFFA (UInt (Interpreter v))) =
+  let FFA (CompatData (FieldElement (CompatContext x)))
+          (UIntFFA (CompatData (UInt (CompatContext v)))) =
         fromConstant n :: FFA p r a
    in x :*: v
 
@@ -188,38 +187,37 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     -- \| Computes unconstrained \(d = ab div p\) and \(m = ab mod p\)
     nd, nm :: CompatData FieldElement c
     ud, um :: UIntFFA p r c
-    (nd :*: ud) :*: (nm :*: um) =
-      restore
-        ( symbolicF
-            (arithmetize ((nx :*: ux) :*: (ny :*: uy)))
-            ( \((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
-                toFFA @p @r ((a * b) `div` p) :*: toFFA @p @r ((a * b) `mod` p)
-            )
-            \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
-              traverse unconstrained $
-                layoutFFA @p @r @c ((a * b) `div` p)
-                  :*: layoutFFA @p @r @c ((a * b) `mod` p)
-        , (U1 :*: U1) :*: (U1 :*: U1)
-        )
+    (nd :*: ud) :*: (nm :*: um) = _
+      -- restore
+      --   ( symbolicF
+      --       (arithmetize ((nx :*: ux) :*: (ny :*: uy)))
+      --       ( \((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
+      --           toFFA @p @r ((a * b) `div` p) :*: toFFA @p @r ((a * b) `mod` p)
+      --       )
+      --       \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
+      --         traverse unconstrained $
+      --           layoutFFA @p @r @c ((a * b) `div` p)
+      --             :*: layoutFFA @p @r @c ((a * b) `mod` p)
+      --   , (U1 :*: U1) :*: (U1 :*: U1)
+      --   )
     -- \| Constraints:
     -- \* UInt registers are indeed registers;
     -- \* m < p;
     -- \* equation holds modulo basefield;
     -- \* equation holds modulo 2^k.
-    ck =
-      isValid (uintFFA ud :*: FFA @p nm um)
-        && (nx * ny == nd * p + nm)
+    ck = -- isValid (uintFFA ud :*: FFA @p nm um)
+        (nx * ny == nd * p + nm)
         && (uintFFA ux * uintFFA uy == uintFFA ud * p + uintFFA um)
     -- \| Sew constraints into result.
-    nr :*: ur =
-      restore
-        ( fromCircuitF
-            (arithmetize (nm :*: um :*: ck))
-            \(ni :*: ui :*: Par1 b) -> do
-              constraint (($ b) - one)
-              return (ni :*: ui)
-        , U1 :*: U1
-        )
+    nr :*: ur = _
+      -- restore
+      --   ( fromCircuitF
+      --       (arithmetize (nm :*: um :*: ck))
+      --       \(ni :*: ui :*: Par1 b) -> do
+      --         constraint (($ b) - one)
+      --         return (ni :*: ui)
+      --   , U1 :*: U1
+      --   )
 
 instance (Symbolic c, KnownFFA p r c) => Exponent (FFA p r c) Natural where
   x ^ a = x `natPow` (a `mod` (value @p -! 1))
@@ -240,20 +238,20 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
     d :: CompatData Bool c
     nm :: CompatData FieldElement c
     um :: UIntFFA p r c
-    d :*: nm :*: um =
-      restore
-        ( symbolicF
-            (arithmetize ((nx :*: ux) :*: (ny :*: uy)))
-            ( \((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
-                Par1 (if a + b Prelude.>= p then one else zero)
-                  :*: toFFA @p @r ((a + b) `mod` p)
-            )
-            \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
-              traverse unconstrained $
-                Par1 (fromConstant ((a + b) `div` p))
-                  :*: layoutFFA @p @r @c ((a + b) `mod` p)
-        , U1 :*: (U1 :*: U1)
-        )
+    d :*: nm :*: um = _
+      -- restore
+      --   ( symbolicF
+      --       (arithmetize ((nx :*: ux) :*: (ny :*: uy)))
+      --       ( \((fromFFA @p @r -> a) :*: (fromFFA @p @r -> b)) ->
+      --           Par1 (if a + b Prelude.>= p then one else zero)
+      --             :*: toFFA @p @r ((a + b) `mod` p)
+      --       )
+      --       \((valueFFA @p @r @c -> a) :*: (valueFFA @p @r @c -> b)) -> do
+      --         traverse unconstrained $
+      --           Par1 (fromConstant ((a + b) `div` p))
+      --             :*: layoutFFA @p @r @c ((a + b) `mod` p)
+      --   , U1 :*: (U1 :*: U1)
+      --   )
     -- \| Constraints:
     -- \* boolean is indeed boolean;
     -- \* UInt registers are indeed registers;
@@ -261,19 +259,19 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
     -- \* equation holds modulo basefield;
     -- \* equation holds modulo 2^k.
     ck =
-      isValid (d :*: FFA @p nm um)
-        && (nx + ny == bool zero p d + nm)
+      -- isValid (d :*: FFA @p nm um)
+        (nx + ny == bool zero p d + nm)
         && (uintFFA ux + uintFFA uy == bool zero p d + uintFFA um)
     -- \| Sew constraints into result.
-    nr :*: ur =
-      restore
-        ( fromCircuitF
-            (arithmetize (nm :*: um :*: ck))
-            \(ni :*: ui :*: Par1 b) -> do
-              constraint (($ b) - one)
-              return (ni :*: ui)
-        , U1 :*: U1
-        )
+    nr :*: ur = _
+      -- restore
+      --   ( fromCircuitF
+      --       (arithmetize (nm :*: um :*: ck))
+      --       \(ni :*: ui :*: Par1 b) -> do
+      --         constraint (($ b) - one)
+      --         return (ni :*: ui)
+      --   , U1 :*: U1
+      --   )
 
 instance (Symbolic c, KnownFFA p r c, Scale a (Zp p)) => Scale a (FFA p r c) where
   scale k x = fromConstant (scale k one :: Zp p) * x
@@ -366,8 +364,8 @@ instance Finite (Zp p) => Finite (FFA p r c) where
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = CompatData (ByteString (NumberOfBits (Zp p))) c
-  binaryExpansion = from . toUInt @(NumberOfBits (Zp p))
-  fromBinary = unsafeFromUInt @(NumberOfBits (Zp p)) . from
+  binaryExpansion = CompatData . from . compatData . toUInt @(NumberOfBits (Zp p))
+  fromBinary = unsafeFromUInt @(NumberOfBits (Zp p)) . CompatData . from . compatData
 
 -- | __NOTE__: This function assumes that the given 'UInt' is in the range of the field. Use 'fromUInt' instead if you need to perform a modulo operation (by order of field) on the 'UInt'.
 unsafeFromUInt
@@ -376,7 +374,8 @@ unsafeFromUInt
   => (KnownNat n, KnownNat (GetRegisterSize c n r))
   => CompatData (UInt n r) c
   -> FFA p r c
-unsafeFromUInt ux = FFA (toNative ux) (UIntFFA $ resize ux)
+unsafeFromUInt (CompatData ux) =
+  FFA (CompatData $ toNative ux) (UIntFFA $ CompatData $ resize ux)
 
 fromUInt
   :: forall n p r c
@@ -438,13 +437,13 @@ toUInt x = uy
   -- \| Constraints:
   -- \* UInt registers are indeed registers;
   -- \* casting back yields source residues.
-  Bool ck = isValid us && unsafeFromUInt us == x
+  Bool ck = _ -- isValid us && unsafeFromUInt us == x
   -- \| Sew constraints into result.
-  uy =
-    restore
-      ( fromCircuit2F
-          (arithmetize us)
-          ck
-          \xi (Par1 b) -> constraint (($ b) - one) $> xi
-      , U1
-      )
+  uy = _
+    -- restore
+    --   ( fromCircuit2F
+    --       (arithmetize us)
+    --       ck
+    --       \xi (Par1 b) -> constraint (($ b) - one) $> xi
+    --   , U1
+    --   )

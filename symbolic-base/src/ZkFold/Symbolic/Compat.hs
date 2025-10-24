@@ -38,9 +38,10 @@ import qualified ZkFold.Symbolic.Class as Old
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), Conditional (..))
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
+import ZkFold.Algebra.Number (Prime)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -110,19 +111,13 @@ instance
 
 instance (Old.Arithmetic a, Old.SymbolicData f, ToConstant (f (Interpreter a))) => ToConstant (CompatData f a) where
   type Const (CompatData f a) = Const (f (Interpreter a))
-  toConstant =
-    toConstant @(f (Interpreter a))
-      . mapContext
-      . compatData
+  toConstant = toConstant @(f (Interpreter a)) . mapContext . compatData
 
 mapContext
-  :: ( Old.SymbolicData f
-     , Old.Symbolic c
-     , Old.Symbolic d
-     , Old.BaseField c ~ Old.BaseField d
-     )
-  => f c -> f d
-mapContext = _
+  :: (Old.Arithmetic a, Old.SymbolicData f)
+  => f (CompatContext a) -> f (Interpreter a)
+mapContext x =
+  Old.restore (Interpreter $ compatContext (Old.arithmetize x), Old.payload x)
 
 instance
   ( Old.SymbolicData f
@@ -182,6 +177,9 @@ instance HApplicative (CompatContext c) where
 instance Package (CompatContext c) where
   packWith f = CompatContext . f . fmap compatContext
   unpackWith f = fmap CompatContext . f . compatContext
+
+instance (Prime p, KnownNat (NumberOfBits (Zp p))) => Symbolic (Zp p) where
+  constrain _ x = x
 
 instance Symbolic c => Old.Symbolic (CompatContext c) where
   type BaseField (CompatContext c) = Zp (Order c)
