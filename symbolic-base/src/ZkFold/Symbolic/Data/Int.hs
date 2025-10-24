@@ -108,7 +108,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
+  , KnownRegisters (BaseField c) n r
   )
   => SemiEuclidean (Int n r c)
   where
@@ -136,7 +136,7 @@ div
    . ( Symbolic c
      , KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      )
   => Int n r c -> Int n r c -> Int n r c
 div i1 i2 = Haskell.fst $ divMod i1 i2
@@ -146,7 +146,7 @@ mod
    . ( Symbolic c
      , KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      )
   => Int n r c -> Int n r c -> Int n r c
 mod i1 i2 = Haskell.snd $ divMod i1 i2
@@ -156,7 +156,7 @@ quotRem
    . ( Symbolic c
      , KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      )
   => Int n r c -> Int n r c -> (Int n r c, Int n r c)
 quotRem i1 i2 = (r1, r2)
@@ -182,7 +182,7 @@ quot
    . ( Symbolic c
      , KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      )
   => Int n r c -> Int n r c -> Int n r c
 quot i1 i2 = Haskell.fst $ quotRem i1 i2
@@ -192,7 +192,7 @@ rem
    . ( Symbolic c
      , KnownNat n
      , KnownRegisterSize r
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      )
   => Int n r c -> Int n r c -> Int n r c
 rem i1 i2 = Haskell.snd $ quotRem i1 i2
@@ -201,7 +201,7 @@ instance
   ( Symbolic c
   , KnownNat n
   , KnownRegisterSize r
-  , KnownRegisters c n r
+  , KnownRegisters (BaseField c) n r
   )
   => Ord (Int n r c)
   where

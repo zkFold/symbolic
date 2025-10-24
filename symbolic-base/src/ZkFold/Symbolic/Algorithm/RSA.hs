@@ -88,8 +88,8 @@ type RSA keyLen msgLen ctx =
   ( SHA2 "SHA256" ctx msgLen
   , KnownNat keyLen
   , KnownNat (2 * keyLen)
-  , KnownRegisters ctx keyLen 'Auto
-  , KnownRegisters ctx (2 * keyLen) 'Auto
+  , KnownRegisters (BaseField ctx) keyLen 'Auto
+  , KnownRegisters (BaseField ctx) (2 * keyLen) 'Auto
   , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
   )
 
