@@ -10,6 +10,7 @@ import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector
 import Prelude qualified as P
+import GHC.Stack (HasCallStack)
 
 -- Replace the first match in the vector with provided one.
 replaceFirstMatchWith
@@ -46,7 +47,7 @@ replaceFirstMatchWith' v mF new =
    in mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) new old) v
 
 -- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
-unsafeToVector' :: forall size a. KnownNat size => [a] -> Vector size a
+unsafeToVector' :: forall size a. KnownNat size => HasCallStack => [a] -> Vector size a
 unsafeToVector' as = case toVector as of
   P.Nothing -> P.error "unsafeToVector': toVector failed"
   P.Just v -> v
