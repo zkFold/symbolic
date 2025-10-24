@@ -42,7 +42,7 @@ type Oxs = 1
 type TxCount = 1
 
 specE2EOne :: Spec
-specE2EOne = 
+specE2EOne =
   it "E2E One" $ do
     let
       emptyTree :: SymMerkle.MerkleTree Ud I

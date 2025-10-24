@@ -4,13 +4,13 @@ module ZkFold.Symbolic.Ledger.Utils (
   unsafeToVector',
 ) where
 
+import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat)
 import ZkFold.Control.Conditional
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector
 import Prelude qualified as P
-import GHC.Stack (HasCallStack)
 
 -- Replace the first match in the vector with provided one.
 replaceFirstMatchWith
