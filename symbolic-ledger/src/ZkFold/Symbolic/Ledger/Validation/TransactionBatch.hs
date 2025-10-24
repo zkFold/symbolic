@@ -11,7 +11,7 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
-import ZkFold.Prelude (foldl', trace)
+import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
@@ -49,9 +49,6 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
       foldl'
         ( \(boCountAcc :*: isValidAcc :*: accUTxOTree) (tx :*: txw) ->
             let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
-                !_ = trace ("txBOuts " Haskell.<> Haskell.show txBOuts) ()
-                isTxValidAsFE :: FieldElement context = ifThenElse isTxValid one zero
-                !_ = trace ("isTxValid " Haskell.<> Haskell.show isTxValidAsFE) ()
              in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
         )
         ((zero :: FieldElement context) :*: true :*: utxoTree)

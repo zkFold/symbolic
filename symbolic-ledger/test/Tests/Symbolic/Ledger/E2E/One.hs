@@ -96,9 +96,6 @@ specE2EOne =
 
       newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
-    Haskell.putStrLn $ "prevState: " Haskell.<> Haskell.show prevState
-    Haskell.putStrLn $ "newState: " Haskell.<> Haskell.show newState
-    Haskell.putStrLn $ "witness: " Haskell.<> Haskell.show witness
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
     -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
