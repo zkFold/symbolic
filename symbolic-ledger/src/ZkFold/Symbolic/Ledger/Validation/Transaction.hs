@@ -204,11 +204,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
             ifThenElse
               bout
-              -- TODO: What if user bridges out a null output?
               ( (boutsAcc + one)
                   :*: (outputIx + one)
                   :*: ( outsValidAcc
                           && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                          && (output /= nullOutput)
                       )
                   :*: utxoTreeAcc
               )

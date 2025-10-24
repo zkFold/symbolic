@@ -38,6 +38,7 @@ For validating transactions, we should check:
 \* Outputs must have at least one ada.
 \* Transaction is balanced.
 \* Transaction must have at least one input.
+\* Bridged out output is not a null output.
 
 For validating batch, we simply apply transaction validation check iteratively.
 
