@@ -41,6 +41,7 @@ type Oxs = 1
 
 type TxCount = 1
 
+-- End-to-end test for a very simplified case.
 specE2EOne :: Spec
 specE2EOne =
   it "E2E One" $ do
