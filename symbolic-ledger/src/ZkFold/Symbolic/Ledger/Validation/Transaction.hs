@@ -45,7 +45,7 @@ deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
-   . (SignatureTransaction ud i o a context)
+   . SignatureTransaction ud i o a context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context

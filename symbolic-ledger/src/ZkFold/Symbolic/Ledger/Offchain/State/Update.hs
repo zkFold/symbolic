@@ -32,7 +32,7 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 -- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
   :: forall bi bo ud a i o t context
-   . (SignatureState bi bo ud a context)
+   . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
   => State bi bo ud a context
   -- ^ Previous state.
