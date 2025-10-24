@@ -28,7 +28,7 @@ type I = Interpreter Fq
 
 type Bi = 3
 
-type Bo = 3
+type Bo = 4
 
 type Ud = 3 -- Thus 2 ^ (3 - 1) = 4 leaves
 
@@ -181,7 +181,7 @@ specE2ETwo =
                           , oAssets =
                               Comp1 $
                                 unsafeToVector'
-                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (10_000_000 :: Natural)}
+                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (9_000_000 :: Natural)}
                                   , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (50_000_000 :: Natural)}
                                   , nullAssetValue
                                   ]
@@ -193,7 +193,7 @@ specE2ETwo =
                           , oAssets =
                               Comp1 $
                                 unsafeToVector'
-                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (5_000_000 :: Natural)}
+                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}
                                   , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (25_000_000 :: Natural)}
                                   , AssetValue {assetPolicy = asset3Policy, assetName = asset3Name, assetQuantity = fromConstant (25_000_000 :: Natural)}
                                   ]
@@ -238,7 +238,7 @@ specE2ETwo =
                           , oAssets =
                               Comp1 $
                                 unsafeToVector'
-                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (10_000_000 :: Natural)}
+                                  [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (9_000_000 :: Natural)}
                                   , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (25_000_000 :: Natural)}
                                   , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (50_000_000 :: Natural)}
                                   ]

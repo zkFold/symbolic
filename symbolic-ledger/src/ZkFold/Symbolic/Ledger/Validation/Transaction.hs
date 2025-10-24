@@ -21,7 +21,7 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import ZkFold.Data.Vector qualified as Vector
-import ZkFold.Prelude (foldl')
+import ZkFold.Prelude (foldl', trace)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
@@ -45,7 +45,7 @@ deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
-   . SignatureTransaction ud i o a context
+   . (SignatureTransaction ud i o a context, HShow context)
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
@@ -239,6 +239,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         )
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
+    !_ = trace ("outsValid " Haskell.<> Haskell.show (ifThenElse outsValid (one :: FieldElement context) zero)) ()
+    !_ = trace ("isInsValid " Haskell.<> Haskell.show (ifThenElse isInsValid (one :: FieldElement context) zero)) ()
+    !_ = trace ("consumedAtleastOneInput " Haskell.<> Haskell.show (ifThenElse consumedAtleastOneInput (one :: FieldElement context) zero)) ()
+    !_ = trace ("outAssetsWithinInputs " Haskell.<> Haskell.show (ifThenElse outAssetsWithinInputs (one :: FieldElement context) zero)) ()
+    !_ = trace ("inputsConsumed " Haskell.<> Haskell.show (ifThenElse inputsConsumed (one :: FieldElement context) zero)) ()
    in
     ( bouts
         :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed)

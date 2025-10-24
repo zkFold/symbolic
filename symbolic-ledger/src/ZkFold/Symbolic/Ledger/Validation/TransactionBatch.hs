@@ -11,7 +11,7 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
-import ZkFold.Prelude (foldl')
+import ZkFold.Prelude (foldl', trace)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
@@ -31,6 +31,7 @@ deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness u
 validateTransactionBatch
   :: forall ud bo i o a t context
    . SignatureTransactionBatch ud i o a t context
+  => HShow context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
@@ -48,6 +49,9 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
       foldl'
         ( \(boCountAcc :*: isValidAcc :*: accUTxOTree) (tx :*: txw) ->
             let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
+                !_ = trace ("txBOuts " Haskell.<> Haskell.show txBOuts) ()
+                isTxValidAsFE :: FieldElement context = ifThenElse isTxValid one zero
+                !_ = trace ("isTxValid " Haskell.<> Haskell.show isTxValidAsFE) ()
              in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
         )
         ((zero :: FieldElement context) :*: true :*: utxoTree)
