@@ -45,7 +45,7 @@ updateLedgerState
   -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
   -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
   -> (State bi bo ud a :*: StateWitness bi bo ud a i o t :*: (Leaves ud :.: UTxO a)) context
-  -- ^ New state and witness.
+  -- ^ New state, witness and UTxO set.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
     nullOutput' = nullOutput @a @context
@@ -107,10 +107,10 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           let
             -- Find UTxO by reference in evolving preimage set
             utxoSetList = fromVector preIn
-            pick (ix, found, picked) u =
+            pick (found, picked) u =
               let isHere = u.uRef == ref
-               in (ifThenElse (isHere || found) ix (ix + one), isHere || found, ifThenElse isHere u picked)
-            (_ix, _foundU, utxo) = foldl' pick (zero :: FieldElement context, false, nullUTxO') utxoSetList
+               in (isHere || found, ifThenElse isHere u picked)
+            (_foundU, utxo) = foldl' pick (false, nullUTxO') utxoSetList
             utxoHash :: FieldElement context = hash utxo & Base.hHash
             utxoHashWC = toWitnessContext utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
