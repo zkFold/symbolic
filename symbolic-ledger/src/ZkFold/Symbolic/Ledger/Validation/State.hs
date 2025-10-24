@@ -14,6 +14,7 @@ import ZkFold.Data.Eq (Eq (..), (==))
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl', trace)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
@@ -25,7 +26,6 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
-import ZkFold.Symbolic.Class (Symbolic(..))
 
 {- Note [State validation]
 
@@ -142,5 +142,7 @@ validateStateUpdateEither previousState action newState sw =
       , newState.sLength == previousState.sLength + one
       , isWitBridgeInValid
       , isBatchValid
-      , trace ("utxoTree " Haskell.<> Haskell.show utxoTree Haskell.<> "\nnewState.sUTxO " Haskell.<> Haskell.show newState.sUTxO) (utxoTree == newState.sUTxO)
+      , trace
+          ("utxoTree " Haskell.<> Haskell.show utxoTree Haskell.<> "\nnewState.sUTxO " Haskell.<> Haskell.show newState.sUTxO)
+          (utxoTree == newState.sUTxO)
       ]
