@@ -31,7 +31,6 @@ deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness u
 validateTransactionBatch
   :: forall ud bo i o a t context
    . SignatureTransactionBatch ud i o a t context
-  => HShow context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
