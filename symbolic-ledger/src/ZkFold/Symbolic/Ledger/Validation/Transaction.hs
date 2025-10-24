@@ -241,8 +241,16 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         outputsWithWitness
     !_ = trace ("outsValid " Haskell.<> Haskell.show (ifThenElse outsValid (one :: FieldElement context) zero)) ()
     !_ = trace ("isInsValid " Haskell.<> Haskell.show (ifThenElse isInsValid (one :: FieldElement context) zero)) ()
-    !_ = trace ("consumedAtleastOneInput " Haskell.<> Haskell.show (ifThenElse consumedAtleastOneInput (one :: FieldElement context) zero)) ()
-    !_ = trace ("outAssetsWithinInputs " Haskell.<> Haskell.show (ifThenElse outAssetsWithinInputs (one :: FieldElement context) zero)) ()
+    !_ =
+      trace
+        ( "consumedAtleastOneInput "
+            Haskell.<> Haskell.show (ifThenElse consumedAtleastOneInput (one :: FieldElement context) zero)
+        )
+        ()
+    !_ =
+      trace
+        ("outAssetsWithinInputs " Haskell.<> Haskell.show (ifThenElse outAssetsWithinInputs (one :: FieldElement context) zero))
+        ()
     !_ = trace ("inputsConsumed " Haskell.<> Haskell.show (ifThenElse inputsConsumed (one :: FieldElement context) zero)) ()
    in
     ( bouts
