@@ -205,7 +205,7 @@ specE2ETwo =
                 )
           }
       -- "address" has 5 ADA and 50 asset2.
-      -- "address2" has one UTxO having 10 ADA and 50 asset2. And other UTxO having 5 ADA and 25 asset2 and 25 asset3.
+      -- "address2" has one UTxO having 9 ADA and 50 asset2. And other UTxO having 5 ADA and 25 asset2 and 25 asset3.
       -- Total 3 UTxOs.
       tx2Id = txId tx2 & Base.hHash
       tx3 :: Transaction Ixs Oxs A I
