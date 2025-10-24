@@ -269,30 +269,44 @@ specE2ETwo =
         let
           dummyRPoint :*: dummyS = signTransaction tx1 privateKey
           dummyPublicKey = publicKey
+          -- Tx1
+          rPointTx11 :*: sTx11 = dummyRPoint :*: dummyS
+          publicKeyTx11 = dummyPublicKey
           rPointTx12 :*: sTx12 = signTransaction tx1 privateKey3
+          publicKeyTx12 = publicKey3
+          rPointTx13 :*: sTx13 = dummyRPoint :*: dummyS
+          publicKeyTx13 = dummyPublicKey
+          -- Tx2
           rPointTx21 :*: sTx21 = signTransaction tx2 privateKey
+          publicKeyTx21 = publicKey
           rPointTx22 :*: sTx22 = dummyRPoint :*: dummyS
+          publicKeyTx22 = dummyPublicKey
           rPointTx23 :*: sTx23 = signTransaction tx2 privateKey3
+          publicKeyTx23 = publicKey3
+          -- Tx3
           rPointTx31 :*: sTx31 = signTransaction tx3 privateKey2
+          publicKeyTx31 = publicKey2
           rPointTx32 :*: sTx32 = signTransaction tx3 privateKey
+          publicKeyTx32 = publicKey
           rPointTx33 :*: sTx33 = signTransaction tx3 privateKey2
+          publicKeyTx33 = publicKey2
          in
           Comp1
             ( unsafeToVector'
                 [ Comp1
                     ( unsafeToVector'
-                        [ dummyRPoint :*: dummyS :*: dummyPublicKey
-                        , rPointTx12 :*: sTx12 :*: publicKey3
-                        , dummyRPoint :*: dummyS :*: dummyPublicKey
+                        [ rPointTx11 :*: sTx11 :*: publicKeyTx11
+                        , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                        , rPointTx13 :*: sTx13 :*: publicKeyTx13
                         ]
                     )
                 , Comp1
                     ( unsafeToVector'
-                        [rPointTx21 :*: sTx21 :*: publicKey2, rPointTx22 :*: sTx22 :*: dummyPublicKey, rPointTx23 :*: sTx23 :*: publicKey3]
+                        [rPointTx21 :*: sTx21 :*: publicKeyTx21, rPointTx22 :*: sTx22 :*: publicKeyTx22, rPointTx23 :*: sTx23 :*: publicKeyTx23]
                     )
                 , Comp1
                     ( unsafeToVector'
-                        [rPointTx31 :*: sTx31 :*: publicKey2, rPointTx32 :*: sTx32 :*: publicKey, rPointTx33 :*: sTx33 :*: publicKey2]
+                        [rPointTx31 :*: sTx31 :*: publicKeyTx31, rPointTx32 :*: sTx32 :*: publicKeyTx32, rPointTx33 :*: sTx33 :*: publicKeyTx33]
                     )
                 ]
             )
