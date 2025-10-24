@@ -196,10 +196,9 @@ search pred tree =
           let (l, r) = bisect v
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
-              goRight = ifThenElse isL false isR
            in ( isL || isR
-              , goRight : zipWith (ifThenElse goRight) ri li
-              , ifThenElse goRight rx lx
+              , isR : zipWith (ifThenElse isR) ri li
+              , ifThenElse isR rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
