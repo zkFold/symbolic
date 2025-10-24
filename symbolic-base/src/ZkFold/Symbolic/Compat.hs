@@ -29,6 +29,7 @@ import Text.Show (Show (showList, showsPrec))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
+import ZkFold.Algebra.Number (Prime)
 import ZkFold.Control.HApplicative (HApplicative (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor (HFunctor (..))
@@ -41,7 +42,6 @@ import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
-import ZkFold.Algebra.Number (Prime)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
