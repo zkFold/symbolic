@@ -2,7 +2,7 @@
 
 module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
-  validateStateUpdateEither,
+  validateStateUpdateIndividualChecks,
   StateWitness (..),
 ) where
 
@@ -74,11 +74,11 @@ validateStateUpdate
   -- ^ Witness for the state.
   -> Bool context
 validateStateUpdate previousState action newState sw =
-  let res = validateStateUpdateEither previousState action newState sw
+  let res = validateStateUpdateIndividualChecks previousState action newState sw
    in res == Haskell.pure true
 
 -- | Validate state update and return either the first failing reason or success.
-validateStateUpdateEither
+validateStateUpdateIndividualChecks
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud i o a t context
@@ -91,7 +91,7 @@ validateStateUpdateEither
   -> StateWitness bi bo ud a i o t context
   -- ^ Witness for the state.
   -> Vector 5 (Bool context)
-validateStateUpdateEither previousState action newState sw =
+validateStateUpdateIndividualChecks previousState action newState sw =
   let
     initialUTxOTree = previousState.sUTxO
     bridgeInAssets = preimage newState.sBridgeIn

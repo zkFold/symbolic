@@ -22,7 +22,7 @@ import Prelude qualified as Haskell
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
-import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateEither)
+import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
 
 type I = Interpreter Fq
 
@@ -320,5 +320,5 @@ specE2ETwo =
 
       newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
     sLength newState `shouldBe` (one :: FieldElement I)
-    validateStateUpdateEither prevState batch newState witness `shouldBe` Haskell.pure true
+    validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
     unComp1 utxoPreimage2 `shouldBe` pure (nullUTxO @A @I)
