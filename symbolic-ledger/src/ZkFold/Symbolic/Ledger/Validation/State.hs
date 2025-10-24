@@ -13,7 +13,7 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
-import ZkFold.Prelude (foldl')
+import ZkFold.Prelude (foldl', trace)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
@@ -25,6 +25,7 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
+import ZkFold.Symbolic.Class (Symbolic(..))
 
 {- Note [State validation]
 
@@ -63,6 +64,8 @@ deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i
 validateStateUpdate
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
+  => HShow context
+  => Haskell.Show (WitnessField context)
   => SignatureTransactionBatch ud i o a t context
   => State bi bo ud a context
   -- ^ Previous state.
@@ -81,6 +84,8 @@ validateStateUpdate previousState action newState sw =
 validateStateUpdateEither
   :: forall bi bo ud a i o t context
    . SignatureState bi bo ud a context
+  => HShow context
+  => Haskell.Show (WitnessField context)
   => SignatureTransactionBatch ud i o a t context
   => State bi bo ud a context
   -- ^ Previous state.
@@ -137,5 +142,5 @@ validateStateUpdateEither previousState action newState sw =
       , newState.sLength == previousState.sLength + one
       , isWitBridgeInValid
       , isBatchValid
-      , utxoTree == newState.sUTxO
+      , trace ("utxoTree " Haskell.<> Haskell.show utxoTree Haskell.<> "\nnewState.sUTxO " Haskell.<> Haskell.show newState.sUTxO) (utxoTree == newState.sUTxO)
       ]

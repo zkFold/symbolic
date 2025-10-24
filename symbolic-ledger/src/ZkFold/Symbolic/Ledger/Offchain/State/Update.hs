@@ -143,7 +143,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               utxoHash = hash utxo & Base.hHash
               treeOut' :*: gatedUtxo =
                 ifThenElse
-                  bout
+                  (bout || (out == nullOutput'))
                   (treeOut :*: nullUTxO')
                   (MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo)
               !_ = trace ("treeOut' " Haskell.<> Haskell.show treeOut') ()
@@ -152,6 +152,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
         tw = TransactionWitness {twInputs, twOutputs}
+        !_ = trace ("treeAfterOuts " Haskell.<> Haskell.show treeAfterOuts) ()
+        !_ = trace ("preAfterOuts " Haskell.<> Haskell.show preAfterOuts) ()
        in
         (treeAfterOuts, preAfterOuts, tw : witsAcc)
 
