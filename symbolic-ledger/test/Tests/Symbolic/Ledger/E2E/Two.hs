@@ -302,13 +302,17 @@ specE2ETwo =
                     )
                 , Comp1
                     ( unsafeToVector'
-                        [rPointTx21 :*: sTx21 :*: publicKeyTx21, 
-                          rPointTx22 :*: sTx22 :*: publicKeyTx22, rPointTx23 :*: sTx23 :*: publicKeyTx23]
+                        [ rPointTx21 :*: sTx21 :*: publicKeyTx21
+                        , rPointTx22 :*: sTx22 :*: publicKeyTx22
+                        , rPointTx23 :*: sTx23 :*: publicKeyTx23
+                        ]
                     )
                 , Comp1
                     ( unsafeToVector'
-                        [rPointTx31 :*: sTx31 :*: publicKeyTx31, 
-                          rPointTx32 :*: sTx32 :*: publicKeyTx32, rPointTx33 :*: sTx33 :*: publicKeyTx33]
+                        [ rPointTx31 :*: sTx31 :*: publicKeyTx31
+                        , rPointTx32 :*: sTx32 :*: publicKeyTx32
+                        , rPointTx33 :*: sTx33 :*: publicKeyTx33
+                        ]
                     )
                 ]
             )
