@@ -26,9 +26,9 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
@@ -42,7 +42,7 @@ import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
+import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 
 -- | An output's reference.
@@ -59,6 +59,10 @@ data OutputRef context = OutputRef
 instance
   Symbolic context
   => Eq (OutputRef context)
+
+deriving stock instance HEq context => Haskell.Eq (OutputRef context)
+
+deriving stock instance HShow context => Haskell.Show (OutputRef context)
 
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
@@ -80,8 +84,12 @@ instance
   )
   => Eq (Output a context)
 
+deriving stock instance HEq context => Haskell.Eq (Output a context)
+
+deriving stock instance HShow context => Haskell.Show (Output a context)
+
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
-  hasher = Poseidon.hash
+  hasher = hashFn
 
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
@@ -101,8 +109,12 @@ instance
   )
   => Eq (UTxO a context)
 
+deriving stock instance HEq context => Haskell.Eq (UTxO a context)
+
+deriving stock instance HShow context => Haskell.Show (UTxO a context)
+
 instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
-  hasher = Poseidon.hash
+  hasher = hashFn
 
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
@@ -134,7 +146,7 @@ instance
 type TransactionId i o a = Hash (Transaction i o a)
 
 instance Symbolic context => Hashable (HashSimple context) (Transaction i o a context) where
-  hasher = Poseidon.hash
+  hasher = hashFn
 
 -- | Obtain transaction hash.
 txId
@@ -162,4 +174,4 @@ signTransaction
   => Transaction i o a context
   -> PrivateKey context
   -> (EdDSAPoint :*: EdDSAScalarField) context
-signTransaction tx privateKey = eddsaSign Poseidon.hash privateKey (txId tx & Base.hHash)
+signTransaction tx privateKey = eddsaSign hashFn privateKey (txId tx & Base.hHash)

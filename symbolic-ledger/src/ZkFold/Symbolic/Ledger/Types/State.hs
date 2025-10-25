@@ -6,16 +6,17 @@ module ZkFold.Symbolic.Ledger.Types.State (
 
 import GHC.Generics (Generic, Generic1, (:.:))
 import ZkFold.Data.Eq (Eq)
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
+import Prelude qualified as Haskell
 
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple)
+import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
@@ -42,5 +43,7 @@ instance
      )
   => Eq (State bi bo ud a context)
 
+deriving stock instance (HShow context, Show (WitnessField context)) => Haskell.Show (State bi bo ud a context)
+
 instance Symbolic context => Hashable (HashSimple context) (State bi bo ud a context) where
-  hasher = Poseidon.hash
+  hasher = hashFn

@@ -6,7 +6,6 @@ module ZkFold.Symbolic.Ledger.Offchain.State.Update (
 
 import Data.Function (($), (&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
@@ -23,7 +22,7 @@ import ZkFold.Symbolic.WitnessContext (toWitnessContext)
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWith')
+import ZkFold.Symbolic.Ledger.Utils (replaceFirstMatchWith, replaceFirstMatchWith', unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.State (StateWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness (..))
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness (..))
@@ -45,8 +44,8 @@ updateLedgerState
   -- ^ Transaction batch.
   -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
   -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a i o t) context
-  -- ^ New state and witness.
+  -> (State bi bo ud a :*: StateWitness bi bo ud a i o t :*: (Leaves ud :.: UTxO a)) context
+  -- ^ New state, witness and UTxO set.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
     nullOutput' = nullOutput @a @context
@@ -130,7 +129,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               utxoHash = hash utxo & Base.hHash
               treeOut' :*: gatedUtxo =
                 ifThenElse
-                  bout
+                  (bout || (out == nullOutput'))
                   (treeOut :*: nullUTxO')
                   (MerkleTree.replace (me {MerkleTree.value = utxoHash}) treeOut :*: utxo)
               preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
@@ -141,7 +140,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
        in
         (treeAfterOuts, preAfterOuts, tw : witsAcc)
 
-    (utxoFinal, _utxoPreimageFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, utxoPreimageAfterBI, []) (P.zip txsList sigsPerTx)
+    (utxoFinal, utxoPreimageFinal, txWitsRev) = foldl' buildTx (utxoAfterBridgeIn, utxoPreimageAfterBI, []) (P.zip txsList sigsPerTx)
     tbwTransactions = Comp1 (unsafeToVector' @t (P.reverse txWitsRev))
 
     newState =
@@ -155,9 +154,4 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
    in
     newState
       :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
-
--- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
-unsafeToVector' :: forall size a. KnownNat size => [a] -> Vector size a
-unsafeToVector' as = case toVector as of
-  P.Nothing -> P.error "unsafeToVector': toVector failed"
-  P.Just v -> v
+      :*: Comp1 utxoPreimageFinal

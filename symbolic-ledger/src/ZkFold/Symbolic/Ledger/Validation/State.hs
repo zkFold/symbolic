@@ -2,6 +2,7 @@
 
 module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
+  validateStateUpdateIndividualChecks,
   StateWitness (..),
 ) where
 
@@ -10,15 +11,18 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 
@@ -34,6 +38,7 @@ For validating transactions, we should check:
 \* Outputs must have at least one ada.
 \* Transaction is balanced.
 \* Transaction must have at least one input.
+\* Bridged out output is not a null output.
 
 For validating batch, we simply apply transaction validation check iteratively.
 
@@ -53,6 +58,8 @@ data StateWitness bi bo ud a i o t context = StateWitness
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
 
+deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
   :: forall bi bo ud a i o t context
@@ -68,6 +75,24 @@ validateStateUpdate
   -- ^ Witness for the state.
   -> Bool context
 validateStateUpdate previousState action newState sw =
+  let res = validateStateUpdateIndividualChecks previousState action newState sw
+   in res == Haskell.pure true
+
+-- | Validate state update and return either the first failing reason or success.
+validateStateUpdateIndividualChecks
+  :: forall bi bo ud a i o t context
+   . SignatureState bi bo ud a context
+  => SignatureTransactionBatch ud i o a t context
+  => State bi bo ud a context
+  -- ^ Previous state.
+  -> TransactionBatch i o a t context
+  -- ^ The "action" that is applied to the state.
+  -> State bi bo ud a context
+  -- ^ New state.
+  -> StateWitness bi bo ud a i o t context
+  -- ^ Witness for the state.
+  -> Vector 5 (Bool context)
+validateStateUpdateIndividualChecks previousState action newState sw =
   let
     initialUTxOTree = previousState.sUTxO
     bridgeInAssets = preimage newState.sBridgeIn
@@ -108,13 +133,10 @@ validateStateUpdate previousState action newState sw =
     bridgedOutOutputs = preimage newState.sBridgeOut
     (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
-    -- New state correctly links to the previous state.
-    newState.sPreviousStateHash
-      == hasher previousState
-      && newState.sLength
-      == previousState.sLength
-      + one
-      && isWitBridgeInValid
-      && isBatchValid
-      && utxoTree
-      == newState.sUTxO
+    unsafeToVector'
+      [ newState.sPreviousStateHash == hasher previousState
+      , newState.sLength == previousState.sLength + one
+      , isWitBridgeInValid
+      , isBatchValid
+      , utxoTree == newState.sUTxO
+      ]

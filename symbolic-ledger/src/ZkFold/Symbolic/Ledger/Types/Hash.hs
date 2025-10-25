@@ -1,8 +1,12 @@
 module ZkFold.Symbolic.Ledger.Types.Hash (
   Hash,
   HashSimple,
+  hashFn,
 ) where
 
+import ZkFold.Symbolic.Algorithm.Hash.MiMC qualified as MiMC
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash qualified as Symbolic.Hash
 
@@ -13,3 +17,8 @@ type Hash = Symbolic.Hash.Hash HashSimple
 
 -- | Simplified hash type, that is just synonym of field element.
 type HashSimple = FieldElement
+
+hashFn :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
+hashFn =
+  -- TODO: (#730) Move to Poseidon hash.
+  MiMC.hash

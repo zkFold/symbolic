@@ -1,8 +1,10 @@
 module ZkFold.Symbolic.Ledger.Utils (
   replaceFirstMatchWith,
   replaceFirstMatchWith',
+  unsafeToVector',
 ) where
 
+import GHC.Stack (HasCallStack)
 import GHC.TypeNats (KnownNat)
 import ZkFold.Control.Conditional
 import ZkFold.Data.Bool
@@ -43,3 +45,9 @@ replaceFirstMatchWith' v mF new =
       usedBefore = take @n prefixUsed
       shouldIns = zipWith (\u m -> not u && m) usedBefore isMatch
    in mapWithIx (\ix old -> ifThenElse (shouldIns !! ix) new old) v
+
+-- | Unsafe conversion from list to vector. This differs from `unsafeToVector` in that it throws an error if the list is not of the correct length.
+unsafeToVector' :: forall size a. KnownNat size => HasCallStack => [a] -> Vector size a
+unsafeToVector' as = case toVector as of
+  P.Nothing -> P.error "unsafeToVector': toVector failed"
+  P.Just v -> v

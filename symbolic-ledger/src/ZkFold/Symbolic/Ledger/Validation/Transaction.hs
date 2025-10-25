@@ -17,12 +17,12 @@ import ZkFold.Algebra.Class (
  )
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -30,7 +30,7 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import Prelude qualified as P
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
 
@@ -39,6 +39,8 @@ data TransactionWitness ud i o a context = TransactionWitness
   { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
+
+deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
@@ -57,8 +59,8 @@ validateTransaction
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & P.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
-    outputsAssets = unComp1 tx.outputs & P.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
+    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
+    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
     -- We check if all output assets are covered by inputs.
     (outAssetsWithinInputs :*: finalInputAssets) =
       foldl'
@@ -175,10 +177,10 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && ifThenElse
                     (utxoHash == nullUTxOHash')
                     true
-                    ( Poseidon.hash publicKey
+                    ( hashFn publicKey
                         == utxo.uOutput.oAddress
                         && eddsaVerify
-                          Poseidon.hash
+                          hashFn
                           publicKey
                           txId'
                           (rPoint :*: s)
@@ -206,6 +208,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   :*: (outputIx + one)
                   :*: ( outsValidAcc
                           && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                          && (output /= nullOutput)
                       )
                   :*: utxoTreeAcc
               )
@@ -252,7 +255,13 @@ outputHasAtLeastOneAda output =
   foldl'
     ( \found asset ->
         found
-          || (asset.assetPolicy == adaPolicy && asset.assetName == adaName && asset.assetQuantity >= fromConstant @P.Integer 1_000_000)
+          || ( asset.assetPolicy
+                 == adaPolicy
+                 && asset.assetName
+                 == adaName
+                 && asset.assetQuantity
+                 >= fromConstant @Haskell.Integer 1_000_000
+             )
     )
     false
     (unComp1 (oAssets output))
