@@ -43,6 +43,9 @@ import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
+import ZkFold.Symbolic.Data.Ord (Ordering, Ord (..), IsOrdering)
+import Data.Monoid (Monoid)
+import Data.Semigroup (Semigroup)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -52,11 +55,17 @@ deriving instance NFData (f (CompatContext c)) => NFData (CompatData f c)
 
 deriving instance Show (f (CompatContext c)) => Show (CompatData f c)
 
+deriving instance Semigroup (f (CompatContext c)) => Semigroup (CompatData f c)
+
+deriving instance Monoid (f (CompatContext c)) => Monoid (CompatData f c)
+
 deriving instance
   ( BoolType (f (CompatContext c))
   , Conditional (CompatData f c) (CompatData f c)
   )
   => BoolType (CompatData f c)
+
+deriving instance IsOrdering (f (CompatContext c)) => IsOrdering (CompatData f c)
 
 deriving instance Scale k (f (CompatContext c)) => Scale k (CompatData f c)
 
@@ -160,6 +169,21 @@ instance
   type BooleanOf (CompatData f c) = CompatData Bool c
   CompatData x == CompatData y = CompatData (x == y)
   CompatData x /= CompatData y = CompatData (x /= y)
+
+instance
+  ( Ord (f (CompatContext c))
+  , BooleanOf (f (CompatContext c)) ~ Bool (CompatContext c)
+  , OrderingOf (f (CompatContext c)) ~ Ordering (CompatContext c)
+  ) => Ord (CompatData f c)
+  where
+  type OrderingOf (CompatData f c) = CompatData Ordering c
+  CompatData x < CompatData y = CompatData (x < y)
+  CompatData x <= CompatData y = CompatData (x <= y)
+  CompatData x >= CompatData y = CompatData (x >= y)
+  CompatData x > CompatData y = CompatData (x > y)
+  compare (CompatData x) (CompatData y) = CompatData (compare x y)
+  ordering (CompatData x) (CompatData y) (CompatData z) (CompatData w) =
+    CompatData (ordering x y z w)
 
 newtype CompatContext c f = CompatContext {compatContext :: f c}
   deriving (Prelude.Eq, Show)
