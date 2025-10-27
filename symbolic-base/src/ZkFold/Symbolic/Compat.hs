@@ -22,6 +22,8 @@ import Data.Function (flip, on, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Identity (Identity (Identity, runIdentity), runIdentity)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Monoid (Monoid)
+import Data.Semigroup (Semigroup)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..), (:*:) (..))
 import GHC.TypeLits (KnownNat)
@@ -39,13 +41,11 @@ import ZkFold.Data.Package (Package (..))
 import qualified ZkFold.Symbolic.Class as Old
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
 import qualified ZkFold.Symbolic.Data.Class as Old
+import ZkFold.Symbolic.Data.Ord (IsOrdering, Ord (..), Ordering)
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
-import ZkFold.Symbolic.Data.Ord (Ordering, Ord (..), IsOrdering)
-import Data.Monoid (Monoid)
-import Data.Semigroup (Semigroup)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -174,7 +174,8 @@ instance
   ( Ord (f (CompatContext c))
   , BooleanOf (f (CompatContext c)) ~ Bool (CompatContext c)
   , OrderingOf (f (CompatContext c)) ~ Ordering (CompatContext c)
-  ) => Ord (CompatData f c)
+  )
+  => Ord (CompatData f c)
   where
   type OrderingOf (CompatData f c) = CompatData Ordering c
   CompatData x < CompatData y = CompatData (x < y)

@@ -27,6 +27,7 @@ import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Product (fstP)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compat (CompatContext (..), CompatData (CompatData, compatData))
@@ -42,6 +43,7 @@ import ZkFold.Symbolic.Data.Combinators (
   Resize (..),
  )
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), natural, register, toNative)
@@ -49,8 +51,6 @@ import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 import ZkFold.Symbolic.V2 (Symbolic (constrain), (=!=))
-import ZkFold.Data.Product (fstP)
-import ZkFold.Symbolic.Data.Input (isValid)
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0
@@ -149,20 +149,25 @@ instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
   uniformM = fmap fromConstant . uniformM @(Zp p)
 
 valueFFA
-  :: forall p r c . (Symbolic c, KnownFFA p r c)
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c)
   => CompatData FieldElement c -> UIntFFA p r c -> IntegralOf c
 valueFFA
   (toLayout -> Par1 ni :*: _)
   (natural @c @c @(FFAUIntSize p (Order c)) @r . fstP . toLayout -> ui) =
-  integralFromFFA @p @(Order c) ni ui
+    integralFromFFA @p @(Order c) ni ui
 
 layoutFFA
-  :: forall p r c . (Symbolic c, KnownFFA p r c)
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c)
   => IntegralOf c -> (CompatData FieldElement c, UIntFFA p r c)
 layoutFFA c =
   ( CompatData $ FieldElement $ CompatContext $ Par1 (fromConstant c)
-  , UIntFFA $ CompatData $ UInt $ CompatContext
-  $ tabulate (register @c @(FFAUIntSize p (Order c)) @r @c c)
+  , UIntFFA $
+      CompatData $
+        UInt $
+          CompatContext $
+            tabulate (register @c @(FFAUIntSize p (Order c)) @r @c c)
   )
 
 assert
@@ -187,13 +192,20 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     (nd, ud) = layoutFFA @p @r di
     (nm, um) = layoutFFA @p @r mi
     -- Constrain the result
-    result = assert (\m ->
-        CompatData (isValid $ compatData (uintFFA ud)
-                          :*: compatData (uintFFA um)) -- UInt registers are bound;
-        && toUInt @(FFAMaxBits p c) m < p -- m < p;
-        && (nx * ny == nd * p + nm) -- equation holds modulo basefield and...
-        && (uintFFA ux * uintFFA uy == uintFFA ud * p + uintFFA um) -- modulo 2^k.
-      ) (FFA @p nm um)
+    result =
+      assert
+        ( \m ->
+            CompatData
+              ( isValid $
+                  compatData (uintFFA ud)
+                    :*: compatData (uintFFA um) -- UInt registers are bound;
+              )
+              && toUInt @(FFAMaxBits p c) m
+              < p -- m < p;
+              && (nx * ny == nd * p + nm) -- equation holds modulo basefield and...
+              && (uintFFA ux * uintFFA uy == uintFFA ud * p + uintFFA um) -- modulo 2^k.
+        )
+        (FFA @p nm um)
 
 instance (Symbolic c, KnownFFA p r c) => Exponent (FFA p r c) Natural where
   x ^ a = x `natPow` (a `mod` (value @p -! 1))
