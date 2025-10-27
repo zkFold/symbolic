@@ -55,7 +55,8 @@ deriving instance Show (f (CompatContext c)) => Show (CompatData f c)
 deriving instance
   ( BoolType (f (CompatContext c))
   , Conditional (CompatData f c) (CompatData f c)
-  ) => BoolType (CompatData f c)
+  )
+  => BoolType (CompatData f c)
 
 deriving instance Scale k (f (CompatContext c)) => Scale k (CompatData f c)
 
@@ -143,7 +144,8 @@ instance (SymbolicData f, Symbolic c) => Conditional (CompatData Bool c) (f c) w
   bool x y (CompatData (Bool (CompatContext (Par1 b)))) =
     interpolate b ((0, x) :| [(1, y)])
 
-instance {-# OVERLAPPING #-}
+instance
+  {-# OVERLAPPING #-}
   Conditional (Bool (CompatContext c)) (f (CompatContext c))
   => Conditional (CompatData Bool c) (CompatData f c)
   where

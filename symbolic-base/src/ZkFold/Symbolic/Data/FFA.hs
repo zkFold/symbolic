@@ -198,8 +198,8 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     nd, nm :: CompatData FieldElement c
     ud, um :: UIntFFA p r c
     (nd :*: ud) :*: (nm :*: um) =
-      let a      = valueFFA @p @r @c $ toLayout (nx :*: ux)
-          b      = valueFFA @p @r @c $ toLayout (ny :*: uy)
+      let a = valueFFA @p @r @c $ toLayout (nx :*: ux)
+          b = valueFFA @p @r @c $ toLayout (ny :*: uy)
           (d, m) = (a * b) `divMod` p
        in fromLayout (layoutFFA @p @r @c d :*: layoutFFA @p @r @c m)
     -- restore

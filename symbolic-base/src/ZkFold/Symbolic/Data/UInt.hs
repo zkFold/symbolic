@@ -243,16 +243,20 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     \ar br mr ->
       (liftA2 (:*:) `on` traverse unconstrained)
         ( tabulate $
-            register @(WitnessField c) @n @r @(BaseField c) (
-              (natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
-                * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br))
-              `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr))
+            register @(WitnessField c) @n @r @(BaseField c)
+              ( ( natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
+                    * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br)
+                )
+                  `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr)
+              )
         )
         ( tabulate $
-            register @(WitnessField c) @n @r @(BaseField c) (
-              (natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
-                * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br))
-              `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr))
+            register @(WitnessField c) @n @r @(BaseField c)
+              ( ( natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
+                    * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br)
+                )
+                  `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr)
+              )
         )
 
   -- \| Unconstrained @div@ part.
@@ -490,12 +494,18 @@ instance
       )
       \n d ->
         (liftA2 (:*:) `on` traverse unconstrained)
-          (tabulate $ register @(WitnessField c) @n @r @(BaseField c)
-            (natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
-            `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)))
-          (tabulate $ register @(WitnessField c) @n @r @(BaseField c)
-            (natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
-            `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)))
+          ( tabulate $
+              register @(WitnessField c) @n @r @(BaseField c)
+                ( natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
+                    `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)
+                )
+          )
+          ( tabulate $
+              register @(WitnessField c) @n @r @(BaseField c)
+                ( natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
+                    `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)
+                )
+          )
 
     -- \| Unconstrained @div@ part.
     dv = hmap fstP source
