@@ -243,10 +243,16 @@ productMod (UInt aRegs) (UInt bRegs) (UInt mRegs) =
     \ar br mr ->
       (liftA2 (:*:) `on` traverse unconstrained)
         ( tabulate $
-            register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `div` natural @c @n @r mr)
+            register @(WitnessField c) @n @r @(BaseField c) (
+              (natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
+                * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br))
+              `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr))
         )
         ( tabulate $
-            register @(WitnessField c) @n @r @(BaseField c) ((natural @c @n @r ar * natural @c @n @r br) `mod` natural @c @n @r mr)
+            register @(WitnessField c) @n @r @(BaseField c) (
+              (natural @(WitnessField c) @(BaseField c) @n @r (at <$> ar)
+                * natural @(WitnessField c) @(BaseField c) @n @r (at <$> br))
+              `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> mr))
         )
 
   -- \| Unconstrained @div@ part.
@@ -438,16 +444,13 @@ instance
 
 -- | "natural" value from vector of registers.
 natural
-  :: forall c n r i
-   . (Symbolic c, KnownNat n, KnownRegisterSize r, Witness i (WitnessField c))
-  => Vector (NumberOfRegisters (BaseField c) n r) i -> IntegralOf (WitnessField c)
-natural =
-  foldr
-    (\i c -> toIntegral (at i :: WitnessField c) + fromConstant base * c)
-    zero
+  :: forall w a n r
+   . (PrimeField w, Finite a, KnownNat n, KnownRegisterSize r)
+  => Vector (NumberOfRegisters a n r) w -> IntegralOf w
+natural = foldr (\i c -> toIntegral i + fromConstant base * c) zero
  where
   base :: Natural
-  base = 2 ^ registerSize @(BaseField c) @n @r
+  base = 2 ^ registerSize @a @n @r
 
 -- | @register n i@ returns @i@-th register of @n@.
 register
@@ -487,8 +490,12 @@ instance
       )
       \n d ->
         (liftA2 (:*:) `on` traverse unconstrained)
-          (tabulate $ register @(WitnessField c) @n @r @(BaseField c) (natural @c @n @r n `div` natural @c @n @r d))
-          (tabulate $ register @(WitnessField c) @n @r @(BaseField c) (natural @c @n @r n `mod` natural @c @n @r d))
+          (tabulate $ register @(WitnessField c) @n @r @(BaseField c)
+            (natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
+            `div` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)))
+          (tabulate $ register @(WitnessField c) @n @r @(BaseField c)
+            (natural @(WitnessField c) @(BaseField c) @n @r (at <$> n)
+            `mod` natural @(WitnessField c) @(BaseField c) @n @r (at <$> d)))
 
     -- \| Unconstrained @div@ part.
     dv = hmap fstP source

@@ -144,6 +144,14 @@ instance {-# OVERLAPPING #-} (Symbolic c, KnownFFA p r c) => Scale (FFA p r c) (
 instance (Symbolic c, KnownFFA p r c) => Uniform (FFA p r c) where
   uniformM = fmap fromConstant . uniformM @(Zp p)
 
+valueFFA
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c)
+  => (Par1 :*: Vector (NumberOfRegisters c (FFAUIntSize p (Order c)) r)) c
+  -> IntegralOf c
+valueFFA (Par1 ni :*: (natural @c @c @(FFAUIntSize p (Order c)) @r -> ui)) =
+  integralFromFFA @p @(Order c) ni ui
+
 layoutFFA
   :: forall p r c
    . (Symbolic c, KnownFFA p r c)
@@ -189,7 +197,11 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     -- \| Computes unconstrained \(d = ab div p\) and \(m = ab mod p\)
     nd, nm :: CompatData FieldElement c
     ud, um :: UIntFFA p r c
-    (nd :*: ud) :*: (nm :*: um) = _
+    (nd :*: ud) :*: (nm :*: um) =
+      let a      = valueFFA @p @r @c $ toLayout (nx :*: ux)
+          b      = valueFFA @p @r @c $ toLayout (ny :*: uy)
+          (d, m) = (a * b) `divMod` p
+       in fromLayout (layoutFFA @p @r @c d :*: layoutFFA @p @r @c m)
     -- restore
     --   ( symbolicF
     --       (arithmetize ((nx :*: ux) :*: (ny :*: uy)))
@@ -388,12 +400,12 @@ fromUInt
   => KnownNat n
   => CompatData (UInt n r) c
   -> FFA p r c
-fromUInt ux =
+fromUInt (CompatData ux) =
   let
     uWide = resize ux
-    m :: CompatData (UInt (FFAMaxBits p c) r) c = fromConstant (value @p)
+    m :: UInt (FFAMaxBits p c) r (CompatContext c) = fromConstant (value @p)
    in
-    unsafeFromUInt $ mod uWide m
+    unsafeFromUInt $ CompatData $ mod uWide m
 
 -- | __NOTE__: This function assumes that the given 'Int' is in the range of the field. Use 'fromInt' instead if you need to perform a modulo operation (by order of field) on the 'Int'.
 unsafeFromInt
@@ -403,7 +415,7 @@ unsafeFromInt
   -> FFA p r c
 unsafeFromInt (CompatData ix) =
   let uxFFA = unsafeFromUInt $ CompatData (uint ix)
-   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+   in ifThenElse (CompatData $ isNegative ix) (negate uxFFA) uxFFA
 
 fromInt
   :: (Symbolic c, KnownFFA p r c)
@@ -412,7 +424,7 @@ fromInt
   -> FFA p r c
 fromInt (CompatData ix) =
   let uxFFA = fromUInt $ CompatData (uint ix)
-   in ifThenElse (isNegative ix) (negate uxFFA) uxFFA
+   in ifThenElse (CompatData $ isNegative ix) (negate uxFFA) uxFFA
 
 toUInt
   :: forall n p r c

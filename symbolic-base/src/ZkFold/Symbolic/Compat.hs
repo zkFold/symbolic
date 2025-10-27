@@ -21,6 +21,7 @@ import Data.Foldable (foldr)
 import Data.Function (flip, on, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Identity (Identity (Identity, runIdentity), runIdentity)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..), (:*:) (..))
 import GHC.TypeLits (KnownNat)
@@ -36,7 +37,7 @@ import ZkFold.Data.HFunctor (HFunctor (..))
 import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
 import ZkFold.Data.Package (Package (..))
 import qualified ZkFold.Symbolic.Class as Old
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), Conditional (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
@@ -51,7 +52,10 @@ deriving instance NFData (f (CompatContext c)) => NFData (CompatData f c)
 
 deriving instance Show (f (CompatContext c)) => Show (CompatData f c)
 
-deriving instance BoolType (f (CompatContext c)) => BoolType (CompatData f c)
+deriving instance
+  ( BoolType (f (CompatContext c))
+  , Conditional (CompatData f c) (CompatData f c)
+  ) => BoolType (CompatData f c)
 
 deriving instance Scale k (f (CompatContext c)) => Scale k (CompatData f c)
 
@@ -135,9 +139,13 @@ instance
   fromLayout (layout :*: payload) =
     CompatData $ Old.restore (CompatContext layout, payload)
 
-instance
-  Conditional (b (CompatContext c)) (f (CompatContext c))
-  => Conditional (CompatData b c) (CompatData f c)
+instance (SymbolicData f, Symbolic c) => Conditional (CompatData Bool c) (f c) where
+  bool x y (CompatData (Bool (CompatContext (Par1 b)))) =
+    interpolate b ((0, x) :| [(1, y)])
+
+instance {-# OVERLAPPING #-}
+  Conditional (Bool (CompatContext c)) (f (CompatContext c))
+  => Conditional (CompatData Bool c) (CompatData f c)
   where
   bool (CompatData x) (CompatData y) (CompatData b) = CompatData (bool x y b)
 
