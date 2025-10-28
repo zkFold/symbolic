@@ -11,13 +11,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.PlutoEris (PlutoEris_p, PlutoEris_q)
 import ZkFold.Algebra.Number
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..))
 
 type Pluto_Point = Point (Weierstrass "Pluto-Eris") (FFA PlutoEris_p 'Auto)
 

@@ -10,13 +10,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..))
 
 type Ed25519_Point = AffinePoint (TwistedEdwards "ed25519") (FFA Ed25519_Base 'Auto)
 

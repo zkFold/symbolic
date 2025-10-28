@@ -113,8 +113,8 @@ type KnownFFA p r c =
 instance SymbolicData (FFA p r)
 
 -- TODO: Restore SymbolicInput class after refactoring of Bool
-isValidFFA ::
-  forall p r c. (Symbolic c, KnownFFA p r c) => FFA p r c -> CompatData Bool c
+isValidFFA
+  :: forall p r c. (Symbolic c, KnownFFA p r c) => FFA p r c -> CompatData Bool c
 isValidFFA ffa@(FFA _ u) =
   isUIntFFAValid u && toUInt @(FFAMaxBits p c) ffa < fromConstant (value @p)
 
@@ -177,15 +177,15 @@ valueFFA
   (natural @c @c @(FFAUIntSize p (Order c)) @r . fstP . toLayout -> ui) =
     integralFromFFA @p @(Order c) ni ui
 
-layoutUInt ::
-  forall n r c.
-  (PrimeField c, KnownNat n, KnownRegisterSize r, KnownRegisters c n r) =>
-  IntegralOf c -> CompatData (UInt n r) c
+layoutUInt
+  :: forall n r c
+   . (PrimeField c, KnownNat n, KnownRegisterSize r, KnownRegisters c n r)
+  => IntegralOf c -> CompatData (UInt n r) c
 layoutUInt =
   CompatData . UInt . CompatContext . tabulate . register @_ @n @r @c
 
-layoutFFA ::
-  forall p r c. (Symbolic c, KnownFFA p r c) => IntegralOf c -> FFA p r c
+layoutFFA
+  :: forall p r c. (Symbolic c, KnownFFA p r c) => IntegralOf c -> FFA p r c
 layoutFFA c =
   FFA
     (CompatData $ FieldElement $ CompatContext $ Par1 $ fromConstant c)
@@ -215,9 +215,9 @@ instance (Symbolic c, KnownFFA p r c) => MultiplicativeSemigroup (FFA p r c) whe
     -- Constrain the result
     result =
       assert
-        (\ffa@(FFA nm um) ->
-            isUIntFFAValid ud             -- UInt is indeed UInt
-              && isValidFFA ffa           -- result is indeed FFA
+        ( \ffa@(FFA nm um) ->
+            isUIntFFAValid ud -- UInt is indeed UInt
+              && isValidFFA ffa -- result is indeed FFA
               && (nx * ny == nd * p + nm) -- equation holds modulo basefield
               && (ux * uy == ud * p + um) -- equation holds modulo 2^k.
         )
@@ -243,12 +243,15 @@ instance (Symbolic c, KnownFFA p r c) => AdditiveSemigroup (FFA p r c) where
     b = valueFFA @p @r ny uy
     d = toBool @c ((a + b) >= p)
     -- Constrain the result
-    result = assert (\ffa@(FFA nm um) ->
-      CompatData (isValid $ compatData d) -- boolean is indeed boolean;
-      && isValidFFA ffa                   -- result is indeed FFA;
-      && (nx + ny == bool nm (nm + p) d)  -- equation holds modulo basefield;
-      && (ux + uy == bool um (um + p) d)  -- equation holds modulo 2^k.
-      ) $ layoutFFA ((a + b) `mod` p)
+    result =
+      assert
+        ( \ffa@(FFA nm um) ->
+            CompatData (isValid $ compatData d) -- boolean is indeed boolean;
+              && isValidFFA ffa -- result is indeed FFA;
+              && (nx + ny == bool nm (nm + p) d) -- equation holds modulo basefield;
+              && (ux + uy == bool um (um + p) d) -- equation holds modulo 2^k.
+        )
+        $ layoutFFA ((a + b) `mod` p)
 
 instance (Symbolic c, KnownFFA p r c, Scale a (Zp p)) => Scale a (FFA p r c) where
   scale k x = fromConstant (scale k one :: Zp p) * x
@@ -299,12 +302,15 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
     sign = r0 < zero
     FFA nl ul = layoutFFA @p @r (ifThenElse sign (l0 + x) l0)
     -- Constrain the result
-    result = assert (\ffa@(FFA nr ur) ->
-      isValidFFA ffa                 -- result is indeed FFA
-        && isUIntFFAValid ul         -- UInt is indeed UInt
-        && (nr * nx == nl * p + one) -- equation holds modulo basefield
-        && (ur * ux == ul * p + one) -- equation holds modulo 2^k
-      ) $ layoutFFA (ifThenElse sign (r0 + p) r0)
+    result =
+      assert
+        ( \ffa@(FFA nr ur) ->
+            isValidFFA ffa -- result is indeed FFA
+              && isUIntFFAValid ul -- UInt is indeed UInt
+              && (nr * nx == nl * p + one) -- equation holds modulo basefield
+              && (ur * ux == ul * p + one) -- equation holds modulo 2^k
+        )
+        $ layoutFFA (ifThenElse sign (r0 + p) r0)
 
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p

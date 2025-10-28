@@ -19,8 +19,8 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import ZkFold.Symbolic.Data.Bool hiding (SymbolicEq)
 import ZkFold.Symbolic.Compat (CompatData)
+import ZkFold.Symbolic.Data.Bool hiding (SymbolicEq)
 import ZkFold.Symbolic.Data.V2 (SymbolicData)
 import ZkFold.Symbolic.V2 (Symbolic)
 
@@ -63,8 +63,11 @@ type Base n c f d = n c (Elliptic.Point (f d))
 
 viaBase
   :: forall n c f d e p g
-   . ( e ~ Base n c f d, p ~ Point (n c) f d, Functor g
-     , BooleanOf (f d) ~ CompatData Bool d)
+   . ( e ~ Base n c f d
+     , p ~ Point (n c) f d
+     , Functor g
+     , BooleanOf (f d) ~ CompatData Bool d
+     )
   => Coercible e (Elliptic.Point (f d))
   => (g e -> e) -> g p -> p
 viaBase f =
@@ -77,8 +80,11 @@ instance (Symbolic c, Semiring (f c)) => HasPointInf (Point curve f c) where
   pointInf = Point zero one true
 
 instance
-  ( Symbolic c, MultiplicativeSemigroup (f c)
-  , Eq (f c), BooleanOf (f c) ~ CompatData Bool c)
+  ( Symbolic c
+  , MultiplicativeSemigroup (f c)
+  , Eq (f c)
+  , BooleanOf (f c) ~ CompatData Bool c
+  )
   => Eq (Point curve f c)
   where
   type BooleanOf (Point curve f c) = CompatData Bool c

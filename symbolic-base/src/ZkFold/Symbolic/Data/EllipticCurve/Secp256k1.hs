@@ -10,13 +10,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.EllipticCurve.Secp256k1 (Secp256k1_Base, Secp256k1_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..))
 
 type Secp256k1_Point = Point (Weierstrass "secp256k1") (FFA Secp256k1_Base 'Auto)
 

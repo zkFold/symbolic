@@ -10,13 +10,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..))
 
 type Jubjub_Point = AffinePoint (TwistedEdwards "jubjub") (FFA Jubjub_Base 'Auto)
 

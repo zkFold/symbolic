@@ -10,13 +10,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BN254 (BN254_Base, BN254_Scalar)
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Algebra.Number
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..))
 
 type BN254_G1_Point = Point (Weierstrass "BN254_G1") (FFA BN254_Base 'Auto)
 
@@ -49,8 +49,9 @@ instance
    where
     bits :: CompatData (ByteString (FFAMaxBits BN254_Scalar ctx)) ctx
     bits =
-      CompatData $ from $
-        compatData (toUInt @(FFAMaxBits BN254_Scalar ctx) ffa)
+      CompatData $
+        from $
+          compatData (toUInt @(FFAMaxBits BN254_Scalar ctx) ffa)
 
     upper :: Natural
     upper = value @(FFAMaxBits BN254_Scalar ctx) -! 1
