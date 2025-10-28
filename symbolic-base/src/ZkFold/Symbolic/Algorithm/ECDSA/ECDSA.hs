@@ -13,13 +13,13 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (Auto), KnownRegisters)
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData)
 
 -- Verify ECDSA where a caller-provided hash function maps a message to it's hash.
 ecdsaVerify

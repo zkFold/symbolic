@@ -14,14 +14,14 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit.Elem (Elem)
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point)
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
 import ZkFold.Symbolic.Interpreter
-import ZkFold.ArithmeticCircuit.Elem (Elem)
-import ZkFold.Symbolic.Compat (CompatData(..))
 
 type I = Interpreter (Zp BLS12_381_Scalar)
 
@@ -39,7 +39,7 @@ main = do
   --  let b = fromConstant @Natural 1 :: FFA Ed25519_Scalar A
   print a
   let (FFA (CompatData (FieldElement nx)) (UIntFFA (CompatData (UInt ux)))) =
-         a ^ (100000 :: Natural)
+        a ^ (100000 :: Natural)
   --  let (FFA ap) = (scale (100000 :: Natural) a)
   print $ exec nx
   print $ exec ux

@@ -14,7 +14,7 @@ import Control.Monad.State (State, gets, modify', runState)
 import Data.Binary (Binary)
 import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
-import Data.Function (on, ($), (.), const)
+import Data.Function (const, on, ($), (.))
 import Data.Functor (fmap)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
@@ -27,7 +27,8 @@ import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, U1)
-import Optics (zoom, over)
+import Numeric.Natural (Natural)
+import Optics (over, zoom)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
@@ -43,16 +44,15 @@ import ZkFold.ArithmeticCircuit.Context (
   lookupType,
   witToVar,
  )
+import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction, symApply)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
-import ZkFold.ArithmeticCircuit.Witness (WitnessF (..), EuclideanF, BooleanF)
-import ZkFold.Symbolic.Class (Arithmetic)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
-import ZkFold.Symbolic.V2 (LookupTable, Symbolic (..), Constraint (..))
-import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, Input, Output, symApply)
-import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
-import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
-import Numeric.Natural (Natural)
+import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
+import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -100,7 +100,7 @@ instance MultiplicativeMonoid (Polynomial a v) where
 instance Zero (Polynomial a v) where
   zero = MkPolynomial (const zero)
 
-instance Scale Natural a => AdditiveMonoid (Polynomial a v) where
+instance Scale Natural a => AdditiveMonoid (Polynomial a v)
 
 instance FromConstant Natural a => Semiring (Polynomial a v)
 
@@ -156,8 +156,7 @@ instance ZkFold.Eq (Elem a) where
   x == y = (pure x :: WitnessF a (Elem a)) ZkFold.== pure y
   x /= y = (pure x :: WitnessF a (Elem a)) ZkFold./= pure y
 
-instance
-  (Arithmetic a, Binary a) => Conditional (BooleanF a (Elem a)) (Elem a) where
+instance (Arithmetic a, Binary a) => Conditional (BooleanF a (Elem a)) (Elem a) where
   bool x y b = fromConstant (bool (pure x :: WitnessF a (Elem a)) (pure y) b)
 
 instance Finite a => Finite (Elem a) where
@@ -165,7 +164,8 @@ instance Finite a => Finite (Elem a) where
 
 instance
   (Arithmetic a, Binary a, Exponent (WitnessF a (Elem a)) e)
-  => Exponent (Elem a) e where
+  => Exponent (Elem a) e
+  where
   x ^ e = fromConstant (pure x ^ e :: WitnessF a (Elem a))
 
 instance
@@ -207,9 +207,10 @@ instance (Arithmetic a, Binary a) => PrimeField (Elem a) where
   toIntegral = toIntegral @(WitnessF a (Elem a)) . pure
 
 instance (Arithmetic a, Binary a) => Symbolic (Elem a) where
-  constrain = over #elConstraints . \case
-    Polynomial p -> over #cbPolyCon $ app p
-    Lookup l x -> over #cbLookups $ app $ LEntry x l
+  constrain =
+    over #elConstraints . \case
+      Polynomial p -> over #cbPolyCon $ app p
+      Lookup l x -> over #cbLookups $ app $ LEntry x l
 
 ------------------------- Optimized compilation function -----------------------
 
