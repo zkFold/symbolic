@@ -8,15 +8,14 @@
 module ZkFold.ArithmeticCircuit.Elem where
 
 import Control.Applicative (pure)
-import Control.DeepSeq (NFData (..), NFData1, liftRnf, rwhnf)
+import Control.DeepSeq (NFData (..), rwhnf)
 import Control.Monad (unless)
 import Control.Monad.State (State, gets, modify', runState)
 import Data.Binary (Binary)
 import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
-import Data.Function (flip, on, ($), (.))
-import Data.Functor (Functor, fmap)
-import Data.Functor.Rep (Rep, Representable)
+import Data.Function (on, ($), (.), const)
+import Data.Functor (fmap)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..))
@@ -26,10 +25,9 @@ import Data.Semigroup (Semigroup, (<>))
 import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
 import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
-import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
-import Optics (zoom)
+import GHC.Generics (Generic, U1)
+import Optics (zoom, over)
 import Prelude (error)
 
 import ZkFold.Algebra.Class
@@ -46,27 +44,15 @@ import ZkFold.ArithmeticCircuit.Context (
   witToVar,
  )
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
-import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
-import ZkFold.Control.HApplicative (HApplicative (..))
-import ZkFold.Data.HFunctor (HFunctor (..))
-import ZkFold.Data.HFunctor.Classes (HNFData (..))
-import ZkFold.Data.Package (Package (..))
-import ZkFold.Symbolic.Class (
-  Arithmetic,
-  Symbolic (..),
-  fromCircuit2F,
- )
-import ZkFold.Symbolic.Compiler (SymbolicFunction (..))
-import ZkFold.Symbolic.Data.Bool (Bool (..))
-import ZkFold.Symbolic.Data.Class (
-  Layout,
-  Payload,
-  arithmetize,
-  restore,
- )
-import ZkFold.Symbolic.Data.Input (isValid)
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
-import ZkFold.Symbolic.V2 (LookupTable)
+import ZkFold.ArithmeticCircuit.Witness (WitnessF (..), EuclideanF, BooleanF)
+import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
+import ZkFold.Symbolic.V2 (LookupTable, Symbolic (..), Constraint (..))
+import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, Input, Output, symApply)
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
+import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.Control.Conditional (Conditional (..))
+import Numeric.Natural (Natural)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -91,6 +77,34 @@ instance Foldable AppList where
 
 newtype Polynomial a v = MkPolynomial
   {runPolynomial :: forall b. Algebra a b => (v -> b) -> b}
+
+instance FromConstant c a => FromConstant c (Polynomial a v) where
+  fromConstant c = MkPolynomial \_ -> fromConstant (fromConstant c :: a)
+
+instance (Scale c a, MultiplicativeMonoid a) => Scale c (Polynomial a v) where
+  scale k (MkPolynomial f) = MkPolynomial (scale (scale k one :: a) . f)
+
+instance Exponent (Polynomial a v) Natural where
+  MkPolynomial x ^ p = MkPolynomial (x ^ p)
+
+instance {-# OVERLAPPING #-} FromConstant (Polynomial a v) (Polynomial a v)
+
+instance {-# OVERLAPPING #-} Scale (Polynomial a v) (Polynomial a v)
+
+instance MultiplicativeSemigroup (Polynomial a v) where
+  MkPolynomial f * MkPolynomial g = MkPolynomial (f * g)
+
+instance MultiplicativeMonoid (Polynomial a v) where
+  one = MkPolynomial (const one)
+
+instance Zero (Polynomial a v) where
+  zero = MkPolynomial (const zero)
+
+instance Scale Natural a => AdditiveMonoid (Polynomial a v) where
+
+instance FromConstant Natural a => Semiring (Polynomial a v)
+
+instance Ring (Polynomial a v)
 
 --------------- Type-preserving lookup constraint representation ---------------
 
@@ -120,10 +134,6 @@ data Elem a = MkElem
 fromVar :: NewVar -> Elem a
 fromVar v = MkElem v Nothing mempty
 
--- A 'constrain' function applies constraints to the "field element".
-constrain :: ConstraintBox a (Elem a) -> Elem a -> Elem a
-constrain cb el = el {elConstraints = cb <> elConstraints el}
-
 instance Eq (Elem a) where
   (==) = (==) `on` elHash
 
@@ -141,72 +151,76 @@ instance
       , elWitness = Just witness
       }
 
---------------------- Adapters into current Symbolic API -----------------------
-
-newtype AC a f = MkAC {runAC :: f (Elem a)}
-
-instance NFData1 f => NFData (AC a f) where
-  rnf = hliftRnf liftRnf
-
-instance HNFData (AC a) where
-  hliftRnf lift = lift rnf . runAC
-
-instance HFunctor (AC a) where
-  hmap f = MkAC . f . runAC
-
-instance HApplicative (AC a) where
-  hpure = MkAC
-  hliftA2 f (MkAC a) (MkAC b) = MkAC (f a b)
-
-instance Package (AC a) where
-  unpackWith f = fmap MkAC . f . runAC
-  packWith f = MkAC . f . fmap runAC
-
-instance (Arithmetic a, Binary a) => Symbolic (AC a) where
-  type BaseField (AC a) = a
-  type WitnessField (AC a) = WitnessF a (Elem a)
-  witnessF = fmap at . runAC
-  fromCircuitF (MkAC es) cf = MkAC $ commit (cf es)
-
-commit
-  :: Functor f => State (ConstraintBox a (Elem a)) (f (Elem a)) -> f (Elem a)
-commit = uncurry (fmap . constrain) . swap . flip runState mempty
-
-instance Arithmetic a => Witness (Elem a) (WitnessF a (Elem a)) where
-  at = pure
+instance ZkFold.Eq (Elem a) where
+  type BooleanOf (Elem a) = BooleanF a (Elem a)
+  x == y = (pure x :: WitnessF a (Elem a)) ZkFold.== pure y
+  x /= y = (pure x :: WitnessF a (Elem a)) ZkFold./= pure y
 
 instance
-  (Arithmetic a, Binary a)
-  => MonadCircuit (Elem a) a (WitnessF a (Elem a)) (State (ConstraintBox a (Elem a)))
+  (Arithmetic a, Binary a) => Conditional (BooleanF a (Elem a)) (Elem a) where
+  bool x y b = fromConstant (bool (pure x :: WitnessF a (Elem a)) (pure y) b)
+
+instance Finite a => Finite (Elem a) where
+  type Order (Elem a) = Order a
+
+instance
+  (Arithmetic a, Binary a, Exponent (WitnessF a (Elem a)) e)
+  => Exponent (Elem a) e where
+  x ^ e = fromConstant (pure x ^ e :: WitnessF a (Elem a))
+
+instance
+  (Arithmetic a, Binary a, Scale k (WitnessF a (Elem a)))
+  => Scale k (Elem a)
   where
-  unconstrained = pure . fromConstant
-  constraint c = modify' \cb -> cb {cbPolyCon = MkPolynomial c `app` cbPolyCon cb}
-  lookupConstraint c t = modify' \cb -> cb {cbLookups = LEntry c t `app` cbLookups cb}
+  scale k = fromConstant . scale k . pure @(WitnessF a)
+
+instance {-# OVERLAPPING #-} FromConstant (Elem a) (Elem a)
+
+instance {-# OVERLAPPING #-} (Arithmetic a, Binary a) => Scale (Elem a) (Elem a)
+
+instance (Arithmetic a, Binary a) => Zero (Elem a) where
+  zero = fromConstant @(WitnessF a (Elem a)) zero
+
+instance (Arithmetic a, Binary a) => AdditiveSemigroup (Elem a) where
+  x + y = fromConstant (pure @(WitnessF a) x + pure y)
+
+instance (Arithmetic a, Binary a) => AdditiveMonoid (Elem a)
+
+instance (Arithmetic a, Binary a) => AdditiveGroup (Elem a) where
+  negate = fromConstant . negate . pure @(WitnessF a)
+
+instance (Arithmetic a, Binary a) => MultiplicativeSemigroup (Elem a) where
+  x * y = fromConstant (pure @(WitnessF a) x * pure y)
+
+instance (Arithmetic a, Binary a) => MultiplicativeMonoid (Elem a) where
+  one = fromConstant @(WitnessF a (Elem a)) one
+
+instance (Arithmetic a, Binary a) => Semiring (Elem a)
+
+instance (Arithmetic a, Binary a) => Ring (Elem a)
+
+instance (Arithmetic a, Binary a) => Field (Elem a) where
+  finv = fromConstant . finv . pure @(WitnessF a)
+
+instance (Arithmetic a, Binary a) => PrimeField (Elem a) where
+  type IntegralOf (Elem a) = EuclideanF a (Elem a)
+  toIntegral = toIntegral @(WitnessF a (Elem a)) . pure
+
+instance (Arithmetic a, Binary a) => Symbolic (Elem a) where
+  constrain = over #elConstraints . \case
+    Polynomial p -> over #cbPolyCon $ app p
+    Lookup l x -> over #cbLookups $ app $ LEntry x l
 
 ------------------------- Optimized compilation function -----------------------
 
-compile
-  :: forall a s f n
-   . ( SymbolicFunction f
-     , Context f ~ AC a
-     , Domain f ~ s
-     , Representable (Layout s n)
-     , Representable (Payload s n)
-     , Binary (Rep (Layout s n))
-     , Binary (Rep (Payload s n))
-     , Binary a
-     , n ~ Order a
-     )
-  => f -> ArithmeticCircuit a (Payload s n :*: Layout s n) (Layout (Range f) n)
-compile =
-  optimize . solder . \f (p :*: l) ->
-    let input = restore (MkAC (fmap fromVar l), fmap (pure . fromVar) p)
-        Bool b = isValid input
-        output = apply f input
-        MkAC constrained = fromCircuit2F (arithmetize output) b \r (Par1 i) -> do
-          constraint (one - ($ i))
-          pure r
-        (vars, circuit) = runState (traverse work constrained) emptyContext
+compileV2
+  :: forall a c f
+   . (Arithmetic a, Binary a, c ~ Elem a, SymbolicFunction c f)
+  => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
+compileV2 =
+  optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
+    let output = toLayout $ symApply f $ fromLayout (fmap fromVar l)
+        (vars, circuit) = runState (traverse work output) emptyContext
      in crown circuit vars
  where
   work :: Elem a -> State (CircuitContext a U1) (Var a)
