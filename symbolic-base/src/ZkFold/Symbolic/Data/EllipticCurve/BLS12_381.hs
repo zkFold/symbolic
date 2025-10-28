@@ -12,12 +12,13 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Haskell
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Point
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData (..))
 
 type BLS12_381_G1_Point =
   Point (Weierstrass "BLS12-381-G1") (FFA BLS12_381_Base 'Auto)
@@ -57,12 +58,14 @@ instance
   scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar 'Auto ctx)) x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ CompatData $ isSet (compatData bits) b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
-    bits :: ByteString (FFAMaxBits BLS12_381_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
+    bits :: CompatData (ByteString (FFAMaxBits BLS12_381_Scalar ctx)) ctx
+    bits =
+      CompatData $ from $
+        compatData (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
 
     upper :: Natural
     upper = value @(FFAMaxBits BLS12_381_Scalar ctx) -! 1
