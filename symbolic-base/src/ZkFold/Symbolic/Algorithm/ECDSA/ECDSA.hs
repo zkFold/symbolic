@@ -13,17 +13,18 @@ import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import qualified ZkFold.Symbolic.Class as S
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, RegisterSize (Auto), KnownRegisters)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA, toUInt)
 import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData)
 
 -- Verify ECDSA where a caller-provided hash function maps a message to it's hash.
 ecdsaVerify
   :: forall message n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
+   . ( Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
      , point ~ Point (Weierstrass curve) baseField ctx
@@ -32,20 +33,20 @@ ecdsaVerify
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownRegisters ctx n 'Auto
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => (message -> scalarField ctx)
   -> point
   -> message
   -> (scalarField :*: scalarField) ctx
-  -> Bool ctx
+  -> CompatData Bool ctx
 ecdsaVerify hashFn publicKey message (r :*: s) =
   case c of
     (Point x _ isInf) ->
       if isInf || r == zero || s == zero
         then false
-        else (toUInt r :: UInt n 'Auto ctx) == toUInt x
+        else (toUInt r :: CompatData (UInt n 'Auto) ctx) == toUInt x
  where
   g = pointGen @point
 
@@ -60,7 +61,7 @@ ecdsaVerify hashFn publicKey message (r :*: s) =
 -- | Variant of 'ecdsaVerify' where the message is already hashed.
 ecdsaVerifyMessageHash
   :: forall n point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
+   . ( Symbolic ctx
      , baseField ~ FFA q 'Auto
      , scalarField ~ FFA p 'Auto
      , point ~ Point (Weierstrass curve) baseField ctx
@@ -69,11 +70,11 @@ ecdsaVerifyMessageHash
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownRegisters ctx n 'Auto
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => point
   -> scalarField ctx
   -> (scalarField :*: scalarField) ctx
-  -> Bool ctx
+  -> CompatData Bool ctx
 ecdsaVerifyMessageHash = ecdsaVerify @_ @n P.id
