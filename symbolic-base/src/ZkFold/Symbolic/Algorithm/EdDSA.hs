@@ -25,8 +25,9 @@ import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt (..))
-import ZkFold.Symbolic.Data.V2 (SymbolicData)
+import ZkFold.Symbolic.Data.V2 (SymbolicData, Layout)
 import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -48,7 +49,7 @@ eddsaVerify
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      )
-  => (forall x. SymbolicData x => x ctx -> CompatData FieldElement ctx)
+  => (forall x. (SymbolicData x, LayoutFunctor (Layout x ctx)) => x ctx -> CompatData FieldElement ctx)
   -- ^ hash function
   -> point
   -- ^ public key A
@@ -82,7 +83,7 @@ eddsaSign
      , Symbolic ctx
      , KnownFFA p 'Auto ctx
      )
-  => (forall x. SymbolicData x => x ctx -> CompatData FieldElement ctx)
+  => (forall x. (SymbolicData x, LayoutFunctor (Layout x ctx)) => x ctx -> CompatData FieldElement ctx)
   -- ^ hash function
   -> scalarField ctx
   -- ^ private key

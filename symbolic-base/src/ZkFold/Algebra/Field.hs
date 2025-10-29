@@ -47,6 +47,7 @@ import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (iterate', log2ceiling)
+import ZkFold.Symbolic.V2 (Symbolic (..))
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -176,6 +177,9 @@ inv a p =
 instance (Finite (Zp p), Prime p) => PrimeField (Zp p) where
   type IntegralOf (Zp p) = Integer
   toIntegral = fromConstant . toConstant
+
+instance (Finite (Zp p), Prime p) => Symbolic (Zp p) where
+  constrain _ x = x
 
 instance Prime p => BinaryExpansion (Zp p) where
   type Bits (Zp p) = [Zp p]

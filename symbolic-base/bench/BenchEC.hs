@@ -4,7 +4,6 @@
 module Main where
 
 import Control.DeepSeq (NFData)
-import GHC.Generics (U1)
 import System.Random (randomRIO)
 import Test.Tasty.Bench
 import Prelude hiding (sum, (*), (+), (-), (/), (^))
@@ -14,7 +13,7 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Ed25519 hiding (Ed25519_Point)
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
-import ZkFold.ArithmeticCircuit.Elem (Elem)
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Ed25519 (Ed25519_Point)

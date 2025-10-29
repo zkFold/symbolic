@@ -32,7 +32,6 @@ import Text.Show (Show (showList, showsPrec))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
-import ZkFold.Algebra.Number (Prime)
 import ZkFold.Control.HApplicative (HApplicative (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor (HFunctor (..))
@@ -212,9 +211,6 @@ instance HApplicative (CompatContext c) where
 instance Package (CompatContext c) where
   packWith f = CompatContext . f . fmap compatContext
   unpackWith f = fmap CompatContext . f . compatContext
-
-instance (Prime p, KnownNat (NumberOfBits (Zp p))) => Symbolic (Zp p) where
-  constrain _ x = x
 
 instance Symbolic c => Old.Symbolic (CompatContext c) where
   type BaseField (CompatContext c) = Zp (Order c)

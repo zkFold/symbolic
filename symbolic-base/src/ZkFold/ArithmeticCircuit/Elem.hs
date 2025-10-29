@@ -18,7 +18,7 @@ import Data.Function (const, on, ($), (.))
 import Data.Functor (fmap)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
-import Data.Maybe (Maybe (..))
+import Data.Maybe (Maybe (..), maybe)
 import Data.Monoid (Monoid, mempty)
 import Data.Ord (Ord (..))
 import Data.Semigroup (Semigroup, (<>))
@@ -33,6 +33,7 @@ import Prelude (error)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
+import qualified ZkFold.ArithmeticCircuit as AC
 import ZkFold.ArithmeticCircuit.Children (children)
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext,
@@ -53,6 +54,12 @@ import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
+import ZkFold.Symbolic.Compat (CompatData (CompatData), CompatContext)
+import ZkFold.Symbolic.Data.Vec (Vec(Vec))
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
+import ZkFold.Data.HFunctor (HFunctor(hmap))
+import ZkFold.Data.Product (fstP)
+import Text.Show (Show (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -63,6 +70,9 @@ app x (AList a) = AList \f s -> f x (a f s)
 
 instance NFData (AppList a) where
   rnf = rwhnf
+
+instance Show a => Show (AppList a) where
+  show = show . toList
 
 instance Semigroup (AppList a) where
   AList a <> AList b = AList \f s -> a f (b f s)
@@ -77,6 +87,15 @@ instance Foldable AppList where
 
 newtype Polynomial a v = MkPolynomial
   {runPolynomial :: forall b. Algebra a b => (v -> b) -> b}
+
+instance (PrimeField a, Ord v, Show v) => Show (Polynomial a v) where
+  show (MkPolynomial f) = "p(" <> show (children @a $ WitnessF f) <> ")"
+
+instance {-# OVERLAPPING #-} FromConstant v (Polynomial a v) where
+  fromConstant v = MkPolynomial ($ v)
+
+instance {-# OVERLAPPING #-} Scale v (Polynomial a v) where
+  scale v (MkPolynomial f) = MkPolynomial \x -> x v * f x
 
 instance FromConstant c a => FromConstant c (Polynomial a v) where
   fromConstant c = MkPolynomial \_ -> fromConstant (fromConstant c :: a)
@@ -100,15 +119,24 @@ instance MultiplicativeMonoid (Polynomial a v) where
 instance Zero (Polynomial a v) where
   zero = MkPolynomial (const zero)
 
-instance Scale Natural a => AdditiveMonoid (Polynomial a v)
+instance AdditiveSemigroup (Polynomial a v) where
+  MkPolynomial f + MkPolynomial g = MkPolynomial (f + g)
 
-instance FromConstant Natural a => Semiring (Polynomial a v)
+instance Semiring a => AdditiveMonoid (Polynomial a v)
 
-instance Ring (Polynomial a v)
+instance Ring a => AdditiveGroup (Polynomial a v) where
+  negate (MkPolynomial f) = MkPolynomial (negate f)
+
+instance Semiring a => Semiring (Polynomial a v)
+
+instance Ring a => Ring (Polynomial a v)
 
 --------------- Type-preserving lookup constraint representation ---------------
 
 data LookupEntry v = forall f. Traversable f => LEntry (f v) (LookupTable f)
+
+instance Show v => Show (LookupEntry v) where
+  show (LEntry x _) = "l(" <> show (toList x) <> ")"
 
 ------------- Box of constraints supporting efficient concatenation ------------
 
@@ -116,7 +144,7 @@ data ConstraintBox a v = MkCBox
   { cbPolyCon :: AppList (Polynomial a v)
   , cbLookups :: AppList (LookupEntry v)
   }
-  deriving (Generic, NFData)
+  deriving (Generic, NFData, Show)
   deriving (Monoid, Semigroup) via (GenericSemigroupMonoid (ConstraintBox a v))
 
 ------------------- Experimental single-output circuit type --------------------
@@ -139,6 +167,14 @@ instance Eq (Elem a) where
 
 instance Ord (Elem a) where
   compare = compare `on` elHash
+
+instance (PrimeField a, Show a) => Show (Elem a) where
+  show MkElem {..} =
+    "{ elHash = " <> show elHash <>
+    ", elWitness = " <> maybe "<input>"
+    (\w -> "f(" <> show (children w) <> ")") elWitness <>
+    ", elConstraints = " <> show elConstraints <>
+    "}"
 
 instance
   (Arithmetic a, Binary a, FromConstant c (WitnessF a (Elem a)))
@@ -213,6 +249,11 @@ instance (Arithmetic a, Binary a) => Symbolic (Elem a) where
       Lookup l x -> over #cbLookups $ app $ LEntry x l
 
 ------------------------- Optimized compilation function -----------------------
+
+exec
+  :: (Arithmetic a, Binary a, LayoutFunctor f)
+  => CompatContext (Elem a) f -> f a
+exec = AC.exec . hmap fstP . compileV2 . CompatData . Vec
 
 compileV2
   :: forall a c f
