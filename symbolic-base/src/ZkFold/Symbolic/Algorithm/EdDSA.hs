@@ -20,14 +20,14 @@ import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData))
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt (..))
-import ZkFold.Symbolic.Data.V2 (SymbolicData, Layout)
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData)
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 

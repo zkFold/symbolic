@@ -29,6 +29,7 @@ import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, U1)
 import Numeric.Natural (Natural)
 import Optics (over, zoom)
+import Text.Show (Show (..))
 import Prelude (error)
 
 import ZkFold.Algebra.Class
@@ -50,16 +51,15 @@ import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
 import qualified ZkFold.Data.Eq as ZkFold
+import ZkFold.Data.HFunctor (HFunctor (hmap))
+import ZkFold.Data.Product (fstP)
 import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compat (CompatContext, CompatData (CompatData))
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
+import ZkFold.Symbolic.Data.Vec (Vec (Vec))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
-import ZkFold.Symbolic.Compat (CompatData (CompatData), CompatContext)
-import ZkFold.Symbolic.Data.Vec (Vec(Vec))
-import ZkFold.Symbolic.Data.Class (LayoutFunctor)
-import ZkFold.Data.HFunctor (HFunctor(hmap))
-import ZkFold.Data.Product (fstP)
-import Text.Show (Show (..))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -170,11 +170,16 @@ instance Ord (Elem a) where
 
 instance (PrimeField a, Show a) => Show (Elem a) where
   show MkElem {..} =
-    "{ elHash = " <> show elHash <>
-    ", elWitness = " <> maybe "<input>"
-    (\w -> "f(" <> show (children w) <> ")") elWitness <>
-    ", elConstraints = " <> show elConstraints <>
-    "}"
+    "{ elHash = "
+      <> show elHash
+      <> ", elWitness = "
+      <> maybe
+        "<input>"
+        (\w -> "f(" <> show (children w) <> ")")
+        elWitness
+      <> ", elConstraints = "
+      <> show elConstraints
+      <> "}"
 
 instance
   (Arithmetic a, Binary a, FromConstant c (WitnessF a (Elem a)))

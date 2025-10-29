@@ -16,15 +16,15 @@ import ZkFold.Algebra.Number
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign, eddsaVerify)
 import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as MiMC
+import ZkFold.Symbolic.Compat (CompatContext (..), CompatData (CompatData))
+import ZkFold.Symbolic.Data.Class (LayoutFunctor)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA (FFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Compat (CompatData (CompatData), CompatContext (..))
-import ZkFold.Symbolic.Data.V2 (SymbolicData(toLayout), Layout)
-import ZkFold.Symbolic.Data.Vec (Vec(Vec))
-import ZkFold.Symbolic.Data.Class (LayoutFunctor)
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout))
+import ZkFold.Symbolic.Data.Vec (Vec (Vec))
 
 type Point = Jubjub_Point Fq
 

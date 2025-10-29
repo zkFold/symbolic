@@ -10,7 +10,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Class (Symbolic, BaseField)
+import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)

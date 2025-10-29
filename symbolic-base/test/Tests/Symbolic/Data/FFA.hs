@@ -15,12 +15,12 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (Prime, value)
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
+import ZkFold.Symbolic.Compat (CompatContext (..), CompatData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize (..), RegisterSize (..))
 import ZkFold.Symbolic.Data.FFA (FFA (FFA), KnownFFA, UIntFFA (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.UInt (UInt (..))
-import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
-import ZkFold.Symbolic.Compat (CompatData(..), CompatContext (..))
 
 type Prime256_1 = FpModulus
 
