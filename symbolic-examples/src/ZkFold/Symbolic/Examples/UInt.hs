@@ -61,7 +61,7 @@ exampleUIntExpMod
   => KnownNat n
   => KnownNat m
   => KnownNat (2 * m)
-  => KnownRegisters c (2 * m) r
+  => KnownRegisters (BaseField c) (2 * m) r
   => KnownNat (Ceil (GetRegisterSize (BaseField c) (2 * m) r) OrdWord)
   => UInt n r c
   -> UInt p r c
@@ -88,7 +88,7 @@ exampleUIntLeq
   :: ( KnownNat n
      , KnownRegisterSize r
      , Symbolic c
-     , KnownRegisters c n r
+     , KnownRegisters (BaseField c) n r
      , regSize ~ GetRegisterSize (BaseField c) n r
      , KnownNat (Ceil regSize OrdWord)
      )

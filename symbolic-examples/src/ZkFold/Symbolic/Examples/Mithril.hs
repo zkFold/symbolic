@@ -6,11 +6,12 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.Mithril (StakeDistribution, mithril)
-import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA (KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.V2 (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData)
 
 exampleMithril
   :: forall n m ctx
@@ -18,11 +19,11 @@ exampleMithril
      , KnownFFA FpModulus 'Auto ctx
      , KnownFFA FqModulus 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
+     , KnownNat (NumberOfRegisters ctx n 'Auto)
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => StakeDistribution m (Pallas_Point ctx) ctx
   -> ScalarFieldOf (Pallas_Point ctx)
   -> (ScalarFieldOf (Pallas_Point ctx), ScalarFieldOf (Pallas_Point ctx))
-  -> FieldElement ctx
+  -> CompatData FieldElement ctx
 exampleMithril = mithril @m @n

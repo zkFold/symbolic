@@ -73,7 +73,7 @@ kycExample
      , KnownNat rsc
      , Eq (KYCHash context)
      , KnownRegisterSize r
-     , KnownRegisters context 64 r
+     , KnownRegisters (BaseField context) 64 r
      , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
      )
   => KYCData n context -> KYCHash context -> Bool context

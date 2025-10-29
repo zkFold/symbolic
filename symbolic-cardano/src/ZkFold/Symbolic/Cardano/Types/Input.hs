@@ -30,8 +30,8 @@ data Input tokens datum context = Input
 instance
   ( Symbolic context
   , KnownNat tokens
-  , KnownRegisters context 32 Auto
-  , KnownRegisters context 64 Auto
+  , KnownRegisters (BaseField context) 32 Auto
+  , KnownRegisters (BaseField context) 64 Auto
   )
   => Eq (Input tokens datum context)
 

@@ -30,5 +30,5 @@ data OutputRef context = OutputRef
 deriving instance HEq context => Haskell.Eq (OutputRef context)
 
 instance
-  (Symbolic context, KnownRegisters context 32 Auto)
+  (Symbolic context, KnownRegisters (BaseField context) 32 Auto)
   => Eq (OutputRef context)
