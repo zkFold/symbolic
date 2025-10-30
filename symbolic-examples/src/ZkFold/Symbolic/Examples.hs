@@ -2,14 +2,19 @@ module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
 import Data.Function (($))
 import Data.String (String)
+import Data.Traversable (Traversable)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus)
 import ZkFold.Algebra.Field (Zp)
+import ZkFold.ArithmeticCircuit.Elem (Elem)
+import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, apply)
 import ZkFold.Data.Binary (Binary)
 import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
+import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 
 import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.ByteString
@@ -26,11 +31,6 @@ import ZkFold.Symbolic.Examples.Pasta (examplePallas_Add, examplePallas_Scale)
 import ZkFold.Symbolic.Examples.ReverseList (exampleReverseList)
 import ZkFold.Symbolic.Examples.SmartWallet (expModContract)
 import ZkFold.Symbolic.Examples.UInt
-import ZkFold.ArithmeticCircuit.Elem (Elem)
-import ZkFold.Symbolic.Data.V2 (SymbolicData(..))
-import Data.Traversable (Traversable)
-import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, apply)
-import ZkFold.Symbolic.Compat (CompatData)
 
 type A = Zp BLS12_381_Scalar
 

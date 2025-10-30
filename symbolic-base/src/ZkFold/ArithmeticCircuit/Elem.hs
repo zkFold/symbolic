@@ -46,6 +46,7 @@ import ZkFold.ArithmeticCircuit.Context (
   lookupType,
   witToVar,
  )
+import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction, apply)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
@@ -59,7 +60,6 @@ import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
 import ZkFold.Symbolic.Data.Vec (Vec (Vec))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
-import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, Input, Output, apply)
 
 ---------------------- Efficient "list" concatenation --------------------------
 

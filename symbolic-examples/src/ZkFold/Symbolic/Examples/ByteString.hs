@@ -8,16 +8,16 @@ module ZkFold.Symbolic.Examples.ByteString (
   exampleSHA,
 ) where
 
+import Data.Function (($), (.))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2)
+import ZkFold.Symbolic.Compat (CompatContext, CompatData (..))
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..), Resize (..))
 import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..), CompatContext)
-import Data.Function (($), (.))
 
 exampleByteStringAnd
   :: (KnownNat n, Symbolic c)
@@ -39,7 +39,8 @@ exampleByteStringResize
 exampleByteStringResize = CompatData . resize . compatData
 
 exampleByteStringAdd
-  :: forall n c. (KnownNat n, Symbolic c)
+  :: forall n c
+   . (KnownNat n, Symbolic c)
   => CompatData (ByteString n) c
   -> CompatData (ByteString n) c
   -> CompatData (ByteString n) c

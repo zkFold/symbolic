@@ -39,13 +39,13 @@ import ZkFold.Data.HFunctor.Classes (HEq (..), HNFData (..), HShow (..))
 import ZkFold.Data.Package (Package (..))
 import qualified ZkFold.Symbolic.Class as Old
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
+import ZkFold.Symbolic.Data.ByteString (ByteString)
 import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.Ord (IsOrdering, Ord (..), Ordering)
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
-import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 

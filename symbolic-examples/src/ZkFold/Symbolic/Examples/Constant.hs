@@ -14,13 +14,13 @@ import GHC.Generics ((:.:) (Comp1))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Number (KnownNat, Natural)
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.V2 (Symbolic)
 
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
 import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
-import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData)
 
 exampleConst :: Symbolic c => CompatData FieldElement c
 exampleConst = fromConstant (5 :: Natural)
