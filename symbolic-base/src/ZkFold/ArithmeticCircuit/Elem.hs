@@ -46,7 +46,6 @@ import ZkFold.ArithmeticCircuit.Context (
   lookupType,
   witToVar,
  )
-import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction, symApply)
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, WitnessF (..))
 import ZkFold.Control.Conditional (Conditional (..))
@@ -60,6 +59,7 @@ import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
 import ZkFold.Symbolic.Data.Vec (Vec (Vec))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
+import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, Input, Output, apply)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -266,7 +266,7 @@ compileV2
   => f -> ArithmeticCircuit a (Layout (Input f) c) (Layout (Output f) c)
 compileV2 =
   optimize . solder . \(f :: f) (l :: Layout (Input f) c NewVar) ->
-    let output = toLayout $ symApply f $ fromLayout (fmap fromVar l)
+    let output = toLayout $ apply f $ fromLayout (fmap fromVar l)
         (vars, circuit) = runState (traverse work output) emptyContext
      in crown circuit vars
  where

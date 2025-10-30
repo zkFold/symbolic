@@ -45,6 +45,7 @@ import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
+import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -156,6 +157,13 @@ instance
   {-# OVERLAPPING #-}
   Conditional (Bool (CompatContext c)) (f (CompatContext c))
   => Conditional (CompatData Bool c) (CompatData f c)
+  where
+  bool (CompatData x) (CompatData y) (CompatData b) = CompatData (bool x y b)
+
+instance
+  {-# OVERLAPPING #-}
+  Conditional (ByteString n (CompatContext c)) (f (CompatContext c))
+  => Conditional (CompatData (ByteString n) c) (CompatData f c)
   where
   bool (CompatData x) (CompatData y) (CompatData b) = CompatData (bool x y b)
 

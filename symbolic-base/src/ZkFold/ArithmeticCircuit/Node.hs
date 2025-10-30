@@ -175,13 +175,13 @@ instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp
 
 ------------------------- Optimized compilation function -----------------------
 
-type family InputF (f :: Type) where
-  InputF (i a -> f) = i :*: Input f
-  InputF (o a) = U1
+type family Input (f :: Type) :: Type -> Type where
+  Input (i a -> f) = i :*: Input f
+  Input (o a) = U1
 
-type family OutputF (f :: Type) where
-  OutputF (i a -> f) = Output f
-  OutputF (o a) = o
+type family Output (f :: Type) :: Type -> Type where
+  Output (i a -> f) = Output f
+  Output (o a) = o
 
 class
   ( SymbolicData (Input f)
@@ -192,23 +192,19 @@ class
   SymbolicFunction (a :: Type) (f :: Type)
     | f -> a
   where
-  type Input f :: Type -> Type
-  type Input f = InputF f
-  type Output f :: Type -> Type
-  type Output f = OutputF f
-  symApply :: f -> Input f a -> Output f a
+  apply :: f -> Input f a -> Output f a
 
 instance
   (SymbolicData o, Traversable (Layout o a), Input (o a) ~ U1, Output (o a) ~ o)
   => SymbolicFunction a (o a)
   where
-  symApply = const
+  apply = const
 
 instance
   (SymbolicData i, HasRep i a, SymbolicFunction a f)
   => SymbolicFunction a (i a -> f)
   where
-  symApply f (x :*: y) = symApply (f x) y
+  apply f (x :*: y) = apply (f x) y
 
 compileV1
   :: forall a f n d
@@ -249,7 +245,7 @@ compileV2 =
             . flip runReaderT compiler
             . traverse compileNode
             . toLayout
-            . symApply f
+            . apply f
             $ fromLayout (fmap NodeInput l)
      in crown circuit (toVar <$> output)
 
