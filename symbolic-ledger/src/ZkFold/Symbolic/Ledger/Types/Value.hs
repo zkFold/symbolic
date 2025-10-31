@@ -30,7 +30,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Class (BaseField, Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
@@ -66,7 +66,7 @@ type AssetName context = FieldElement context
 -- | Quantity of an asset.
 type AssetQuantity context = Int 128 Auto context
 
-type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
+type KnownRegistersAssetQuantity context = KnownRegisters (BaseField context) 128 Auto
 
 -- TODO: Replace with actual value, once we finalize how policy names are represented.
 adaPolicy :: Symbolic context => AssetPolicy context

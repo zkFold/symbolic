@@ -35,8 +35,6 @@ import ZkFold.Algebra.Number (value)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (drop, take)
-import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Interpreter (Interpreter)
 import ZkFold.Symbolic.MonadCircuit
 
 mzipWithMRep
@@ -114,7 +112,7 @@ type family GetRegisterSizeN n b r :: Natural where
   GetRegisterSizeN _ _ (Fixed rs) = rs
   GetRegisterSizeN n b Auto = Ceil b (NumberOfRegistersN n b Auto)
 
-type KnownRegisters c bits r = KnownNat (NumberOfRegisters (BaseField c) bits r)
+type KnownRegisters c bits r = KnownNat (NumberOfRegisters c bits r)
 
 type NumberOfRegisters (a :: Type) (bits :: Natural) (r :: RegisterSize) =
   NumberOfRegistersN (Order a) bits r
@@ -243,11 +241,11 @@ withSecondNextNBits :: forall n {r}. KnownNat n => (KnownNat (Log2 (2 * n - 1) +
 withSecondNextNBits = withDict (withSecondNextNBits' @n)
 
 withNumberOfRegisters'
-  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters (Interpreter a) n r
+  :: forall n r a. (KnownNat n, KnownRegisterSize r, Finite a) :- KnownRegisters a n r
 withNumberOfRegisters' = Sub $ withKnownNat @(NumberOfRegisters a n r) (unsafeSNat (numberOfRegisters @a @n @r)) Dict
 
 withNumberOfRegisters
-  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters (Interpreter a) n r => k) -> k
+  :: forall n r a {k}. (KnownNat n, KnownRegisterSize r, Finite a) => (KnownRegisters a n r => k) -> k
 withNumberOfRegisters = withDict (withNumberOfRegisters' @n @r @a)
 
 withCeilRegSize' :: forall rs ow. (KnownNat rs, KnownNat ow) :- KnownNat (Ceil rs ow)

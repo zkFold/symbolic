@@ -45,6 +45,6 @@ deriving instance HEq context => Haskell.Eq (Output tokens datum context)
 instance
   ( Symbolic context
   , KnownNat tokens
-  , KnownRegisters context 64 Auto
+  , KnownRegisters (BaseField context) 64 Auto
   )
   => Eq (Output tokens datum context)

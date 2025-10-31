@@ -30,7 +30,7 @@ deriving newtype instance SymbolicData UTCTime
 
 deriving newtype instance
   ( Symbolic c
-  , KnownRegisters c 11 Auto
+  , KnownRegisters (BaseField c) 11 Auto
   , regSize ~ GetRegisterSize (BaseField c) 11 Auto
   , KnownNat (Ceil regSize OrdWord)
   )
