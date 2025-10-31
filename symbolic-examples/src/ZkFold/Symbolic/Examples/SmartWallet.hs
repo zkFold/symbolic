@@ -79,12 +79,12 @@ import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
-import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
+import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..), CompatContext (CompatContext))
+import ZkFold.Symbolic.Compat (CompatData (..), CompatContext)
 import ZkFold.Symbolic.Class (fromCircuitF)
 import ZkFold.ArithmeticCircuit.Elem (compileV2, Elem)
 import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout))
@@ -296,7 +296,7 @@ expModContract
   msgHash = CompatData $ exp65537Mod @_ @2048 @2048 (compatData sig) pubN
 
   unpadded :: CompatData (UInt 256 Auto) c
-  unpadded = resize msgHash
+  unpadded = CompatData $ resize (compatData msgHash)
 
   rsize :: Natural
   rsize = 2 ^ registerSize @c @256 @Auto
@@ -312,7 +312,7 @@ expModContract
 
 expModCircuit :: Natural -> Natural -> ExpModCircuit
 expModCircuit pubE' pubN' =
-  hmap (\(x :*: y) -> fstP x :*: fstP y) $ compileV2 @Fr $
+  hmap (\(x :*: y) -> fstP x :*: fstP y) $ compileV2 @Fr id $
     expModContract @(Elem Fr) $ CompatData (RSA.PublicKey {..})
  where
   pubE = fromConstant pubE'
@@ -442,7 +442,8 @@ debugFun (CompatData (Vec cp)) = CompatData $ Vec $
     pure (Par1 out :*: Par1 out)
 
 debugCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
-debugCircuit = runVec $ C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
+debugCircuit =
+  hmap fstP $ compileV2 @Fr (\i -> (i :*: U1) :*: U1) $ debugFun @(Elem Fr)
 
 expModProofDebug
   :: forall t
