@@ -1,5 +1,5 @@
-{-# LANGUAGE NoStarIsType #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module ZkFold.Symbolic.Examples.UInt (
   exampleUIntMul,
@@ -12,10 +12,12 @@ module ZkFold.Symbolic.Examples.UInt (
   exampleUIntLeq,
 ) where
 
+import Data.Function ((.))
 import Data.Type.Equality (type (~))
 import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (*))
+import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData))
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Combinators (
   Ceil,
@@ -28,8 +30,6 @@ import ZkFold.Symbolic.Data.Combinators (
 import ZkFold.Symbolic.Data.Ord ((<=))
 import ZkFold.Symbolic.Data.UInt (OrdWord, StrictNum (..), UInt, expMod, productMod)
 import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (CompatData, compatData))
-import Data.Function ((.))
 
 exampleUIntMul
   :: (KnownNat n, KnownRegisterSize r, Symbolic c)

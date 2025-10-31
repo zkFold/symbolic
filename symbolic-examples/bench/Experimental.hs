@@ -8,7 +8,7 @@ import Control.DeepSeq (force)
 import Control.Monad (return)
 import Data.ByteString (foldr)
 import Data.ByteString.Lazy (ByteString)
-import Data.Function (($), (.), id)
+import Data.Function (id, ($), (.))
 import Data.Functor.Rep (tabulate)
 import Data.Semigroup ((<>))
 import Data.String (String)
@@ -24,22 +24,22 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
 import ZkFold.ArithmeticCircuit qualified as Circuit
+import ZkFold.ArithmeticCircuit.Elem (Elem)
 import ZkFold.ArithmeticCircuit.Elem qualified as Elem
+import ZkFold.ArithmeticCircuit.Node (Node)
 import ZkFold.ArithmeticCircuit.Node qualified as Node
+import ZkFold.ArithmeticCircuit.Op (Sort (ZZp))
 import ZkFold.Data.Binary (Binary, toByteString)
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.UInt (UInt)
+import ZkFold.Symbolic.V2 (Symbolic)
 import Prelude (toInteger)
 
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)
 import ZkFold.Symbolic.Examples.MiMCHash (exampleMiMC)
 import ZkFold.Symbolic.Examples.UInt (exampleUIntExpMod)
-import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData)
-import ZkFold.ArithmeticCircuit.Op (Sort(ZZp))
-import ZkFold.ArithmeticCircuit.Node (Node)
-import ZkFold.ArithmeticCircuit.Elem (Elem)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =
@@ -70,6 +70,7 @@ expMod
 expMod = exampleUIntExpMod
 
 type N = Node (Order A) ZZp
+
 type E = Elem A
 
 main :: IO ()

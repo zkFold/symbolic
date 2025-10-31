@@ -9,13 +9,14 @@ module ZkFold.ArithmeticCircuit.Elem where
 
 import Control.Applicative (pure)
 import Control.DeepSeq (NFData (..), rwhnf)
-import Control.Monad (unless, Functor)
+import Control.Monad (Functor, unless)
 import Control.Monad.State (State, gets, modify', runState)
 import Data.Binary (Binary)
 import Data.Eq (Eq (..))
 import Data.Foldable (Foldable (..), any, for_)
-import Data.Function (const, on, ($), (.), id)
+import Data.Function (const, id, on, ($), (.))
 import Data.Functor (fmap, (<$>))
+import Data.Functor.Rep (Rep, Representable)
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..), maybe)
@@ -60,7 +61,6 @@ import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (fromLayout), toLayout)
 import ZkFold.Symbolic.Data.Vec (Vec (Vec))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..))
 import ZkFold.Symbolic.V2 (Constraint (..), LookupTable, Symbolic (..))
-import Data.Functor.Rep (Representable, Rep)
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -263,13 +263,23 @@ exec = AC.exec . hmap fstP . compileV2 id . CompatData . Vec
 
 compileV2
   :: forall a i c l f
-   . ( Arithmetic a, Binary a, c ~ Elem a, SymbolicFunction c f
-     , l ~ Layout (Input f) c, Functor l, Representable i, Binary (Rep i))
+   . ( Arithmetic a
+     , Binary a
+     , c ~ Elem a
+     , SymbolicFunction c f
+     , l ~ Layout (Input f) c
+     , Functor l
+     , Representable i
+     , Binary (Rep i)
+     )
   => (forall x. i x -> l x) -> f -> ArithmeticCircuit a i (Layout (Output f) c)
 compileV2 mkLayout =
   optimize . solder . \(f :: f) (input :: i NewVar) ->
-    let output = toLayout $ apply f $ fromLayout $
-                   fromVar <$> mkLayout input
+    let output =
+          toLayout $
+            apply f $
+              fromLayout $
+                fromVar <$> mkLayout input
         (vars, circuit) = runState (traverse work output) emptyContext
      in crown circuit vars
  where

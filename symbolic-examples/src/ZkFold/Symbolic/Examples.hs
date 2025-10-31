@@ -7,11 +7,12 @@ import Data.Function (($))
 import Data.String (String)
 import Data.Traversable (Traversable)
 import Data.Type.Equality (type (~))
+import GHC.Generics (U1)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit.Elem (Elem)
-import ZkFold.ArithmeticCircuit.Node (SymbolicFunction, apply, Input, Output)
+import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction, apply)
 import ZkFold.Data.Binary (Binary)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Compat (CompatData)
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Examples.Pasta (examplePallas_Add, examplePallas_Scale)
 import ZkFold.Symbolic.Examples.ReverseList (exampleReverseList)
 import ZkFold.Symbolic.Examples.SmartWallet (expModContract)
 import ZkFold.Symbolic.Examples.UInt
-import GHC.Generics (U1)
 
 type A = Zp BLS12_381_Scalar
 
@@ -59,7 +59,9 @@ data ExampleOutput where
 
 exampleOutput
   :: forall a f
-   . ( Arithmetic a, Binary a, SymbolicFunction (Elem a) f
+   . ( Arithmetic a
+     , Binary a
+     , SymbolicFunction (Elem a) f
      , NFData1 (Layout (Output f) (Elem a))
      , Input (Output f (Elem a)) ~ U1
      , Output (Output f (Elem a)) ~ Output f

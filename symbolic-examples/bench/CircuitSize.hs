@@ -2,7 +2,7 @@ module Main where
 
 import Control.Applicative (Applicative (..))
 import Data.ByteString.Lazy (ByteString)
-import Data.Function (($), id)
+import Data.Function (id, ($))
 import Data.Semigroup (Semigroup (..))
 import Data.String (String)
 import qualified Data.String as String
@@ -12,10 +12,10 @@ import qualified Test.Tasty.Golden as Golden
 import Text.Show (Show (..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import qualified ZkFold.ArithmeticCircuit as Circuit
+import ZkFold.ArithmeticCircuit.Elem (Elem, compileV2)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..))
 import qualified ZkFold.Symbolic.Examples as Examples
-import ZkFold.ArithmeticCircuit.Elem (compileV2, Elem)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
 metrics name circuit =

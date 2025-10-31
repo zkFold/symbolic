@@ -2,11 +2,11 @@
 
 module Main where
 
-import Control.DeepSeq (force, NFData1)
+import Control.DeepSeq (NFData1, force)
 import Control.Monad (return)
 import Data.Binary (Binary)
 import Data.ByteString (foldr)
-import Data.Function (($), (.), id)
+import Data.Function (id, ($), (.))
 import Data.Functor.Rep (Representable (..))
 import Data.String (String)
 import Data.Type.Equality (type (~))
@@ -14,14 +14,14 @@ import System.IO (IO)
 import Test.Tasty.Bench
 import ZkFold.Algebra.Class (Ring, fromConstant, zero, (+))
 import ZkFold.ArithmeticCircuit (eval)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compileV2)
+import ZkFold.ArithmeticCircuit.Node (Output, SymbolicFunction)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
+import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import Prelude (toInteger)
 
 import ZkFold.Symbolic.Examples (ExampleOutput (..), examples)
-import ZkFold.ArithmeticCircuit.Elem (Elem, compileV2)
-import ZkFold.Symbolic.Data.V2 (SymbolicData(..))
-import ZkFold.ArithmeticCircuit.Node (Output, SymbolicFunction)
 
 fromBinary :: (Binary a, Ring b) => a -> b
 fromBinary = foldr ((+) . fromConstant . toInteger) zero . toByteString

@@ -56,7 +56,10 @@ import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
 import qualified ZkFold.ArithmeticCircuit as AC
+import ZkFold.ArithmeticCircuit.Elem (Elem, compileV2)
 import ZkFold.Data.Binary (toByteString)
+import ZkFold.Data.HFunctor (hmap)
+import ZkFold.Data.Product (fstP)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
@@ -76,20 +79,17 @@ import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
+import ZkFold.Symbolic.Class (fromCircuitF)
+import ZkFold.Symbolic.Compat (CompatContext, CompatData (..))
 import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
+import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout))
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
+import ZkFold.Symbolic.V2 (Symbolic)
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
-import ZkFold.Symbolic.V2 (Symbolic)
-import ZkFold.Symbolic.Compat (CompatData (..), CompatContext)
-import ZkFold.Symbolic.Class (fromCircuitF)
-import ZkFold.ArithmeticCircuit.Elem (compileV2, Elem)
-import ZkFold.Symbolic.Data.V2 (Layout, SymbolicData (toLayout))
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Product (fstP)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -290,30 +290,35 @@ expModContract
 expModContract
   (CompatData RSA.PublicKey {..})
   (ExpModInput sig tokenNameAsFE) =
-  ExpModOutput hashAsFE tokenNameAsFE
- where
-  msgHash :: CompatData (UInt 2048 Auto) c
-  msgHash = CompatData $ exp65537Mod @_ @2048 @2048 (compatData sig) pubN
+    ExpModOutput hashAsFE tokenNameAsFE
+   where
+    msgHash :: CompatData (UInt 2048 Auto) c
+    msgHash = CompatData $ exp65537Mod @_ @2048 @2048 (compatData sig) pubN
 
-  unpadded :: CompatData (UInt 256 Auto) c
-  unpadded = CompatData $ resize (compatData msgHash)
+    unpadded :: CompatData (UInt 256 Auto) c
+    unpadded = CompatData $ resize (compatData msgHash)
 
-  rsize :: Natural
-  rsize = 2 ^ registerSize @c @256 @Auto
+    rsize :: Natural
+    rsize = 2 ^ registerSize @c @256 @Auto
 
-  -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
-  --
-  hashAsFE :: CompatData FieldElement c
-  hashAsFE = CompatData $ FieldElement $ fromCircuitF
-    (let CompatData (UInt regs) = unpadded in regs) $ \v -> do
-    z <- newAssigned (const zero)
-    ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
-    pure $ Par1 ans
+    -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
+    --
+    hashAsFE :: CompatData FieldElement c
+    hashAsFE = CompatData
+      $ FieldElement
+      $ fromCircuitF
+        (let CompatData (UInt regs) = unpadded in regs)
+      $ \v -> do
+        z <- newAssigned (const zero)
+        ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
+        pure $ Par1 ans
 
 expModCircuit :: Natural -> Natural -> ExpModCircuit
 expModCircuit pubE' pubN' =
-  hmap (\(x :*: y) -> fstP x :*: fstP y) $ compileV2 @Fr id $
-    expModContract @(Elem Fr) $ CompatData (RSA.PublicKey {..})
+  hmap (\(x :*: y) -> fstP x :*: fstP y) $
+    compileV2 @Fr id $
+      expModContract @(Elem Fr) $
+        CompatData (RSA.PublicKey {..})
  where
   pubE = fromConstant pubE'
   pubN = fromConstant pubN'
@@ -363,8 +368,9 @@ expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
   witnessInputs = toLayout input :*: U1
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-  plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s
-              :: PlonkupTs CircuitInput ExpModCircuitGates t
+  plonkup =
+    Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s
+      :: PlonkupTs CircuitInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs CircuitInput ExpModCircuitGates t) plonkup
   witness = (PlonkupWitnessInput @CircuitInput @BLS12_381_G1_JacobianPoint witnessInputs, ps)
   (proof, _) = rustPlonkupProve setupP witness
@@ -426,20 +432,22 @@ expModProofMock TrustedSetup {..} ps empi = (proofInput, proof)
 -- The number of constraints depends on ExpModCircuitGatesMock
 --
 debugFun
-  :: forall c. Symbolic c
+  :: forall c
+   . Symbolic c
   => CompatData (Vec (Par1 :*: Par1)) c -> CompatData (Vec (Par1 :*: Par1)) c
-debugFun (CompatData (Vec cp)) = CompatData $ Vec $
-  fromCircuitF @(CompatContext c) cp $ \(Par1 i :*: _) -> do
-    o <- newAssigned $ \p -> p i + fromConstant @Natural 42
-    o' <- newAssigned $ \p -> p o * p i
-    let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
-    let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
-    rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
-    mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
-    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
-    out' <- newAssigned $ \p -> p a + p i
-    out <- newAssigned $ \p -> p out' - p a
-    pure (Par1 out :*: Par1 out)
+debugFun (CompatData (Vec cp)) = CompatData $
+  Vec $
+    fromCircuitF @(CompatContext c) cp $ \(Par1 i :*: _) -> do
+      o <- newAssigned $ \p -> p i + fromConstant @Natural 42
+      o' <- newAssigned $ \p -> p o * p i
+      let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+      let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+      rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
+      mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
+      a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
+      out' <- newAssigned $ \p -> p a + p i
+      out <- newAssigned $ \p -> p out' - p a
+      pure (Par1 out :*: Par1 out)
 
 debugCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
 debugCircuit =
