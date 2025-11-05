@@ -44,13 +44,16 @@ ledgerContract LedgerContractInput {..} = validateStateUpdate lciPreviousState l
 -- TODO: Is this circuit gate count enough?
 type LedgerCircuitGates = 2 ^ 18
 
-type LedgerContractInputLayout bi bo ud a i o t c = Layout (LedgerContractInput bi bo ud a i o t) (Order (BaseField c))
+type LedgerContractInputLayout bi bo ud a i o t c = Layout (LedgerContractInput bi bo ud a i o t :*: U1) (52435875175126190479447740508185965837690552500527637822603658699938581184513)
 
 type LedgerContractInputPayload bi bo ud a i o t c =
-  Payload (LedgerContractInput bi bo ud a i o t) (Order (BaseField c))
+             Payload
+                    (LedgerContractInput bi bo ud a i o t :*: U1)
+          (52435875175126190479447740508185965837690552500527637822603658699938581184513)
+  -- Payload (LedgerContractInput bi bo ud a i o t) (Order (BaseField c))
 
 type LedgerContractCompiledInput bi bo ud a i o t c =
-  (LedgerContractInputPayload bi bo ud a i o t c :*: U1) :*: (LedgerContractInputLayout bi bo ud a i o t c :*: U1)
+  (LedgerContractInputPayload bi bo ud a i o t c) :*: (LedgerContractInputLayout bi bo ud a i o t c)
 
 type LedgerCircuit bi bo ud a i o t c = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t c) Par1
 
