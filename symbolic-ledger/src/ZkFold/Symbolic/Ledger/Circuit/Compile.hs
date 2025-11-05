@@ -44,24 +44,24 @@ ledgerContract LedgerContractInput {..} = validateStateUpdate lciPreviousState l
 -- TODO: Is this circuit gate count enough?
 type LedgerCircuitGates = 2 ^ 18
 
-type LedgerContractInputLayout bi bo ud a i o t c =
+type LedgerContractInputLayout bi bo ud a i o t =
   Layout
     (LedgerContractInput bi bo ud a i o t :*: U1)
-    (52435875175126190479447740508185965837690552500527637822603658699938581184513)
+    (Order Fq)
 
-type LedgerContractInputPayload bi bo ud a i o t c =
+type LedgerContractInputPayload bi bo ud a i o t =
   Payload
     (LedgerContractInput bi bo ud a i o t :*: U1)
-    (52435875175126190479447740508185965837690552500527637822603658699938581184513)
+    (Order Fq)
 
 -- Payload (LedgerContractInput bi bo ud a i o t) (Order (BaseField c))
 
-type LedgerContractCompiledInput bi bo ud a i o t c =
-  (LedgerContractInputPayload bi bo ud a i o t c) :*: (LedgerContractInputLayout bi bo ud a i o t c)
+type LedgerContractCompiledInput bi bo ud a i o t =
+  (LedgerContractInputPayload bi bo ud a i o t) :*: (LedgerContractInputLayout bi bo ud a i o t)
 
-type LedgerCircuit bi bo ud a i o t c = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t c) Par1
+type LedgerCircuit bi bo ud a i o t = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) Par1
 
 ledgerCircuit
   :: forall bi bo ud a i o t c
-   . SignatureState bi bo ud a c => SignatureTransactionBatch ud i o a t c => LedgerCircuit bi bo ud a i o t c
+   . SignatureState bi bo ud a c => SignatureTransactionBatch ud i o a t c => LedgerCircuit bi bo ud a i o t
 ledgerCircuit = runVec $ C.compile @Fq ledgerContract
