@@ -12,6 +12,7 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Transaction batch.
 newtype TransactionBatch i o a t c = TransactionBatch
@@ -19,7 +20,7 @@ newtype TransactionBatch i o a t c = TransactionBatch
   -- ^ Vector of transaction hashes.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall i o a t context

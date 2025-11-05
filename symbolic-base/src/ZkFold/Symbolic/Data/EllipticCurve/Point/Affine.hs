@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Data.EllipticCurve.Point.Affine where
 
 import Data.Coerce (Coercible, coerce)
 import Data.Function ((.))
-import GHC.Generics (Generic1)
+import GHC.Generics (Generic1, Generic)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
@@ -14,11 +14,12 @@ import ZkFold.Algebra.EllipticCurve.Class (Planar (..))
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 newtype AffinePoint curve f c
   = AffinePoint {affinePoint :: Elliptic.AffinePoint (f c)}
-  deriving stock Generic1
-  deriving anyclass SymbolicData
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance (HShow c, Haskell.Show (f c)) => Haskell.Show (AffinePoint curve f c)
 

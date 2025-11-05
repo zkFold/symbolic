@@ -44,6 +44,7 @@ import Prelude qualified as Haskell hiding ((||))
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -54,7 +55,7 @@ data OutputRef context = OutputRef
   -- TODO: Restrict to represent 'o' outputs instead of 2^32?
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   Symbolic context
@@ -76,7 +77,7 @@ data Output a context = Output
   -- ^ Assets of the output.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -101,7 +102,7 @@ data UTxO a context = UTxO
   , uOutput :: Output a context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -133,7 +134,7 @@ data Transaction i o a context = Transaction
   -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall i o a context

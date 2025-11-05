@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Ledger.Validation.State (
 ) where
 
 import Data.Function ((&))
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import GHC.Generics ((:*:) (..), (:.:) (..), Generic, Generic1)
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -25,6 +25,8 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 {- Note [State validation]
 
@@ -57,6 +59,8 @@ data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
 

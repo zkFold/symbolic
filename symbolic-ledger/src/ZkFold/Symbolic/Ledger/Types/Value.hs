@@ -56,6 +56,7 @@ import Prelude hiding (
   (||),
  )
 import Prelude qualified as Haskell
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
@@ -83,7 +84,7 @@ data AssetValue context = AssetValue
   , assetQuantity :: AssetQuantity context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 

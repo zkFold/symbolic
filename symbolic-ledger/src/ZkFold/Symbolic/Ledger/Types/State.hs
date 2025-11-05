@@ -19,6 +19,7 @@ import Prelude qualified as Haskell
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State bi bo ud a context = State
@@ -34,7 +35,7 @@ data State bi bo ud a context = State
   -- ^ Denotes outputs that are bridged out of the ledger.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall bi bo ud a context
