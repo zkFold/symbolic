@@ -36,9 +36,9 @@ module ZkFold.Algebra.EllipticCurve.Class (
 
 import Control.DeepSeq (NFData, NFData1)
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Distributive (Distributive (..))
 import Data.Foldable (Foldable)
 import Data.Functor (Functor)
-import Data.Distributive (Distributive (..))
 import Data.Functor.Rep (Representable (..), collectRep, distributeRep)
 import Data.Kind (Type)
 import Data.OpenApi (ToSchema (..))
@@ -55,9 +55,9 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
+import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
-import ZkFold.Data.Binary (Binary (..))
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
 -- Elliptic curves always have genus @1@ and are birationally equivalent
