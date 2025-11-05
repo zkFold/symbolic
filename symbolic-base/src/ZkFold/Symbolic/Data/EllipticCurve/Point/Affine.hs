@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Data.EllipticCurve.Point.Affine where
 
 import Data.Coerce (Coercible, coerce)
 import Data.Function ((.))
-import GHC.Generics (Generic1, Generic)
+import GHC.Generics (Generic, Generic1)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class

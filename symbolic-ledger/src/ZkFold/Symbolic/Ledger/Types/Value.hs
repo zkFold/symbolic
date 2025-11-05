@@ -35,6 +35,7 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import ZkFold.Symbolic.Data.List qualified as Symbolic.List
@@ -56,7 +57,6 @@ import Prelude hiding (
   (||),
  )
 import Prelude qualified as Haskell
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
