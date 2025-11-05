@@ -7,13 +7,30 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 
 -- TODO: Refine import from SmartWallet.
 
--- import GHC.TypeNats (type (^))
-
+import GHC.TypeNats (type (^), type (+))
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1, U1, (:*:))
+import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import ZkFold.Protocol.Plonkup.Proof
+import qualified ZkFold.Algebra.Number as Number
+import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
+import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
+import ZkFold.Protocol.Plonkup.Utils (getParams)
+import ZkFold.Protocol.Plonkup.Verifier.Commitments
+import ZkFold.Protocol.Plonkup.Verifier.Setup
+import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Algebra.Class
+import ZkFold.Protocol.Plonkup (Plonkup (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.ArithmeticCircuit
+import ZkFold.Protocol.NonInteractiveProof as NP (
+  FromTranscript (..),
+  NonInteractiveProof (..),
+  ToTranscript (..),
+  TrustedSetup (..),
+  powersOfTauSubset,
+ )
+import ZkFold.Symbolic.Examples.SmartWallet hiding (PlonkupTs)
 import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Compiler qualified as C
 import ZkFold.Symbolic.Data.Bool
@@ -24,6 +41,7 @@ import Prelude (($))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint)
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -44,7 +62,7 @@ ledgerContract
 ledgerContract LedgerContractInput {..} = validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
 -- TODO: Is this circuit gate count enough?
--- type LedgerCircuitGates = 2 ^ 18
+type LedgerCircuitGates = 2 ^ 18
 
 type LedgerContractInputLayout bi bo ud a i o t =
   Layout
@@ -55,8 +73,6 @@ type LedgerContractInputPayload bi bo ud a i o t =
   Payload
     (LedgerContractInput bi bo ud a i o t :*: U1)
     (Order Fq)
-
--- Payload (LedgerContractInput bi bo ud a i o t) (Order (BaseField c))
 
 type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
@@ -71,3 +87,19 @@ ledgerCircuit
   Fq ~ BaseField c
   => LedgerCircuit bi bo ud a i o t
 ledgerCircuit = runVec $ C.compile @Fq ledgerContract
+
+type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
+
+ledgerSetup
+  :: forall tc bi bo ud a i o t c
+   . TranscriptConstraints tc
+  =>  SignatureState bi bo ud a c
+  => SignatureTransactionBatch ud i o a t c
+  => TrustedSetup (LedgerCircuitGates + 6)
+  -> LedgerCircuit bi bo ud a i o t
+  -> SetupVerify (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+ledgerSetup TrustedSetup {..} ac = setupV
+ where
+  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  plonkup = Plonkup omega k1 k2 ac g2_1 g1s
+  setupV = setupVerify @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
