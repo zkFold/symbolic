@@ -9,10 +9,10 @@ import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Transaction batch.
 newtype TransactionBatch i o a t c = TransactionBatch
