@@ -109,10 +109,8 @@ library
     ZkFold.Symbolic.Ledger.Validation.TransactionBatch
 
   build-depends:
-    -- TODO: I think dependency upon symbolic-examples should be avoided.
     base >=4.9 && <5,
     symbolic-base,
-    symbolic-examples,
 
   hs-source-dirs: src
 

@@ -1,4 +1,3 @@
--- TODO: Is this language extension needed?
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
@@ -6,8 +5,6 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
   ledgerSetup,
   ledgerProof,
 ) where
-
--- TODO: Refine import from SmartWallet.
 
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
