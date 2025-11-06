@@ -190,7 +190,7 @@ ledgerProof TrustedSetup {..} ps ac input = proof
   (proof, _) = rustPlonkupProve setupP witness
 
 ------------------------------------------------
--- Copy-pasted from SmartWallet.hs
+-- Copy-pasted from ZkFold.Symbolic.Examples.SmartWallet
 ------------------------------------------------
 
 convertZp :: Zp p -> Integer
@@ -347,5 +347,5 @@ mkProof PlonkupProof {..} =
         }
 
 ------------------------------------------------
--- End of copy-pasted code from SmartWallet.hs
+-- End of copy-pasted code from ZkFold.Symbolic.Examples.SmartWallet
 ------------------------------------------------
