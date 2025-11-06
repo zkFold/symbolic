@@ -3,32 +3,28 @@
 
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
   ledgerCircuit,
+  ledgerSetup,
+  ledgerProof,
 ) where
 
 -- TODO: Refine import from SmartWallet.
 
 import GHC.TypeNats (type (^), type (+))
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, Generic1, Par1, U1, (:*:))
+import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
-import ZkFold.Protocol.Plonkup.Proof
 import qualified ZkFold.Algebra.Number as Number
+import ZkFold.Symbolic.Interpreter
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
-import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Utils (getParams)
-import ZkFold.Protocol.Plonkup.Verifier.Commitments
-import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Algebra.Class
 import ZkFold.Protocol.Plonkup (Plonkup (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.ArithmeticCircuit
 import ZkFold.Protocol.NonInteractiveProof as NP (
-  FromTranscript (..),
   NonInteractiveProof (..),
-  ToTranscript (..),
   TrustedSetup (..),
-  powersOfTauSubset,
  )
 import ZkFold.Symbolic.Examples.SmartWallet hiding (PlonkupTs)
 import ZkFold.Symbolic.Class (BaseField)
@@ -38,10 +34,11 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import Prelude (($))
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint)
+import qualified Prelude as P
+import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -103,3 +100,28 @@ ledgerSetup TrustedSetup {..} ac = setupV
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
   plonkup = Plonkup omega k1 k2 ac g2_1 g1s
   setupV = setupVerify @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+
+ledgerProof
+  :: forall tc bi bo ud a i o t c
+   . (TranscriptConstraints tc, c ~ Interpreter Fq)
+  => SignatureState bi bo ud a c
+  => SignatureTransactionBatch ud i o a t c
+  => TrustedSetup (LedgerCircuitGates + 6)
+  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> LedgerCircuit bi bo ud a i o t
+  -> LedgerContractInput bi bo ud a i o t c
+  -> Proof (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+ledgerProof TrustedSetup {..} ps ac input = proof
+ where
+
+  witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order Fq)) Fq
+  witnessInputs = runInterpreter $ arithmetize input
+
+  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t Fq
+  paddedWitnessInputs = P.undefined :*: (witnessInputs :*: U1) -- ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
+
+  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  plonkup = Plonkup omega k1 k2 ac g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
+  setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+  witness = (PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a i o t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
+  (proof, _) = rustPlonkupProve setupP witness
