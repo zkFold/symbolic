@@ -12,25 +12,32 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
   mkProof,
 ) where
 
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
+import Data.ByteString (ByteString)
+import Data.ByteString.Base16 qualified as BS16
+import Data.Coerce (coerce)
+import Data.Text (Text)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Type.Equality (type (~))
 import Data.Word (Word8)
-import ZkFold.Protocol.Plonkup.Proof
-import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
-import GHC.TypeNats (type (+), type (^), KnownNat)
+import GHC.Natural (Natural, naturalToInteger)
+import GHC.TypeNats (KnownNat, type (+), type (^))
 import ZkFold.Algebra.Class
-import ZkFold.Protocol.Plonkup.Verifier.Commitments
-import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
   BLS12_381_G1_JacobianPoint,
   BLS12_381_G2_JacobianPoint,
  )
+import ZkFold.Algebra.EllipticCurve.Class (Compressible (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
+import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit
+import ZkFold.Data.Binary (toByteString)
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
+import ZkFold.Prelude (log2ceiling)
 import ZkFold.Protocol.NonInteractiveProof (
   FromTranscript (..),
   ToTranscript (..),
@@ -40,8 +47,12 @@ import ZkFold.Protocol.NonInteractiveProof as NP (
   TrustedSetup (..),
  )
 import ZkFold.Protocol.Plonkup (Plonkup (..))
+import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
+import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
 import ZkFold.Protocol.Plonkup.Utils (getParams)
+import ZkFold.Protocol.Plonkup.Verifier.Commitments
+import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Compiler qualified as C
@@ -53,22 +64,11 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree (mHash))
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
-import Prelude (($), (.), Integer, Show, fromIntegral, MonadFail (..), either, pure, show, error, (<$>))
-import qualified Prelude as P
+import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
+import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
-import ZkFold.Algebra.Field (Zp, fromZp)
-import Data.ByteString (ByteString)
-import Data.Aeson (FromJSON (..), ToJSON (..), withText, Value (String))
-import Data.Text (Text)
-import ZkFold.Prelude (log2ceiling)
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Coerce (coerce)
-import GHC.Natural (naturalToInteger, Natural)
-import ZkFold.Algebra.EllipticCurve.Class (Compressible(..))
-import ZkFold.Data.Binary (toByteString)
-import qualified Data.ByteString.Base16 as BS16
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -226,10 +226,9 @@ data ZKSetupBytes = ZKSetupBytes
   }
   deriving stock (Generic, Show)
 
-
 -- | Field element.
 newtype ZKF = ZKF Integer
-  deriving stock (P.Eq, Generic, P.Ord, Show)
+  deriving stock (Generic, P.Eq, P.Ord, Show)
   deriving newtype (FromJSON, ToJSON)
 
 -- | 'ByteString' whose on wire representation is given in hexadecimal encoding.
@@ -285,7 +284,6 @@ data ZKProofBytes = ZKProofBytes
   }
   deriving stock (Generic, Show)
   deriving anyclass (FromJSON, ToJSON)
-
 
 mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
