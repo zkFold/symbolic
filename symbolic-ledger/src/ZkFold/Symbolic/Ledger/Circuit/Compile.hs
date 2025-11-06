@@ -44,6 +44,8 @@ import Prelude (($))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Hash (Hashable(hasher))
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -54,14 +56,18 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-type LedgerContractOutput c = Bool c
+type LedgerContractOutput = (FieldElement :*: FieldElement :*: Bool)
 
 ledgerContract
   :: forall bi bo ud a i o t c
    . SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput c
-ledgerContract LedgerContractInput {..} = validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
+ledgerContract LedgerContractInput {..} = 
+  -- `validateStateUpdate` already checks if previous state hash in new state is correctly set.
+  sPreviousStateHash lciNewState 
+  :*: hasher lciNewState 
+  :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
 -- TODO: Is this circuit gate count enough?
 type LedgerCircuitGates = 2 ^ 18
@@ -79,7 +85,7 @@ type LedgerContractInputPayload bi bo ud a i o t =
 type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
 
-type LedgerCircuit bi bo ud a i o t = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) Par1
+type LedgerCircuit bi bo ud a i o t = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) (Par1 :*: Par1 :*: Par1)
 
 ledgerCircuit
   :: forall bi bo ud a i o t c
@@ -90,7 +96,7 @@ ledgerCircuit
   => LedgerCircuit bi bo ud a i o t
 ledgerCircuit = runVec $ C.compile @Fq ledgerContract
 
-type PlonkupTs i n t = Plonkup i Par1 n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
+type PlonkupTs i n t = Plonkup i (Par1 :*: Par1 :*: Par1) n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
