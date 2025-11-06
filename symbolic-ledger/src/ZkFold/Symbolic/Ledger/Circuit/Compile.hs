@@ -7,15 +7,24 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 ) where
 
 import Data.Type.Equality (type (~))
+import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
 import GHC.TypeNats (type (+), type (^))
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint, BLS12_381_G1_CompressedPoint)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (
+  BLS12_381_G1_CompressedPoint,
+  BLS12_381_G1_JacobianPoint,
+  BLS12_381_G2_JacobianPoint,
+ )
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
+import ZkFold.Protocol.NonInteractiveProof (
+  FromTranscript (..),
+  ToTranscript (..),
+ )
 import ZkFold.Protocol.NonInteractiveProof as NP (
   NonInteractiveProof (..),
   TrustedSetup (..),
@@ -27,10 +36,6 @@ import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Compiler qualified as C
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Protocol.NonInteractiveProof (
-  FromTranscript (..),
-  ToTranscript (..),
- )
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
@@ -39,7 +44,6 @@ import Prelude (($))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
-import Data.Word (Word8)
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
