@@ -10,7 +10,7 @@ module ZkFold.Algebra.EllipticCurve.BLS12_381 where
 import Control.Monad
 import Data.Bits
 import Data.Foldable
-import Data.OpenApi (ToSchema)
+import Data.Swagger (ToSchema)
 import Data.Word
 import Prelude hiding (Num (..), (/), (^))
 

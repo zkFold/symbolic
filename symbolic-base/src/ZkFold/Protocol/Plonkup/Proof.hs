@@ -5,7 +5,7 @@ module ZkFold.Protocol.Plonkup.Proof where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Data (Typeable)
-import Data.OpenApi (ToSchema (..))
+import Data.Swagger (ToSchema (..))
 import GHC.Generics (Generic)
 import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
