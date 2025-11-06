@@ -109,8 +109,12 @@ library
     ZkFold.Symbolic.Ledger.Validation.TransactionBatch
 
   build-depends:
+    aeson,
     base >=4.9 && <5,
+    base16-bytestring,
+    bytestring,
     symbolic-base,
+    text,
 
   hs-source-dirs: src
 
