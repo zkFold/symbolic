@@ -37,16 +37,16 @@ import ZkFold.Symbolic.Class (BaseField)
 import ZkFold.Symbolic.Compiler qualified as C
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Hash (Hash (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree (mHash))
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
 import Prelude (($), (.))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Hash (Hash (..))
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree(mHash))
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -59,8 +59,8 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
 
 type LedgerContractOutput =
   (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
-  :*: (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
-  :*: Bool
+    :*: (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
+    :*: Bool
 
 ledgerContract
   :: forall bi bo ud a i o t c
@@ -69,18 +69,18 @@ ledgerContract
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput c
 ledgerContract LedgerContractInput {..} =
   ( sPreviousStateHash lciPreviousState
-  :*: (mHash . sUTxO $ lciPreviousState)
-  :*: sLength lciPreviousState
-  :*: (hHash . sBridgeIn $ lciPreviousState)
-  :*: (hHash . sBridgeOut $ lciPreviousState)
-  ) :*:
-  ( sPreviousStateHash lciNewState
-  :*: (mHash . sUTxO $ lciNewState)
-  :*: sLength lciNewState
-  :*: (hHash . sBridgeIn $ lciNewState)
-  :*: (hHash . sBridgeOut $ lciNewState)
+      :*: (mHash . sUTxO $ lciPreviousState)
+      :*: sLength lciPreviousState
+      :*: (hHash . sBridgeIn $ lciPreviousState)
+      :*: (hHash . sBridgeOut $ lciPreviousState)
   )
-  :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
+    :*: ( sPreviousStateHash lciNewState
+            :*: (mHash . sUTxO $ lciNewState)
+            :*: sLength lciNewState
+            :*: (hHash . sBridgeIn $ lciNewState)
+            :*: (hHash . sBridgeOut $ lciNewState)
+        )
+    :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
 -- TODO: Is this circuit gate count enough?
 type LedgerCircuitGates = 2 ^ 18
@@ -98,13 +98,14 @@ type LedgerContractInputPayload bi bo ud a i o t =
 type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
 
-type LedgerContractOutputLayout = (
-  (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
-  :*: (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
-  :*: Par1
+type LedgerContractOutputLayout =
+  ( (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
+      :*: (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
+      :*: Par1
   )
 
-type LedgerCircuit bi bo ud a i o t = ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) LedgerContractOutputLayout
+type LedgerCircuit bi bo ud a i o t =
+  ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) LedgerContractOutputLayout
 
 ledgerCircuit
   :: forall bi bo ud a i o t c
@@ -115,7 +116,8 @@ ledgerCircuit
   => LedgerCircuit bi bo ud a i o t
 ledgerCircuit = runVec $ C.compile @Fq ledgerContract
 
-type PlonkupTs i n t = Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
+type PlonkupTs i n t =
+  Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
