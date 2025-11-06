@@ -36,8 +36,6 @@ import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Examples.SmartWallet hiding (PlonkupTs)
 import ZkFold.Symbolic.Interpreter
 import Prelude (($))
-import Prelude qualified as P
-
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
 
@@ -118,7 +116,8 @@ ledgerProof TrustedSetup {..} ps ac input = proof
   witnessInputs = runInterpreter $ arithmetize input
 
   paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t Fq
-  paddedWitnessInputs = P.undefined :*: (witnessInputs :*: U1) -- ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
+  paddedWitnessInputs = (payload input :*: U1) :*: (witnessInputs :*: U1)
+
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
   plonkup = Plonkup omega k1 k2 ac g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
   setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
