@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.MerkleTree (
-  MerkleTree,
+  MerkleTree (mHash),
   emptyTree,
   fromLeaves,
   toLeaves,
