@@ -36,6 +36,7 @@ import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Examples.SmartWallet hiding (PlonkupTs)
 import ZkFold.Symbolic.Interpreter
 import Prelude (($))
+
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State
 
