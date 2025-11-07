@@ -129,7 +129,7 @@ data MerkleEntry d c = MerkleEntry
   { position :: Index d c
   , value :: FieldElement c
   }
-  deriving (Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
 deriving stock instance HShow c => P.Show (MerkleEntry d c)
 
