@@ -8,14 +8,14 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
-import Data.Function (($), (.))
+import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
-import GHC.Generics (Generic, Generic1, (:.:) (..), Par1 (Par1))
+import GHC.Generics (Generic, Generic1, (:.:) (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Ctx, Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 
@@ -23,9 +23,10 @@ import ZkFold.Symbolic.Ledger.Types.Hash
 import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import Data.Aeson (FromJSON (..), withBool)
-import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
-import ZkFold.Algebra.Class (one, zero)
+import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Algebra.Class (FromConstant (..))
 import qualified ZkFold.Symbolic.Data.Bool as SBool
+import Prelude (Integer)
 
 newtype VectorTakingCtx n (a :: Ctx -> Type) c = VectorTakingCtx ((Vector n :.: a) c)
   deriving stock (Generic, Generic1)
@@ -43,11 +44,10 @@ instance Symbolic context => Hashable (HashSimple context) (FieldElement context
   hasher = hashFn
 
 instance FromJSON (FieldElement (Interpreter Fq)) where
-  parseJSON v = FieldElement . Interpreter . Par1 <$> parseJSON v
+  parseJSON v = fromConstant @Integer <$> parseJSON v
 
 instance FromJSON (SBool.Bool (Interpreter Fq)) where
-  parseJSON = withBool "Bool" $ \b ->
-    pure (SBool.Bool (Interpreter (Par1 (if b then one else zero))))
+  parseJSON = withBool "Bool" $ \b -> pure $ fromConstant b
 
 instance forall n. FromJSON (SBool.Bool (Interpreter Fq)) => FromJSON ((:.:) (Vector n) SBool.Bool (Interpreter Fq)) where
   parseJSON v = Comp1 <$> parseJSON v
