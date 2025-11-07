@@ -1,6 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
+  LedgerContractInput (..),
+  LedgerContractOutput,
+  LedgerCircuitGates,
+  LedgerCircuit,
+  PlonkupTs,
+  TranscriptConstraints,
+  ledgerContract,
   ledgerCircuit,
   ledgerSetup,
   ledgerProof,
