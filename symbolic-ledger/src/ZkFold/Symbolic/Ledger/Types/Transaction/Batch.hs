@@ -13,6 +13,9 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import Data.Aeson (ToJSON)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import GHC.TypeNats (KnownNat)
 
 -- | Transaction batch.
 newtype TransactionBatch i o a t c = TransactionBatch

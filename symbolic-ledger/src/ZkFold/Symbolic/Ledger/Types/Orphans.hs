@@ -11,7 +11,7 @@ import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Kind (Type)
-import GHC.Generics (Generic, Generic1, (:.:) (..))
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
@@ -151,3 +151,21 @@ instance
   => FromJSON (MerkleTree d RollupBFInterpreter)
   where
   parseJSON = parseJSON . fromConstant
+
+instance
+  ( ToJSON (f RollupBFInterpreter)
+  , ToJSON (g RollupBFInterpreter)
+  )
+  => ToJSON ((:*:) f g RollupBFInterpreter)
+  where
+  toJSON (x :*: y) = toJSON (x, y)
+
+instance
+  ( FromJSON (f RollupBFInterpreter)
+  , FromJSON (g RollupBFInterpreter)
+  )
+  => FromJSON ((:*:) f g RollupBFInterpreter)
+  where
+  parseJSON v = do
+    (x, y) <- parseJSON v
+    pure (x :*: y)

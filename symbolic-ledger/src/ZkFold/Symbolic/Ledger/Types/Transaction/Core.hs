@@ -157,6 +157,11 @@ instance
      , KnownRegistersAssetQuantity context
      )
   => Eq (Transaction i o a context)
+  
+
+deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
 
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)
