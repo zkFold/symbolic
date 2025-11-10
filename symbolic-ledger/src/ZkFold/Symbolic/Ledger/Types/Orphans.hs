@@ -51,6 +51,7 @@ deriving via
 instance Symbolic context => Hashable (HashSimple context) (FieldElement context) where
   hasher = hashFn
 
+-- TODO: Can we move these Aeson instances to their respective type-definition module?
 instance FromJSON (FieldElement RollupBFInterpreter) where
   parseJSON v = fromConstant @Integer <$> parseJSON v
 
