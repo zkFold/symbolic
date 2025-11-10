@@ -68,7 +68,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hash (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree (mHash), KnownMerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
@@ -87,9 +87,12 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving anyclass instance forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+deriving anyclass instance
+  forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
-deriving anyclass instance forall bi bo ud a i o t. (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+deriving anyclass instance
+  forall bi bo ud a i o t
+   . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
 type LedgerContractOutput =
   (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
