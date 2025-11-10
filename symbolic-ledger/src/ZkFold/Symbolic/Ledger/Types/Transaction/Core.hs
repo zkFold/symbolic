@@ -20,7 +20,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   signTransaction,
 ) where
 
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
@@ -69,6 +69,7 @@ deriving stock instance HEq context => Haskell.Eq (OutputRef context)
 deriving stock instance HShow context => Haskell.Show (OutputRef context)
 
 deriving anyclass instance ToJSON (OutputRef RollupBFInterpreter)
+
 deriving anyclass instance FromJSON (OutputRef RollupBFInterpreter)
 
 -- | Null output reference.
@@ -99,6 +100,7 @@ instance Symbolic context => Hashable (HashSimple context) (Output a context) wh
   hasher = hashFn
 
 deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
+
 deriving anyclass instance FromJSON (Output a RollupBFInterpreter)
 
 -- | Null output.

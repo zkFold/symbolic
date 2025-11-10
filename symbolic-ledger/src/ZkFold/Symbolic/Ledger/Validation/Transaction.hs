@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
+import Data.Aeson (ToJSON)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
-import Data.Aeson (ToJSON)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 
