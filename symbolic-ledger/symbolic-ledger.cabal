@@ -131,10 +131,14 @@ test-suite symbolic-ledger-test
   other-modules:
     Tests.Symbolic.Ledger.E2E.One
     Tests.Symbolic.Ledger.E2E.Two
+    Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden
     Tests.Symbolic.Ledger.Update
 
   build-depends:
+    aeson,
+    aeson-pretty,
     base,
+    bytestring,
     hspec <2.12,
     symbolic-base,
     symbolic-ledger,
