@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
   TransactionBatch (..),
 ) where
 
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic, Generic1)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
@@ -31,6 +31,6 @@ instance
      )
   => Eq (TransactionBatch i o a t context)
 
-
 deriving anyclass instance forall i o a t. ToJSON (TransactionBatch i o a t RollupBFInterpreter)
+
 deriving anyclass instance forall i o a t. FromJSON (TransactionBatch i o a t RollupBFInterpreter)
