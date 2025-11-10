@@ -5,7 +5,9 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
   validateTransactionBatch,
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
@@ -20,10 +22,8 @@ import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
-import Data.Aeson (ToJSON, FromJSON)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
-import GHC.TypeNats (KnownNat)
+import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
@@ -35,7 +35,9 @@ newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
 deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
 
 deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
-deriving anyclass instance forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
