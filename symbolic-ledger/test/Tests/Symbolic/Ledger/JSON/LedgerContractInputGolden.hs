@@ -1,15 +1,14 @@
 module Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden (specLedgerContractInputJSON) where
 
 import Data.Aeson (eitherDecode)
-import qualified Data.ByteString.Lazy as BL
+import Data.Aeson.Encode.Pretty (Config (..), Indent (..), defConfig, encodePretty')
+import Data.ByteString.Lazy qualified as BL
 import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
 import Prelude (($))
 import Prelude qualified as Haskell
 
-import ZkFold.Symbolic.Ledger.Circuit.Compile (LedgerContractInput (..))
-
 import Tests.Symbolic.Ledger.E2E.Two (batch, newState, prevState, witness)
-import Data.Aeson.Encode.Pretty (defConfig, Config (..), encodePretty', Indent (..))
+import ZkFold.Symbolic.Ledger.Circuit.Compile (LedgerContractInput (..))
 
 specLedgerContractInputJSON :: Spec
 specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
@@ -22,7 +21,7 @@ specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
         , lciStateWitness = witness
         }
     goldenPath = "symbolic-ledger/test/data/ledger_contract_input.json"
-  let encConf = defConfig { confIndent = Spaces 2 }
+  let encConf = defConfig {confIndent = Spaces 2}
       enc = encodePretty' encConf
   it "encodes to JSON matching the golden file" $ do
     goldenBytes <- BL.readFile goldenPath

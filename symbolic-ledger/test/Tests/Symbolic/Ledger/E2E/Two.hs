@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
-module Tests.Symbolic.Ledger.E2E.Two (specE2ETwo
-  , prevState
-  , batch
-  , witness
-  , newState
 
+module Tests.Symbolic.Ledger.E2E.Two (
+  specE2ETwo,
+  prevState,
+  batch,
+  witness,
+  newState,
 ) where
 
 import Control.Applicative (pure)
@@ -61,25 +62,37 @@ prevState =
 
 utxoPreimage :: Leaves Ud (UTxO A I)
 utxoPreimage = pure (nullUTxO @A @I)
+
 privateKey :: PrivateKey I
 privateKey = fromConstant (1 :: Natural)
+
 privateKey2 :: PrivateKey I
 privateKey2 = fromConstant (2 :: Natural)
+
 privateKey3 :: PrivateKey I
 privateKey3 = fromConstant (3 :: Natural)
+
 publicKey :: PublicKey I
 publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
+
 publicKey2 :: PublicKey I
 publicKey2 = privateKey2 `scale` pointGen @(EdDSAPoint I)
+
 publicKey3 :: PublicKey I
 publicKey3 = privateKey3 `scale` pointGen @(EdDSAPoint I)
 
 address = hashFn publicKey
+
 address2 = hashFn publicKey2
+
 address3 = hashFn publicKey3
+
 asset2Policy :: AssetPolicy I = one + one
+
 asset2Name :: AssetName I = adaName -- same as ADA.
+
 asset3Policy :: AssetPolicy I = one + one + one
+
 asset3Name :: AssetName I = one + one + one
 
 bridgeInOutput =
@@ -93,8 +106,10 @@ bridgeInOutput =
             , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (50_000_000 :: Natural)}
             ]
     }
+
 -- "address" has 10 ADA and 100 asset2
 bridgeInOutput2 :: Output A I = nullOutput
+
 bridgeInOutput3 :: Output A I =
   Output
     { oAddress = address3
@@ -106,16 +121,19 @@ bridgeInOutput3 :: Output A I =
             , AssetValue {assetPolicy = asset3Policy, assetName = asset3Name, assetQuantity = fromConstant (50_000_000 :: Natural)}
             ]
     }
+
 -- "address3" has 10 ADA and 50 asset2 and 50 asset3.
 -- We bridge in an output and refer to it in transaction.
 bridgedIn :: (Vector Bi :.: Output A) I
 bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput, bridgeInOutput2, bridgeInOutput3])
+
 -- Total 2 UTxOs.
 
 bridgeInHash :: HashSimple I
 bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
 two = one + one
+
 tx1 :: Transaction Ixs Oxs A I
 tx1 =
   Transaction
@@ -151,10 +169,12 @@ tx1 =
               ]
           )
     }
+
 -- "address2" has 5 ADA and 25 asset2 and 25 asset3.
 -- "address3" has 5 ADA and 25 asset2 and 25 asset3.
 -- Total 3 UTxOs.
 tx1Id = txId tx1 & Base.hHash
+
 tx2 :: Transaction Ixs Oxs A I
 tx2 =
   Transaction
@@ -205,10 +225,12 @@ tx2 =
               ]
           )
     }
+
 -- "address" has 5 ADA and 50 asset2.
 -- "address2" has one UTxO having 9 ADA and 50 asset2. And other UTxO having 5 ADA and 25 asset2 and 25 asset3.
 -- Total 3 UTxOs.
 tx2Id = txId tx2 & Base.hHash
+
 tx3 :: Transaction Ixs Oxs A I
 tx3 =
   Transaction
@@ -262,6 +284,7 @@ tx3 =
               ]
           )
     }
+
 -- Spent all UTxOs and bridged out all created outputs.
 
 batch :: TransactionBatch Ixs Oxs A TxCount I
@@ -292,7 +315,7 @@ sigs =
     publicKeyTx32 = publicKey
     rPointTx33 :*: sTx33 = signTransaction tx3 privateKey2
     publicKeyTx33 = publicKey2
-    in
+   in
     Comp1
       ( unsafeToVector'
           [ Comp1
