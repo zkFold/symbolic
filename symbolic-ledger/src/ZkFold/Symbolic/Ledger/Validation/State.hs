@@ -27,6 +27,9 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
+import Data.Aeson (ToJSON, FromJSON)
+import ZkFold.Symbolic.Ledger.Types.Field
+import GHC.TypeNats (KnownNat)
 
 {- Note [State validation]
 
@@ -63,6 +66,10 @@ data StateWitness bi bo ud a i o t context = StateWitness
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+
+deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
