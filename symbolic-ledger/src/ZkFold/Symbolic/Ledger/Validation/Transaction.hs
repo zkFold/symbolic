@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
-import Data.Aeson (ToJSON)
+import Data.Aeson (ToJSON (..), object, (.=))
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (
@@ -49,7 +49,24 @@ data TransactionWitness ud i o a context = TransactionWitness
 
 deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
 
--- deriving anyclass instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter)
+instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+  toJSON (TransactionWitness ins outs) =
+    let insVec = unComp1 ins
+        insList = Vector.fromVector insVec
+        encodeIn (me :*: utxo :*: rPoint :*: s :*: pk) =
+          object
+            [ "merkleEntry" .= me
+            , "utxo" .= utxo
+            , "r" .= rPoint
+            , "s" .= s
+            , "publicKey" .= pk
+            ]
+        outsVec = unComp1 outs
+        outsList = Vector.fromVector outsVec
+     in object
+          [ "inputs" .= Haskell.fmap encodeIn insList
+          , "outputs" .= outsList
+          ]
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
