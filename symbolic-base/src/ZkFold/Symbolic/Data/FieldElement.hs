@@ -5,7 +5,6 @@
 module ZkFold.Symbolic.Data.FieldElement where
 
 import Control.DeepSeq (NFData)
-import Data.Aeson (FromJSON (..))
 import Data.Foldable (foldr)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
@@ -16,7 +15,6 @@ import Prelude (Integer)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor (hmap)
