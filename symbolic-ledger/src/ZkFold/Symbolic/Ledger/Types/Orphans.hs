@@ -140,14 +140,12 @@ instance
       v <- o .: "value"
       pure Base.Hash {hHash = h, hValue = payloaded (Identity v)}
 
--- MerkleTree JSON instances: encode as leaves vector.
 instance
   KnownMerkleTree d
   => ToJSON (MerkleTree d RollupBFInterpreter)
   where
   toJSON = toJSON . toConstant
 
--- TODO: What if the root hash is not correct?
 instance
   KnownMerkleTree d
   => FromJSON (MerkleTree d RollupBFInterpreter)
