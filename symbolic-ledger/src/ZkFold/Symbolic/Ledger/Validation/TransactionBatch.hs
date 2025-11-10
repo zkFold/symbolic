@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
   validateTransactionBatch,
 ) where
 
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
@@ -13,7 +13,9 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
@@ -24,6 +26,8 @@ import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, valida
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
 

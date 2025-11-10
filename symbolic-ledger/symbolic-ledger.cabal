@@ -92,6 +92,7 @@ common options-exe
 library
   import: options
   exposed-modules:
+    ZkFold.Symbolic.Ledger.Circuit.Compile
     ZkFold.Symbolic.Ledger.Offchain.State.Update
     ZkFold.Symbolic.Ledger.Types
     ZkFold.Symbolic.Ledger.Types.Address
@@ -108,8 +109,12 @@ library
     ZkFold.Symbolic.Ledger.Validation.TransactionBatch
 
   build-depends:
+    aeson,
     base >=4.9 && <5,
+    base16-bytestring,
+    bytestring,
     symbolic-base,
+    text,
 
   hs-source-dirs: src
 

@@ -12,6 +12,7 @@ import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
@@ -34,7 +35,7 @@ data State bi bo ud a context = State
   -- ^ Denotes outputs that are bridged out of the ledger.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall bi bo ud a context

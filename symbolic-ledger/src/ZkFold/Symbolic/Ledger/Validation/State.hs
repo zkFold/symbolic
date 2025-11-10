@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Ledger.Validation.State (
 ) where
 
 import Data.Function ((&))
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -15,8 +15,10 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
@@ -57,6 +59,8 @@ data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
 

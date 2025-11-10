@@ -35,6 +35,7 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import ZkFold.Symbolic.Data.List qualified as Symbolic.List
@@ -83,7 +84,7 @@ data AssetValue context = AssetValue
   , assetQuantity :: AssetQuantity context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 

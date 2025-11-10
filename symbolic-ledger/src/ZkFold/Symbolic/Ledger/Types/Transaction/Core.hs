@@ -37,6 +37,7 @@ import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
@@ -54,7 +55,7 @@ data OutputRef context = OutputRef
   -- TODO: Restrict to represent 'o' outputs instead of 2^32?
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   Symbolic context
@@ -76,7 +77,7 @@ data Output a context = Output
   -- ^ Assets of the output.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -101,7 +102,7 @@ data UTxO a context = UTxO
   , uOutput :: Output a context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -133,7 +134,7 @@ data Transaction i o a context = Transaction
   -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall i o a context
