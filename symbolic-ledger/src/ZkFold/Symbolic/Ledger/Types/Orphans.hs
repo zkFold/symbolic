@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
-import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
@@ -92,3 +92,22 @@ instance
   toJSON p =
     let Elliptic.AffinePoint x y = affinePoint p
      in object ["x" .= x, "y" .= y]
+
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => FromJSON (FFA a 'Auto RollupBFInterpreter)
+  where
+  parseJSON v = fromConstant @Integer <$> parseJSON v
+
+-- TODO: What if the parsed point is not on the curve?
+instance
+  forall curve a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => FromJSON (AffinePoint curve (FFA a 'Auto) RollupBFInterpreter)
+  where
+  parseJSON =
+    withObject "AffinePoint" $ \o -> do
+      x <- o .: "x"
+      y <- o .: "y"
+      pure (AffinePoint (Elliptic.AffinePoint x y))

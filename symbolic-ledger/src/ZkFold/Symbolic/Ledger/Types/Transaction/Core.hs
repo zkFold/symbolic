@@ -130,6 +130,8 @@ instance Symbolic context => Hashable (HashSimple context) (UTxO a context) wher
 
 deriving anyclass instance ToJSON (UTxO a RollupBFInterpreter)
 
+deriving anyclass instance FromJSON (UTxO a RollupBFInterpreter)
+
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
 nullUTxO = UTxO {uRef = nullOutputRef, uOutput = nullOutput}
