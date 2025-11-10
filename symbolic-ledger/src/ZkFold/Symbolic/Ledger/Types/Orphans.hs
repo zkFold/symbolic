@@ -1,6 +1,6 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Ledger.Types.Orphans (
@@ -8,29 +8,29 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
+import Data.Aeson (FromJSON (..), ToJSON (..), withBool)
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
 import GHC.Generics (Generic, Generic1, (:.:) (..))
+import GHC.TypeNats (KnownNat)
+import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Ctx, Symbolic)
+import ZkFold.Symbolic.Data.Bool (fromBool)
+import ZkFold.Symbolic.Data.Bool qualified as SBool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
-
-import ZkFold.Symbolic.Ledger.Types.Hash
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
-import Data.Aeson (FromJSON (..), ToJSON (..), withBool)
-import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
-import qualified ZkFold.Symbolic.Data.Bool as SBool
-import Prelude (Integer, (.))
-import qualified Prelude as Haskell
-import ZkFold.Symbolic.Data.Bool (fromBool)
 import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize)
-import GHC.TypeNats (KnownNat)
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter, RollupBF)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
+import Prelude (Integer, (.))
+import Prelude qualified as Haskell
+
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Hash
 
 newtype VectorTakingCtx n (a :: Ctx -> Type) c = VectorTakingCtx ((Vector n :.: a) c)
   deriving stock (Generic, Generic1)
@@ -56,7 +56,6 @@ instance FromJSON (SBool.Bool RollupBFInterpreter) where
 instance ToJSON (FieldElement RollupBFInterpreter) where
   toJSON v = toJSON (toConstant v :: RollupBF)
 
-
 instance ToJSON (SBool.Bool RollupBFInterpreter) where
   toJSON b = toJSON (fromBool b Haskell.== one)
 
@@ -67,7 +66,8 @@ instance forall n a. ToJSON (a RollupBFInterpreter) => ToJSON ((:.:) (Vector n) 
   toJSON (Comp1 x) = toJSON x
 
 deriving anyclass instance forall ud. FromJSON (MerkleEntry ud RollupBFInterpreter)
-deriving anyclass instance forall ud. ToJSON   (MerkleEntry ud RollupBFInterpreter)
+
+deriving anyclass instance forall ud. ToJSON (MerkleEntry ud RollupBFInterpreter)
 
 instance forall n r. (KnownRegisterSize r, KnownNat n) => ToJSON (Int n r RollupBFInterpreter) where
   toJSON = toJSON . toConstant

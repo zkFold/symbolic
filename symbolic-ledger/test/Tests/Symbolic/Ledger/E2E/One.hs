@@ -20,8 +20,8 @@ import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
 import ZkFold.Symbolic.Ledger.Types.Field
+import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
 
 type I = RollupBFInterpreter
 

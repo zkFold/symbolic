@@ -74,8 +74,8 @@ import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Validation.State
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
+import ZkFold.Symbolic.Ledger.Validation.State
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c

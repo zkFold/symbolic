@@ -23,6 +23,7 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   addAssetValues,
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Coerce (coerce)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, type (:*:) (..))
@@ -32,7 +33,6 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -58,8 +58,9 @@ import Prelude hiding (
   (||),
  )
 import Prelude qualified as Haskell
-import Data.Aeson (ToJSON, FromJSON)
+
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context

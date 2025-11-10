@@ -20,6 +20,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   signTransaction,
 ) where
 
+import Data.Aeson (ToJSON)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
@@ -27,7 +28,6 @@ import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
-import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -44,10 +44,10 @@ import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
-import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import Data.Aeson (ToJSON)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
+import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
