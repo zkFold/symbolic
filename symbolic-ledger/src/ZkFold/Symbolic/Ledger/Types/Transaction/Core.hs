@@ -157,7 +157,6 @@ instance
      , KnownRegistersAssetQuantity context
      )
   => Eq (Transaction i o a context)
-  
 
 deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
 

@@ -86,7 +86,6 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-
 type LedgerContractOutput =
   (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
     :*: (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
