@@ -21,6 +21,9 @@ import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
+import Data.Aeson (ToJSON, FromJSON)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import GHC.TypeNats (KnownNat)
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
@@ -30,6 +33,9 @@ newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
+
+deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+deriving anyclass instance forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
