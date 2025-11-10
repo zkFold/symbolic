@@ -6,6 +6,7 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
+import Data.Functor.Identity (Identity (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
 import Data.Function (($))
 import Data.Functor ((<$>))
@@ -27,7 +28,8 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree, KnownMerkleTree)
+import ZkFold.Symbolic.Data.Payloaded (payloaded, restored)
 import Prelude (Integer, (.))
 import Prelude qualified as Haskell
 
@@ -111,3 +113,42 @@ instance
       x <- o .: "x"
       y <- o .: "y"
       pure (AffinePoint (Elliptic.AffinePoint x y))
+
+instance
+  ( ToJSON (h RollupBFInterpreter)
+  , ToJSON (a RollupBFInterpreter)
+  , SymbolicData a
+  )
+  => ToJSON (Base.Hash h a RollupBFInterpreter)
+  where
+  toJSON Base.Hash {..} =
+    let Identity v = restored hValue
+     in object ["hash" .= hHash, "value" .= v]
+
+-- TODO: What if the parsed hash does not match the expected hash?
+instance
+  ( FromJSON (h RollupBFInterpreter)
+  , FromJSON (a RollupBFInterpreter)
+  , SymbolicData a
+  )
+  => FromJSON (Base.Hash h a RollupBFInterpreter)
+  where
+  parseJSON =
+    withObject "Hash" $ \o -> do
+      h <- o .: "hash"
+      v <- o .: "value"
+      pure Base.Hash {hHash = h, hValue = payloaded (Identity v)}
+
+-- MerkleTree JSON instances: encode as leaves vector.
+instance
+  KnownMerkleTree d
+  => ToJSON (MerkleTree d RollupBFInterpreter)
+  where
+  toJSON = toJSON . toConstant
+
+-- TODO: What if the root hash is not correct?
+instance
+  KnownMerkleTree d
+  => FromJSON (MerkleTree d RollupBFInterpreter)
+  where
+  parseJSON = parseJSON . fromConstant

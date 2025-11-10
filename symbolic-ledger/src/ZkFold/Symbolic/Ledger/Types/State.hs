@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.State (
   State (..),
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic, Generic1, (:.:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HShow)
@@ -13,11 +14,12 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree, KnownMerkleTree)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
@@ -48,3 +50,9 @@ deriving stock instance (HShow context, Show (WitnessField context)) => Haskell.
 
 instance Symbolic context => Hashable (HashSimple context) (State bi bo ud a context) where
   hasher = hashFn
+
+deriving anyclass instance
+  forall bi bo ud a. KnownMerkleTree ud => ToJSON (State bi bo ud a RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a. KnownMerkleTree ud => FromJSON (State bi bo ud a RollupBFInterpreter)
