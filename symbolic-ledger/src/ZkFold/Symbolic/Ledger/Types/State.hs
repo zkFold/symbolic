@@ -14,12 +14,12 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree, KnownMerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
-import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 

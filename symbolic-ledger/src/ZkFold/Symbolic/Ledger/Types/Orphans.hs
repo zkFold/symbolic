@@ -6,10 +6,10 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
-import Data.Functor.Identity (Identity (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
 import Data.Function (($))
 import Data.Functor ((<$>))
+import Data.Functor.Identity (Identity (..))
 import Data.Kind (Type)
 import GHC.Generics (Generic, Generic1, (:.:) (..))
 import GHC.TypeNats (KnownNat)
@@ -28,7 +28,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree, KnownMerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.Payloaded (payloaded, restored)
 import Prelude (Integer, (.))
 import Prelude qualified as Haskell
