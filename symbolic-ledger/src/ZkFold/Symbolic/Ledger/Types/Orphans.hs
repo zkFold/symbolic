@@ -14,15 +14,14 @@ import GHC.Generics (Generic, Generic1, (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
+import ZkFold.Data.Orphans ()
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Ctx, Symbolic)
 import ZkFold.Symbolic.Data.Bool (fromBool)
 import ZkFold.Symbolic.Data.Bool qualified as SBool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize)
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
-import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
@@ -78,15 +77,16 @@ instance forall n r. (KnownRegisterSize r, KnownNat n) => ToJSON (Int n r Rollup
 instance forall n r. (KnownRegisterSize r, KnownNat n) => FromJSON (Int n r RollupBFInterpreter) where
   parseJSON v = fromConstant @Integer <$> parseJSON v
 
-instance forall a.
-  KnownFFA a 'Auto RollupBFInterpreter
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
   => ToJSON (FFA a 'Auto RollupBFInterpreter)
   where
   toJSON v = toJSON (toConstant v)
 
 instance
-  forall curve a.
-  KnownFFA a 'Auto RollupBFInterpreter
+  forall curve a
+   . KnownFFA a 'Auto RollupBFInterpreter
   => ToJSON (AffinePoint curve (FFA a 'Auto) RollupBFInterpreter)
   where
   toJSON p =
