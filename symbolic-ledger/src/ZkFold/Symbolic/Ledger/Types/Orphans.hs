@@ -16,6 +16,7 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
 import ZkFold.Data.Orphans ()
+import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Ctx, Symbolic)
 import ZkFold.Symbolic.Data.Bool (fromBool)
@@ -150,7 +151,7 @@ instance
   KnownMerkleTree d
   => FromJSON (MerkleTree d RollupBFInterpreter)
   where
-  parseJSON = parseJSON . fromConstant
+  parseJSON v = (fromConstant @(Vector (MerkleTreeSize d) RollupBF)) <$> parseJSON v
 
 instance
   ( ToJSON (f RollupBFInterpreter)
