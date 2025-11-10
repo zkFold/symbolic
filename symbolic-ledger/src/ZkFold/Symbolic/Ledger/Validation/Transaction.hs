@@ -35,6 +35,9 @@ import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import Data.Aeson (ToJSON)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -45,6 +48,8 @@ data TransactionWitness ud i o a context = TransactionWitness
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
+
+-- deriving anyclass instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
