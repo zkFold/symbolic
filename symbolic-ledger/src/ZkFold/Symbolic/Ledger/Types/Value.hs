@@ -32,6 +32,7 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -57,6 +58,8 @@ import Prelude hiding (
   (||),
  )
 import Prelude qualified as Haskell
+import Data.Aeson (ToJSON, FromJSON)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
@@ -91,6 +94,10 @@ instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetVal
 deriving stock instance HEq context => Haskell.Eq (AssetValue context)
 
 deriving stock instance HShow context => Haskell.Show (AssetValue context)
+
+deriving anyclass instance ToJSON (AssetValue RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (AssetValue RollupBFInterpreter)
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context

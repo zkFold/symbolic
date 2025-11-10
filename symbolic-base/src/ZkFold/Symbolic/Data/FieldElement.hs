@@ -29,6 +29,8 @@ import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import Data.Aeson (FromJSON (..))
+import ZkFold.Algebra.Field (Zp)
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic

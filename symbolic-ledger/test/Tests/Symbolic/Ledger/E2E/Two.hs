@@ -7,7 +7,6 @@ import GHC.Natural (Natural)
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
-import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Data.Bool (false, true)
@@ -15,7 +14,6 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree qualified as SymMerkle
-import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude (($))
 import Prelude qualified as Haskell
 
@@ -23,8 +21,9 @@ import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
+import ZkFold.Symbolic.Ledger.Types.Field
 
-type I = Interpreter Fq
+type I = RollupBFInterpreter
 
 type Bi = 3
 

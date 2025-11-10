@@ -11,7 +11,7 @@ import Control.Applicative (pure)
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
-import GHC.Generics (Generic, Generic1, Par1 (..), (:.:) (..))
+import GHC.Generics (Generic, Generic1, (:.:) (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Ctx, Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
@@ -20,15 +20,17 @@ import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 
 import ZkFold.Symbolic.Ledger.Types.Hash
-import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import Data.Aeson (FromJSON (..), ToJSON (..), withBool)
-import ZkFold.Symbolic.Interpreter (Interpreter (..))
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import qualified ZkFold.Symbolic.Data.Bool as SBool
-import Prelude (Integer)
+import Prelude (Integer, (.))
 import qualified Prelude as Haskell
 import ZkFold.Symbolic.Data.Bool (fromBool)
+import ZkFold.Symbolic.Data.Int (Int)
+import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize)
+import GHC.TypeNats (KnownNat)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter, RollupBF)
 
 newtype VectorTakingCtx n (a :: Ctx -> Type) c = VectorTakingCtx ((Vector n :.: a) c)
   deriving stock (Generic, Generic1)
@@ -45,24 +47,30 @@ deriving via
 instance Symbolic context => Hashable (HashSimple context) (FieldElement context) where
   hasher = hashFn
 
-instance FromJSON (FieldElement (Interpreter Fq)) where
+instance FromJSON (FieldElement RollupBFInterpreter) where
   parseJSON v = fromConstant @Integer <$> parseJSON v
 
-instance FromJSON (SBool.Bool (Interpreter Fq)) where
+instance FromJSON (SBool.Bool RollupBFInterpreter) where
   parseJSON = withBool "Bool" $ \b -> pure $ fromConstant b
 
-instance ToJSON (FieldElement (Interpreter Fq)) where
-  toJSON v = toJSON (toConstant v :: Fq)
+instance ToJSON (FieldElement RollupBFInterpreter) where
+  toJSON v = toJSON (toConstant v :: RollupBF)
 
 
-instance ToJSON (SBool.Bool (Interpreter Fq)) where
+instance ToJSON (SBool.Bool RollupBFInterpreter) where
   toJSON b = toJSON (fromBool b Haskell.== one)
 
-instance forall n. FromJSON (SBool.Bool (Interpreter Fq)) => FromJSON ((:.:) (Vector n) SBool.Bool (Interpreter Fq)) where
+instance forall n a. FromJSON (a RollupBFInterpreter) => FromJSON ((:.:) (Vector n) a RollupBFInterpreter) where
   parseJSON v = Comp1 <$> parseJSON v
 
-instance forall n. ToJSON (SBool.Bool (Interpreter Fq)) => ToJSON ((:.:) (Vector n) SBool.Bool (Interpreter Fq)) where
+instance forall n a. ToJSON (a RollupBFInterpreter) => ToJSON ((:.:) (Vector n) a RollupBFInterpreter) where
   toJSON (Comp1 x) = toJSON x
 
-deriving anyclass instance forall ud. FromJSON (MerkleEntry ud (Interpreter Fq))
-deriving anyclass instance forall ud. ToJSON   (MerkleEntry ud (Interpreter Fq))
+deriving anyclass instance forall ud. FromJSON (MerkleEntry ud RollupBFInterpreter)
+deriving anyclass instance forall ud. ToJSON   (MerkleEntry ud RollupBFInterpreter)
+
+instance forall n r. (KnownRegisterSize r, KnownNat n) => ToJSON (Int n r RollupBFInterpreter) where
+  toJSON = toJSON . toConstant
+
+instance forall n r. (KnownRegisterSize r, KnownNat n) => FromJSON (Int n r RollupBFInterpreter) where
+  parseJSON v = fromConstant @Integer <$> parseJSON v

@@ -27,6 +27,7 @@ import ZkFold.Algebra.Class (Zero (..))
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
 import ZkFold.Symbolic.Class (Symbolic)
@@ -45,6 +46,8 @@ import Prelude qualified as Haskell hiding ((||))
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
+import Data.Aeson (ToJSON)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 
 -- | An output's reference.
 data OutputRef context = OutputRef
@@ -91,6 +94,8 @@ deriving stock instance HShow context => Haskell.Show (Output a context)
 
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = hashFn
+
+deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
 
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context

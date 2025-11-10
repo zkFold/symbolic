@@ -96,6 +96,7 @@ library
     ZkFold.Symbolic.Ledger.Offchain.State.Update
     ZkFold.Symbolic.Ledger.Types
     ZkFold.Symbolic.Ledger.Types.Address
+    ZkFold.Symbolic.Ledger.Types.Field
     ZkFold.Symbolic.Ledger.Types.Hash
     ZkFold.Symbolic.Ledger.Types.Orphans
     ZkFold.Symbolic.Ledger.Types.State
