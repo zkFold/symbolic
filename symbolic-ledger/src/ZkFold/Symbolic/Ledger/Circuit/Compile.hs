@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 ) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
 import Data.Coerce (coerce)
@@ -364,3 +365,10 @@ mkProof PlonkupProof {..} =
 ------------------------------------------------
 -- End of copy-pasted code from ZkFold.Symbolic.Examples.SmartWallet
 ------------------------------------------------
+
+instance
+  forall bi bo ud a i o t
+   . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
+  => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions

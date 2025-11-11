@@ -6,13 +6,19 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
+import Control.Lens ((&), (.~), (?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
+import Data.OpenApi (NamedSchema (..), OpenApiType (..), ToSchema (..), declareSchemaRef, defaultSchemaOptions, genericDeclareNamedSchema, type_)
+import Data.OpenApi.Lens (properties, required)
+import Data.Proxy (Proxy (..))
+import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Kind (Type)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat)
+import GHC.TypeNats (KnownNat, type (-))
+import Data.Typeable (Typeable)
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
@@ -24,11 +30,13 @@ import ZkFold.Symbolic.Data.Bool qualified as SBool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
+import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
+import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.Payloaded (payloaded, restored)
 import Prelude (Integer, (.))
@@ -170,3 +178,94 @@ instance
   parseJSON v = do
     (x, y) <- parseJSON v
     pure (x :*: y)
+
+------------------------------------------------
+-- OpenAPI ToSchema orphans mirroring JSON
+------------------------------------------------
+
+-- Field elements and simple booleans are encoded as integers/bools in JSON.
+instance ToSchema (FieldElement RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @RollupBF)
+
+instance ToSchema (SBool.Bool RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Haskell.Bool)
+
+-- Sized Int encoded as integer
+instance forall n r. (KnownNat n, Typeable r) => ToSchema (Int n r RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Integer)
+
+-- FFA values are encoded as integers
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => ToSchema (FFA a 'Auto RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Integer)
+
+-- EdDSA/Jubjub points are encoded as an object with x and y
+instance ToSchema (Jubjub_Point RollupBFInterpreter) where
+  declareNamedSchema _ = do
+    xyRef <- declareSchemaRef (Proxy @(FieldElement RollupBFInterpreter))
+    let schema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties .~ InsOrd.fromList [("x", xyRef), ("y", xyRef)]
+            & required .~ ["x", "y"]
+    pure (NamedSchema Haskell.Nothing schema)
+
+-- Composition Vector n :.: a is encoded as a JSON array of a
+instance
+  forall n a
+   . (ToSchema (a RollupBFInterpreter), KnownNat n, Typeable a)
+  => ToSchema ((:.:) (Vector n) a RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @[a RollupBFInterpreter])
+
+
+-- MerkleTree is encoded as a JSON array of field elements
+instance
+  forall d
+   . KnownNat d
+  => ToSchema (MerkleTree d RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @[FieldElement RollupBFInterpreter])
+
+-- Generic schema for MerkleEntry { position, value } matches JSON keys
+instance forall ud. (KnownNat ud, KnownNat (ud - 1)) => ToSchema (MerkleEntry ud RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+
+-- Product (:*:) is encoded as a JSON tuple; reuse tuple schema
+instance
+  forall f g
+   . ( ToSchema (f RollupBFInterpreter)
+     , ToSchema (g RollupBFInterpreter)
+     , Typeable f
+     , Typeable g
+     )
+  => ToSchema ((:*:) f g RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @(f RollupBFInterpreter, g RollupBFInterpreter))
+
+-- Hash is encoded as object { hash, value } (drop the leading 'h' from field names)
+instance
+  forall h a
+   . ( ToSchema (h RollupBFInterpreter)
+     , ToSchema (a RollupBFInterpreter)
+     , Typeable h
+     , Typeable a
+     )
+  => ToSchema (Base.Hash h a RollupBFInterpreter)
+  where
+  declareNamedSchema _ = do
+    hRef <- declareSchemaRef (Proxy @(h RollupBFInterpreter))
+    vRef <- declareSchemaRef (Proxy @(a RollupBFInterpreter))
+    let schema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties .~ InsOrd.fromList [("hash", hRef), ("value", vRef)]
+            & required .~ ["hash", "value"]
+    pure (NamedSchema Haskell.Nothing schema)
+
+-- Unsigned integers encoded as integers
+instance forall n r. (KnownNat n, Typeable r) => ToSchema (UInt n r RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Integer)

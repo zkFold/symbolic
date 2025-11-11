@@ -5,6 +5,8 @@ module ZkFold.Symbolic.Ledger.Types.State (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
+import GHC.TypeNats (KnownNat)
 import GHC.Generics (Generic, Generic1, (:.:))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HShow)
@@ -56,3 +58,10 @@ deriving anyclass instance
 
 deriving anyclass instance
   forall bi bo ud a. KnownMerkleTree ud => FromJSON (State bi bo ud a RollupBFInterpreter)
+
+instance
+  forall bi bo ud a
+   . (KnownNat bi, KnownNat bo, KnownNat ud, KnownNat a)
+  => ToSchema (State bi bo ud a RollupBFInterpreter)
+  where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions

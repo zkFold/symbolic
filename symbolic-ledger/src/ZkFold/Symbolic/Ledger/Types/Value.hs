@@ -24,6 +24,7 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.Coerce (coerce)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, type (:*:) (..))
@@ -99,6 +100,9 @@ deriving stock instance HShow context => Haskell.Show (AssetValue context)
 deriving anyclass instance ToJSON (AssetValue RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (AssetValue RollupBFInterpreter)
+
+instance ToSchema (AssetValue RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context

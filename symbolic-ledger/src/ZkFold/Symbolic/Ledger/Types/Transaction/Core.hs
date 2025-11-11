@@ -21,6 +21,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
@@ -195,3 +196,19 @@ signTransaction
   -> PrivateKey context
   -> (EdDSAPoint :*: EdDSAScalarField) context
 signTransaction tx privateKey = eddsaSign hashFn privateKey (txId tx & Base.hHash)
+
+------------------------------------------------
+-- OpenAPI schemas
+------------------------------------------------
+
+instance ToSchema (OutputRef RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+
+instance forall a. KnownNat a => ToSchema (Output a RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+
+instance forall a. KnownNat a => ToSchema (UTxO a RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+
+instance forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter) where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
