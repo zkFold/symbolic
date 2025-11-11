@@ -5,6 +5,7 @@
 
 #![allow(non_snake_case)]
 
+use ark_bls12_381::Fr as ScalarField;
 use halo2curves::ff::Field;
 use halo2_proofs::{
     circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value},
@@ -15,7 +16,10 @@ use halo2_proofs::{
     poly::Rotation,
 };
 use serde::{Deserialize, Serialize};
+use core::slice;
 use std::marker::PhantomData;
+
+use crate::utils::c_char;
 
 /// Configuration for the PlonkUp circuit
 #[derive(Debug, Clone)]
@@ -59,7 +63,7 @@ pub struct PlonkupCircuit<F: Field> {
     /// Copy constraints for equality: (from_col, from_row, to_col, to_row)
     pub copy_constraints: Vec<(usize, usize, usize, usize)>,
     /// Phantom data for the field type
-    _marker: PhantomData<F>,
+    pub marker: PhantomData<F>,
 }
 
 /// Witness data for the three advice columns
@@ -125,7 +129,7 @@ impl<F: Field> PlonkupCircuit<F> {
                 t3: Vec::new(),
             },
             copy_constraints: Vec::new(),
-            _marker: PhantomData,
+            marker: PhantomData,
         }
     }
 
@@ -233,7 +237,7 @@ impl<F: Field> Circuit<F> for PlonkupCircuit<F> {
             selectors: self.selectors.clone(),
             table: self.table.clone(),
             copy_constraints: self.copy_constraints.clone(),
-            _marker: PhantomData,
+            marker: PhantomData,
         }
     }
 
