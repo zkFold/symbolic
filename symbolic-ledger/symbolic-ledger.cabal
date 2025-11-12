@@ -13,6 +13,9 @@ build-type: Simple
 description:
   This package contains the definitions related to the zkFold Ledger.
 
+data-files:
+  test/data/ledger_contract_input.json
+
 flag Pedantic
   description: Enable pedantic build with -Werror
   manual: True
@@ -132,10 +135,14 @@ test-suite symbolic-ledger-test
     "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
 
   other-modules:
+    Paths_symbolic_ledger
     Tests.Symbolic.Ledger.E2E.One
     Tests.Symbolic.Ledger.E2E.Two
     Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden
     Tests.Symbolic.Ledger.Update
+
+  autogen-modules:
+    Paths_symbolic_ledger
 
   build-depends:
     aeson,

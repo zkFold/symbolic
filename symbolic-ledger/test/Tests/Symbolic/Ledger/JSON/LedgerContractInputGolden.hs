@@ -7,6 +7,7 @@ import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
 import Prelude (($))
 import Prelude qualified as Haskell
 
+import Paths_symbolic_ledger (getDataFileName)
 import Tests.Symbolic.Ledger.E2E.Two (batch, newState, prevState, witness)
 import ZkFold.Symbolic.Ledger.Circuit.Compile (LedgerContractInput (..))
 
@@ -20,15 +21,17 @@ specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
         , lciNewState = newState
         , lciStateWitness = witness
         }
-    goldenPath = "symbolic-ledger/test/data/ledger_contract_input.json"
   let encConf = defConfig {confIndent = Spaces 2}
       enc = encodePretty' encConf
+      readGolden = do
+        path <- getDataFileName "test/data/ledger_contract_input.json"
+        BL.readFile path
   it "encodes to JSON matching the golden file" $ do
-    goldenBytes <- BL.readFile goldenPath
+    goldenBytes <- readGolden
     enc lci `shouldBe` goldenBytes
 
   it "decodes from the golden JSON back to the same value (by re-encoding)" $ do
-    goldenBytes <- BL.readFile goldenPath
+    goldenBytes <- readGolden
     case eitherDecode goldenBytes of
       Haskell.Left err -> expectationFailure err
       Haskell.Right parsed -> enc parsed `shouldBe` enc lci
