@@ -37,8 +37,6 @@ deriving anyclass instance forall i o a t. ToJSON (TransactionBatch i o a t Roll
 
 deriving anyclass instance forall i o a t. FromJSON (TransactionBatch i o a t RollupBFInterpreter)
 
-instance
+deriving anyclass instance
   forall i o a t
    . (KnownNat i, KnownNat o, KnownNat t, KnownNat a) => ToSchema (TransactionBatch i o a t RollupBFInterpreter)
-  where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
