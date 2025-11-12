@@ -7,8 +7,8 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   StateWitness (..),
 ) where
 
-import Data.Aeson (FromJSON, ToJSON)
 import Control.Lens ((&))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))

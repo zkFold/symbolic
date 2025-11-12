@@ -105,32 +105,31 @@ deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
-{- |
->>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
-{
-    "properties": {
-        "lciNewState": {
-            "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        },
-        "lciPreviousState": {
-            "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        },
-        "lciStateWitness": {
-            "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        },
-        "lciTransactionBatch": {
-            "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        }
-    },
-    "required": [
-        "lciPreviousState",
-        "lciTransactionBatch",
-        "lciNewState",
-        "lciStateWitness"
-    ],
-    "type": "object"
-}
--}
+-- |
+-- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
+-- {
+--     "properties": {
+--         "lciNewState": {
+--             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         },
+--         "lciPreviousState": {
+--             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         },
+--         "lciStateWitness": {
+--             "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         },
+--         "lciTransactionBatch": {
+--             "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         }
+--     },
+--     "required": [
+--         "lciPreviousState",
+--         "lciTransactionBatch",
+--         "lciNewState",
+--         "lciStateWitness"
+--     ],
+--     "type": "object"
+-- }
 deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
