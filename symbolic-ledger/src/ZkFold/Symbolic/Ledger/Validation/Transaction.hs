@@ -9,7 +9,11 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
 import Data.Function ((&))
-import Data.OpenApi (SchemaOptions (..), ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
+import Data.OpenApi (Referenced (Inline), OpenApiItems (..), OpenApiType (..), ToSchema (..), declareSchemaRef, type_)
+import Data.OpenApi.Internal.Schema (named)
+import Data.OpenApi.Lens (items, properties, required)
+import Data.Proxy (Proxy (..))
+import Control.Lens ((.~), (?~))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (
@@ -42,6 +46,7 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
+import GHC.IsList (IsList(..))
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -103,9 +108,43 @@ instance
    . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
   => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
   where
-  declareNamedSchema =
-    let opts = defaultSchemaOptions {fieldLabelModifier = Haskell.drop 2}
-     in genericDeclareNamedSchema opts
+  declareNamedSchema _ = do
+    meRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBFInterpreter))
+    utxoRef <- declareSchemaRef (Proxy @(UTxO a RollupBFInterpreter))
+    rRef <- declareSchemaRef (Proxy @(EdDSAPoint RollupBFInterpreter))
+    sRef <- declareSchemaRef (Proxy @(EdDSAScalarField RollupBFInterpreter))
+    pkRef <- declareSchemaRef (Proxy @(PublicKey RollupBFInterpreter))
+    outsRef <- declareSchemaRef (Proxy @((:.:) (Vector o) (MerkleEntry ud) RollupBFInterpreter))
+
+    let inputSchema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties
+              .~ fromList
+                [ ("merkleEntry", meRef)
+                , ("utxo", utxoRef)
+                , ("r", rRef)
+                , ("s", sRef)
+                , ("publicKey", pkRef)
+                ]
+            & required .~ ["merkleEntry", "utxo", "r", "s", "publicKey"]
+
+        inputsSchema =
+          Haskell.mempty
+            & type_ ?~ OpenApiArray
+            & items ?~ OpenApiItemsObject (Inline inputSchema)
+
+        schema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties
+              .~ fromList
+                [ ("inputs", Inline inputsSchema)
+                , ("outputs", outsRef)
+                ]
+            & required .~ ["inputs", "outputs"]
+
+    Haskell.pure (named "TransactionWitness" schema)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
