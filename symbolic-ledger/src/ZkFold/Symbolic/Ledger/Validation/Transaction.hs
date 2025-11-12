@@ -113,54 +113,53 @@ instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a Rollu
           Haskell.pure (TransactionWitness twInputs twOutputs)
       )
 
-{- |
->>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (TransactionWitness 2 1 1 1 RollupBFInterpreter))
-{
-    "properties": {
-        "inputs": {
-            "items": {
-                "properties": {
-                    "merkleEntry": {
-                        "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                    },
-                    "publicKey": {
-                        "$ref": "#/components/schemas/AffinePoint"
-                    },
-                    "r": {
-                        "$ref": "#/components/schemas/AffinePoint"
-                    },
-                    "s": {
-                        "type": "integer"
-                    },
-                    "utxo": {
-                        "$ref": "#/components/schemas/UTxO_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                    }
-                },
-                "required": [
-                    "merkleEntry",
-                    "utxo",
-                    "r",
-                    "s",
-                    "publicKey"
-                ],
-                "type": "object"
-            },
-            "type": "array"
-        },
-        "outputs": {
-            "items": {
-                "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-            },
-            "type": "array"
-        }
-    },
-    "required": [
-        "inputs",
-        "outputs"
-    ],
-    "type": "object"
-}
--}
+-- |
+-- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (TransactionWitness 2 1 1 1 RollupBFInterpreter))
+-- {
+--     "properties": {
+--         "inputs": {
+--             "items": {
+--                 "properties": {
+--                     "merkleEntry": {
+--                         "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--                     },
+--                     "publicKey": {
+--                         "$ref": "#/components/schemas/AffinePoint"
+--                     },
+--                     "r": {
+--                         "$ref": "#/components/schemas/AffinePoint"
+--                     },
+--                     "s": {
+--                         "type": "integer"
+--                     },
+--                     "utxo": {
+--                         "$ref": "#/components/schemas/UTxO_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--                     }
+--                 },
+--                 "required": [
+--                     "merkleEntry",
+--                     "utxo",
+--                     "r",
+--                     "s",
+--                     "publicKey"
+--                 ],
+--                 "type": "object"
+--             },
+--             "type": "array"
+--         },
+--         "outputs": {
+--             "items": {
+--                 "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             },
+--             "type": "array"
+--         }
+--     },
+--     "required": [
+--         "inputs",
+--         "outputs"
+--     ],
+--     "type": "object"
+-- }
 instance
   forall ud i o a
    . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
