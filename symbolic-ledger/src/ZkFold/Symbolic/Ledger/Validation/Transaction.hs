@@ -98,6 +98,15 @@ instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a Rollu
           Haskell.pure (TransactionWitness twInputs twOutputs)
       )
 
+instance
+  forall ud i o a
+   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
+  => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
+  where
+  declareNamedSchema =
+    let opts = defaultSchemaOptions {fieldLabelModifier = Haskell.drop 2}
+     in genericDeclareNamedSchema opts
+
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
@@ -321,12 +330,3 @@ outputHasAtLeastOneAda output =
     )
     false
     (unComp1 (oAssets output))
-
-instance
-  forall ud i o a
-   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
-  => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
-  where
-  declareNamedSchema =
-    let opts = defaultSchemaOptions {fieldLabelModifier = Haskell.drop 2}
-     in genericDeclareNamedSchema opts

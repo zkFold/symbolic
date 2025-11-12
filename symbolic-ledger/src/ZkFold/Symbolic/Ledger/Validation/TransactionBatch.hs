@@ -7,7 +7,7 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
@@ -41,6 +41,12 @@ deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFIn
 deriving anyclass instance
   forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
 
+
+deriving anyclass instance
+  forall ud i o a t
+   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
+  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
   :: forall ud bo i o a t context
@@ -73,10 +79,3 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
         (unComp1 bridgedOutOutputs)
    in
     ((isValid && (bouts == boCount)) :*: updatedUTxOTree)
-
-instance
-  forall ud i o a t
-   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
-  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
-  where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
