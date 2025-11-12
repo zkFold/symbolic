@@ -62,4 +62,4 @@ deriving anyclass instance
 deriving anyclass instance
   forall bi bo ud a
    . (KnownNat bi, KnownNat bo, KnownNat ud, KnownNat a)
-   => ToSchema (State bi bo ud a RollupBFInterpreter)
+  => ToSchema (State bi bo ud a RollupBFInterpreter)

@@ -41,7 +41,6 @@ deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFIn
 deriving anyclass instance
   forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
 
-
 deriving anyclass instance
   forall ud i o a t
    . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
