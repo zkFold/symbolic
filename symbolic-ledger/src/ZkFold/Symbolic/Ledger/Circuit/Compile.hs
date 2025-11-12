@@ -117,22 +117,7 @@ deriving anyclass instance
             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
         },
         "lciStateWitness": {
-            "properties": {
-                "swAddBridgeIn": {
-                    "items": {
-                        "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                    },
-                    "type": "array"
-                },
-                "swTransactionBatch": {
-                    "$ref": "#/components/schemas/TransactionBatchWitness_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                }
-            },
-            "required": [
-                "swAddBridgeIn",
-                "swTransactionBatch"
-            ],
-            "type": "object"
+            "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
         },
         "lciTransactionBatch": {
             "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"

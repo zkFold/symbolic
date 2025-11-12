@@ -8,14 +8,10 @@ module ZkFold.Symbolic.Ledger.Validation.State (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Control.Lens ((&), (?~), (.~))
-import Data.OpenApi (NamedSchema (..), OpenApiItems (..), OpenApiType (..), Referenced (..), Schema, ToSchema (..), declareSchemaRef, type_)
-import Data.OpenApi.Lens (items, properties, required)
-import qualified Data.HashMap.Strict.InsOrd as InsOrd
-import Data.Proxy (Proxy (..))
+import Control.Lens ((&))
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
-import Data.Typeable (Typeable)
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -77,6 +73,11 @@ deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpr
 
 deriving anyclass instance
   forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t
+   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
+  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
@@ -158,33 +159,3 @@ validateStateUpdateIndividualChecks previousState action newState sw =
       , isBatchValid
       , utxoTree == newState.sUTxO
       ]
-
-instance
-  forall bi bo ud a i o t
-   . ( KnownNat (ud - 1)
-     , KnownNat ud
-     , KnownNat i
-     , KnownNat a
-     , KnownNat t
-     , KnownNat o
-     , Typeable (StateWitness bi bo ud a i o t RollupBFInterpreter)
-     )
-  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
-  where
-  declareNamedSchema _ = do
-    elemRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBFInterpreter))
-    let addBridgeInSchema :: Schema
-        addBridgeInSchema =
-          Haskell.mempty
-            & type_ ?~ OpenApiArray
-            & items ?~ OpenApiItemsObject elemRef
-    tbwRef <- declareSchemaRef (Proxy @(TransactionBatchWitness ud i o a t RollupBFInterpreter))
-    let schema =
-          Haskell.mempty
-            & type_ ?~ OpenApiObject
-            & properties .~ InsOrd.fromList
-                [ ("swAddBridgeIn", Inline addBridgeInSchema)
-                , ("swTransactionBatch", tbwRef)
-                ]
-            & required .~ ["swAddBridgeIn", "swTransactionBatch"]
-    Haskell.pure (NamedSchema Haskell.Nothing schema)
