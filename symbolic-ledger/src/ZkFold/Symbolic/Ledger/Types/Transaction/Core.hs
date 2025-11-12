@@ -22,7 +22,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
-import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
@@ -73,6 +73,8 @@ deriving anyclass instance ToJSON (OutputRef RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (OutputRef RollupBFInterpreter)
 
+deriving anyclass instance ToSchema (OutputRef RollupBFInterpreter)
+
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
 nullOutputRef = OutputRef {orTxId = zero, orIndex = zero}
@@ -104,6 +106,8 @@ deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (Output a RollupBFInterpreter)
 
+deriving anyclass instance forall a. KnownNat a => ToSchema (Output a RollupBFInterpreter)
+
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
 nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
@@ -132,6 +136,8 @@ instance Symbolic context => Hashable (HashSimple context) (UTxO a context) wher
 deriving anyclass instance ToJSON (UTxO a RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (UTxO a RollupBFInterpreter)
+
+deriving anyclass instance forall a. KnownNat a => ToSchema (UTxO a RollupBFInterpreter)
 
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
@@ -162,6 +168,8 @@ instance
 deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
+
+deriving anyclass instance forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter)
 
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)
@@ -196,19 +204,3 @@ signTransaction
   -> PrivateKey context
   -> (EdDSAPoint :*: EdDSAScalarField) context
 signTransaction tx privateKey = eddsaSign hashFn privateKey (txId tx & Base.hHash)
-
-------------------------------------------------
--- OpenAPI schemas
-------------------------------------------------
-
-instance ToSchema (OutputRef RollupBFInterpreter) where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-
-instance forall a. KnownNat a => ToSchema (Output a RollupBFInterpreter) where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-
-instance forall a. KnownNat a => ToSchema (UTxO a RollupBFInterpreter) where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-
-instance forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter) where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
