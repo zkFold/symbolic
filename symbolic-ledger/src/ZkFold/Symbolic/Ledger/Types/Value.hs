@@ -26,6 +26,7 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Coerce (coerce)
 import Data.Function ((&))
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
@@ -99,6 +100,8 @@ deriving stock instance HShow context => Haskell.Show (AssetValue context)
 deriving anyclass instance ToJSON (AssetValue RollupBFInterpreter)
 
 deriving anyclass instance FromJSON (AssetValue RollupBFInterpreter)
+
+deriving anyclass instance ToSchema (AssetValue RollupBFInterpreter)
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context

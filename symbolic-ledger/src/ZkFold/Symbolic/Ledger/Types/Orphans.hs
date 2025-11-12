@@ -6,14 +6,28 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 ) where
 
 import Control.Applicative (pure)
+import Control.Lens ((&), (.~), (?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Kind (Type)
+import Data.OpenApi (
+  OpenApiType (..),
+  ToSchema (..),
+  declareSchemaRef,
+  type_,
+ )
+import Data.OpenApi.Internal.Schema (named)
+import Data.OpenApi.Lens (properties, required)
+import Data.Proxy (Proxy (..))
+import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat)
+import GHC.IsList (IsList (..))
+import GHC.Natural (Natural)
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
+import ZkFold.Algebra.EllipticCurve.Class (TwistedEdwards)
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Orphans ()
@@ -31,6 +45,7 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.Payloaded (payloaded, restored)
+import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude (Integer, (.))
 import Prelude qualified as Haskell
 
@@ -56,6 +71,9 @@ instance Symbolic context => Hashable (HashSimple context) (FieldElement context
 instance FromJSON (FieldElement RollupBFInterpreter) where
   parseJSON v = fromConstant @Integer <$> parseJSON v
 
+instance ToSchema (FieldElement RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @RollupBF)
+
 instance FromJSON (SBool.Bool RollupBFInterpreter) where
   parseJSON = withBool "Bool" $ \b -> pure $ fromConstant b
 
@@ -65,21 +83,41 @@ instance ToJSON (FieldElement RollupBFInterpreter) where
 instance ToJSON (SBool.Bool RollupBFInterpreter) where
   toJSON b = toJSON (fromBool b Haskell.== one)
 
+instance ToSchema (SBool.Bool RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Haskell.Bool)
+
 instance forall n a. FromJSON (a RollupBFInterpreter) => FromJSON ((:.:) (Vector n) a RollupBFInterpreter) where
   parseJSON v = Comp1 <$> parseJSON v
 
 instance forall n a. ToJSON (a RollupBFInterpreter) => ToJSON ((:.:) (Vector n) a RollupBFInterpreter) where
   toJSON (Comp1 x) = toJSON x
 
+-- Composition Vector n :.: a is encoded as a JSON array of a
+instance
+  forall n a
+   . (ToSchema (a RollupBFInterpreter), KnownNat n, Typeable a)
+  => ToSchema ((:.:) (Vector n) a RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @[a RollupBFInterpreter])
+
 deriving anyclass instance forall ud. FromJSON (MerkleEntry ud RollupBFInterpreter)
 
 deriving anyclass instance forall ud. ToJSON (MerkleEntry ud RollupBFInterpreter)
+
+deriving anyclass instance forall ud. (KnownNat ud, KnownNat (ud - 1)) => ToSchema (MerkleEntry ud RollupBFInterpreter)
 
 instance forall n r. (KnownRegisterSize r, KnownNat n) => ToJSON (Int n r RollupBFInterpreter) where
   toJSON = toJSON . toConstant
 
 instance forall n r. (KnownRegisterSize r, KnownNat n) => FromJSON (Int n r RollupBFInterpreter) where
   parseJSON v = fromConstant @Integer <$> parseJSON v
+
+instance forall n r. (KnownNat n, Typeable r) => ToSchema (Int n r RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Integer)
+
+-- Matches JSON encoding of UInt as a natural number.
+instance forall n r. (KnownNat n, Typeable r) => ToSchema (UInt n r RollupBFInterpreter) where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Natural)
 
 instance
   forall a
@@ -89,6 +127,21 @@ instance
   toJSON v = toJSON (toConstant v)
 
 instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => FromJSON (FFA a 'Auto RollupBFInterpreter)
+  where
+  parseJSON v = fromConstant @Integer <$> parseJSON v
+
+-- FFA values are encoded as integers
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => ToSchema (FFA a 'Auto RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @Integer)
+
+instance
   forall curve a
    . KnownFFA a 'Auto RollupBFInterpreter
   => ToJSON (AffinePoint curve (FFA a 'Auto) RollupBFInterpreter)
@@ -96,13 +149,6 @@ instance
   toJSON p =
     let Elliptic.AffinePoint x y = affinePoint p
      in object ["x" .= x, "y" .= y]
-
-instance
-  forall a
-   . KnownFFA a 'Auto RollupBFInterpreter
-  => FromJSON (FFA a 'Auto RollupBFInterpreter)
-  where
-  parseJSON v = fromConstant @Integer <$> parseJSON v
 
 -- TODO: What if the parsed point is not on the curve?
 instance
@@ -115,6 +161,21 @@ instance
       x <- o .: "x"
       y <- o .: "y"
       pure (AffinePoint (Elliptic.AffinePoint x y))
+
+-- Apparently, there is an issue with having instance for arbitrary curve, so we hardcode the Jubjub curve for now.
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => ToSchema (AffinePoint (TwistedEdwards "jubjub") (FFA a 'Auto) RollupBFInterpreter)
+  where
+  declareNamedSchema _ = do
+    xyRef <- declareSchemaRef (Proxy @(FFA a 'Auto RollupBFInterpreter))
+    let schema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties .~ fromList [("x", xyRef), ("y", xyRef)]
+            & required .~ ["x", "y"]
+    pure (named "AffinePoint" schema)
 
 instance
   ( ToJSON (h RollupBFInterpreter)
@@ -142,6 +203,25 @@ instance
       pure Base.Hash {hHash = h, hValue = payloaded (Identity v)}
 
 instance
+  forall h a
+   . ( ToSchema (h RollupBFInterpreter)
+     , ToSchema (a RollupBFInterpreter)
+     , Typeable h
+     , Typeable a
+     )
+  => ToSchema (Base.Hash h a RollupBFInterpreter)
+  where
+  declareNamedSchema _ = do
+    hRef <- declareSchemaRef (Proxy @(h RollupBFInterpreter))
+    vRef <- declareSchemaRef (Proxy @(a RollupBFInterpreter))
+    let schema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties .~ fromList [("hash", hRef), ("value", vRef)]
+            & required .~ ["hash", "value"]
+    pure (named "Hash" schema)
+
+instance
   KnownMerkleTree d
   => ToJSON (MerkleTree d RollupBFInterpreter)
   where
@@ -152,6 +232,14 @@ instance
   => FromJSON (MerkleTree d RollupBFInterpreter)
   where
   parseJSON v = (fromConstant @(Vector (MerkleTreeSize d) RollupBF)) <$> parseJSON v
+
+-- MerkleTree is encoded as a JSON array of field elements
+instance
+  forall d
+   . KnownNat d
+  => ToSchema (MerkleTree d RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @[RollupBF])
 
 instance
   ( ToJSON (f RollupBFInterpreter)
@@ -170,3 +258,15 @@ instance
   parseJSON v = do
     (x, y) <- parseJSON v
     pure (x :*: y)
+
+-- Product (:*:) is encoded as a JSON tuple; reuse tuple schema
+instance
+  forall f g
+   . ( ToSchema (f RollupBFInterpreter)
+     , ToSchema (g RollupBFInterpreter)
+     , Typeable f
+     , Typeable g
+     )
+  => ToSchema ((:*:) f g RollupBFInterpreter)
+  where
+  declareNamedSchema _ = declareNamedSchema (Proxy @(f RollupBFInterpreter, g RollupBFInterpreter))

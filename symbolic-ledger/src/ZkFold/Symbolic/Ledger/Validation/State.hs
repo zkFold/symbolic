@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
@@ -6,10 +7,11 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   StateWitness (..),
 ) where
 
+import Control.Lens ((&))
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Function ((&))
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat)
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -71,6 +73,11 @@ deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpr
 
 deriving anyclass instance
   forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t
+   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
+  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
