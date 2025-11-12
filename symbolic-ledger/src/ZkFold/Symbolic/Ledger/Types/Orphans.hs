@@ -18,12 +18,16 @@ import Data.OpenApi (
   declareSchemaRef,
   type_,
  )
+import Data.OpenApi.Internal.Schema (named)
 import Data.OpenApi.Lens (properties, required)
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.IsList (IsList (..))
+import GHC.Natural (Natural)
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
+import ZkFold.Algebra.EllipticCurve.Class (TwistedEdwards)
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Orphans ()
@@ -47,10 +51,6 @@ import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Hash
-import ZkFold.Algebra.EllipticCurve.Class (TwistedEdwards)
-import GHC.IsList (IsList(..))
-import Data.OpenApi.Internal.Schema (named)
-import GHC.Natural (Natural)
 
 newtype VectorTakingCtx n (a :: Ctx -> Type) c = VectorTakingCtx ((Vector n :.: a) c)
   deriving stock (Generic, Generic1)
@@ -85,7 +85,6 @@ instance ToJSON (SBool.Bool RollupBFInterpreter) where
 
 instance ToSchema (SBool.Bool RollupBFInterpreter) where
   declareNamedSchema _ = declareNamedSchema (Proxy @Haskell.Bool)
-
 
 instance forall n a. FromJSON (a RollupBFInterpreter) => FromJSON ((:.:) (Vector n) a RollupBFInterpreter) where
   parseJSON v = Comp1 <$> parseJSON v
@@ -164,7 +163,11 @@ instance
       pure (AffinePoint (Elliptic.AffinePoint x y))
 
 -- Apparently, there is an issue with having instance for arbitrary curve, so we hardcode the Jubjub curve for now.
-instance forall a. KnownFFA a 'Auto RollupBFInterpreter => ToSchema (AffinePoint (TwistedEdwards "jubjub") (FFA a 'Auto) RollupBFInterpreter) where
+instance
+  forall a
+   . KnownFFA a 'Auto RollupBFInterpreter
+  => ToSchema (AffinePoint (TwistedEdwards "jubjub") (FFA a 'Auto) RollupBFInterpreter)
+  where
   declareNamedSchema _ = do
     xyRef <- declareSchemaRef (Proxy @(FFA a 'Auto RollupBFInterpreter))
     let schema =
@@ -173,7 +176,6 @@ instance forall a. KnownFFA a 'Auto RollupBFInterpreter => ToSchema (AffinePoint
             & properties .~ fromList [("x", xyRef), ("y", xyRef)]
             & required .~ ["x", "y"]
     pure (named "AffinePoint" schema)
-
 
 instance
   ( ToJSON (h RollupBFInterpreter)
@@ -256,7 +258,6 @@ instance
   parseJSON v = do
     (x, y) <- parseJSON v
     pure (x :*: y)
-
 
 -- Product (:*:) is encoded as a JSON tuple; reuse tuple schema
 instance
