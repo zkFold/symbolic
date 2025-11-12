@@ -117,7 +117,6 @@ library
     base >=4.9 && <5,
     base16-bytestring,
     bytestring,
-    insert-ordered-containers,
     lens,
     openapi3,
     symbolic-base,
