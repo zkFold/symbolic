@@ -24,9 +24,9 @@ module ZkFold.Symbolic.Ledger.Types.Value (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.Coerce (coerce)
 import Data.Function ((&))
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)

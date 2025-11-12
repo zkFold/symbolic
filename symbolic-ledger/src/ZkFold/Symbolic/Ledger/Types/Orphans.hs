@@ -8,17 +8,25 @@ module ZkFold.Symbolic.Ledger.Types.Orphans (
 import Control.Applicative (pure)
 import Control.Lens ((&), (.~), (?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withBool, withObject, (.:), (.=))
-import Data.OpenApi (NamedSchema (..), OpenApiType (..), ToSchema (..), declareSchemaRef, defaultSchemaOptions, genericDeclareNamedSchema, type_)
-import Data.OpenApi.Lens (properties, required)
-import Data.Proxy (Proxy (..))
-import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
+import Data.HashMap.Strict.InsOrd qualified as InsOrd
 import Data.Kind (Type)
+import Data.OpenApi (
+  NamedSchema (..),
+  OpenApiType (..),
+  ToSchema (..),
+  declareSchemaRef,
+  defaultSchemaOptions,
+  genericDeclareNamedSchema,
+  type_,
+ )
+import Data.OpenApi.Lens (properties, required)
+import Data.Proxy (Proxy (..))
+import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
-import Data.Typeable (Typeable)
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
@@ -29,16 +37,16 @@ import ZkFold.Symbolic.Data.Bool (fromBool)
 import ZkFold.Symbolic.Data.Bool qualified as SBool
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Combinators (KnownRegisterSize, RegisterSize (Auto))
-import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
+import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.UInt (UInt)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.Payloaded (payloaded, restored)
+import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude (Integer, (.))
 import Prelude qualified as Haskell
 
@@ -220,7 +228,6 @@ instance
   => ToSchema ((:.:) (Vector n) a RollupBFInterpreter)
   where
   declareNamedSchema _ = declareNamedSchema (Proxy @[a RollupBFInterpreter])
-
 
 -- MerkleTree is encoded as a JSON array of field elements
 instance

@@ -8,8 +8,8 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 ) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
-import Data.OpenApi (ToSchema (..), SchemaOptions (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.Function ((&))
+import Data.OpenApi (SchemaOptions (..), ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (
@@ -322,7 +322,11 @@ outputHasAtLeastOneAda output =
     false
     (unComp1 (oAssets output))
 
-instance forall ud i o a. (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1)) => ToSchema (TransactionWitness ud i o a RollupBFInterpreter) where
+instance
+  forall ud i o a
+   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
+  => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
+  where
   declareNamedSchema =
     let opts = defaultSchemaOptions {fieldLabelModifier = Haskell.drop 2}
      in genericDeclareNamedSchema opts

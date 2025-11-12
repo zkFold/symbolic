@@ -21,10 +21,10 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 ) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
-import Data.OpenApi (ToSchema (..))
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
 import Data.Coerce (coerce)
+import Data.OpenApi (ToSchema (..))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Type.Equality (type (~))
@@ -79,16 +79,15 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
 
-{- $setup
-
->>> :set -XOverloadedStrings -XTypeApplications -XDataKinds
->>> import qualified Data.Aeson                 as Aeson
->>> import           Data.Proxy
->>> import qualified Data.ByteString.Lazy.Char8 as BSL
->>> import Data.OpenApi.Internal.Schema
->>> import Data.OpenApi.Internal.Utils (encodePretty)
->>> import ZkFold.Symbolic.Ledger.Types.Field
--}
+-- $setup
+--
+-- >>> :set -XOverloadedStrings -XTypeApplications -XDataKinds
+-- >>> import qualified Data.Aeson                 as Aeson
+-- >>> import           Data.Proxy
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
+-- >>> import Data.OpenApi.Internal.Schema
+-- >>> import Data.OpenApi.Internal.Utils (encodePretty)
+-- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
