@@ -7,14 +7,15 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
+import Control.Lens ((.~), (?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
 import Data.Function ((&))
-import Data.OpenApi (Referenced (Inline), OpenApiItems (..), OpenApiType (..), ToSchema (..), declareSchemaRef, type_)
+import Data.OpenApi (OpenApiItems (..), OpenApiType (..), Referenced (Inline), ToSchema (..), declareSchemaRef, type_)
 import Data.OpenApi.Internal.Schema (named)
 import Data.OpenApi.Lens (items, properties, required)
 import Data.Proxy (Proxy (..))
-import Control.Lens ((.~), (?~))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.IsList (IsList (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
@@ -46,7 +47,6 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
-import GHC.IsList (IsList(..))
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
