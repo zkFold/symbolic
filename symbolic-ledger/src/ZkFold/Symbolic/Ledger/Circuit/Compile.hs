@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerContractInput (..),
@@ -37,7 +38,6 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G2_JacobianPoint,
  )
 import ZkFold.Algebra.EllipticCurve.Class (Compressible (..))
-import ZkFold.Algebra.EllipticCurve.Jubjub (Fq)
 import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
@@ -68,13 +68,14 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hash (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree (mHash))
+import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
@@ -85,6 +86,13 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
+
+deriving anyclass instance
+  forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t
+   . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
 type LedgerContractOutput =
   (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
@@ -117,12 +125,12 @@ type LedgerCircuitGates = 2 ^ 18
 type LedgerContractInputLayout bi bo ud a i o t =
   Layout
     (LedgerContractInput bi bo ud a i o t :*: U1)
-    (Order Fq)
+    (Order RollupBF)
 
 type LedgerContractInputPayload bi bo ud a i o t =
   Payload
     (LedgerContractInput bi bo ud a i o t :*: U1)
-    (Order Fq)
+    (Order RollupBF)
 
 type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
@@ -134,25 +142,25 @@ type LedgerContractOutputLayout =
   )
 
 type LedgerCircuit bi bo ud a i o t =
-  ArithmeticCircuit Fq (LedgerContractCompiledInput bi bo ud a i o t) LedgerContractOutputLayout
+  ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a i o t) LedgerContractOutputLayout
 
 ledgerCircuit
   :: forall bi bo ud a i o t c
    . SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
-  => -- Since we are hardcoding @Fq@ at some places in this file, it is important that it is the same as the base field of the context.
-  Fq ~ BaseField c
+  => -- Since we are hardcoding @RollupBF@ at some places in this file, it is important that it is the same as the base field of the context.
+  RollupBF ~ BaseField c
   => LedgerCircuit bi bo ud a i o t
-ledgerCircuit = runVec $ C.compile @Fq ledgerContract
+ledgerCircuit = runVec $ C.compile @RollupBF ledgerContract
 
 type PlonkupTs i n t =
-  Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fq)
+  Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec RollupBF)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
-  , ToTranscript ts Fq
+  , ToTranscript ts RollupBF
   , ToTranscript ts BLS12_381_G1_CompressedPoint
-  , FromTranscript ts Fq
+  , FromTranscript ts RollupBF
   )
 
 ledgerSetup
@@ -171,7 +179,7 @@ ledgerSetup TrustedSetup {..} ac = setupV
 
 ledgerProof
   :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc, c ~ Interpreter Fq)
+   . (TranscriptConstraints tc, c ~ Interpreter RollupBF)
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
@@ -181,10 +189,10 @@ ledgerProof
   -> Proof (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
 ledgerProof TrustedSetup {..} ps ac input = proof
  where
-  witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order Fq)) Fq
+  witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order RollupBF)) RollupBF
   witnessInputs = runInterpreter $ arithmetize input
 
-  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t Fq
+  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t RollupBF
   paddedWitnessInputs = (payload input :*: U1) :*: (witnessInputs :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)

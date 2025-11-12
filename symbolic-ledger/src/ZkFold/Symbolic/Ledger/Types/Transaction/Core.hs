@@ -20,6 +20,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   signTransaction,
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
@@ -43,7 +44,9 @@ import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 
 -- | An output's reference.
@@ -64,6 +67,10 @@ instance
 deriving stock instance HEq context => Haskell.Eq (OutputRef context)
 
 deriving stock instance HShow context => Haskell.Show (OutputRef context)
+
+deriving anyclass instance ToJSON (OutputRef RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (OutputRef RollupBFInterpreter)
 
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
@@ -92,6 +99,10 @@ deriving stock instance HShow context => Haskell.Show (Output a context)
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = hashFn
 
+deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (Output a RollupBFInterpreter)
+
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
 nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
@@ -116,6 +127,10 @@ deriving stock instance HShow context => Haskell.Show (UTxO a context)
 
 instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
   hasher = hashFn
+
+deriving anyclass instance ToJSON (UTxO a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (UTxO a RollupBFInterpreter)
 
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
@@ -142,6 +157,10 @@ instance
      , KnownRegistersAssetQuantity context
      )
   => Eq (Transaction i o a context)
+
+deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
 
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)

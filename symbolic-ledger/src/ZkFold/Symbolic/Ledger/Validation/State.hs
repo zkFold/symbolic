@@ -6,8 +6,10 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   StateWitness (..),
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -24,6 +26,7 @@ import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
@@ -63,6 +66,11 @@ data StateWitness bi bo ud a i o t context = StateWitness
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+
+deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate

@@ -6,8 +6,10 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
   outputHasAtLeastOneAda,
 ) where
 
+import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
 import Data.Function ((&))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
   AdditiveSemigroup (..),
@@ -35,6 +37,9 @@ import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
+import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
@@ -45,6 +50,51 @@ data TransactionWitness ud i o a context = TransactionWitness
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
+
+instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+  toJSON (TransactionWitness ins outs) =
+    let insVec = unComp1 ins
+        insList = Vector.fromVector insVec
+        encodeIn (me :*: utxo :*: rPoint :*: s :*: pk) =
+          object
+            [ "merkleEntry" .= me
+            , "utxo" .= utxo
+            , "r" .= rPoint
+            , "s" .= s
+            , "publicKey" .= pk
+            ]
+        outsVec = unComp1 outs
+        outsList = Vector.fromVector outsVec
+     in object
+          [ "inputs" .= Haskell.fmap encodeIn insList
+          , "outputs" .= outsList
+          ]
+
+instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+  parseJSON =
+    withObject
+      "TransactionWitness"
+      ( \o -> do
+          insVals <- o .: "inputs"
+          insList <-
+            Haskell.traverse
+              ( withObject
+                  "Input"
+                  ( \io -> do
+                      me <- io .: "merkleEntry"
+                      utxo <- io .: "utxo"
+                      rPoint <- io .: "r"
+                      s <- io .: "s"
+                      pk <- io .: "publicKey"
+                      Haskell.pure (me :*: utxo :*: rPoint :*: s :*: pk)
+                  )
+              )
+              insVals
+          outsList <- o .: "outputs"
+          let twInputs = Comp1 (unsafeToVector' insList)
+              twOutputs = Comp1 (unsafeToVector' outsList)
+          Haskell.pure (TransactionWitness twInputs twOutputs)
+      )
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction

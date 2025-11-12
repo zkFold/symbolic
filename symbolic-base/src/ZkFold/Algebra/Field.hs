@@ -201,8 +201,8 @@ instance Haskell.Show (Zp p) where
 instance ToJSON (Zp p) where
   toJSON (Zp a) = toJSON a
 
-instance FromJSON (Zp p) where
-  parseJSON = Haskell.fmap Zp . parseJSON
+instance KnownNat p => FromJSON (Zp p) where
+  parseJSON = fmap (Zp . (residue @p)) . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
   put (Zp x) = go x (wordCount @p)

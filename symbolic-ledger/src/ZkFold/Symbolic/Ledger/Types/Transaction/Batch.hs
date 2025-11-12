@@ -4,6 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Batch (
   TransactionBatch (..),
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic, Generic1)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
@@ -11,6 +12,7 @@ import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
@@ -28,3 +30,7 @@ instance
      , KnownRegistersAssetQuantity context
      )
   => Eq (TransactionBatch i o a t context)
+
+deriving anyclass instance forall i o a t. ToJSON (TransactionBatch i o a t RollupBFInterpreter)
+
+deriving anyclass instance forall i o a t. FromJSON (TransactionBatch i o a t RollupBFInterpreter)
