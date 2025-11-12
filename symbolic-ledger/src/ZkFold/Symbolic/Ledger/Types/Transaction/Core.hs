@@ -21,8 +21,8 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import Data.Function ((&))
+import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))

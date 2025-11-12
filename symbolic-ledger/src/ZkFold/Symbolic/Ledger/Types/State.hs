@@ -6,8 +6,8 @@ module ZkFold.Symbolic.Ledger.Types.State (
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
-import GHC.TypeNats (KnownNat)
 import GHC.Generics (Generic, Generic1, (:.:))
+import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector)

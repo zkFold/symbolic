@@ -7,15 +7,24 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   StateWitness (..),
 ) where
 
+import Control.Lens ((&), (.~), (?~))
 import Data.Aeson (FromJSON, ToJSON)
-import Control.Lens ((&), (?~), (.~))
-import Data.OpenApi (NamedSchema (..), OpenApiItems (..), OpenApiType (..), Referenced (..), Schema, ToSchema (..), declareSchemaRef, type_)
+import Data.HashMap.Strict.InsOrd qualified as InsOrd
+import Data.OpenApi (
+  NamedSchema (..),
+  OpenApiItems (..),
+  OpenApiType (..),
+  Referenced (..),
+  Schema,
+  ToSchema (..),
+  declareSchemaRef,
+  type_,
+ )
 import Data.OpenApi.Lens (items, properties, required)
-import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import Data.Proxy (Proxy (..))
+import Data.Typeable (Typeable)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.TypeNats (KnownNat, type (-))
-import Data.Typeable (Typeable)
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -182,7 +191,8 @@ instance
     let schema =
           Haskell.mempty
             & type_ ?~ OpenApiObject
-            & properties .~ InsOrd.fromList
+            & properties
+              .~ InsOrd.fromList
                 [ ("swAddBridgeIn", Inline addBridgeInSchema)
                 , ("swTransactionBatch", tbwRef)
                 ]

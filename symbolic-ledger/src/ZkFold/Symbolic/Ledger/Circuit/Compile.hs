@@ -21,10 +21,10 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 ) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
-import Data.OpenApi (ToSchema (..))
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
 import Data.Coerce (coerce)
+import Data.OpenApi (ToSchema (..))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Type.Equality (type (~))
@@ -79,16 +79,15 @@ import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
 
-{- $setup
-
->>> :set -XOverloadedStrings -XTypeApplications -XDataKinds
->>> import qualified Data.Aeson                 as Aeson
->>> import           Data.Proxy
->>> import qualified Data.ByteString.Lazy.Char8 as BSL
->>> import Data.OpenApi.Internal.Schema
->>> import Data.OpenApi.Internal.Utils (encodePretty)
->>> import ZkFold.Symbolic.Ledger.Types.Field
--}
+-- $setup
+--
+-- >>> :set -XOverloadedStrings -XTypeApplications -XDataKinds
+-- >>> import qualified Data.Aeson                 as Aeson
+-- >>> import           Data.Proxy
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
+-- >>> import Data.OpenApi.Internal.Schema
+-- >>> import Data.OpenApi.Internal.Utils (encodePretty)
+-- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
 data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   { lciPreviousState :: State bi bo ud a c
@@ -106,47 +105,46 @@ deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
-{- |
->>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
-{
-    "properties": {
-        "lciNewState": {
-            "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        },
-        "lciPreviousState": {
-            "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        },
-        "lciStateWitness": {
-            "properties": {
-                "swAddBridgeIn": {
-                    "items": {
-                        "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                    },
-                    "type": "array"
-                },
-                "swTransactionBatch": {
-                    "$ref": "#/components/schemas/TransactionBatchWitness_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-                }
-            },
-            "required": [
-                "swAddBridgeIn",
-                "swTransactionBatch"
-            ],
-            "type": "object"
-        },
-        "lciTransactionBatch": {
-            "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
-        }
-    },
-    "required": [
-        "lciPreviousState",
-        "lciTransactionBatch",
-        "lciNewState",
-        "lciStateWitness"
-    ],
-    "type": "object"
-}
--}
+-- |
+-- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
+-- {
+--     "properties": {
+--         "lciNewState": {
+--             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         },
+--         "lciPreviousState": {
+--             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         },
+--         "lciStateWitness": {
+--             "properties": {
+--                 "swAddBridgeIn": {
+--                     "items": {
+--                         "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--                     },
+--                     "type": "array"
+--                 },
+--                 "swTransactionBatch": {
+--                     "$ref": "#/components/schemas/TransactionBatchWitness_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--                 }
+--             },
+--             "required": [
+--                 "swAddBridgeIn",
+--                 "swTransactionBatch"
+--             ],
+--             "type": "object"
+--         },
+--         "lciTransactionBatch": {
+--             "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--         }
+--     },
+--     "required": [
+--         "lciPreviousState",
+--         "lciTransactionBatch",
+--         "lciNewState",
+--         "lciStateWitness"
+--     ],
+--     "type": "object"
+-- }
 deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)

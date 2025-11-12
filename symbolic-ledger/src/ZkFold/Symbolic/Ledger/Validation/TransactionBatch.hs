@@ -8,8 +8,8 @@ module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..), defaultSchemaOptions, genericDeclareNamedSchema)
-import GHC.TypeNats (KnownNat, type (-))
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
@@ -74,5 +74,9 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
    in
     ((isValid && (bouts == boCount)) :*: updatedUTxOTree)
 
-instance forall ud i o a t. (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1)) => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter) where
+instance
+  forall ud i o a t
+   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
+  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+  where
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
