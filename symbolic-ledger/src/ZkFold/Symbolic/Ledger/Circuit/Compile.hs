@@ -136,8 +136,8 @@ deriving anyclass instance
   => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
 type LedgerContractOutput =
-  (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
-    :*: (FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement)
+  FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement
+    :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement
     :*: Bool
 
 ledgerContract
@@ -146,18 +146,18 @@ ledgerContract
   => SignatureTransactionBatch ud i o a t c
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput c
 ledgerContract LedgerContractInput {..} =
-  ( sPreviousStateHash lciPreviousState
+   sPreviousStateHash lciPreviousState
       :*: (mHash . sUTxO $ lciPreviousState)
       :*: sLength lciPreviousState
       :*: (hHash . sBridgeIn $ lciPreviousState)
       :*: (hHash . sBridgeOut $ lciPreviousState)
-  )
-    :*: ( sPreviousStateHash lciNewState
+  
+    :*:  sPreviousStateHash lciNewState
             :*: (mHash . sUTxO $ lciNewState)
             :*: sLength lciNewState
             :*: (hHash . sBridgeIn $ lciNewState)
             :*: (hHash . sBridgeOut $ lciNewState)
-        )
+        
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
 -- TODO: Is this circuit gate count enough?
@@ -177,8 +177,8 @@ type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputLayout bi bo ud a i o t :*: LedgerContractInputPayload bi bo ud a i o t
 
 type LedgerContractOutputLayout =
-  ( (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
-      :*: (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
+  ( Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1
+      :*: Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1
       :*: Par1
   )
 
