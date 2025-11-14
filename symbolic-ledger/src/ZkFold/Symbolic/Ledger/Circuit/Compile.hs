@@ -63,7 +63,6 @@ import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Class (BaseField)
-import ZkFold.Symbolic.Compiler qualified as C
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -78,6 +77,7 @@ import Prelude qualified as P
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
+import qualified ZkFold.ArithmeticCircuit.Node as C
 
 -- $setup
 --
@@ -174,7 +174,7 @@ type LedgerContractInputPayload bi bo ud a i o t =
     (Order RollupBF)
 
 type LedgerContractCompiledInput bi bo ud a i o t =
-  LedgerContractInputPayload bi bo ud a i o t :*: LedgerContractInputLayout bi bo ud a i o t
+  LedgerContractInputLayout bi bo ud a i o t :*: LedgerContractInputPayload bi bo ud a i o t
 
 type LedgerContractOutputLayout =
   ( (Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1)
@@ -192,7 +192,7 @@ ledgerCircuit
   => -- Since we are hardcoding @RollupBF@ at some places in this file, it is important that it is the same as the base field of the context.
   RollupBF ~ BaseField c
   => LedgerCircuit bi bo ud a i o t
-ledgerCircuit = runVec $ C.compile @RollupBF ledgerContract
+ledgerCircuit = C.compileV1 @RollupBF ledgerContract
 
 type PlonkupTs i n t =
   Plonkup i LedgerContractOutputLayout n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec RollupBF)
@@ -233,7 +233,7 @@ ledgerProof TrustedSetup {..} ps input = proof
   witnessInputs = runInterpreter $ arithmetize input
 
   paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t RollupBF
-  paddedWitnessInputs = (payload input :*: U1) :*: (witnessInputs :*: U1)
+  paddedWitnessInputs = (witnessInputs :*: U1) :*: (payload input :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
   plonkup = Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc

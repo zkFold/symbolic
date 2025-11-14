@@ -35,6 +35,7 @@ import ZkFold.Symbolic.Ledger.Circuit.Compile
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import GHC.TypeNats (type (+))
+import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
 
 specE2ECompile :: Spec
 specE2ECompile =
@@ -50,7 +51,7 @@ specE2ECompile =
 
     -- ts :: TrustedSetup (LedgerCircuitGates + 6) <- powersOfTauSubset
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
-    Haskell.print $ "compiledCircuit: " <> show compiledCircuit
+    Haskell.print $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
 
     -- let setupV =
     --       ledgerSetup
