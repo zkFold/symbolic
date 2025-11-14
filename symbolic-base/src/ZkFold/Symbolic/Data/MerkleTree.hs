@@ -30,7 +30,7 @@ import Data.Foldable (foldl', foldr, toList)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Ord ((<=))
-import Data.Tuple (fst)
+import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
@@ -118,8 +118,8 @@ merklePath
   -> MerklePath d c
 merklePath MerkleTree {..} position =
   let
-    -- Leaves at the current level as a strict vector of FieldElements
-    leaves = toV (restored mLeaves)
+    -- Base (witness) leaves as a strict vector
+    leavesBase = toV (toBaseLeaves mLeaves)
 
     -- Pairs up adjacent elements: [(a0,b0),(a1,b1),...]
     pairUp v =
@@ -133,23 +133,27 @@ merklePath MerkleTree {..} position =
              in ifThenElse b (rec r) (rec l)
        in foldr splitter Data.head bitsTail
 
-    -- Computes siblings bottom-up for all levels using only symbolic conditionals.
-    computePath v bitsLSB =
+    -- Computes siblings bottom-up: hash parents in base ring, select siblings as FieldElements.
+    computePathBase v bitsLSB =
       case (Data.length v, bitsLSB) of
         (len, _) | len <= 1 -> []
         (_, b : bsLSB) ->
           let pairs = pairUp v
-              -- for each pair, pick the sibling depending on current bit
-              siblingsVec = Data.map (\(a, c) -> ifThenElse b a c) pairs
-              -- select among pairs using the remaining higher-order bits (MSB -> LSB)
-              sibling = selectByBits (P.reverse bsLSB) siblingsVec
+              leftsFE = Data.map (fromBaseHash . fst) pairs
+              rightsFE = Data.map (fromBaseHash . snd) pairs
+              -- Select the pair index by remaining higher bits (MSB -> LSB)
+              chosenLeftFE = selectByBits (P.reverse bsLSB) leftsFE
+              chosenRightFE = selectByBits (P.reverse bsLSB) rightsFE
+              -- Sibling at this level: if bit=1 (current is right) sibling is left; else sibling is right
+              siblingFE = ifThenElse b chosenLeftFE chosenRightFE
               parents = Data.map (\(x, y) -> Base.merkleHash x y) pairs
-           in sibling : computePath parents bsLSB
+           in siblingFE : computePathBase parents bsLSB
         -- Should not happen for well-formed trees, but keep totality
         _ -> []
 
     -- process bits from LSB to MSB at the bottom level
-    pathElems = unsafeToVector (computePath leaves (P.reverse (toList $ unComp1 position)))
+    pathElems =
+      unsafeToVector (computePathBase leavesBase (P.reverse (toList $ unComp1 position)))
    in Comp1 $ zipWith (:*:) (reverse $ unComp1 position) pathElems
 
 rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
@@ -171,7 +175,7 @@ contains
   -> MerkleEntry d c
   -> Bool c
 tree `contains` MerkleEntry {..} =
-  rootOnReplace (merklePath tree position) value == mHash tree
+  lookup tree position == value
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
@@ -291,6 +295,7 @@ replace
   -> MerkleTree d c
   -> MerkleTree d c
 replace entry@MerkleEntry {..} =
+  -- Needs conditional on witness field for `contains`
   assert (`contains` entry)
     . unconstrainedFromLeaves
     . mapWithIx (replacer (toBasePosition position, toBaseHash value))
