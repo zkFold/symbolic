@@ -5,8 +5,10 @@ import Prelude (($))
 
 import Tests.Symbolic.Ledger.E2E.One (specE2EOne)
 import Tests.Symbolic.Ledger.E2E.Two (specE2ETwo)
+import Tests.Symbolic.Ledger.E2E.Compile (specE2ECompile)
 
 specUpdateLedgerState :: Spec
 specUpdateLedgerState = describe "updateLedgerState" $ do
   specE2EOne
   specE2ETwo
+  specE2ECompile

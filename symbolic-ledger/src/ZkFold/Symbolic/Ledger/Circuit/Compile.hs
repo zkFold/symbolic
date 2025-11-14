@@ -207,15 +207,15 @@ type TranscriptConstraints ts =
 ledgerSetup
   :: forall tc bi bo ud a i o t c
    . TranscriptConstraints tc
+   => RollupBF ~ BaseField c
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
-  -> LedgerCircuit bi bo ud a i o t
   -> SetupVerify (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
-ledgerSetup TrustedSetup {..} ac = setupV
+ledgerSetup TrustedSetup {..} = setupV
  where
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
-  plonkup = Plonkup omega k1 k2 ac g2_1 g1s
+  plonkup = Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s
   setupV = setupVerify @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
 
 ledgerProof
@@ -225,10 +225,9 @@ ledgerProof
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
-  -> LedgerCircuit bi bo ud a i o t
   -> LedgerContractInput bi bo ud a i o t c
   -> Proof (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
-ledgerProof TrustedSetup {..} ps ac input = proof
+ledgerProof TrustedSetup {..} ps input = proof
  where
   witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order RollupBF)) RollupBF
   witnessInputs = runInterpreter $ arithmetize input
@@ -237,7 +236,7 @@ ledgerProof TrustedSetup {..} ps ac input = proof
   paddedWitnessInputs = (payload input :*: U1) :*: (witnessInputs :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
-  plonkup = Plonkup omega k1 k2 ac g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
+  plonkup = Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
   setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
   witness =
     ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a i o t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs
