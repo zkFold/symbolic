@@ -4,7 +4,7 @@
 module ZkFold.Symbolic.Ledger.Validation.Transaction (
   TransactionWitness (..),
   validateTransaction,
-  outputHasAtLeastOneAda,
+  outputHasValueSanity,
 ) where
 
 import Control.Lens ((.~), (?~))
@@ -370,6 +370,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   :*: ( outsValidAcc
                           && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
                           && (output /= nullOutput)
+                          && outputHasValueSanity output
                       )
                   :*: utxoTreeAcc
               )
@@ -381,7 +382,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                             true
                             ( (utxoTreeAcc `MerkleTree.contains` merkleEntry)
                                 && (merkleEntry.value == nullUTxOHash @a @context)
-                                && outputHasAtLeastOneAda output
+                                && outputHasValueSanity output
                             )
                       )
                   :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
@@ -406,23 +407,26 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         :*: updatedUTxOTreeForOutputs
     )
 
--- | Check if output has at least one ada.
-outputHasAtLeastOneAda
+-- | Check if output has sane value.
+--
+-- We check if the output has at least one ada and all assets are non-negative.
+outputHasValueSanity
   :: forall a context
    . (KnownRegistersAssetQuantity context, Symbolic context)
   => Output a context
   -> Bool context
-outputHasAtLeastOneAda output =
-  foldl'
-    ( \found asset ->
-        found
-          || ( asset.assetPolicy
-                 == adaPolicy
-                 && asset.assetName
-                 == adaName
-                 && asset.assetQuantity
-                 >= fromConstant @Haskell.Integer 1_000_000
-             )
-    )
-    false
-    (unComp1 (oAssets output))
+outputHasValueSanity output =
+  let adaCheck :*: allNonNegCheck = foldl'
+        ( \(found :*: allNonNegAcc) asset ->
+            (found
+              || ( asset.assetPolicy
+                    == adaPolicy
+                    && asset.assetName
+                    == adaName
+                    && asset.assetQuantity
+                    >= fromConstant @Haskell.Integer 1_000_000
+                )) :*: (allNonNegAcc && (asset.assetQuantity >= zero))
+        )
+        (false :*: true)
+        (unComp1 (oAssets output))
+  in adaCheck && allNonNegCheck
