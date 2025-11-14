@@ -112,14 +112,45 @@ type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
 type Index d = Vector (d - 1) :.: Bool
 
 merklePath
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> MerklePath d c
 merklePath MerkleTree {..} position =
-  let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
-      path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
-   in Comp1 $ zipWith (:*:) (reverse $ unComp1 position) path
+  let
+    -- Leaves at the current level as a strict vector of FieldElements
+    leaves = toV (restored mLeaves)
+
+    -- Pairs up adjacent elements: [(a0,b0),(a1,b1),...]
+    pairUp v =
+      let n = Data.length v `P.div` 2
+       in Data.generate n (\k -> (v Data.! (2 P.* k), v Data.! (2 P.* k P.+ 1)))
+
+    -- Selects an element from a vector based on a list of bits (MSB -> LSB).
+    selectByBits bitsTail =
+      let splitter b rec vec =
+            let (l, r) = bisect vec
+             in ifThenElse b (rec r) (rec l)
+       in foldr splitter Data.head bitsTail
+
+    -- Computes siblings bottom-up for all levels using only symbolic conditionals.
+    computePath v bitsLSB =
+      case (Data.length v, bitsLSB) of
+        (len, _) | len <= 1 -> []
+        (_, b : bsLSB) ->
+          let pairs = pairUp v
+              -- for each pair, pick the sibling depending on current bit
+              siblingsVec = Data.map (\(a, c) -> ifThenElse b a c) pairs
+              -- select among pairs using the remaining higher-order bits (MSB -> LSB)
+              sibling = selectByBits (P.reverse bsLSB) siblingsVec
+              parents = Data.map (\(x, y) -> Base.merkleHash x y) pairs
+           in sibling : computePath parents bsLSB
+        -- Should not happen for well-formed trees, but keep totality
+        _ -> []
+
+    -- process bits from LSB to MSB at the bottom level
+    pathElems = unsafeToVector (computePath leaves (P.reverse (toList $ unComp1 position)))
+   in Comp1 $ zipWith (:*:) (reverse $ unComp1 position) pathElems
 
 rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
 rootOnReplace (Comp1 path) value =
@@ -135,7 +166,7 @@ deriving stock instance HShow c => P.Show (MerkleEntry d c)
 
 contains
   :: forall d c
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => MerkleTree d c
   -> MerkleEntry d c
   -> Bool c
@@ -146,7 +177,7 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
 (!!)
   :: forall d c
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
@@ -168,7 +199,7 @@ tree !! position =
 
 search
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (MerkleEntry d) c
@@ -216,7 +247,7 @@ search pred tree =
 
 find
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe FieldElement c
@@ -224,7 +255,7 @@ find pred = mmap value . search pred
 
 findIndex
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (Index d) c
@@ -232,21 +263,21 @@ findIndex pred = mmap position . search pred
 
 elemIndex
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => FieldElement (WitnessContext c)
   -> MerkleTree d c
   -> Maybe (Index d) c
 elemIndex elem = findIndex (== elem)
 
 lookup
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
 lookup = (!!)
 
 search'
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => (forall e. (Symbolic e, BaseField e ~ BaseField c) => FieldElement e -> Bool e)
   -> MerkleTree d c
   -> MerkleEntry d c
