@@ -30,7 +30,7 @@ import Prelude qualified as Haskell
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
-import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
+import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasValueSanity)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
 
 {- Note [State validation]
@@ -42,7 +42,7 @@ For validating transactions, we should check:
 \* Outputs are added to the UTxO set if they are not bridge out outputs.
 \* We require signature from addresses corresponding to spent UTxOs.
 \* Bridged out outputs are checked to be same as in bridge out list.
-\* Outputs must have at least one ada.
+\* Outputs (bridged out or not) must have at least one ada and all assets are non-negative.
 \* Transaction is balanced.
 \* Transaction must have at least one input.
 \* Bridged out output is not a null output.
@@ -53,7 +53,7 @@ For validating state, we check following:
 
 \* Previous state hash is correctly set.
 \* New UTxO state is properly computed. For it, we first added UTxOs to the old state corresponding to bridged in assets and then update this set by folding over transactions.
-\* Bridge in outputs have at least one ada.
+\* Bridge in outputs have at least one ada and all assets are non-negative.
 \* Transaction batch is valid.
 \* Length is incremented by one.
 \* Bridged out list is correctly computed.
@@ -129,7 +129,7 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                       true
                       ( (acc `MerkleTree.contains` merkleEntry)
                           && (merkleEntry.value == nullUTxOHash')
-                          && outputHasAtLeastOneAda output
+                          && outputHasValueSanity output
                       )
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
