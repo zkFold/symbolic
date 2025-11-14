@@ -5,17 +5,15 @@ module ZkFold.Symbolic.Data.Input (
   SymbolicInput (..),
 ) where
 
-import Data.Semialign (Zip)
+import Data.Semialign (Semialign)
 import qualified GHC.Generics as G
-import Prelude (($), (.))
+import Prelude (($), (.), Functor, Foldable)
 
-import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.Vec
-import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
+import ZkFold.Symbolic.V2 (Symbolic)
+import GHC.Err (error)
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where
@@ -26,13 +24,13 @@ class SymbolicData d => SymbolicInput d where
   isValid = isValid . G.from1
 
 instance SymbolicInput Bool where
-  isValid (Bool b) = Bool $
-    fromCircuitF b $
-      \(G.Par1 v) -> do
-        u <- newAssigned (\x -> x v * (one - x v))
-        isZero $ G.Par1 u
+  isValid (Bool _b) = Bool $ error "TODO"
+    -- fromCircuitF b $
+    --  \(G.Par1 v) -> do
+    --    u <- newAssigned (\x -> x v * (one - x v))
+    --    isZero $ G.Par1 u
 
-instance LayoutFunctor f => SymbolicInput (Vec f) where
+instance Functor f => SymbolicInput (Vec f) where
   isValid _ = true
 
 instance SymbolicInput G.U1 where
@@ -41,7 +39,7 @@ instance SymbolicInput G.U1 where
 instance (SymbolicInput x, SymbolicInput y) => SymbolicInput (x G.:*: y) where
   isValid (x G.:*: y) = isValid x && isValid y
 
-instance (Zip f, LayoutFunctor f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
+instance (Semialign f, Foldable f, SymbolicInput x) => SymbolicInput (f G.:.: x) where
   isValid = all isValid . G.unComp1
 
 instance SymbolicInput x => SymbolicInput (G.M1 i c x) where

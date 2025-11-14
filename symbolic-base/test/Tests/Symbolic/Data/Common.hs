@@ -3,6 +3,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Tests.Symbolic.Data.Common (
+  specConstantRoundtrip',
   specConstantRoundtrip,
   specSymbolicFunction0,
   specSymbolicFunction1,

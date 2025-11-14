@@ -11,18 +11,21 @@ import Test.QuickCheck (withMaxSuccess, (.&.), (===))
 import Prelude (pure)
 import qualified Prelude as P
 
-import Tests.Common (evalBool, it, toss)
+import Tests.Common (it, toss)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Algorithm.RSA
 import ZkFold.Symbolic.Data.Combinators (ilog2)
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Compat (CompatData (..), CompatContext (..))
+import ZkFold.Symbolic.Data.Bool (Bool (..))
+import GHC.Generics (Par1(..))
 
-type I = Interpreter Fr
+evalBool :: CompatData Bool a -> a
+evalBool (CompatData (Bool (CompatContext (Par1 b)))) = b
 
-specRSA' :: forall keyLength g. (RandomGen g, RSA keyLength 256 I) => g -> Spec
+specRSA' :: forall keyLength g. (RandomGen g, RSA keyLength 256 Fr) => g -> Spec
 specRSA' gen = do
   describe ("RSA signature: key length of " P.<> P.show (value @keyLength) P.<> " bits") $ do
     it "signs and verifies correctly" $ withMaxSuccess 10 $ do
@@ -34,11 +37,11 @@ specRSA' gen = do
 
           msgVar = fromNatural (ilog2 msgBits) msgBits
 
-          sig = sign @keyLength @256 @I msg prvkey
-          check = verify @keyLength @256 @I msg sig pubkey
+          sig = sign @keyLength @256 @Fr msg prvkey
+          check = verify @keyLength @256 @Fr msg sig pubkey
 
-          sigV = signVar @keyLength @256 @I msgVar prvkey
-          (checkV, _) = verifyVar @keyLength @256 @I msgVar sigV pubkey
+          sigV = signVar @keyLength @256 @Fr msgVar prvkey
+          (checkV, _) = verifyVar @keyLength @256 @Fr msgVar sigV pubkey
 
       pure $ evalBool check === one .&. evalBool checkV === one
 

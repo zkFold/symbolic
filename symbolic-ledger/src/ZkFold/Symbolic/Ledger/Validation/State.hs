@@ -15,14 +15,12 @@ import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
-import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
@@ -32,6 +30,7 @@ import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
+import ZkFold.Symbolic.Data.V2 (SymbolicData)
 
 {- Note [State validation]
 
@@ -62,22 +61,22 @@ For validating state, we check following:
 -- | State witness for validating state update.
 data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
-  , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
+  , swTransactionBatch :: TransactionBatchWitness ud i o a t context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
-deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+deriving stock instance Haskell.Show context => Haskell.Show (StateWitness bi bo ud a i o t context)
 
-deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBF)
 
 deriving anyclass instance
-  forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBF)
 
 deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
-  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
+  => ToSchema (StateWitness bi bo ud a i o t RollupBF)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
@@ -92,7 +91,7 @@ validateStateUpdate
   -- ^ New state.
   -> StateWitness bi bo ud a i o t context
   -- ^ Witness for the state.
-  -> Bool context
+  -> CompatData Bool context
 validateStateUpdate previousState action newState sw =
   let res = validateStateUpdateIndividualChecks previousState action newState sw
    in res == Haskell.pure true
@@ -110,7 +109,7 @@ validateStateUpdateIndividualChecks
   -- ^ New state.
   -> StateWitness bi bo ud a i o t context
   -- ^ Witness for the state.
-  -> Vector 5 (Bool context)
+  -> Vector 5 (CompatData Bool context)
 validateStateUpdateIndividualChecks previousState action newState sw =
   let
     initialUTxOTree = previousState.sUTxO
@@ -138,10 +137,7 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                     :*: ifThenElse
                       (isValid' && (output /= nullOutput))
                       ( MerkleTree.replace
-                          ( merkleEntry
-                              { MerkleTree.value = utxoHash
-                              }
-                          )
+                          (merkleEntry {MerkleTree.value = utxoHash})
                           acc
                       )
                       acc

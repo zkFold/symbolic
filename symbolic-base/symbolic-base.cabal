@@ -157,6 +157,7 @@ library
       ZkFold.Control.HApplicative
       ZkFold.Data.Bool
       ZkFold.Data.Binary
+      ZkFold.Data.Collect
       ZkFold.Data.Empty
       ZkFold.Data.Eq
       ZkFold.Data.FromList
@@ -181,23 +182,6 @@ library
       ZkFold.FFI.Rust.Types
       ZkFold.FFI.Rust.Plonkup
       ZkFold.FFI.Rust.Runner
-      ZkFold.Protocol.IVC
-      ZkFold.Protocol.IVC.Accumulator
-      ZkFold.Protocol.IVC.AccumulatorScheme
-      ZkFold.Protocol.IVC.AlgebraicMap
-      ZkFold.Protocol.IVC.CommitOpen
-      ZkFold.Protocol.IVC.Commit
-      ZkFold.Protocol.IVC.FiatShamir
-      ZkFold.Protocol.IVC.ForeignField
-      ZkFold.Protocol.IVC.Internal
-      ZkFold.Protocol.IVC.NARK
-      ZkFold.Protocol.IVC.OperationRecord
-      ZkFold.Protocol.IVC.Oracle
-      ZkFold.Protocol.IVC.Predicate
-      ZkFold.Protocol.IVC.RecursiveFunction
-      ZkFold.Protocol.IVC.SpecialSound
-      ZkFold.Protocol.IVC.VerifierCircuit
-      ZkFold.Protocol.IVC.WeierstrassWitness
       ZkFold.Protocol.KZG
       ZkFold.Protocol.Plonkup
       ZkFold.Protocol.Plonkup.LookupConstraint
@@ -242,8 +226,6 @@ library
       ZkFold.Symbolic.Algorithm.FFT
       ZkFold.Symbolic.Algorithm.Interpolation
       ZkFold.Symbolic.Class
-      ZkFold.Symbolic.Compat
-      ZkFold.Symbolic.Compiler
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
@@ -267,17 +249,18 @@ library
       ZkFold.Symbolic.Data.JWT.RS256
       ZkFold.Symbolic.Data.JWT.Twitch
       ZkFold.Symbolic.Data.JWT.Utils
-      ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Sum
       ZkFold.Symbolic.Data.UInt
+      ZkFold.Symbolic.Data.Unconstrained
       ZkFold.Symbolic.Data.UTCTime
       ZkFold.Symbolic.Data.V2
       ZkFold.Symbolic.Data.VarByteString
       ZkFold.Symbolic.Data.Vec
+      ZkFold.Symbolic.Data.Witness
       ZkFold.Symbolic.Fold
       ZkFold.Symbolic.Interpreter
       ZkFold.Symbolic.MonadCircuit
@@ -317,7 +300,6 @@ library
       generic-random                        < 1.6,
       hashtables                                 ,
       infinite-list                              ,
-      lens                                       ,
       monoidal-containers                        ,
       mtl                                   < 2.4,
       optics                                < 0.5,
@@ -386,15 +368,14 @@ test-suite symbolic-base-test
       Tests.Symbolic.Algorithm.SHA2
       Tests.Symbolic.ArithmeticCircuit
       Tests.Symbolic.Compiler
-      Tests.Symbolic.Compiler.CompileWith
       Tests.Symbolic.Compiler.Optimization
       Tests.Symbolic.Data.ByteString
       Tests.Symbolic.Data.Common
+      Tests.Symbolic.Data.Common.V2
       Tests.Symbolic.Data.FFA
       Tests.Symbolic.Data.FieldElement
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
-      Tests.Symbolic.Data.List
       Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt

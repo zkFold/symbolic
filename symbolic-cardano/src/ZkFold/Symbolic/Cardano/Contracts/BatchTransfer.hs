@@ -10,11 +10,11 @@ import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Compat (CompatData (..))
 import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
 import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.FieldElement (fromFieldElement)
 import ZkFold.Symbolic.Data.UInt (StrictConv (..))
+import ZkFold.Symbolic.V2 (Symbolic)
 import Prelude hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
 import ZkFold.Symbolic.Cardano.Types
@@ -30,21 +30,27 @@ type Tx = Transaction 6 0 11 Tokens 0 ()
 verifySignature
   :: forall context
    . Symbolic context
-  => ByteString 224 context -> (TxOut context, TxOut context) -> ByteString 256 context -> Bool context
-verifySignature pub (pay, change) sig = (from sig * base) == (strictConv (fromFieldElement mimc) * from (resize pub :: ByteString 256 context))
+  => ByteString 224 context
+  -> (TxOut context, TxOut context)
+  -> ByteString 256 context
+  -> CompatData Bool context
+verifySignature pub (pay, change) sig =
+  from sig * base == strictConv mimc * from (resize pub :: ByteString 256 context)
  where
   base :: UInt 256 Auto context
   base = fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural)
 
-  mimc :: FieldElement context
-  mimc = hash (pay :*: change)
+  mimc :: CompatData FieldElement context
+  mimc = hashV2 (pay :*: change)
 
 batchTransfer
   :: forall context
    . ( Symbolic context
      , KnownRegisters context 64 'Auto
      )
-  => Tx context -> Vector 5 (TxOut context, TxOut context, ByteString 256 context) -> Bool context
+  => Tx context
+  -> Vector 5 (TxOut context, TxOut context, ByteString 256 context)
+  -> CompatData Bool context
 batchTransfer tx transfers =
   let
     -- Extract the payment credentials and verify the signatures

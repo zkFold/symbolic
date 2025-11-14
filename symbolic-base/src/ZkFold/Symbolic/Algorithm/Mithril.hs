@@ -15,13 +15,15 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
-import ZkFold.Symbolic.Class (BaseField, Symbolic)
-import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, NumberOfRegisters, RegisterSize (Auto))
+import ZkFold.Symbolic.Compat (CompatData)
+import ZkFold.Symbolic.Data.Combinators (GetRegisterSize, KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.V2 (Symbolic)
 
-type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)
+type StakeDistribution m point ctx =
+  Vector m (point, CompatData FieldElement ctx)
 
 mithril
   :: forall m n point curve p q baseField scalarField ctx
@@ -34,13 +36,13 @@ mithril
      , KnownFFA q 'Auto ctx
      , KnownFFA p 'Auto ctx
      , KnownNat n
-     , KnownNat (NumberOfRegisters (BaseField ctx) n 'Auto)
-     , KnownNat (GetRegisterSize (BaseField ctx) n 'Auto)
+     , KnownRegisters ctx n 'Auto
+     , KnownNat (GetRegisterSize ctx n 'Auto)
      )
   => StakeDistribution m point ctx
   -> scalarField
   -> (scalarField, scalarField)
-  -> FieldElement ctx
+  -> CompatData FieldElement ctx
 mithril stakeDist messageHash (r, s) =
   let
    in foldl'

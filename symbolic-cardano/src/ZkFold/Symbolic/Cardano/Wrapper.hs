@@ -1,6 +1,7 @@
 module ZkFold.Symbolic.Cardano.Wrapper where
 
 import ZkFold.Data.Eq (Eq ((==)))
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (..))
 import Prelude hiding (Bool, Eq (..), length, splitAt, (&&), (*), (+))
@@ -13,7 +14,7 @@ type TxHash context = UInt 64 Auto context
 hashFunction :: Transaction inputs rinputs outputs tokens mint datum context -> TxHash context
 hashFunction = undefined -- from . blake2b_224 . serialiseData . toBuiltinData
 
-type Contract tx redeemer context = tx context -> redeemer context -> Bool context
+type Contract tx redeemer context = tx context -> redeemer context -> CompatData Bool context
 
 -- | Wrap the contract, exposing the transaction hash as the single public input.
 symbolicContractWrapper
@@ -23,7 +24,7 @@ symbolicContractWrapper
   -> TxHash context
   -> Transaction inputs rinputs outputs tokens mint datum context
   -> redeemer context
-  -> Bool context
+  -> CompatData Bool context
 symbolicContractWrapper contract hash tx witness =
   let
     -- Сhecking the supplied transaction hash

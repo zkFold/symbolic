@@ -12,13 +12,14 @@ import ZkFold.Data.Eq ((==))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector
 import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (BoolType (..), false, (||))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Maybe (Maybe (..))
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import ZkFold.Symbolic.WitnessContext (toWitnessContext)
+import ZkFold.Symbolic.Data.Witness (toWitness)
 import Prelude qualified as P
 
 import ZkFold.Symbolic.Ledger.Types
@@ -78,7 +79,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     utxoPreimageInit = utxoSet
     -- Apply bridge-in outputs to the UTxO set and collect witness entries.
     stepBridgeIn (ix, entries, tree, pre) out =
-      let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
+      let entry = MerkleTree.search' (\(fe :: CompatData FieldElement e) -> fe == nullUTxOHash @a) tree
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
           utxoHash = hash utxo & Base.hHash
           tree' :*: gatedUtxo =
@@ -111,8 +112,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               let isHere = u.uRef == ref
                in (isHere || found, ifThenElse isHere u picked)
             (_foundU, utxo) = foldl' pick (false, nullUTxO') utxoSetList
-            utxoHash :: FieldElement context = hash utxo & Base.hHash
-            utxoHashWC = toWitnessContext utxoHash
+            utxoHash :: CompatData FieldElement context = hash utxo & Base.hHash
+            utxoHashWC = toWitness utxoHash
             me = fromJust $ MerkleTree.search (== utxoHashWC) treeIn
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash'}) treeIn
             preIn' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
@@ -124,7 +125,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         -- Outputs witnesses and apply outputs (skip bridge-outs)
         outs = fromVector (unComp1 tx.outputs)
         stepOut (outsAcc, outIx, treeOut, preOut) (out :*: bout) =
-          let me = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) treeOut
+          let me = MerkleTree.search' (\(fe :: CompatData FieldElement e) -> fe == nullUTxOHash @a) treeOut
               utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outIx}, uOutput = out}
               utxoHash = hash utxo & Base.hHash
               treeOut' :*: gatedUtxo =

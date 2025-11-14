@@ -13,38 +13,37 @@ import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
-import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
+import ZkFold.Symbolic.Compat (CompatData)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
+import ZkFold.Symbolic.Data.V2 (SymbolicData)
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving anyclass (SymbolicData)
 
-deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
+deriving stock instance Haskell.Show context => Haskell.Show (TransactionBatchWitness ud i o a t context)
 
-deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBF)
 
 deriving anyclass instance
-  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBF)
 
 deriving anyclass instance
   forall ud i o a t
    . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
-  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+  => ToSchema (TransactionBatchWitness ud i o a t RollupBF)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
@@ -58,7 +57,7 @@ validateTransactionBatch
   -- ^ Transaction batch.
   -> TransactionBatchWitness ud i o a t context
   -- ^ Witness for the transaction batch.
-  -> (Bool :*: MerkleTree ud) context
+  -> (CompatData Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree.
 validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
   let
@@ -69,7 +68,7 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
             let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
              in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
         )
-        ((zero :: FieldElement context) :*: true :*: utxoTree)
+        ((zero :: CompatData FieldElement context) :*: true :*: utxoTree)
         transactionBatchWithWitness
     bouts =
       foldl'
