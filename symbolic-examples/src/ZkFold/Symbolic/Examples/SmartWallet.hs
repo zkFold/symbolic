@@ -50,6 +50,7 @@ import GHC.Natural (naturalToInteger)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class (compress)
+import ZkFold.Protocol.Plonkup.OffChain.Cardano
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Algebra.Number (KnownNat, Natural, type (+), type (^))
 import qualified ZkFold.Algebra.Number as Number
@@ -101,30 +102,6 @@ convertG1 = toByteString . compress
 convertG2 :: BLS12_381_G2_JacobianPoint -> ByteString
 convertG2 = toByteString . compress
 
-data ZKSetupBytes = ZKSetupBytes
-  { n :: Integer
-  , nPrv :: Integer
-  , pow :: Integer
-  , omega_int :: Integer
-  , omegaNPrv_int :: Integer
-  , k1_int :: Integer
-  , k2_int :: Integer
-  , h1_bytes :: ByteString
-  , cmQm_bytes :: ByteString
-  , cmQl_bytes :: ByteString
-  , cmQr_bytes :: ByteString
-  , cmQo_bytes :: ByteString
-  , cmQc_bytes :: ByteString
-  , cmQk_bytes :: ByteString
-  , cmS1_bytes :: ByteString
-  , cmS2_bytes :: ByteString
-  , cmS3_bytes :: ByteString
-  , cmT1_bytes :: ByteString
-  , cmT2_bytes :: ByteString
-  , cmT3_bytes :: ByteString
-  }
-  deriving stock (Generic, Show)
-
 mkSetup :: forall i n. KnownNat n => SetupVerify (PlonkupTs i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
@@ -150,65 +127,6 @@ mkSetup PlonkupVerifierSetup {..} =
         , cmT2_bytes = convertG1 cmT2
         , cmT3_bytes = convertG1 cmT3
         }
-
--- | Field element.
-newtype ZKF = ZKF Integer
-  deriving stock (Eq, Generic, Ord, Show)
-  deriving newtype (FromJSON, ToJSON)
-
--- | 'ByteString' whose on wire representation is given in hexadecimal encoding.
-newtype ByteStringFromHex = ByteStringFromHex ByteString
-  deriving stock Generic
-  deriving newtype (Eq, Ord)
-
-byteStringFromHexToHex :: ByteStringFromHex -> Text
-byteStringFromHexToHex = decodeUtf8 . BS16.encode . coerce
-
-instance Show ByteStringFromHex where
-  showsPrec d bs =
-    showParen (d > 10) $
-      showString "ByteStringFromHex "
-        . showsPrec 11 (byteStringFromHexToHex bs)
-
-instance FromJSON ByteStringFromHex where
-  parseJSON = withText "ByteStringFromHex" $ \t ->
-    either (fail . show) (pure . ByteStringFromHex) $ BS16.decode (encodeUtf8 t)
-
-instance ToJSON ByteStringFromHex where
-  toJSON = Aeson.String . byteStringFromHexToHex
-
--- | ZK proof bytes, assuming hex encoding for relevant bytes.
-data ZKProofBytes = ZKProofBytes
-  { cmA_bytes :: !ByteStringFromHex
-  , cmB_bytes :: !ByteStringFromHex
-  , cmC_bytes :: !ByteStringFromHex
-  , cmF_bytes :: !ByteStringFromHex
-  , cmH1_bytes :: !ByteStringFromHex
-  , cmH2_bytes :: !ByteStringFromHex
-  , cmZ1_bytes :: !ByteStringFromHex
-  , cmZ2_bytes :: !ByteStringFromHex
-  , cmQlow_bytes :: !ByteStringFromHex
-  , cmQmid_bytes :: !ByteStringFromHex
-  , cmQhigh_bytes :: !ByteStringFromHex
-  , proof1_bytes :: !ByteStringFromHex
-  , proof2_bytes :: !ByteStringFromHex
-  , a_xi_int :: !Integer
-  , b_xi_int :: !Integer
-  , c_xi_int :: !Integer
-  , s1_xi_int :: !Integer
-  , s2_xi_int :: !Integer
-  , f_xi_int :: !Integer
-  , t_xi_int :: !Integer
-  , t_xi'_int :: !Integer
-  , z1_xi'_int :: !Integer
-  , z2_xi'_int :: !Integer
-  , h1_xi'_int :: !Integer
-  , h2_xi_int :: !Integer
-  , l_xi :: ![ZKF]
-  , l1_xi :: !ZKF
-  }
-  deriving stock (Generic, Show)
-  deriving anyclass (FromJSON, ToJSON)
 
 mkProof :: forall i (n :: Natural). Proof (PlonkupTs i n ByteString) -> ZKProofBytes
 mkProof PlonkupProof {..} =
