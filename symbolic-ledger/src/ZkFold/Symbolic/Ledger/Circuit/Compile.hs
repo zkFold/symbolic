@@ -23,7 +23,6 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
-import ZkFold.Protocol.Plonkup.OffChain.Cardano
 import Data.Coerce (coerce)
 import Data.OpenApi (ToSchema (..))
 import Data.Text (Text)
@@ -44,6 +43,7 @@ import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit.Node qualified as C
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
@@ -56,6 +56,7 @@ import ZkFold.Protocol.NonInteractiveProof as NP (
   TrustedSetup (..),
  )
 import ZkFold.Protocol.Plonkup (Plonkup (..))
+import ZkFold.Protocol.Plonkup.OffChain.Cardano
 import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))
@@ -78,7 +79,6 @@ import Prelude qualified as P
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
-import qualified ZkFold.ArithmeticCircuit.Node as C
 
 -- $setup
 --
@@ -137,8 +137,16 @@ deriving anyclass instance
   => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
 type LedgerContractOutput =
-  FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement
-    :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement :*: FieldElement
+  FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
+    :*: FieldElement
     :*: Bool
 
 ledgerContract
@@ -147,18 +155,16 @@ ledgerContract
   => SignatureTransactionBatch ud i o a t c
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput c
 ledgerContract LedgerContractInput {..} =
-   sPreviousStateHash lciPreviousState
-      :*: (mHash . sUTxO $ lciPreviousState)
-      :*: sLength lciPreviousState
-      :*: (hHash . sBridgeIn $ lciPreviousState)
-      :*: (hHash . sBridgeOut $ lciPreviousState)
-  
-    :*:  sPreviousStateHash lciNewState
-            :*: (mHash . sUTxO $ lciNewState)
-            :*: sLength lciNewState
-            :*: (hHash . sBridgeIn $ lciNewState)
-            :*: (hHash . sBridgeOut $ lciNewState)
-        
+  sPreviousStateHash lciPreviousState
+    :*: (mHash . sUTxO $ lciPreviousState)
+    :*: sLength lciPreviousState
+    :*: (hHash . sBridgeIn $ lciPreviousState)
+    :*: (hHash . sBridgeOut $ lciPreviousState)
+    :*: sPreviousStateHash lciNewState
+    :*: (mHash . sUTxO $ lciNewState)
+    :*: sLength lciNewState
+    :*: (hHash . sBridgeIn $ lciNewState)
+    :*: (hHash . sBridgeOut $ lciNewState)
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
 -- TODO: Is this circuit gate count enough?
@@ -178,8 +184,16 @@ type LedgerContractCompiledInput bi bo ud a i o t =
   LedgerContractInputLayout bi bo ud a i o t :*: LedgerContractInputPayload bi bo ud a i o t
 
 type LedgerContractOutputLayout =
-  ( Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1
-      :*: Par1 :*: Par1 :*: Par1 :*: Par1 :*: Par1
+  ( Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
+      :*: Par1
       :*: Par1
   )
 
@@ -208,7 +222,7 @@ type TranscriptConstraints ts =
 ledgerSetup
   :: forall tc bi bo ud a i o t c
    . TranscriptConstraints tc
-   => RollupBF ~ BaseField c
+  => RollupBF ~ BaseField c
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
@@ -237,7 +251,9 @@ ledgerProof TrustedSetup {..} ps input = proof
   paddedWitnessInputs = (witnessInputs :*: U1) :*: (payload input :*: U1)
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
-  plonkup = Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
+  plonkup =
+    Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s
+      :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
   setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
   witness =
     ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a i o t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs

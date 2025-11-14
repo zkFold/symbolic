@@ -4,38 +4,41 @@ import Control.Applicative (pure)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
 import GHC.Natural (Natural)
+import GHC.TypeNats (type (+))
 import Test.Hspec (Spec, it, shouldBe)
-import Prelude (($), Semigroup ((<>)), Show (..))
-import Prelude qualified as Haskell
-
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number qualified as Number
-import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (prove, setupProve, setupVerify, verify), TrustedSetup (..), powersOfTauSubset)
+import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
+import ZkFold.Protocol.NonInteractiveProof (
+  NonInteractiveProof (prove, setupProve, setupVerify, verify),
+  TrustedSetup (..),
+  powersOfTauSubset,
+ )
 import ZkFold.Protocol.Plonkup (Plonkup (..))
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
 import ZkFold.Protocol.Plonkup.Utils (getParams)
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
+import Prelude (Semigroup ((<>)), Show (..), ($))
+import Prelude qualified as Haskell
 
 import Tests.Symbolic.Ledger.E2E.Two
-import ZkFold.Symbolic.Ledger.Circuit.Compile
-  ( LedgerCircuit
-  , LedgerCircuitGates
-  , LedgerContractInput (..)
-  , LedgerContractOutput
-  , PlonkupTs
-  , ZKProofBytes
-  , ZKSetupBytes
-  , ledgerCircuit
-  , ledgerSetup
-  , mkProof
-  , mkSetup
-  )
+import ZkFold.Symbolic.Ledger.Circuit.Compile (
+  LedgerCircuit,
+  LedgerCircuitGates,
+  LedgerContractInput (..),
+  LedgerContractOutput,
+  PlonkupTs,
+  ZKProofBytes,
+  ZKSetupBytes,
+  ledgerCircuit,
+  ledgerSetup,
+  mkProof,
+  mkSetup,
+ )
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
-import GHC.TypeNats (type (+))
-import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
 
 specE2ECompile :: Spec
 specE2ECompile =
@@ -53,20 +56,20 @@ specE2ECompile =
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
     Haskell.print $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
 
-    -- let setupV =
-    --       ledgerSetup
-    --         @ByteString
-    --         @Bi
-    --         @Bo
-    --         @Ud
-    --         @A
-    --         @Ixs
-    --         @Oxs
-    --         @TxCount
-    --         @I
-    --         ts
+-- let setupV =
+--       ledgerSetup
+--         @ByteString
+--         @Bi
+--         @Bo
+--         @Ud
+--         @A
+--         @Ixs
+--         @Oxs
+--         @TxCount
+--         @I
+--         ts
 
-    -- let zkSetupBytes :: ZKSetupBytes
-    --     zkSetupBytes = mkSetup setupV
+-- let zkSetupBytes :: ZKSetupBytes
+--     zkSetupBytes = mkSetup setupV
 
-    -- verify setupV inputV proof `shouldBe` Haskell.True
+-- verify setupV inputV proof `shouldBe` Haskell.True

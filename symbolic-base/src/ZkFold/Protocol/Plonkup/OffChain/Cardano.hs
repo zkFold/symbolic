@@ -1,6 +1,7 @@
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+
 -- | Types specifically for off-chain Cardano blockchain usage of the plonkup protocol.
 module ZkFold.Protocol.Plonkup.OffChain.Cardano (
   ZKSetupBytes (..),
@@ -8,18 +9,17 @@ module ZkFold.Protocol.Plonkup.OffChain.Cardano (
   ByteStringFromHex (..),
   byteStringFromHexToHex,
   ZKProofBytes (..),
-)
-where
-import Data.Aeson (ToJSON (..), FromJSON (..), withText, Value (..))
-import Data.Coerce (coerce)
-import Prelude (Integer, Show (..), ($), (.), MonadFail (..), Applicative (..), either)
-import qualified Prelude as P
-import GHC.Generics (Generic)
+) where
+
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), withText)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
+import Data.Coerce (coerce)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-
+import GHC.Generics (Generic)
+import Prelude (Applicative (..), Integer, MonadFail (..), Show (..), either, ($), (.))
+import Prelude qualified as P
 
 data ZKSetupBytes = ZKSetupBytes
   { n :: Integer

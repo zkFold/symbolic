@@ -50,7 +50,6 @@ import GHC.Natural (naturalToInteger)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.EllipticCurve.Class (compress)
-import ZkFold.Protocol.Plonkup.OffChain.Cardano
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
 import ZkFold.Algebra.Number (KnownNat, Natural, type (+), type (^))
 import qualified ZkFold.Algebra.Number as Number
@@ -70,6 +69,7 @@ import ZkFold.Protocol.NonInteractiveProof as NP (
   powersOfTauSubset,
  )
 import ZkFold.Protocol.Plonkup (Plonkup (..))
+import ZkFold.Protocol.Plonkup.OffChain.Cardano
 import ZkFold.Protocol.Plonkup.Proof
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (..))

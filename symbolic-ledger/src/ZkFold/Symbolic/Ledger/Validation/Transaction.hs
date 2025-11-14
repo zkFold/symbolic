@@ -206,7 +206,7 @@ instance
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
   :: forall ud bo i o a context
-   . (SignatureTransaction ud i o a context)
+   . SignatureTransaction ud i o a context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
@@ -416,17 +416,20 @@ outputHasValueSanity
   => Output a context
   -> Bool context
 outputHasValueSanity output =
-  let adaCheck :*: allNonNegCheck = foldl'
-        ( \(found :*: allNonNegAcc) asset ->
-            (found
-              || ( asset.assetPolicy
-                    == adaPolicy
-                    && asset.assetName
-                    == adaName
-                    && asset.assetQuantity
-                    >= fromConstant @Haskell.Integer 1_000_000
-                )) :*: (allNonNegAcc && (asset.assetQuantity >= zero))
-        )
-        (false :*: true)
-        (unComp1 (oAssets output))
-  in adaCheck && allNonNegCheck
+  let adaCheck :*: allNonNegCheck =
+        foldl'
+          ( \(found :*: allNonNegAcc) asset ->
+              ( found
+                  || ( asset.assetPolicy
+                         == adaPolicy
+                         && asset.assetName
+                         == adaName
+                         && asset.assetQuantity
+                         >= fromConstant @Haskell.Integer 1_000_000
+                     )
+              )
+                :*: (allNonNegAcc && (asset.assetQuantity >= zero))
+          )
+          (false :*: true)
+          (unComp1 (oAssets output))
+   in adaCheck && allNonNegCheck
