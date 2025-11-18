@@ -40,6 +40,7 @@ import Data.Traversable (Traversable, traverse)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
+import GHC.Stack (callStack, prettyCallStack)
 import Optics (over, set, zoom)
 import Text.Show
 import Prelude (error, seq)
@@ -62,7 +63,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Fold (SymbolicFold, sfoldl)
 import ZkFold.Symbolic.MonadCircuit
 import ZkFold.Symbolic.V2 (LookupTable (..))
-import GHC.Stack (prettyCallStack, callStack)
 
 -- | The type that represents a constraint in the arithmetic circuit.
 type Constraint a = Poly a NewVar Natural
@@ -349,8 +349,11 @@ instance
           Known c ->
             if c == zero
               then pure ()
-              else error ("The constraint is non-zero at\n"
-                       <> prettyCallStack callStack)
+              else
+                error
+                  ( "The constraint is non-zero at\n"
+                      <> prettyCallStack callStack
+                  )
           Unknown ->
             zoom #acSystem . modify $
               M.insert (witToVar (p at)) (p $ evalVar var)

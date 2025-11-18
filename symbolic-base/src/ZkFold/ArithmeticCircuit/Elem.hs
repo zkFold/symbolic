@@ -1,10 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE ImplicitParams #-}
 
 module ZkFold.ArithmeticCircuit.Elem where
 
@@ -30,6 +30,7 @@ import Data.Traversable (Traversable, traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
+import GHC.Stack (CallStack, callStack)
 import Optics (zoom)
 import Prelude (error)
 
@@ -68,7 +69,6 @@ import ZkFold.Symbolic.Data.Class (
 import ZkFold.Symbolic.Data.Input (isValid)
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 import ZkFold.Symbolic.V2 (LookupTable)
-import GHC.Stack (CallStack, callStack)
 
 ---------------------- Efficient "list" concatenation --------------------------
 

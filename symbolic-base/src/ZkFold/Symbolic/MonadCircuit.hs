@@ -5,12 +5,12 @@ import Data.Function (($), (.))
 import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import GHC.Generics (Par1 (..))
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Orphans ()
 import ZkFold.Symbolic.V2 (LookupTable (..))
-import GHC.Stack (HasCallStack)
 
 -- | A type of witness builders. @i@ is a type of variables.
 --
