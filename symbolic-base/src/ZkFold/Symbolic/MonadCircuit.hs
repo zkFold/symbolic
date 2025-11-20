@@ -5,6 +5,7 @@ import Data.Function (($), (.))
 import Data.Set (singleton)
 import Data.Traversable (Traversable)
 import GHC.Generics (Par1 (..))
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
@@ -68,13 +69,13 @@ class
   --   E.g., @'constraint' (\\x -> x i)@ forces variable @var@ to be zero.
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-  constraint :: ClosedPoly var a -> m ()
+  constraint :: HasCallStack => ClosedPoly var a -> m ()
 
   -- | Adds new lookup constraint to the system.
   --   For examples of lookup constraints, see 'rangeConstraint'.
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-  lookupConstraint :: Traversable f => f var -> LookupTable f -> m ()
+  lookupConstraint :: (HasCallStack, Traversable f) => f var -> LookupTable f -> m ()
 
   -- | Creates new variable given a polynomial witness
   --   AND adds a corresponding polynomial constraint.
@@ -86,7 +87,7 @@ class
   --   NOTE: this adds a polynomial constraint to the system.
   --
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-  newAssigned :: ClosedPoly var a -> m var
+  newAssigned :: HasCallStack => ClosedPoly var a -> m var
   newAssigned p = newConstrained (\x var -> p x - x var) (p at)
 
 -- | Adds new range constraint to the system.
@@ -94,7 +95,7 @@ class
 --
 -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
 -- For now, this is handled partially with the help of 'desugarRanges' function.
-rangeConstraint :: MonadCircuit var a w m => var -> Natural -> m ()
+rangeConstraint :: (HasCallStack, MonadCircuit var a w m) => var -> Natural -> m ()
 rangeConstraint v upperBound =
   lookupConstraint (Par1 v) . Ranges $ singleton (zero, upperBound)
 
@@ -103,7 +104,7 @@ rangeConstraint v upperBound =
 -- is equal to @x var - one@ and which is expected to be in range @[0..b]@.
 --
 -- NOTE: this adds a range constraint to the system.
-newRanged :: MonadCircuit var a w m => Natural -> w -> m var
+newRanged :: (HasCallStack, MonadCircuit var a w m) => Natural -> w -> m var
 newRanged upperBound witness = do
   v <- unconstrained witness
   rangeConstraint v upperBound
@@ -129,7 +130,7 @@ type NewConstraint var a = forall x. Algebra a x => (var -> x) -> var -> x
 -- NOTE: this adds a polynomial constraint to the system.
 --
 -- NOTE: currently, provided constraints are directly fed to zkSNARK in use.
-newConstrained :: MonadCircuit var a w m => NewConstraint var a -> w -> m var
+newConstrained :: (HasCallStack, MonadCircuit var a w m) => NewConstraint var a -> w -> m var
 newConstrained poly witness = do
   v <- unconstrained witness
   constraint (`poly` v)
