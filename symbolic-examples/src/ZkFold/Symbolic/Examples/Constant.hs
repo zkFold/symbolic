@@ -14,9 +14,9 @@ import GHC.Generics ((:.:) (Comp1))
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Number (KnownNat, Natural)
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Class (Symbolic)
 
 import ZkFold.Symbolic.Examples.Conditional (exampleConditional)
 import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
@@ -24,7 +24,8 @@ import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
 exampleConst :: Symbolic c => FieldElement c
 exampleConst = fromConstant (5 :: Natural)
 
-exampleConditionalConst :: Symbolic c => Bool c -> FieldElement c -> FieldElement c
+exampleConditionalConst
+  :: Symbolic c => Bool c -> FieldElement c -> FieldElement c
 exampleConditionalConst b x = exampleConditional b x exampleConst
 
 exampleConditionalConstConst :: Symbolic c => Bool c -> FieldElement c
@@ -34,7 +35,5 @@ exampleEqConst :: Symbolic c => FieldElement c -> Bool c
 exampleEqConst = exampleEq exampleConst
 
 exampleEqVectorConst
-  :: (KnownNat n, Symbolic c)
-  => (Vector n :.: FieldElement) c
-  -> Bool c
+  :: (KnownNat n, Symbolic c) => (Vector n :.: FieldElement) c -> Bool c
 exampleEqVectorConst = exampleEqVector (Comp1 $ tabulate $ const exampleConst)

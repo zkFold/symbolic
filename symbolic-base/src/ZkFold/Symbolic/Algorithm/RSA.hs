@@ -22,23 +22,13 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
-import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisters,
-  RegisterSize (..),
-  Resize (..),
- )
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt, expMod)
+import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Data.Iso (Iso(..))
 
 type Signature keyLen ctx = ByteString keyLen ctx
 
@@ -47,20 +37,7 @@ data PrivateKey keyLen ctx
   { prvD :: UInt keyLen 'Auto ctx
   , prvN :: UInt keyLen 'Auto ctx
   }
-
-deriving instance Generic (PrivateKey keyLen context)
-
-deriving instance Generic1 (PrivateKey keyLen)
-
-deriving instance HNFData context => NFData (PrivateKey keyLen context)
-
-deriving instance HEq context => P.Eq (PrivateKey keyLen context)
-
-deriving instance HShow context => P.Show (PrivateKey keyLen context)
-
-deriving instance SymbolicData (PrivateKey keyLen)
-
-deriving instance KnownNat keyLen => SymbolicInput (PrivateKey keyLen)
+  deriving (Generic, Generic1, SymbolicData, NFData, P.Eq, P.Show)
 
 type PubExponentSize = 18
 
@@ -69,20 +46,7 @@ data PublicKey keyLen ctx
   { pubE :: UInt PubExponentSize 'Auto ctx
   , pubN :: UInt keyLen 'Auto ctx
   }
-
-deriving instance Generic (PublicKey keyLen context)
-
-deriving instance Generic1 (PublicKey keyLen)
-
-deriving instance HNFData context => NFData (PublicKey keyLen context)
-
-deriving instance HEq context => P.Eq (PublicKey keyLen context)
-
-deriving instance HShow context => P.Show (PublicKey keyLen context)
-
-deriving instance SymbolicData (PublicKey keyLen)
-
-deriving instance KnownNat keyLen => SymbolicInput (PublicKey keyLen)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 type RSA keyLen msgLen ctx =
   ( SHA2 "SHA256" ctx msgLen
@@ -90,7 +54,7 @@ type RSA keyLen msgLen ctx =
   , KnownNat (2 * keyLen)
   , KnownRegisters ctx keyLen 'Auto
   , KnownRegisters ctx (2 * keyLen) 'Auto
-  , KnownNat (Ceil (GetRegisterSize (BaseField ctx) (2 * keyLen) 'Auto) OrdWord)
+  , KnownNat (Ceil (GetRegisterSize ctx (2 * keyLen) 'Auto) OrdWord)
   )
 
 sign

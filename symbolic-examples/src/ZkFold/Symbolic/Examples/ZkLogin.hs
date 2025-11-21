@@ -27,7 +27,11 @@ zkLogin
 zkLogin jHeader jPayload jSignature amount recipient certificate pi = tokenValid && piValid
  where
   (tokenValid, tokenHash) = verifyJWT @"RS256" jHeader jPayload jSignature certificate
-  truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
+  truePi = sha2Var @"SHA256" $
+    plEmail jPayload @+
+    fromByteString tokenHash @+
+    fromByteString amount @+
+    fromByteString recipient
   piValid = truePi == pi
 
 zkLoginNoSig
@@ -45,7 +49,11 @@ zkLoginNoSig
 zkLoginNoSig jHeader jPayload _ amount recipient _ pi = piValid
  where
   tokenHash = sha2Var @"SHA256" $ tokenBits jHeader jPayload
-  truePi = sha2Var @"SHA256" $ plEmail jPayload @+ fromByteString tokenHash @+ fromByteString amount @+ fromByteString recipient
+  truePi = sha2Var @"SHA256" $
+    plEmail jPayload @+
+    fromByteString tokenHash @+
+    fromByteString amount @+
+    fromByteString recipient
   piValid = truePi == pi
 
 exampleZkLoginNoSig

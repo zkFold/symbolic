@@ -32,7 +32,7 @@ import ZkFold.Data.Vector hiding (zip, (.:))
 import qualified ZkFold.Data.Vector as V
 import qualified ZkFold.Prelude as ZkFold
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Data.Combinators (Iso (from))
+import ZkFold.Data.Iso (Iso (from))
 
 type MerkleTreeSize d = 2 ^ (d - 1)
 

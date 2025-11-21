@@ -4,8 +4,8 @@ module ZkFold.Symbolic.Ledger.Types.Address (
 ) where
 
 import ZkFold.Algebra.Class (Zero (..))
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 
 -- | Address on the zkFold ledger.

@@ -8,60 +8,25 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   AssetQuantity,
   AssetValue (..),
   nullAssetValue,
-  AssetValues,
   KnownRegistersAssetQuantity,
-
-  -- * Construction
-  assetValuesToList,
-  unsafeAssetValuesFromList,
-  emptyAssetValues,
-  assetValuesFromList,
-
-  -- * Arithmetic
-  addAssetValue,
-  negateAssetValues,
-  addAssetValues,
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Coerce (coerce)
-import Data.Function ((&))
 import Data.OpenApi (ToSchema (..))
-import GHC.Generics (Generic, Generic1, type (:*:) (..))
+import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Class
-import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
-import ZkFold.Symbolic.Data.List qualified as Symbolic.List
-import ZkFold.Symbolic.Fold (SymbolicFold)
-import Prelude hiding (
-  Bool,
-  Eq,
-  Int,
-  all,
-  foldr,
-  length,
-  negate,
-  null,
-  splitAt,
-  (&&),
-  (*),
-  (+),
-  (==),
-  (||),
- )
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Class (Symbolic)
 import Prelude qualified as Haskell
 
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
+import ZkFold.Symbolic.Data.UInt
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
@@ -70,9 +35,9 @@ type AssetPolicy context = FieldElement context
 type AssetName context = FieldElement context
 
 -- | Quantity of an asset.
-type AssetQuantity context = Int 128 Auto context
+type AssetQuantity context = Int 128 'Auto context
 
-type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
+type KnownRegistersAssetQuantity a = KnownRegisters a 128 Auto
 
 -- TODO: Replace with actual value, once we finalize how policy names are represented.
 adaPolicy :: Symbolic context => AssetPolicy context
@@ -88,115 +53,25 @@ data AssetValue context = AssetValue
   , assetName :: AssetName context
   , assetQuantity :: AssetQuantity context
   }
-  deriving stock (Generic, Generic1)
-  deriving anyclass (SymbolicData, SymbolicInput)
+  deriving stock (Generic, Generic1, Haskell.Eq, Haskell.Show)
+  deriving anyclass SymbolicData
 
-instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
+instance Symbolic c => Collect (ConstrainedDatum c) (AssetValue c)
 
-deriving stock instance HEq context => Haskell.Eq (AssetValue context)
+instance
+  (KnownRegistersAssetQuantity context, Symbolic context)
+  => Eq (AssetValue context)
 
-deriving stock instance HShow context => Haskell.Show (AssetValue context)
+deriving anyclass instance ToJSON (AssetValue RollupBF)
 
-deriving anyclass instance ToJSON (AssetValue RollupBFInterpreter)
+deriving anyclass instance FromJSON (AssetValue RollupBF)
 
-deriving anyclass instance FromJSON (AssetValue RollupBFInterpreter)
-
-deriving anyclass instance ToSchema (AssetValue RollupBFInterpreter)
+deriving anyclass instance ToSchema (AssetValue RollupBF)
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context
-nullAssetValue = AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
+nullAssetValue =
+  AssetValue {assetPolicy = zero, assetName = zero, assetQuantity = zero}
 
 instance Symbolic context => Zero (AssetValue context) where
   zero = nullAssetValue
-
--- | Denotes multiple assets.
-newtype AssetValues context = UnsafeAssetValues (List AssetValue context)
-  deriving newtype SymbolicData
-
-deriving newtype instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValues context)
-
--- | Convert a 'AssetValues' to a list.
-assetValuesToList :: AssetValues context -> List AssetValue context
-assetValuesToList = coerce
-
--- | Unsafe constructor for 'AssetValues'. Mainly to be used for testing.
-unsafeAssetValuesFromList :: List AssetValue context -> AssetValues context
-unsafeAssetValuesFromList = UnsafeAssetValues
-
--- | Construct an empty 'AssetValues'.
-emptyAssetValues
-  :: KnownRegistersAssetQuantity context
-  => Symbolic context
-  => AssetValues context
-emptyAssetValues = UnsafeAssetValues emptyList
-
--- | Safe constructor for 'AssetValues'.
-assetValuesFromList
-  :: SymbolicFold context
-  => KnownRegistersAssetQuantity context
-  => List AssetValue context
-  -> AssetValues context
-assetValuesFromList = Symbolic.List.foldr addAssetValue emptyAssetValues
-
--- | Add an 'AssetValue' to 'AssetValues'.
---
--- If the asset already exists in the list, the quantities are added. Else the asset is added to the list.
-addAssetValue
-  :: forall context
-   . SymbolicFold context
-  => KnownRegistersAssetQuantity context
-  => AssetValue context
-  -> AssetValues context
-  -> AssetValues context
-addAssetValue givenAssetVal (UnsafeAssetValues assetValList) =
-  let assetExisted :*: _ :*: r =
-        Symbolic.List.foldr
-          ( \y (found :*: givenAssetVal' :*: ys) ->
-              let isSame = givenAssetVal' == y
-               in (found || isSame)
-                    :*: givenAssetVal'
-                    :*: ifThenElse
-                      isSame
-                      ( AssetValue
-                          { assetPolicy = assetPolicy y
-                          , assetName = assetName y
-                          , assetQuantity = assetQuantity y + assetQuantity givenAssetVal'
-                          }
-                          .: ys
-                      )
-                      (y .: ys)
-          )
-          ((false :: Bool context) :*: givenAssetVal :*: emptyList)
-          assetValList
-   in ifThenElse
-        assetExisted
-        (UnsafeAssetValues r)
-        (UnsafeAssetValues $ givenAssetVal .: assetValList)
-
--- | Negate quantities present inside 'AssetValues'.
-negateAssetValues
-  :: forall context
-   . SymbolicFold context
-  => KnownRegistersAssetQuantity context
-  => AssetValues context
-  -> AssetValues context
-negateAssetValues (UnsafeAssetValues ls) =
-  UnsafeAssetValues $
-    Symbolic.List.foldr
-      ( \av acc ->
-          (av {assetQuantity = assetQuantity av & negate}) .: acc
-      )
-      (emptyList :: List AssetValue context)
-      ls
-
--- | Add two 'AssetValues'.
-addAssetValues
-  :: forall context
-   . SymbolicFold context
-  => KnownRegistersAssetQuantity context
-  => AssetValues context
-  -> AssetValues context
-  -> AssetValues context
-addAssetValues as (UnsafeAssetValues bs) =
-  Symbolic.List.foldl (flip addAssetValue) as bs
