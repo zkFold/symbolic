@@ -9,6 +9,7 @@ import Data.Functor.Rep (Rep, Representable)
 import Data.Set (Set)
 import Data.Traversable (Traversable)
 import GHC.Generics (Par1, (:*:))
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class (Algebra, PrimeField, (-))
@@ -39,4 +40,4 @@ p =!= q = Polynomial (p - q)
 
 -- TODO: Get rid of NFData constraint
 class (NFData c, PrimeField c) => Symbolic c where
-  constrain :: Constraint c -> c -> c
+  constrain :: HasCallStack => Constraint c -> c -> c

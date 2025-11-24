@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -21,6 +22,7 @@ import Data.Function (flip, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..), (:*:) (..))
+import GHC.Stack (CallStack, callStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
@@ -78,17 +80,21 @@ instance Symbolic c => Old.Symbolic (CompatContext c) where
   witnessF = compatContext
   fromCircuitF (CompatContext x) f = CompatContext $ collect (f x)
    where
-    collect :: Functor f => State [Constraint c] (f c) -> f c
-    collect fs =
-      let (xs, cs) = runState fs [] in flip (foldr constrain) cs <$> xs
+    collect :: Functor f => State [(CallStack, Constraint c)] (f c) -> f c
+    collect fs = let (xs, cs) = runState fs [] in flip (foldr work) cs <$> xs
+    work :: (CallStack, Constraint c) -> c -> c
+    work (stack, constr) elem = let ?callStack = stack in constrain constr elem
 
 instance
   (Symbolic c, Order c ~ n)
-  => MonadCircuit c (Zp n) c (State [Constraint c])
+  => MonadCircuit c (Zp n) c (State [(CallStack, Constraint c)])
   where
   unconstrained = pure
-  constraint f = modify' (Polynomial (compatAlgebra $ f fromConstant) :)
-  lookupConstraint xs lt = modify' (Lookup lt xs :)
+  constraint f =
+    let stack = callStack
+     in modify' ((stack, Polynomial (compatAlgebra $ f fromConstant)) :)
+  lookupConstraint xs lt =
+    let stack = callStack in modify' ((stack, Lookup lt xs) :)
 
 newtype CompatAlgebra a = CompatAlgebra {compatAlgebra :: a}
   deriving
