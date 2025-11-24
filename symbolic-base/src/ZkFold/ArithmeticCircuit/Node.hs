@@ -1,9 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE ImplicitParams #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {- HLINT ignore "Use record patterns" -}
@@ -30,6 +30,7 @@ import Data.Type.Equality (type (~))
 import GHC.Err (error)
 import GHC.Generics (U1, (:*:) (..))
 import GHC.Integer (Integer)
+import GHC.Stack (CallStack, callStack)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 import System.IO (IO)
@@ -55,7 +56,6 @@ import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.MonadCircuit (at, constraint, lookupConstraint, unconstrained)
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic (..))
-import GHC.Stack (CallStack, callStack)
 
 ------------------- Experimental single-output circuit type --------------------
 

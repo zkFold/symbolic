@@ -1,8 +1,8 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ImplicitParams #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- The purpose of this module is to provide compatibility
@@ -22,6 +22,7 @@ import Data.Function (flip, ($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Type.Equality (type (~))
 import GHC.Generics (Par1 (..), (:*:) (..))
+import GHC.Stack (CallStack, callStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
@@ -35,7 +36,6 @@ import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
-import GHC.Stack (CallStack, callStack)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 

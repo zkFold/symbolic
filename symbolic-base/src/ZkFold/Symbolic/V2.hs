@@ -9,11 +9,11 @@ import Data.Functor.Rep (Rep, Representable)
 import Data.Set (Set)
 import Data.Traversable (Traversable)
 import GHC.Generics (Par1, (:*:))
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class (Algebra, PrimeField, (-))
 import ZkFold.Data.FromList (FromList)
-import GHC.Stack (HasCallStack)
 
 -- | @LookupTable f@ is a type of compact @f@-ary lookup table descriptions
 -- using ideas from relational algebra.
