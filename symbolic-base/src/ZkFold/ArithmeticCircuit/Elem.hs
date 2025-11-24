@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -29,6 +30,7 @@ import Data.Traversable (Traversable, traverse)
 import Data.Tuple (swap, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1, (:*:) (..))
+import GHC.Stack (CallStack, callStack)
 import Optics (zoom)
 import Prelude (error)
 
@@ -99,7 +101,7 @@ data LookupEntry v = forall f. Traversable f => LEntry (f v) (LookupTable f)
 ------------- Box of constraints supporting efficient concatenation ------------
 
 data ConstraintBox a v = MkCBox
-  { cbPolyCon :: AppList (Polynomial a v)
+  { cbPolyCon :: AppList (CallStack, Polynomial a v)
   , cbLookups :: AppList (LookupEntry v)
   }
   deriving (Generic, NFData)
@@ -180,7 +182,9 @@ instance
   => MonadCircuit (Elem a) a (WitnessF a (Elem a)) (State (ConstraintBox a (Elem a)))
   where
   unconstrained = pure . fromConstant
-  constraint c = modify' \cb -> cb {cbPolyCon = MkPolynomial c `app` cbPolyCon cb}
+  constraint c =
+    let stack = callStack
+     in modify' \cb -> cb {cbPolyCon = (stack, MkPolynomial c) `app` cbPolyCon cb}
   lookupConstraint c t = modify' \cb -> cb {cbLookups = LEntry c t `app` cbLookups cb}
 
 ------------------------- Optimized compilation function -----------------------
@@ -219,12 +223,13 @@ compile =
       unless isDone do
         zoom #acWitness $ modify' $ M.insert bs (fmap elHash w)
         let MkCBox {..} = elConstraints el
-        for_ cbPolyCon \c -> do
+        for_ cbPolyCon \(stack, c) -> do
           let asWitness = WitnessF @a (runPolynomial c)
               cId = witToVar (fmap elHash asWitness)
           isDone' <- gets (M.member cId . acSystem)
           unless isDone' do
-            constraint (\x -> runPolynomial c (x . pure . elHash))
+            let ?callStack = stack
+             in constraint (\x -> runPolynomial c (x . pure . elHash))
             for_ (children asWitness) work
         for_ cbLookups \(LEntry l t) -> do
           lt <- lookupType t
