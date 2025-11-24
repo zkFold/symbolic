@@ -13,6 +13,7 @@ import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class (Algebra, PrimeField, (-))
 import ZkFold.Data.FromList (FromList)
+import GHC.Stack (HasCallStack)
 
 -- | @LookupTable f@ is a type of compact @f@-ary lookup table descriptions
 -- using ideas from relational algebra.
@@ -39,4 +40,4 @@ p =!= q = Polynomial (p - q)
 
 -- TODO: Get rid of NFData constraint
 class (NFData c, PrimeField c) => Symbolic c where
-  constrain :: Constraint c -> c -> c
+  constrain :: HasCallStack => Constraint c -> c -> c

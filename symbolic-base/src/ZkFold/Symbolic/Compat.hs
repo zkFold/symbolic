@@ -2,6 +2,7 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- The purpose of this module is to provide compatibility
@@ -34,6 +35,7 @@ import qualified ZkFold.Symbolic.Data.Class as Old
 import ZkFold.Symbolic.Data.V2 (SymbolicData (..))
 import ZkFold.Symbolic.MonadCircuit (MonadCircuit (..), Witness (..))
 import ZkFold.Symbolic.V2 (Constraint (..), Symbolic, constrain)
+import GHC.Stack (CallStack, callStack)
 
 newtype CompatData f c = CompatData {compatData :: f (CompatContext c)}
 
@@ -78,17 +80,21 @@ instance Symbolic c => Old.Symbolic (CompatContext c) where
   witnessF = compatContext
   fromCircuitF (CompatContext x) f = CompatContext $ collect (f x)
    where
-    collect :: Functor f => State [Constraint c] (f c) -> f c
-    collect fs =
-      let (xs, cs) = runState fs [] in flip (foldr constrain) cs <$> xs
+    collect :: Functor f => State [(CallStack, Constraint c)] (f c) -> f c
+    collect fs = let (xs, cs) = runState fs [] in flip (foldr work) cs <$> xs
+    work :: (CallStack, Constraint c) -> c -> c
+    work (stack, constr) elem = let ?callStack = stack in constrain constr elem
 
 instance
   (Symbolic c, Order c ~ n)
-  => MonadCircuit c (Zp n) c (State [Constraint c])
+  => MonadCircuit c (Zp n) c (State [(CallStack, Constraint c)])
   where
   unconstrained = pure
-  constraint f = modify' (Polynomial (compatAlgebra $ f fromConstant) :)
-  lookupConstraint xs lt = modify' (Lookup lt xs :)
+  constraint f =
+    let stack = callStack
+     in modify' ((stack, Polynomial (compatAlgebra $ f fromConstant)) :)
+  lookupConstraint xs lt =
+    let stack = callStack in modify' ((stack, Lookup lt xs) :)
 
 newtype CompatAlgebra a = CompatAlgebra {compatAlgebra :: a}
   deriving
