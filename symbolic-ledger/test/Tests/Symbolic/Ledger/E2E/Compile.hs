@@ -45,7 +45,7 @@ specE2ECompile =
             , lciStateWitness = witness
             }
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
-    Haskell.print $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
+    Haskell.putStrLn $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
     let
       proverSecret = PlonkupProverSecret (pure zero)
       zkLedgerSetup =
@@ -66,7 +66,6 @@ specE2ECompile =
       compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
-    -- Haskell.putStrLn $ "zkLedgerSetup: " <> show zkLedgerSetup
     verify @(PlonkupTs (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
