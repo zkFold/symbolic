@@ -1,4 +1,22 @@
-module Tests.Symbolic.Ledger.E2E.One (specE2EOne) where
+{-# OPTIONS_GHC -Wno-missing-signatures #-}
+
+module Tests.Symbolic.Ledger.E2E.One (
+  
+  
+  specE2EOne,
+  prevState,
+  batch,
+  witness,
+  newState,
+  I,
+  Bi,
+  Bo,
+  Ud,
+  A,
+  Ixs,
+  Oxs,
+  TxCount,
+  ) where
 
 import Control.Applicative (pure)
 import Data.Function ((&))
@@ -40,61 +58,59 @@ type Oxs = 1
 
 type TxCount = 1
 
+emptyTree :: SymMerkle.MerkleTree Ud I
+emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
+
+prevState :: State Bi Bo Ud A I
+prevState =
+  State
+    { sPreviousStateHash = zero
+    , sUTxO = emptyTree
+    , sLength = zero
+    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
+    , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
+    }
+
+utxoPreimage :: Leaves Ud (UTxO A I)
+utxoPreimage = pure (nullUTxO @A @I)
+privateKey :: PrivateKey I
+privateKey = fromConstant (1 :: Natural)
+publicKey :: PublicKey I
+publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
+
+address = hashFn publicKey
+
+adaAsset =
+  Comp1 $
+    fromList
+      [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}]
+bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
+-- We bridge in an output and refer to it in transaction.
+bridgedIn :: (Vector Bi :.: Output A) I
+bridgedIn = Comp1 (fromList [bridgeInOutput])
+
+bridgeInHash :: HashSimple I
+bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
+
+tx :: Transaction Ixs Oxs A I
+tx =
+  Transaction
+    { inputs = Comp1 (fromList [OutputRef {orTxId = bridgeInHash, orIndex = zero}])
+    , outputs = Comp1 (fromList [bridgeInOutput :*: false])
+    }
+
+batch :: TransactionBatch Ixs Oxs A TxCount I
+batch = TransactionBatch {tbTransactions = pure tx}
+
+sigs =
+  let rPoint :*: s = signTransaction tx privateKey
+    in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+
+newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 -- End-to-end test for a very simplified case.
 specE2EOne :: Spec
 specE2EOne =
   it "E2E One" $ do
-    let
-      emptyTree :: SymMerkle.MerkleTree Ud I
-      emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
-
-      prevState :: State Bi Bo Ud A I
-      prevState =
-        State
-          { sPreviousStateHash = zero
-          , sUTxO = emptyTree
-          , sLength = zero
-          , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
-          , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
-          }
-
-      utxoPreimage :: Leaves Ud (UTxO A I)
-      utxoPreimage = pure (nullUTxO @A @I)
-      privateKey :: PrivateKey I
-      privateKey = fromConstant (1 :: Natural)
-      publicKey :: PublicKey I
-      publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
-
-      address = hashFn publicKey
-
-      adaAsset =
-        Comp1 $
-          fromList
-            [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}]
-      bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
-      -- We bridge in an output and refer to it in transaction.
-      bridgedIn :: (Vector Bi :.: Output A) I
-      bridgedIn = Comp1 (fromList [bridgeInOutput])
-
-      bridgeInHash :: HashSimple I
-      bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
-
-      tx :: Transaction Ixs Oxs A I
-      tx =
-        Transaction
-          { inputs = Comp1 (fromList [OutputRef {orTxId = bridgeInHash, orIndex = zero}])
-          , outputs = Comp1 (fromList [bridgeInOutput :*: false])
-          }
-
-      batch :: TransactionBatch Ixs Oxs A TxCount I
-      batch = TransactionBatch {tbTransactions = pure tx}
-
-      sigs =
-        let rPoint :*: s = signTransaction tx privateKey
-         in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
-
-      newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
-
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
     -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
