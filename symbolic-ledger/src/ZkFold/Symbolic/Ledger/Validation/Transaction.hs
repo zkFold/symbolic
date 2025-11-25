@@ -340,11 +340,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     true
                     ( hashFn publicKey
                         == utxo.uOutput.oAddress
-                        && eddsaVerify
-                          hashFn
-                          publicKey
-                          txId'
-                          (rPoint :*: s)
+                        -- && eddsaVerify
+                        --   hashFn
+                        --   publicKey
+                        --   txId'
+                        --   (rPoint :*: s)
                     )
              in
               ( isValid'

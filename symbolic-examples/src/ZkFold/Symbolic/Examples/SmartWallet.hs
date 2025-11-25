@@ -31,15 +31,10 @@ module ZkFold.Symbolic.Examples.SmartWallet (
   TranscriptConstraints,
 ) where
 
-import Data.Aeson (withText)
 import qualified Data.Aeson as Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base16 as BS16
-import Data.Coerce (coerce)
 import Data.Foldable (foldrM)
-import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Word (Word8)
 import Deriving.Aeson
 import Foreign.C.String
