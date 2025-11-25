@@ -162,7 +162,7 @@ ledgerContract LedgerContractInput {..} =
     :*: (hHash . sBridgeOut $ lciNewState)
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
 
--- TODO: Is this circuit gate count enough?
+-- TODO: Circuit gate count is likely not good enough, see https://github.com/zkFold/symbolic/issues/766.
 type LedgerCircuitGates = 2 ^ 18
 
 type LedgerContractInputLayout bi bo ud a i o t =
