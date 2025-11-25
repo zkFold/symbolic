@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerContractInput (..),
   LedgerContractOutput,
+  LedgerContractCompiledInput,
   LedgerCircuitGates,
   LedgerCircuit,
   PlonkupTs,
@@ -20,13 +21,9 @@ module ZkFold.Symbolic.Ledger.Circuit.Compile (
   mkProof,
 ) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.ByteString (ByteString)
-import Data.ByteString.Base16 qualified as BS16
-import Data.Coerce (coerce)
 import Data.OpenApi (ToSchema (..))
-import Data.Text (Text)
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Type.Equality (type (~))
 import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
@@ -71,10 +68,8 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hash (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
-import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
 import ZkFold.Symbolic.Interpreter
-import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
-import Prelude qualified as P
+import Prelude (Integer, error, fromIntegral, ($), (.), (<$>))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
@@ -226,11 +221,12 @@ ledgerSetup
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
+  -> LedgerCircuit bi bo ud a i o t
   -> SetupVerify (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
-ledgerSetup TrustedSetup {..} = setupV
+ledgerSetup TrustedSetup {..} circuit = setupV
  where
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
-  plonkup = Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s
+  plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
   setupV = setupVerify @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
 
 ledgerProof
@@ -240,9 +236,10 @@ ledgerProof
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> LedgerCircuit bi bo ud a i o t
   -> LedgerContractInput bi bo ud a i o t c
   -> Proof (PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
-ledgerProof TrustedSetup {..} ps input = proof
+ledgerProof TrustedSetup {..} ps circuit input = proof
  where
   witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order RollupBF)) RollupBF
   witnessInputs = runInterpreter $ arithmetize input
@@ -252,7 +249,7 @@ ledgerProof TrustedSetup {..} ps input = proof
 
   (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
   plonkup =
-    Plonkup omega k1 k2 (ledgerCircuit @bi @bo @ud @a @i @o @t @c) g2_1 g1s
+    Plonkup omega k1 k2 circuit g2_1 g1s
       :: PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
   setupP = setupProve @(PlonkupTs (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
   witness =

@@ -3,73 +3,68 @@ module Tests.Symbolic.Ledger.E2E.Compile (specE2ECompile) where
 import Control.Applicative (pure)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
-import GHC.Natural (Natural)
 import GHC.TypeNats (type (+))
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number qualified as Number
 import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
 import ZkFold.Protocol.NonInteractiveProof (
-  NonInteractiveProof (prove, setupProve, setupVerify, verify),
+  NonInteractiveProof (verify),
   TrustedSetup (..),
   powersOfTauSubset,
  )
-import ZkFold.Protocol.Plonkup (Plonkup (..))
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
-import ZkFold.Protocol.Plonkup.Utils (getParams)
-import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
+import ZkFold.Protocol.Plonkup.Input (PlonkupInput(..))
+import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup(..))
+import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 
 import Tests.Symbolic.Ledger.E2E.Two
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
-  LedgerCircuit,
   LedgerCircuitGates,
   LedgerContractInput (..),
-  LedgerContractOutput,
   PlonkupTs,
-  ZKProofBytes,
-  ZKSetupBytes,
   ledgerCircuit,
-  ledgerSetup,
-  mkProof,
-  mkSetup,
+  ledgerSetup, ledgerProof, LedgerContractCompiledInput,
  )
-import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
+import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation(pubInput))
 
 specE2ECompile :: Spec
 specE2ECompile =
   it "E2E ledger circuit: prove and verify" $ do
-    -- let lci :: LedgerContractInput Bi Bo Ud A Ixs Oxs TxCount I
-    --     lci =
-    --       LedgerContractInput
-    --         { lciPreviousState = prevState
-    --         , lciTransactionBatch = batch
-    --         , lciNewState = newState
-    --         , lciStateWitness = witness
-    --         }
+    let lci :: LedgerContractInput Bi Bo Ud A Ixs Oxs TxCount I
+        lci =
+          LedgerContractInput
+            { lciPreviousState = prevState
+            , lciTransactionBatch = batch
+            , lciNewState = newState
+            , lciStateWitness = witness
+            }
 
-    -- ts :: TrustedSetup (LedgerCircuitGates + 6) <- powersOfTauSubset
+    ts :: TrustedSetup (LedgerCircuitGates + 6) <- powersOfTauSubset
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
     Haskell.print $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
+    let proverSecret = PlonkupProverSecret (pure zero)
 
--- let setupV =
---       ledgerSetup
---         @ByteString
---         @Bi
---         @Bo
---         @Ud
---         @A
---         @Ixs
---         @Oxs
---         @TxCount
---         @I
---         ts
+    let zkLedgerSetup =
+          ledgerSetup
+            @ByteString
+            @Bi
+            @Bo
+            @Ud
+            @A
+            @Ixs
+            @Oxs
+            @TxCount
+            @I
+            ts
+            compiledCircuit
+    let zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
+    let witnessInputs   = runInterpreter $ arithmetize lci
+    let compiledInput   = (witnessInputs :*: U1) :*: (payload lci :*: U1)
+    let PlonkupVerifierSetup { relation } = zkLedgerSetup
+    let zkLedgerInput   = PlonkupInput (pubInput relation compiledInput)
 
--- let zkSetupBytes :: ZKSetupBytes
---     zkSetupBytes = mkSetup setupV
-
--- verify setupV inputV proof `shouldBe` Haskell.True
+    verify @(PlonkupTs (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
+      zkLedgerSetup zkLedgerInput zkLedgerProof `shouldBe` Haskell.True
