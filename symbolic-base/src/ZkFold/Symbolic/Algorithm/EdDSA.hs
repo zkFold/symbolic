@@ -59,7 +59,6 @@ eddsaVerify
   -> Bool ctx
 eddsaVerify hashFn publicKey message (rPoint :*: s) =
   unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
-
  where
   g = pointGen @point
 
