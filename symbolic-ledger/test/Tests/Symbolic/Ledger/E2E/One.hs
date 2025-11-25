@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module Tests.Symbolic.Ledger.E2E.One (
-  
-  
   specE2EOne,
   prevState,
   batch,
@@ -16,7 +14,7 @@ module Tests.Symbolic.Ledger.E2E.One (
   Ixs,
   Oxs,
   TxCount,
-  ) where
+) where
 
 import Control.Applicative (pure)
 import Data.Function ((&))
@@ -73,8 +71,10 @@ prevState =
 
 utxoPreimage :: Leaves Ud (UTxO A I)
 utxoPreimage = pure (nullUTxO @A @I)
+
 privateKey :: PrivateKey I
 privateKey = fromConstant (1 :: Natural)
+
 publicKey :: PublicKey I
 publicKey = privateKey `scale` pointGen @(EdDSAPoint I)
 
@@ -84,7 +84,9 @@ adaAsset =
   Comp1 $
     fromList
       [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (1_000_000 :: Natural)}]
+
 bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
+
 -- We bridge in an output and refer to it in transaction.
 bridgedIn :: (Vector Bi :.: Output A) I
 bridgedIn = Comp1 (fromList [bridgeInOutput])
@@ -104,9 +106,10 @@ batch = TransactionBatch {tbTransactions = pure tx}
 
 sigs =
   let rPoint :*: s = signTransaction tx privateKey
-    in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
 
 newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+
 -- End-to-end test for a very simplified case.
 specE2EOne :: Spec
 specE2EOne =

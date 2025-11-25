@@ -46,26 +46,26 @@ specE2ECompile =
             }
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
     Haskell.print $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
-    let 
-        proverSecret = PlonkupProverSecret (pure zero)
-        zkLedgerSetup =
-          ledgerSetup
-            @ByteString
-            @Bi
-            @Bo
-            @Ud
-            @A
-            @Ixs
-            @Oxs
-            @TxCount
-            @I
-            ts
-            compiledCircuit
-        zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
-        witnessInputs = runInterpreter $ arithmetize lci
-        compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
-        PlonkupVerifierSetup {relation} = zkLedgerSetup
-        zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
+    let
+      proverSecret = PlonkupProverSecret (pure zero)
+      zkLedgerSetup =
+        ledgerSetup
+          @ByteString
+          @Bi
+          @Bo
+          @Ud
+          @A
+          @Ixs
+          @Oxs
+          @TxCount
+          @I
+          ts
+          compiledCircuit
+      zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
+      witnessInputs = runInterpreter $ arithmetize lci
+      compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
+      PlonkupVerifierSetup {relation} = zkLedgerSetup
+      zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
     -- Haskell.putStrLn $ "zkLedgerSetup: " <> show zkLedgerSetup
     verify @(PlonkupTs (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
