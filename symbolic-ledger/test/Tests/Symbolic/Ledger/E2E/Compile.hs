@@ -12,23 +12,25 @@ import ZkFold.Protocol.NonInteractiveProof (
   TrustedSetup (..),
   powersOfTauSubset,
  )
+import ZkFold.Protocol.Plonkup.Input (PlonkupInput (..))
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
+import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (pubInput))
+import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup (..))
+import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
-import ZkFold.Protocol.Plonkup.Input (PlonkupInput(..))
-import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup(..))
-import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 
 import Tests.Symbolic.Ledger.E2E.Two
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
+  LedgerContractCompiledInput,
   LedgerContractInput (..),
   PlonkupTs,
   ledgerCircuit,
-  ledgerSetup, ledgerProof, LedgerContractCompiledInput,
+  ledgerProof,
+  ledgerSetup,
  )
-import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation(pubInput))
 
 specE2ECompile :: Spec
 specE2ECompile =
@@ -61,10 +63,13 @@ specE2ECompile =
             ts
             compiledCircuit
     let zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
-    let witnessInputs   = runInterpreter $ arithmetize lci
-    let compiledInput   = (witnessInputs :*: U1) :*: (payload lci :*: U1)
-    let PlonkupVerifierSetup { relation } = zkLedgerSetup
-    let zkLedgerInput   = PlonkupInput (pubInput relation compiledInput)
+    let witnessInputs = runInterpreter $ arithmetize lci
+    let compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
+    let PlonkupVerifierSetup {relation} = zkLedgerSetup
+    let zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
 
     verify @(PlonkupTs (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
-      zkLedgerSetup zkLedgerInput zkLedgerProof `shouldBe` Haskell.True
+      zkLedgerSetup
+      zkLedgerInput
+      zkLedgerProof
+      `shouldBe` Haskell.True

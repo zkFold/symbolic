@@ -58,8 +58,9 @@ eddsaVerify
   -- ^ signature (R, s)
   -> Bool ctx
 eddsaVerify hashFn publicKey message (rPoint :*: s) = true
-  -- unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
  where
+  -- unwrap lhs == unwrap rhs -- `unwrap` as `Eq` instance is missing.
+
   g = pointGen @point
 
   h :: scalarField ctx = scalarFieldFromFE $ hashFn (rPoint :*: publicKey :*: message)
