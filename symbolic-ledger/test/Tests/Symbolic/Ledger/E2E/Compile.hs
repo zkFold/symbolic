@@ -45,7 +45,8 @@ specE2ECompile =
             , lciStateWitness = witness
             }
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
-    Haskell.putStrLn $ "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
+    Haskell.putStrLn $
+      "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
     let
       proverSecret = PlonkupProverSecret (pure zero)
       zkLedgerSetup =
