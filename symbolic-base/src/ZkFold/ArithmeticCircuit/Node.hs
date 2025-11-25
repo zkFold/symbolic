@@ -403,7 +403,7 @@ opToWitness = \case
   OpBezoutR (IntWitness v) (IntWitness w) ->
     pure $ IntWitness (v `bezoutR` w)
   OpInv (FieldVar v) ->
-    state . runState $ FieldVar <$> unconstrained (at v)
+    state . runState $ FieldVar <$> unconstrained (finv $ at v)
   OpEq x y -> pure $ BoolWitness (x == y)
   OpNEq x y -> pure $ BoolWitness (x /= y)
   OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)
