@@ -340,12 +340,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     true
                     ( hashFn publicKey
                         == utxo.uOutput.oAddress
-                        -- TODO: Enable it back, see https://github.com/zkFold/symbolic/issues/765.
-                        -- && eddsaVerify
-                        --   hashFn
-                        --   publicKey
-                        --   txId'
-                        --   (rPoint :*: s)
+                        && eddsaVerify
+                          hashFn
+                          publicKey
+                          txId'
+                          (rPoint :*: s)
                     )
              in
               ( isValid'

@@ -11,5 +11,4 @@ specUpdateLedgerState :: Spec
 specUpdateLedgerState = describe "updateLedgerState" $ do
   specE2EOne
   specE2ETwo
-
--- specE2ECompile -- TODO: Enable it back, see https://github.com/zkFold/symbolic/issues/769.
+  specE2ECompile
