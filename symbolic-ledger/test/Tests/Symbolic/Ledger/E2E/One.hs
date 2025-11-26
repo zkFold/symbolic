@@ -25,9 +25,9 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import Prelude (($))
 import Prelude qualified as Haskell
 
+import ZkFold.Symbolic.Ledger.Examples.One
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChecks)
-import ZkFold.Symbolic.Ledger.Examples.One
 
 -- End-to-end test for a very simplified case.
 specE2EOne :: Spec

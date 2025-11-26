@@ -117,11 +117,15 @@ tx2 =
     { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
     , outputs = Comp1 (fromList [bridgeInOutput :*: true])
     }
+
 bridgedIn2 :: (Vector Bi :.: Output A) I
 bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
+
 batch2 :: TransactionBatch Ixs Oxs A TxCount I
 batch2 = TransactionBatch {tbTransactions = pure tx2}
+
 sigs2 =
   let rPoint :*: s = signTransaction tx2 privateKey
-    in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+
 newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
