@@ -13,6 +13,9 @@ build-type: Simple
 description:
   This package contains the definitions related to the zkFold Ledger.
 
+data-files:
+  test/data/ledger_contract_input.json
+
 flag Pedantic
   description: Enable pedantic build with -Werror
   manual: True
@@ -92,9 +95,11 @@ common options-exe
 library
   import: options
   exposed-modules:
+    ZkFold.Symbolic.Ledger.Circuit.Compile
     ZkFold.Symbolic.Ledger.Offchain.State.Update
     ZkFold.Symbolic.Ledger.Types
     ZkFold.Symbolic.Ledger.Types.Address
+    ZkFold.Symbolic.Ledger.Types.Field
     ZkFold.Symbolic.Ledger.Types.Hash
     ZkFold.Symbolic.Ledger.Types.Orphans
     ZkFold.Symbolic.Ledger.Types.State
@@ -108,8 +113,14 @@ library
     ZkFold.Symbolic.Ledger.Validation.TransactionBatch
 
   build-depends:
+    aeson,
     base >=4.9 && <5,
+    base16-bytestring,
+    bytestring,
+    lens,
+    openapi3,
     symbolic-base,
+    text,
 
   hs-source-dirs: src
 
@@ -123,12 +134,20 @@ test-suite symbolic-ledger-test
     "-with-rtsopts=-A128M -AL256m -qb0 -qn4 -N"
 
   other-modules:
+    Paths_symbolic_ledger
     Tests.Symbolic.Ledger.E2E.One
     Tests.Symbolic.Ledger.E2E.Two
+    Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden
     Tests.Symbolic.Ledger.Update
 
+  autogen-modules:
+    Paths_symbolic_ledger
+
   build-depends:
+    aeson,
+    aeson-pretty,
     base,
+    bytestring,
     hspec <2.12,
     symbolic-base,
     symbolic-ledger,

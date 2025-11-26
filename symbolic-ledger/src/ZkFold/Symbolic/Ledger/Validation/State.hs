@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.State (
   validateStateUpdate,
@@ -6,8 +7,11 @@ module ZkFold.Symbolic.Ledger.Validation.State (
   StateWitness (..),
 ) where
 
-import Data.Function ((&))
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import Control.Lens ((&))
+import Data.Aeson (FromJSON, ToJSON)
+import Data.OpenApi (ToSchema (..))
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (MultiplicativeMonoid (..), Zero (..), (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..), (==))
@@ -15,13 +19,16 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
 import ZkFold.Symbolic.Data.Hash qualified as Base
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (outputHasAtLeastOneAda)
 import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitness, validateTransactionBatch)
@@ -57,8 +64,20 @@ data StateWitness bi bo ud a i o t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+
+deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a i o t
+   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
+  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate

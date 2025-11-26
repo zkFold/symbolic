@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Data.Bool (
   and,
   or,
   assert,
+  fromBool,
 ) where
 
 import Control.Applicative (pure)

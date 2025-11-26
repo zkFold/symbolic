@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Ledger.Validation.TransactionBatch (
   TransactionBatchWitness (..),
   validateTransactionBatch,
 ) where
 
-import GHC.Generics ((:*:) (..), (:.:) (..))
+import Data.Aeson (FromJSON, ToJSON)
+import Data.OpenApi (ToSchema (..))
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (Zero (..), one, (+))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq ((==))
@@ -13,19 +17,34 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
 -- | Transaction batch witness for validating transaction batch.
 newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
   { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
+
+deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall ud i o a t
+   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
+  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch

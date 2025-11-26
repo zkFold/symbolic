@@ -36,8 +36,10 @@ module ZkFold.Algebra.EllipticCurve.Class (
 
 import Control.DeepSeq (NFData, NFData1)
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Distributive (Distributive (..))
 import Data.Foldable (Foldable)
 import Data.Functor (Functor)
+import Data.Functor.Rep (Representable (..), collectRep, distributeRep)
 import Data.Kind (Type)
 import Data.Swagger (ToSchema (..))
 import Data.Semialign (Semialign (..), Zip (..))
@@ -53,6 +55,7 @@ import qualified Prelude
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
+import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 
@@ -657,3 +660,19 @@ instance Semialign AffinePoint where
 
 instance Zip AffinePoint where
   zipWith f (AffinePoint x y) (AffinePoint z w) = AffinePoint (f x z) (f y w)
+
+instance Distributive AffinePoint where
+  distribute = distributeRep
+  collect = collectRep
+
+instance Representable AffinePoint where
+  type Rep AffinePoint = Prelude.Bool
+  index (AffinePoint x y) i = if i then y else x
+  tabulate f = AffinePoint (f Prelude.False) (f Prelude.True)
+
+instance Binary a => Binary (AffinePoint a) where
+  put (AffinePoint x y) = put x Prelude.>> put y
+  get = do
+    x <- get
+    y <- get
+    return (AffinePoint x y)

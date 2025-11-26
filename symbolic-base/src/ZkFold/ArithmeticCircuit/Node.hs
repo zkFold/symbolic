@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -29,6 +30,7 @@ import Data.Type.Equality (type (~))
 import GHC.Err (error)
 import GHC.Generics (U1, (:*:) (..))
 import GHC.Integer (Integer)
+import GHC.Stack (CallStack, callStack)
 import GHC.TypeNats (KnownNat)
 import Numeric.Natural (Natural)
 import System.IO (IO)
@@ -65,7 +67,8 @@ data Node p (s :: Sort) where
   -- | An application of an operation from 'PrimeField' class.
   NodeApply :: KnownSort s => Op (Node p) s -> Node p s
   -- | An application of a 'constrain' function from 'Symbolic' class.
-  NodeConstrain :: Constraint (Node p ZZp) -> Node p ZZp -> Node p ZZp
+  NodeConstrain
+    :: CallStack -> Constraint (Node p ZZp) -> Node p ZZp -> Node p ZZp
 
 instance NFData (Node p s) where
   rnf = rwhnf -- GADTs are strict, so no need to eval
@@ -171,7 +174,7 @@ instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => PrimeField (Node p Z
   toIntegral = NodeApply . OpTo
 
 instance (Prime p, KnownNat (NumberOfBits (Node p ZZp))) => Symbolic (Node p ZZp) where
-  constrain = NodeConstrain
+  constrain = NodeConstrain callStack
 
 ------------------------- Optimized compilation function -----------------------
 
@@ -272,7 +275,7 @@ compileNode
    . (Arithmetic a, Binary a)
   => Node (Order a) s -> CompilerM a (Witness a s)
 compileNode (NodeInput v) = pure $ FieldVar (pure v)
-compileNode (NodeConstrain !c n) = do
+compileNode (NodeConstrain stack !c n) = do
   snc <- liftIO (makeStableName c)
   isDone <-
     asks constraintLog
@@ -281,10 +284,12 @@ compileNode (NodeConstrain !c n) = do
   unless isDone case c of
     Lookup lkp ns -> do
       vs <- traverse (fmap toVar . compileNode) ns
-      state $ runState (lookupConstraint vs lkp)
+      let ?callStack = stack
+       in state $ runState (lookupConstraint vs lkp)
     Polynomial p -> do
       poly <- traverse (fmap toVar . compileNode) p
-      state . runState $ constraint (evalPoly @a poly)
+      let ?callStack = stack
+       in state . runState $ constraint (evalPoly @a poly)
   compileNode n
 compileNode (NodeApply !op) = do
   sno <- liftIO (makeStableName op)
@@ -398,7 +403,7 @@ opToWitness = \case
   OpBezoutR (IntWitness v) (IntWitness w) ->
     pure $ IntWitness (v `bezoutR` w)
   OpInv (FieldVar v) ->
-    state . runState $ FieldVar <$> unconstrained (at v)
+    state . runState $ FieldVar <$> unconstrained (finv $ at v)
   OpEq x y -> pure $ BoolWitness (x == y)
   OpNEq x y -> pure $ BoolWitness (x /= y)
   OpOr (BoolWitness v) (BoolWitness w) -> pure $ BoolWitness (v || w)

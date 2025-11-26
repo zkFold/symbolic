@@ -20,7 +20,9 @@ module ZkFold.Symbolic.Ledger.Types.Transaction.Core (
   signTransaction,
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Function ((&))
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, (:*:), (:.:) (..))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Algebra.Class (Zero (..))
@@ -37,12 +39,15 @@ import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
 import ZkFold.Symbolic.Ledger.Types.Address (Address, nullAddress)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
 
 -- | An output's reference.
@@ -54,7 +59,7 @@ data OutputRef context = OutputRef
   -- TODO: Restrict to represent 'o' outputs instead of 2^32?
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   Symbolic context
@@ -63,6 +68,12 @@ instance
 deriving stock instance HEq context => Haskell.Eq (OutputRef context)
 
 deriving stock instance HShow context => Haskell.Show (OutputRef context)
+
+deriving anyclass instance ToJSON (OutputRef RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (OutputRef RollupBFInterpreter)
+
+deriving anyclass instance ToSchema (OutputRef RollupBFInterpreter)
 
 -- | Null output reference.
 nullOutputRef :: Symbolic context => OutputRef context
@@ -76,7 +87,7 @@ data Output a context = Output
   -- ^ Assets of the output.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -91,6 +102,12 @@ deriving stock instance HShow context => Haskell.Show (Output a context)
 instance Symbolic context => Hashable (HashSimple context) (Output a context) where
   hasher = hashFn
 
+deriving anyclass instance ToJSON (Output a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (Output a RollupBFInterpreter)
+
+deriving anyclass instance forall a. KnownNat a => ToSchema (Output a RollupBFInterpreter)
+
 -- | Null output.
 nullOutput :: forall a context. (Symbolic context, KnownNat a) => Output a context
 nullOutput = Output {oAddress = nullAddress, oAssets = Comp1 zero}
@@ -101,7 +118,7 @@ data UTxO a context = UTxO
   , uOutput :: Output a context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   ( Symbolic context
@@ -115,6 +132,12 @@ deriving stock instance HShow context => Haskell.Show (UTxO a context)
 
 instance Symbolic context => Hashable (HashSimple context) (UTxO a context) where
   hasher = hashFn
+
+deriving anyclass instance ToJSON (UTxO a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (UTxO a RollupBFInterpreter)
+
+deriving anyclass instance forall a. KnownNat a => ToSchema (UTxO a RollupBFInterpreter)
 
 -- | Null UTxO.
 nullUTxO :: forall a context. (Symbolic context, KnownNat a) => UTxO a context
@@ -133,7 +156,7 @@ data Transaction i o a context = Transaction
   -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
   forall i o a context
@@ -141,6 +164,13 @@ instance
      , KnownRegistersAssetQuantity context
      )
   => Eq (Transaction i o a context)
+
+deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
+
+deriving anyclass instance
+  forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter)
 
 -- | Transaction hash.
 type TransactionId i o a = Hash (Transaction i o a)

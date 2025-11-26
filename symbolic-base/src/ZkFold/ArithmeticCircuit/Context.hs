@@ -40,6 +40,7 @@ import Data.Traversable (Traversable, traverse)
 import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
+import GHC.Stack (callStack, prettyCallStack)
 import Optics (over, set, zoom)
 import Text.Show
 import Prelude (error, seq)
@@ -348,7 +349,11 @@ instance
           Known c ->
             if c == zero
               then pure ()
-              else error "The constraint is non-zero"
+              else
+                error
+                  ( "The constraint is non-zero at\n"
+                      <> prettyCallStack callStack
+                  )
           Unknown ->
             zoom #acSystem . modify $
               M.insert (witToVar (p at)) (p $ evalVar var)

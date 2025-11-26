@@ -23,8 +23,10 @@ module ZkFold.Symbolic.Ledger.Types.Value (
   addAssetValues,
 ) where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Coerce (coerce)
 import Data.Function ((&))
+import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1, type (:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (ifThenElse)
@@ -35,6 +37,7 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (Auto))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import ZkFold.Symbolic.Data.List qualified as Symbolic.List
@@ -56,6 +59,9 @@ import Prelude hiding (
   (||),
  )
 import Prelude qualified as Haskell
+
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Orphans ()
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
@@ -83,13 +89,19 @@ data AssetValue context = AssetValue
   , assetQuantity :: AssetQuantity context
   }
   deriving stock (Generic, Generic1)
-  deriving anyclass SymbolicData
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 instance (KnownRegistersAssetQuantity context, Symbolic context) => Eq (AssetValue context)
 
 deriving stock instance HEq context => Haskell.Eq (AssetValue context)
 
 deriving stock instance HShow context => Haskell.Show (AssetValue context)
+
+deriving anyclass instance ToJSON (AssetValue RollupBFInterpreter)
+
+deriving anyclass instance FromJSON (AssetValue RollupBFInterpreter)
+
+deriving anyclass instance ToSchema (AssetValue RollupBFInterpreter)
 
 -- | Null asset value.
 nullAssetValue :: Symbolic context => AssetValue context
