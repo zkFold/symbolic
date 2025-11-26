@@ -6,6 +6,14 @@ module Tests.Symbolic.Ledger.E2E.Two (
   batch,
   witness,
   newState,
+  I,
+  Bi,
+  Bo,
+  Ud,
+  A,
+  Ixs,
+  Oxs,
+  TxCount,
 ) where
 
 import Control.Applicative (pure)

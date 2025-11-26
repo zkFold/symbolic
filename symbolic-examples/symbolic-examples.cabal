@@ -130,12 +130,10 @@ library
       adjunctions                                ,
       aeson                                      ,
       base                          >= 4.9 && < 5,
-      base16-bytestring                          ,
       bytestring                                 ,
       deepseq                                    ,
       deriving-aeson                             ,
       symbolic-base                              ,
-      text                                       ,
     hs-source-dirs: src
 
 benchmark bench-compiler-performance
