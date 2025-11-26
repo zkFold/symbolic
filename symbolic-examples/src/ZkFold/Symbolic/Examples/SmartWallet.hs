@@ -38,8 +38,8 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as BS16
 import Data.Coerce (coerce)
-import Data.Function ((&))
 import Data.Foldable (foldrM)
+import Data.Function ((&))
 import Data.Swagger
 import Data.Swagger.Internal.Schema (named)
 import Data.Text (Text)
@@ -182,16 +182,16 @@ instance ToJSON ByteStringFromHex where
   toJSON = Aeson.String . byteStringFromHexToHex
 
 instance ToSchema ByteStringFromHex where
-    declareNamedSchema _ =
-        pure $
-            named "ByteStringFromHex" $
-                mempty
-                    & type_
-                        ?~ SwaggerString
-                    & format
-                        ?~ "hex"
-                    & description
-                        ?~ "Bytes encoded in hex."
+  declareNamedSchema _ =
+    pure $
+      named "ByteStringFromHex" $
+        mempty
+          & type_
+            ?~ SwaggerString
+          & format
+            ?~ "hex"
+          & description
+            ?~ "Bytes encoded in hex."
 
 -- | ZK proof bytes, assuming hex encoding for relevant bytes.
 data ZKProofBytes = ZKProofBytes
