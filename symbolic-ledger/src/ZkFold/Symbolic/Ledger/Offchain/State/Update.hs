@@ -38,7 +38,7 @@ updateLedgerState
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
   -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the previous state's UTxO set
-  -> (Vector bi :.: (Output a :*: Address)) context
+  -> (Vector bi :.: Output a) context
   -- ^ Bridged in outputs.
   -> TransactionBatch i o a t context
   -- ^ Transaction batch.
@@ -77,7 +77,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     -- Maintain a local preimage vector of UTxOs in parallel with the Merkle tree
     utxoPreimageInit = utxoSet
     -- Apply bridge-in outputs to the UTxO set and collect witness entries.
-    stepBridgeIn (ix, entries, tree, pre) (out :*: _cardanoAddress) =
+    stepBridgeIn (ix, entries, tree, pre) out =
       let entry = MerkleTree.search' (\(fe :: FieldElement e) -> fe == nullUTxOHash @a @e) tree
           utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = out}
           utxoHash = hash utxo & Base.hHash
