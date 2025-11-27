@@ -5,8 +5,8 @@ module ZkFold.Protocol.Plonkup.Proof where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Data (Typeable)
-import qualified Data.Swagger as Swagger (ToSchema)
 import qualified Data.OpenApi as OpenApi (ToSchema)
+import qualified Data.Swagger as Swagger (ToSchema)
 import GHC.Generics (Generic)
 import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
 
@@ -51,6 +51,7 @@ instance (ToJSON g, ToJSON (ScalarFieldOf g)) => ToJSON (PlonkupProof g)
 instance (FromJSON g, FromJSON (ScalarFieldOf g)) => FromJSON (PlonkupProof g)
 
 instance (Swagger.ToSchema g, s ~ ScalarFieldOf g, Swagger.ToSchema s) => Swagger.ToSchema (PlonkupProof g)
+
 instance (Typeable g, OpenApi.ToSchema g, s ~ ScalarFieldOf g, OpenApi.ToSchema s) => OpenApi.ToSchema (PlonkupProof g)
 
 instance (Show (ScalarFieldOf g), Show g) => Show (PlonkupProof g) where

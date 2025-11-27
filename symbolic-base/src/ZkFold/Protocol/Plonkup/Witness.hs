@@ -8,8 +8,8 @@ import Data.Data (Typeable)
 import Data.Functor ((<$>))
 import Data.Functor.Classes (Show1)
 import Data.List ((++))
-import qualified Data.Swagger as Swagger (ToSchema)
 import qualified Data.OpenApi as OpenApi (ToSchema)
+import qualified Data.Swagger as Swagger (ToSchema)
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..), Arbitrary1, arbitrary1)
 import Text.Show (Show, show)
@@ -26,6 +26,7 @@ instance (s ~ ScalarFieldOf g, ToJSON (i s)) => ToJSON (PlonkupWitnessInput i g)
 instance (s ~ ScalarFieldOf g, FromJSON (i s)) => FromJSON (PlonkupWitnessInput i g)
 
 instance (s ~ ScalarFieldOf g, Swagger.ToSchema (i s)) => Swagger.ToSchema (PlonkupWitnessInput i g)
+
 instance (Typeable i, Typeable g, s ~ ScalarFieldOf g, OpenApi.ToSchema (i s)) => OpenApi.ToSchema (PlonkupWitnessInput i g)
 
 instance

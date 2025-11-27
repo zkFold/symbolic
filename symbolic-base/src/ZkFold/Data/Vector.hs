@@ -23,9 +23,9 @@ import Data.Functor.Classes (Eq1, Show1)
 import Data.Functor.Rep (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
+import qualified Data.OpenApi as OpenApi (ToSchema)
 import Data.Semigroup ((<>))
 import qualified Data.Swagger as Swagger (ToSchema)
-import qualified Data.OpenApi as OpenApi (ToSchema)
 import Data.These (These (..))
 import Data.Traversable (Traversable, sequenceA, traverse)
 import Data.Tuple (fst, snd, uncurry)
@@ -51,7 +51,7 @@ import ZkFold.Prelude (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
-  deriving newtype (FromJSON, ToJSON, ToJSON1, Swagger.ToSchema, OpenApi.ToSchema)
+  deriving newtype (FromJSON, OpenApi.ToSchema, Swagger.ToSchema, ToJSON, ToJSON1)
 
 instance Eq x => Eq (Vector n x) where
   type BooleanOf (Vector n x) = BooleanOf x
