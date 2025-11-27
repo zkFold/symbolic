@@ -61,7 +61,7 @@ import ZkFold.Protocol.Plonkup.Utils (getParams)
 import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
-import ZkFold.Symbolic.Class (BaseField)
+import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -69,7 +69,7 @@ import ZkFold.Symbolic.Data.Hash (Hash (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Interpreter
-import Prelude (Integer, error, fromIntegral, ($), (.), (<$>))
+import Prelude (Integer, error, fromIntegral, ($), (.), (<$>), Show)
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
@@ -93,6 +93,8 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
+
+deriving stock instance (Show (State bi bo ud a context), Show (TransactionBatch i o a t context), Show (StateWitness bi bo ud a i o t context)) => Show (LedgerContractInput bi bo ud a i o t context)
 
 deriving anyclass instance
   forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)

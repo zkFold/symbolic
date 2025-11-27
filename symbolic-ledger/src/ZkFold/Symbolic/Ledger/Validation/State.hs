@@ -120,7 +120,7 @@ validateStateUpdateIndividualChecks previousState action newState sw =
     bridgeInHash = newState.sLength & hash & Base.hHash
     (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
       foldl'
-        ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
+        ( \(ix :*: isValidAcc :*: acc) (((output :*: _cardanoAddress) :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isValid' =
                   isValidAcc

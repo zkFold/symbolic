@@ -59,13 +59,16 @@ type TxCount = 1
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
 
+nullAddress' :: Address I
+nullAddress' = nullAddress @I
+
 prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
     , sUTxO = emptyTree
     , sLength = zero
-    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
+    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I :*: nullAddress')))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
     }
 
@@ -88,8 +91,8 @@ adaAsset =
 bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
 
 -- We bridge in an output and refer to it in transaction.
-bridgedIn :: (Vector Bi :.: Output A) I
-bridgedIn = Comp1 (fromList [bridgeInOutput])
+bridgedIn :: (Vector Bi :.: (Output A :*: Address)) I
+bridgedIn = Comp1 (fromList [bridgeInOutput :*: nullAddress'])
 
 bridgeInHash :: HashSimple I
 bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
@@ -118,8 +121,8 @@ tx2 =
     , outputs = Comp1 (fromList [bridgeInOutput :*: true])
     }
 
-bridgedIn2 :: (Vector Bi :.: Output A) I
-bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
+bridgedIn2 :: (Vector Bi :.: (Output A :*: Address)) I
+bridgedIn2 = Comp1 (fromList [nullOutput @A @I :*: nullAddress'])
 
 batch2 :: TransactionBatch Ixs Oxs A TxCount I
 batch2 = TransactionBatch {tbTransactions = pure tx2}

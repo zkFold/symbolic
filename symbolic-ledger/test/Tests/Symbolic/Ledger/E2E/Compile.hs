@@ -67,6 +67,7 @@ specE2ECompile =
       compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
+    Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
     verify @(PlonkupTs (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput

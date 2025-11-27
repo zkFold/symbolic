@@ -58,13 +58,16 @@ type TxCount = 3
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
 
+nullAddress' :: Address I
+nullAddress' = nullAddress @I
+
 prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
     , sUTxO = emptyTree
     , sLength = zero
-    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
+    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I :*: nullAddress')))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
     }
 
@@ -132,8 +135,8 @@ bridgeInOutput3 :: Output A I =
 
 -- "address3" has 10 ADA and 50 asset2 and 50 asset3.
 -- We bridge in an output and refer to it in transaction.
-bridgedIn :: (Vector Bi :.: Output A) I
-bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput, bridgeInOutput2, bridgeInOutput3])
+bridgedIn :: (Vector Bi :.: (Output A :*: Address)) I
+bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput :*: nullAddress', bridgeInOutput2 :*: nullAddress', bridgeInOutput3 :*: nullAddress'])
 
 -- Total 2 UTxOs.
 

@@ -6,7 +6,7 @@ module ZkFold.Symbolic.Ledger.Types.State (
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..))
-import GHC.Generics (Generic, Generic1, (:.:))
+import GHC.Generics (Generic, Generic1, (:.:), (:*:))
 import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HShow)
@@ -24,6 +24,7 @@ import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import ZkFold.Symbolic.Ledger.Types.Address (Address)
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State bi bo ud a context = State
@@ -33,7 +34,7 @@ data State bi bo ud a context = State
   -- ^ Merkle tree of UTxO set.
   , sLength :: FieldElement context
   -- ^ Denotes length of the state chain.
-  , sBridgeIn :: Hash (Vector bi :.: Output a) context
+  , sBridgeIn :: Hash (Vector bi :.: (Output a :*: Address)) context
   -- ^ Outputs that are bridged into the ledger. These lead to creation of new UTxOs where `orTxId` of the output is obtained by hashing `sLength` and `orIndex` is the index of the output in the vector.
   , sBridgeOut :: Hash (Vector bo :.: Output a) context
   -- ^ Denotes outputs that are bridged out of the ledger.
