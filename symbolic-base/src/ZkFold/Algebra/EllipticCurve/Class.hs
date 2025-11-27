@@ -43,7 +43,8 @@ import Data.Functor.Rep (Representable (..), collectRep, distributeRep)
 import Data.Kind (Type)
 import Data.Semialign (Semialign (..), Zip (..))
 import Data.String (fromString)
-import Data.Swagger (ToSchema (..))
+import qualified Data.Swagger as Swagger (ToSchema(..))
+import qualified Data.OpenApi as OpenApi (ToSchema(..))
 import Data.These (These (..))
 import Data.Traversable (Traversable)
 import GHC.Generics
@@ -520,7 +521,8 @@ deriving instance (ToJSON field, BooleanOf field ~ Prelude.Bool) => ToJSON (Poin
 
 deriving instance (FromJSON field, BooleanOf field ~ Prelude.Bool) => FromJSON (Point field)
 
-instance (ToSchema field, BooleanOf field ~ Prelude.Bool) => ToSchema (Point field)
+instance (Swagger.ToSchema field, BooleanOf field ~ Prelude.Bool) => Swagger.ToSchema (Point field)
+instance (OpenApi.ToSchema field, BooleanOf field ~ Prelude.Bool) => OpenApi.ToSchema (Point field)
 
 instance Eq field => Planar field (Point field) where
   pointXY x y = Point x y false
@@ -542,7 +544,8 @@ data JacobianPoint field = JacobianPoint
   }
   deriving (FromJSON, Generic, ToJSON)
 
-instance ToSchema f => ToSchema (JacobianPoint f)
+instance Swagger.ToSchema f => Swagger.ToSchema (JacobianPoint f)
+instance OpenApi.ToSchema f => OpenApi.ToSchema (JacobianPoint f)
 
 deriving instance NFData field => NFData (JacobianPoint field)
 

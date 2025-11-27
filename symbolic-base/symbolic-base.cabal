@@ -335,13 +335,14 @@ library
       vector                               < 0.14,
       vector-binary-instances               < 0.3,
       vector-split                          < 1.1,
-      swagger2                                   ,
     if arch(wasm32)
       build-depends:
         ghc-experimental
     if !arch(javascript) && !arch(wasm32)
       build-depends:
         -- TODO: remove `blake2` after refactoring of ZK protocols
+        openapi3                                   ,
+        swagger2                                   ,
         blake2                                < 0.4,
     hs-source-dirs: src
     if arch(wasm32)

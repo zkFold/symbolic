@@ -5,7 +5,9 @@
 module ZkFold.Protocol.Plonkup.Prover.Secret where
 
 import Data.Aeson.Types (FromJSON (..), ToJSON (..))
-import Data.Swagger (ToSchema (..))
+import qualified Data.Swagger as Swagger (ToSchema)
+import qualified Data.OpenApi as OpenApi (ToSchema)
+import Data.Data (Typeable)
 import GHC.Generics (Generic)
 import Test.QuickCheck (Arbitrary (..))
 import Prelude hiding (Num (..), drop, length, sum, take, (!!), (/), (^))
@@ -20,7 +22,8 @@ instance ToJSON (ScalarFieldOf g) => ToJSON (PlonkupProverSecret g)
 
 instance FromJSON (ScalarFieldOf g) => FromJSON (PlonkupProverSecret g)
 
-deriving newtype instance (s ~ ScalarFieldOf g, ToSchema s) => ToSchema (PlonkupProverSecret g)
+deriving newtype instance (s ~ ScalarFieldOf g, Swagger.ToSchema s) => Swagger.ToSchema (PlonkupProverSecret g)
+deriving newtype instance (Typeable g, s ~ ScalarFieldOf g, OpenApi.ToSchema s) => OpenApi.ToSchema (PlonkupProverSecret g)
 
 instance Show (ScalarFieldOf g) => Show (PlonkupProverSecret g) where
   show (PlonkupProverSecret v) =
