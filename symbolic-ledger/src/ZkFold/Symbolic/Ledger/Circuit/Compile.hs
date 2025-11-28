@@ -26,7 +26,7 @@ import Data.ByteString (ByteString)
 import Data.OpenApi (ToSchema (..))
 import Data.Type.Equality (type (~))
 import Data.Word (Word8)
-import GHC.Generics (Generic, Generic1, Par1, U1 (..), (:*:) (..))
+import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.Natural (Natural, naturalToInteger)
 import GHC.TypeNats (KnownNat, type (+), type (^), Nat)
 import ZkFold.Algebra.Class
@@ -64,18 +64,18 @@ import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Hash (Hash (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Interpreter
-import Prelude (Integer, error, fromIntegral, ($), (.), (<$>), Show, undefined, Foldable, Traversable)
+import Prelude (Integer, error, fromIntegral, ($), (.), (<$>), Show)
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
 import GHC.TypeLits (TypeError, ErrorMessage (..))
-import Data.Functor.Rep (Representable)
+import ZkFold.Data.Vector (Vector)
 
 -- $setup
 --
@@ -157,10 +157,8 @@ type LedgerContractOutput bi bo a =
     :*: FieldElement
     :*: FieldElement)
     :*: Bool
-    -- Bridge-in outputs
-    :*: ExpandOutput bi a FieldElement
-    -- Bridge-out outputs
-    :*: ExpandOutput bo a FieldElement
+    :*: (Vector bi :.: Output a)
+    :*: (Vector bo :.: Output a)
 
 ledgerContract
   :: forall bi bo ud a i o t c
@@ -179,8 +177,8 @@ ledgerContract LedgerContractInput {..} =
     :*: (hHash . sBridgeIn $ lciNewState)
     :*: (hHash . sBridgeOut $ lciNewState))
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
-    :*: undefined
-    :*: undefined
+    :*: preimage (sBridgeIn lciNewState)
+    :*: preimage (sBridgeOut lciNewState)
 
 -- TODO: Circuit gate count is likely not good enough, see https://github.com/zkFold/symbolic/issues/766.
 type LedgerCircuitGates = 2 ^ 18
@@ -210,8 +208,8 @@ type LedgerContractOutputLayout bi bo a =
       :*: Par1
       :*: Par1)
       :*: Par1
-      :*: ExpandOutput bi a Par1
-      :*: ExpandOutput bo a Par1
+      :*: (Vector bi :.: Layout (Output a) (Order RollupBF))
+      :*: (Vector bo :.: Layout (Output a) (Order RollupBF))
 
 type LedgerCircuit bi bo ud a i o t =
   ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a i o t) (LedgerContractOutputLayout bi bo a)
@@ -238,11 +236,7 @@ type TranscriptConstraints ts =
 
 ledgerSetup
   :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc, Foldable (ExpandOutput bo a Par1), Foldable (ExpandOutput bi a Par1)
-   
-   ,Representable (ExpandOutput bo a Par1), 
-   Representable (ExpandOutput bi a Par1)
-   )
+   . (TranscriptConstraints tc)
   => RollupBF ~ BaseField c
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
@@ -257,7 +251,7 @@ ledgerSetup TrustedSetup {..} circuit = setupV
 
 ledgerProof
   :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc, c ~ Interpreter RollupBF, Foldable (ExpandOutput bo a Par1), Foldable (ExpandOutput bi a Par1), Representable (ExpandOutput bo a Par1), Representable (ExpandOutput bi a Par1))
+   . (TranscriptConstraints tc, c ~ Interpreter RollupBF)
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
   => TrustedSetup (LedgerCircuitGates + 6)
