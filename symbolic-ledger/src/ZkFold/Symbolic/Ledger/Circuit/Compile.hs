@@ -207,7 +207,6 @@ ledgerCircuit
   :: forall bi bo ud a i o t c
    . SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
-  -- => Traversable (Layout (ExpandOutput bi a FieldElement) n)
   => -- Since we are hardcoding @RollupBF@ at some places in this file, it is important that it is the same as the base field of the context.
   RollupBF ~ BaseField c
   => LedgerCircuit bi bo ud a i o t
