@@ -114,7 +114,6 @@ library
     ZkFold.Symbolic.Ledger.Validation.TransactionBatch
 
   build-depends:
-    adjunctions,
     aeson,
     base >=4.9 && <5,
     bytestring,

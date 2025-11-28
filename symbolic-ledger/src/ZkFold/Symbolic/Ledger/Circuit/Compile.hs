@@ -28,7 +28,7 @@ import Data.Type.Equality (type (~))
 import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.Natural (Natural, naturalToInteger)
-import GHC.TypeNats (KnownNat, type (+), type (^), Nat)
+import GHC.TypeNats (KnownNat, type (+), type (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
@@ -74,7 +74,6 @@ import Prelude (Integer, error, fromIntegral, ($), (.), (<$>), Show)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
-import GHC.TypeLits (TypeError, ErrorMessage (..))
 import ZkFold.Data.Vector (Vector)
 
 -- $setup
@@ -134,16 +133,6 @@ deriving anyclass instance
   forall bi bo ud a i o t
    . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
   => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
-
-type family ExpandAssets (p :: Nat) l where
-  ExpandAssets 0 _l = TypeError ('Text "ExpandAssets: p must be >= 1")
-  ExpandAssets 1 l = l :*: l :*: l
-  ExpandAssets p l = (ExpandAssets 1 l :*: ExpandAssets (p Number.- 1) l)
-
-type family ExpandOutput (n :: Nat) (p :: Nat) l where
-  ExpandOutput 0 _p _l = TypeError ('Text "ExpandOutput: n must be >= 1")
-  ExpandOutput 1 p l = l :*: ExpandAssets p l
-  ExpandOutput n p l = ExpandOutput 1 p l :*: ExpandOutput (n Number.- 1) p l
 
 type LedgerContractOutput bi bo a =
   (FieldElement
