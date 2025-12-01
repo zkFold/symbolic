@@ -85,7 +85,7 @@ address = hashFn publicKey
 adaAsset =
   Comp1 $
     fromList
-      [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (2_000_000 :: Natural)}]
+      [AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (5_000_000 :: Natural)}]
 
 bridgeInOutput = Output {oAddress = address, oAssets = adaAsset}
 
