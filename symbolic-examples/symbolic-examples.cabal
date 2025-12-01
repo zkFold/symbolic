@@ -136,6 +136,8 @@ library
       deriving-aeson                             ,
       symbolic-base                              ,
       text                                       ,
+      swagger2                                   ,
+      lens                                       ,
     hs-source-dirs: src
 
 benchmark bench-compiler-performance
