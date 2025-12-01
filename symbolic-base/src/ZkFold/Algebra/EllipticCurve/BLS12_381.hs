@@ -10,7 +10,8 @@ module ZkFold.Algebra.EllipticCurve.BLS12_381 where
 import Control.Monad
 import Data.Bits
 import Data.Foldable
-import Data.OpenApi (ToSchema)
+import qualified Data.OpenApi as OpenApi (ToSchema)
+import qualified Data.Swagger as Swagger (ToSchema)
 import Data.Word
 import Prelude hiding (Num (..), (/), (^))
 
@@ -74,9 +75,13 @@ type BLS12_381_G1_Point = Weierstrass "BLS12-381-G1" (Point Fq)
 
 type BLS12_381_G1_JacobianPoint = Weierstrass "BLS12-381-G1" (JacobianPoint Fq)
 
-instance ToSchema BLS12_381_G1_Point
+instance Swagger.ToSchema BLS12_381_G1_Point
 
-instance ToSchema BLS12_381_G1_JacobianPoint
+instance Swagger.ToSchema BLS12_381_G1_JacobianPoint
+
+instance OpenApi.ToSchema BLS12_381_G1_Point
+
+instance OpenApi.ToSchema BLS12_381_G1_JacobianPoint
 
 type BLS12_381_G1_CompressedPoint =
   Weierstrass "BLS12-381-G1" (CompressedPoint Fq)
