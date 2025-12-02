@@ -6,3 +6,4 @@ pub mod scalar;
 pub mod msm;
 pub mod utils;
 pub mod halo2;
+pub mod storable;
