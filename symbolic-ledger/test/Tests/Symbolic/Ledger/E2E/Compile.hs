@@ -44,6 +44,13 @@ specE2ECompile =
             , lciNewState = newState
             , lciStateWitness = witness
             }
+        lci2 =
+          LedgerContractInput
+            { lciPreviousState = newState
+            , lciTransactionBatch = batch2
+            , lciNewState = newState2
+            , lciStateWitness = witness2
+            }
     let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
     Haskell.putStrLn $
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
@@ -63,13 +70,23 @@ specE2ECompile =
           ts
           compiledCircuit
       zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
+      zkLedgerProof2 = ledgerProof @ByteString ts proverSecret compiledCircuit lci2
       witnessInputs = runInterpreter $ arithmetize lci
       compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
+      witnessInputs2 = runInterpreter $ arithmetize lci2
+      compiledInput2 = (witnessInputs2 :*: U1) :*: (payload lci2 :*: U1)
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
+      zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
+    Haskell.putStrLn $ "zkLedgerInput2: " <> show zkLedgerInput2
     verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
+      `shouldBe` Haskell.True
+    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
+      zkLedgerSetup
+      zkLedgerInput2
+      zkLedgerProof2
       `shouldBe` Haskell.True
