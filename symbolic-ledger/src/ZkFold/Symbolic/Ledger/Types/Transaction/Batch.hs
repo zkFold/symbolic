@@ -17,6 +17,8 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
+import ZkFold.Data.HFunctor.Classes (HShow)
+import qualified Prelude as Haskell
 
 -- | Transaction batch.
 newtype TransactionBatch i o a t c = TransactionBatch
@@ -25,6 +27,8 @@ newtype TransactionBatch i o a t c = TransactionBatch
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
+
+deriving stock instance HShow context => Haskell.Show (TransactionBatch i o a t context)
 
 instance
   forall i o a t context
