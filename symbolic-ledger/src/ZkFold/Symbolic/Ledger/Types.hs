@@ -14,10 +14,10 @@ import ZkFold.Algebra.Class (NumberOfBits)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
-import ZkFold.Symbolic.Data.UInt (GetRegisterSize, RegisterSize (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (KnownFFA)
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.UInt (GetRegisterSize, RegisterSize (..))
 
 import ZkFold.Symbolic.Ledger.Types.Address
 import ZkFold.Symbolic.Ledger.Types.Hash

@@ -12,17 +12,17 @@ module ZkFold.Symbolic.Data.Bool (
 ) where
 
 import Data.Function (($))
+import Data.Functor ((<$>))
 import Data.List.NonEmpty (NonEmpty (..))
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool
+import ZkFold.Data.Eq ((==))
+import ZkFold.Symbolic.Boot (Bool (..), FieldElement (..))
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
-import Data.Functor ((<$>))
-import ZkFold.Symbolic.Boot (Bool (..), FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Data.Ord (Ord (..), Ordering (..))
 
 instance SymbolicData Bool

@@ -3,6 +3,7 @@
 module ZkFold.Algebra.DFT (genericDft) where
 
 import Data.Bits ((.<<.), (.>>.), (.|.))
+import Data.Foldable (for_)
 import qualified Data.STRef as ST
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
@@ -11,7 +12,6 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import Data.Foldable (for_)
 
 -- | Generic FFT algorithm. Can be both direct and inverse
 -- depending on @wn@ (root of unity or its inverse) supplied.
@@ -36,7 +36,7 @@ genericDft (P.fromEnum -> !n) !wn !v = V.create $ do
         !wm = wn ^ (2 P.^ (n P.- s) :: Natural)
     for_ [0, m .. len P.- 1] \k -> do
       ST.writeSTRef wRef one
-      for_ [0 .. (m `P.div` 2) P.- 1 ] \j -> do
+      for_ [0 .. (m `P.div` 2) P.- 1] \j -> do
         let !iu = k P.+ j
             !it = iu P.+ (m `P.div` 2)
 

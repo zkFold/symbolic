@@ -8,10 +8,10 @@ import Data.Function ((.))
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC
 import ZkFold.Data.Collect (Collect, collect)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import qualified ZkFold.Symbolic.Data.Unconstrained as C
-import ZkFold.Symbolic.Class (Symbolic)
 
 hash
   :: forall c a

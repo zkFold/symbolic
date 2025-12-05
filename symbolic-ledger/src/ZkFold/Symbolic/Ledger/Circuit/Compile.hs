@@ -24,6 +24,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), withText)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
 import Data.Coerce (coerce)
+import Data.Function (id)
 import Data.OpenApi (ToSchema (..))
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -43,6 +44,7 @@ import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
@@ -63,8 +65,10 @@ import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hash (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import Prelude (Integer, MonadFail (..), Show, either, error, fromIntegral, pure, show, ($), (.), (<$>))
 import Prelude qualified as P
@@ -72,10 +76,6 @@ import Prelude qualified as P
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Validation.State
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
-import Data.Function (id)
 
 -- $setup
 --
@@ -137,8 +137,8 @@ deriving anyclass instance
 
 type LedgerContractOutput =
   (FE :*: FE :*: FE :*: FE :*: FE)
-  :*: (FE :*: FE :*: FE :*: FE :*: FE)
-  :*: Bool
+    :*: (FE :*: FE :*: FE :*: FE :*: FE)
+    :*: Bool
 
 ledgerContract
   :: forall c bi bo ud a i o t

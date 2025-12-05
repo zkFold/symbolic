@@ -1,9 +1,9 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ImplicitParams #-}
 
 module ZkFold.ArithmeticCircuit.Elem where
 
@@ -22,12 +22,13 @@ import qualified Data.Map.Monoidal as MM
 import Data.Maybe (Maybe (..), maybe)
 import Data.Monoid (Monoid, mempty)
 import Data.Ord (Ord (..))
+import Data.Semialign (Semialign)
 import Data.Semigroup (Semigroup, (<>))
 import Data.Semigroup.Generic (GenericSemigroupMonoid (..))
 import qualified Data.Set as S
 import Data.Traversable (Traversable, traverse)
 import Data.Type.Equality (type (~))
-import GHC.Generics (Generic, U1, type (:.:) (Comp1, unComp1), Par1 (unPar1))
+import GHC.Generics (Generic, Par1 (unPar1), U1, type (:.:) (Comp1, unComp1))
 import GHC.Stack (CallStack, callStack)
 import Numeric.Natural (Natural)
 import Optics (over, zoom)
@@ -42,10 +43,12 @@ import ZkFold.ArithmeticCircuit.Context (
   acLookup,
   acSystem,
   acWitness,
+  constraint,
   crown,
   emptyContext,
+  lookupConstraint,
   lookupType,
-  witToVar, constraint, lookupConstraint,
+  witToVar,
  )
 import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction, apply)
 import ZkFold.ArithmeticCircuit.Var (NewVar, Var)
@@ -54,8 +57,7 @@ import ZkFold.Control.Conditional (Conditional (..))
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class (Layout, SymbolicData (fromLayout), toLayout)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement(FieldElement))
-import Data.Semialign (Semialign)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 
 ---------------------- Efficient "list" concatenation --------------------------
 
@@ -241,8 +243,9 @@ instance (Arithmetic a, Binary a) => Symbolic (Elem a) where
   constrain =
     let stack = callStack
      in over #elConstraints . \case
-          Polynomial p -> over #cbPolyCon
-            $ app (stack, p $ \e -> MkPolynomial ($ e))
+          Polynomial p ->
+            over #cbPolyCon $
+              app (stack, p $ \e -> MkPolynomial ($ e))
           Lookup l x -> over #cbLookups $ app $ LEntry x l
 
 ------------------------- Optimized compilation function -----------------------

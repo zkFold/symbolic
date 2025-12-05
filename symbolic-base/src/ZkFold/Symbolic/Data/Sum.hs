@@ -22,10 +22,10 @@ import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq (Eq (BooleanOf))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), dummy)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..), dummy)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 
 ------------------------------ Product & Eithers -------------------------------
 
@@ -70,7 +70,8 @@ instance
   ( Symbolic c
   , Eq (Product ts c)
   , BooleanOf (Product ts c) ~ Bool c
-  ) => Eq (OneOf ts c)
+  )
+  => Eq (OneOf ts c)
 
 embedOneOf
   :: forall ts c. (Embed ts c, Symbolic c) => Eithers ts c -> OneOf ts c
@@ -157,7 +158,8 @@ deriving newtype instance
   ( Symbolic c
   , Eq (Prod a c)
   , BooleanOf (Prod a c) ~ Bool c
-  ) => Eq (Sum a c)
+  )
+  => Eq (Sum a c)
 
 inject :: (Generic1 a, Injects (G.Rep1 a) c, Symbolic c) => a c -> Sum a c
 inject = Sum . embedOneOf . sopify . G.from1

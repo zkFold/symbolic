@@ -1,7 +1,7 @@
 module ZkFold.ArithmeticCircuit.Desugaring (desugarRanges) where
 
 import Control.Monad (foldM, return)
-import Control.Monad.State (execState, State)
+import Control.Monad.State (State, execState)
 import Data.Binary (Binary)
 import Data.Bool (otherwise)
 import Data.Either (Either (..), partitionEithers)
@@ -17,7 +17,7 @@ import Prelude (error)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Context
-import ZkFold.ArithmeticCircuit.Var (toVar, Var)
+import ZkFold.ArithmeticCircuit.Var (Var, toVar)
 import ZkFold.Prelude (assert, length)
 import ZkFold.Symbolic.Class (Arithmetic)
 

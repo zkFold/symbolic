@@ -157,9 +157,13 @@ instance Arithmetic a => Q.Function (OneOf3 a)
 
 specSumOf
   :: forall a
-   . ( Q.Arbitrary a, Arithmetic a, Show a, Typeable a
+   . ( Q.Arbitrary a
+     , Arithmetic a
+     , Show a
+     , Typeable a
      , KnownNat (NumberOfRegisters a 32 Auto)
-     ) => Spec
+     )
+  => Spec
 specSumOf = do
   specSumOf' @a @(Only FieldElement)
   specSumOf' @a @(Might FieldElement)

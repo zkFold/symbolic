@@ -4,18 +4,18 @@
 
 module ZkFold.Symbolic.Data.Hash where
 
+import Data.Function ((.))
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Data.Bool (Bool (..))
-import ZkFold.Symbolic.Data.Unconstrained
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (Bool (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import Data.Function ((.))
+import ZkFold.Symbolic.Data.Unconstrained
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;

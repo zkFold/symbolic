@@ -31,15 +31,16 @@ import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaSign)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
-import ZkFold.Symbolic.Data.UInt (UInt, RegisterSize (Auto))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto), UInt)
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
@@ -48,7 +49,6 @@ import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuantity)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | An output's reference.
 data OutputRef context = OutputRef

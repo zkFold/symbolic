@@ -8,16 +8,16 @@ import GHC.Generics ((:*:) (..))
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (from)
 import ZkFold.Data.Vector (Vector, fromVector, toVector)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC
-import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
-import ZkFold.Symbolic.Data.UInt hiding (resize)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (BoolType (..), all)
+import ZkFold.Symbolic.Data.ByteString (resize)
+import ZkFold.Symbolic.Data.UInt hiding (resize)
 import Prelude hiding (Bool, Eq (..), all, length, splitAt, zip, (&&), (*), (+))
 
 import ZkFold.Symbolic.Cardano.Types
-import ZkFold.Data.Iso (from)
-import ZkFold.Symbolic.Data.ByteString (resize)
 
 type Tokens = 10
 

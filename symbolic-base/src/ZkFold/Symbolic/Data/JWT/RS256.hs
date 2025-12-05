@@ -15,11 +15,11 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.Symbolic.Algorithm.RSA
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | RSA Public key with Key ID
 data Certificate ctx
@@ -27,7 +27,7 @@ data Certificate ctx
   { pubKid :: VarByteString 320 ctx
   , pubKey :: PublicKey 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show, NFData)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => FromJSON (Certificate ctx) where
   parseJSON = withObject "Certificate" $ \v -> do
@@ -53,7 +53,7 @@ data SigningKey ctx
   { prvKid :: VarByteString 320 ctx
   , prvKey :: PrivateKey 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show, NFData)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 instance SigningAlgorithm "RS256" where
   type SKey "RS256" ctx = SigningKey ctx

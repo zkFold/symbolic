@@ -13,14 +13,14 @@ import qualified Prelude as P
 
 import ZkFold.Data.Eq
 import ZkFold.Symbolic.Algorithm.RSA as RSA
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Utils
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+), fromType)
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | Json Web Token payload with information about the user
 -- https://dev.twitch.tv/docs/extensions/reference/#jwt-schema
@@ -41,7 +41,7 @@ data TwitchPayload ctx
   , twUserId :: VarByteString 512 ctx
   -- ^ The user's Twitch user ID. This is provided only for users who allow your extension to identify them.
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show)
+  deriving (Generic, Generic1, P.Eq, P.Show, SymbolicData)
 
 -- | @pListen@ and @pSend@ contain the topics the associated user is allowed to listen to and publish to, respectively.
 data PubSubPerms ctx
@@ -49,7 +49,7 @@ data PubSubPerms ctx
   { pListen :: VarByteString 2048 ctx
   , pSend :: VarByteString 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show)
+  deriving (Generic, Generic1, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
   arbitrary = genericArbitrary uniform

@@ -81,14 +81,14 @@ import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (Layout, SymbolicData, toLayout)
 import ZkFold.Symbolic.Data.FieldElement
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
-import ZkFold.Symbolic.Data.Class (Layout, SymbolicData, toLayout)
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- Copypaste from zkfold-cardano but these types do not depend on PlutusTx
 --
@@ -301,26 +301,27 @@ expModContract
   => KnownNat (Ceil (GetRegisterSize c 4096 Auto) OrdWord)
   => RSA.PublicKey 2048 c -> ExpModInput c -> ExpModOutput c
 expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) =
-    ExpModOutput hashAsFE tokenNameAsFE
-   where
-    msgHash :: UInt 2048 Auto c
-    msgHash = exp65537Mod @_ @2048 @2048 sig pubN
+  ExpModOutput hashAsFE tokenNameAsFE
+ where
+  msgHash :: UInt 2048 Auto c
+  msgHash = exp65537Mod @_ @2048 @2048 sig pubN
 
-    _unpadded :: UInt 256 Auto c
-    _unpadded = resize msgHash
+  _unpadded :: UInt 256 Auto c
+  _unpadded = resize msgHash
 
-    _rsize :: Natural
-    _rsize = 2 ^ registerSize @c @256 @Auto
+  _rsize :: Natural
+  _rsize = 2 ^ registerSize @c @256 @Auto
 
-    -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
-    --
-    hashAsFE :: FieldElement c
-    hashAsFE = FieldElement $ error "TODO"
-      -- fromCircuitF (let (UInt regs) = unpadded in regs)
-      -- $ \v -> do
-       -- z <- newAssigned (const zero)
-       -- ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
-       -- pure $ Par1 ans
+  -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
+  --
+  hashAsFE :: FieldElement c
+  hashAsFE = FieldElement $ error "TODO"
+
+-- fromCircuitF (let (UInt regs) = unpadded in regs)
+-- \$ \v -> do
+-- z <- newAssigned (const zero)
+-- ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
+-- pure $ Par1 ans
 
 expModCircuit :: Natural -> Natural -> ExpModCircuit
 expModCircuit pubE' pubN' =
@@ -441,17 +442,18 @@ debugFun
   :: forall c
    . Vec (Par1 :*: Par1) c -> Vec (Par1 :*: Par1) c
 debugFun (Vec _cp) = Vec $ error "TODO"
-  --  fromCircuitF @(CompatContext c) cp $ \(Par1 i :*: _) -> do
-  --    o <- newAssigned $ \p -> p i + fromConstant @Natural 42
-  --    o' <- newAssigned $ \p -> p o * p i
-  --    let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
-  --    let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
-  --    rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
-  --    mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
-  --    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
-  --    out' <- newAssigned $ \p -> p a + p i
-  --    out <- newAssigned $ \p -> p out' - p a
-  --    pure (Par1 out :*: Par1 out)
+
+--  fromCircuitF @(CompatContext c) cp $ \(Par1 i :*: _) -> do
+--    o <- newAssigned $ \p -> p i + fromConstant @Natural 42
+--    o' <- newAssigned $ \p -> p o * p i
+--    let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+--    let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+--    rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
+--    mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
+--    a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
+--    out' <- newAssigned $ \p -> p a + p i
+--    out <- newAssigned $ \p -> p out' - p a
+--    pure (Par1 out :*: Par1 out)
 
 debugCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
 debugCircuit = compile @Fr (:*: U1) $ debugFun @(Elem Fr)

@@ -5,6 +5,7 @@ module Tests.Symbolic.Data.ByteString (specByteString) where
 
 import Control.Monad (return)
 import Data.Aeson (decode, encode)
+import Data.Binary (Binary)
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (plusNat)
 import Data.Function (id, ($))
@@ -16,18 +17,17 @@ import Prelude (show, (<>), type (~))
 import qualified Prelude as Haskell
 
 import Tests.Common (it, toss)
+import Tests.Symbolic.Data.Common
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
-import Tests.Symbolic.Data.Common
-import Data.Binary (Binary)
 
 eval :: forall a n. (Arithmetic a, Binary a) => ByteString n (Elem a) -> ByteString n a
 eval (ByteString bits) = ByteString (exec bits)

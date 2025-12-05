@@ -45,13 +45,13 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, bool, (||), assert)
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fromFieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Witness (Witness (Witness, witness))
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 
 data MerkleTree d c = MerkleTree
   { mHash :: FieldElement c
@@ -83,10 +83,10 @@ fromLeaves src@(fmap toBaseHash -> mLeaves) =
 
 toLeaves :: Symbolic c => MerkleTree d c -> Base.Leaves d (FieldElement c)
 toLeaves src@MerkleTree {..} =
-  unComp1
-  $ assert ((== src) . fromLeaves . unComp1)
-  $ Comp1
-  $ fromBaseHash <$> mLeaves
+  unComp1 $
+    assert ((== src) . fromLeaves . unComp1) $
+      Comp1 $
+        fromBaseHash <$> mLeaves
 
 instance
   (Symbolic c, FromConstant a (FieldElement c), Base.MerkleTreeSize d ~ n)
@@ -162,9 +162,9 @@ search
   -> MerkleTree d c
   -> Maybe (MerkleEntry d) c
 search pred tree =
-  assert (\entry -> tree `contains` fromJust entry)
-  $ toEntry
-  $ recSearch (fromBool . pred . FieldElement) (mLeaves tree)
+  assert (\entry -> tree `contains` fromJust entry) $
+    toEntry $
+      recSearch (fromBool . pred . FieldElement) (mLeaves tree)
  where
   recSearch
     :: forall n b a

@@ -30,9 +30,9 @@ import ZkFold.ArithmeticCircuit.Node (Node)
 import ZkFold.ArithmeticCircuit.Node qualified as Node
 import ZkFold.ArithmeticCircuit.Op (Sort (ZZp))
 import ZkFold.Data.Binary (Binary, toByteString)
-import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto), UInt)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto), UInt)
 import Prelude (toInteger)
 
 import ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod)

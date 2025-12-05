@@ -2,7 +2,7 @@
 
 module ZkFold.Symbolic.Examples (ExampleOutput (..), examples) where
 
-import Control.DeepSeq (NFData1, NFData)
+import Control.DeepSeq (NFData, NFData1)
 import Data.Function (($))
 import Data.String (String)
 import Data.Traversable (Traversable)
@@ -17,8 +17,9 @@ import ZkFold.Data.Binary (Binary)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool (true)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto))
 
 import ZkFold.Symbolic.Examples.Blake2b (exampleBlake2b_224, exampleBlake2b_256)
 import ZkFold.Symbolic.Examples.ByteString
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Examples.Pasta (examplePallas_Add, examplePallas_Scale)
 import ZkFold.Symbolic.Examples.ReverseList (exampleReverseList)
 import ZkFold.Symbolic.Examples.SmartWallet (expModContract)
 import ZkFold.Symbolic.Examples.UInt
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 type A = Zp BLS12_381_Scalar
 

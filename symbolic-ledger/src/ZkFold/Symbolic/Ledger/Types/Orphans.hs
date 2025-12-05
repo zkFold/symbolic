@@ -21,24 +21,25 @@ import Data.OpenApi.Internal.Schema (named)
 import Data.OpenApi.Lens (properties, required)
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
-import GHC.Generics
-    ( Generic,
-      Generic1,
-      (:*:)(..),
-      (:.:)(..),
-      Generic,
-      Generic1,
-      (:.:)(..) )
+import GHC.Generics (
+  Generic,
+  Generic1,
+  (:*:) (..),
+  (:.:) (..),
+ )
 import GHC.IsList (IsList (..))
 import GHC.Natural (Natural)
-import GHC.TypeNats ( KnownNat, type (-), KnownNat )
+import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (FromConstant (..), MultiplicativeMonoid (..), ToConstant (..))
 import ZkFold.Algebra.EllipticCurve.Class (TwistedEdwards)
 import ZkFold.Algebra.EllipticCurve.Class qualified as Elliptic
+import ZkFold.Data.Collect (Collect (..))
 import ZkFold.Data.MerkleTree (MerkleTreeSize)
 import ZkFold.Data.Orphans ()
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool qualified as SBool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -47,12 +48,9 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Int (Int)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum, constrained, unconstrain)
 import Prelude (Integer, (.))
 import Prelude qualified as Haskell
-import ZkFold.Data.Collect (Collect (..))
-import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum, constrained, unconstrain)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Hash

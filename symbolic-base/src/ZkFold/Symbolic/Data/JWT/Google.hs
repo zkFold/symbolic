@@ -17,13 +17,13 @@ import qualified Prelude as P
 
 import ZkFold.Data.Eq
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+), fromType)
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL
 data GooglePayload ctx
@@ -57,7 +57,7 @@ data GooglePayload ctx
   , plExp :: VarByteString 80 ctx
   -- ^ Expiration time (seconds since Unix epoch), a decimal number
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show)
+  deriving (Generic, Generic1, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => Arbitrary (GooglePayload ctx) where
   arbitrary = genericArbitrary uniform

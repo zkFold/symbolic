@@ -20,7 +20,7 @@ import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA (FFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.UInt (RegisterSize(..))
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 type Point = Jubjub_Point Fq
 

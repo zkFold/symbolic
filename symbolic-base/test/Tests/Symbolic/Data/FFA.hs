@@ -4,6 +4,7 @@ module Tests.Symbolic.Data.FFA (specFFA) where
 
 import Data.Function (($))
 import Data.List ((++))
+import GHC.Generics (Par1 (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, (===))
 import Text.Show (show)
@@ -19,7 +20,6 @@ import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Symbolic.Data.FFA (FFA (FFA), KnownFFA, UIntFFA (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement))
 import ZkFold.Symbolic.Data.UInt
-import GHC.Generics (Par1(..))
 
 type Prime256_1 = FpModulus
 

@@ -1,9 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Algebra.Number (
   Natural,
@@ -24,17 +24,17 @@ module ZkFold.Algebra.Number (
   type (^),
 ) where
 
+import Data.Constraint (Dict (Dict), (:-) (Sub))
+import Data.Constraint.Unsafe (unsafeSNat)
+import Data.Function (($), (.))
+import Data.Type.Bool (If)
+import Data.Type.Ord (type (>?))
 import GHC.Exts (proxy#)
+import GHC.Natural (shiftLNatural)
+import GHC.Num.Natural (naturalLog2)
 import GHC.Real (Integral)
 import qualified GHC.Real as Integral
 import GHC.TypeNats
-import GHC.Num.Natural (naturalLog2)
-import Data.Function ((.), ($))
-import Data.Constraint ((:-) (Sub), Dict (Dict))
-import Data.Constraint.Unsafe (unsafeSNat)
-import GHC.Natural (shiftLNatural)
-import Data.Type.Ord (type (>?))
-import Data.Type.Bool (If)
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p

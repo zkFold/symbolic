@@ -17,17 +17,17 @@ import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.Int (Int)
-import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Int (Int)
+import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
-import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context

@@ -38,10 +38,18 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.Mem.StableName (StableName, makeStableName)
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number (Prime)
 import ZkFold.Algebra.Polynomial.Multivariate.Expression (evalPoly)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
-import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext, lookupConstraint, constraint, unconstrained)
+import ZkFold.ArithmeticCircuit.Context (
+  CircuitContext,
+  constraint,
+  crown,
+  emptyContext,
+  lookupConstraint,
+  unconstrained,
+ )
 import ZkFold.ArithmeticCircuit.Op
 import ZkFold.ArithmeticCircuit.Var (NewVar, Var, at)
 import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
@@ -49,11 +57,10 @@ import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Ord (IsOrdering (..), Ord (..))
-import ZkFold.Symbolic.Class (Arithmetic, Constraint(..), Symbolic(..), (=!=))
+import ZkFold.Symbolic.Class (Arithmetic, Constraint (..), Symbolic (..), (=!=))
+import ZkFold.Symbolic.Data.Bool (Bool (fromBool))
 import ZkFold.Symbolic.Data.Class (HasRep, Layout, SymbolicData (fromLayout, toLayout))
 import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
-import ZkFold.Symbolic.Data.Bool (Bool(fromBool))
-import ZkFold.Algebra.Field (Zp, fromZp)
 
 ------------------- Experimental single-output circuit type --------------------
 

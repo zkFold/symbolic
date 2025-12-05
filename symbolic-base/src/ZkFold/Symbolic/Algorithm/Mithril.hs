@@ -15,10 +15,10 @@ import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Point (Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.UInt
 
 type StakeDistribution m point ctx = Vector m (point, FieldElement ctx)

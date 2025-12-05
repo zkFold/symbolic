@@ -25,9 +25,9 @@ import Prelude (foldr)
 import qualified Prelude as Haskell
 
 import ZkFold.Data.Eq
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class (HasRep, SymbolicData, dummy)
-import ZkFold.Symbolic.Class (Symbolic)
 
 data Maybe x c = Maybe {isJust :: Bool c, fromJust :: x c}
   deriving (Generic, Generic1, SymbolicData)

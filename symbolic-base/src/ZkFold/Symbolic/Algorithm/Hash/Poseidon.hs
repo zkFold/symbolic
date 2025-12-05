@@ -6,9 +6,9 @@ module ZkFold.Symbolic.Algorithm.Hash.Poseidon (
 import Data.Function ((.))
 
 import ZkFold.Algorithm.Hash.Poseidon
-import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Data.Collect (Collect, collect)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import qualified ZkFold.Symbolic.Data.Unconstrained as C
 

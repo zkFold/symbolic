@@ -42,15 +42,15 @@ import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (bool, ifThenElse)
 import ZkFold.Data.Eq (Eq)
+import ZkFold.Data.Iso (Iso (..))
 import ZkFold.Data.Vector (Vector, chunks, fromVector)
 import ZkFold.Prelude (drop)
-import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, truncate, resize)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
+import ZkFold.Symbolic.Data.Bool (fromBool)
+import ZkFold.Symbolic.Data.ByteString (ByteString (..), dropN, isSet, orRight, resize, truncate)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Ord ((<))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Class (Symbolic, Arithmetic)
-import ZkFold.Data.Iso (Iso (..))
-import ZkFold.Symbolic.Data.Bool (fromBool)
 
 -- | A ByteString that has length unknown at compile time but guaranteed to not exceed @maxLen@.
 -- The unassigned buffer space (i.e. bits past @bsLength@) should be set to zero at all times.
@@ -61,7 +61,7 @@ data VarByteString (maxLen :: Natural) (context :: Type)
   { bsLength :: FieldElement context
   , bsBuffer :: ByteString maxLen context
   }
-  deriving (Generic, Generic1, Eq, SymbolicData, Haskell.Eq, NFData)
+  deriving (Eq, Generic, Generic1, Haskell.Eq, NFData, SymbolicData)
 
 deriving instance (Arithmetic a, Haskell.Show a) => Haskell.Show (VarByteString n a)
 
@@ -82,10 +82,10 @@ toAsciiString VarByteString {..} = drop numZeros $ fromVector chars
   strLen = fromZp len `div` 8
   chars =
     chr
-    . Haskell.fromIntegral
-    . fromZp
-    . Haskell.foldl (\b a -> b + b + fromBool a) zero
-    <$> chunks @(Div n 8) @8 v
+      . Haskell.fromIntegral
+      . fromZp
+      . Haskell.foldl (\b a -> b + b + fromBool a) zero
+      <$> chunks @(Div n 8) @8 v
   numZeros = value @(Div n 8) -! strLen
 
 instance
@@ -128,7 +128,8 @@ type family Length (s :: Symbol) :: Natural where
 
 -- | Construct a VarByteString from a type-level string calculating its length automatically
 fromType
-  :: forall s ctx . (Symbolic ctx, KnownSymbol s, KnownNat (Length s))
+  :: forall s ctx
+   . (Symbolic ctx, KnownSymbol s, KnownNat (Length s))
   => VarByteString (Length s * 8) ctx
 fromType = fromString $ symbolVal (Proxy @s)
 
@@ -177,14 +178,14 @@ shift
   -> FieldElement ctx
   -> ByteString n ctx
 shift sh bs (FieldElement _el) =
-  from $ Haskell.foldr
-    (\s b -> withWordCount @n @ctx $ bool b (b `sh` (2 ^ s)) (isSet elBits s))
-    w
-    [0 .. nbits]
+  from $
+    Haskell.foldr
+      (\s b -> withWordCount @n @ctx $ bool b (b `sh` (2 ^ s)) (isSet elBits s))
+      w
+      [0 .. nbits]
  where
   elBits :: ByteString (Log2 n + 1) ctx
   elBits = ByteString $ Haskell.error "TODO" -- fromCircuitF el $ fmap unsafeToVector . expansion (nbits + 1) . unPar1
-
   w :: Words n ctx
   w = from bs
 
@@ -275,13 +276,13 @@ instance
   => Iso (Words n ctx) (ByteString n ctx)
   where
   from (Words _regs) = ByteString $ Haskell.error "TODO" -- fromCircuitF regs $ \r -> do
---    let v = fromVector r
---        (w, ws) = (Haskell.head v, Haskell.tail v)
---        regSize = withWordSize @ctx $ value @(WordSize ctx)
---        hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
---    lows <- Haskell.concatMap Haskell.reverse <$> mapM (expansion regSize) ws
---    hi <- Haskell.reverse <$> expansion hiRegSize w
---    pure $ unsafeToVector (hi <> lows)
+  --    let v = fromVector r
+  --        (w, ws) = (Haskell.head v, Haskell.tail v)
+  --        regSize = withWordSize @ctx $ value @(WordSize ctx)
+  --        hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+  --    lows <- Haskell.concatMap Haskell.reverse <$> mapM (expansion regSize) ws
+  --    hi <- Haskell.reverse <$> expansion hiRegSize w
+  --    pure $ unsafeToVector (hi <> lows)
 
 instance
   ( Symbolic ctx
@@ -290,14 +291,14 @@ instance
   => Iso (ByteString n ctx) (Words n ctx)
   where
   from (ByteString _bits) = Words $ Haskell.error "TODO" -- fromCircuitF bits $ \b -> do
---    let bs = fromVector b
---        regSize = withWordSize @ctx $ value @(WordSize ctx)
---        hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
---        his = take hiRegSize bs
---        lows = chunksOf (Haskell.fromIntegral regSize) $ drop hiRegSize bs
---    hi <- horner $ Haskell.reverse his
---    lo <- mapM (horner . Haskell.reverse) lows
---    pure $ unsafeToVector (hi : lo)
+  --    let bs = fromVector b
+  --        regSize = withWordSize @ctx $ value @(WordSize ctx)
+  --        hiRegSize = value @n -! regSize * (withWordCount @n @ctx $ value @(WordCount n ctx) -! 1)
+  --        his = take hiRegSize bs
+  --        lows = chunksOf (Haskell.fromIntegral regSize) $ drop hiRegSize bs
+  --    hi <- horner $ Haskell.reverse his
+  --    lo <- mapM (horner . Haskell.reverse) lows
+  --    pure $ unsafeToVector (hi : lo)
 
 -- | shift a vector of words left by a power of two
 shiftWordsL
@@ -320,9 +321,9 @@ shiftWordsL (Words regs) p2
   (_zeroRegs, _remShift) = p2 `divMod` regSize
 
   shifted = Haskell.error "TODO" -- fromCircuitF regs $ \r -> do
---    let lst = fromVector r
---        v = drop zeroRegs lst
---        (hi, lows) = (Haskell.head v, Haskell.tail v)
+  --    let lst = fromVector r
+  --        v = drop zeroRegs lst
+  --        (hi, lows) = (Haskell.head v, Haskell.tail v)
 
 --    z <- newAssigned (const zero)
 --    (newRegs, carry) <- foldrM shiftCarry ([], z) lows
@@ -357,15 +358,15 @@ shiftWordsR (Words regs) p2
   (_zeroRegs, _remShift) = p2 `divMod` regSize
 
   shifted = Haskell.error "TODO" -- fromCircuitF regs $ \r -> do
---    let lst = fromVector r
---        v = take (length lst -! zeroRegs) lst
---        (hi, lows) = (Haskell.head v, Haskell.tail v)
---    z <- newAssigned (const zero)
---    (carry, newHi) <- case hiRegSize Haskell.> remShift of
---      Haskell.True -> splitExpansion remShift (hiRegSize -! remShift) hi
---      _ -> pure (hi, z)
---    (newRegs, _) <- foldlM shiftCarry ([], carry) lows
---    pure $ unsafeToVector (replicate zeroRegs z <> (newHi : Haskell.reverse newRegs))
+  --    let lst = fromVector r
+  --        v = take (length lst -! zeroRegs) lst
+  --        (hi, lows) = (Haskell.head v, Haskell.tail v)
+  --    z <- newAssigned (const zero)
+  --    (carry, newHi) <- case hiRegSize Haskell.> remShift of
+  --      Haskell.True -> splitExpansion remShift (hiRegSize -! remShift) hi
+  --      _ -> pure (hi, z)
+  --    (newRegs, _) <- foldlM shiftCarry ([], carry) lows
+  --    pure $ unsafeToVector (replicate zeroRegs z <> (newHi : Haskell.reverse newRegs))
 
 --  shiftCarry :: MonadCircuit i ctx w m => ([i], i) -> i -> m ([i], i)
 --  shiftCarry (acc, carry) r = do

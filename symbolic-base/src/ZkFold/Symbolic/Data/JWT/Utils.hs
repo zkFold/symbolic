@@ -22,12 +22,12 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import qualified ZkFold.Data.Vector as V
-import ZkFold.Symbolic.Data.ByteString (ByteString (..), concat, toWords, resize)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.ByteString (ByteString (..), concat, resize, toWords)
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.Data.UInt hiding (resize)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned)
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
 type BufLen n = Max (Log2 n + 1) 3
@@ -125,6 +125,7 @@ padTo6
   => UInt (BufLen n) ('Fixed (BufLen n)) ctx
   -> FieldElement ctx
 padTo6 ui = FieldElement $ P.error "TODO"
+ where
   -- fromCircuitF (CompatContext v) $ \bits ->
   -- do
   --  val <- horner $ V.fromVector bits
@@ -138,7 +139,7 @@ padTo6 ui = FieldElement $ P.error "TODO"
   --  res <- horner [valBits !! 0, hi1, hi2]
 
   --  pure $ Par1 res
- where
+
   UInt _v =
     knownBufLen @n $
       knownNumWords @n @ctx $
@@ -192,12 +193,13 @@ base64ToAscii VarByteString {..} =
     _            63          95
 -}
 word6ToAscii
-  :: forall ctx. Symbolic ctx
+  :: forall ctx
+   . Symbolic ctx
   => ByteString 6 ctx -> ByteString 8 ctx
 word6ToAscii (ByteString _bs) =
   force $ ByteString $ P.error "TODO" -- fromCircuitF bs $ \bits ->
---  do
---    let bitsSym = V.fromVector bits
+  --  do
+  --    let bitsSym = V.fromVector bits
 
 --    fe <- horner (P.reverse bitsSym)
 

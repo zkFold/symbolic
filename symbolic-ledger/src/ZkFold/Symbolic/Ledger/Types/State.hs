@@ -11,12 +11,13 @@ import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree)
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
@@ -24,7 +25,6 @@ import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Hash (Hash, HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 -- | Defines the on-chain representation of the Symbolic Ledger state transition.
 data State bi bo ud a context = State

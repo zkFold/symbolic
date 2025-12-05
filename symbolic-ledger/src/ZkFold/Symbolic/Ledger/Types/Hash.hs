@@ -6,10 +6,10 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
 
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC qualified as MiMC
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash qualified as Symbolic.Hash
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Class (Symbolic)
 
 -- | Hash type used in the zkFold ledger.
 type Hash = Symbolic.Hash.Hash HashSimple

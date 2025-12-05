@@ -5,7 +5,7 @@
 
 module ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_256, blake2b_512) where
 
-import Data.Bool (bool, Bool (..))
+import Data.Bool (Bool (..), bool)
 import Data.Constraint (Dict, withDict)
 import Data.Constraint.Nat (
   minusNat,
@@ -17,13 +17,20 @@ import Data.Constraint.Nat (
   zeroLe,
  )
 import Data.Constraint.Unsafe (unsafeAxiom)
+import Data.Eq ((==))
+import Data.Function (flip, ($), (.))
+import Data.Functor (fmap)
+import Data.Int (Int)
+import Data.List (foldl', map, (++))
+import Data.Ord ((>))
 import Data.Ratio ((%))
+import Data.Tuple (fst, snd)
 import Data.Type.Equality (type (~))
 import Data.Vector ((!), (//))
 import qualified Data.Vector as V
-import           Data.List                                         (foldl', map, (++))
 import GHC.IsList (IsList (..))
 import qualified GHC.Num as GHC
+import GHC.Real (ceiling)
 
 import ZkFold.Algebra.Class (
   AdditiveGroup (..),
@@ -38,9 +45,11 @@ import ZkFold.Algebra.Class (
   (-!),
  )
 import ZkFold.Algebra.Number
+import ZkFold.Data.Iso (Iso (..))
 import qualified ZkFold.Data.Vector as Vec
 import ZkFold.Prelude (length, replicate, splitAt, (!!))
 import ZkFold.Symbolic.Algorithm.Hash.Blake2b.Constants (blake2b_iv, sigma)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString (
   ByteString (..),
@@ -50,16 +59,7 @@ import ZkFold.Symbolic.Data.ByteString (
   toWords,
   truncate,
  )
-import ZkFold.Symbolic.Data.UInt (UInt (..), RegisterSize (..))
-import Data.Int (Int)
-import ZkFold.Symbolic.Class (Symbolic)
-import Data.Eq ((==))
-import Data.Function (($), (.), flip)
-import Data.Tuple (fst, snd)
-import Data.Functor (fmap)
-import GHC.Real (ceiling)
-import Data.Ord ((>))
-import ZkFold.Data.Iso (Iso(..))
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..), UInt (..))
 
 -- | BLAKE2b Cryptographic hash. Reference:
 -- https://tools.ietf.org/html/rfc7693
@@ -413,18 +413,21 @@ blake2b key input =
 
 -- | Hash a `ByteString` using the Blake2b-224 hash function.
 blake2b_224
-  :: forall inputLen c. (Symbolic c, KnownNat inputLen)
+  :: forall inputLen c
+   . (Symbolic c, KnownNat inputLen)
   => ByteString (8 * inputLen) c -> ByteString 224 c
 blake2b_224 = blake2b @0 @inputLen @28 0
 
 -- | Hash a `ByteString` using the Blake2b-256 hash function.
 blake2b_256
-  :: forall inputLen c. (Symbolic c, KnownNat inputLen)
+  :: forall inputLen c
+   . (Symbolic c, KnownNat inputLen)
   => ByteString (8 * inputLen) c -> ByteString 256 c
 blake2b_256 = blake2b @0 @inputLen @32 0
 
 -- | Hash a `ByteString` using the Blake2b-512 hash function.
 blake2b_512
-  :: forall inputLen c. (Symbolic c, KnownNat inputLen)
+  :: forall inputLen c
+   . (Symbolic c, KnownNat inputLen)
   => ByteString (8 * inputLen) c -> ByteString 512 c
 blake2b_512 = blake2b @0 @inputLen @64 0

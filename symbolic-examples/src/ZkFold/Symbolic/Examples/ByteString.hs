@@ -10,12 +10,12 @@ module ZkFold.Symbolic.Examples.ByteString (
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat)
+import ZkFold.Data.Iso (from)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Data.ByteString (ByteString, resize)
-import ZkFold.Symbolic.Data.UInt (UInt, RegisterSize (..))
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Data.Iso (from)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..), UInt)
 
 exampleByteStringAnd
   :: (KnownNat n, Symbolic c)
@@ -33,7 +33,8 @@ exampleByteStringResize
 exampleByteStringResize = resize
 
 exampleByteStringAdd
-  :: forall n c. (KnownNat n, Symbolic c)
+  :: forall n c
+   . (KnownNat n, Symbolic c)
   => ByteString n c -> ByteString n c -> ByteString n c
 exampleByteStringAdd x y = from (from x + from y :: UInt n Auto c)
 

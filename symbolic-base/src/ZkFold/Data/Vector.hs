@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Data.Vector (
@@ -47,8 +47,8 @@ import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Eq
-import ZkFold.Prelude (length)
 import ZkFold.Data.Ord (Ord)
+import ZkFold.Prelude (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)

@@ -4,12 +4,12 @@ module ZkFold.Symbolic.Data.Input where
 
 import Data.Semialign (Semialign)
 import qualified GHC.Generics as G
-import Prelude ((.), Foldable)
+import Prelude (Foldable, (.))
 
-import ZkFold.Data.Bool (true, (&&), all)
+import ZkFold.Data.Bool (all, true, (&&))
 import ZkFold.Symbolic.Boot (Bool)
-import ZkFold.Symbolic.Data.Class (SymbolicData, HasRep)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (HasRep, SymbolicData)
 
 -- | A class for Symbolic input.
 class SymbolicData d => SymbolicInput d where

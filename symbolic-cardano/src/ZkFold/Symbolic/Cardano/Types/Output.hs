@@ -14,10 +14,10 @@ import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.UInt (KnownRegisters, RegisterSize (..))
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
 

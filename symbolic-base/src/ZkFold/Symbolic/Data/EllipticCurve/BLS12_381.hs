@@ -12,13 +12,13 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Haskell
 import ZkFold.Algebra.Number
+import ZkFold.Data.Iso (Iso (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.EllipticCurve.Point
 import ZkFold.Symbolic.Data.FFA
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.UInt (RegisterSize(..))
-import ZkFold.Data.Iso (Iso(..))
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 type BLS12_381_G1_Point =
   Point (Weierstrass "BLS12-381-G1") (FFA BLS12_381_Base 'Auto)

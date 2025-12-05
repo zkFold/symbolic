@@ -37,7 +37,7 @@ import Data.Traversable (Traversable, traverse)
 import Data.Tuple (uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
-import GHC.Stack (prettyCallStack, HasCallStack, callStack)
+import GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import Optics (over, set, zoom)
 import Text.Show
 import Prelude (error)
@@ -196,8 +196,11 @@ hpure :: Ord a => (forall i. f i) -> CircuitContext a f
 hpure = crown mempty
 
 hliftA2
-  :: Ord a => (forall i. f i -> g i -> h i)
-  -> CircuitContext a f -> CircuitContext a g -> CircuitContext a h
+  :: Ord a
+  => (forall i. f i -> g i -> h i)
+  -> CircuitContext a f
+  -> CircuitContext a g
+  -> CircuitContext a h
 hliftA2 f (behead -> (c, o)) (behead -> (d, p)) = crown (c <> d) (f o p)
 
 unpackWith
@@ -234,7 +237,8 @@ guessOutput f (i :*: o) =
 ----------------------------- MonadCircuit instance ----------------------------
 
 unconstrained
-  :: forall a o. (Arithmetic a, Binary a)
+  :: forall a o
+   . (Arithmetic a, Binary a)
   => CircuitWitness a -> State (CircuitContext a o) (Var a)
 unconstrained wf = case runWitnessF wf (\sV -> LinUVar one sV zero) of
   ConstUVar c -> pure (ConstVar c)
@@ -268,7 +272,8 @@ constraint p =
 newConstrained
   :: (Arithmetic a, Binary a, HasCallStack)
   => (forall b. Algebra a b => (Var a -> b) -> Var a -> b)
-  -> CircuitWitness a -> State (CircuitContext a o) (Var a)
+  -> CircuitWitness a
+  -> State (CircuitContext a o) (Var a)
 newConstrained p w = do
   i <- unconstrained w
   constraint (`p` i)
@@ -281,7 +286,8 @@ newAssigned
 newAssigned p = newConstrained (\x i -> p x - x i) (p at)
 
 lookupConstraint
-  :: forall f a o. (Arithmetic a, Binary a, Traversable f)
+  :: forall f a o
+   . (Arithmetic a, Binary a, Traversable f)
   => f (Var a) -> LookupTable f -> State (CircuitContext a o) ()
 lookupConstraint vars ltable = do
   vs <- traverse prepare (toList vars)

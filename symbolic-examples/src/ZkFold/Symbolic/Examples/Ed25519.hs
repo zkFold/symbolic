@@ -5,10 +5,10 @@ module ZkFold.Symbolic.Examples.Ed25519 (
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_Scalar)
-import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Ed25519
 import ZkFold.Symbolic.Data.FFA
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.UInt (RegisterSize (Auto))
 
 exampleEd25519Scale
   :: ( Symbolic ctx

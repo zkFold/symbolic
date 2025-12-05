@@ -3,18 +3,18 @@
 
 module ZkFold.Symbolic.Data.FieldElement (FieldElement (..)) where
 
-import Data.Function ((.), on)
+import Data.Function (on, (.))
+import Data.Functor (fmap)
 
 import ZkFold.Algebra.Class hiding (invert)
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Data.Eq (SemialignEqOrd (..))
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Boot (FieldElement (..), Bool (fromBool))
+import ZkFold.Symbolic.Boot (Bool (fromBool), FieldElement (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.Register (bitsOfFE)
-import Data.Functor (fmap)
 import ZkFold.Symbolic.Data.Ord (Ord (..), Ordering)
-import ZkFold.Data.Eq (SemialignEqOrd(..))
+import ZkFold.Symbolic.Data.Register (bitsOfFE)
 
 instance SymbolicData FieldElement
 

@@ -2,23 +2,24 @@
 
 module ZkFold.Symbolic.Boot (Bool (..), FieldElement (..)) where
 
-import Data.Functor (Functor, (<$>), fmap)
-import ZkFold.Symbolic.Class (Symbolic, assigned, constrain, (=!=))
-import ZkFold.Algebra.Class
 import qualified Data.Bool as Haskell
-import ZkFold.Data.Bool (BoolType (..))
-import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
 import Data.Function (($), (.))
-import ZkFold.Data.Eq (Eq (..))
+import Data.Functor (Functor, fmap, (<$>))
+import Data.Tuple (fst, snd)
 import GHC.Generics (Generic1, type (:*:) (..))
-import Numeric.Natural (Natural)
 import GHC.Integer (Integer)
-import Data.Tuple (snd, fst)
-import ZkFold.Data.Product (toPair)
+import Numeric.Natural (Natural)
 
-newtype FieldElement c = FieldElement { fromFieldElement :: c }
+import ZkFold.Algebra.Class
+import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Product (toPair)
+import ZkFold.Symbolic.Class (Symbolic, assigned, constrain, (=!=))
+
+newtype FieldElement c = FieldElement {fromFieldElement :: c}
   deriving stock (Functor, Generic1)
-  deriving newtype (Zero, AdditiveMonoid, MultiplicativeMonoid)
+  deriving newtype (AdditiveMonoid, MultiplicativeMonoid, Zero)
 
 deriving newtype instance Finite c => Finite (FieldElement c)
 
@@ -31,8 +32,7 @@ instance ToConstant (FieldElement a) where
 
 instance {-# OVERLAPPING #-} FromConstant (FieldElement c) (FieldElement c)
 
-instance {-# OVERLAPPING #-}
-  Symbolic c => Scale (FieldElement c) (FieldElement c)
+instance {-# OVERLAPPING #-} Symbolic c => Scale (FieldElement c) (FieldElement c)
 
 instance Symbolic c => Scale Natural (FieldElement c) where
   scale k (FieldElement x) = FieldElement $ assigned (scale k ($ x))
@@ -57,7 +57,7 @@ instance Symbolic c => Exponent (FieldElement c) Natural where
   (^) = natPow
 
 -- TODO (Issue #18): hide this constructor
-newtype Bool c = Bool { fromBool :: c } deriving (Functor, Generic1)
+newtype Bool c = Bool {fromBool :: c} deriving (Functor, Generic1)
 
 bTrue :: Semiring c => Bool c
 bTrue = Bool one
@@ -92,17 +92,16 @@ safeInverse :: Symbolic c => FieldElement c -> (Bool c, FieldElement c)
 safeInverse (FieldElement x) =
   let isZero = ifThenElse (x == zero) one zero
       inverse = finv x
-   in toPair
-      $ constrain (($ x) * ($ isZero) =!= zero)
-      . constrain (($ x) * ($ inverse) + ($ isZero) =!= one)
-      <$> (Bool isZero :*: FieldElement inverse)
+   in toPair $
+        constrain (($ x) * ($ isZero) =!= zero)
+          . constrain (($ x) * ($ inverse) + ($ isZero) =!= one)
+          <$> (Bool isZero :*: FieldElement inverse)
 
 instance Symbolic c => Eq (FieldElement c) where
   type BooleanOf (FieldElement c) = Bool c
   x == y = fst $ safeInverse (x - y)
 
-instance {-# INCOHERENT #-}
-  Symbolic c => Conditional (Bool c) (FieldElement c) where
+instance {-# INCOHERENT #-} Symbolic c => Conditional (Bool c) (FieldElement c) where
   bool (FieldElement f) (FieldElement t) c = FieldElement (bIf c t f)
 
 instance Symbolic c => Field (FieldElement c) where

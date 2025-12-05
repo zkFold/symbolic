@@ -2,13 +2,13 @@
 
 module ZkFold.Control.BackwardsState where
 
-import Data.Tuple (fst)
-import Data.Functor (Functor)
 import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..), ap)
 import Data.Function ((.))
-import Control.Monad (ap, Monad (..))
+import Data.Functor (Functor)
+import Data.Tuple (fst)
 
-newtype BState s a = MkBState { runBState :: s -> (a, s) }
+newtype BState s a = MkBState {runBState :: s -> (a, s)}
   deriving Functor
 
 evalBState :: s -> BState s a -> a

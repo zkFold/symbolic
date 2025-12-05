@@ -14,13 +14,13 @@ import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, Fr)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, eval)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.Blake2b (blake2b_224, blake2b_512)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString (..))
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
 
 blake2bNumeric :: forall c. Arithmetic c => Spec
 blake2bNumeric =

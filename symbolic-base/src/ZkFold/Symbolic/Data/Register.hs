@@ -1,42 +1,43 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Symbolic.Data.Register where
 
+import Control.Applicative (pure, (<*>))
+import Control.Monad (sequence)
+import Control.Monad.State (MonadState (state), evalState, gets)
+import Data.Bifunctor (Bifunctor (first))
+import Data.Constraint (withDict)
+import Data.Constraint.Nat (plusCommutes, timesOne)
+import Data.Foldable (foldr)
+import Data.Function (($), (.))
+import Data.Functor (Functor, fmap, (<$>))
+import Data.Tuple (fst, snd)
 import GHC.Generics (Generic1, Par1 (..), type (:*:) (..), type (:.:) (..))
-import ZkFold.Algebra.Number
+
 import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Algebra.Number
+import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
+import ZkFold.Data.Bool (BoolType (..))
+import ZkFold.Data.Collect (Collect)
+import ZkFold.Data.Eq (Eq, (==))
+import ZkFold.Data.Product (toPair)
+import ZkFold.Data.Vector (Vector, item, singleton, unfold, zipWith)
 import ZkFold.Symbolic.Boot (FieldElement (..))
 import ZkFold.Symbolic.Class
-import ZkFold.Data.Eq ((==), Eq)
-import Data.Functor ((<$>), fmap, Functor)
-import Data.Function (($), (.))
-import ZkFold.Data.Bool (BoolType (..))
-import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
-import ZkFold.Data.Product (toPair)
-import Data.Tuple (fst, snd)
-import ZkFold.Symbolic.Data.Bool (assert, Bool (..))
-import ZkFold.Data.Vector (zipWith, Vector, unfold, singleton, item)
-import ZkFold.Symbolic.Data.Witness (Witness(..))
-import Data.Foldable (foldr)
-import Data.Constraint (withDict)
-import Data.Constraint.Nat (timesOne, plusCommutes)
+import ZkFold.Symbolic.Data.Bool (Bool (..), assert)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Data.Collect (Collect)
-import Control.Monad.State (evalState, gets, MonadState (state))
-import Control.Applicative ((<*>), pure)
-import Control.Monad (sequence)
-import Data.Bifunctor (Bifunctor(first))
+import ZkFold.Symbolic.Data.Witness (Witness (..))
 
-newtype Register (n :: Natural) c = MkRegister { fromRegister :: c }
+newtype Register (n :: Natural) c = MkRegister {fromRegister :: c}
   deriving stock (Functor, Generic1)
   deriving anyclass SymbolicData
   deriving newtype Zero
-  deriving (Eq, Collect (ConstrainedDatum c)) via (FieldElement c)
+  deriving (Collect (ConstrainedDatum c), Eq) via (FieldElement c)
 
 instance KnownNat n => SymbolicInput (Register n) where
   isValid (MkRegister x) =
@@ -51,11 +52,11 @@ instance (KnownNat n, Symbolic c) => Ord (Register n c) where
         res = unconstrainedCompare x y
         rfe = FieldElement (fromOrdering res)
         diff = FieldElement x - FieldElement y
-     in assert isValid
-        $ constrain (($ fromBool (diff == zero)) * ($ fromOrdering res) =!= zero)
-        . constrain (fromFieldElement ((rfe - one) * diff) <! bound)
-        . constrain (fromFieldElement ((rfe + one) * diff) <! bound)
-        <$> res
+     in assert isValid $
+          constrain (($ fromBool (diff == zero)) * ($ fromOrdering res) =!= zero)
+            . constrain (fromFieldElement ((rfe - one) * diff) <! bound)
+            . constrain (fromFieldElement ((rfe + one) * diff) <! bound)
+            <$> res
 
 extendR :: forall n m c. Register m c -> Register (m + n) c
 extendR = MkRegister . fromRegister
@@ -75,48 +76,57 @@ x .+. y = adder x y false
 (regToFE -> x) .*. (regToFE -> y) = MkRegister $ fromFieldElement (x * y)
 
 shlR
-  :: forall m n c. (KnownNat m, Symbolic c)
+  :: forall m n c
+   . (KnownNat m, Symbolic c)
   => Register n c -> Register (m + n) c
 shlR (regToFE -> x) =
   MkRegister $ fromFieldElement (((2 :: Natural) ^ value @m) `scale` x)
 
 negateR
-  :: forall n c. (KnownNat n, Symbolic c)
+  :: forall n c
+   . (KnownNat n, Symbolic c)
   => Register n c -> (Register n c, Bool c)
-negateR (regToFE -> x) = let isZ = x == zero in
-  (,isZ)
-  $ MkRegister
-  $ fromFieldElement
-  $ ifThenElse isZ x
-  $ fromConstant ((2 :: Natural) ^ value @n) - x
+negateR (regToFE -> x) =
+  let isZ = x == zero
+   in (,isZ) $
+        MkRegister $
+          fromFieldElement $
+            ifThenElse isZ x $
+              fromConstant ((2 :: Natural) ^ value @n) - x
 
 regsToIntegral
-  :: forall m n k c. (KnownNat n, PrimeField c)
+  :: forall m n k c
+   . (KnownNat n, PrimeField c)
   => Vector m (Register n c) -> Register k c -> IntegralOf c
-regsToIntegral (fmap (toIntegral . fromRegister) -> xs)
-               (toIntegral . fromRegister -> y) =
-  foldr (\r s -> r + scale ((2 :: Natural) ^ value @n) s) y xs
+regsToIntegral
+  (fmap (toIntegral . fromRegister) -> xs)
+  (toIntegral . fromRegister -> y) =
+    foldr (\r s -> r + scale ((2 :: Natural) ^ value @n) s) y xs
 
 appendConcatR
-  :: forall m n k c. (KnownNat n, Symbolic c)
+  :: forall m n k c
+   . (KnownNat n, Symbolic c)
   => Vector m (Register n c) -> Register k c -> Register (m * n + k) c
 appendConcatR xs (regToFE -> y) =
-  MkRegister
-  $ fromFieldElement
-  $ foldr (\r s -> regToFE r + scale ((2 :: Natural) ^ value @n) s) y xs
+  MkRegister $
+    fromFieldElement $
+      foldr (\r s -> regToFE r + scale ((2 :: Natural) ^ value @n) s) y xs
 
 appendR
-  :: forall m n c. (KnownNat m, Symbolic c)
+  :: forall m n c
+   . (KnownNat m, Symbolic c)
   => Register m c -> Register n c -> Register (m + n) c
 appendR = appendConcatR . singleton
 
 concatR
-  :: forall m n c. (KnownNat n, Symbolic c)
+  :: forall m n c
+   . (KnownNat n, Symbolic c)
   => Vector m (Register n c) -> Register (m * n) c
 concatR xs = appendConcatR xs (zero :: Register 0 c)
 
 limb
-  :: forall a n c. (SemiEuclidean a, KnownNat n, FromConstant a c)
+  :: forall a n c
+   . (SemiEuclidean a, KnownNat n, FromConstant a c)
   => a -> (Register n c, a)
 limb x =
   let (d, m) = x `divMod` fromConstant ((2 :: Natural) ^ value @n)
@@ -127,10 +137,13 @@ splitChunksR
   => Register (m * n + k) c -> (Vector m (Register n c), Register k c)
 splitChunksR x =
   (\(Comp1 lo :*: hi) -> (lo, hi))
-  $ assert (\v@(Comp1 lo :*: hi) -> isValid v && appendConcatR lo hi == x)
-  $ evalState ((:*:) . Comp1 <$> sequence (pure $ state limb)
-                             <*> gets (MkRegister . fromConstant))
-  $ toIntegral (fromRegister x)
+    $ assert (\v@(Comp1 lo :*: hi) -> isValid v && appendConcatR lo hi == x)
+    $ evalState
+      ( (:*:) . Comp1
+          <$> sequence (pure $ state limb)
+          <*> gets (MkRegister . fromConstant)
+      )
+    $ toIntegral (fromRegister x)
 
 splitR
   :: (KnownNat m, KnownNat n, Symbolic c)
@@ -159,37 +172,40 @@ bitsOfFE :: Symbolic c => FieldElement c -> Vector (NumberOfBits c) (Bool c)
 bitsOfFE = bitsOfR . MkRegister . fromFieldElement
 
 andXor
-  :: forall n c. (KnownNat n, Symbolic c)
+  :: forall n c
+   . (KnownNat n, Symbolic c)
   => Register n c -> Register n c -> (Register n c, Register n c)
 andXor q r =
   let qb = bitsOfR (Witness <$> q)
       rb = bitsOfR (Witness <$> r)
    in toPair
-      $ assert (\((comb -> ca) :*: (comb -> cx)) ->
-          withDict (plusCommutes @(2 * n - 1) @1) $
-            extendR cx .+. shlR @1 ca == extendR (comb q .+. comb r))
-      $ fmap witness
-      $ fromBinaryR (zipWith (&&) qb rb) :*: fromBinaryR (zipWith xor qb rb)
+        $ assert
+          ( \((comb -> ca) :*: (comb -> cx)) ->
+              withDict (plusCommutes @(2 * n - 1) @1) $
+                extendR cx .+. shlR @1 ca == extendR (comb q .+. comb r)
+          )
+        $ fmap witness
+        $ fromBinaryR (zipWith (&&) qb rb) :*: fromBinaryR (zipWith xor qb rb)
  where
   comb :: Register n c -> Register (2 * n - 1) c
   comb =
     MkRegister
-    . unPar1
-    . plot (
-        Par1
-        . witness
-        . fromRegister
-        . concatR @n @2
-        . fmap (extendR @1)
-        . unfold limb
-        . toIntegral
-        . unPar1
-        ) (rangeTable $ 2 ^ value @n)
-    . Par1
-    . fromRegister
+      . unPar1
+      . plot
+        ( Par1
+            . witness
+            . fromRegister
+            . concatR @n @2
+            . fmap (extendR @1)
+            . unfold limb
+            . toIntegral
+            . unPar1
+        )
+        (rangeTable $ 2 ^ value @n)
+      . Par1
+      . fromRegister
 
-instance
-  (KnownNat n, Symbolic c) => Conditional (Register n c) (Register n c) where
+instance (KnownNat n, Symbolic c) => Conditional (Register n c) (Register n c) where
   bool f t c = MkRegister $ fromRegister ((c && t) .+. not (c || not f))
 
 instance (KnownNat n, Symbolic c) => BoolType (Register n c) where

@@ -7,6 +7,7 @@ module ZkFold.Symbolic.Data.Int where
 
 import Control.DeepSeq
 import qualified Data.Bool as Haskell
+import GHC.Err (error)
 import GHC.Generics (Generic, type (:*:) (..))
 import Test.QuickCheck (Arbitrary (..))
 import Prelude (Integer, ($), (.))
@@ -15,23 +16,38 @@ import qualified Prelude as Haskell hiding ((-))
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (Iso (..))
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import GHC.Err (error)
-import ZkFold.Data.Collect (Collect)
-import ZkFold.Data.Iso (Iso (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 newtype Int n r c = Int {uint :: UInt n r c}
-  deriving (Generic, NFData, Haskell.Eq, Haskell.Show, SymbolicData,
-            SymbolicInput, Eq, FromConstant Natural, FromConstant Integer,
-            MultiplicativeMonoid, Zero, AdditiveMonoid, Arbitrary,
-            Scale Natural, Scale Integer, Semiring, AdditiveSemigroup,
-            AdditiveGroup, MultiplicativeSemigroup)
+  deriving
+    ( AdditiveGroup
+    , AdditiveMonoid
+    , AdditiveSemigroup
+    , Arbitrary
+    , Eq
+    , FromConstant Integer
+    , FromConstant Natural
+    , Generic
+    , Haskell.Eq
+    , Haskell.Show
+    , MultiplicativeMonoid
+    , MultiplicativeSemigroup
+    , NFData
+    , Scale Integer
+    , Scale Natural
+    , Semiring
+    , SymbolicData
+    , SymbolicInput
+    , Zero
+    )
 
 deriving newtype instance
   (Haskell.Monoid m, Collect m (UInt n r c)) => Collect m (Int n r c)
@@ -50,17 +66,19 @@ instance (Arithmetic a, KnownRegisterSize r, KnownNat n) => ToConstant (Int n r 
         (negate . Haskell.toInteger . toConstant $ negate u)
         (isNegative i Haskell.== true)
 
-isNegative ::
-  forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) =>
-  Int n r c -> Bool c
+isNegative
+  :: forall n r c
+   . (Symbolic c, KnownNat n, KnownRegisterSize r)
+  => Int n r c -> Bool c
 isNegative (Int (UInt _)) = Bool $ error "TODO" -- fromCircuitF u $ \regs -> do
-  -- let hd = Haskell.last $ fromVector regs
-  -- (_, h) <- splitExpansion (highRegisterSize @c @n @r -! 1) 1 hd
-  -- Haskell.return $ Par1 h
+-- let hd = Haskell.last $ fromVector regs
+-- (_, h) <- splitExpansion (highRegisterSize @c @n @r -! 1) 1 hd
+-- Haskell.return $ Par1 h
 
-isNotNegative ::
-  forall n r c. (Symbolic c, KnownNat n, KnownRegisterSize r) =>
-  Int n r c -> Bool c
+isNotNegative
+  :: forall n r c
+   . (Symbolic c, KnownNat n, KnownRegisterSize r)
+  => Int n r c -> Bool c
 isNotNegative i = not (isNegative i)
 
 abs :: forall c n r. (Symbolic c, KnownNat n, KnownRegisterSize r) => Int n r c -> Int n r c

@@ -14,12 +14,12 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Algorithm.RSA
+import ZkFold.Symbolic.Data.Bool (Bool (fromBool))
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.Google
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Twitch
 import ZkFold.Symbolic.Data.VarByteString (VarByteString, fromNatural)
-import ZkFold.Symbolic.Data.Bool (Bool(fromBool))
 
 specJWT :: Spec
 specJWT = do

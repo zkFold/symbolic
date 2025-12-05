@@ -6,10 +6,10 @@ module ZkFold.Symbolic.Examples.Pasta (
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.UInt (RegisterSize(..))
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 examplePallas_Add
   :: ( Symbolic ctx

@@ -4,9 +4,10 @@
 
 module ZkFold.Symbolic.Data.Class where
 
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Binary (Binary)
 import Data.Constraint (Constraint)
-import Data.Function ((.), ($))
+import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Rep (Rep, Representable, pureRep)
 import Data.Kind (Type)
@@ -17,11 +18,10 @@ import qualified GHC.Generics as G
 import Numeric.Natural (Natural)
 
 import ZkFold.Algebra.Class
-import ZkFold.Data.Product (fstP, sndP)
-import ZkFold.Symbolic.Class (Symbolic)
 import qualified ZkFold.Algorithm.Interpolation as I
-import ZkFold.Symbolic.Boot (FieldElement(..))
-import Data.Bifunctor (Bifunctor(bimap))
+import ZkFold.Data.Product (fstP, sndP)
+import ZkFold.Symbolic.Boot (FieldElement (..))
+import ZkFold.Symbolic.Class (Symbolic)
 
 class Functor (Layout f c) => LayoutData f c
 
@@ -86,9 +86,9 @@ instance SymbolicData G.Par1 where
   toLayout p = p
   interpolate c =
     G.Par1
-    . fromFieldElement
-    . I.interpolate (FieldElement c)
-    . fmap (bimap fromConstant $ FieldElement . G.unPar1)
+      . fromFieldElement
+      . I.interpolate (FieldElement c)
+      . fmap (bimap fromConstant $ FieldElement . G.unPar1)
   fromLayout p = p
 
 instance (SymbolicData f, SymbolicData g) => SymbolicData (f G.:*: g) where

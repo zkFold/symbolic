@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Unconstrained where
 
@@ -13,10 +13,10 @@ import Text.Show (Show)
 
 import ZkFold.Data.Collect (Collect (..))
 import ZkFold.Symbolic.Boot (FieldElement (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Witness (Witness (..))
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool (..), assert)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.Witness (Witness (..))
 
 newtype Unconstrained a c = Unconstrained {unconstrained :: a (Witness c)}
 

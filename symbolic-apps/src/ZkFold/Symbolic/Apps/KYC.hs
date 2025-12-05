@@ -10,15 +10,15 @@ import GHC.Generics (Generic)
 import ZkFold.Algebra.Class (FromConstant (fromConstant), PrimeField)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.Data.Iso (from)
 import ZkFold.Data.Eq (Eq ((==)), elem)
+import ZkFold.Data.Iso (from)
 import ZkFold.Data.Vector (Vector, head, tail, toVector)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, not, (&&))
-import ZkFold.Symbolic.Data.ByteString (ByteString, resize, concat, toWords)
+import ZkFold.Symbolic.Data.ByteString (ByteString, concat, resize, toWords)
 import ZkFold.Symbolic.Data.Ord (Ord ((>=)))
 import ZkFold.Symbolic.Data.UInt hiding (resize)
 import Prelude (String, error, ($), (.))
-import ZkFold.Symbolic.Class (Symbolic)
 
 type KYCByteString context = ByteString 256 context
 

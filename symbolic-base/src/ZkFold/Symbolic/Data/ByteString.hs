@@ -59,25 +59,25 @@ import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
+import ZkFold.Data.Collect (Collect (..))
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.Vector (Vector (..))
 import qualified ZkFold.Data.Vector as V
 import ZkFold.Prelude (replicate)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Data.Collect (Collect (..))
-import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import ZkFold.Symbolic.Data.Register (Register, fromBinaryR, bitsOfR)
+import ZkFold.Symbolic.Data.Register (Register, bitsOfR, fromBinaryR)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
 newtype ByteString n c = ByteString (Vector n (Bool c))
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
-  deriving newtype (Eq, Collect (ConstrainedDatum c))
+  deriving newtype (Collect (ConstrainedDatum c), Eq)
 
 instance
   ( Symbolic c
@@ -189,16 +189,17 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
 
   xor (ByteString _l) (ByteString _r) =
     ByteString $ Haskell.error "TODO"
-      -- symbolic2F
-      --  l
-      --  r
-      --  (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n))
-      --  ( \lv rv -> do
-      --      let varsLeft = lv
-      --          varsRight = rv
-      --      zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
-      --  )
    where
+    -- symbolic2F
+    --  l
+    --  r
+    --  (\x y -> V.unsafeToVector $ fromConstant <$> toBsBits (vecToNat x `B.xor` vecToNat y) (value @n))
+    --  ( \lv rv -> do
+    --      let varsLeft = lv
+    --          varsRight = rv
+    --      zipWithM (\i j -> newAssigned $ cons i j) varsLeft varsRight
+    --  )
+
     _vecToNat :: (ToConstant a, Const a ~ Natural) => Vector n a -> Natural
     _vecToNat = Haskell.foldl (\x p -> toConstant p + 2 * x :: Natural) 0
 
@@ -220,7 +221,7 @@ orRight _l _r = Haskell.error "TODO"
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 toWords
-  :: forall m wordSize c. (KnownNat wordSize) => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
+  :: forall m wordSize c. KnownNat wordSize => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
 toWords (ByteString bits) = ByteString <$> V.chunks @m @wordSize bits
 
 concat :: forall k m c. Vector k (ByteString m c) -> ByteString (k * m) c
@@ -258,41 +259,42 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
     | Haskell.abs s >= Haskell.fromIntegral (value @n) = false
     | otherwise =
         ByteString $ Haskell.error "TODO"
-          -- symbolicF
-          --   oldBits
-          --   (\v -> V.shift v s (fromConstant (0 :: Integer)))
-          --   ( \bitsV -> do
-          --       let bits = V.fromVector bitsV
-          --       z <- newAssigned (Haskell.const zero)
-          --       let zeros = Haskell.replicate (Haskell.fromIntegral $ Haskell.abs s) z
 
-          --       let newBits = case s < 0 of
-          --             Haskell.True -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
-          --             Haskell.False -> drop (Haskell.fromIntegral s) $ bits <> zeros
+  -- symbolicF
+  --   oldBits
+  --   (\v -> V.shift v s (fromConstant (0 :: Integer)))
+  --   ( \bitsV -> do
+  --       let bits = V.fromVector bitsV
+  --       z <- newAssigned (Haskell.const zero)
+  --       let zeros = Haskell.replicate (Haskell.fromIntegral $ Haskell.abs s) z
 
-          --       pure $ V.unsafeToVector newBits
-          --   )
+  --       let newBits = case s < 0 of
+  --             Haskell.True -> take (Haskell.fromIntegral $ getNatural @n) $ zeros <> bits
+  --             Haskell.False -> drop (Haskell.fromIntegral s) $ bits <> zeros
+
+  --       pure $ V.unsafeToVector newBits
+  --   )
 
   rotateBits (ByteString bits) s = ByteString $ bits `V.rotate` s
 
 resize
-  :: forall c k n . (KnownNat k, KnownNat n) => ByteString k c -> ByteString n c
+  :: forall c k n. (KnownNat k, KnownNat n) => ByteString k c -> ByteString n c
 resize (ByteString oldBits)
   | diff > 0 = ByteString $ Haskell.error "TODO"
-          -- symbolicF
-          --   oldBits
-          --   (\v -> V.unsafeToVector $ zeroA <> V.fromVector v)
-          --   ( \bitsV -> do
-          --       let bits = V.fromVector bitsV
-          --       zeros <- replicateM diff $ newAssigned (Haskell.const zero)
-          --       return $ V.unsafeToVector $ zeros <> bits
-          --   )
+  -- symbolicF
+  --   oldBits
+  --   (\v -> V.unsafeToVector $ zeroA <> V.fromVector v)
+  --   ( \bitsV -> do
+  --       let bits = V.fromVector bitsV
+  --       zeros <- replicateM diff $ newAssigned (Haskell.const zero)
+  --       return $ V.unsafeToVector $ zeros <> bits
+  --   )
   | otherwise = ByteString . V.unsafeToVector $ Haskell.drop (Haskell.abs diff) (V.fromVector oldBits)
-  where
-    diff :: Haskell.Int
-    diff = Haskell.fromIntegral (value @n) Haskell.- Haskell.fromIntegral (value @k)
+ where
+  diff :: Haskell.Int
+  diff = Haskell.fromIntegral (value @n) Haskell.- Haskell.fromIntegral (value @k)
 
-    -- _zeroA = Haskell.replicate diff (fromConstant (0 :: Integer))
+-- _zeroA = Haskell.replicate diff (fromConstant (0 :: Integer))
 
 -- instance KnownNat n => SymbolicInput (ByteString n) where
 --   isValid (ByteString bits) = Bool $ fromCircuitF bits $ \v -> do

@@ -3,9 +3,9 @@ module ZkFold.Symbolic.Examples.Fibonacci (exampleFibonacciMod) where
 import Data.Foldable (foldl)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (bool)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Class (Symbolic)
 import Prelude (Integer)
 
 -- | The Fibonacci index function.

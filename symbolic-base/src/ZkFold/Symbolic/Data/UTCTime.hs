@@ -12,18 +12,21 @@ import Prelude hiding (Bool, Eq, Ord)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class (FromConstant)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Symbolic.Data.Ord (Ord)
-import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Ord (Ord)
+import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Data.Collect (Collect)
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
   deriving newtype
-    ( Haskell.Eq, Eq, SymbolicData, FromConstant Natural
-    , Collect (ConstrainedDatum c)
+    ( Collect (ConstrainedDatum c)
+    , Eq
+    , FromConstant Natural
+    , Haskell.Eq
+    , SymbolicData
     )
 
 deriving newtype instance

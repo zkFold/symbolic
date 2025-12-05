@@ -1,5 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+
 {- HLINT ignore "Use camelCase" -}
 
 module ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point) where
@@ -11,13 +12,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
 import ZkFold.Algebra.Number
+import ZkFold.Data.Iso (Iso (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
-import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.UInt (RegisterSize(..))
-import ZkFold.Data.Iso (Iso(..))
+import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 
 type Jubjub_Point = AffinePoint (TwistedEdwards "jubjub") (FFA Jubjub_Base 'Auto)
 

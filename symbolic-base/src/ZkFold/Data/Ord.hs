@@ -5,21 +5,21 @@
 module ZkFold.Data.Ord where
 
 import qualified Data.Bool as Haskell
+import Data.Foldable (Foldable (fold))
 import Data.Functor.Constant (Constant (..))
 import Data.Monoid (Monoid)
 import qualified Data.Ord as Haskell
+import Data.Semialign (Semialign, alignWith)
 import Data.Semigroup ((<>))
 import qualified Data.String as Haskell
+import Data.These (These (..))
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import qualified GHC.Integer as Haskell
 import qualified Numeric.Natural as Haskell
 
+import ZkFold.Control.Conditional (Conditional, ifThenElse)
 import ZkFold.Data.Eq
-import Data.Semialign (Semialign, alignWith)
-import Data.Foldable (Foldable (fold))
-import ZkFold.Control.Conditional (ifThenElse, Conditional)
-import Data.These (These(..))
 
 class (Monoid ordering, Eq ordering) => IsOrdering ordering where
   lt, eq, gt :: ordering
@@ -29,9 +29,13 @@ instance IsOrdering Haskell.Ordering where
   eq = Haskell.EQ
   gt = Haskell.GT
 
-class ( Eq a, IsOrdering (OrderingOf a)
-      , BooleanOf (OrderingOf a) ~ BooleanOf a
-      ) => Ord a where
+class
+  ( Eq a
+  , IsOrdering (OrderingOf a)
+  , BooleanOf (OrderingOf a) ~ BooleanOf a
+  ) =>
+  Ord a
+  where
   type OrderingOf a
   type OrderingOf a = GOrderingOf (G.Rep a)
 
@@ -42,10 +46,15 @@ class ( Eq a, IsOrdering (OrderingOf a)
   compare x y = gcompare (G.from x) (G.from y)
 
 (<), (<=), (>=), (>) :: Ord a => a -> a -> BooleanOf a
+
 infix 4 <, <=, >=, >
+
 x < y = compare x y == lt
+
 x <= y = compare x y /= gt
+
 x >= y = compare x y /= lt
+
 x > y = compare x y == gt
 
 max, min :: (Ord a, Conditional (BooleanOf a) a) => a -> a -> a
@@ -71,12 +80,17 @@ instance (Foldable f, Semialign f, Ord a) => Ord (SemialignEqOrd f a) where
   MkSemialignEqOrd f `compare` MkSemialignEqOrd g = fold (alignWith combine f g)
    where
     combine = \case
-     This _ -> lt
-     These x y -> compare x y
-     That _ -> gt
+      This _ -> lt
+      These x y -> compare x y
+      That _ -> gt
 
-class ( GEq u, IsOrdering (GOrderingOf u)
-      , BooleanOf (GOrderingOf u) ~ GBooleanOf u) => GOrd u where
+class
+  ( GEq u
+  , IsOrdering (GOrderingOf u)
+  , BooleanOf (GOrderingOf u) ~ GBooleanOf u
+  ) =>
+  GOrd u
+  where
   type GOrderingOf u
   gcompare :: u x -> u x -> GOrderingOf u
 

@@ -16,8 +16,8 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Algorithm.RSA
+import ZkFold.Symbolic.Data.Bool (Bool (fromBool))
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
-import ZkFold.Symbolic.Data.Bool (Bool(fromBool))
 
 specRSA' :: forall keyLength g. (RandomGen g, RSA keyLength 256 Fr) => g -> Spec
 specRSA' gen = do

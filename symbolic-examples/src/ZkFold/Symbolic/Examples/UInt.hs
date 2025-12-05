@@ -16,10 +16,10 @@ import Data.Type.Equality (type (~))
 import GHC.Generics ((:*:) (..))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (KnownNat, type (*))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.Ord ((<=))
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Class (Symbolic)
 
 exampleUIntMul
   :: (KnownNat n, KnownRegisterSize r, Symbolic c)

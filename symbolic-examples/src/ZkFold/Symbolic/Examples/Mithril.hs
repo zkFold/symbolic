@@ -6,10 +6,10 @@ import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (ScalarFieldOf))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.Mithril (StakeDistribution, mithril)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA (KnownFFA)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.UInt
 
 exampleMithril

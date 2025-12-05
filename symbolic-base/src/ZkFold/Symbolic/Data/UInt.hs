@@ -1,39 +1,39 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DerivingStrategies #-}
 
 module ZkFold.Symbolic.Data.UInt where
 
 import qualified Data.Aeson as Aeson
-import Data.Functor ((<$>), fmap)
+import Data.Function (($), (.))
+import Data.Functor (fmap, (<$>))
+import Data.Kind (Type)
 import Data.List (iterate)
+import Data.Tuple (snd)
+import Data.Type.Bool (If)
+import Data.Type.Ord (type (<=?))
 import Data.Word (Word64)
+import GHC.Err (error)
+import GHC.Real (toInteger)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
 import ZkFold.Prelude ((!!))
-import ZkFold.Symbolic.Data.ByteString hiding (resize)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Ord
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Class (Symbolic, Arithmetic)
-import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Data.Collect (Collect)
-import Data.Kind (Type)
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
-import Data.Type.Bool (If)
-import Data.Type.Ord (type (<=?))
-import Data.Function (($), (.))
-import GHC.Err (error)
-import GHC.Real (toInteger)
-import Data.Tuple (snd)
-import ZkFold.Symbolic.Data.UIntData
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.Bool (assert)
+import ZkFold.Symbolic.Data.ByteString hiding (resize)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Data.Ord
+import ZkFold.Symbolic.Data.UIntData
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 
 newtype SizeHint = SizeHint Natural
 
@@ -65,8 +65,7 @@ instance SymbolicInput (UInt n h) where
 
 instance {-# OVERLAPPING #-} FromConstant (UInt n h c) (UInt n h c)
 
-instance {-# OVERLAPPING #-}
-  (KnownUInt n h c, Symbolic c) => Scale (UInt n h c) (UInt n h c)
+instance {-# OVERLAPPING #-} (KnownUInt n h c, Symbolic c) => Scale (UInt n h c) (UInt n h c)
 
 deriving newtype instance (KnownUInt n h c, Symbolic c) => Ord (UInt n h c)
 
@@ -106,8 +105,7 @@ deriving newtype instance
 deriving newtype instance
   (KnownUInt n h c, Symbolic c) => Euclidean (UInt n h c)
 
-instance
-  (KnownUInt 64 h c, Symbolic c) => FromConstant Word64 (UInt 64 h c) where
+instance (KnownUInt 64 h c, Symbolic c) => FromConstant Word64 (UInt 64 h c) where
   fromConstant = fromConstant . toInteger
 
 instance (KnownUInt n h c, Symbolic c) => Aeson.FromJSON (UInt n h c) where
@@ -116,8 +114,7 @@ instance (KnownUInt n h c, Symbolic c) => Aeson.FromJSON (UInt n h c) where
 instance (KnownUInt n h a, Arithmetic a) => Aeson.ToJSON (UInt n h a) where
   toJSON = Aeson.toJSON . toConstant
 
-instance
-  MultiplicativeMonoid (UInt n h c) => Exponent (UInt n h c) Natural where
+instance MultiplicativeMonoid (UInt n h c) => Exponent (UInt n h c) Natural where
   (^) = natPow
 
 resizeUInt :: UInt m g c -> UInt n h c

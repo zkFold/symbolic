@@ -18,7 +18,7 @@ import Data.Monoid (Monoid, mempty)
 import Data.Ratio (Rational)
 import Data.Semigroup (Semigroup, (<>))
 import Data.Type.Equality (type (~))
-import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural, shiftLNatural)
+import GHC.Natural (andNatural, naturalFromInteger, shiftLNatural, shiftRNatural)
 import Prelude (Integer)
 import qualified Prelude as Haskell
 
@@ -692,7 +692,7 @@ instance BinaryExpansion Bool where
   binaryExpansion = (: [])
 
   fromBinary [] = False
-  fromBinary (x:_) = x
+  fromBinary (x : _) = x
 
 instance MultiplicativeMonoid a => Exponent a Bool where
   _ ^ False = one

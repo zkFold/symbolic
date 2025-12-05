@@ -16,6 +16,7 @@ import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number (KnownNat, value)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit, hmap)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 import ZkFold.Data.Binary (Binary)
 import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector, unsafeToVector)
@@ -35,7 +36,6 @@ import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool (..), all, any, (&&))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import Prelude ((++))
-import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
 
 utxoAccumulator
   :: forall n c
@@ -63,8 +63,10 @@ utxoAccumulatorCircuit
   => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
   hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3)
-    $ compile (\(i1 :*: i2 :*: i3) ->
-        Comp1 (Par1 <$> i1) :*: Comp1 (Par1 <$> i2) :*: i3 :*: U1)
+    $ compile
+      ( \(i1 :*: i2 :*: i3) ->
+          Comp1 (Par1 <$> i1) :*: Comp1 (Par1 <$> i2) :*: i3 :*: U1
+      )
     $ utxoAccumulator @n @(Elem a)
 
 utxoAccumulatorInput

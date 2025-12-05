@@ -15,10 +15,10 @@ import ZkFold.Algebra.Class
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
 import ZkFold.Data.Vector
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.UInt (RegisterSize (..))
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 import Prelude hiding (Bool, Eq, length, replicate, splitAt, (*), (+))
 import qualified Prelude as Haskell
 
@@ -33,7 +33,7 @@ data SingleAsset context = SingleAsset
   , assetName :: AssetName context
   , amount :: UInt 64 Auto context
   }
-  deriving (Generic, Generic1, SymbolicData, Haskell.Eq)
+  deriving (Generic, Generic1, Haskell.Eq, SymbolicData)
 
 deriving instance Symbolic c => Collect (ConstrainedDatum c) (SingleAsset c)
 

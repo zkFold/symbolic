@@ -3,26 +3,26 @@
 module ZkFold.Symbolic.Class where
 
 import Data.Binary (Binary)
-import Data.Foldable (Foldable)
-import Data.Functor.Rep (Rep, Representable)
-import Data.Set (Set, singleton)
-import Data.Traversable (Traversable)
-import GHC.Generics (Par1 (..), (:*:) (..))
-import Numeric.Natural (Natural)
-import Data.Type.Equality (type (~))
-
-import ZkFold.Algebra.Class
-import ZkFold.Data.FromList (FromList)
-import GHC.Integer (Integer)
-import ZkFold.Data.Eq (BooleanOf)
-import qualified Data.Eq as Haskell
-import qualified Data.Ord as Haskell
-import qualified Data.Enum as Haskell
-import ZkFold.Data.Ord (Ord(OrderingOf))
 import qualified Data.Bool as Haskell
-import GHC.Stack (HasCallStack)
+import qualified Data.Enum as Haskell
+import qualified Data.Eq as Haskell
+import Data.Foldable (Foldable)
 import Data.Function (id, ($), (.))
 import Data.Functor ((<$>))
+import Data.Functor.Rep (Rep, Representable)
+import qualified Data.Ord as Haskell
+import Data.Set (Set, singleton)
+import Data.Traversable (Traversable)
+import Data.Type.Equality (type (~))
+import GHC.Generics (Par1 (..), (:*:) (..))
+import GHC.Integer (Integer)
+import GHC.Stack (HasCallStack)
+import Numeric.Natural (Natural)
+
+import ZkFold.Algebra.Class
+import ZkFold.Data.Eq (BooleanOf)
+import ZkFold.Data.FromList (FromList)
+import ZkFold.Data.Ord (Ord (OrderingOf))
 
 -- | @LookupTable f@ is a type of compact @f@-ary lookup table descriptions
 -- using ideas from relational algebra.
@@ -65,7 +65,9 @@ plot
   :: (Symbolic c, Representable f, Binary (Rep f))
   => (FromList f, Traversable f, Traversable g)
   => (forall a. PrimeField a => f a -> g a)
-  -> LookupTable f -> f c -> g c
+  -> LookupTable f
+  -> f c
+  -> g c
 plot f t x = let y = f x in constrain (Lookup (Plot f t) (x :*: y)) <$> y
 
 -- | Symbolic field with decidable equality and ordering

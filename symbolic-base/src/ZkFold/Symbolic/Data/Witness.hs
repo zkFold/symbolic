@@ -7,15 +7,15 @@ import Data.Function (const, id, (.))
 import Data.Functor (Functor, fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Semialign (Semialign)
+import qualified GHC.Err as Haskell
 import GHC.Generics (Par1 (..))
 import Text.Show (Show)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.Conditional (Conditional)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Class (Symbolic (..))
-import qualified GHC.Err as Haskell
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 
 newtype Witness a = Witness {witness :: a}
   deriving

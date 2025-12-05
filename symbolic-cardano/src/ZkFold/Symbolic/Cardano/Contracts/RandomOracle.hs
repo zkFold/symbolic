@@ -7,10 +7,12 @@ import GHC.Generics ((:*:) (..))
 import Numeric.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (from)
 import ZkFold.Data.Vector ((!!))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
-import ZkFold.Symbolic.Data.Bool (BoolType (..))
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (BoolType (..))
+import ZkFold.Symbolic.Data.ByteString (resize)
 import Prelude hiding (
   Bool,
   Eq (..),
@@ -27,8 +29,6 @@ import Prelude hiding (
  )
 
 import ZkFold.Symbolic.Cardano.Types
-import ZkFold.Symbolic.Data.ByteString (resize)
-import ZkFold.Data.Iso (from)
 
 type Tokens = 2
 

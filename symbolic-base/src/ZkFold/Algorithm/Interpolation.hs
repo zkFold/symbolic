@@ -1,17 +1,18 @@
 module ZkFold.Algorithm.Interpolation where
 
-import Data.Semialign (Semialign, alignWith)
-import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (Maybe (..), mapMaybe)
-import Data.These (These(..))
-import Data.Functor (fmap, (<$>))
-import Data.Function (($), (.))
 import Data.Foldable1 (foldr1)
-import qualified Data.List.NonEmpty as NE
-import Data.Monoid ((<>))
+import Data.Function (($), (.))
+import Data.Functor (fmap, (<$>))
 import qualified Data.List as L
-import qualified GHC.Num as P
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
+import Data.Maybe (Maybe (..), mapMaybe)
+import Data.Monoid ((<>))
+import Data.Semialign (Semialign, alignWith)
+import Data.These (These (..))
 import Data.Tuple (fst, snd)
+import qualified GHC.Num as P
+
 import ZkFold.Algebra.Class
 
 -- | Transpose collection, denoting missing values with 'Nothing'.
@@ -43,5 +44,5 @@ interpolate pt fs =
         [ product [pt - d | d <- ds] // product [c - d | d <- ds]
         | (c, ds) <- NE.toList $ cuts (fmap fst fs)
         ]
-      -- branches to interpolate between
-   in sum [k * f | ((_, f), k) <- L.zip (NE.toList fs) ks]
+   in -- branches to interpolate between
+      sum [k * f | ((_, f), k) <- L.zip (NE.toList fs) ks]

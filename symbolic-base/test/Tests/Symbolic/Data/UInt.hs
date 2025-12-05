@@ -5,6 +5,7 @@ module Tests.Symbolic.Data.UInt (specUInt) where
 
 import Control.Monad (return, when)
 import Data.Aeson (decode, encode)
+import Data.Binary (Binary)
 import Data.Constraint
 import Data.Constraint.Nat (timesNat)
 import Data.Function (id, ($))
@@ -17,10 +18,12 @@ import Prelude (show, type (~))
 import qualified Prelude as P
 
 import Tests.Common (it, toss, toss1)
+import Tests.Symbolic.Data.Common
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Eq
 import ZkFold.Data.Iso
 import ZkFold.Data.Vector (Vector)
@@ -30,9 +33,6 @@ import ZkFold.Symbolic.Data.ByteString hiding (resize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
-import Tests.Symbolic.Data.Common
-import Data.Binary (Binary)
 
 evalBool :: (Arithmetic a, Binary a) => Bool (Elem a) -> a
 evalBool (Bool ac) = unPar1 $ exec (Par1 ac)

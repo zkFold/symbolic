@@ -17,7 +17,7 @@ import Test.QuickCheck (Arbitrary, Gen, arbitrary, elements)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.ArithmeticCircuit.Context
-import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, toVar, at)
+import ZkFold.ArithmeticCircuit.Var (CircuitWitness, NewVar, Var, at, toVar)
 import ZkFold.Prelude (elementsRep, replicateA)
 import ZkFold.Symbolic.Class (Arithmetic)
 

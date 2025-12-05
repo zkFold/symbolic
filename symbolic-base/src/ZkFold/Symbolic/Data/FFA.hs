@@ -6,17 +6,17 @@
 {-# LANGUAGE NoStarIsType #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
-module ZkFold.Symbolic.Data.FFA
-  ( UIntFFA (..)
-  , FFA (..)
-  , KnownFFA
-  , FFAMaxBits
-  , toUInt
-  , unsafeFromInt
-  , fromInt
-  , unsafeFromUInt
-  , fromUInt
-  ) where
+module ZkFold.Symbolic.Data.FFA (
+  UIntFFA (..),
+  FFA (..),
+  KnownFFA,
+  FFAMaxBits,
+  toUInt,
+  unsafeFromInt,
+  fromInt,
+  unsafeFromUInt,
+  fromUInt,
+) where
 
 import Control.DeepSeq (NFData)
 import Data.Bits (shiftL)
@@ -39,17 +39,17 @@ import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.Iso (Iso (..))
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool, assert)
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), assert, bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Input (isValid, SymbolicInput)
+import ZkFold.Symbolic.Data.Input (SymbolicInput, isValid)
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Data.Iso (Iso(..))
 
 type family FFAUIntSize (p :: Natural) (q :: Natural) :: Natural where
   FFAUIntSize p p = 0

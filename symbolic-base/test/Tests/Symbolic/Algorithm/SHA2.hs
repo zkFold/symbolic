@@ -3,6 +3,7 @@
 module Tests.Symbolic.Algorithm.SHA2 (specSHA2Natural, specSHA2) where
 
 import Control.Monad (forM_)
+import Data.Binary (Binary)
 import Data.Bits (shiftR)
 import Data.Function (($))
 import Data.Functor ((<$>))
@@ -25,14 +26,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
-import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
-import Data.Binary (Binary)
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.

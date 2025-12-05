@@ -6,11 +6,11 @@ import GHC.Generics ((:*:))
 import ZkFold.Algebra.EllipticCurve.Pasta (FpModulus, FqModulus)
 import ZkFold.Algebra.Number (KnownNat)
 import ZkFold.Symbolic.Algorithm.ECDSA.ECDSA (ecdsaVerifyMessageHash)
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool)
-import ZkFold.Symbolic.Data.UInt (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
 import ZkFold.Symbolic.Data.EllipticCurve.Pasta (Pallas_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
-import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.UInt (GetRegisterSize, NumberOfRegisters, RegisterSize (..))
 
 exampleECDSA
   :: Symbolic ctx

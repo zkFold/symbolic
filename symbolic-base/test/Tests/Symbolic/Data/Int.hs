@@ -4,6 +4,7 @@
 module Tests.Symbolic.Data.Int (specInt) where
 
 import Control.Monad (return, when)
+import Data.Binary (Binary)
 import Data.Function (id, ($))
 import Data.List ((++))
 import GHC.Generics (Par1 (Par1, unPar1))
@@ -13,10 +14,12 @@ import Prelude (Integer, show, type (~))
 import qualified Prelude as P
 
 import Tests.Common (it)
+import Tests.Symbolic.Data.Common
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Eq
 import ZkFold.Data.Iso
 import ZkFold.Data.Vector (Vector)
@@ -25,9 +28,6 @@ import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Int
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
-import Tests.Symbolic.Data.Common
-import Data.Binary (Binary)
 
 tossInteger :: Natural -> Gen Integer
 tossInteger (P.fromIntegral -> x) = chooseInteger (-x, x)

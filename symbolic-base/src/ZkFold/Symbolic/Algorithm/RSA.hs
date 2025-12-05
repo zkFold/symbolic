@@ -22,14 +22,14 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso (Iso (..))
 import ZkFold.Symbolic.Algorithm.Hash.SHA2 (SHA2, sha2, sha2Var)
 import ZkFold.Symbolic.Data.Bool (Bool)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.UInt
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Data.Iso (Iso(..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 type Signature keyLen ctx = ByteString keyLen ctx
 
@@ -38,7 +38,7 @@ data PrivateKey keyLen ctx
   { prvD :: UInt keyLen 'Auto ctx
   , prvN :: UInt keyLen 'Auto ctx
   }
-  deriving (Generic, Generic1, SymbolicData, NFData, P.Eq, P.Show)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 type PubExponentSize = 18
 

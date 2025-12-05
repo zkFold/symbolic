@@ -2,33 +2,33 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Tests.Symbolic.Data.Common
-  ( specConstantRoundtrip
-  , specSymbolicFunction0
-  , specSymbolicFunction1
-  , specSymbolicFunction1WithPar
-  , specSymbolicFunction2
-  ) where
+module Tests.Symbolic.Data.Common (
+  specConstantRoundtrip,
+  specSymbolicFunction0,
+  specSymbolicFunction1,
+  specSymbolicFunction1WithPar,
+  specSymbolicFunction2,
+) where
 
+import Control.Applicative (pure)
+import Data.Binary (Binary)
 import Data.Eq (Eq)
+import Data.Function (id, ($))
+import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Type.Equality (type (~))
+import GHC.Generics (U1 (..), type (:*:) (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary, Gen, (===))
 import Text.Show (Show)
 
-import ZkFold.Algebra.Class
-import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..), RepData)
-import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
-import Data.Binary (Binary)
-import Data.Function (($), id)
-import ZkFold.ArithmeticCircuit (exec, checkClosedCircuit, eval, checkCircuit)
-import GHC.Generics (U1 (..), type (:*:) (..))
-import ZkFold.ArithmeticCircuit.Node (Output, Input, SymbolicFunction)
 import Tests.Common (it)
-import Data.Semigroup ((<>))
-import Control.Applicative (pure)
+import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit (checkCircuit, checkClosedCircuit, eval, exec)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
+import ZkFold.ArithmeticCircuit.Node (Input, Output, SymbolicFunction)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
+import ZkFold.Symbolic.Data.Class (RepData, SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 specConstantRoundtrip
@@ -89,7 +89,7 @@ specSymbolicFunction1
 specSymbolicFunction1 desc func = describe desc do
   it "evaluates correctly" \(x :: x a) ->
     fromLayout (eval (compile (:*: U1) $ func @(Elem a)) $ toLayout x)
-    === func x
+      === func x
   it "satisfies constraints" $
     checkCircuit
       (compile (:*: U1) $ func @(Elem a))
@@ -97,13 +97,17 @@ specSymbolicFunction1 desc func = describe desc do
 
 specSymbolicFunction1WithPar
   :: forall p a x y
-   . ( Arbitrary p, Show p, Arithmetic a
-     , MatchingSymbolicInput a x, MatchingSymbolicOutput a y)
+   . ( Arbitrary p
+     , Show p
+     , Arithmetic a
+     , MatchingSymbolicInput a x
+     , MatchingSymbolicOutput a y
+     )
   => String -> (forall c. Symbolic c => p -> x c -> y c) -> Spec
 specSymbolicFunction1WithPar desc func = describe desc do
   it "evaluates correctly" \p (x :: x a) ->
     fromLayout (eval (compile (:*: U1) $ func @(Elem a) p) $ toLayout x)
-    === func p x
+      === func p x
   it "satisfies constraints" \p ->
     checkCircuit
       (compile (:*: U1) $ func @(Elem a) p)
@@ -121,7 +125,7 @@ specSymbolicFunction2 desc func = describe desc do
   it "evaluates correctly" \(x :: x a) (y :: y a) ->
     fromLayout
       (eval (compile id $ func @(Elem a)) $ toLayout x :*: toLayout y :*: U1)
-    === func x y
+      === func x y
   it "satisfies constraints" $
     checkCircuit
       (compile id $ func @(Elem a))

@@ -151,7 +151,8 @@ testAlgorithm file = do
                     inBSVar :: VarByteString 500_000 Element =
                       fromNatural (value @(bytes * 8)) input
                  in ( toConstant $ keccak @algorithm @Element @(bytes * 8) inBS
-                    , toConstant $ keccakVar @algorithm @Element @500_000 inBSVar)
+                    , toConstant $ keccakVar @algorithm @Element @500_000 inBSVar
+                    )
             )
               `shouldBe` (hash, hash)
  where

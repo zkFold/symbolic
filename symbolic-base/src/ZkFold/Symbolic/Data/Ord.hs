@@ -1,6 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Data.Ord (
   Ordering (..),
@@ -8,22 +8,22 @@ module ZkFold.Symbolic.Data.Ord (
   unconstrainedCompare,
 ) where
 
+import Data.Functor (Functor)
 import GHC.Generics
 import Prelude (Monoid, Semigroup, ($), (<>))
 import qualified Prelude
 
 import ZkFold.Algebra.Class
+import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord
 import ZkFold.Data.Orphans ()
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Boot (FieldElement (..))
-import ZkFold.Control.Conditional (ifThenElse)
-import Data.Functor (Functor)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 
-newtype Ordering c = MkOrdering { fromOrdering :: c }
+newtype Ordering c = MkOrdering {fromOrdering :: c}
   deriving stock (Functor, Generic1)
   deriving anyclass SymbolicData
   deriving Eq via FieldElement c
@@ -45,6 +45,6 @@ instance Symbolic c => IsOrdering (Ordering c) where
 
 unconstrainedCompare :: Symbolic c => c -> c -> Ordering c
 unconstrainedCompare x y =
-  MkOrdering
-  $ ifThenElse (x == y) (fromOrdering eq)
-  $ ifThenElse (toIntegral x < toIntegral y) (fromOrdering lt) (fromOrdering gt)
+  MkOrdering $
+    ifThenElse (x == y) (fromOrdering eq) $
+      ifThenElse (toIntegral x < toIntegral y) (fromOrdering lt) (fromOrdering gt)

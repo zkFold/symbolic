@@ -25,12 +25,12 @@ import Prelude (($), (.))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.JWT.Utils
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+), fromType)
-import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.JWT.Utils
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
+import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
 -- | Types than can be represented as a Symbolic JSON string
 class IsSymbolicJSON a c where
@@ -64,7 +64,7 @@ data TokenHeader ctx
   , hdTyp :: VarByteString 32 ctx
   -- ^ Type of token
   }
-  deriving (Generic, Generic1, SymbolicData, P.Eq, P.Show, NFData)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
@@ -72,14 +72,14 @@ instance Symbolic ctx => FromJSON (TokenHeader ctx) where
 instance Symbolic ctx => IsSymbolicJSON TokenHeader ctx where
   type MaxLength TokenHeader = 648
   toJsonBits TokenHeader {..} =
-      force $
-        (fromType @"{\"alg\":\"")
-          @+ hdAlg
-          `VB.append` (fromType @"\",\"kid\":\"")
-          @+ hdKid
-          `VB.append` (fromType @"\",\"typ\":\"")
-          @+ hdTyp
-          `VB.append` (fromType @"\"}")
+    force $
+      (fromType @"{\"alg\":\"")
+        @+ hdAlg
+        `VB.append` (fromType @"\",\"kid\":\"")
+        @+ hdKid
+        `VB.append` (fromType @"\",\"typ\":\"")
+        @+ hdTyp
+        `VB.append` (fromType @"\"}")
 
 instance Symbolic ctx => IsBits TokenHeader ctx where
   type BitCount TokenHeader = 864
@@ -92,8 +92,9 @@ toAsciiBits
   => Symbolic ctx
   => a ctx -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
 toAsciiBits =
-  withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $
-    base64ToAscii . padBytestring6 . toJsonBits
+  withNext6 @(MaxLength a) $
+    withDict (mulMod @(MaxLength a)) $
+      base64ToAscii . padBytestring6 . toJsonBits
 
 type TokenBits a c = (IsBits a c, KnownNat (872 + BitCount a))
 

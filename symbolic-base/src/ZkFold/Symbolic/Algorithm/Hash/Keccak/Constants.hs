@@ -16,8 +16,8 @@ import GHC.TypeNats (Natural)
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Data.Vector (Vector (..))
-import ZkFold.Symbolic.Data.ByteString (ByteString)
 import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.ByteString (ByteString)
 
 -- | The number of rounds in the Keccak-f[1600] permutation.
 type NumRounds :: Natural

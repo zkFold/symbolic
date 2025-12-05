@@ -7,12 +7,16 @@ module ZkFold.Data.Eq where
 import Data.Bool (Bool)
 import qualified Data.Eq as Haskell
 import Data.Foldable (Foldable)
+import Data.Functor (Functor)
 import Data.Functor.Constant (Constant)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
+import Data.Ord (Ordering)
 import qualified Data.Ord as Haskell
 import Data.Ratio (Rational)
+import Data.Semialign (Semialign, alignWith)
 import Data.String (String)
+import Data.These (These (..))
 import Data.Type.Equality (type (~))
 import GHC.Generics ((:.:))
 import qualified GHC.Generics as G
@@ -20,10 +24,6 @@ import Numeric.Natural (Natural)
 import Prelude (Integer)
 
 import ZkFold.Data.Bool
-import Data.Ord (Ordering)
-import Data.Semialign (Semialign, alignWith)
-import Data.Functor (Functor)
-import Data.These (These(..))
 
 class BoolType (BooleanOf a) => Eq a where
   type BooleanOf a
@@ -39,6 +39,7 @@ class BoolType (BooleanOf a) => Eq a where
   x == y = geq (G.from x) (G.from y)
 
 infix 4 /=
+
 (/=) :: Eq a => a -> a -> BooleanOf a
 x /= y = not (x == y)
 
@@ -66,13 +67,14 @@ deriving via (HaskellEqOrd String) instance Eq String
 
 deriving via (HaskellEqOrd Rational) instance Eq Rational
 
-newtype SemialignEqOrd f a = MkSemialignEqOrd { fromSemialignEqOrd :: f a }
+newtype SemialignEqOrd f a = MkSemialignEqOrd {fromSemialignEqOrd :: f a}
   deriving (Foldable, Functor, Semialign)
 
 instance (Foldable f, Semialign f, Eq a) => Eq (SemialignEqOrd f a) where
   type BooleanOf (SemialignEqOrd f a) = BooleanOf a
   MkSemialignEqOrd f == MkSemialignEqOrd g = and (alignWith combine f g)
-   where combine = \case { These x y -> x == y; _ -> false }
+   where
+    combine = \case These x y -> x == y; _ -> false
 
 instance Eq a => Eq (Maybe a) where
   type BooleanOf (Maybe a) = BooleanOf a

@@ -4,6 +4,7 @@
 module Tests.Symbolic.Compiler.Optimization (specOptimization) where
 
 import Data.Binary (Binary)
+import Data.Function (id)
 import GHC.Generics (Par1 (..), U1 (..), type (:*:))
 import Test.Hspec
 import Test.QuickCheck.Property ((.&.), (===))
@@ -12,12 +13,11 @@ import Prelude (Show, return, ($))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.ArithmeticCircuit
+import ZkFold.ArithmeticCircuit.Context (constraint, newAssigned, newRanged)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
+import ZkFold.ArithmeticCircuit.Var (at)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Bool (Bool (..))
-import Data.Function (id)
-import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
-import ZkFold.ArithmeticCircuit.Context (newRanged, newAssigned, constraint)
-import ZkFold.ArithmeticCircuit.Var (at)
 
 testFunc :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
 testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
@@ -30,7 +30,8 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
   return (Par1 i5)
 
 testBool
-  :: forall a. (Arithmetic a, Binary a)
+  :: forall a
+   . (Arithmetic a, Binary a)
   => ArithmeticCircuit a (Par1 :*: U1) Par1
 testBool = compile id (identBool @(Elem a))
  where
