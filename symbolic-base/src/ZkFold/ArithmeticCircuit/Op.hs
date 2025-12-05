@@ -52,11 +52,10 @@ data Op f (s :: Sort) where
   OpCompare :: f ZZ -> f ZZ -> Op f OO
   OpDiv, OpMod, OpGcd, OpBezoutL, OpBezoutR :: f ZZ -> f ZZ -> Op f ZZ
   OpInv :: f ZZp -> Op f ZZp
-  OpEq, OpNEq :: f s -> f s -> Op f BB
+  OpEq :: f s -> f s -> Op f BB
   OpOr :: f BB -> f BB -> Op f BB
   OpBool :: f s -> f s -> f BB -> Op f s
   OpAppend :: f OO -> f OO -> Op f OO
-  OpOrder :: f ZZ -> f ZZ -> f ZZ -> f OO -> Op f ZZ
 
 -- | Replacement of a @Sort -> Type@ functor in 'Op',
 -- possibly with side-effects.
@@ -79,8 +78,6 @@ traverseOp f = \case
   OpBezoutR x y -> OpBezoutR <$> f x <*> f y
   OpInv x -> OpInv <$> f x
   OpEq x y -> OpEq <$> f x <*> f y
-  OpNEq x y -> OpNEq <$> f x <*> f y
   OpOr x y -> OpOr <$> f x <*> f y
   OpBool x y z -> OpBool <$> f x <*> f y <*> f z
   OpAppend x y -> OpAppend <$> f x <*> f y
-  OpOrder x y z w -> OpOrder <$> f x <*> f y <*> f z <*> f w

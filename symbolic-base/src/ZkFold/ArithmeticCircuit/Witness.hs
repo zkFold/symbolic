@@ -80,7 +80,6 @@ instance Conditional (BooleanF a v) (WitnessF a v) where
 instance Eq (WitnessF a v) where
   type BooleanOf (WitnessF a v) = BooleanF a v
   WitnessF f == WitnessF g = BooleanF (\x -> f x == g x)
-  WitnessF f /= WitnessF g = BooleanF (\x -> f x /= g x)
 
 instance Field (WitnessF a v) where
   finv (WitnessF f) = WitnessF (finv . f)
@@ -123,17 +122,10 @@ instance Conditional (BooleanF a v) (EuclideanF a v) where
 instance Eq (EuclideanF a v) where
   type BooleanOf (EuclideanF a v) = BooleanF a v
   EuclideanF f == EuclideanF g = BooleanF (\x -> f x == g x)
-  EuclideanF f /= EuclideanF g = BooleanF (\x -> f x /= g x)
 
 instance Ord (EuclideanF a v) where
   type OrderingOf (EuclideanF a v) = OrderingF a v
-  ordering (EuclideanF f) (EuclideanF g) (EuclideanF h) (OrderingF o) =
-    EuclideanF (\x -> ordering (f x) (g x) (h x) (o x))
   compare (EuclideanF f) (EuclideanF g) = OrderingF (\x -> compare (f x) (g x))
-  EuclideanF f < EuclideanF g = BooleanF (\x -> f x < g x)
-  EuclideanF f <= EuclideanF g = BooleanF (\x -> f x <= g x)
-  EuclideanF f >= EuclideanF g = BooleanF (\x -> f x >= g x)
-  EuclideanF f > EuclideanF g = BooleanF (\x -> f x > g x)
 
 instance Scale Natural (EuclideanF a v) where scale k (EuclideanF f) = EuclideanF (scale k f)
 
@@ -176,6 +168,10 @@ instance Semigroup (OrderingF a v) where
 
 instance Monoid (OrderingF a v) where
   mempty = OrderingF (const mempty)
+
+instance Eq (OrderingF a v) where
+  type BooleanOf (OrderingF a v) = BooleanF a v
+  OrderingF f == OrderingF g = BooleanF (\x -> f x == g x)
 
 instance IsOrdering (OrderingF a v) where
   lt = OrderingF (const lt)

@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE TypeOperators #-}
 
 module ZkFold.Algebra.Number (
   Natural,
@@ -11,8 +12,11 @@ module ZkFold.Algebra.Number (
   Log2,
   Mod,
   Div,
+  Sqrt,
   value,
   integral,
+  ilog2,
+  pow2Nat,
   type (<=),
   type (*),
   type (+),
@@ -24,9 +28,25 @@ import GHC.Exts (proxy#)
 import GHC.Real (Integral)
 import qualified GHC.Real as Integral
 import GHC.TypeNats
+import GHC.Num.Natural (naturalLog2)
+import Data.Function ((.), ($))
+import Data.Constraint ((:-) (Sub), Dict (Dict))
+import Data.Constraint.Unsafe (unsafeSNat)
+import GHC.Natural (shiftLNatural)
+import Data.Type.Ord (type (>?))
+import Data.Type.Bool (If)
 
 -- Use orphan instances for large publicly verified primes
 class KnownNat p => Prime p
+
+instance Prime 2
+
+instance Prime 3
+
+type family FindSqrt n x where
+  FindSqrt n x = If ((x + 1) * (x + 1) >? n) x (FindSqrt n (x + 1))
+
+type Sqrt n = FindSqrt n (2 ^ Div (Log2 n) 2)
 
 value :: forall n. KnownNat n => Natural
 value = natVal' (proxy# @n)
@@ -34,6 +54,9 @@ value = natVal' (proxy# @n)
 integral :: forall size n. (KnownNat size, Integral n) => n
 integral = Integral.fromIntegral (value @size)
 
-instance Prime 2
+ilog2 :: Natural -> Natural
+ilog2 = Integral.fromIntegral . naturalLog2
 
-instance Prime 3
+pow2Nat :: forall n. KnownNat n :- KnownNat (2 ^ n)
+pow2Nat =
+  Sub $ withKnownNat @(2 ^ n) (unsafeSNat $ shiftLNatural 1 $ integral @n) Dict

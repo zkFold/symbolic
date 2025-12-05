@@ -1,7 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Data.Vector (
   module ZkFold.Data.Vector,
@@ -45,18 +46,14 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Data.Binary (Binary (..))
-import ZkFold.Data.Bool
 import ZkFold.Data.Eq
 import ZkFold.Prelude (length)
+import ZkFold.Data.Ord (Ord)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
   deriving newtype (FromJSON, OpenApi.ToSchema, Swagger.ToSchema, ToJSON, ToJSON1)
-
-instance Eq x => Eq (Vector n x) where
-  type BooleanOf (Vector n x) = BooleanOf x
-  u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
-  u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
+  deriving (Eq, Ord) via (SemialignEqOrd (Vector size) a)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size

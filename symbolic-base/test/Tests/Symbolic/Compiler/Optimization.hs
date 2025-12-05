@@ -13,10 +13,11 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
 import ZkFold.ArithmeticCircuit
 import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Compiler (compile)
 import ZkFold.Symbolic.Data.Bool (Bool (..))
-import ZkFold.Symbolic.Data.Vec (runVec)
-import ZkFold.Symbolic.MonadCircuit
+import Data.Function (id)
+import ZkFold.ArithmeticCircuit.Elem (compile, Elem)
+import ZkFold.ArithmeticCircuit.Context (newRanged, newAssigned, constraint)
+import ZkFold.ArithmeticCircuit.Var (at)
 
 testFunc :: (Arithmetic a, Binary a) => ArithmeticCircuit a Par1 Par1
 testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
@@ -29,9 +30,9 @@ testFunc = fromCircuitF idCircuit $ \(Par1 i0) -> do
   return (Par1 i5)
 
 testBool
-  :: (Arithmetic a, Binary a)
-  => ArithmeticCircuit a ((U1 :*: U1) :*: Par1 :*: U1) Par1
-testBool = runVec $ compile identBool
+  :: forall a. (Arithmetic a, Binary a)
+  => ArithmeticCircuit a (Par1 :*: U1) Par1
+testBool = compile id (identBool @(Elem a))
  where
   identBool :: Bool c -> Bool c
   identBool x = x
@@ -62,7 +63,7 @@ specOptimization =
     it "number of variables decreases" $ do
       acSizeM ac === 0
     it "bool should pass" $ do
-      acSizeN (testBool @a :: ArithmeticCircuit a ((U1 :*: U1) :*: Par1 :*: U1) Par1) === 1
+      acSizeN (testBool @a :: ArithmeticCircuit a (Par1 :*: U1) Par1) === 1
     let constAc = optimize @a testConst
     it "constant ac evaluated" $ do
       eval constAc (Par1 one) === (eval $ testConst @a) (Par1 one)

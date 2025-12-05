@@ -58,6 +58,7 @@ import ZkFold.Algebra.Number
 import ZkFold.Control.Conditional
 import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Bool
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
 
 -- | Elliptic curves are plane algebraic curves that form `AdditiveGroup`s.
@@ -536,7 +537,6 @@ instance Field field => Eq (Point field) where
     if not isInf0 && not isInf1
       then x0 == x1 && y0 == y1
       else isInf0 && isInf1 && x1 * y0 == x0 * y1 -- same slope y0//x0 = y1//x1
-  pt0 /= pt1 = not (pt0 == pt1)
 
 data JacobianPoint field = JacobianPoint
   { _x :: field
@@ -588,7 +588,6 @@ instance Field field => Eq (JacobianPoint field) where
     z13 = z1 * z12
     z02 = square z0
     z03 = z0 * z02
-  pt0 /= pt1 = not (pt0 == pt1)
 
 class Project a b where
   project :: a -> b
@@ -654,6 +653,8 @@ deriving instance NFData1 AffinePoint
 instance Planar field (AffinePoint field) where pointXY = AffinePoint
 
 instance Eq field => Eq (AffinePoint field)
+
+instance Collect m field => Collect m (AffinePoint field)
 
 instance Prelude.Show field => Prelude.Show (AffinePoint field) where
   show (AffinePoint x y) =

@@ -16,8 +16,8 @@ import GHC.TypeNats (Natural)
 import ZkFold.Algebra.Class (FromConstant (..))
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Data.Vector (Vector (..))
-import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
+import ZkFold.Symbolic.Class (Symbolic)
 
 -- | The number of rounds in the Keccak-f[1600] permutation.
 type NumRounds :: Natural
@@ -128,5 +128,5 @@ piConstants =
     , 9
     ]
 
-emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
+emptyState :: Symbolic context => Vector NumLanes (ByteString 64 context)
 emptyState = tabulate (\_ -> fromConstant (0 :: Natural))

@@ -18,7 +18,7 @@ import Data.Monoid (Monoid, mempty)
 import Data.Ratio (Rational)
 import Data.Semigroup (Semigroup, (<>))
 import Data.Type.Equality (type (~))
-import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural)
+import GHC.Natural (andNatural, naturalFromInteger, shiftRNatural, shiftLNatural)
 import Prelude (Integer)
 import qualified Prelude as Haskell
 
@@ -483,7 +483,7 @@ class Semiring a => BinaryExpansion a where
   binaryExpansion :: a -> Bits a
 
   fromBinary :: Bits a -> a
-  default fromBinary :: Bits a ~ [a] => Bits a -> a
+  default fromBinary :: (Bits a ~ f a, Foldable f) => Bits a -> a
   fromBinary = foldr (\(!x) (!y) -> x + y + y) zero
 
 padBits :: forall a. AdditiveMonoid a => Natural -> [a] -> [a]
@@ -522,7 +522,11 @@ instance MultiplicativeSemigroup Natural where
   (*) = (Haskell.*)
 
 instance Exponent Natural Natural where
-  (^) = (Haskell.^)
+  _ ^ 0 = 1
+  0 ^ _ = 0
+  1 ^ _ = 1
+  2 ^ p = shiftLNatural 1 (Haskell.fromIntegral p)
+  x ^ p = x Haskell.^ p
 
 instance MultiplicativeMonoid Natural where
   one = 1
@@ -685,12 +689,10 @@ instance Ring Bool
 
 instance BinaryExpansion Bool where
   type Bits Bool = [Bool]
-
   binaryExpansion = (: [])
 
   fromBinary [] = False
-  fromBinary [x] = x
-  fromBinary _ = Haskell.error "fromBits: This should never happen."
+  fromBinary (x:_) = x
 
 instance MultiplicativeMonoid a => Exponent a Bool where
   _ ^ False = one
@@ -800,7 +802,7 @@ instance (Applicative f, Semigroup a) => Semigroup (ApplicativeAlgebra f a) wher
 instance (Applicative f, Monoid a) => Monoid (ApplicativeAlgebra f a) where
   mempty = pure mempty
 
-instance (Applicative f, IsOrdering a) => IsOrdering (ApplicativeAlgebra f a) where
+instance (Applicative f, IsOrdering a, Eq (f a)) => IsOrdering (ApplicativeAlgebra f a) where
   lt = pure lt
   eq = pure eq
   gt = pure gt
