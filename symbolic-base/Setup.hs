@@ -2,6 +2,7 @@
 
 import Control.Exception (throwIO)
 import Control.Monad
+import Data.Function ((&))
 import Data.Functor (($>))
 import Data.List (
   dropWhile,
@@ -13,17 +14,20 @@ import Data.List (
 import Data.Maybe (fromMaybe)
 import Distribution.PackageDescription hiding (libName)
 import Distribution.Simple
+import Distribution.Simple.InstallDirs hiding (absoluteInstallDirs)
 import Distribution.Simple.LocalBuildInfo (
   LocalBuildInfo (..),
+  absoluteInstallDirs,
   localPkgDescr,
-  absoluteInstallDirs
  )
 import Distribution.Simple.Program.Find (
   defaultProgramSearchPath,
   findProgramOnSearchPath,
  )
 import Distribution.Simple.Setup
+import Distribution.System
 import Distribution.Types.HookedBuildInfo
+import Distribution.Types.LocalBuildInfo
 import Distribution.Verbosity (Verbosity)
 import qualified Distribution.Verbosity as Verbosity
 import System.Directory
@@ -31,10 +35,6 @@ import System.Exit
 import System.FilePath
 import System.Info (os)
 import System.Process (system)
-import Distribution.System
-import Data.Function ((&))
-import Distribution.Types.LocalBuildInfo
-import Distribution.Simple.InstallDirs hiding (absoluteInstallDirs)
 
 #if MIN_VERSION_Cabal(3,14,0)
 import qualified Distribution.Utils.Path            as UtilsPath
@@ -90,10 +90,15 @@ main = defaultMainWithHooks hooks
                 copyVerbose (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
                 copyVerbose (absoluteRustOutputPath </> dynamicLibName <.> dynExt) (pathToDistNewstyle </> dynamicLibName <.> dynExt)
                 return pathToDistNewstyle
-          lbi <- addExtraLibDirs [path] <$> confHook simpleUserHooks (addDataFiles [defaultRustOuputPath </> staticLibName, defaultRustOuputPath </> dynamicLibName <.> dynExt] args) flags
-                    
+          lbi <-
+            addExtraLibDirs [path]
+              <$> confHook
+                simpleUserHooks
+                (addDataFiles [defaultRustOuputPath </> staticLibName, defaultRustOuputPath </> dynamicLibName <.> dynExt] args)
+                flags
+
           let instDirs = absoluteInstallDirs (packageDescription $ fst args) lbi NoCopyDest
-          pure $ addExtraLibDirs [datadir instDirs </> defaultRustOuputPath] lbi   
+          pure $ addExtraLibDirs [datadir instDirs </> defaultRustOuputPath] lbi
       , preBuild = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preReg = \args flags -> do
@@ -119,12 +124,10 @@ addExtraLibDirs extraLibDirs' lbi = lbi {localPkgDescr = updatePkgDescr (localPk
   updateLib lib = lib {libBuildInfo = updateBi (libBuildInfo lib)}
   updateBi bi = bi {extraLibDirs = (mkSymbolicPath <$> extraLibDirs') <> extraLibDirs bi}
 
-
 addDataFiles :: [String] -> (GenericPackageDescription, HookedBuildInfo) -> (GenericPackageDescription, HookedBuildInfo)
-addDataFiles rustLibPaths (gpd, hbi) = (gpd { packageDescription = updatePD $ packageDescription gpd}, hbi)
-  where
-    updatePD pd = pd { dataFiles = (mkSymbolicPath <$> rustLibPaths) <> dataFiles pd}
-
+addDataFiles rustLibPaths (gpd, hbi) = (gpd {packageDescription = updatePD $ packageDescription gpd}, hbi)
+ where
+  updatePD pd = pd {dataFiles = (mkSymbolicPath <$> rustLibPaths) <> dataFiles pd}
 
 runCargoOrThrow :: String -> IO ()
 runCargoOrThrow cargoArgs = do
