@@ -16,6 +16,7 @@ import Distribution.Simple
 import Distribution.Simple.LocalBuildInfo (
   LocalBuildInfo (..),
   localPkgDescr,
+  absoluteInstallDirs
  )
 import Distribution.Simple.Program.Find (
   defaultProgramSearchPath,
@@ -30,6 +31,10 @@ import System.Exit
 import System.FilePath
 import System.Info (os)
 import System.Process (system)
+import Distribution.System
+import Data.Function ((&))
+import Distribution.Types.LocalBuildInfo
+import Distribution.Simple.InstallDirs hiding (absoluteInstallDirs)
 
 #if MIN_VERSION_Cabal(3,14,0)
 import qualified Distribution.Utils.Path            as UtilsPath
@@ -85,8 +90,10 @@ main = defaultMainWithHooks hooks
                 copyVerbose (absoluteRustOutputPath </> staticLibName) (pathToDistNewstyle </> staticLibName)
                 copyVerbose (absoluteRustOutputPath </> dynamicLibName <.> dynExt) (pathToDistNewstyle </> dynamicLibName <.> dynExt)
                 return pathToDistNewstyle
-
-          addExtraLibDir path <$> confHook simpleUserHooks args flags
+          lbi <- addExtraLibDirs [path] <$> confHook simpleUserHooks (addDataFiles [defaultRustOuputPath </> staticLibName, defaultRustOuputPath </> dynamicLibName <.> dynExt] args) flags
+                    
+          let instDirs = absoluteInstallDirs (packageDescription $ fst args) lbi NoCopyDest
+          pure $ addExtraLibDirs [datadir instDirs </> defaultRustOuputPath] lbi   
       , preBuild = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preReg = \args flags -> do
@@ -105,12 +112,19 @@ renameVerbose origin destination = do
   putStrLn $ unlines ["Renaming", origin, "to", destination]
   renameFile origin destination
 
-addExtraLibDir :: FilePath -> LocalBuildInfo -> LocalBuildInfo
-addExtraLibDir extraLibDir lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
+addExtraLibDirs :: [FilePath] -> LocalBuildInfo -> LocalBuildInfo
+addExtraLibDirs extraLibDirs' lbi = lbi {localPkgDescr = updatePkgDescr (localPkgDescr lbi)}
  where
   updatePkgDescr pkgDescr = pkgDescr {library = updateLib <$> library pkgDescr}
   updateLib lib = lib {libBuildInfo = updateBi (libBuildInfo lib)}
-  updateBi bi = bi {extraLibDirs = mkSymbolicPath extraLibDir : extraLibDirs bi}
+  updateBi bi = bi {extraLibDirs = (mkSymbolicPath <$> extraLibDirs') <> extraLibDirs bi}
+
+
+addDataFiles :: [String] -> (GenericPackageDescription, HookedBuildInfo) -> (GenericPackageDescription, HookedBuildInfo)
+addDataFiles rustLibPaths (gpd, hbi) = (gpd { packageDescription = updatePD $ packageDescription gpd}, hbi)
+  where
+    updatePD pd = pd { dataFiles = (mkSymbolicPath <$> rustLibPaths) <> dataFiles pd}
+
 
 runCargoOrThrow :: String -> IO ()
 runCargoOrThrow cargoArgs = do

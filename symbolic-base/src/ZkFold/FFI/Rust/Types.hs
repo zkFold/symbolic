@@ -13,6 +13,7 @@ import GHC.Natural (Natural)
 import Prelude
 
 import ZkFold.Control.Conditional
+import Paths_symbolic_base
 
 type FCString = ForeignPtr CChar
 
@@ -119,3 +120,11 @@ type Rust_BLS12_381_G1_CompressedPoint = Point "Rust BLS12-381-G1 Compressed" Ru
 type Rust_BLS12_381_G2_CompressedPoint = Point "Rust BLS12-381-G2 Compressed" RustData
 
 instance Conditional Bool RustData where bool = B.bool
+
+
+-- Building
+pathToRustWrapper :: IO (FilePath, FilePath)
+pathToRustWrapper = do
+  fpStat <- getDataFileName "rust-wrapper/target/release/librust_wrapper_stat.a"
+  fpDyn <- getDataFileName "rust-wrapper/target/release/librust_wrapper_dyn.so"
+  pure (fpStat, fpDyn) 
