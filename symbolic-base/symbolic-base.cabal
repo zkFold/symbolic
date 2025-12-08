@@ -345,6 +345,7 @@ library
         -- TODO: remove `blake2` after refactoring of ZK protocols
         blake2                                < 0.4,
         openapi3                                   ,
+        swagger2                                   ,
     hs-source-dirs: src
     if arch(wasm32)
         ghc-options:

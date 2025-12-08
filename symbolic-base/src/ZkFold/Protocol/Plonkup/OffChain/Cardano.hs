@@ -11,10 +11,14 @@ module ZkFold.Protocol.Plonkup.OffChain.Cardano (
   ZKProofBytes (..),
 ) where
 
+import Control.Lens ((?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), withText)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 qualified as BS16
 import Data.Coerce (coerce)
+import Data.Function ((&))
+import Data.Swagger
+import Data.Swagger.Internal.Schema (named)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import GHC.Generics (Generic)
@@ -70,6 +74,18 @@ instance FromJSON ByteStringFromHex where
 
 instance ToJSON ByteStringFromHex where
   toJSON = String . byteStringFromHexToHex
+
+instance ToSchema ByteStringFromHex where
+  declareNamedSchema _ =
+    pure $
+      named "ByteStringFromHex" $
+        mempty
+          & type_
+            ?~ SwaggerString
+          & format
+            ?~ "hex"
+          & description
+            ?~ "Bytes encoded in hex."
 
 -- | ZK proof bytes, assuming hex encoding for relevant bytes.
 data ZKProofBytes = ZKProofBytes
