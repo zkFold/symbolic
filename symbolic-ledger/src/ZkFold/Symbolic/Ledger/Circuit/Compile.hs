@@ -42,6 +42,7 @@ import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit
 import ZkFold.ArithmeticCircuit.Node qualified as C
 import ZkFold.Data.Binary (toByteString)
+import ZkFold.Data.Vector (Vector)
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
 import ZkFold.Protocol.NonInteractiveProof (
@@ -69,12 +70,11 @@ import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Interpreter
-import Prelude (Integer, error, fromIntegral, ($), (.), (<$>), Show)
+import Prelude (Integer, Show, error, fromIntegral, ($), (.), (<$>))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.State
-import ZkFold.Data.Vector (Vector)
 
 -- $setup
 --
@@ -95,7 +95,9 @@ data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance (Show (State bi bo ud a context), Show (TransactionBatch i o a t context), Show (StateWitness bi bo ud a i o t context)) => Show (LedgerContractInput bi bo ud a i o t context)
+deriving stock instance
+  (Show (State bi bo ud a context), Show (TransactionBatch i o a t context), Show (StateWitness bi bo ud a i o t context))
+  => Show (LedgerContractInput bi bo ud a i o t context)
 
 deriving anyclass instance
   forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
@@ -135,16 +137,18 @@ deriving anyclass instance
   => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
 
 type LedgerContractOutput bi bo a =
-  (FieldElement
-    :*: FieldElement
-    :*: FieldElement
-    :*: FieldElement
-    :*: FieldElement)
-    :*: (FieldElement
-    :*: FieldElement
-    :*: FieldElement
-    :*: FieldElement
-    :*: FieldElement)
+  ( FieldElement
+      :*: FieldElement
+      :*: FieldElement
+      :*: FieldElement
+      :*: FieldElement
+  )
+    :*: ( FieldElement
+            :*: FieldElement
+            :*: FieldElement
+            :*: FieldElement
+            :*: FieldElement
+        )
     :*: Bool
     :*: (Vector bi :.: Output a)
     :*: (Vector bo :.: Output a)
@@ -155,16 +159,18 @@ ledgerContract
   => SignatureTransactionBatch ud i o a t c
   => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput bi bo a c
 ledgerContract LedgerContractInput {..} =
-  (sPreviousStateHash lciPreviousState
-    :*: (mHash . sUTxO $ lciPreviousState)
-    :*: sLength lciPreviousState
-    :*: (hHash . sBridgeIn $ lciPreviousState)
-    :*: (hHash . sBridgeOut $ lciPreviousState))
-    :*: (sPreviousStateHash lciNewState
-    :*: (mHash . sUTxO $ lciNewState)
-    :*: sLength lciNewState
-    :*: (hHash . sBridgeIn $ lciNewState)
-    :*: (hHash . sBridgeOut $ lciNewState))
+  ( sPreviousStateHash lciPreviousState
+      :*: (mHash . sUTxO $ lciPreviousState)
+      :*: sLength lciPreviousState
+      :*: (hHash . sBridgeIn $ lciPreviousState)
+      :*: (hHash . sBridgeOut $ lciPreviousState)
+  )
+    :*: ( sPreviousStateHash lciNewState
+            :*: (mHash . sUTxO $ lciNewState)
+            :*: sLength lciNewState
+            :*: (hHash . sBridgeIn $ lciNewState)
+            :*: (hHash . sBridgeOut $ lciNewState)
+        )
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
     :*: preimage (sBridgeIn lciNewState)
     :*: preimage (sBridgeOut lciNewState)
@@ -190,15 +196,17 @@ type LedgerContractOutputLayout bi bo a =
       :*: Par1
       :*: Par1
       :*: Par1
-      :*: Par1)
-      :*: (Par1
       :*: Par1
-      :*: Par1
-      :*: Par1
-      :*: Par1)
-      :*: Par1
-      :*: (Vector bi :.: Layout (Output a) (Order RollupBF))
-      :*: (Vector bo :.: Layout (Output a) (Order RollupBF))
+  )
+    :*: ( Par1
+            :*: Par1
+            :*: Par1
+            :*: Par1
+            :*: Par1
+        )
+    :*: Par1
+    :*: (Vector bi :.: Layout (Output a) (Order RollupBF))
+    :*: (Vector bo :.: Layout (Output a) (Order RollupBF))
 
 type LedgerCircuit bi bo ud a i o t =
   ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a i o t) (LedgerContractOutputLayout bi bo a)
@@ -213,7 +221,14 @@ ledgerCircuit
 ledgerCircuit = C.compileV1 @RollupBF ledgerContract
 
 type PlonkupTs bi bo a i n t =
-  Plonkup i (LedgerContractOutputLayout bi bo a) n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec RollupBF)
+  Plonkup
+    i
+    (LedgerContractOutputLayout bi bo a)
+    n
+    BLS12_381_G1_JacobianPoint
+    BLS12_381_G2_JacobianPoint
+    t
+    (PolyVec RollupBF)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
@@ -224,7 +239,7 @@ type TranscriptConstraints ts =
 
 ledgerSetup
   :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc)
+   . TranscriptConstraints tc
   => RollupBF ~ BaseField c
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud i o a t c
