@@ -14,6 +14,7 @@ import Control.DeepSeq (NFData, NFData1)
 import Control.Monad (Monad)
 import Control.Monad.State.Strict (runState, state)
 import Data.Aeson (FromJSON (..), ToJSON (..), ToJSON1)
+import Data.Bifunctor (Bifunctor (first))
 import Data.Bool (otherwise)
 import Data.Constraint.Nat (Max)
 import Data.Distributive (Distributive (..))
@@ -49,7 +50,6 @@ import ZkFold.Data.Binary (Binary (..))
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (length)
-import Data.Bifunctor (Bifunctor(first))
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)

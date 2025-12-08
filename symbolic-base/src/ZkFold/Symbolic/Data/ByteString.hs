@@ -29,13 +29,18 @@ module ZkFold.Symbolic.Data.ByteString (
   orRight,
 ) where
 
+import Control.Applicative (pure)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.ByteString as Bytes
 import Data.Constraint (withDict)
 import Data.Constraint.Nat (Max, plusMinusInverse3)
+import Data.Functor.Rep (index)
 import Data.List (reverse, unfoldr)
 import Data.Maybe (Maybe (..))
+import Data.Ord (Ordering (..), compare)
 import Data.String (IsString (..))
+import Data.These (These (..))
+import qualified Data.Vector as UV
 import GHC.Generics (Generic, Generic1)
 import GHC.Natural (naturalFromInteger)
 import Numeric (readHex, showHex)
@@ -71,11 +76,6 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Register (Register, bitsOfR, fromBinaryR)
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
-import Control.Applicative (pure)
-import Data.These (These(..))
-import qualified Data.Vector as UV
-import Data.Ord (Ordering(..), compare)
-import Data.Functor.Rep (index)
 
 -- | A ByteString which stores @n@ bits and uses elements of @a@ as registers, one element per register.
 -- Bit layout is Big-endian.
@@ -89,7 +89,8 @@ instance (Symbolic c, m * 8 ~ n, KnownNat m) => IsString (ByteString n c) where
 
 instance
   (Symbolic c, m * 8 ~ n, KnownNat m)
-  => FromConstant Bytes.ByteString (ByteString n c) where
+  => FromConstant Bytes.ByteString (ByteString n c)
+  where
   fromConstant bytes =
     concat @_ @8 $
       fromConstant @Natural @(ByteString 8 c)
@@ -181,7 +182,8 @@ instance (Symbolic c, KnownNat n) => BoolType (ByteString n c) where
   ByteString l `xor` ByteString r = ByteString (V.zipWith xor l r)
 
 orRight
-  :: forall m n c. Symbolic c
+  :: forall m n c
+   . Symbolic c
   => ByteString m c -> ByteString n c -> ByteString (Max m n) c
 orRight (ByteString l) (ByteString r) = ByteString (op <$> V.alignRight l r)
  where
@@ -196,7 +198,8 @@ orRight (ByteString l) (ByteString r) = ByteString (op <$> V.alignRight l r)
 -- 3. The bytestring is not empty;
 -- 4. @wordSize@ divides @n@.
 toWords
-  :: forall m wordSize c. KnownNat wordSize
+  :: forall m wordSize c
+   . KnownNat wordSize
   => ByteString (m * wordSize) c -> Vector m (ByteString wordSize c)
 toWords (ByteString bits) = ByteString <$> V.chunks @m @wordSize bits
 
@@ -234,15 +237,16 @@ instance (Symbolic c, KnownNat n) => ShiftBits (ByteString n c) where
   shiftBits bs@(ByteString (V.toV -> oldBits)) s
     | Haskell.abs s >= integral @n = false
     | otherwise = case compare s 0 of
-      LT -> fromVector $ UV.take (integral @n) (zeros <> oldBits)
-      EQ -> bs
-      GT -> fromVector $ UV.drop (Haskell.fromIntegral s) (oldBits <> zeros)
-    where
-      zeros = UV.replicate (Haskell.fromIntegral $ Haskell.abs s) false
-      fromVector = ByteString . V.Vector
+        LT -> fromVector $ UV.take (integral @n) (zeros <> oldBits)
+        EQ -> bs
+        GT -> fromVector $ UV.drop (Haskell.fromIntegral s) (oldBits <> zeros)
+   where
+    zeros = UV.replicate (Haskell.fromIntegral $ Haskell.abs s) false
+    fromVector = ByteString . V.Vector
 
 resize
-  :: forall c k n. (Symbolic c, KnownNat k, KnownNat n)
+  :: forall c k n
+   . (Symbolic c, KnownNat k, KnownNat n)
   => ByteString k c -> ByteString n c
 resize (ByteString (V.toV -> v))
   | diff > 0 = ByteString $ V.Vector (UV.replicate diff false <> v)
@@ -252,12 +256,14 @@ resize (ByteString (V.toV -> v))
   diff = integral @n Haskell.- integral @k
 
 set
-  :: forall c n. (Symbolic c, KnownNat n)
+  :: forall c n
+   . (Symbolic c, KnownNat n)
   => ByteString n c -> Natural -> ByteString n c
 set (ByteString bits) ix = ByteString $ bits V.// [(fromConstant ix, true)]
 
 unset
-  :: forall c n. (Symbolic c, KnownNat n)
+  :: forall c n
+   . (Symbolic c, KnownNat n)
   => ByteString n c -> Natural -> ByteString n c
 unset (ByteString bits) ix = ByteString $ bits V.// [(fromConstant ix, false)]
 
