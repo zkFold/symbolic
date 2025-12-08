@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Symbolic.Data.JWT.RS256 (SigningKey (..), Certificate (..)) where
 
@@ -15,12 +14,10 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number (Natural)
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Symbolic.Algorithm.RSA
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.ByteString (ByteString)
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.VarByteString (VarByteString)
 
@@ -30,13 +27,7 @@ data Certificate ctx
   { pubKid :: VarByteString 320 ctx
   , pubKey :: PublicKey 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
-
-deriving instance HEq ctx => P.Eq (Certificate ctx)
-
-deriving instance HShow ctx => P.Show (Certificate ctx)
-
-deriving instance HNFData ctx => NFData (Certificate ctx)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => FromJSON (Certificate ctx) where
   parseJSON = withObject "Certificate" $ \v -> do
@@ -62,13 +53,7 @@ data SigningKey ctx
   { prvKid :: VarByteString 320 ctx
   , prvKey :: PrivateKey 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
-
-deriving instance HEq ctx => P.Eq (SigningKey ctx)
-
-deriving instance HShow ctx => P.Show (SigningKey ctx)
-
-deriving instance HNFData ctx => NFData (SigningKey ctx)
+  deriving (Generic, Generic1, NFData, P.Eq, P.Show, SymbolicData)
 
 instance SigningAlgorithm "RS256" where
   type SKey "RS256" ctx = SigningKey ctx

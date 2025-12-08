@@ -12,17 +12,14 @@ import Prelude ((.))
 import qualified Prelude as P
 
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import ZkFold.Symbolic.Algorithm.RSA as RSA
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators hiding (toBits)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
 import ZkFold.Symbolic.Data.JWT.Utils
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
 -- | Json Web Token payload with information about the user
@@ -44,7 +41,7 @@ data TwitchPayload ctx
   , twUserId :: VarByteString 512 ctx
   -- ^ The user's Twitch user ID. This is provided only for users who allow your extension to identify them.
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, P.Eq, P.Show, SymbolicData)
 
 -- | @pListen@ and @pSend@ contain the topics the associated user is allowed to listen to and publish to, respectively.
 data PubSubPerms ctx
@@ -52,11 +49,7 @@ data PubSubPerms ctx
   { pListen :: VarByteString 2048 ctx
   , pSend :: VarByteString 2048 ctx
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
-
-deriving instance HEq ctx => P.Eq (PubSubPerms ctx)
-
-deriving instance HShow ctx => P.Show (PubSubPerms ctx)
+  deriving (Generic, Generic1, P.Eq, P.Show, SymbolicData)
 
 instance Symbolic ctx => Arbitrary (PubSubPerms ctx) where
   arbitrary = genericArbitrary uniform
@@ -72,10 +65,6 @@ instance Symbolic ctx => IsSymbolicJSON PubSubPerms ctx where
 
 instance Symbolic ctx => FromJSON (PubSubPerms ctx) where
   parseJSON = genericParseJSON (aesonPrefix snakeCase) . stringify
-
-deriving instance HEq ctx => P.Eq (TwitchPayload ctx)
-
-deriving instance HShow ctx => P.Show (TwitchPayload ctx)
 
 instance Symbolic ctx => Arbitrary (TwitchPayload ctx) where
   arbitrary = genericArbitrary uniform

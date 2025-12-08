@@ -15,4 +15,4 @@ import ZkFold.Symbolic.Cardano.Types.Basic
 type DatumHash context = ByteString 256 context
 
 emptyDatumHash :: forall context. Symbolic context => DatumHash context
-emptyDatumHash = withDict (gcdZero @8) $ blake2b_256 @0 $ emptyByteString @context
+emptyDatumHash = withDict (gcdZero @8) $ blake2b_256 @0 $ emptyByteString

@@ -12,28 +12,27 @@ import Prelude hiding (Bool, Eq, Ord)
 import qualified Prelude as Haskell
 
 import ZkFold.Algebra.Class (FromConstant)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (Ceil, GetRegisterSize, KnownRegisters, RegisterSize (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Ord (Ord)
 import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 
 newtype UTCTime c = UTCTime (UInt 11 Auto c)
-
-deriving newtype instance HEq c => Haskell.Eq (UTCTime c)
-
-deriving newtype instance Symbolic c => Eq (UTCTime c)
-
-deriving newtype instance SymbolicData UTCTime
+  deriving newtype
+    ( Collect (ConstrainedDatum c)
+    , Eq
+    , FromConstant Natural
+    , Haskell.Eq
+    , SymbolicData
+    )
 
 deriving newtype instance
   ( Symbolic c
   , KnownRegisters c 11 Auto
-  , regSize ~ GetRegisterSize (BaseField c) 11 Auto
+  , regSize ~ GetRegisterSize c 11 Auto
   , KnownNat (Ceil regSize OrdWord)
   )
   => Ord (UTCTime c)
-
-deriving newtype instance FromConstant Natural (UInt 11 Auto c) => FromConstant Natural (UTCTime c)

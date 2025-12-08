@@ -128,5 +128,5 @@ piConstants =
     , 9
     ]
 
-emptyState :: forall context. Symbolic context => Vector NumLanes (ByteString 64 context)
+emptyState :: Symbolic context => Vector NumLanes (ByteString 64 context)
 emptyState = tabulate (\_ -> fromConstant (0 :: Natural))

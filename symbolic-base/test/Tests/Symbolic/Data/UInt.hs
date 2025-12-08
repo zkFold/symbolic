@@ -5,72 +5,52 @@ module Tests.Symbolic.Data.UInt (specUInt) where
 
 import Control.Monad (return, when)
 import Data.Aeson (decode, encode)
+import Data.Binary (Binary)
 import Data.Constraint
 import Data.Constraint.Nat (timesNat)
 import Data.Function (id, ($))
 import Data.Functor ((<$>))
 import Data.List ((++))
-import GHC.Generics (Par1 (Par1), U1)
+import GHC.Generics (Par1 (..))
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Property, withMaxSuccess, (.&.), (===))
 import Prelude (show, type (~))
 import qualified Prelude as P
 
 import Tests.Common (it, toss, toss1)
-import Tests.Symbolic.Data.Common (
-  specConstantRoundtrip,
-  specSymbolicFunction0,
-  specSymbolicFunction1,
-  specSymbolicFunction2,
- )
+import Tests.Symbolic.Data.Common
 import ZkFold.Algebra.Class hiding (Euclidean (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec, exec1)
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Eq
+import ZkFold.Data.Iso
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisterSize,
-  NumberOfRegisters,
-  RegisterSize (..),
- )
+import ZkFold.Symbolic.Data.ByteString hiding (resize)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.UInt
-import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
 
-type AC a = ArithmeticCircuit a U1
+evalBool :: (Arithmetic a, Binary a) => Bool (Elem a) -> a
+evalBool (Bool ac) = unPar1 $ exec (Par1 ac)
 
-evalBool :: Arithmetic a => Bool (AC a) -> a
-evalBool (Bool ac) = exec1 ac
+evalFE :: (Arithmetic a, Binary a) => FieldElement (Elem a) -> a
+evalFE (FieldElement x) = unPar1 $ exec (Par1 x)
 
-evalFE :: Arithmetic a => FieldElement (AC a) -> a
-evalFE (FieldElement x) = exec1 x
-
-evalBoolVec :: Bool (Interpreter a) -> a
-evalBoolVec (Bool (Interpreter (Par1 v))) = v
-
-evalBS
-  :: forall a n
-   . Arithmetic a
-  => ByteString n (AC a) -> ByteString n (Interpreter a)
-evalBS (ByteString bits) = ByteString $ Interpreter (exec bits)
+evalBS :: forall a n. (Arithmetic a, Binary a) => ByteString n (Elem a) -> ByteString n a
+evalBS (ByteString bits) = ByteString (exec bits)
 
 execAcUint
   :: forall a n r
-   . Arithmetic a
-  => UInt n r (AC a) -> Vector (NumberOfRegisters a n r) a
-execAcUint (UInt v) = exec v
+   . (Arithmetic a, Binary a)
+  => UInt n r (Elem a) -> Vector (NumberOfRegisters a n r) a
+execAcUint (UInt v) = execZpUint @a @n @r $ UInt (exec v)
 
-execZpUint :: forall a n r. UInt n r (Interpreter a) -> Vector (NumberOfRegisters a n r) a
-execZpUint (UInt (Interpreter v)) = v
+execZpUint :: forall a n r. UInt n r a -> Vector (NumberOfRegisters a n r) a
+execZpUint (UInt v) = v
 
 type BinaryOp a = a -> a -> a
 
@@ -81,8 +61,8 @@ isHom
    . KnownNat n
   => PrimeField (Zp p)
   => KnownRegisterSize r
-  => UBinary n r (Interpreter (Zp p))
-  -> UBinary n r (AC (Zp p))
+  => UBinary n r (Zp p)
+  -> UBinary n r (Elem (Zp p))
   -> BinaryOp Natural
   -> Natural
   -> Natural
@@ -133,28 +113,39 @@ specUInt' = do
     -- Type-specific tests go here
     it "iso uint correctly" $ do
       x <- toss m
-      let bx = fromConstant x :: ByteString n (AC (Zp p))
-          ux = fromConstant x :: UInt n rs (AC (Zp p))
-      return $ execAcUint (from bx :: UInt n rs (AC (Zp p))) === execAcUint ux
+      let bx = fromConstant x :: ByteString n (Elem (Zp p))
+          ux = fromConstant x :: UInt n rs (Elem (Zp p))
+      return $ execAcUint (from bx :: UInt n rs (Elem (Zp p))) === execAcUint ux
     it "iso bytestring correctly" $ do
       x <- toss m
-      let ux = fromConstant x :: UInt n rs (AC (Zp p))
-          bx = fromConstant x :: ByteString n (AC (Zp p))
-      return $ evalBS (from ux :: ByteString n (AC (Zp p))) === evalBS bx
+      let ux = fromConstant x :: UInt n rs (Elem (Zp p))
+          bx = fromConstant x :: ByteString n (Elem (Zp p))
+      return $ evalBS (from ux :: ByteString n (Elem (Zp p))) === evalBS bx
     when (n == value @(BitsOf p)) $ it "iso fieldelement correctly" $ do
       x <- toss m
-      let ux = fromConstant x :: UInt (BitsOf p) rs (AC (Zp p))
-          fx = fromConstant x :: FieldElement (AC (Zp p))
+      let ux = fromConstant x :: UInt (BitsOf p) rs (Elem (Zp p))
+          fx = fromConstant x :: FieldElement (Elem (Zp p))
       return $ evalFE (from ux) === evalFE fx
+
+    -- TODO: remove withMaxSuccess when eval is optimised
+    it "sums bytestrings modulo n correctly" $ withMaxSuccess 10 $ do
+      x <- toss m
+      y <- toss m
+      let acX :: ByteString n (Elem (Zp p)) = fromConstant x
+          acY :: ByteString n (Elem (Zp p)) = fromConstant y
+          acSum :: ByteString n (Elem (Zp p)) =
+            from $ from acX + (from acY :: UInt n Auto (Elem (Zp p)))
+          zpSum :: ByteString n (Zp p) = fromConstant $ x + y
+      return $ evalBS acSum === zpSum
 
     when (m > 1) $ it "performs divMod correctly" $ do
       num <- toss m
       d <- toss1 m
-      let (acQ, acR) = (fromConstant num :: UInt n rs (AC (Zp p))) `divMod` fromConstant d
-          (zpQ, zpR) = (fromConstant num :: UInt n rs (Interpreter (Zp p))) `divMod` fromConstant d
+      let (acQ, acR) = (fromConstant num :: UInt n rs (Elem (Zp p))) `divMod` fromConstant d
+          (zpQ, zpR) = (fromConstant num :: UInt n rs (Zp p)) `divMod` fromConstant d
           (trueQ, trueR) = num `divMod` d
-          refQ = execZpUint (fromConstant trueQ :: UInt n rs (Interpreter (Zp p)))
-          refR = execZpUint (fromConstant trueR :: UInt n rs (Interpreter (Zp p)))
+          refQ = execZpUint (fromConstant trueQ :: UInt n rs (Zp p))
+          refR = execZpUint (fromConstant trueR :: UInt n rs (Zp p))
       return $
         (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
           .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
@@ -163,11 +154,11 @@ specUInt' = do
       a <- toss (2 ^ ((n `div` 2) -! 2))
       b <- toss (2 ^ ((n `div` 2) -! 2))
       d <- toss1 (2 ^ ((n `div` 2) -! 2))
-      let (acQ, acR) = productMod (fromConstant a :: UInt n rs (AC (Zp p))) (fromConstant b) (fromConstant d)
-          (zpQ, zpR) = productMod (fromConstant a :: UInt n rs (Interpreter (Zp p))) (fromConstant b) (fromConstant d)
+      let (acQ, acR) = productMod (fromConstant a :: UInt n rs (Elem (Zp p))) (fromConstant b) (fromConstant d)
+          (zpQ, zpR) = productMod (fromConstant a :: UInt n rs (Zp p)) (fromConstant b) (fromConstant d)
           (trueQ, trueR) = (a * b) `divMod` d
-          refQ = execZpUint (fromConstant trueQ :: UInt n rs (Interpreter (Zp p)))
-          refR = execZpUint (fromConstant trueR :: UInt n rs (Interpreter (Zp p)))
+          refQ = execZpUint (fromConstant trueQ :: UInt n rs (Zp p))
+          refR = execZpUint (fromConstant trueR :: UInt n rs (Zp p))
       return $
         (execAcUint acQ, execAcUint acR) === (execZpUint zpQ, execZpUint zpR)
           .&. (refQ, refR) === (execZpUint zpQ, execZpUint zpR)
@@ -175,8 +166,8 @@ specUInt' = do
     when (n <= 128) $ it "calculates gcd correctly" $ withMaxSuccess 10 $ do
       x <- toss m
       y <- toss m
-      let (_, _, r) = eea (fromConstant x :: UInt n rs (Interpreter (Zp p))) (fromConstant y)
-          ans = fromConstant (P.gcd x y) :: UInt n rs (Interpreter (Zp p))
+      let (_, _, r) = eea (fromConstant x :: UInt n rs (Zp p)) (fromConstant y)
+          ans = fromConstant (P.gcd x y) :: UInt n rs (Zp p)
       return $ r === ans
     when (n <= 128) $ it "calculates Bezout coefficients correctly" $ withMaxSuccess 10 $ do
       x' <- toss m
@@ -185,7 +176,7 @@ specUInt' = do
           y = y' `P.div` P.gcd x' y'
 
           -- We will test Bezout coefficients by multiplying two UInts less than 2^n, hence we need 2^(2n) bits to store the result
-          zpX = with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
+          zpX = with2n @n (fromConstant x) :: UInt (2 * n) rs (Zp p)
           zpY = with2n @n (fromConstant y)
           (s, t, _) = with2n @n (eea zpX zpY)
       -- if x and y are coprime, s is the multiplicative inverse of x modulo y and t is the multiplicative inverse of y modulo x
@@ -193,19 +184,19 @@ specUInt' = do
 
     it "extends correctly" $ do
       x <- toss m
-      let acUint = with2n @n (fromConstant x) :: UInt n rs (AC (Zp p))
-          zpUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (Interpreter (Zp p))
-      return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt (2 * n) rs (AC (Zp p)))) === execZpUint zpUint
+      let acUint = with2n @n (fromConstant x) :: UInt n rs (Elem (Zp p))
+          zpUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (Zp p)
+      return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt (2 * n) rs (Elem (Zp p)))) === execZpUint zpUint
 
     it "shrinks correctly" $ do
       x <- toss (m * m)
-      let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (AC (Zp p))
-          zpUint = fromConstant x :: UInt n rs (Interpreter (Zp p))
-      return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt n rs (AC (Zp p)))) === execZpUint zpUint
+      let acUint = with2n @n (fromConstant x) :: UInt (2 * n) rs (Elem (Zp p))
+          zpUint = fromConstant x :: UInt n rs (Zp p)
+      return $ execAcUint @(Zp p) (with2n @n (resize acUint :: UInt n rs (Elem (Zp p)))) === execZpUint zpUint
 
     it "checks equality" $ do
       x <- toss m
-      let acUint = fromConstant x :: UInt n rs (AC (Zp p))
+      let acUint = fromConstant x :: UInt n rs (Elem (Zp p))
       return $ evalBool @(Zp p) (acUint == acUint) === one
 
     it "checks inequality" $ do
@@ -213,32 +204,32 @@ specUInt' = do
       y' <- toss m
       let y = if y' P.== x then (x + 1) `mod` (2 ^ n) else y'
 
-      let acUint1 = fromConstant x :: UInt n rs (AC (Zp p))
-          acUint2 = fromConstant y :: UInt n rs (AC (Zp p))
+      let acUint1 = fromConstant x :: UInt n rs (Elem (Zp p))
+          acUint2 = fromConstant y :: UInt n rs (Elem (Zp p))
 
       return $ evalBool @(Zp p) (acUint1 == acUint2) === (if x == y then 1 else 0)
 
     it "checks greater than" $ do
       x <- toss m
       y <- toss m
-      let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))
-          y' = fromConstant y :: UInt n rs (Interpreter (Zp p))
-          x'' = fromConstant x :: UInt n rs (AC (Zp p))
-          y'' = fromConstant y :: UInt n rs (AC (Zp p))
-          gt' = evalBoolVec $ x' > y'
+      let x' = fromConstant x :: UInt n rs (Zp p)
+          y' = fromConstant y :: UInt n rs (Zp p)
+          x'' = fromConstant x :: UInt n rs (Elem (Zp p))
+          y'' = fromConstant y :: UInt n rs (Elem (Zp p))
+          gt' = fromBool $ x' > y'
           gt'' = evalBool @(Zp p) (x'' > y'')
           trueGt = if x > y then one else zero
       return $ gt' === gt'' .&. gt' === trueGt
     it "checks greater than or equal" $ do
       x <- toss m
       y <- toss m
-      let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))
-          y' = fromConstant y :: UInt n rs (Interpreter (Zp p))
-          x'' = fromConstant x :: UInt n rs (AC (Zp p))
-          y'' = fromConstant y :: UInt n rs (AC (Zp p))
-          ge' = evalBoolVec $ x' >= y'
-          ge1' = evalBoolVec $ x' >= x'
-          ge2' = evalBoolVec $ y' >= y'
+      let x' = fromConstant x :: UInt n rs (Zp p)
+          y' = fromConstant y :: UInt n rs (Zp p)
+          x'' = fromConstant x :: UInt n rs (Elem (Zp p))
+          y'' = fromConstant y :: UInt n rs (Elem (Zp p))
+          ge' = fromBool $ x' >= y'
+          ge1' = fromBool $ x' >= x'
+          ge2' = fromBool $ y' >= y'
           ge'' = evalBool @(Zp p) (x'' >= y'')
           trueGe = if x >= y then one else zero
       return $ ge' === ge'' .&. ge1' === (one :: Zp p) .&. ge2' === (one :: Zp p) .&. ge' === trueGe
@@ -246,16 +237,16 @@ specUInt' = do
       num <- toss m
       modulus <- toss1 m
       p <- toss 255
-      let nI = fromConstant num :: UInt n rs (Interpreter (Zp p))
-          mI = fromConstant modulus :: UInt n rs (Interpreter (Zp p))
-          pI = fromConstant p :: UInt 8 rs (Interpreter (Zp p))
+      let nI = fromConstant num :: UInt n rs (Zp p)
+          mI = fromConstant modulus :: UInt n rs (Zp p)
+          pI = fromConstant p :: UInt 8 rs (Zp p)
 
           rI = execZpUint $ with2n @n $ expMod nI pI mI
-          rTrue = execZpUint (fromConstant ((num ^ p) `mod` modulus) :: UInt n rs (Interpreter (Zp p)))
+          rTrue = execZpUint (fromConstant ((num ^ p) `mod` modulus) :: UInt n rs (Zp p))
       return $ rI === rTrue
     it "preserves the JSON invariant property" $ do
       x <- toss m
-      let x' = fromConstant x :: UInt n rs (Interpreter (Zp p))
+      let x' = fromConstant x :: UInt n rs (Zp p)
       return $ P.Just x' === decode (encode x)
 
 specUInt :: Spec

@@ -7,12 +7,12 @@ module ZkFold.Symbolic.Cardano.Types.Input where
 
 import GHC.Generics (Generic, Generic1)
 import ZkFold.Algebra.Number
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.UInt (KnownRegisters, RegisterSize (..))
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import qualified Prelude as Haskell
 
@@ -25,7 +25,9 @@ data Input tokens datum context = Input
   { txiOutputRef :: OutputRef context
   , txiOutput :: Output tokens datum context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
+
+instance Symbolic c => Collect (ConstrainedDatum c) (Input t d c)
 
 instance
   ( Symbolic context
@@ -35,7 +37,7 @@ instance
   )
   => Eq (Input tokens datum context)
 
-deriving instance HEq context => Haskell.Eq (Input tokens datum context)
+deriving instance Haskell.Eq context => Haskell.Eq (Input tokens datum context)
 
 txiAddress :: Input tokens datum context -> Address context
 txiAddress (Input _ txo) = txoAddress txo

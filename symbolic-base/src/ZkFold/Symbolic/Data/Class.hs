@@ -1,195 +1,122 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Class where
 
-import Control.Applicative (liftA2)
-import Control.DeepSeq (NFData1)
-import Data.Bifunctor (bimap)
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.Binary (Binary)
+import Data.Constraint (Constraint)
 import Data.Function (($), (.))
-import Data.Functor (fmap, (<$>))
+import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Rep (Rep, Representable, pureRep)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Semialign (Semialign, Zip, zipWith)
-import Data.Traversable (Traversable)
-import Data.Tuple (curry)
+import Data.Semialign (Semialign)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
+import Numeric.Natural (Natural)
 
-import ZkFold.Algebra.Class (Order, zero)
-import ZkFold.Algebra.Number (Natural)
-import ZkFold.Control.HApplicative (hliftA2, hpure)
-import ZkFold.Data.Binary (Binary1)
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Orphans ()
-import ZkFold.Data.Package (pack, unpack)
+import ZkFold.Algebra.Class
+import qualified ZkFold.Algorithm.Interpolation as I
 import ZkFold.Data.Product (fstP, sndP)
-import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Boot (FieldElement (..))
+import ZkFold.Symbolic.Class (Symbolic)
 
--- Functor data
+class Functor (Layout f c) => LayoutData f c
 
-type PayloadFunctor f = Semialign f
+instance Functor (Layout f c) => LayoutData f c
 
-type LayoutFunctor f = (PayloadFunctor f, Traversable f, NFData1 f)
+class Layout f c ~ Layout f d => EquivData f c d
 
-type IsDataFunctor x n =
-  (LayoutFunctor (Layout x n), PayloadFunctor (Payload x n))
+instance Layout f c ~ Layout f d => EquivData f c d
 
-class IsDataFunctor x n => DataFunctor x n
+type RepFunctor f = (Representable f, Binary (Rep f))
 
-instance IsDataFunctor x n => DataFunctor x n
+class RepFunctor (Layout f c) => RepData f c
 
--- Representable data
+instance RepFunctor (Layout f c) => RepData f c
 
-type RepPayload f = (Representable f, Binary (Rep f))
-
-type RepLayout f = (RepPayload f, Binary1 f)
-
-type RepDataImpl x (n :: Natural) =
-  (RepLayout (Layout x n), RepPayload (Payload x n))
-
-type IsRepData x (c :: Ctx) = RepDataImpl x (Order (BaseField c))
-
-class IsRepData x c => RepData x (c :: Ctx)
-
-instance IsRepData x c => RepData x c
-
--- | A class for Symbolic data types.
 class
-  ( forall n. DataFunctor x n
-  , forall c. HasRep x c => RepData x c
+  ( forall c. LayoutData f c
+  , forall c d. Order c ~ Order d => EquivData f c d
+  , forall c. HasRep f c => RepData f c
   ) =>
-  SymbolicData x
+  SymbolicData (f :: Type -> Type)
   where
-  type Layout x (n :: Natural) :: Type -> Type
-  type Layout x n = Layout (G.Rep1 x) n
+  type Layout f (c :: Type) :: Type -> Type
+  type Layout f c = Layout (G.Rep1 f) c
 
-  type Payload x (n :: Natural) :: Type -> Type
-  type Payload x n = Payload (G.Rep1 x) n
+  type HasRep f (c :: Type) :: Constraint
+  type HasRep f c = HasRep (G.Rep1 f) c
 
-  type HasRep x (c :: Ctx) :: Constraint
-  type HasRep x c = HasRep (G.Rep1 x) c
+  toLayout :: Symbolic c => f c -> Layout f c c
+  default toLayout
+    :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
+    => Layout f c ~ Layout (G.Rep1 f) c
+    => f c -> Layout f c c
+  toLayout = toLayout . G.from1
 
-  -- | Returns the circuit that makes up `x`.
-  arithmetize :: Symbolic c => x c -> c (Layout x (Order (BaseField c)))
-  default arithmetize
-    :: ( Symbolic c
-       , Order (BaseField c) ~ n
-       , G.Generic1 x
-       , SymbolicData (G.Rep1 x)
-       , Layout x n ~ Layout (G.Rep1 x) n
-       )
-    => x c
-    -> c (Layout x (Order (BaseField c)))
-  arithmetize = arithmetize . G.from1
-
-  payload :: Symbolic c => x c -> Payload x (Order (BaseField c)) (WitnessField c)
-  default payload
-    :: ( Symbolic c
-       , Order (BaseField c) ~ n
-       , G.Generic1 x
-       , SymbolicData (G.Rep1 x)
-       , Payload x n ~ Payload (G.Rep1 x) n
-       )
-    => x c
-    -> Payload x (Order (BaseField c)) (WitnessField c)
-  payload = payload . G.from1
-
-  -- | Interpolates branch values between given points.
-  interpolate :: Symbolic c => NonEmpty (BaseField c, x c) -> c G.Par1 -> x c
+  interpolate :: Symbolic c => c -> NonEmpty (Natural, f c) -> f c
   default interpolate
-    :: ( G.Generic1 x
-       , SymbolicData (G.Rep1 x)
-       , Symbolic c
-       )
-    => NonEmpty (BaseField c, x c)
-    -> c G.Par1
-    -> x c
-  interpolate = (G.to1 .) . interpolate . fmap (G.from1 <$>)
+    :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
+    => c -> NonEmpty (Natural, f c) -> f c
+  interpolate v = G.to1 . interpolate v . fmap (fmap G.from1)
 
-  -- | Restores `x` from the circuit's outputs.
-  restore
-    :: (Symbolic c, Order (BaseField c) ~ n)
-    => (c (Layout x n), Payload x n (WitnessField c))
-    -> x c
-  default restore
-    :: ( Symbolic c
-       , Order (BaseField c) ~ n
-       , G.Generic1 x
-       , SymbolicData (G.Rep1 x)
-       , Layout x n ~ Layout (G.Rep1 x) n
-       , Payload x n ~ Payload (G.Rep1 x) n
-       )
-    => (c (Layout x n), Payload x n (WitnessField c))
-    -> x c
-  restore = G.to1 . restore
+  fromLayout :: Symbolic c => Layout f c c -> f c
+  default fromLayout
+    :: (Symbolic c, G.Generic1 f, SymbolicData (G.Rep1 f))
+    => Layout f c ~ Layout (G.Rep1 f) c
+    => Layout f c c -> f c
+  fromLayout = G.to1 . fromLayout
 
-withoutConstraints
-  :: (SymbolicData x, Symbolic c, Traversable (Layout x (Order (BaseField c))))
-  => x c -> x c
-withoutConstraints x = restore (embedW $ witnessF $ arithmetize x, payload x)
-
-dummy :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => x c
-dummy = restore (embed (pureRep zero), pureRep zero)
+dummy :: (SymbolicData f, HasRep f c, Symbolic c) => f c
+dummy = fromLayout (pureRep zero)
 
 instance SymbolicData G.U1 where
   type Layout G.U1 _ = G.U1
-  type Payload G.U1 _ = G.U1
   type HasRep G.U1 _ = ()
-
-  arithmetize _ = hpure G.U1
-  payload _ = G.U1
+  toLayout u = u
   interpolate _ _ = G.U1
-  restore _ = G.U1
+  fromLayout u = u
 
-instance (SymbolicData x, SymbolicData y) => SymbolicData (x G.:*: y) where
-  type Layout (x G.:*: y) n = Layout x n G.:*: Layout y n
-  type Payload (x G.:*: y) n = Payload x n G.:*: Payload y n
-  type HasRep (x G.:*: y) n = (HasRep x n, HasRep y n)
+instance SymbolicData G.Par1 where
+  type Layout G.Par1 _ = G.Par1
+  type HasRep G.Par1 _ = ()
+  toLayout p = p
+  interpolate c =
+    G.Par1
+      . fromFieldElement
+      . I.interpolate (FieldElement c)
+      . fmap (bimap fromConstant $ FieldElement . G.unPar1)
+  fromLayout p = p
 
-  arithmetize (a G.:*: b) = hliftA2 (G.:*:) (arithmetize a) (arithmetize b)
-  payload (a G.:*: b) = payload a G.:*: payload b
-  interpolate bs =
-    liftA2
-      (G.:*:)
-      (interpolate (fmap fstP <$> bs))
-      (interpolate (fmap sndP <$> bs))
-  restore f =
-    restore (bimap (hmap fstP) fstP f)
-      G.:*: restore (bimap (hmap sndP) sndP f)
+instance (SymbolicData f, SymbolicData g) => SymbolicData (f G.:*: g) where
+  type Layout (f G.:*: g) c = Layout f c G.:*: Layout g c
+  type HasRep (f G.:*: g) c = (HasRep f c, HasRep g c)
+  toLayout (f G.:*: g) = toLayout f G.:*: toLayout g
+  interpolate c bs =
+    interpolate c (fmap fstP <$> bs) G.:*: interpolate c (fmap sndP <$> bs)
+  fromLayout (f G.:*: g) = fromLayout f G.:*: fromLayout g
 
-instance (Zip f, LayoutFunctor f, SymbolicData x) => SymbolicData (f G.:.: x) where
-  type Layout (f G.:.: x) n = f G.:.: Layout x n
-  type Payload (f G.:.: x) n = f G.:.: Payload x n
-  type HasRep (f G.:.: x) n = (RepLayout f, HasRep x n)
+instance (Semialign f, SymbolicData g) => SymbolicData (f G.:.: g) where
+  type Layout (f G.:.: g) c = f G.:.: Layout g c
+  type HasRep (f G.:.: g) c = (RepFunctor f, HasRep g c)
+  toLayout = G.Comp1 . fmap toLayout . G.unComp1
+  interpolate c =
+    G.Comp1 . fmap (interpolate c) . I.pushInterpolation . fmap (G.unComp1 <$>)
+  fromLayout = G.Comp1 . fmap fromLayout . G.unComp1
 
-  arithmetize (G.Comp1 xs) = pack (arithmetize <$> xs)
-  payload (G.Comp1 xs) = G.Comp1 (payload <$> xs)
-  interpolate (I.pushInterpolation . fmap (G.unComp1 <$>) -> bs) i =
-    G.Comp1 $ (`interpolate` i) <$> bs
-  restore (c, G.Comp1 ps) = G.Comp1 $ zipWith (curry restore) (unpack c) ps
+instance SymbolicData f => SymbolicData (G.M1 i d f) where
+  type Layout (G.M1 i d f) c = Layout f c
+  type HasRep (G.M1 i d f) c = HasRep f c
+  toLayout = toLayout . G.unM1
+  interpolate c = G.M1 . interpolate c . fmap (G.unM1 <$>)
+  fromLayout = G.M1 . fromLayout
 
-instance SymbolicData x => SymbolicData (G.M1 i c x) where
-  type Layout (G.M1 i c x) n = Layout x n
-  type Payload (G.M1 i c x) n = Payload x n
-  type HasRep (G.M1 i c x) n = HasRep x n
-
-  arithmetize = arithmetize . G.unM1
-  payload = payload . G.unM1
-  interpolate = (G.M1 .) . interpolate . fmap (G.unM1 <$>)
-  restore = G.M1 . restore
-
-instance SymbolicData x => SymbolicData (G.Rec1 x) where
-  type Layout (G.Rec1 x) n = Layout x n
-  type Payload (G.Rec1 x) n = Payload x n
-  type HasRep (G.Rec1 x) n = HasRep x n
-
-  arithmetize (G.Rec1 x) = arithmetize x
-  payload (G.Rec1 x) = payload x
-  interpolate = (G.Rec1 .) . interpolate . fmap (G.unRec1 <$>)
-  restore f = G.Rec1 (restore f)
+instance SymbolicData f => SymbolicData (G.Rec1 f) where
+  type Layout (G.Rec1 f) c = Layout f c
+  type HasRep (G.Rec1 f) c = HasRep f c
+  toLayout = toLayout . G.unRec1
+  interpolate c = G.Rec1 . interpolate c . fmap (G.unRec1 <$>)
+  fromLayout = G.Rec1 . fromLayout

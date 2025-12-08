@@ -3,22 +3,15 @@ module ZkFold.Symbolic.Algorithm.Hash.Poseidon (
   module ZkFold.Algorithm.Hash.Poseidon,
 ) where
 
-import Data.Foldable (toList)
 import Data.Function ((.))
-import Data.Functor (fmap)
 
 import ZkFold.Algorithm.Hash.Poseidon
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Package (unpacked)
+import ZkFold.Data.Collect (Collect, collect)
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
+import qualified ZkFold.Symbolic.Data.Unconstrained as C
 
 -- | Symbolic Poseidon hash
-hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
-hash =
-  poseidonHashDefault
-    . fmap FieldElement
-    . unpacked
-    . hmap toList
-    . arithmetize
+hash :: (Symbolic c, Collect (ConstrainedDatum c) x) => x -> FieldElement c
+hash = poseidonHashDefault . C.toList . collect

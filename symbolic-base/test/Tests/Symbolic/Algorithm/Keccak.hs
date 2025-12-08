@@ -33,7 +33,6 @@ import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, keccak, keccakVar)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString
-import ZkFold.Symbolic.Interpreter (Interpreter)
 
 -- | Adds following obvious constraints.
 withConstraints
@@ -61,9 +60,6 @@ withConstraints' =
 
 -- | Test the implementation of a hashing algorithm with @Zp BLS12_381_Scalar@ as base field for ByteStrings.
 type Element = Zp BLS12_381_Scalar
-
--- | Symbolic context.
-type Context = Interpreter Element
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
@@ -151,9 +147,12 @@ testAlgorithm file = do
         SomeNat (_ :: Proxy bytes) ->
           it bitMsgN $
             ( withConstraints @bytes $
-                let inBS = fromConstant @Natural @(ByteString (bytes * 8) Context) input
-                    inBSVar :: VarByteString 500_000 Context = fromNatural (value @(bytes * 8)) input
-                 in (toConstant $ keccak @algorithm @Context @(bytes * 8) inBS, toConstant $ keccakVar @algorithm @Context @500_000 inBSVar)
+                let inBS = fromConstant @Natural @(ByteString (bytes * 8) Element) input
+                    inBSVar :: VarByteString 500_000 Element =
+                      fromNatural (value @(bytes * 8)) input
+                 in ( toConstant $ keccak @algorithm @Element @(bytes * 8) inBS
+                    , toConstant $ keccakVar @algorithm @Element @500_000 inBSVar
+                    )
             )
               `shouldBe` (hash, hash)
  where
