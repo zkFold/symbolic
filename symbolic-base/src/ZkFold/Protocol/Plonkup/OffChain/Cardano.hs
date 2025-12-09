@@ -79,7 +79,7 @@ instance ToSchema ByteStringFromHex where
   declareNamedSchema _ =
     pure $
       named "ByteStringFromHex" $
-        mempty
+        P.mempty
           & type_
             ?~ SwaggerString
           & format
