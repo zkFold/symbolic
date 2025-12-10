@@ -100,9 +100,9 @@ main = defaultMainWithHooks hooks
           let instDirs = absoluteInstallDirs (packageDescription $ fst args) lbi NoCopyDest
           pure $ addExtraLibDirs [datadir instDirs </> defaultRustOuputPath] lbi
       , preBuild = \args flags -> do
-          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       , preReg = \args flags -> do
-          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       , preRepl = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }
