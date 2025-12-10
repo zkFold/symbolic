@@ -9,10 +9,12 @@ import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1)
 import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Eq (Eq)
+import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
@@ -25,6 +27,8 @@ newtype TransactionBatch i o a t c = TransactionBatch
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
+
+deriving stock instance HShow context => Haskell.Show (TransactionBatch i o a t context)
 
 instance
   forall i o a t context

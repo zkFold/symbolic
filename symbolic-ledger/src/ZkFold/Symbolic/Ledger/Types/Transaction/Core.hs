@@ -158,6 +158,8 @@ data Transaction i o a context = Transaction
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
+deriving stock instance HShow context => Haskell.Show (Transaction i o a context)
+
 instance
   forall i o a context
    . ( Symbolic context

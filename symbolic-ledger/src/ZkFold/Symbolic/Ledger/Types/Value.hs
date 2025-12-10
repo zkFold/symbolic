@@ -70,15 +70,13 @@ type AssetPolicy context = FieldElement context
 type AssetName context = FieldElement context
 
 -- | Quantity of an asset.
-type AssetQuantity context = Int 128 Auto context
+type AssetQuantity context = Int 64 Auto context
 
-type KnownRegistersAssetQuantity context = KnownRegisters context 128 Auto
+type KnownRegistersAssetQuantity context = KnownRegisters context 64 Auto
 
--- TODO: Replace with actual value, once we finalize how policy names are represented.
 adaPolicy :: Symbolic context => AssetPolicy context
 adaPolicy = zero
 
--- TODO: Replace with actual value, once we finalize how asset names are represented.
 adaName :: Symbolic context => AssetName context
 adaName = zero
 

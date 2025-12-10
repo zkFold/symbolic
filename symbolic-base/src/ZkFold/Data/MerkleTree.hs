@@ -84,6 +84,7 @@ merkleProve' (MerkleTree _ leaves) idx =
         siblingIdx = currentIdx + (if mod currentIdx two ZkFold.== zero then one else negate one)
         level = levels ZkFold.!! levelIndex
         f [] _ = error "Merkle tree: impossible"
+        f [x] _ = x
         f (x : xs) n = if n ZkFold.== zero then x else f xs (n - one)
      in f level siblingIdx
 
