@@ -103,6 +103,10 @@ main = defaultMainWithHooks hooks
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       , preReg = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
+      , preTest = \args flags -> do
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
+      , preBench = \args flags -> do
+          return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_stat"]}, [])
       , preRepl = \args flags -> do
           return (Just $ emptyBuildInfo {extraLibs = ["rust_wrapper_dyn"]}, [])
       }
