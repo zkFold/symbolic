@@ -17,8 +17,8 @@ import           ZkFold.Symbolic.Algorithm.Hash.Keccak   (Keccak, keccak)
 import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Data.Eq
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..))
+import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, dropN, toWords)
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..), resize)
 import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 
@@ -61,6 +61,7 @@ verifyAllocatorSignature :: forall n p q curve ctx.
      , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
      , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
      , Keccak "Keccak256" ctx 1024
+     , Keccak "Keccak256" ctx 512
      )
     => ByteString 256 ctx
     -> ByteString 512 ctx
@@ -71,7 +72,7 @@ verifyAllocatorSignature :: forall n p q curve ctx.
 verifyAllocatorSignature taskId validatorPublicKey allocatorPublicKey allocatorSignature schemaId = verifyVerdict
     where
         params :: ByteString 1024 ctx
-        params = concat $ V.unsafeToVector [concat $ V.unsafeToVector [taskId, schemaId], validatorPublicKey]
+        params = concat $ V.unsafeToVector [concat $ V.unsafeToVector [taskId, schemaId], resize $ dropN @160 (keccak @"Keccak256" validatorPublicKey) :: ByteString 512 ctx]
 
         (r, s, _) = extractSignature @p allocatorSignature
 
@@ -143,6 +144,7 @@ zkPassSymbolicVerifier :: forall n p q curve ctx.
      , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
      , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
      , Keccak "Keccak256" ctx 1024
+     , Keccak "Keccak256" ctx 512
      )
     => ZKPassResult ctx
     -> Bool ctx
