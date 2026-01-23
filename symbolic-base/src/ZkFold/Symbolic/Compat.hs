@@ -135,10 +135,10 @@ instance {-# OVERLAPPING #-} FromConstant Natural a => FromConstant (Zp n) (Comp
 
 ----------------------------------- ORPHANS ------------------------------------
 
-instance {-# OVERLAPPABLE #-} (FromConstant Natural a, Order a ~ n) => FromConstant (Zp n) a where
+instance {-# INCOHERENT #-} (FromConstant Natural a, Order a ~ n) => FromConstant (Zp n) a where
   fromConstant = fromConstant . toConstant
 
-instance {-# OVERLAPPABLE #-} (Scale Natural a, Order a ~ n) => Scale (Zp n) a where
+instance {-# INCOHERENT #-} (Scale Natural a, Order a ~ n) => Scale (Zp n) a where
   scale = scale . toConstant
 
 instance {-# OVERLAPPABLE #-} PrimeField a => Witness a a where

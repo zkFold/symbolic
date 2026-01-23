@@ -8,15 +8,25 @@
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
 import ZkFold.ArithmeticCircuit.Op (Sort (..))
+import ZkFold.Algebra.Number qualified as Number
 import           GHC.Generics                            ((:*:) (..), U1, Par1, Generic, Generic1)
-import           GHC.TypeLits                            (KnownNat)
+import           GHC.TypeLits                            (KnownNat, type (^), type (+))
 import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
                                                           (&&), (*), (+))
 
 import           ZkFold.Algebra.Class                    (zero, Order)
 import           ZkFold.Algebra.EllipticCurve.Class      hiding (Point)
-import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
+import ZkFold.Protocol.NonInteractiveProof (
+  FromTranscript (..),
+  ToTranscript (..),
+ )
+import ZkFold.Protocol.NonInteractiveProof as NP (
+  NonInteractiveProof (..),
+  TrustedSetup (..),
+ )
 import ZkFold.ArithmeticCircuit.Node qualified as C
+import ZkFold.Protocol.Plonkup (Plonkup (..))
+import ZkFold.Protocol.Plonkup.Utils (getParams)
 import qualified ZkFold.Data.Vector                      as V
 import           ZkFold.Data.Vector                      hiding (concat, append)
 import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA   (ecdsaVerify)
@@ -30,12 +40,14 @@ import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 import           ZkFold.Symbolic.Data.UInt               (UInt, toNative)
-import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint, BLS12_381_G1_CompressedPoint)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Symbolic.Data.Class (SymbolicData(..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
 import ZkFold.Symbolic.Compat (CompatContext)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import Data.Word (Word8)
 
 data ZKPassResult c = ZKPassResult
   { allocatorPublicKey :: ByteString 512 c
@@ -227,3 +239,34 @@ zksPassCircuit
   )
   => ZkPassCircuit
 zksPassCircuit = C.compileV1 @ZkPassBF (zkPassSymbolicVerifier @n @p @q @curve)
+
+type PlonkupTs i n t =
+  Plonkup
+    i
+    ZkPassContractOutputLayout
+    n
+    BLS12_381_G1_JacobianPoint
+    BLS12_381_G2_JacobianPoint
+    t
+    (PolyVec ZkPassBF)
+
+type TranscriptConstraints ts =
+  ( ToTranscript ts Word8
+  , ToTranscript ts ZkPassBF
+  , ToTranscript ts BLS12_381_G1_CompressedPoint
+  , FromTranscript ts ZkPassBF
+  )
+
+type ZkPassCircuitGates = 2 ^ 18
+
+zksPassSetup
+  :: forall tc
+   . TranscriptConstraints tc
+  => TrustedSetup (ZkPassCircuitGates + 6)
+  -> ZkPassCircuit
+  -> SetupVerify (PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc)
+zksPassSetup TrustedSetup {..} circuit = setupV
+ where
+  (omega, k1, k2) = getParams (Number.value @ZkPassCircuitGates)
+  plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
+  setupV = setupVerify @(PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc) plonkup
