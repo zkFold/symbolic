@@ -11,7 +11,7 @@ import ZkFold.ArithmeticCircuit.Op (Sort (..))
 import Data.ByteString qualified as Haskell (ByteString)
 import ZkFold.Algebra.Number qualified as Number
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
-import           GHC.Generics                            ((:*:) (..), U1 (..), Par1, Generic, Generic1)
+import           GHC.Generics                            ((:*:) (..), U1 (..), Par1 (..), Generic, Generic1)
 import           GHC.TypeLits                            (KnownNat, type (^), type (+))
 import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
                                                           (&&), (*), (+))
@@ -40,7 +40,7 @@ import           ZkFold.Symbolic.Data.ByteString         (ByteString, append, co
 import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
-import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
+import           ZkFold.Symbolic.Data.FieldElement       (FieldElement (..))
 import           ZkFold.Symbolic.Data.UInt               (UInt, toNative)
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar, BLS12_381_G1_JacobianPoint, BLS12_381_G2_JacobianPoint, BLS12_381_G1_CompressedPoint)
 import ZkFold.Algebra.Field (Zp, fromZp)
@@ -61,6 +61,8 @@ import GHC.Natural (naturalToInteger)
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation(..))
 import ZkFold.Prelude (log2ceiling)
 import ZkFold.Data.Binary (toByteString)
+import Data.Aeson (FromJSON (..), eitherDecode)
+import Data.ByteString.Lazy qualified as LBS
 
 data ZKPassResult c = ZKPassResult
   { allocatorPublicKey :: ByteString 512 c
@@ -310,6 +312,22 @@ zksPassProof TrustedSetup {..} ps circuit input = proof
     , ps
     )
   (proof, _) = rustPlonkupProve setupP witness
+
+deriving anyclass instance FromJSON (ZKPassResult (Interpreter ZkPassBF))
+
+parseZKPassResult :: String -> Either String (ZKPassResult (Interpreter ZkPassBF))
+parseZKPassResult = eitherDecode . LBS.fromStrict . fromString
+  where
+    fromString = LBS.toStrict . LBS.pack . fmap (fromIntegral . fromEnum)
+
+zkPassVerifyInput
+  :: forall n p q curve
+   . Signature n p q curve (Interpreter ZkPassBF)
+  => ZKPassResult (Interpreter ZkPassBF)
+  -> ZkPassBF
+zkPassVerifyInput input = runInterpreter $ fromFieldElement $ zkPassSymbolicVerifier @n @p @q @curve input
+  where
+    fromFieldElement (FieldElement (Interpreter (Par1 x))) = Interpreter x
 
 ------------------------------------------------
 -- Copy-pasted from ZkFold.Symbolic.Examples.SmartWallet
