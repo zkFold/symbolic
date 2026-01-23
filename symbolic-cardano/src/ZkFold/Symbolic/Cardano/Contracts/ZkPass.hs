@@ -18,20 +18,20 @@ import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Data.Eq
 import           ZkFold.Symbolic.Data.Bool
 import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, toWords)
-import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..), resize)
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 
 data ZKPassResult c = ZKPassResult
-  { allocatorAddress   :: ByteString 256 c
+  { allocatorPublicKey :: ByteString 512 c
   , allocatorSignature :: ByteString 520 c
   , publicFields       :: ByteString 1024 c
   , publicFieldsHash   :: ByteString 256 c
   , taskId             :: ByteString 256 c
   , uHash              :: ByteString 256 c
-  , validatorAddress   :: ByteString 256 c
+  , validatorPublicKey :: ByteString 512 c
   , validatorSignature :: ByteString 520 c
-  , publicKey          :: ByteString 512 c
+  , schemaId           :: ByteString 256 c
   }
 
 -- | Convert a 256-bit ByteString to an FFA element
@@ -63,19 +63,19 @@ verifyAllocatorSignature :: forall n p q curve ctx.
      , Keccak "Keccak256" ctx 1024
      )
     => ByteString 256 ctx
-    -> ByteString 256 ctx
-    -> ByteString 256 ctx
-    -> ByteString 520 ctx
     -> ByteString 512 ctx
+    -> ByteString 512 ctx
+    -> ByteString 520 ctx
+    -> ByteString 256 ctx
     -> Bool ctx
-verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSignature publicKey = verifyVerdict
+verifyAllocatorSignature taskId validatorPublicKey allocatorPublicKey allocatorSignature schemaId = verifyVerdict
     where
         params :: ByteString 1024 ctx
-        params = resize (concat $ V.unsafeToVector [taskId, allocatorAddress, validatorAddress] :: ByteString 768 ctx)
+        params = concat $ V.unsafeToVector [concat $ V.unsafeToVector [taskId, schemaId], validatorPublicKey]
 
         (r, s, _) = extractSignature @p allocatorSignature
 
-        (xVec, yVec) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
+        (xVec, yVec) = splitAt (toWords allocatorPublicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
 
         pubKey :: Point (Weierstrass curve) (FFA q 'Auto) ctx
         pubKey = pointXY (fromByteString256 $ item xVec) (fromByteString256 $ item yVec)
@@ -97,18 +97,18 @@ verifyValidatorSignature :: forall n p q curve ctx.
     => ByteString 256 ctx
     -> ByteString 256 ctx
     -> ByteString 256 ctx
-    -> ByteString 256 ctx
-    -> ByteString 520 ctx
     -> ByteString 512 ctx
+    -> ByteString 520 ctx
+    -> ByteString 256 ctx
     -> Bool ctx
-verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey = verifyVerdict
+verifyValidatorSignature taskId uHash publicFieldsHash validatorPublicKey validatorSignature schemaId = verifyVerdict
     where
         params :: ByteString 1024 ctx
-        params = concat $ V.unsafeToVector [taskId, validatorAddress, uHash, publicFieldsHash]
+        params = concat $ V.unsafeToVector [taskId, schemaId, uHash, publicFieldsHash]
 
         (r, s, _) = extractSignature @p validatorSignature
 
-        (xVec, yVec) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
+        (xVec, yVec) = splitAt (toWords validatorPublicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
 
         pubKey :: Point (Weierstrass curve) (FFA q 'Auto) ctx
         pubKey = pointXY (fromByteString256 $ item xVec) (fromByteString256 $ item yVec)
@@ -147,23 +147,23 @@ zkPassSymbolicVerifier :: forall n p q curve ctx.
     => ZKPassResult ctx
     -> Bool ctx
 zkPassSymbolicVerifier (ZKPassResult
-    allocatorAddress
+    allocatorPublicKey
     allocatorSignature
     publicFields
     publicFieldsHash
     taskId
     uHash
-    validatorAddress
+    validatorPublicKey
     validatorSignature
-    publicKey
+    schemaId
     ) =
     let
         conditionAllocatorSignatureCorrect = verifyAllocatorSignature @n @p @q @curve
-            taskId validatorAddress allocatorAddress allocatorSignature publicKey
+            taskId validatorPublicKey allocatorPublicKey allocatorSignature schemaId
 
         conditionHashEquality = hashFunction publicFields == publicFieldsHash
 
         conditionValidatorSignatureCorrect = verifyValidatorSignature @n @p @q @curve
-            taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey
+            taskId uHash publicFieldsHash validatorPublicKey validatorSignature schemaId
 
     in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
