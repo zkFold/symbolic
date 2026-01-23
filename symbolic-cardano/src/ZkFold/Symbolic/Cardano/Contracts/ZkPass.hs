@@ -248,12 +248,12 @@ type ZkPassCircuit =
 
 type ZkPassContractOutput = FieldElement
 
-zksPassCircuit
+zkPassCircuit
   :: forall n p q curve.
   ( Signature n p q curve (CompatContext (C.Node (Order ZkPassBF) ZZp))
   )
   => ZkPassCircuit
-zksPassCircuit = C.compileV1 @ZkPassBF (zkPassSymbolicVerifier @n @p @q @curve)
+zkPassCircuit = C.compileV1 @ZkPassBF (zkPassSymbolicVerifier @n @p @q @curve)
 
 type PlonkupTs i n t =
   Plonkup
@@ -274,19 +274,19 @@ type TranscriptConstraints ts =
 
 type ZkPassCircuitGates = 2 ^ 18
 
-zksPassSetup
+zkPassSetup
   :: forall tc
    . TranscriptConstraints tc
   => TrustedSetup (ZkPassCircuitGates + 6)
   -> ZkPassCircuit
   -> SetupVerify (PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc)
-zksPassSetup TrustedSetup {..} circuit = setupV
+zkPassSetup TrustedSetup {..} circuit = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ZkPassCircuitGates)
   plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
   setupV = setupVerify @(PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc) plonkup
 
-zksPassProof
+zkPassProof
   :: forall tc c
    . (TranscriptConstraints tc, c ~ Interpreter ZkPassBF)
   => TrustedSetup (ZkPassCircuitGates + 6)
@@ -294,7 +294,7 @@ zksPassProof
   -> ZkPassCircuit
   -> ZkPassContractInput c
   -> Proof (PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc)
-zksPassProof TrustedSetup {..} ps circuit input = proof
+zkPassProof TrustedSetup {..} ps circuit input = proof
  where
   witnessInputs :: (Layout ZkPassContractInput (Order ZkPassBF)) ZkPassBF
   witnessInputs = runInterpreter $ arithmetize input
