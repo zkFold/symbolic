@@ -137,7 +137,7 @@ extractSignature sign = (fromByteString256 $ concat r', fromByteString256 $ conc
 
         (s', v') = splitAt l'
 
-zkPassSymbolicVerifier :: forall n p q curve ctx.
+type Signature n p q curve ctx = 
      ( KnownNat n
      , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
      , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
@@ -150,7 +150,9 @@ zkPassSymbolicVerifier :: forall n p q curve ctx.
      , Keccak "Keccak256" ctx 672
      , Keccak "Keccak256" ctx 512
      )
-    => ZKPassResult ctx
+
+zkPassSymbolicVerifier :: forall n p q curve ctx. Signature n p q curve ctx =>
+    ZKPassResult ctx
     -> FieldElement ctx
 zkPassSymbolicVerifier (ZKPassResult
     allocatorPublicKey
