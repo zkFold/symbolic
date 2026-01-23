@@ -4,158 +4,167 @@
 
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
--- import           Data.Type.Equality
--- import           GHC.TypeLits                            (KnownNat, Log2)
--- import qualified GHC.TypeNats
--- import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
---                                                           (&&), (*), (+))
+import           GHC.Generics                            ((:*:) (..))
+import           GHC.TypeLits                            (KnownNat)
+import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
+                                                          (&&), (*), (+))
 
--- import           ZkFold.Base.Algebra.Basic.Class
--- import           ZkFold.Base.Algebra.EllipticCurve.Class
--- import qualified ZkFold.Base.Data.Vector                 as V
--- import           ZkFold.Base.Data.Vector                 hiding (concat)
--- import           ZkFold.Symbolic.Algorithms.ECDSA.ECDSA  (ecdsaVerify)
--- import           ZkFold.Symbolic.Algorithms.Hash.SHA2    (SHA2N, sha2)
--- import qualified ZkFold.Symbolic.Class                   as S
--- import           ZkFold.Symbolic.Class                   (Symbolic)
--- import           ZkFold.Symbolic.Data.Bool
--- import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, toWords)
--- import           ZkFold.Symbolic.Data.Combinators        (Iso (..), NumberOfRegisters, RegisterSize (..), resize)
--- import           ZkFold.Symbolic.Data.Eq
--- import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
--- import           ZkFold.Symbolic.Data.UInt               (UInt)
+import           ZkFold.Algebra.EllipticCurve.Class      hiding (Point)
+import qualified ZkFold.Data.Vector                      as V
+import           ZkFold.Data.Vector                      hiding (concat)
+import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA   (ecdsaVerify)
+import           ZkFold.Symbolic.Algorithm.Hash.SHA2     (SHA2N, sha2)
+import qualified ZkFold.Symbolic.Class                   as S
+import           ZkFold.Data.Eq
+import           ZkFold.Symbolic.Data.Bool
+import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, toWords)
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..), resize)
+import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
+import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 
--- data ZKPassResult c = ZKPassResult
---   { allocatorAddress   :: ByteString 256 c
---   , allocatorSignature :: ByteString 520 c
---   , publicFields       :: ByteString 1024 c
---   , publicFieldsHash   :: ByteString 256 c
---   , taskId             :: ByteString 256 c
---   , uHash              :: ByteString 256 c
---   , validatorAddress   :: ByteString 256 c
---   , validatorSignature :: ByteString 520 c
---   , publicKey          :: ByteString 512 c
---   }
+data ZKPassResult c = ZKPassResult
+  { allocatorAddress   :: ByteString 256 c
+  , allocatorSignature :: ByteString 520 c
+  , publicFields       :: ByteString 1024 c
+  , publicFieldsHash   :: ByteString 256 c
+  , taskId             :: ByteString 256 c
+  , uHash              :: ByteString 256 c
+  , validatorAddress   :: ByteString 256 c
+  , validatorSignature :: ByteString 520 c
+  , publicKey          :: ByteString 512 c
+  }
 
--- type Hash c = UInt 256 Auto c
+-- | Convert a 256-bit ByteString to an FFA element
+fromByteString256 :: forall p ctx .
+    ( S.Symbolic ctx
+    , KnownFFA p 'Auto ctx
+    , KnownNat (GetRegisterSize (S.BaseField ctx) 256 'Auto)
+    )
+    => ByteString 256 ctx
+    -> FFA p 'Auto ctx
+fromByteString256 = unsafeFromUInt @256 . from
 
--- -- TODO: change to keccak256
--- hashFunction :: forall c . (
---     SHA2N "SHA512/256" c
---     )
---     => ByteString 1024 c
---     -> ByteString 256 c
--- hashFunction = sha2 @"SHA512/256"
+-- TODO: change to keccak256
+hashFunction :: forall c .
+    ( SHA2N "SHA512/256" c
+    )
+    => ByteString 1024 c
+    -> ByteString 256 c
+hashFunction = sha2 @"SHA512/256"
 
--- verifyAllocatorSignature :: forall point n context curve baseField.
---      ( S.Symbolic context
---      , KnownNat n
---      , baseField ~ UInt 256 'Auto context
---      , ScalarFieldOf point ~ FieldElement context
---      , point ~ Weierstrass curve (Point baseField)
---      , CyclicGroup point
---      , SemiEuclidean (UInt 256 'Auto context)
---      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
---      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      )
---     => ByteString 256 context
---     -> ByteString 256 context
---     -> ByteString 256 context
---     -> ByteString 520 context
---     -> ByteString 512 context
---     -> Bool context
--- verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSignature publicKey = verifyVerdict
---     where
---         params :: ByteString 1024 context
---         params = resize (concat $ V.unsafeToVector [taskId, validatorAddress, allocatorAddress] :: ByteString 768 context)
+verifyAllocatorSignature :: forall n p q curve ctx.
+     ( KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) 256 'Auto)
+     , KnownFFA p 'Auto ctx
+     , KnownFFA q 'Auto ctx
+     , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
+     , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
+     , SHA2N "SHA512/256" ctx
+     )
+    => ByteString 256 ctx
+    -> ByteString 256 ctx
+    -> ByteString 256 ctx
+    -> ByteString 520 ctx
+    -> ByteString 512 ctx
+    -> Bool ctx
+verifyAllocatorSignature taskId validatorAddress allocatorAddress allocatorSignature publicKey = verifyVerdict
+    where
+        params :: ByteString 1024 ctx
+        params = resize (concat $ V.unsafeToVector [taskId, validatorAddress, allocatorAddress] :: ByteString 768 ctx)
 
---         encodedParams :: ByteString 256 context
---         encodedParams = hashFunction params
+        (r, s, _) = extractSignature @p allocatorSignature
 
---         (r, s, _) = extractSignature allocatorSignature
+        (xVec, yVec) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
 
---         (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
+        pubKey :: Point (Weierstrass curve) (FFA q 'Auto) ctx
+        pubKey = pointXY (fromByteString256 $ item xVec) (fromByteString256 $ item yVec)
 
---         verifyVerdict :: Bool context
---         verifyVerdict = ecdsaVerify @point @n @context @curve @baseField (pointXY (from $ item x) (from $ item y)) encodedParams (r, s)
+        verifyVerdict :: Bool ctx
+        verifyVerdict = ecdsaVerify @_ @n (fromByteString256 . hashFunction) pubKey params (r :*: s)
 
--- verifyValidatorSignature :: forall point n context curve baseField.
---      ( S.Symbolic context
---      , KnownNat n
---      , baseField ~ UInt 256 'Auto context
---      , ScalarFieldOf point ~ FieldElement context
---      , point ~ Weierstrass curve (Point baseField)
---      , CyclicGroup point
---      , SemiEuclidean (UInt 256 'Auto context)
---      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
---      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      )
---     => ByteString 256 context
---     -> ByteString 256 context
---     -> ByteString 256 context
---     -> ByteString 256 context
---     -> ByteString 520 context
---     -> ByteString 512 context
---     -> Bool context
--- verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey = verifyVerdict
---     where
---         params :: ByteString 1024 context
---         params = concat $ V.unsafeToVector [taskId, uHash, publicFieldsHash, validatorAddress]
+verifyValidatorSignature :: forall n p q curve ctx.
+     ( KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) 256 'Auto)
+     , KnownFFA p 'Auto ctx
+     , KnownFFA q 'Auto ctx
+     , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
+     , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
+     , SHA2N "SHA512/256" ctx
+     )
+    => ByteString 256 ctx
+    -> ByteString 256 ctx
+    -> ByteString 256 ctx
+    -> ByteString 256 ctx
+    -> ByteString 520 ctx
+    -> ByteString 512 ctx
+    -> Bool ctx
+verifyValidatorSignature taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey = verifyVerdict
+    where
+        params :: ByteString 1024 ctx
+        params = concat $ V.unsafeToVector [taskId, uHash, publicFieldsHash, validatorAddress]
 
---         encodedParams :: ByteString 256 context
---         encodedParams = hashFunction params
+        (r, s, _) = extractSignature @p validatorSignature
 
---         (r, s, _) = extractSignature validatorSignature
+        (xVec, yVec) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 ctx), Vector 1 (ByteString 256 ctx))
 
---         (x, y) = splitAt (toWords publicKey) :: (Vector 1 (ByteString 256 context), Vector 1 (ByteString 256 context))
+        pubKey :: Point (Weierstrass curve) (FFA q 'Auto) ctx
+        pubKey = pointXY (fromByteString256 $ item xVec) (fromByteString256 $ item yVec)
 
---         verifyVerdict :: Bool context
---         verifyVerdict = ecdsaVerify @point @n @context @curve @baseField (pointXY (from $ item x) (from $ item y)) encodedParams (r, s)
+        verifyVerdict :: Bool ctx
+        verifyVerdict = ecdsaVerify @_ @n (fromByteString256 . hashFunction) pubKey params (r :*: s)
 
--- extractSignature :: forall context . (Symbolic context)
---     => ByteString 520 context
---     -> (Hash context,  Hash context, ByteString 8 context)
--- extractSignature sign = (from $ concat r', from $ concat s', item v')
---     where
---         r' :: Vector 32 (ByteString 8 context)
+extractSignature :: forall p ctx .
+    ( S.Symbolic ctx
+    , KnownFFA p 'Auto ctx
+    , KnownNat (GetRegisterSize (S.BaseField ctx) 256 'Auto)
+    )
+    => ByteString 520 ctx
+    -> (FFA p 'Auto ctx, FFA p 'Auto ctx, ByteString 8 ctx)
+extractSignature sign = (fromByteString256 $ concat r', fromByteString256 $ concat s', item v')
+    where
+        r' :: Vector 32 (ByteString 8 ctx)
 
---         bytes = toWords sign
+        bytes = toWords sign
 
---         (r', l') = splitAt bytes
+        (r', l') = splitAt bytes
 
---         (s', v') = splitAt l'
+        (s', v') = splitAt l'
 
--- zkPassSymbolicVerifier :: forall point n context curve baseField.
---      ( S.Symbolic context
---      , KnownNat n
---      , baseField ~ UInt 256 'Auto context
---      , ScalarFieldOf point ~ FieldElement context
---      , point ~ Weierstrass curve (Point baseField)
---      , CyclicGroup point
---      , SemiEuclidean (UInt 256 'Auto context)
---      , KnownNat (NumberOfRegisters (S.BaseField context) 256 'Auto)
---      , Log2 (Order (S.BaseField context) GHC.TypeNats.- 1) ~ 255
---      )
---     =>ZKPassResult context
---     -> Bool context
--- zkPassSymbolicVerifier (ZKPassResult
---     allocatorAddress
---     allocatorSignature
---     publicFields
---     publicFieldsHash
---     taskId
---     uHash
---     validatorAddress
---     validatorSignature
---     publicKey
---     ) =
---     let
---         conditionAllocatorSignatureCorrect = verifyAllocatorSignature @point @n @context @curve @baseField
---             taskId validatorAddress allocatorAddress allocatorSignature publicKey
+zkPassSymbolicVerifier :: forall n p q curve ctx.
+     ( KnownNat n
+     , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
+     , KnownNat (GetRegisterSize (S.BaseField ctx) 256 'Auto)
+     , KnownFFA p 'Auto ctx
+     , KnownFFA q 'Auto ctx
+     , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
+     , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
+     , SHA2N "SHA512/256" ctx
+     )
+    => ZKPassResult ctx
+    -> Bool ctx
+zkPassSymbolicVerifier (ZKPassResult
+    allocatorAddress
+    allocatorSignature
+    publicFields
+    publicFieldsHash
+    taskId
+    uHash
+    validatorAddress
+    validatorSignature
+    publicKey
+    ) =
+    let
+        conditionAllocatorSignatureCorrect = verifyAllocatorSignature @n @p @q @curve
+            taskId validatorAddress allocatorAddress allocatorSignature publicKey
 
---         conditionHashEquality = hashFunction publicFields == publicFieldsHash
+        conditionHashEquality = hashFunction publicFields == publicFieldsHash
 
---         conditionValidatorSignatureCorrect = verifyValidatorSignature @point @n @context @curve @baseField
---             taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey
+        conditionValidatorSignatureCorrect = verifyValidatorSignature @n @p @q @curve
+            taskId uHash publicFieldsHash validatorAddress validatorSignature publicKey
 
---     in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
+    in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
