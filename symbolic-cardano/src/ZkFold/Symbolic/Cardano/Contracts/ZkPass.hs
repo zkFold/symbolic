@@ -321,11 +321,10 @@ parseZKPassResult = eitherDecode . LBS.fromStrict . fromString
     fromString = LBS.toStrict . LBS.pack . fmap (fromIntegral . fromEnum)
 
 zkPassVerifyInput
-  :: forall n p q curve
-   . Signature n p q curve (Interpreter ZkPassBF)
-  => ZKPassResult (Interpreter ZkPassBF)
+  :: ZKPassResult (Interpreter ZkPassBF)
   -> ZkPassBF
-zkPassVerifyInput input = runInterpreter $ fromFieldElement $ zkPassSymbolicVerifier @n @p @q @curve input
+zkPassVerifyInput input =
+  runInterpreter $ fromFieldElement $ toNative (from (publicFieldsHash input) :: UInt 256 'Auto (Interpreter ZkPassBF))
   where
     fromFieldElement (FieldElement (Interpreter (Par1 x))) = Interpreter x
 
