@@ -1,16 +1,22 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
-import           GHC.Generics                            ((:*:) (..))
+import ZkFold.ArithmeticCircuit.Op (Sort (..))
+import           GHC.Generics                            ((:*:) (..), U1, Par1, Generic, Generic1)
 import           GHC.TypeLits                            (KnownNat)
 import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
                                                           (&&), (*), (+))
 
-import           ZkFold.Algebra.Class                    (zero)
+import           ZkFold.Algebra.Class                    (zero, Order)
 import           ZkFold.Algebra.EllipticCurve.Class      hiding (Point)
+import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
+import ZkFold.ArithmeticCircuit.Node qualified as C
 import qualified ZkFold.Data.Vector                      as V
 import           ZkFold.Data.Vector                      hiding (concat, append)
 import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA   (ecdsaVerify)
@@ -24,6 +30,12 @@ import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
 import           ZkFold.Symbolic.Data.UInt               (UInt, toNative)
+import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
+import ZkFold.Algebra.Field (Zp)
+import ZkFold.Symbolic.Data.Class (SymbolicData(..))
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
+import ZkFold.Symbolic.Compat (CompatContext)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
 
 data ZKPassResult c = ZKPassResult
   { allocatorPublicKey :: ByteString 512 c
@@ -36,6 +48,8 @@ data ZKPassResult c = ZKPassResult
   , validatorSignature :: ByteString 520 c
   , schemaId           :: ByteString 256 c
   }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
 
 -- | Convert a 256-bit ByteString to an FFA element
 fromByteString256 :: forall p ctx .
@@ -137,7 +151,7 @@ extractSignature sign = (fromByteString256 $ concat r', fromByteString256 $ conc
 
         (s', v') = splitAt l'
 
-type Signature n p q curve ctx = 
+type Signature n p q curve ctx =
      ( KnownNat n
      , KnownNat (NumberOfRegisters (S.BaseField ctx) n 'Auto)
      , KnownNat (GetRegisterSize (S.BaseField ctx) n 'Auto)
@@ -177,3 +191,39 @@ zkPassSymbolicVerifier (ZKPassResult
         allConditions = conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
 
     in bool zero (toNative (from publicFieldsHash :: UInt 256 'Auto ctx)) allConditions
+
+-----------------------------------------
+-- Compilation
+-----------------------------------------
+
+
+type ZkPassBF = Zp BLS12_381_Scalar
+
+type ZkPassContractInput = ZKPassResult
+
+type ZkPassContractInputLayout =
+  Layout
+    (ZkPassContractInput :*: U1)
+    (Order ZkPassBF)
+
+type ZkPassContractInputPayload =
+  Payload
+    (ZkPassContractInput :*: U1)
+    (Order ZkPassBF)
+
+type ZkPassContractCompiledInput =
+  ZkPassContractInputLayout :*: ZkPassContractInputPayload
+
+type ZkPassContractOutputLayout = Par1
+
+type ZkPassCircuit =
+  ArithmeticCircuit ZkPassBF ZkPassContractCompiledInput ZkPassContractOutputLayout
+
+type ZkPassContractOutput = FieldElement
+
+zksPassCircuit
+  :: forall n p q curve.
+  ( Signature n p q curve (CompatContext (C.Node (Order ZkPassBF) ZZp))
+  )
+  => ZkPassCircuit
+zksPassCircuit = C.compileV1 @ZkPassBF (zkPassSymbolicVerifier @n @p @q @curve)
