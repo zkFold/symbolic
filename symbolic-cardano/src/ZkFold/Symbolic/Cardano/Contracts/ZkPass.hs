@@ -9,7 +9,8 @@ module ZkFold.Symbolic.Cardano.Contracts.ZkPass where
 
 import ZkFold.ArithmeticCircuit.Op (Sort (..))
 import ZkFold.Algebra.Number qualified as Number
-import           GHC.Generics                            ((:*:) (..), U1, Par1, Generic, Generic1)
+import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
+import           GHC.Generics                            ((:*:) (..), U1 (..), Par1, Generic, Generic1)
 import           GHC.TypeLits                            (KnownNat, type (^), type (+))
 import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
                                                           (&&), (*), (+))
@@ -48,6 +49,9 @@ import ZkFold.Symbolic.Compat (CompatContext)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import Data.Word (Word8)
+import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret)
+import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput(..))
 
 data ZKPassResult c = ZKPassResult
   { allocatorPublicKey :: ByteString 512 c
@@ -270,3 +274,30 @@ zksPassSetup TrustedSetup {..} circuit = setupV
   (omega, k1, k2) = getParams (Number.value @ZkPassCircuitGates)
   plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
   setupV = setupVerify @(PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc) plonkup
+
+zksPassProof
+  :: forall tc c
+   . (TranscriptConstraints tc, c ~ Interpreter ZkPassBF)
+  => TrustedSetup (ZkPassCircuitGates + 6)
+  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> ZkPassCircuit
+  -> ZkPassContractInput c
+  -> Proof (PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc)
+zksPassProof TrustedSetup {..} ps circuit input = proof
+ where
+  witnessInputs :: (Layout ZkPassContractInput (Order ZkPassBF)) ZkPassBF
+  witnessInputs = runInterpreter $ arithmetize input
+
+  paddedWitnessInputs :: ZkPassContractCompiledInput ZkPassBF
+  paddedWitnessInputs = (witnessInputs :*: U1) :*: (payload input :*: U1)
+
+  (omega, k1, k2) = getParams (Number.value @ZkPassCircuitGates)
+  plonkup =
+    Plonkup omega k1 k2 circuit g2_1 g1s
+      :: PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc
+  setupP = setupProve @(PlonkupTs ZkPassContractCompiledInput ZkPassCircuitGates tc) plonkup
+  witness =
+    ( PlonkupWitnessInput @ZkPassContractCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs
+    , ps
+    )
+  (proof, _) = rustPlonkupProve setupP witness
