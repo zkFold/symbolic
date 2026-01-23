@@ -11,14 +11,14 @@ import           Prelude                                 hiding (Bool, Eq (..), 
 
 import           ZkFold.Algebra.EllipticCurve.Class      hiding (Point)
 import qualified ZkFold.Data.Vector                      as V
-import           ZkFold.Data.Vector                      hiding (concat)
+import           ZkFold.Data.Vector                      hiding (concat, append)
 import           ZkFold.Symbolic.Algorithm.ECDSA.ECDSA   (ecdsaVerify)
 import           ZkFold.Symbolic.Algorithm.Hash.Keccak   (Keccak, keccak)
 import qualified ZkFold.Symbolic.Class                   as S
 import           ZkFold.Data.Eq
 import           ZkFold.Symbolic.Data.Bool
-import           ZkFold.Symbolic.Data.ByteString         (ByteString, concat, dropN, toWords)
-import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..), resize)
+import           ZkFold.Symbolic.Data.ByteString         (ByteString, append, concat, dropN, toWords)
+import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
 
@@ -44,10 +44,10 @@ fromByteString256 :: forall p ctx .
     -> FFA p 'Auto ctx
 fromByteString256 = unsafeFromUInt @256 . from
 
-hashFunction :: forall c .
-    ( Keccak "Keccak256" c 1024
+hashFunction :: forall n c .
+    ( Keccak "Keccak256" c n
     )
-    => ByteString 1024 c
+    => ByteString n c
     -> ByteString 256 c
 hashFunction = keccak @"Keccak256"
 
@@ -60,7 +60,7 @@ verifyAllocatorSignature :: forall n p q curve ctx.
      , KnownFFA q 'Auto ctx
      , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
      , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
-     , Keccak "Keccak256" ctx 1024
+     , Keccak "Keccak256" ctx 672
      , Keccak "Keccak256" ctx 512
      )
     => ByteString 256 ctx
@@ -71,8 +71,8 @@ verifyAllocatorSignature :: forall n p q curve ctx.
     -> Bool ctx
 verifyAllocatorSignature taskId validatorPublicKey allocatorPublicKey allocatorSignature schemaId = verifyVerdict
     where
-        params :: ByteString 1024 ctx
-        params = concat $ V.unsafeToVector [concat $ V.unsafeToVector [taskId, schemaId], resize $ dropN @160 (keccak @"Keccak256" validatorPublicKey) :: ByteString 512 ctx]
+        params :: ByteString 672 ctx
+        params = (taskId `append` schemaId) `append` dropN @160 (keccak @"Keccak256" validatorPublicKey)
 
         (r, s, _) = extractSignature @p allocatorSignature
 
@@ -144,6 +144,7 @@ zkPassSymbolicVerifier :: forall n p q curve ctx.
      , ScalarFieldOf (Point (Weierstrass curve) (FFA q 'Auto) ctx) ~ FFA p 'Auto ctx
      , CyclicGroup (Point (Weierstrass curve) (FFA q 'Auto) ctx)
      , Keccak "Keccak256" ctx 1024
+     , Keccak "Keccak256" ctx 672
      , Keccak "Keccak256" ctx 512
      )
     => ZKPassResult ctx
