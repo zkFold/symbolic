@@ -9,6 +9,7 @@ import           GHC.TypeLits                            (KnownNat)
 import           Prelude                                 hiding (Bool, Eq (..), concat, head, length, splitAt, (!!),
                                                           (&&), (*), (+))
 
+import           ZkFold.Algebra.Class                    (zero)
 import           ZkFold.Algebra.EllipticCurve.Class      hiding (Point)
 import qualified ZkFold.Data.Vector                      as V
 import           ZkFold.Data.Vector                      hiding (concat, append)
@@ -21,6 +22,8 @@ import           ZkFold.Symbolic.Data.ByteString         (ByteString, append, co
 import           ZkFold.Symbolic.Data.Combinators        (GetRegisterSize, Iso (..), NumberOfRegisters, RegisterSize (..))
 import           ZkFold.Symbolic.Data.EllipticCurve.Point (Point (..))
 import           ZkFold.Symbolic.Data.FFA                (FFA, KnownFFA, unsafeFromUInt)
+import           ZkFold.Symbolic.Data.FieldElement       (FieldElement)
+import           ZkFold.Symbolic.Data.UInt               (UInt, toNative)
 
 data ZKPassResult c = ZKPassResult
   { allocatorPublicKey :: ByteString 512 c
@@ -148,7 +151,7 @@ zkPassSymbolicVerifier :: forall n p q curve ctx.
      , Keccak "Keccak256" ctx 512
      )
     => ZKPassResult ctx
-    -> Bool ctx
+    -> FieldElement ctx
 zkPassSymbolicVerifier (ZKPassResult
     allocatorPublicKey
     allocatorSignature
@@ -169,4 +172,6 @@ zkPassSymbolicVerifier (ZKPassResult
         conditionValidatorSignatureCorrect = verifyValidatorSignature @n @p @q @curve
             taskId uHash publicFieldsHash validatorPublicKey validatorSignature schemaId
 
-    in conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
+        allConditions = conditionAllocatorSignatureCorrect && conditionHashEquality && conditionValidatorSignatureCorrect
+
+    in bool zero (toNative (from publicFieldsHash :: UInt 256 'Auto ctx)) allConditions
