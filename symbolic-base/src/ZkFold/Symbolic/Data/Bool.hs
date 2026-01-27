@@ -16,6 +16,7 @@ import qualified Data.Bool as Haskell
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.List.NonEmpty (NonEmpty (..))
+import GHC.Stack (HasCallStack)
 import Test.QuickCheck (Arbitrary (..), oneof)
 
 import ZkFold.Algebra.Class
@@ -27,7 +28,6 @@ import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Ord (Ord (..), Ordering (..))
-import GHC.Stack (HasCallStack)
 
 instance SymbolicData Bool
 

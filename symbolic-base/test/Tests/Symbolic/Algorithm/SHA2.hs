@@ -109,10 +109,13 @@ testAlgorithm file = do
         let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
         let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
         it bitMsgN $ toConstant (sha2Natural @algorithm @element bits input) `shouldBe` hash
-        it bitMsgS
-          ((toConstant (sha2Var @algorithm $ fromNatural @10000 @element bits input)
-           \\ unsafeAxiom @(1 <= PaddedLength 10000 (ChunkSize algorithm) (2 * WordSize algorithm)))
-           `shouldBe` hash)
+        it
+          bitMsgS
+          ( ( toConstant (sha2Var @algorithm $ fromNatural @10000 @element bits input)
+                \\ unsafeAxiom @(1 <= PaddedLength 10000 (ChunkSize algorithm) (2 * WordSize algorithm))
+            )
+              `shouldBe` hash
+          )
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file

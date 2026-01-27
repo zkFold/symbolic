@@ -20,6 +20,7 @@ import Data.Proxy (Proxy (..))
 import Data.Tuple (fst, snd)
 import Data.Type.Ord (OrderingI (..), type (>=))
 import GHC.Generics (Generic1, Par1 (..), type (:*:) (..), type (:.:) (..))
+import GHC.Stack (HasCallStack)
 import GHC.TypeNats (cmpNat)
 import Test.QuickCheck (Arbitrary (..), chooseInteger)
 import Text.Show (Show)
@@ -40,7 +41,6 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import ZkFold.Symbolic.Data.Witness (Witness (..))
-import GHC.Stack (HasCallStack)
 
 newtype Register (n :: Natural) c = MkRegister {fromRegister :: c}
   deriving stock (Functor, Generic1, Show)

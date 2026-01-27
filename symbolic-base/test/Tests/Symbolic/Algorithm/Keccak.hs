@@ -29,7 +29,7 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, Rate, keccak, keccakVar, ResultSizeInBits)
+import ZkFold.Symbolic.Algorithm.Hash.Keccak (AlgorithmSetup, Rate, ResultSizeInBits, keccak, keccakVar)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString
@@ -127,28 +127,30 @@ testAlgorithm file = do
                   inBSVar :: VarByteString 500_000 Element =
                     fromNatural (value @(bytes * 8)) input
                in ( toConstant @(ByteString (ResultSizeInBits (Rate algorithm)) Element)
-                      (keccak @algorithm @Element @(bytes * 8) inBS
-                        \\ unsafeAxiom
-                          @( Mod (bytes * 8) 8 ~ 0
-                           , 1
-                               <= ( Div (bytes * 8) 8
-                                      + ( Div (Rate algorithm) 8
-                                            - Mod (Div (bytes * 8) 8) (Div (Rate algorithm) 8)
-                                        )
-                                  )
-                               * 8
-                           ))
+                      ( keccak @algorithm @Element @(bytes * 8) inBS
+                          \\ unsafeAxiom
+                            @( Mod (bytes * 8) 8 ~ 0
+                             , 1
+                                 <= ( Div (bytes * 8) 8
+                                        + ( Div (Rate algorithm) 8
+                                              - Mod (Div (bytes * 8) 8) (Div (Rate algorithm) 8)
+                                          )
+                                    )
+                                 * 8
+                             )
+                      )
                   , toConstant @(ByteString (ResultSizeInBits (Rate algorithm)) Element)
-                      (keccakVar @algorithm @Element @500_000 inBSVar
-                        \\ unsafeAxiom
-                          @( 1
-                               <= ( 62500
-                                      + ( Div (Rate algorithm) 8
-                                            - Mod 62500 (Div (Rate algorithm) 8)
-                                        )
-                                  )
-                               * 8
-                           ))
+                      ( keccakVar @algorithm @Element @500_000 inBSVar
+                          \\ unsafeAxiom
+                            @( 1
+                                 <= ( 62500
+                                        + ( Div (Rate algorithm) 8
+                                              - Mod 62500 (Div (Rate algorithm) 8)
+                                          )
+                                    )
+                                 * 8
+                             )
+                      )
                   )
                     `shouldBe` (hash, hash)
  where
