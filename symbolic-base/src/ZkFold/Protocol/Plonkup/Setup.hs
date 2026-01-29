@@ -88,6 +88,7 @@ plonkupSetup
      , Foldable o
      , Binary (Rep i)
      , Arithmetic (ScalarFieldOf g1)
+     , Binary (ScalarFieldOf g1)
      , Pairing g1 g2 gt
      , KnownNat n
      , KnownNat (PlonkupPolyExtendedLength n)

@@ -10,23 +10,23 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import ZkFold.Algebra.EllipticCurve.Ed25519 (Ed25519_Base, Ed25519_Scalar)
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.UInt (uintToBSbe)
 
-type Ed25519_Point = AffinePoint (TwistedEdwards "ed25519") (FFA Ed25519_Base 'Auto)
+type Ed25519_Point = AffinePoint (TwistedEdwards "ed25519") (FFA Ed25519_Base)
 
 instance
   ( Symbolic ctx
-  , KnownFFA Ed25519_Base 'Auto ctx
-  , KnownFFA Ed25519_Scalar 'Auto ctx
+  , KnownFFA Ed25519_Base ctx
+  , KnownFFA Ed25519_Scalar ctx
   )
   => CyclicGroup (Ed25519_Point ctx)
   where
-  type ScalarFieldOf (Ed25519_Point ctx) = FFA Ed25519_Scalar 'Auto ctx
+  type ScalarFieldOf (Ed25519_Point ctx) = FFA Ed25519_Scalar ctx
   pointGen =
     pointXY
       (fromConstant (15112221349535400772501151409588531511454012693041857206046113283949847762202 :: Natural))
@@ -34,20 +34,20 @@ instance
 
 instance
   ( Symbolic ctx
-  , KnownFFA Ed25519_Base 'Auto ctx
-  , KnownFFA Ed25519_Scalar 'Auto ctx
+  , KnownFFA Ed25519_Base ctx
+  , KnownFFA Ed25519_Scalar ctx
   )
-  => Scale (FFA Ed25519_Scalar 'Auto ctx) (Ed25519_Point ctx)
+  => Scale (FFA Ed25519_Scalar ctx) (Ed25519_Point ctx)
   where
   scale ffa x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits Ed25519_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits Ed25519_Scalar ctx) ffa)
+    bits = uintToBSbe $ toUInt @(FFAMaxBits Ed25519_Scalar ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits Ed25519_Scalar ctx) -! 1

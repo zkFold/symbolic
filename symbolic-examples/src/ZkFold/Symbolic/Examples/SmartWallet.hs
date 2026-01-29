@@ -34,7 +34,6 @@ module ZkFold.Symbolic.Examples.SmartWallet (
 import qualified Data.Aeson as Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
-import Data.Foldable (foldrM)
 import Data.Word (Word8)
 import Deriving.Aeson
 import Foreign.C.String
@@ -51,8 +50,8 @@ import qualified ZkFold.Algebra.Number as Number
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit (..))
 import qualified ZkFold.ArithmeticCircuit as AC
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 import ZkFold.Data.Binary (toByteString)
-import ZkFold.Data.Vector (Vector)
 import qualified ZkFold.Data.Vector as V
 import ZkFold.FFI.Rust.Plonkup (rustPlonkupProve)
 import ZkFold.Prelude (log2ceiling)
@@ -73,16 +72,11 @@ import ZkFold.Protocol.Plonkup.Verifier.Commitments
 import ZkFold.Protocol.Plonkup.Verifier.Setup
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
-import ZkFold.Symbolic.Class (Symbolic (..))
-import qualified ZkFold.Symbolic.Compiler as C
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Symbolic.Class (Symbolic (constrain), (!<=))
+import ZkFold.Symbolic.Data.Class (Layout, SymbolicData, toLayout)
 import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Data.Input
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt (..), exp65537Mod)
-import ZkFold.Symbolic.Data.Vec (Vec (..), runVec)
-import ZkFold.Symbolic.Interpreter
-import ZkFold.Symbolic.MonadCircuit (newAssigned, rangeConstraint)
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.UInt
 import Prelude hiding (Fractional (..), Num (..), length, (^))
 import qualified Prelude as P
 
@@ -154,21 +148,21 @@ mkProof PlonkupProof {..} =
         , z2_xi'_int = convertZp z2_xi'
         , h1_xi'_int = convertZp h1_xi'
         , h2_xi_int = convertZp h2_xi
-        , l_xi = (ZKF . convertZp) <$> xs
+        , l_xi = ZKF . convertZp <$> xs
         , l1_xi = ZKF $ convertZp l1_xi
         }
 
 type ExpModCircuitGates = 2 ^ 18
 
-type ExpModLayout = (Vector 17 :*: Par1)
+type CircuitInput = Layout ExpModInput Fr :*: U1
 
-type ExpModCompiledInput = ((U1 :*: U1) :*: U1) :*: (ExpModLayout :*: U1)
+type CircuitOutput = Par1 :*: Par1
 
-type ExpModCircuit = ArithmeticCircuit Fr ExpModCompiledInput (Par1 :*: Par1)
+type ExpModCircuit = ArithmeticCircuit Fr CircuitInput CircuitOutput
 
 data ExpModInput c
   = ExpModInput
-  { emiSig :: UInt 2048 Auto c
+  { emiSig :: UInt 2048 c
   , emiTokenName :: FieldElement c
   }
   deriving (Generic, Generic1)
@@ -186,9 +180,7 @@ data ExpModOutput c
 
 deriving instance SymbolicData ExpModOutput
 
-deriving instance SymbolicInput ExpModOutput
-
-type PlonkupTs i n t = Plonkup i (Par1 :*: Par1) n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
+type PlonkupTs i n t = Plonkup i CircuitOutput n BLS12_381_G1_JacobianPoint BLS12_381_G2_JacobianPoint t (PolyVec Fr)
 
 type TranscriptConstraints ts =
   ( ToTranscript ts Word8
@@ -199,33 +191,19 @@ type TranscriptConstraints ts =
 
 expModContract
   :: forall c
-   . Symbolic c
-  => KnownNat (NumberOfRegisters (BaseField c) 4096 Auto)
-  => KnownNat (Ceil (GetRegisterSize (BaseField c) 4096 Auto) OrdWord)
-  => RSA.PublicKey 2048 c
-  -> ExpModInput c
-  -> ExpModOutput c
-expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) = ExpModOutput hashAsFE tokenNameAsFE
+   . (Symbolic c, KnownUInt 2048 c, KnownUInt 4096 c, KnownUInt 256 c)
+  => RSA.PublicKey 2048 c -> ExpModInput c -> ExpModOutput c
+expModContract RSA.PublicKey {..} (ExpModInput sig tokenNameAsFE) =
+  ExpModOutput hashAsFE tokenNameAsFE
  where
-  msgHash :: UInt 2048 Auto c
-  msgHash = exp65537Mod @c @2048 @2048 sig pubN
-
-  unpadded :: UInt 256 Auto c
-  unpadded = resize msgHash
-
-  rsize :: Natural
-  rsize = 2 ^ registerSize @(BaseField c) @256 @Auto
-
+  msgHash :: UInt 2048 c
+  msgHash = exp65537Mod @_ @2048 @2048 sig pubN
   -- UInt `mod` BLS12_381_Scalar is just weighted sum of its registers
-  --
-  hashAsFE :: FieldElement c
-  hashAsFE = FieldElement $ fromCircuitF (let UInt regs = unpadded in regs) $ \v -> do
-    z <- newAssigned (const zero)
-    ans <- foldrM (\i acc -> newAssigned $ \p -> scale rsize (p acc) + p i) z v
-    pure $ Par1 ans
+  hashAsFE = uintToFE (resizeUInt msgHash :: UInt 256 c)
 
 expModCircuit :: Natural -> Natural -> ExpModCircuit
-expModCircuit pubE' pubN' = runVec $ C.compile @Fr $ expModContract (RSA.PublicKey {..})
+expModCircuit pubE' pubN' =
+  compile @Fr id $ expModContract @(Elem Fr) $ RSA.PublicKey {..}
  where
   pubE = fromConstant pubE'
   pubN = fromConstant pubN'
@@ -235,12 +213,12 @@ expModSetup
    . TranscriptConstraints t
   => TrustedSetup (ExpModCircuitGates + 6)
   -> ExpModCircuit
-  -> SetupVerify (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+  -> SetupVerify (PlonkupTs CircuitInput ExpModCircuitGates t)
 expModSetup TrustedSetup {..} ac = setupV
  where
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
   plonkup = Plonkup omega k1 k2 ac g2_1 g1s
-  setupV = setupVerify @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
+  setupV = setupVerify @(PlonkupTs CircuitInput ExpModCircuitGates t) plonkup
 
 data ExpModProofInput
   = ExpModProofInput
@@ -262,25 +240,24 @@ expModProof
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> (Natural -> Natural -> ExpModCircuit)
   -> ExpModProofInput
-  -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+  -> Proof (PlonkupTs (Layout ExpModInput Fr) ExpModCircuitGates t)
 expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
  where
-  input :: ExpModInput (Interpreter Fr)
+  input :: ExpModInput Fr
   input =
     ExpModInput
       (fromConstant piSignature)
       (fromConstant piTokenName)
 
-  witnessInputs :: ExpModLayout Fr
-  witnessInputs = runInterpreter $ arithmetize input
-
-  paddedWitnessInputs :: ExpModCompiledInput Fr
-  paddedWitnessInputs = ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
+  witnessInputs :: CircuitInput Fr
+  witnessInputs = toLayout input :*: U1
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
-  plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
-  setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
-  witness = (PlonkupWitnessInput @ExpModCompiledInput @BLS12_381_G1_JacobianPoint paddedWitnessInputs, ps)
+  plonkup =
+    Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s
+      :: PlonkupTs CircuitInput ExpModCircuitGates t
+  setupP = setupProve @(PlonkupTs CircuitInput ExpModCircuitGates t) plonkup
+  witness = (PlonkupWitnessInput @CircuitInput @BLS12_381_G1_JacobianPoint witnessInputs, ps)
   (proof, _) = rustPlonkupProve setupP witness
 
 -------------------------------------------------------------------------------------------------------------------
@@ -339,21 +316,28 @@ expModProofMock TrustedSetup {..} ps empi = (proofInput, proof)
 -- A meaningless function with range and polynomial constraints for debugging
 -- The number of constraints depends on ExpModCircuitGatesMock
 --
-debugFun :: forall c. Symbolic c => Vec (Par1 :*: Par1) c -> Vec (Par1 :*: Par1) c
-debugFun (Vec cp) = Vec $ fromCircuitF cp $ \(Par1 i :*: _) -> do
-  o <- newAssigned $ \p -> p i + fromConstant @Natural 42
-  o' <- newAssigned $ \p -> p o * p i
-  let gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
-  let upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
-  rs <- mapM (\r -> newAssigned $ \p -> scale r (p o) + scale (42 :: Natural) (p o') + (p o * p o')) [1 .. gates]
-  mapM_ (\r -> rangeConstraint r (fromConstant upperBnd)) rs
-  a <- foldrM (\r a -> newAssigned (\p -> p a * p r)) o rs
-  out' <- newAssigned $ \p -> p a + p i
-  out <- newAssigned $ \p -> p out' - p a
-  pure $ (Par1 out :*: Par1 out)
+debugFun
+  :: forall c
+   . Symbolic c
+  => (FieldElement :*: FieldElement) c -> (FieldElement :*: FieldElement) c
+debugFun (i :*: _) =
+  let o = i + fromConstant @Natural 42
+      o' = o * i
+      gates = (Number.value @ExpModCircuitGatesMock -! 10) `P.div` 3
+      upperBnd = min (Number.value @ExpModCircuitGatesMock -! 1) 65535
+      rs =
+        map
+          ( (\r -> constrain (fromFieldElement r !<= fromConstant upperBnd) <$> r)
+              . (\r -> scale r o + scale (42 :: Natural) o' + o * o')
+          )
+          [1 .. gates]
+      a = foldr (flip (*)) o rs
+      out' = a + i
+      out = out' - a
+   in (out :*: out)
 
 debugCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
-debugCircuit = runVec $ C.compileWith @Fr AC.solder (\i -> (U1 :*: U1, i :*: U1)) debugFun
+debugCircuit = compile @Fr (:*: U1) $ debugFun @(Elem Fr)
 
 expModProofDebug
   :: forall t

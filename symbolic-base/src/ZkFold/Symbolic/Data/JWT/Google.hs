@@ -16,16 +16,13 @@ import Prelude (fmap, ($), (.))
 import qualified Prelude as P
 
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Symbolic.Algorithm.RSA as RSA
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT
 import ZkFold.Symbolic.Data.JWT.RS256
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
 -- | Json Web Token payload with information about the issuer, bearer and TTL
@@ -60,11 +57,7 @@ data GooglePayload ctx
   , plExp :: VarByteString 80 ctx
   -- ^ Expiration time (seconds since Unix epoch), a decimal number
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
-
-deriving instance HEq ctx => P.Eq (GooglePayload ctx)
-
-deriving instance HShow ctx => P.Show (GooglePayload ctx)
+  deriving (Generic, Generic1, SymbolicData)
 
 instance Symbolic ctx => Arbitrary (GooglePayload ctx) where
   arbitrary = genericArbitrary uniform

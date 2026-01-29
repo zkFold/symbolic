@@ -59,7 +59,6 @@ instance Eq Fr where
 instance ZkFold.Data.Eq.Eq Fr where
   type BooleanOf Fr = Bool
   (==) a b = (==) (r2h a) (r2h b)
-  (/=) a b = (/=) (r2h a) (r2h b)
 
 instance P.Enum Fr where
   succ = h2r . P.succ . r2h

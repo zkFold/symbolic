@@ -1,39 +1,31 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Tests.Symbolic.Data.FieldElement (specFieldElement) where
 
-import Data.Function (id, ($))
-import Data.List ((++))
-import Test.Hspec (Spec, describe)
+import Data.Function (flip, ($))
+import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck (arbitrary)
+import Test.QuickCheck.Instances ()
 import Prelude (Integer)
 
-import Tests.Symbolic.Data.Common (
-  specConstantRoundtrip,
-  specSymbolicFunction0,
-  specSymbolicFunction1,
-  specSymbolicFunction1WithPar,
-  specSymbolicFunction2,
- )
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
+import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Testing
 
-specFieldElement' :: forall p. PrimeField (Zp p) => Spec
-specFieldElement' = do
-  describe ("FieldElement" ++ " specification") $ do
-    specConstantRoundtrip @(Zp p) @FieldElement "FieldElement" "Zp" arbitrary
-    specSymbolicFunction1 @(Zp p) @FieldElement "identity" id
-    specSymbolicFunction0 @(Zp p) @FieldElement "zero" zero
-    specSymbolicFunction2 @(Zp p) @FieldElement "addition" (+)
-    specSymbolicFunction1 @(Zp p) @FieldElement "negation" negate
-    specSymbolicFunction2 @(Zp p) @FieldElement "subtraction" (-)
-    specSymbolicFunction0 @(Zp p) @FieldElement "one" one
-    specSymbolicFunction2 @(Zp p) @FieldElement "multiplication" (*)
-    specSymbolicFunction1 @(Zp p) @FieldElement "inversion" finv
-    specSymbolicFunction2 @(Zp p) @FieldElement "division" (//)
-    specSymbolicFunction1WithPar @Integer @(Zp p) @FieldElement "exponentiation" (\e x -> x ^ e)
+specFieldElement' :: forall p. Arithmetic (Zp p) => Spec
+specFieldElement' = describe "FieldElement specification" do
+  ringModelAxioms @FieldElement @(Zp p) arbitrary arbitrary
+  it "models inversion" $ commutative1 @(FieldElement (Zp p)) finv finv arbitrary
+  it "models division" $ commutative2 @(FieldElement (Zp p)) (//) (//) arbitrary
+  it "models exponentiation" $
+    commutativePar @Integer @(FieldElement (Zp p))
+      (flip (^))
+      (flip (^))
+      arbitrary
 
 -- Type-specific tests go here
 

@@ -21,7 +21,6 @@ import Prelude (Eq, Ord)
 
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Witness (WitnessF)
-import ZkFold.Symbolic.MonadCircuit (Witness, at)
 
 data LinVar a v = LinVar a v a | ConstVar a
   deriving
@@ -62,22 +61,7 @@ instance Semiring a => Monad (LinVar a) where
   LinVar k x b >>= f = b .+ scale k (f x)
   ConstVar c >>= _ = ConstVar c
 
-data NewVar
-  = EqVar ByteString
-  | FoldLVar ByteString ByteString
-  | FoldPVar ByteString ByteString
-  deriving
-    ( Binary
-    , Eq
-    , FromJSON
-    , FromJSONKey
-    , Generic
-    , NFData
-    , Ord
-    , Show
-    , ToJSON
-    , ToJSONKey
-    )
+type NewVar = ByteString
 
 type CircuitWitness a = WitnessF a NewVar
 
@@ -86,5 +70,5 @@ type Var a = LinVar a NewVar
 toVar :: Semiring a => NewVar -> Var a
 toVar = pure
 
-instance PrimeField a => Witness (Var a) (CircuitWitness a) where
-  at = evalVar pure
+at :: Var a -> CircuitWitness a
+at = evalVar pure

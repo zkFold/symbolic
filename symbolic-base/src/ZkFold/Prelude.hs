@@ -120,7 +120,7 @@ readFileJSON file = do
     Nothing -> P.error "ZkFold.Prelude.readFileJSON: invalid JSON"
     Just x -> return x
 
-assert :: Show a => Bool -> a -> x -> x
+assert :: (HasCallStack, Show a) => Bool -> a -> x -> x
 assert statement obj x = if statement then x else P.error (show obj)
 
 chooseNatural :: (Natural, Natural) -> Gen Natural

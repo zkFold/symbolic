@@ -4,13 +4,13 @@
 
 module ZkFold.Symbolic.Cardano.Types.Transaction where
 
-import GHC.Generics (Generic, Generic1, (:*:), type (:.:) (..))
-import ZkFold.Data.HFunctor.Classes (HEq)
+import GHC.Generics (Generic, Generic1, (:*:))
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Vector
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-import qualified Prelude as Haskell
 
 import ZkFold.Symbolic.Cardano.Types.Basic
 import ZkFold.Symbolic.Cardano.Types.Input (Input)
@@ -27,9 +27,4 @@ data Transaction inputs rinputs outputs tokens mint datum context = Transaction
   }
   deriving (Generic, Generic1, SymbolicData)
 
-deriving instance
-  HEq context
-  => Haskell.Eq (Transaction inputs rinputs outputs tokens mint datum context)
-
-instance SymbolicInput (Transaction inputs rinputs outputs tokens mint datum) where
-  isValid (Transaction _ txI _ _ _ _) = isValid (Comp1 txI)
+instance Symbolic c => Collect (ConstrainedDatum c) (Transaction i r o t m d c)

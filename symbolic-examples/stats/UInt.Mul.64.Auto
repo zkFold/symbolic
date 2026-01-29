@@ -1,5 +1,5 @@
 UInt.Mul.64.Auto
-Number of polynomial constraints: 148
-Number of variables: 279
-Number of lookup constraints: 136
-Number of lookup tables: 2
+Number of polynomial constraints: 119
+Number of variables: 132
+Number of lookup constraints: 8
+Number of lookup tables: 3

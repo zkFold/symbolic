@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Apps.KYC where
@@ -7,35 +8,26 @@ import Data.Aeson
 import Data.Functor ((<$>))
 import Data.Maybe (fromJust)
 import GHC.Generics (Generic)
-import ZkFold.Algebra.Class (FromConstant (fromConstant))
+import ZkFold.Algebra.Class (FromConstant (fromConstant), PrimeField)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Data.Eq (Eq ((==)), elem)
 import ZkFold.Data.Vector (Vector, head, tail, toVector)
-import ZkFold.Symbolic.Class (Symbolic (BaseField))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, not, (&&))
-import ZkFold.Symbolic.Data.ByteString (ByteString, Resize (resize), concat, toWords)
-import ZkFold.Symbolic.Data.Combinators (
-  Ceil,
-  GetRegisterSize,
-  Iso (..),
-  KnownRegisterSize,
-  KnownRegisters,
-  RegisterSize (..),
- )
-import ZkFold.Symbolic.Data.Ord (Ord ((>=)))
-import ZkFold.Symbolic.Data.UInt (OrdWord, UInt)
-import ZkFold.Symbolic.Interpreter (Interpreter)
+import ZkFold.Symbolic.Data.ByteString (ByteString, concat, resize, toWords)
+import ZkFold.Symbolic.Data.Ord ((>=))
+import ZkFold.Symbolic.Data.UInt
 import Prelude (String, error, ($), (.))
 
 type KYCByteString context = ByteString 256 context
 
-type KYCHash context = UInt 256 Auto context
+type KYCHash context = UInt 256 context
 
 {-
 >>> type Prime256_1 = 28948022309329048855892746252171976963363056481941560715954676764349967630337
 >>> :{
-exKYC :: KYCData (Interpreter (Zp Prime256_1))
+exKYC :: KYCData (Zp Prime256_1)
 exKYC = KYCData
   (fromConstant (1000 :: Natural))
   (fromConstant (2000 :: Natural))
@@ -49,32 +41,31 @@ data KYCData n context = KYCData
   { kycType :: KYCByteString context
   , kycValue :: ByteString n context
   , kycHash :: KYCHash context
-  , kycID :: UInt 64 Auto context
+  , kycID :: UInt 64 context
   }
   deriving Generic
 
-data User r context = User
-  { userAge :: UInt 64 r context
+data User context = User
+  { userAge :: UInt 64 context
   , userCountry :: ByteString 128 context
   }
   deriving Generic
 
-instance Symbolic context => FromJSON (KYCData 256 context)
+instance (Symbolic c, KnownUInt 256 c, KnownUInt 64 c) => FromJSON (KYCData 256 c)
 
-instance Symbolic (Interpreter (Zp p)) => ToJSON (KYCData 256 (Interpreter (Zp p)))
+instance
+  (PrimeField (Zp p), 3 <= p, KnownUInt 256 (Zp p), KnownUInt 64 (Zp p))
+  => ToJSON (KYCData 256 (Zp p))
 
 isCitizen :: Symbolic c => KYCByteString c -> Vector n (KYCByteString c) -> Bool c
 isCitizen = elem
 
 kycExample
-  :: forall n r rsc context
+  :: forall n rsc context
    . ( Symbolic context
+     , KnownUInt 64 context
      , KnownNat n
      , KnownNat rsc
-     , Eq (KYCHash context)
-     , KnownRegisterSize r
-     , KnownRegisters context 64 r
-     , KnownNat (Ceil (GetRegisterSize (BaseField context) 64 r) OrdWord)
      )
   => KYCData n context -> KYCHash context -> Bool context
 kycExample kycData hash =
@@ -85,8 +76,8 @@ kycExample kycData hash =
     correctHash :: Bool context
     correctHash = hash == kycHash kycData
 
-    user :: User r context
-    user = User (from $ head v) (concat $ tail v)
+    user :: User context
+    user = User (beBSToUInt $ head v) (concat $ tail v)
 
     validAge :: Bool context
     validAge = userAge user >= fromConstant (18 :: Natural)
@@ -96,16 +87,8 @@ kycExample kycData hash =
    in
     correctHash && validAge && validCountry
 
-userA
-  :: forall r context
-   . ( Symbolic context
-     , KnownRegisterSize r
-     )
-  => User r context
-userA =
-  User
-    (fromConstant (25 :: Natural))
-    (fromConstant $ iso3166 "JPN")
+userA :: forall c. (Symbolic c, KnownUInt 64 c) => User c
+userA = User (fromConstant (25 :: Natural)) (fromConstant $ iso3166 "JPN")
 
 iso3166 :: String -> Natural
 iso3166 = \case
@@ -118,9 +101,7 @@ iso3166 = \case
 
 restrictedCountries
   :: forall m context
-   . ( Symbolic context
-     , KnownNat m
-     )
+   . (Symbolic context, KnownNat m)
   => Vector m (ByteString 128 context)
 restrictedCountries =
   fromJust $

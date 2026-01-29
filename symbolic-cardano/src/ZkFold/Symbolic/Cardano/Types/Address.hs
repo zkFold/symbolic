@@ -5,13 +5,12 @@
 module ZkFold.Symbolic.Cardano.Types.Address where
 
 import GHC.Generics (Generic, Generic1)
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Data.HFunctor.Classes (HEq)
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Input
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-import qualified Prelude as Haskell
 
 import ZkFold.Symbolic.Cardano.Types.Basic
 
@@ -26,8 +25,6 @@ data Address context = Address
   , paymentCredential :: PaymentCredential context
   , stakingCredential :: StakingCredential context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Eq, Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (Address context)
-
-instance Symbolic context => Eq (Address context)
+instance Symbolic c => Collect (ConstrainedDatum c) (Address c)

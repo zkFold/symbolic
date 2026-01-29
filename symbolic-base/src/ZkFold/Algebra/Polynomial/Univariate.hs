@@ -219,7 +219,7 @@ mulAdaptive !l !r
   resultLen :: Int
   resultLen = V.length l P.+ V.length r P.- 1
 
-  dftP :: Integer
+  dftP :: Int
   dftP = ceiling @Double $ logBase 2 (fromIntegral resultLen)
 
   padDft :: Int
@@ -249,7 +249,7 @@ mulAdaptive !l !r
   lKaratsuba = padVector l padKaratsuba
   rKaratsuba = padVector r padKaratsuba
 
-mulDft :: forall c. Field c => Integer -> c -> V.Vector c -> V.Vector c -> V.Vector c
+mulDft :: forall c. Field c => Int -> c -> V.Vector c -> V.Vector c -> V.Vector c
 mulDft !p !w2n !lPadded !rPadded = c
  where
   pad :: Int

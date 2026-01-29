@@ -118,7 +118,6 @@ library
       ZkFold.Algebra.Number
       ZkFold.Algebra.Permutation
       ZkFold.Algebra.DFT
-      ZkFold.Algebra.VectorSpace
       ZkFold.Algebra.EllipticCurve.BLS12_381
       ZkFold.Algebra.EllipticCurve.BN254
       ZkFold.Algebra.EllipticCurve.Pasta
@@ -140,6 +139,7 @@ library
       ZkFold.Algorithm.Hash.MiMC.Constants
       ZkFold.Algorithm.Hash.Poseidon
       ZkFold.Algorithm.Hash.Poseidon.Constants
+      ZkFold.Algorithm.Interpolation
       ZkFold.ArithmeticCircuit
       ZkFold.ArithmeticCircuit.Arbitrary
       ZkFold.ArithmeticCircuit.Children
@@ -153,24 +153,22 @@ library
       ZkFold.ArithmeticCircuit.Var
       ZkFold.ArithmeticCircuit.Witness
       ZkFold.ArithmeticCircuit.WitnessEstimation
+      ZkFold.Control.BackwardsState
       ZkFold.Control.Conditional
-      ZkFold.Control.HApplicative
       ZkFold.Data.Bool
       ZkFold.Data.Binary
+      ZkFold.Data.Collect
       ZkFold.Data.Empty
       ZkFold.Data.Eq
       ZkFold.Data.FromList
-      ZkFold.Data.HFunctor
-      ZkFold.Data.HFunctor.Classes
-      ZkFold.Data.List.Infinite
+      ZkFold.Data.Iso
       ZkFold.Data.Matrix
       ZkFold.Data.Ord
       ZkFold.Data.Orphans
-      ZkFold.Data.Package
       ZkFold.Data.Product
       ZkFold.Data.Sparse.Matrix
       ZkFold.Data.Sparse.Vector
-      ZkFold.Data.Type
+      ZkFold.Data.Summoner
       ZkFold.Data.Utils
       ZkFold.Data.Vector
       ZkFold.Data.MerkleTree
@@ -181,23 +179,6 @@ library
       ZkFold.FFI.Rust.Types
       ZkFold.FFI.Rust.Plonkup
       ZkFold.FFI.Rust.Runner
-      ZkFold.Protocol.IVC
-      ZkFold.Protocol.IVC.Accumulator
-      ZkFold.Protocol.IVC.AccumulatorScheme
-      ZkFold.Protocol.IVC.AlgebraicMap
-      ZkFold.Protocol.IVC.CommitOpen
-      ZkFold.Protocol.IVC.Commit
-      ZkFold.Protocol.IVC.FiatShamir
-      ZkFold.Protocol.IVC.ForeignField
-      ZkFold.Protocol.IVC.Internal
-      ZkFold.Protocol.IVC.NARK
-      ZkFold.Protocol.IVC.OperationRecord
-      ZkFold.Protocol.IVC.Oracle
-      ZkFold.Protocol.IVC.Predicate
-      ZkFold.Protocol.IVC.RecursiveFunction
-      ZkFold.Protocol.IVC.SpecialSound
-      ZkFold.Protocol.IVC.VerifierCircuit
-      ZkFold.Protocol.IVC.WeierstrassWitness
       ZkFold.Protocol.KZG
       ZkFold.Protocol.Plonkup
       ZkFold.Protocol.Plonkup.LookupConstraint
@@ -240,15 +221,12 @@ library
       ZkFold.Symbolic.Algorithm.Hash.SHA2.Constants
       ZkFold.Symbolic.Algorithm.Mithril
       ZkFold.Symbolic.Algorithm.RSA
-      ZkFold.Symbolic.Algorithm.FFT
-      ZkFold.Symbolic.Algorithm.Interpolation
+      ZkFold.Symbolic.Boot
       ZkFold.Symbolic.Class
-      ZkFold.Symbolic.Compat
-      ZkFold.Symbolic.Compiler
+      ZkFold.Symbolic.Testing
       ZkFold.Symbolic.Data.Bool
       ZkFold.Symbolic.Data.ByteString
       ZkFold.Symbolic.Data.Class
-      ZkFold.Symbolic.Data.Combinators
       ZkFold.Symbolic.Data.EllipticCurve.BLS12_381
       ZkFold.Symbolic.Data.EllipticCurve.BN254
       ZkFold.Symbolic.Data.EllipticCurve.Ed25519
@@ -268,22 +246,17 @@ library
       ZkFold.Symbolic.Data.JWT.RS256
       ZkFold.Symbolic.Data.JWT.Twitch
       ZkFold.Symbolic.Data.JWT.Utils
-      ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
       ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
-      ZkFold.Symbolic.Data.Payloaded
+      ZkFold.Symbolic.Data.Register
       ZkFold.Symbolic.Data.Sum
       ZkFold.Symbolic.Data.UInt
+      ZkFold.Symbolic.Data.UIntData
+      ZkFold.Symbolic.Data.Unconstrained
       ZkFold.Symbolic.Data.UTCTime
-      ZkFold.Symbolic.Data.V2
       ZkFold.Symbolic.Data.VarByteString
-      ZkFold.Symbolic.Data.Vec
-      ZkFold.Symbolic.Fold
-      ZkFold.Symbolic.Interpreter
-      ZkFold.Symbolic.MonadCircuit
-      ZkFold.Symbolic.V2
-      ZkFold.Symbolic.WitnessContext
+      ZkFold.Symbolic.Data.Witness
     if arch(wasm32)
       exposed-modules:
         ZkFold.Protocol.NonInteractiveProof.WASM
@@ -316,9 +289,9 @@ library
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.6.0.0,
       distributive                               ,
-      generic-random                        < 1.6,
+      generic-random                             ,
       hashtables                                 ,
-      infinite-list                              ,
+      hspec                                < 2.12,
       lens                                       ,
       monoidal-containers                        ,
       mtl                                   < 2.4,
@@ -329,11 +302,9 @@ library
       scientific                            < 0.4,
       semialign                             < 1.4,
       semigroups                                 ,
-      split                               < 0.2.6,
       text                                       ,
       these                                 < 1.3,
       transformers                               ,
-      type-errors                         < 0.2.1,
       vector                               < 0.14,
       vector-binary-instances               < 0.3,
       vector-split                          < 1.1,
@@ -376,7 +347,6 @@ test-suite symbolic-base-test
       Tests.Data.Binary
       Tests.Data.MerkleTree
       Tests.FFI.Rust.Plonkup
-      Tests.Protocol.IVC
       Tests.Protocol.NonInteractiveProof
       Tests.Protocol.Plonkup
       Tests.Protocol.Plonkup.Update
@@ -387,17 +357,13 @@ test-suite symbolic-base-test
       Tests.Symbolic.Algorithm.Poseidon
       Tests.Symbolic.Algorithm.RSA
       Tests.Symbolic.Algorithm.SHA2
-      Tests.Symbolic.ArithmeticCircuit
       Tests.Symbolic.Compiler
-      Tests.Symbolic.Compiler.CompileWith
       Tests.Symbolic.Compiler.Optimization
       Tests.Symbolic.Data.ByteString
-      Tests.Symbolic.Data.Common
       Tests.Symbolic.Data.FFA
       Tests.Symbolic.Data.FieldElement
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
-      Tests.Symbolic.Data.List
       Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
@@ -413,8 +379,7 @@ test-suite symbolic-base-test
       random                                < 1.3,
       directory                        <= 1.3.8.5,
       filepath                         <= 1.5.2.0,
-      hspec                                < 2.12,
-      lens                                       ,
+      hspec                                      ,
       QuickCheck                                 ,
       quickcheck-instances                       ,
       regex-tdfa                       <= 1.3.2.2,

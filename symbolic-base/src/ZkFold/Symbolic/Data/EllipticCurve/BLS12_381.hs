@@ -12,18 +12,18 @@ import qualified ZkFold.Algebra.EllipticCurve.BLS12_381 as Haskell
 import ZkFold.Algebra.EllipticCurve.Class hiding (Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Haskell
 import ZkFold.Algebra.Number
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators
 import ZkFold.Symbolic.Data.EllipticCurve.Point
 import ZkFold.Symbolic.Data.FFA
+import ZkFold.Symbolic.Data.UInt (uintToBSbe)
 
 type BLS12_381_G1_Point =
-  Point (Weierstrass "BLS12-381-G1") (FFA BLS12_381_Base 'Auto)
+  Point (Weierstrass "BLS12-381-G1") (FFA BLS12_381_Base)
 
 instance
-  (Symbolic ctx, KnownFFA BLS12_381_Base Auto ctx)
+  (Symbolic ctx, KnownFFA BLS12_381_Base ctx)
   => FromConstant Haskell.BLS12_381_G1_Point (BLS12_381_G1_Point ctx)
   where
   fromConstant (Weierstrass (Haskell.Point x y b)) =
@@ -31,12 +31,12 @@ instance
 
 instance
   ( Symbolic ctx
-  , KnownFFA BLS12_381_Base 'Auto ctx
-  , KnownFFA BLS12_381_Scalar 'Auto ctx
+  , KnownFFA BLS12_381_Base ctx
+  , KnownFFA BLS12_381_Scalar ctx
   )
   => CyclicGroup (BLS12_381_G1_Point ctx)
   where
-  type ScalarFieldOf (BLS12_381_G1_Point ctx) = FFA BLS12_381_Scalar 'Auto ctx
+  type ScalarFieldOf (BLS12_381_G1_Point ctx) = FFA BLS12_381_Scalar ctx
   pointGen =
     pointXY
       ( fromConstant
@@ -48,21 +48,21 @@ instance
 
 instance
   ( Symbolic ctx
-  , KnownFFA BLS12_381_Base 'Auto ctx
-  , KnownFFA BLS12_381_Scalar 'Auto ctx
-  , FromConstant k (FFA BLS12_381_Scalar 'Auto ctx)
+  , KnownFFA BLS12_381_Base ctx
+  , KnownFFA BLS12_381_Scalar ctx
+  , FromConstant k (FFA BLS12_381_Scalar ctx)
   )
   => Scale k (BLS12_381_G1_Point ctx)
   where
-  scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar 'Auto ctx)) x =
+  scale (fromConstant -> (ffa :: FFA BLS12_381_Scalar ctx)) x =
     sum $
       Prelude.zipWith
-        (\b p -> bool zero p (isSet bits b))
+        (\b p -> bool zero p $ isSet bits b)
         [upper, upper -! 1 .. 0]
         (Prelude.iterate (\e -> e + e) x)
    where
     bits :: ByteString (FFAMaxBits BLS12_381_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa)
+    bits = uintToBSbe $ toUInt @(FFAMaxBits BLS12_381_Scalar ctx) ffa
 
     upper :: Natural
     upper = value @(FFAMaxBits BLS12_381_Scalar ctx) -! 1

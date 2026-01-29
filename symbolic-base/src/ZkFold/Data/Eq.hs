@@ -7,12 +7,16 @@ module ZkFold.Data.Eq where
 import Data.Bool (Bool)
 import qualified Data.Eq as Haskell
 import Data.Foldable (Foldable)
+import Data.Functor (Functor)
 import Data.Functor.Constant (Constant)
 import Data.Int (Int)
 import Data.Maybe (Maybe (..))
+import Data.Ord (Ordering)
 import qualified Data.Ord as Haskell
 import Data.Ratio (Rational)
+import Data.Semialign (Semialign, alignWith)
 import Data.String (String)
+import Data.These (These (..))
 import Data.Type.Equality (type (~))
 import GHC.Generics ((:.:))
 import qualified GHC.Generics as G
@@ -34,14 +38,10 @@ class BoolType (BooleanOf a) => Eq a where
     -> BooleanOf a
   x == y = geq (G.from x) (G.from y)
 
-  infix 4 /=
-  (/=) :: a -> a -> BooleanOf a
-  default (/=)
-    :: (G.Generic a, GEq (G.Rep a), BooleanOf a ~ GBooleanOf (G.Rep a))
-    => a
-    -> a
-    -> BooleanOf a
-  x /= y = gneq (G.from x) (G.from y)
+infix 4 /=
+
+(/=) :: Eq a => a -> a -> BooleanOf a
+x /= y = not (x == y)
 
 elem :: (Eq a, Foldable t) => a -> t a -> BooleanOf a
 elem x = any (== x)
@@ -52,7 +52,6 @@ newtype HaskellEqOrd a = HaskellEqOrd {runHaskellEqOrd :: a}
 instance Haskell.Eq a => Eq (HaskellEqOrd a) where
   type BooleanOf (HaskellEqOrd a) = Bool
   (==) = (Haskell.==)
-  (/=) = (Haskell./=)
 
 deriving via (HaskellEqOrd Natural) instance Eq Natural
 
@@ -62,16 +61,26 @@ deriving via (HaskellEqOrd Int) instance Eq Int
 
 deriving via (HaskellEqOrd Bool) instance Eq Bool
 
+deriving via (HaskellEqOrd Ordering) instance Eq Ordering
+
 deriving via (HaskellEqOrd String) instance Eq String
 
 deriving via (HaskellEqOrd Rational) instance Eq Rational
+
+newtype SemialignEqOrd f a = MkSemialignEqOrd {fromSemialignEqOrd :: f a}
+  deriving (Foldable, Functor, Semialign)
+
+instance (Foldable f, Semialign f, Eq a) => Eq (SemialignEqOrd f a) where
+  type BooleanOf (SemialignEqOrd f a) = BooleanOf a
+  MkSemialignEqOrd f == MkSemialignEqOrd g = and (alignWith combine f g)
+   where
+    combine = \case These x y -> x == y; _ -> false
 
 instance Eq a => Eq (Maybe a) where
   type BooleanOf (Maybe a) = BooleanOf a
   Just x == Just y = x == y
   Nothing == Nothing = true
   _ == _ = false
-  x /= y = not (x == y)
 
 instance Eq a => Eq (Constant a b)
 
@@ -83,7 +92,6 @@ instance Eq (f (g a)) => Eq ((:.:) f g a)
 
 instance {-# OVERLAPPING #-} Eq (f a) => Eq ((f G.:*: G.U1) a) where
   (x G.:*: _) == (y G.:*: _) = x == y
-  (x G.:*: _) /= (y G.:*: _) = x /= y
 
 instance (Eq (f a), Eq (g a), BooleanOf (f a) ~ BooleanOf (g a)) => Eq ((f G.:*: g) a)
 

@@ -93,7 +93,6 @@ instance Conditional (MerkleHash (Just 2)) (MerkleHash n) where
 instance Eq (MerkleHash n) where
   type BooleanOf (MerkleHash n) = MerkleHash (Just 2)
   M x == M y = merkleHash (Eq, x, y)
-  M x /= M y = merkleHash (Neq, x, y)
 
 instance Field (MerkleHash (Just n)) where
   finv (M x) = merkleHash (Mul, x)
@@ -111,7 +110,7 @@ instance BoolType (MerkleHash (Just 2)) where
   xor = (+)
 
 instance Semigroup (MerkleHash (Just 3)) where
-  x <> y = ordering x y x x
+  x <> y = merkleHash (Ordering, x, y)
 
 instance Monoid (MerkleHash (Just 3)) where
   mempty = fromConstant (0 :: Natural)
@@ -123,7 +122,6 @@ instance IsOrdering (MerkleHash (Just 3)) where
 
 instance Ord (MerkleHash n) where
   type OrderingOf (MerkleHash n) = MerkleHash (Just 3)
-  ordering (M x) (M y) (M z) (M o) = merkleHash (Ordering, x, y, z, o)
   compare (M x) (M y) = merkleHash (Cmp, x, y)
 
 instance SemiEuclidean (MerkleHash Nothing) where

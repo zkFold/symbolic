@@ -1,38 +1,37 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.JWT.Utils where
 
-import Control.DeepSeq (force)
 import qualified Data.Aeson as JSON
 import qualified Data.ByteString as BS
-import Data.Constraint (Dict (..), withDict, (:-) (..))
-import Data.Constraint.Nat (Max, divNat, minusNat, plusNat, timesNat)
-import Data.Constraint.Unsafe (unsafeAxiom, unsafeSNat)
+import Data.Constraint (Dict (..), unmapDict, (:-) (..), (\\))
+import Data.Constraint.Nat
+import Data.Foldable (toList)
 import Data.Maybe (fromMaybe)
 import Data.Scientific (toBoundedInteger)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
-import GHC.Generics (Par1 (..))
-import GHC.TypeLits (withKnownNat)
-import Prelude (fmap, pure, ($), (.), (<$>), type (~))
+import Prelude (fmap, ($), (.), (<$>), type (~))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
-import ZkFold.Data.HFunctor (hmap)
-import ZkFold.Data.Vector ((!!))
-import qualified ZkFold.Data.Vector as V
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.ByteString (ByteString (..), concat, toWords)
-import ZkFold.Symbolic.Data.Combinators
+import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Data.Bool
+import ZkFold.Data.Eq ((==))
+import ZkFold.Data.Ord ((<=))
+import ZkFold.Data.Summoner (NumExpr (..), summon)
+import ZkFold.Data.Vector (empty, (.:))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.ByteString (ByteString (..), beBSToReg, concat, regToBSbe, resize, toWords)
 import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Data.Register hiding (feToReg)
 import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), wipeUnassigned)
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- | The lowest number of bits to store the padded length of a bytestring of @n@ bits
 type BufLen n = Max (Log2 n + 1) 3
@@ -48,141 +47,125 @@ type ASCII (n :: Natural) = (Div n 6) * 8
 -- Helper axioms
 ---------------------------------------------------------------------------------------------------
 
-knownBufLen' :: forall n. KnownNat n :- KnownNat (BufLen n)
-knownBufLen' = Sub $ withKnownNat @(BufLen n) (unsafeSNat $ P.max (ilog2 (value @n) + 1) 3) Dict
+knownBufLen :: forall n. (KnownNat n, 1 <= n) :- KnownNat (BufLen n)
+knownBufLen = unmapDict \Dict ->
+  Dict \\ summon @((NLog2 (NConst n) :+ NConst 1) `NMax` NConst 3)
 
-knownBufLen :: forall n {r}. KnownNat n => (KnownNat (BufLen n) => r) -> r
-knownBufLen = withDict (knownBufLen' @n)
+knownNext6 :: forall n. KnownNat n :- KnownNat (Next6 n)
+knownNext6 = unmapDict \Dict ->
+  Dict \\ summon @(((NConst n :+ NConst 5) :/ NConst 6) :* NConst 6)
 
-monoAdd :: forall (a :: Natural) (b :: Natural) (c :: Natural). (a <= b) :- (a <= (c + b))
-monoAdd = Sub unsafeAxiom
+knownAscii :: forall n. KnownNat n :- KnownNat (ASCII n)
+knownAscii = unmapDict \Dict ->
+  Dict \\ summon @((NConst n :/ NConst 6) :* NConst 8)
 
-oneReg :: forall n c. Dict (NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n)) ~ 1)
-oneReg = unsafeAxiom -- @BufLen n@ is always greater than 2
+bufLenPos :: forall n. Dict (1 <= BufLen n)
+bufLenPos =
+  Dict
+    \\ leTrans @1 @3 @(BufLen n)
+    \\ maxMonotone1 @0 @(Log2 n + 1) @3
+    \\ zeroLe @(Log2 n + 1)
 
-knownOneReg' :: forall n c. Dict (KnownRegisters c (BufLen n) ('Fixed (BufLen n)))
-knownOneReg' = withKnownNat @(NumberOfRegisters (BaseField c) (BufLen n) ('Fixed (BufLen n))) (unsafeSNat 1) Dict
+next6Pos :: forall n. (1 <= n) :- (1 <= Next6 n)
+next6Pos = unmapDict \Dict ->
+  Dict
+    \\ leTrans @1 @6 @(Next6 n)
+    \\ timesMonotone1 @1 @(Div (n + 5) 6) @6
+    \\ divMonotone1 @6 @(n + 5) @6
+    \\ plusMonotone1 @1 @n @5
 
-knownOneReg
-  :: forall n c {r}. (KnownRegisters c (BufLen n) ('Fixed (BufLen n)) => r) -> r
-knownOneReg = withDict (knownOneReg' @n @c)
+monoAdd :: forall a b c. (a <= b) :- (a <= (c + b))
+monoAdd = unmapDict \Dict ->
+  Dict
+    \\ leTrans @a @(c + a) @(c + b)
+    \\ plusMonotone1 @0 @c @a
+    \\ zeroLe @c
+    \\ plusMonotone2 @c @a @b
 
-knownNumWords'
-  :: forall n c
-   . KnownNat n
-    :- KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
-knownNumWords' =
-  Sub $
-    withKnownNat @(Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord)
-      (unsafeSNat $ knownBufLen @n $ wordSize (value @(BufLen n)))
-      Dict
- where
-  wordSize :: Natural -> Natural
-  wordSize n = (n + (value @OrdWord) -! 1) `div` (value @OrdWord)
-
-knownNumWords
-  :: forall n c {r}
-   . KnownNat n
-  => (KnownNat (Div (GetRegisterSize (BaseField c) (BufLen n) ('Fixed (BufLen n)) + OrdWord - 1) OrdWord) => r) -> r
-knownNumWords = withDict (knownNumWords' @n @c)
-
-withDiv :: forall n {r}. KnownNat n => (KnownNat (Div ((n + OrdWord) - 1) OrdWord) => r) -> r
-withDiv =
-  withDict (plusNat @n @OrdWord) $
-    withDict (monoAdd @1 @OrdWord @n) $
-      withDict (minusNat @(n + OrdWord) @1) $
-        withDict (divNat @(n + OrdWord - 1) @OrdWord)
-
-withNext6 :: forall n {r}. KnownNat n => (KnownNat (Next6 n) => r) -> r
-withNext6 =
-  withDict (plusNat @n @5) $
-    withDict (divNat @(n + 5) @6) $
-      withDict (timesNat @(Div (n + 5) 6) @6)
-
-withAscii :: forall n {r}. KnownNat n => (KnownNat (ASCII n) => r) -> r
-withAscii =
-  withDict (divNat @n @6) $
-    withDict (timesNat @(Div n 6) @8)
-
-divMul :: forall a b. (Mod a b ~ 0) :- ((Div a b) * b ~ a)
-divMul = Sub unsafeAxiom
+divMul :: forall a b. (Mod a b ~ 0, 1 <= b) :- (Div a b * b ~ a)
+divMul = unmapDict \Dict ->
+  Dict
+    \\ timesCommutes @b @(Div a b)
+    \\ euclideanNat @b @a
 
 mulMod :: forall n. Dict (Mod (Next6 n) 6 ~ 0)
-mulMod = unsafeAxiom
-
-withDivMul :: forall a b {r}. Mod a b ~ 0 => ((Div a b) * b ~ a => r) -> r
-withDivMul = withDict (divMul @a @b)
+mulMod =
+  Dict
+    \\ dividesDef @6 @(Next6 n)
+    \\ gcdOne @(Div (n + 5) 6)
+    \\ timesDistributesOverGcd @6 @1 @(Div (n + 5) 6)
+    \\ timesCommutes @6 @(Div (n + 5) 6)
 
 ---------------------------------------------------------------------------------------------------
 
-feToUInt :: forall n ctx. Symbolic ctx => FieldElement ctx -> UInt (BufLen n) ('Fixed (BufLen n)) ctx
-feToUInt (FieldElement c) = UInt $ withDict (oneReg @n @ctx) $ hmap (V.singleton . unPar1) c
-
-uintToFe :: forall n ctx. Symbolic ctx => UInt (BufLen n) ('Fixed (BufLen n)) ctx -> FieldElement ctx
-uintToFe (UInt v) = FieldElement $ withDict (oneReg @n @ctx) $ hmap (Par1 . V.item) v
+feToReg :: forall n ctx. FieldElement ctx -> Register (BufLen n) ctx
+feToReg (FieldElement c) = MkRegister c
 
 -- | The smallest multiple of 6 not less than the given UInt
 padTo6
   :: forall n ctx
-   . Symbolic ctx
-  => KnownNat n
-  => UInt (BufLen n) ('Fixed (BufLen n)) ctx
-  -> FieldElement ctx
-padTo6 ui = FieldElement $ fromCircuitF v $ \bits ->
-  do
-    val <- horner $ V.fromVector bits
-
-    toPad <- newAssigned $ \p -> fromConstant @Natural 6 - p val
-    valBits <- V.unsafeToVector @3 <$> expansion 3 toPad
-
-    f <- newAssigned $ \p -> one - p (valBits !! 1) * p (valBits !! 2)
-    hi1 <- newAssigned $ \p -> p f * p (valBits !! 1)
-    hi2 <- newAssigned $ \p -> p f * p (valBits !! 2)
-    res <- horner [valBits !! 0, hi1, hi2]
-
-    pure $ Par1 res
- where
-  UInt v =
-    knownBufLen @n $
-      knownNumWords @n @ctx $
-        knownOneReg @n @ctx $
-          withDiv @(BufLen n) $
-            ui `mod` fromConstant @Natural 6
+   . (KnownNat n, 1 <= n, Symbolic ctx)
+  => Register (BufLen n) ctx -> FieldElement ctx
+padTo6 ui =
+  let v =
+        modR @_ @(BufLen n) (extendR @4 ui) (constant @6)
+          \\ plusAssociates @(BufLen n) @3 @1
+          \\ plusCommutes @3 @(BufLen n)
+          \\ knownBufLen @n
+   in case toList $ bitsOfR (constant @6 .-. v) of
+        [b0, b1, b2] ->
+          let f = not (b1 && b2)
+           in regToFE $ fromBinaryR $ b0 .: (f && b1) .: (f && b2) .: empty
+        _ -> P.error "padTo6: impossible" -- TODO cons-lists rep for vectors
 
 -- | Increase capacity of a VarByteString and increase its length to the nearest multiple of 6
 -- Required for base64 encoding.
 padBytestring6
   :: forall n ctx
-   . Symbolic ctx
-  => KnownNat n
+   . (Symbolic ctx, KnownNat n, 1 <= n)
   => VarByteString n ctx -> VarByteString (Next6 n) ctx
-padBytestring6 VarByteString {..} = VarByteString (bsLength + mod6) (withNext6 @n $ VB.shiftL newBuf mod6)
+padBytestring6 VarByteString {..} =
+  VarByteString
+    (bsLength + mod6)
+    (VB.shiftL newBuf mod6 \\ next6Pos @n \\ knownNext6 @n)
  where
-  mod6 = padTo6 @n $ feToUInt @n bsLength
-  newBuf = withNext6 @n $ resize bsBuffer
+  mod6 = padTo6 @n $ feToReg @n bsLength
+  newBuf :: ByteString (Next6 n) ctx
+  newBuf = resize bsBuffer \\ knownNext6 @n
 
 -- | Convert a base64-encoded string into an ASCII-encoded string
 -- It is expected that both capacity and length of the input bytestring are divisible by 6
 -- If either of them is not, apply @padBytestring6@ first.
 base64ToAscii
   :: forall n ctx
-   . Symbolic ctx
-  => KnownNat n
-  => Mod n 6 ~ 0
+   . (Symbolic ctx, KnownNat n, 6 <= n, Mod n 6 ~ 0)
   => VarByteString n ctx -> VarByteString (ASCII n) ctx
-base64ToAscii VarByteString {..} = withAscii @n $ wipeUnassigned $ VarByteString newLen result
+base64ToAscii VarByteString {..} =
+  wipeUnassigned (VarByteString newLen result)
+    \\ knownAscii @n
+    \\ leTrans @1 @8 @(Div n 6 * 8)
+    \\ timesMonotone1 @1 @(Div n 6) @8
+    \\ divMonotone1 @6 @n @6
  where
-  words6 = withDivMul @n @6 $ toWords @(Div n 6) @6 bsBuffer
+  words6 = toWords @(Div n 6) @6 bsBuffer \\ divMul @n @6
   ascii = word6ToAscii <$> words6
-  result = force $ concat ascii
 
+  result :: ByteString (ASCII n) ctx
+  result = concat ascii
+
+  newLen :: FieldElement ctx
   newLen =
-    knownBufLen @n $
-      withDiv @(BufLen n) $
-        knownOneReg @n @ctx $
-          knownNumWords @n @ctx $
-            scale (4 :: Natural) . (uintToFe @n) . (`div` fromConstant @Natural 3) . (feToUInt @n) $
-              bsLength
+    scale
+      (4 :: Natural)
+      ( regToFE $
+          divR @_ @(BufLen n)
+            (extendR @3 $ feToReg @n bsLength)
+            (constant @3)
+      )
+      \\ plusAssociates @(BufLen n) @2 @1
+      \\ plusCommutes @(BufLen n) @2
+      \\ knownBufLen @n
+      \\ leTrans @1 @6 @n
 
 {-
     Symbols  |  Base64url  |  ASCII
@@ -192,47 +175,17 @@ base64ToAscii VarByteString {..} = withAscii @n $ wipeUnassigned $ VarByteString
     -            62          45
     _            63          95
 -}
-word6ToAscii :: forall ctx. Symbolic ctx => ByteString 6 ctx -> ByteString 8 ctx
-word6ToAscii (ByteString bs) = force $ ByteString $ fromCircuitF bs $ \bits ->
-  do
-    let bitsSym = V.fromVector bits
-
-    fe <- horner (P.reverse bitsSym)
-
-    z <- newAssigned (P.const zero)
-    o <- newAssigned (P.const one)
-
-    let bits25 = [z, o, o, z, z, o]
-        bits51 = [o, o, z, z, o, o]
-        bits61 = [o, o, o, o, z, o]
-        bits62 = [o, o, o, o, o, z]
-
-    isAZ <- blueprintGE @6 bits25 bitsSym
-    leaz <- blueprintGE @6 bits51 bitsSym
-    le09 <- blueprintGE @6 bits61 bitsSym
-    ledash <- blueprintGE @6 bits62 bitsSym
-
-    isaz <- newAssigned $ \p -> p leaz * (one - p isAZ)
-    is09 <- newAssigned $ \p -> p le09 * (one - p leaz)
-    isdash <- newAssigned $ \p -> p ledash * (one - p le09)
-    isus <- newAssigned $ \p -> one - p ledash
-
-    asciiAZ <- newAssigned $ \p -> p isAZ * (p fe + fromConstant @Natural 65)
-    asciiaz <- newAssigned $ \p -> p isaz * (p fe + fromConstant @Natural 71)
-    ascii09 <- newAssigned $ \p -> p is09 * (p fe - fromConstant @Natural 4)
-    asciidash <- newAssigned $ \p -> p isdash * (p fe - fromConstant @Natural 17)
-    asciius <- newAssigned $ \p -> p isus * (p fe + fromConstant @Natural 32)
-
-    s1 <- newAssigned $ \p -> p asciiAZ + p asciiaz
-    s2 <- newAssigned $ \p -> p ascii09 + p s1
-    s3 <- newAssigned $ \p -> p asciidash + p s2
-    s4 <- newAssigned $ \p -> p asciius + p s3
-
-    V.unsafeToVector . P.reverse <$> expansion 8 s4
+word6ToAscii :: Symbolic ctx => ByteString 6 ctx -> ByteString 8 ctx
+word6ToAscii (beBSToReg -> reg) =
+  regToBSbe $
+    ifThenElse (reg <= extendR (constant @25)) (extendR reg .+. constant @65) $
+      ifThenElse (reg <= constant @51) (extendR reg .+. constant @(97 - 26)) $
+        ifThenElse (reg <= constant @61) (extendR reg .-. extendR (constant @(61 - 57))) $
+          ifThenElse (reg == constant @62) (extendR reg .-. extendR (constant @(62 - 45))) $
+            extendR (reg .+. constant @(95 - 63))
 
 -- We store everything as ByteStrings for simplicity.
 -- We need to convert ints and bools to strings to avoid conversion errors
---
 stringify :: JSON.Value -> JSON.Value
 stringify (JSON.Number s) =
   JSON.String

@@ -48,6 +48,7 @@ import ZkFold.Data.Binary
 import ZkFold.Data.Eq
 import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (iterate', log2ceiling)
+import ZkFold.Symbolic.Class (Symbolic (..))
 
 ------------------------------ Prime Fields -----------------------------------
 
@@ -145,7 +146,6 @@ instance Prime p => Exponent (Zp p) Integer where
 instance KnownNat n => Eq (Zp n) where
   type BooleanOf (Zp n) = Bool
   (==) = (Haskell.==)
-  (/=) = (Haskell./=)
 
 instance Prime p => Field (Zp p) where
   --    finv (Zp a) = fromConstant $ inv a (value @p)
@@ -178,9 +178,11 @@ instance (Finite (Zp p), Prime p) => PrimeField (Zp p) where
   type IntegralOf (Zp p) = Integer
   toIntegral = fromConstant . toConstant
 
+instance (Finite (Zp p), Prime p, 3 <= p) => Symbolic (Zp p)
+
 instance Prime p => BinaryExpansion (Zp p) where
   type Bits (Zp p) = [Zp p]
-  binaryExpansion = Haskell.map (Zp . fromConstant) . binaryExpansion . fromZp
+  binaryExpansion = Haskell.map fromConstant . binaryExpansion . fromZp
 
 instance KnownNat p => Haskell.Num (Zp p) where
   fromInteger = toZp

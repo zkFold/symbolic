@@ -49,6 +49,7 @@ instance
      , Compressible g1
      , Eq gt
      , Arithmetic (ScalarFieldOf g1)
+     , Binary (ScalarFieldOf g1)
      , Binary (Rep i)
      , ToTranscript ts Word8
      , ToTranscript ts (ScalarFieldOf g1)

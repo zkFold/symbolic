@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module ZkFold.Symbolic.Data.JWT (
   IsSymbolicJSON (..),
@@ -14,29 +15,25 @@ module ZkFold.Symbolic.Data.JWT (
   tokenBits,
 ) where
 
-import Control.DeepSeq (NFData, force)
 import Data.Aeson (FromJSON (..), genericParseJSON)
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
-import Data.Constraint (withDict)
+import Data.Constraint ((\\))
+import Data.Constraint.Nat
 import Data.Kind (Type)
 import GHC.Generics (Generic, Generic1)
 import GHC.TypeLits (Symbol)
 import Prelude (($), (.))
-import qualified Prelude as P
 
 import ZkFold.Algebra.Number
-import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators hiding (toBits)
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.JWT.Utils
-import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), (@+))
+import ZkFold.Symbolic.Data.VarByteString (VarByteString (..), fromType, (@+))
 import qualified ZkFold.Symbolic.Data.VarByteString as VB
 
 -- | Types than can be represented as a Symbolic JSON string
-class IsSymbolicJSON a c where
+class (KnownNat (MaxLength a), 1 <= MaxLength a) => IsSymbolicJSON a c where
   type MaxLength a :: Natural
   toJsonBits :: a c -> VarByteString (MaxLength a) c
 
@@ -47,10 +44,10 @@ class IsBits a c where
 
 -- | Signing algorithm for JWT (such as RS256)
 class SigningAlgorithm (alg :: Symbol) where
-  type SKey alg (ctx :: (Type -> Type) -> Type) :: Type
-  type VKey alg (ctx :: (Type -> Type) -> Type) :: Type
-  type Signature alg (ctx :: (Type -> Type) -> Type) :: Type
-  type Hash alg (ctx :: (Type -> Type) -> Type) :: Type
+  type SKey alg (ctx :: Type) :: Type
+  type VKey alg (ctx :: Type) :: Type
+  type Signature alg (ctx :: Type) :: Type
+  type Hash alg (ctx :: Type) :: Type
 
 -- | Types that can act as JWT Payload
 class IsTokenPayload (alg :: Symbol) a c where
@@ -67,13 +64,7 @@ data TokenHeader ctx
   , hdTyp :: VarByteString 32 ctx
   -- ^ Type of token
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
-
-deriving instance HEq ctx => P.Eq (TokenHeader ctx)
-
-deriving instance HShow ctx => P.Show (TokenHeader ctx)
-
-deriving instance HNFData ctx => NFData (TokenHeader ctx)
+  deriving (Generic, Generic1, SymbolicData)
 
 instance Symbolic ctx => FromJSON (TokenHeader ctx) where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
@@ -81,14 +72,13 @@ instance Symbolic ctx => FromJSON (TokenHeader ctx) where
 instance Symbolic ctx => IsSymbolicJSON TokenHeader ctx where
   type MaxLength TokenHeader = 648
   toJsonBits TokenHeader {..} =
-    force $
-      (fromType @"{\"alg\":\"")
-        @+ hdAlg
-        `VB.append` (fromType @"\",\"kid\":\"")
-        @+ hdKid
-        `VB.append` (fromType @"\",\"typ\":\"")
-        @+ hdTyp
-        `VB.append` (fromType @"\"}")
+    fromType @"{\"alg\":\""
+      @+ hdAlg
+      `VB.append` (fromType @"\",\"kid\":\"")
+      @+ hdKid
+      `VB.append` (fromType @"\",\"typ\":\"")
+      @+ hdTyp
+      `VB.append` (fromType @"\"}")
 
 instance Symbolic ctx => IsBits TokenHeader ctx where
   type BitCount TokenHeader = 864
@@ -97,10 +87,15 @@ instance Symbolic ctx => IsBits TokenHeader ctx where
 toAsciiBits
   :: forall a ctx
    . IsSymbolicJSON a ctx
-  => KnownNat (MaxLength a)
   => Symbolic ctx
   => a ctx -> VarByteString (ASCII (Next6 (MaxLength a))) ctx
-toAsciiBits = withNext6 @(MaxLength a) $ withDict (mulMod @(MaxLength a)) $ base64ToAscii . padBytestring6 . toJsonBits
+toAsciiBits =
+  base64ToAscii . padBytestring6 . toJsonBits
+    \\ knownNext6 @(MaxLength a)
+    \\ mulMod @(MaxLength a)
+    \\ timesMonotone1 @1 @(Div (MaxLength a + 5) 6) @6
+    \\ divMonotone1 @6 @(MaxLength a + 5) @6
+    \\ plusMonotone1 @1 @(MaxLength a) @5
 
 type TokenBits a c = (IsBits a c, KnownNat (872 + BitCount a))
 
@@ -112,7 +107,7 @@ tokenBits
   -> p ctx
   -> VarByteString (864 + 8 + BitCount p) ctx
 tokenBits h p =
-  force $
-    toBits h
-      @+ (fromType @".")
-      @+ toBits p
+  toBits h @+ (fromType @".") @+ toBits p
+    \\ leTrans @1 @872 @(872 + BitCount p)
+    \\ plusMonotone2 @872 @0 @(BitCount p)
+    \\ zeroLe @(BitCount p)

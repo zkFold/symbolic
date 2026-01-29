@@ -1,5 +1,5 @@
 Pallas.Add
-Number of polynomial constraints: 57
-Number of variables: 56
-Number of lookup constraints: 0
-Number of lookup tables: 0
+Number of polynomial constraints: 512
+Number of variables: 551
+Number of lookup constraints: 40
+Number of lookup tables: 5

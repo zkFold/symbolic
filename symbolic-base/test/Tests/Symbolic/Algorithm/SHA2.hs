@@ -1,15 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Tests.Symbolic.Algorithm.SHA2 (specSHA2Natural, specSHA2) where
 
 import Control.Monad (forM_)
+import Data.Binary (Binary)
 import Data.Bits (shiftR)
+import Data.Constraint ((\\))
+import Data.Constraint.Unsafe (unsafeAxiom)
 import Data.Function (($))
-import Data.Functor ((<$>))
+import Data.Functor (fmap, (<$>))
 import Data.List (isPrefixOf, isSuffixOf, take, (++))
 import Data.List.Split (splitOn)
 import Data.Proxy (Proxy (..))
-import GHC.Generics (U1)
 import GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import System.Directory (listDirectory)
 import System.Environment (lookupEnv)
@@ -26,14 +29,13 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, exec)
+import ZkFold.ArithmeticCircuit.Elem (Elem, exec)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Algorithm.Hash.SHA2
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.ByteString
 import ZkFold.Symbolic.Data.VarByteString (fromNatural)
-import ZkFold.Symbolic.Interpreter (Interpreter (Interpreter))
 
 -- | These test files are provided by the Computer Security Resource Center.
 -- Passing these tests is a requirement for having an implementation of a hashing function officially validated.
@@ -94,19 +96,26 @@ readTestCase s = (numBits, msg, hash)
 testAlgorithm
   :: forall (algorithm :: Symbol) element
    . KnownSymbol algorithm
-  => SHA2N algorithm (Interpreter element)
-  => KnownNat (Log2 (ChunkSize algorithm))
-  => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
+  => Arithmetic element
+  => SHA2N algorithm element
+  => ToConstant (ByteString (ResultSize algorithm) element)
   => FilePath
   -> Spec
 testAlgorithm file = do
   testCases <- runIO (readRSP $ dataDir </> file)
   describe description $
-    forM_ testCases $ \(bits, input, hash) -> do
-      let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
-      let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
-      it bitMsgN $ toConstant (sha2Natural @algorithm @(Interpreter element) bits input) `shouldBe` hash
-      it bitMsgS $ toConstant (sha2Var @algorithm @(Interpreter element) @10000 $ fromNatural bits input) `shouldBe` hash
+    forM_ testCases $ \(bits, input, hash) ->
+      do
+        let bitMsgN = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is Natural)"
+        let bitMsgS = "calculates hash on a message of " <> Haskell.show bits <> " bits (input is VarByteString)"
+        it bitMsgN $ toConstant (sha2Natural @algorithm @element bits input) `shouldBe` hash
+        it
+          bitMsgS
+          ( ( toConstant (sha2Var @algorithm $ fromNatural @10000 @element bits input)
+                \\ unsafeAxiom @(1 <= PaddedLength 10000 (ChunkSize algorithm) (2 * WordSize algorithm))
+            )
+              `shouldBe` hash
+          )
  where
   description :: String
   description = "Testing " <> symbolVal (Proxy @algorithm) <> " on " <> file
@@ -115,9 +124,9 @@ testAlgorithm file = do
 specSHA2Natural'
   :: forall (algorithm :: Symbol) element
    . KnownSymbol algorithm
-  => SHA2N algorithm (Interpreter element)
-  => KnownNat (Log2 (ChunkSize algorithm))
-  => ToConstant (ByteString (ResultSize algorithm) (Interpreter element))
+  => Arithmetic element
+  => SHA2N algorithm element
+  => ToConstant (ByteString (ResultSize algorithm) element)
   => Spec
 specSHA2Natural' = do
   testFiles <- runIO $ getTestFiles @algorithm
@@ -132,36 +141,33 @@ specSHA2Natural = do
   specSHA2Natural' @"SHA512/224" @(Zp BLS12_381_Scalar)
   specSHA2Natural' @"SHA512/256" @(Zp BLS12_381_Scalar)
 
-eval
-  :: forall a n
-   . Arithmetic a
-  => ByteString n (ArithmeticCircuit a U1) -> Vector n a
-eval (ByteString bits) = exec bits
+eval :: (Arithmetic a, Binary a) => ByteString n (Elem a) -> Vector n a
+eval (exec -> ByteString bits) = fromBool <$> bits
 
 specSHA2bs
   :: forall (n :: Natural) (algorithm :: Symbol)
    . KnownSymbol algorithm
-  => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) n
-  => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
+  => SHA2 algorithm (Elem (Zp BLS12_381_Scalar)) n
+  => SHA2N algorithm (Zp BLS12_381_Scalar)
   => Spec
 specSHA2bs = do
   let n = value @n
       m = 2 ^ n
   it ("calculates " <> symbolVal (Proxy @algorithm) <> " of a " <> Haskell.show n <> "-bit bytestring") $ withMaxSuccess 2 $ do
     x <- toss m
-    let hashAC = sha2 @algorithm @(ArithmeticCircuit (Zp BLS12_381_Scalar) U1) @n $ fromConstant x
-        ByteString (Interpreter hashZP) = sha2Natural @algorithm @(Interpreter (Zp BLS12_381_Scalar)) n x
-    pure $ eval @(Zp BLS12_381_Scalar) @(ResultSize algorithm) hashAC === hashZP
+    let hashAC = sha2 @algorithm @(Elem (Zp BLS12_381_Scalar)) @n $ fromConstant x
+        ByteString hashZP = sha2Natural @algorithm @(Zp BLS12_381_Scalar) n x
+    pure $ eval hashAC === fmap fromBool hashZP
 
 -- | Test the implementation of a hashing algorithm with @ArithmeticCircuit (Zp BLS12_381_Scalar)@ as base field for ByteStrings.
 specSHA2'
   :: forall (algorithm :: Symbol)
    . KnownSymbol algorithm
-  => SHA2N algorithm (Interpreter (Zp BLS12_381_Scalar))
-  => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1
-  => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 63
-  => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 64
-  => SHA2 algorithm (ArithmeticCircuit (Zp BLS12_381_Scalar) U1) 1900
+  => SHA2N algorithm (Zp BLS12_381_Scalar)
+  => SHA2 algorithm (Elem (Zp BLS12_381_Scalar)) 1
+  => SHA2 algorithm (Elem (Zp BLS12_381_Scalar)) 63
+  => SHA2 algorithm (Elem (Zp BLS12_381_Scalar)) 64
+  => SHA2 algorithm (Elem (Zp BLS12_381_Scalar)) 1900
   => Spec
 specSHA2' = do
   specSHA2bs @1 @algorithm

@@ -1,157 +1,122 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
-module ZkFold.Symbolic.Class where
+module ZkFold.Symbolic.Class (
+  LookupTable (..),
+  Poly,
+  Constraint (..),
+  (=!=),
+  rangeTable,
+  (!<=),
+  Symbolic (..),
+  Arithmetic,
+  assigned,
+  plot,
+) where
 
-import Control.DeepSeq (NFData)
-import Control.Monad
-import Data.Bool (Bool)
-import Data.Eq (Eq)
-import Data.Foldable (Foldable)
-import Data.Function ((.))
+import Control.Applicative (pure)
+import Data.Binary (Binary)
+import Data.Foldable (Foldable, toList)
+import Data.Function (id, ($), (.))
 import Data.Functor ((<$>))
-import Data.Kind (Type)
-import Data.Ord (Ord)
-import Data.Traversable (traverse)
-import Data.Type.Equality (type (~))
-import GHC.Generics (type (:.:) (unComp1))
+import Data.Functor.Rep (Rep, Representable)
+import Data.List (intercalate, (++))
+import Data.Semialign (Semialign, align)
+import Data.Set (Set, singleton)
+import Data.These (mergeThese)
+import Data.Traversable (Traversable)
+import Data.Type.Ord (type (<=))
+import GHC.Generics (Par1 (..), (:*:) (..))
+import GHC.Integer (Integer)
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
-import Prelude (Enum, Integer, Traversable)
+import Text.Show (Show (..))
 
 import ZkFold.Algebra.Class
-import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
-import ZkFold.Data.Eq (BooleanOf)
-import ZkFold.Data.HFunctor.Classes (HNFData)
-import ZkFold.Data.Package (Package (pack))
-import ZkFold.Data.Product (uncurryP)
-import ZkFold.Symbolic.MonadCircuit
+import ZkFold.Algebra.Polynomial.Multivariate.Expression
+import ZkFold.Data.Bool (all, any, (&&))
+import ZkFold.Data.Eq (BooleanOf, (==))
+import ZkFold.Data.FromList (FromList)
+import ZkFold.Data.Ord ((<=))
+import ZkFold.Prelude (assert)
 
--- | Field of residues with decidable equality and ordering
--- is called an ``arithmetic'' field.
-type Arithmetic a =
-  ( PrimeField a
-  , IntegralOf a ~ Integer
-  , ToConstant a
-  , Const a ~ Natural
-  , BooleanOf a ~ Bool
-  , Eq a
-  , Ord a
-  , Enum a
-  , NFData a
-  )
+-- | @LookupTable f@ is a type of compact @f@-ary lookup table descriptions
+-- using ideas from relational algebra.
+data LookupTable f where
+  -- | @Ranges@ describes a set of disjoint segments of the base field.
+  Ranges :: Set (Natural, Natural) -> LookupTable Par1
+  -- | @Product t u@ is a cartesian product of tables @t@ and @u@.
+  Product :: LookupTable f -> LookupTable g -> LookupTable (f :*: g)
+  -- | @Plot f x@ is a plot of a function @f@ with @x@ as a domain.
+  Plot
+    :: (Representable f, FromList f, Binary (Rep f), Semialign g, Foldable g)
+    => (forall w. (PrimeField w, 3 <= Order w) => f w -> g w)
+    -> LookupTable f
+    -> LookupTable (f :*: g)
 
--- | A type of mappings between functors inside a circuit.
--- @fs@ are input functors, @g@ is an output functor, @c@ is context.
---
--- A function is a mapping between functors inside a circuit if,
--- given an arbitrary builder of circuits @m@ over @c@ with arbitrary @i@ as
--- variables, it maps @f@ many inputs to @g@ many outputs using @m@.
---
--- NOTE: the property above is correct by construction for each function of a
--- suitable type, you don't have to check it yourself.
-type CircuitFun (fs :: [Type -> Type]) (g :: Type -> Type) (c :: (Type -> Type) -> Type) =
-  forall i m. (NFData i, MonadCircuit i (BaseField c) (WitnessField c) m) => FunBody fs g i m
+lookupTable
+  :: (PrimeField a, 3 <= Order a) => LookupTable f -> f a -> BooleanOf a
+lookupTable (Ranges rs) (Par1 (toIntegral -> x)) =
+  any (\(lo, hi) -> fromConstant lo <= x && x <= fromConstant hi) rs
+lookupTable (Product k l) (f :*: g) = lookupTable k f && lookupTable l g
+lookupTable (Plot f l) (xs :*: ys) =
+  lookupTable l xs && all ((== zero) . mergeThese (-)) (f xs `align` ys)
 
-type family FunBody (fs :: [Type -> Type]) (g :: Type -> Type) (i :: Type) (m :: Type -> Type) where
-  FunBody '[] g i m = m (g i)
-  FunBody (f ': fs) g i m = f i -> FunBody fs g i m
+instance Show (LookupTable f) where
+  show (Ranges rs) =
+    intercalate
+      " ∪ "
+      ["[" ++ show lo ++ "; " ++ show hi ++ "]" | (lo, hi) <- toList rs]
+  show (Product k l) = "(" ++ show k ++ ") x (" ++ show l ++ ")"
+  show (Plot _ l) = "{ (x, f(x)) | x ∈ " ++ show l ++ "}"
 
-type Ctx = (Type -> Type) -> Type
+type Poly a = forall b. Ring b => (a -> b) -> b
 
--- | A Symbolic DSL for performant pure computations with arithmetic circuits.
--- @c@ is a generic context in which computations are performed.
-class
-  ( HApplicative c
-  , Package c
-  , HNFData c
-  , Arithmetic (BaseField c)
-  , PrimeField (WitnessField c)
-  , FromConstant (BaseField c) (WitnessField c)
-  , Scale (BaseField c) (WitnessField c)
-  , NFData (WitnessField c)
-  ) =>
-  Symbolic (c :: Ctx)
-  where
-  -- | Base algebraic field over which computations are performed.
-  type BaseField c :: Type
+data Constraint a where
+  Polynomial :: Poly a -> Constraint a
+  Lookup :: Traversable f => LookupTable f -> f a -> Constraint a
 
-  -- | Type of witnesses usable inside circuit construction
-  type WitnessField c :: Type
+evalConstraint :: (PrimeField a, 3 <= Order a) => Constraint a -> BooleanOf a
+evalConstraint (Polynomial p) = p id == zero
+evalConstraint (Lookup t f) = lookupTable t f
 
-  -- | Computes witnesses (exact value may depend on the input to context).
-  witnessF :: Functor f => c f -> f (WitnessField c)
+instance Show a => Show (Constraint a) where
+  show (Polynomial p) = show (p pure :: Polynomial Integer a) ++ " =!= 0"
+  show (Lookup t f) = show (toList f) ++ " ∈! " ++ show t
 
-  -- | To perform computations in a generic context @c@ -- that is, to form a
-  -- mapping between @c f@ and @c g@ for given @f@ and @g@ -- you need to
-  -- provide an algorithm for turning @f@ into @g@ inside a circuit.
-  fromCircuitF :: (Functor f, Functor g) => c f -> CircuitFun '[f] g c -> c g
+infix 2 =!=
 
-  -- | If there is a simpler implementation of a function in pure context,
-  -- you can provide it via 'sanityF' to use it in pure contexts.
-  sanityF :: BaseField c ~ a => c f -> (f a -> g a) -> (c f -> c g) -> c g
-  sanityF x _ f = f x
+(=!=) :: Poly a -> Poly a -> Constraint a
+p =!= q = Polynomial (p - q)
 
--- | Embeds the pure value(s) into generic context @c@.
-embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
-embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
+rangeTable :: Natural -> LookupTable Par1
+rangeTable = Ranges . singleton . (0,)
 
--- | Embeds unconstrained witness value(s) into generic context @c@.
-embedW :: (Symbolic c, Traversable f) => f (WitnessField c) -> c f
-embedW ws = fromCircuitF hunit (\_ -> traverse unconstrained ws)
+(!<=) :: a -> Natural -> Constraint a
+x !<= u = Lookup (rangeTable u) (Par1 x)
 
-symbolicF
-  :: (Symbolic c, BaseField c ~ a, Functor f, Functor g)
-  => c f
-  -> (f a -> g a)
-  -> CircuitFun '[f] g c
-  -> c g
-symbolicF x f c = sanityF x f (`fromCircuitF` c)
+newtype Failed a = Failed (Constraint a)
 
--- | Runs the binary function from @f@ and @g@ into @h@ in a generic context @c@.
-symbolic2F
-  :: (Symbolic c, BaseField c ~ a, Functor f, Functor g, Functor h)
-  => c f
-  -> c g
-  -> (f a -> g a -> h a)
-  -> CircuitFun '[f, g] h c
-  -> c h
-symbolic2F x y f m = symbolicF (hpair x y) (uncurryP f) (uncurryP m)
+instance Show a => Show (Failed a) where
+  show (Failed c) = "Failed constraint: " ++ show c
 
--- | Runs the binary @'CircuitFun'@ in a generic context.
-fromCircuit2F
-  :: (Symbolic c, Functor f, Functor g, Functor h)
-  => c f -> c g -> CircuitFun '[f, g] h c -> c h
-fromCircuit2F x y m = fromCircuitF (hpair x y) (uncurryP m)
+class (PrimeField c, 3 <= Order c) => Symbolic c where
+  constrain :: HasCallStack => Constraint c -> c -> c
+  default constrain
+    :: (Decidable c, Show c, HasCallStack) => Constraint c -> c -> c
+  constrain c = assert (evalConstraint c) (Failed c)
 
--- | Runs the ternary function from @f@, @g@ and @h@ into @k@ in a context @c@.
-symbolic3F
-  :: (Symbolic c, BaseField c ~ a, Functor f, Functor g, Functor h, Functor k)
-  => c f
-  -> c g
-  -> c h
-  -> (f a -> g a -> h a -> k a)
-  -> CircuitFun '[f, g, h] k c
-  -> c k
-symbolic3F x y z f m = symbolic2F (hpair x y) z (uncurryP f) (uncurryP m)
+-- | 'Decidable' 'Symbolic' field is called 'Arithmetic'.
+type Arithmetic a = (Symbolic a, Decidable a)
 
--- | Runs the ternary @'CircuitFun'@ in a generic context.
-fromCircuit3F
-  :: (Symbolic c, Functor f, Functor g, Functor h, Functor k)
-  => c f -> c g -> c h -> CircuitFun '[f, g, h] k c -> c k
-fromCircuit3F x y z m = fromCircuit2F (hpair x y) z (uncurryP m)
+assigned :: (Symbolic c, HasCallStack) => Poly c -> c
+assigned p = let x = p id in constrain (($ x) =!= p) x
 
--- | Given a generic context @c@, runs the function from @f@ many @c g@'s into @c h@.
-symbolicVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w)
-  => (Foldable f, Functor f, Functor g, Functor h)
-  => f (c g)
-  -> (f (g a) -> h a)
-  -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i))
-  -> c h
-symbolicVF xs f m = symbolicF (pack xs) (f . unComp1) (m . unComp1)
-
--- | Given a generic context @c@, runs the @'CircuitFun'@ from @f@ many @c g@'s into @c h@.
-fromCircuitVF
-  :: (Symbolic c, BaseField c ~ a, WitnessField c ~ w)
-  => (Foldable f, Functor f, Functor g, Functor h)
-  => f (c g) -> (forall i m. MonadCircuit i a w m => f (g i) -> m (h i)) -> c h
-fromCircuitVF xs m = fromCircuitF (pack xs) (m . unComp1)
+plot
+  :: (HasCallStack, Symbolic c, Representable f, Binary (Rep f))
+  => (FromList f, Traversable f, Semialign g, Traversable g)
+  => (forall a. (PrimeField a, 3 <= Order a) => f a -> g a)
+  -> LookupTable f
+  -> f c
+  -> g c
+plot f t x = let y = f x in constrain (Lookup (Plot f t) (x :*: y)) <$> y

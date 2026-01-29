@@ -4,11 +4,12 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
   hashFn,
 ) where
 
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Symbolic.Algorithm.Hash.MiMC qualified as MiMC
 import ZkFold.Symbolic.Class (Symbolic)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash qualified as Symbolic.Hash
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 
 -- | Hash type used in the zkFold ledger.
 type Hash = Symbolic.Hash.Hash HashSimple
@@ -18,7 +19,7 @@ type Hash = Symbolic.Hash.Hash HashSimple
 -- | Simplified hash type, that is just synonym of field element.
 type HashSimple = FieldElement
 
-hashFn :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
+hashFn :: (Collect (ConstrainedDatum c) x, Symbolic c) => x -> HashSimple c
 hashFn =
   -- TODO: (#730) Move to Poseidon hash.
   MiMC.hash

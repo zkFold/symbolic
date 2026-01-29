@@ -1,7 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Data.Vector (
   module ZkFold.Data.Vector,
@@ -13,6 +14,7 @@ import Control.DeepSeq (NFData, NFData1)
 import Control.Monad (Monad)
 import Control.Monad.State.Strict (runState, state)
 import Data.Aeson (FromJSON (..), ToJSON (..), ToJSON1)
+import Data.Bifunctor (Bifunctor (first))
 import Data.Bool (otherwise)
 import Data.Constraint.Nat (Max)
 import Data.Distributive (Distributive (..))
@@ -45,18 +47,14 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field
 import ZkFold.Algebra.Number
 import ZkFold.Data.Binary (Binary (..))
-import ZkFold.Data.Bool
 import ZkFold.Data.Eq
+import ZkFold.Data.Ord (Ord)
 import ZkFold.Prelude (length)
 
 newtype Vector (size :: Natural) a = Vector {toV :: V.Vector a}
   deriving (Eq1, Foldable, Functor, Generic, NFData, NFData1, P.Eq, P.Ord, Show, Show1, Traversable)
   deriving newtype (FromJSON, OpenApi.ToSchema, Swagger.ToSchema, ToJSON, ToJSON1)
-
-instance Eq x => Eq (Vector n x) where
-  type BooleanOf (Vector n x) = BooleanOf x
-  u == v = V.foldl (&&) true (V.zipWith (==) (toV u) (toV v))
-  u /= v = V.foldl (||) false (V.zipWith (/=) (toV u) (toV v))
+  deriving (Eq, Ord) via (SemialignEqOrd (Vector size) a)
 
 instance KnownNat size => Representable (Vector size) where
   type Rep (Vector size) = Zp size
@@ -229,6 +227,9 @@ alignRight !v1 !v2 = unsafeToVector $ P.reverse $ align (P.reverse $ fromVector 
 --
 alignLeft :: forall m n a b. Vector m a -> Vector n b -> Vector (Max m n) (These a b)
 alignLeft !v1 !v2 = unsafeToVector $ align (fromVector v1) (fromVector v2)
+
+(//) :: Vector n a -> [(Zp n, a)] -> Vector n a
+(//) (Vector v) = Vector . V.unsafeUpd v . fmap (first $ P.fromEnum . fromZp)
 
 instance Zip (Vector size) where
   zip (Vector !as) (Vector !bs) = Vector $ V.zip as bs

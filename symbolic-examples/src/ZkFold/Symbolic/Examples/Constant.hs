@@ -24,7 +24,8 @@ import ZkFold.Symbolic.Examples.Eq (exampleEq, exampleEqVector)
 exampleConst :: Symbolic c => FieldElement c
 exampleConst = fromConstant (5 :: Natural)
 
-exampleConditionalConst :: Symbolic c => Bool c -> FieldElement c -> FieldElement c
+exampleConditionalConst
+  :: Symbolic c => Bool c -> FieldElement c -> FieldElement c
 exampleConditionalConst b x = exampleConditional b x exampleConst
 
 exampleConditionalConstConst :: Symbolic c => Bool c -> FieldElement c
@@ -34,7 +35,5 @@ exampleEqConst :: Symbolic c => FieldElement c -> Bool c
 exampleEqConst = exampleEq exampleConst
 
 exampleEqVectorConst
-  :: (KnownNat n, Symbolic c)
-  => (Vector n :.: FieldElement) c
-  -> Bool c
+  :: (KnownNat n, Symbolic c) => (Vector n :.: FieldElement) c -> Bool c
 exampleEqVectorConst = exampleEqVector (Comp1 $ tabulate $ const exampleConst)

@@ -6,8 +6,8 @@ module ZkFold.Symbolic.Examples.UtxoAccumulator where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.ByteString (ByteString)
-import Data.Function (const, flip, ($))
-import Data.Functor (fmap)
+import Data.Function (flip, ($))
+import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (tabulate)
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import ZkFold.Algebra.Class (fromConstant, one, toConstant, zero, (+), (-!))
@@ -15,10 +15,10 @@ import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_G1_Point, BLS12_381_G2_
 import ZkFold.Algebra.EllipticCurve.Class (ScalarFieldOf)
 import ZkFold.Algebra.Number (KnownNat, value)
 import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
-import ZkFold.ArithmeticCircuit (ArithmeticCircuit, solder)
+import ZkFold.ArithmeticCircuit (ArithmeticCircuit, hmap)
+import ZkFold.ArithmeticCircuit.Elem (Elem, compile)
 import ZkFold.Data.Binary (Binary)
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor (hmap)
+import ZkFold.Data.Eq (Eq (..), (/=))
 import ZkFold.Data.Vector (Vector, unsafeToVector)
 import ZkFold.Prelude (length, replicate, take, (!!))
 import ZkFold.Protocol.NonInteractiveProof (NonInteractiveProof (setupProve, setupVerify), prove)
@@ -33,11 +33,8 @@ import ZkFold.Protocol.Plonkup.Verifier (PlonkupVerifierSetup)
 import ZkFold.Protocol.Plonkup.Witness (PlonkupWitnessInput (..))
 import ZkFold.Symbolic.Algorithm.Hash.MiMC (hash)
 import ZkFold.Symbolic.Class (Arithmetic, Symbolic)
-import ZkFold.Symbolic.Compiler (compileWith)
 import ZkFold.Symbolic.Data.Bool (Bool (..), all, any, (&&))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Vec (runVec)
-import ZkFold.Symbolic.Interpreter (Interpreter)
 import Prelude ((++))
 
 utxoAccumulator
@@ -66,15 +63,11 @@ utxoAccumulatorCircuit
   => ArithmeticCircuit a (UtxoAccumulatorInput n) (UtxoAccumulatorOutput n)
 utxoAccumulatorCircuit =
   hmap (\(i1 :*: Comp1 i2 :*: Comp1 i3) -> i1 :*: fmap unPar1 i2 :*: fmap unPar1 i3)
-    $ runVec
-    $ compileWith
-      solder
+    $ compile
       ( \(i1 :*: i2 :*: i3) ->
-          ( Comp1 (tabulate $ const U1) :*: Comp1 (tabulate $ const U1) :*: (U1 :*: U1) :*: U1
-          , Comp1 (fmap Par1 i1) :*: Comp1 (fmap Par1 i2) :*: i3 :*: U1
-          )
+          Comp1 (Par1 <$> i1) :*: Comp1 (Par1 <$> i2) :*: i3 :*: U1
       )
-    $ utxoAccumulator @n
+    $ utxoAccumulator @n @(Elem a)
 
 utxoAccumulatorInput
   :: forall n a
@@ -155,7 +148,7 @@ utxoAccumulatorHash
   -> ScalarFieldOf BLS12_381_G1_Point
 utxoAccumulatorHash a r =
   let
-    f = fromConstant @(ScalarFieldOf BLS12_381_G1_Point) @(FieldElement (Interpreter (ScalarFieldOf BLS12_381_G1_Point)))
+    f = fromConstant @(ScalarFieldOf BLS12_381_G1_Point) @(FieldElement (ScalarFieldOf BLS12_381_G1_Point))
    in
     toConstant $ hash (f a :*: f r)
 

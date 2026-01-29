@@ -1,24 +1,21 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.Hash where
 
-import Control.Monad (return)
-import Data.Function (($))
-import Data.Functor.Identity (Identity (Identity))
+import Data.Function ((.))
+import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes (HShow)
-import ZkFold.Symbolic.Class (Symbolic, fromCircuit2F)
-import ZkFold.Symbolic.Data.Bool (Bool (..), SymbolicEq)
-import ZkFold.Symbolic.Data.Class (SymbolicData (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
-import ZkFold.Symbolic.MonadCircuit (constraint)
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Bool (Bool (..))
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Data.Unconstrained
 
 -- | A generic hashing interface for Symbolic DSL.
 -- 'h' is the result of the hashing algorithm;
@@ -33,37 +30,38 @@ class Hashable h a where
 -- | An invertible hash 'h' of a symbolic datatype 'a'.
 data Hash h a c = Hash
   { hHash :: h c
-  , hValue :: Payloaded Identity a c
+  , hValue :: Unconstrained a c
   }
-  deriving (G.Generic, G.Generic1, SymbolicInput)
+  deriving (G.Generic, G.Generic1)
 
 instance (SymbolicData h, SymbolicData a) => SymbolicData (Hash h a)
 
-instance (Symbolic c, SymbolicEq h c) => Eq (Hash h a c)
+instance (SymbolicInput h, SymbolicData a) => SymbolicInput (Hash h a) where
+  isValid = isValid . hHash -- FIXME: check validity of 'hValue'
+
+instance Collect (ConstrainedDatum c) (h c) => Collect (ConstrainedDatum c) (Hash h a c)
+
+instance Eq (h c) => Eq (Hash h a c) where
+  type BooleanOf (Hash h a c) = BooleanOf (h c)
+  Hash h _ == Hash h' _ = h == h'
 
 deriving stock instance
-  (Haskell.Show (h c), HShow c, Haskell.Show (Payloaded Identity a c)) => Haskell.Show (Hash h a c)
+  (Haskell.Show (h c), Haskell.Show (Unconstrained a c))
+  => Haskell.Show (Hash h a c)
 
 -- | Restorably hash the data.
 hash :: (Hashable (h c) (a c), SymbolicData a, Symbolic c) => a c -> Hash h a c
-hash a = hasher a `Hash` payloaded (Identity a)
+hash a = hasher a `Hash` unconstrain a
 
 -- | Restore the data which were hashed.
 preimage
   :: forall h a c
    . ( Hashable (h c) (a c)
+     , Eq (h c)
+     , BooleanOf (h c) ~ Bool c
      , SymbolicData a
-     , SymbolicEq h c
      , Symbolic c
      )
   => Hash h a c
   -> a c
-preimage Hash {..} =
-  let Identity raw = restored hValue
-      Bool b = hasher raw == hHash
-   in restore
-        ( fromCircuit2F (arithmetize raw) b $ \r (G.Par1 i) -> do
-            constraint (($ i) - one)
-            return r
-        , payload raw
-        )
+preimage Hash {..} = constrained (\value -> hasher value == hHash) hValue

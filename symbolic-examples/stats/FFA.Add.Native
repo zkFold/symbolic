@@ -1,5 +1,5 @@
 FFA.Add.Native
-Number of polynomial constraints: 1
-Number of variables: 1
-Number of lookup constraints: 0
-Number of lookup tables: 0
+Number of polynomial constraints: 188
+Number of variables: 210
+Number of lookup constraints: 20
+Number of lookup tables: 5

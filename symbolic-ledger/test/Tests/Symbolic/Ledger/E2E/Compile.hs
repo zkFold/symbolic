@@ -16,16 +16,15 @@ import ZkFold.Protocol.Plonkup.Input (PlonkupInput (..))
 import ZkFold.Protocol.Plonkup.Prover.Secret (PlonkupProverSecret (..))
 import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (pubInput))
 import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup (..))
-import ZkFold.Symbolic.Data.Class (arithmetize, payload)
-import ZkFold.Symbolic.Interpreter (runInterpreter)
+import ZkFold.Symbolic.Data.Class (toLayout)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
 
 import Tests.Symbolic.Ledger.E2E.One
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
-  LedgerContractCompiledInput,
   LedgerContractInput (..),
+  LedgerContractInputLayout,
   PlonkupTs,
   ledgerCircuit,
   ledgerProof,
@@ -71,21 +70,21 @@ specE2ECompile =
           compiledCircuit
       zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
       zkLedgerProof2 = ledgerProof @ByteString ts proverSecret compiledCircuit lci2
-      witnessInputs = runInterpreter $ arithmetize lci
-      compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
-      witnessInputs2 = runInterpreter $ arithmetize lci2
-      compiledInput2 = (witnessInputs2 :*: U1) :*: (payload lci2 :*: U1)
+      witnessInputs = toLayout lci
+      compiledInput = witnessInputs :*: U1
+      witnessInputs2 = toLayout lci2
+      compiledInput2 = witnessInputs2 :*: U1
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
       zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
     Haskell.putStrLn $ "zkLedgerInput2: " <> show zkLedgerInput2
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A (LedgerContractInputLayout Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
       `shouldBe` Haskell.True
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A (LedgerContractInputLayout Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput2
       zkLedgerProof2

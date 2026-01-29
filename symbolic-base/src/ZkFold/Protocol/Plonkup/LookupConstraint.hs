@@ -10,7 +10,7 @@ import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
 
 import ZkFold.Algebra.Class (Semiring)
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var, toVar)
+import ZkFold.ArithmeticCircuit.Var (Var, toVar)
 import ZkFold.Data.Binary (toByteString)
 
 data LookupConstraint i a = LookupConstraint
@@ -22,11 +22,9 @@ data LookupConstraint i a = LookupConstraint
 
 instance (Arbitrary a, Binary a, Semiring a) => Arbitrary (LookupConstraint i a) where
   arbitrary =
-    let var = toVar . EqVar . toByteString @a <$> arbitrary
+    let var = toVar . toByteString @a <$> arbitrary
      in LookupConstraint <$> var <*> var <*> var
 
 toLookupConstraint
   :: Semiring a => ByteString -> ByteString -> ByteString -> LookupConstraint i a
-toLookupConstraint i j k =
-  let var = toVar . EqVar
-   in LookupConstraint (var i) (var j) (var k)
+toLookupConstraint i j k = LookupConstraint (toVar i) (toVar j) (toVar k)

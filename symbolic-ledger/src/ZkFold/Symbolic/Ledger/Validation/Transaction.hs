@@ -26,13 +26,12 @@ import ZkFold.Algebra.Class (
  )
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
-import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Ord ((>=))
 import ZkFold.Data.Vector (Vector, Zip (..), (!!))
 import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
-import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -41,10 +40,11 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import ZkFold.Symbolic.Data.UInt (KnownUInt)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
-import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 
@@ -60,15 +60,14 @@ import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 
 -- | Transaction witness for validating transaction.
 data TransactionWitness ud i o a context = TransactionWitness
-  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
+  { twInputs
+      :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
   , twOutputs :: (Vector o :.: MerkleEntry ud) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
-
-instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+instance ToJSON (TransactionWitness ud i o a RollupBF) where
   toJSON (TransactionWitness ins outs) =
     let insVec = unComp1 ins
         insList = Vector.fromVector insVec
@@ -87,7 +86,7 @@ instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
           , "outputs" .= outsList
           ]
 
-instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a RollupBF) where
   parseJSON =
     withObject
       "TransactionWitness"
@@ -163,15 +162,15 @@ instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a Rollu
 instance
   forall ud i o a
    . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
-  => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
+  => ToSchema (TransactionWitness ud i o a RollupBF)
   where
   declareNamedSchema _ = do
-    meRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBFInterpreter))
-    utxoRef <- declareSchemaRef (Proxy @(UTxO a RollupBFInterpreter))
-    rRef <- declareSchemaRef (Proxy @(EdDSAPoint RollupBFInterpreter))
-    sRef <- declareSchemaRef (Proxy @(EdDSAScalarField RollupBFInterpreter))
-    pkRef <- declareSchemaRef (Proxy @(PublicKey RollupBFInterpreter))
-    outsRef <- declareSchemaRef (Proxy @((:.:) (Vector o) (MerkleEntry ud) RollupBFInterpreter))
+    meRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBF))
+    utxoRef <- declareSchemaRef (Proxy @(UTxO a RollupBF))
+    rRef <- declareSchemaRef (Proxy @(EdDSAPoint RollupBF))
+    sRef <- declareSchemaRef (Proxy @(EdDSAScalarField RollupBF))
+    pkRef <- declareSchemaRef (Proxy @(PublicKey RollupBF))
+    outsRef <- declareSchemaRef (Proxy @((:.:) (Vector o) (MerkleEntry ud) RollupBF))
 
     let inputSchema =
           Haskell.mempty
@@ -241,7 +240,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                                   (sameAsset av)
                                   ( ifThenElse
                                       (r >= av.assetQuantity)
-                                      (r + negate av.assetQuantity)
+                                      (r - av.assetQuantity)
                                       zero
                                   )
                                   r
@@ -268,7 +267,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                                     (sameAsset av)
                                     ( ifThenElse
                                         (r >= av.assetQuantity)
-                                        (r + negate av.assetQuantity)
+                                        (r - av.assetQuantity)
                                         zero
                                     )
                                     r
@@ -282,7 +281,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                                   let rBefore = remsWithinInput !! ix
                                    in ifThenElse
                                         (sameAsset av)
-                                        ( let newQty = ifThenElse (rBefore >= av.assetQuantity) zero (av.assetQuantity + negate rBefore)
+                                        ( let newQty = ifThenElse (rBefore >= av.assetQuantity) zero (av.assetQuantity - rBefore)
                                            in av {assetQuantity = newQty}
                                         )
                                         av
@@ -311,6 +310,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         ((true :: Bool context) :*: Comp1 inputAssets)
         outputsAssets
     -- We check if all inputs are covered by outputs.
+    inputsConsumed :: Bool context
     inputsConsumed =
       foldl'
         ( \acc inAssetsComp ->
@@ -350,14 +350,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
               ( isValid'
                   :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
                   :*: MerkleTree.replace
-                    ( merkleEntry
-                        { MerkleTree.value = nullUTxOHash'
-                        }
-                    )
+                    (merkleEntry {MerkleTree.value = nullUTxOHash'})
                     acc
               )
         )
-        ((true :: Bool context) :*: (false :: Bool context) :*: utxoTree)
+        (true :*: false :*: utxoTree)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
     (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
@@ -390,16 +387,13 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                               (output == nullOutput)
                               utxoTreeAcc
                               ( MerkleTree.replace
-                                  ( merkleEntry
-                                      { MerkleTree.value = hash utxo & Base.hHash
-                                      }
-                                  )
+                                  (merkleEntry {MerkleTree.value = hash utxo & Base.hHash})
                                   utxoTreeAcc
                               )
                       )
               )
         )
-        (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
+        (zero :*: zero :*: true :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
     ( bouts
@@ -412,7 +406,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
 -- We check if the output has at least one ada and all assets are non-negative.
 outputHasValueSanity
   :: forall a context
-   . (KnownRegistersAssetQuantity context, Symbolic context)
+   . (Symbolic context, KnownUInt 64 context)
   => Output a context
   -> Bool context
 outputHasValueSanity output =

@@ -17,16 +17,15 @@ import Prelude (($))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint, Point)
 import qualified ZkFold.Algebra.EllipticCurve.Class as Elliptic
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq
-import ZkFold.Symbolic.Class (Symbolic (..))
-import qualified ZkFold.Symbolic.Class as S
+import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Bool
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (Iso (..), RegisterSize (..))
 import qualified ZkFold.Symbolic.Data.EllipticCurve.Point.Affine as SymAffine
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
-import ZkFold.Symbolic.Data.UInt (UInt (..))
+import ZkFold.Symbolic.Data.UInt
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 
 -- https://cryptobook.nakov.com/digital-signatures/eddsa-and-ed25519 for how to derive the signature and perform verification.
 
@@ -39,16 +38,17 @@ import ZkFold.Symbolic.Data.UInt (UInt (..))
 --   - H is a caller-provided hash-to-scalar function
 eddsaVerify
   :: forall point curve p q baseField scalarField ctx
-   . ( S.Symbolic ctx
-     , baseField ~ FFA q 'Auto
-     , scalarField ~ FFA p 'Auto
+   . ( Symbolic ctx
+     , baseField ~ FFA q
+     , scalarField ~ FFA p
      , point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
-     , KnownFFA q 'Auto ctx
-     , KnownFFA p 'Auto ctx
+     , KnownFFA q ctx
+     , KnownFFA p ctx
+     , KnownUInt (NumberOfBits ctx) ctx
      )
-  => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
+  => (forall x. Collect (ConstrainedDatum ctx) (x ctx) => x ctx -> FieldElement ctx)
   -- ^ hash function
   -> point
   -- ^ public key A
@@ -74,15 +74,16 @@ eddsaVerify hashFn publicKey message (rPoint :*: s) =
 -- | Sign EdDSA signature on a Twisted Edwards curve.
 eddsaSign
   :: forall point curve p q baseField scalarField ctx
-   . ( baseField ~ FFA q 'Auto
-     , scalarField ~ FFA p 'Auto
+   . ( baseField ~ FFA q
+     , scalarField ~ FFA p
      , point ~ SymAffine.AffinePoint (TwistedEdwards curve) baseField ctx
      , ScalarFieldOf point ~ scalarField ctx
      , CyclicGroup point
      , Symbolic ctx
-     , KnownFFA p 'Auto ctx
+     , KnownFFA p ctx
+     , KnownUInt (NumberOfBits ctx) ctx
      )
-  => (forall x. SymbolicData x => x ctx -> FieldElement ctx)
+  => (forall x. Collect (ConstrainedDatum ctx) (x ctx) => x ctx -> FieldElement ctx)
   -- ^ hash function
   -> scalarField ctx
   -- ^ private key
@@ -104,11 +105,12 @@ eddsaSign hashFn privKey message =
 scalarFieldFromFE
   :: forall p c
    . ( Symbolic c
-     , KnownFFA p 'Auto c
+     , KnownFFA p c
+     , KnownUInt (NumberOfBits c) c
      )
-  => FieldElement c -> FFA p 'Auto c
+  => FieldElement c -> FFA p c
 scalarFieldFromFE fe =
   let
-    u :: UInt (NumberOfBits (BaseField c)) 'Auto c = from fe
+    u :: UInt (NumberOfBits c) c = feToUInt fe
    in
     fromUInt u

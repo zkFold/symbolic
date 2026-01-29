@@ -1,8 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE UndecidableInstances #-}
--- Avoid reduction overflow error caused by NumberOfRegisters
-{-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module ZkFold.Symbolic.Cardano.Types.Output (
   module ZkFold.Symbolic.Cardano.Types.Output.Datum,
@@ -11,15 +9,12 @@ module ZkFold.Symbolic.Cardano.Types.Output (
 ) where
 
 import GHC.Generics (Generic, Generic1)
-import ZkFold.Algebra.Number
+import ZkFold.Data.Collect (Collect)
 import ZkFold.Data.Eq (Eq)
-import ZkFold.Data.HFunctor.Classes (HEq)
-import ZkFold.Symbolic.Class
-import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (KnownRegisters, RegisterSize (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
+import ZkFold.Symbolic.Class (Symbolic)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Unconstrained (ConstrainedDatum)
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
-import qualified Prelude as Haskell
 
 import ZkFold.Symbolic.Cardano.Types.Address (Address)
 import ZkFold.Symbolic.Cardano.Types.Output.Datum
@@ -29,22 +24,15 @@ data Liability context = Liability
   { lLiability :: SingleAsset context -- Liability in native tokens
   , lBabel :: SingleAsset context -- Offer in any other tokens
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (Liability context)
+instance Symbolic c => Collect (ConstrainedDatum c) (Liability c)
 
 data Output tokens datum context = Output
   { txoAddress :: Address context
   , txoTokens :: Value tokens context
   , txoDatumHash :: DatumHash context
   }
-  deriving (Generic, Generic1, SymbolicData, SymbolicInput)
+  deriving (Eq, Generic, Generic1, SymbolicData)
 
-deriving instance HEq context => Haskell.Eq (Output tokens datum context)
-
-instance
-  ( Symbolic context
-  , KnownNat tokens
-  , KnownRegisters context 64 Auto
-  )
-  => Eq (Output tokens datum context)
+instance Symbolic c => Collect (ConstrainedDatum c) (Output t d c)
