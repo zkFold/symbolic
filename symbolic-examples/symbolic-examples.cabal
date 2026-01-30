@@ -116,6 +116,7 @@ library
       ZkFold.Symbolic.Examples.Fibonacci
       ZkFold.Symbolic.Examples.FieldElement
       ZkFold.Symbolic.Examples.JWT
+      ZkFold.Symbolic.Examples.Jubjub
       ZkFold.Symbolic.Examples.LEQ
       ZkFold.Symbolic.Examples.MiMCHash
       ZkFold.Symbolic.Examples.Mithril
