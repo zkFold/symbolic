@@ -33,7 +33,8 @@ hash =
 -- This implementation computes the round function with only 3 constraints
 -- per round (for x², x⁴, and x⁵) instead of 6+ by inlining the additions.
 mimcHash2
-  :: forall c. Symbolic c
+  :: forall c
+   . Symbolic c
   => [BaseField c] -> BaseField c -> FieldElement c -> FieldElement c -> FieldElement c
 mimcHash2 xs k = case nonEmpty (reverse xs) of
   Just cs -> go cs
@@ -64,9 +65,12 @@ mimcRound k c xL xR = FieldElement $
     -- Compute t^4 = t2 * t2 (constraint 2)
     t4 <- newAssigned $ \w -> w t2 * w t2
     -- Compute result = t4 * t + xR = t^5 + xR (constraint 3)
-    Par1 <$> newAssigned (\w ->
-      let t = w iL + fromConstant k + fromConstant c
-       in w t4 * t + w iR)
+    Par1
+      <$> newAssigned
+        ( \w ->
+            let t = w iL + fromConstant k + fromConstant c
+             in w t4 * t + w iR
+        )
 
 -- | Optimized MiMC hash for multiple inputs
 mimcHashN :: Symbolic c => [BaseField c] -> BaseField c -> [FieldElement c] -> FieldElement c
