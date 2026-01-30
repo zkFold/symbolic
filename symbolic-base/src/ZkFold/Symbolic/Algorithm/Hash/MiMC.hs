@@ -1,6 +1,6 @@
 module ZkFold.Symbolic.Algorithm.Hash.MiMC (
   module ZkFold.Symbolic.Algorithm.Hash.MiMC,
-  module ZkFold.Algorithm.Hash.MiMC,
+  module ZkFold.Algorithm.Hash.MiMC.Constants,
 ) where
 
 import Data.Foldable (toList)
@@ -12,7 +12,7 @@ import GHC.Generics (Par1 (..))
 import Prelude (error, reverse)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.MiMC
+import ZkFold.Algorithm.Hash.MiMC.Constants
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)
 import ZkFold.Symbolic.Class (Symbolic (..), fromCircuit2F)
@@ -29,14 +29,15 @@ hash =
     . arithmetize
 
 -- | Optimized MiMC-2n/n (Feistel) hash function for Symbolic context.
+-- See https://eprint.iacr.org/2016/492.pdf, page 5
 -- This implementation computes the round function with only 3 constraints
 -- per round (for x², x⁴, and x⁵) instead of 6+ by inlining the additions.
-mimcHash2S
+mimcHash2
   :: forall c. Symbolic c
   => [BaseField c] -> BaseField c -> FieldElement c -> FieldElement c -> FieldElement c
-mimcHash2S xs k = case nonEmpty (reverse xs) of
+mimcHash2 xs k = case nonEmpty (reverse xs) of
   Just cs -> go cs
-  Nothing -> error "mimcHash2S: empty list"
+  Nothing -> error "mimcHash2: empty list"
  where
   go :: NonEmpty (BaseField c) -> FieldElement c -> FieldElement c -> FieldElement c
   go (c :| cs) (FieldElement xL) (FieldElement xR) =
@@ -68,10 +69,10 @@ mimcRound k c xL xR = FieldElement $
        in w t4 * t + w iR)
 
 -- | Optimized MiMC hash for multiple inputs
-mimcHashNS :: Symbolic c => [BaseField c] -> BaseField c -> [FieldElement c] -> FieldElement c
-mimcHashNS xs k = go
+mimcHashN :: Symbolic c => [BaseField c] -> BaseField c -> [FieldElement c] -> FieldElement c
+mimcHashN xs k = go
  where
-  go [] = mimcHash2S xs k zero zero
-  go [z] = mimcHash2S xs k zero z
-  go [zL, zR] = mimcHash2S xs k zL zR
-  go (zL : zR : zs') = go (mimcHash2S xs k zL zR : zs')
+  go [] = mimcHash2 xs k zero zero
+  go [z] = mimcHash2 xs k zero z
+  go [zL, zR] = mimcHash2 xs k zL zR
+  go (zL : zR : zs') = go (mimcHash2 xs k zL zR : zs')
