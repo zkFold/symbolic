@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail, ffaScaleAddConst, ffaInvAffineOrFail) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail, ffaScaleAddConst, ffaInvAffineOrFail, ffaConditionalSelect) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -44,7 +44,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, scaleAddConst, invAffineOrFail)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, scaleAddConst, invAffineOrFail, conditionalSelect)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -460,6 +460,25 @@ ffaInvAffineOrFail c s ffa@(FFA nx _ux) =
   where
     c' = fromZp (fromConstant c :: Zp p) :: Natural
     s' = fromZp (scale s one :: Zp p) :: Natural
+
+-- | Efficient conditional selection for FFA: result = onFalse + bit * (onTrue - onFalse)
+-- Uses 1 constraint per field element instead of ~10+ from interpolation.
+--
+-- For native FFA (when circuit field = curve field), this uses 1 constraint total.
+-- For non-native FFA, falls back to the generic `bool` which uses interpolation.
+--
+-- SAFETY: The bit parameter must be 0 or 1 for correct results.
+ffaConditionalSelect
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c)
+  => FieldElement c       -- ^ Selector bit (0 or 1)
+  -> FFA p r c            -- ^ onFalse (value when bit=0)
+  -> FFA p r c            -- ^ onTrue (value when bit=1)
+  -> FFA p r c            -- ^ Result: onFalse + bit * (onTrue - onFalse)
+ffaConditionalSelect bit (FFA nxF _uxF) (FFA nxT _uxT) =
+  if isNative @p @c
+    then FFA (conditionalSelect bit nxF nxT) (UIntFFA zero)
+    else Prelude.error "ffaConditionalSelect not implemented for non-native FFA"
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c

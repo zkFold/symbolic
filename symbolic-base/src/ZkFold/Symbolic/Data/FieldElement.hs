@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FieldElement where
+module ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements, finvOrFail, invAffineOrFail, conditionalSelect, scaleAddConst) where
 
 import Control.DeepSeq (NFData)
 import Data.Foldable (foldr)
@@ -22,7 +22,7 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
-import ZkFold.Symbolic.Class (Symbolic (..), embed, fromCircuit2F, fromCircuitF, symbolicF)
+import ZkFold.Symbolic.Class (Symbolic (..), embed, fromCircuit2F, fromCircuit3F, fromCircuitF, symbolicF)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert, runInvertOrFail)
 import ZkFold.Symbolic.Data.Input
@@ -160,6 +160,26 @@ invAffineOrFail c s (FieldElement x) =
          Par1 <$> newConstrained 
            (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
            (finv (fromConstant c' + fromConstant s' * at i))
+
+-- | Efficient conditional selection: result = onFalse + bit * (onTrue - onFalse)
+-- Uses 1 PlonkUp constraint instead of ~10+ from interpolation.
+--
+-- The generic `bool` via `interpolate` costs significantly more constraints.
+-- Use this function when selecting between two field elements based on a bit.
+--
+-- SAFETY: The bit parameter must be 0 or 1 for correct results.
+conditionalSelect
+  :: Symbolic ctx
+  => FieldElement ctx  -- ^ Selector bit (0 or 1)
+  -> FieldElement ctx  -- ^ onFalse (value when bit=0)
+  -> FieldElement ctx  -- ^ onTrue (value when bit=1)
+  -> FieldElement ctx  -- ^ Result: onFalse + bit * (onTrue - onFalse)
+conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
+  FieldElement $
+    fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) ->
+      -- result = onFalse + bit * (onTrue - onFalse)
+      -- = bit * onTrue + (1 - bit) * onFalse
+      Par1 <$> newAssigned (\w -> w f + w b * (w t - w f))
 
 instance
   ( KnownNat (Order (FieldElement c))
