@@ -37,8 +37,8 @@ jubjubD = 1925703803668094935975031266978687799194943540225412028618419689195088
 --
 -- Optimized with:
 --   - Common subexpression reuse: t1=x0*x1, t2=y0*y1, t3=x0*y1, t4=y0*x1, t5=t1*t2
---   - 1-constraint inversion (finvOrFail) instead of 2-constraint inversion
---   - Constant scaling absorbed into selector coefficients (no intermediate dt5 variable)
+--   - 1-constraint inversion with inlined affine denominator (no denX/denY variables)
+--     Using: s*t5*inv + c*inv - 1 = 0 instead of: denX = 1+d*t5; inv*denX = 1
 --
 -- SAFETY: Denominators are non-zero for valid twisted Edwards curve points
 -- because |d*x0*x1*y0*y1| < 1 (curve property). Use only with valid points.
@@ -63,16 +63,16 @@ jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y
       -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 + x0*x1
       numY = t2 + t1     -- (1 constraint)
       
-      -- Denominators using scaleAddConst (1 constraint each)
-      -- Instead of: dt5 = d*t5 (1 constraint), denX = 1 + dt5 (1 constraint)
-      -- We use: denX = 1 + d*t5 (1 constraint) - absorbs d into selector
-      denX = ffaScaleAddConst (1 :: Natural) jubjubD t5   -- 1 + d*t5 (1 constraint)
-      denY = ffaScaleAddConst (1 :: Natural) negJubjubD t5 -- 1 - d*t5 (1 constraint)
+      -- Inlined inverse of affine denominator (1 constraint each)
+      -- Instead of: denX = 1 + d*t5 (1 constraint), invX = 1/denX (1 constraint)
+      -- We use: invX = 1/(1 + d*t5) with inlined affine function (1 constraint)
+      -- Constraint: d*t5*invX + 1*invX - 1 = 0
+      invDenX = ffaInvAffineOrFail (1 :: Natural) jubjubD t5     -- 1/(1 + d*t5) (1 constraint)
+      invDenY = ffaInvAffineOrFail (1 :: Natural) negJubjubD t5  -- 1/(1 - d*t5) (1 constraint)
       
-      -- Final divisions using 1-constraint inversion
-      -- Each division = 1 inversion + 1 multiplication = 2 constraints
-      x2 = ffaDivOrFail numX denX
-      y2 = ffaDivOrFail numY denY
+      -- Final multiplications (1 constraint each)
+      x2 = numX * invDenX  -- (1 constraint)
+      y2 = numY * invDenY  -- (1 constraint)
    in AffinePoint (EC.AffinePoint x2 y2)
   where
     -- -d (mod p) = p - d

@@ -29,7 +29,7 @@ import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import ZkFold.Symbolic.MonadCircuit (newAssigned, newConstrained, Witness (..))
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
@@ -129,6 +129,37 @@ scaleAddConst c s (FieldElement x) =
   in FieldElement $
        fromCircuitF x $ \(Par1 i) ->
          Par1 <$> newAssigned (\w -> fromConstant c' + fromConstant s' * w i)
+
+-- | Compute the inverse of an affine function: 1 / (constant + scale * x)
+-- Uses only 1 constraint by inlining the affine function into the inversion.
+-- 
+-- Instead of:
+--   1. y = c + s*x  (1 constraint)
+--   2. inv * y = 1  (1 constraint)
+-- 
+-- We use a single combined constraint:
+--   s*x*inv + c*inv - 1 = 0  (1 constraint)
+--
+-- PlonkUp form: qM*x*inv + qL*inv + qC = 0  with qM=s, qL=c, qC=-1
+--
+-- IMPORTANT: This assumes (c + s*x) is non-zero. If it's zero, the circuit
+-- will be unsatisfiable.
+invAffineOrFail
+  :: forall ctx k s. (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
+  => k                    -- ^ Constant term
+  -> s                    -- ^ Scale factor
+  -> FieldElement ctx     -- ^ Variable x
+  -> FieldElement ctx     -- ^ Result: 1 / (constant + scale * x)
+invAffineOrFail c s (FieldElement x) = 
+  let c' = fromConstant c :: BaseField ctx
+      s' = fromConstant s :: BaseField ctx
+  in FieldElement $
+       fromCircuitF x $ \(Par1 i) ->
+         -- Constraint: s*x*inv + c*inv - 1 = 0
+         -- Witness: inv = 1 / (c + s*x)
+         Par1 <$> newConstrained 
+           (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
+           (finv (fromConstant c' + fromConstant s' * at i))
 
 instance
   ( KnownNat (Order (FieldElement c))
