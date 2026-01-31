@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail, ffaSumDivOrFail) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -44,7 +44,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, sumDivOrFail)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -414,29 +414,6 @@ ffaDivOrFail
   -> FFA p r c
   -> FFA p r c
 ffaDivOrFail num den = num * ffaFinvOrFail den
-
--- | Compute (a + b) / den using a single combined constraint.
--- Instead of:
---   sum = a + b        (1 constraint)
---   result = sum / den (1 inv + 1 mul = 2 constraints)
---   Total: 3 constraints
--- We use:
---   result * den = a + b  (1 constraint)
---   Total: 1 constraint
---
--- For native case only. Non-native falls back to regular operations.
--- IMPORTANT: This assumes den is non-zero.
-ffaSumDivOrFail
-  :: forall p r c
-   . (Symbolic c, KnownFFA p r c, Prime p)
-  => FFA p r c
-  -> FFA p r c
-  -> FFA p r c
-  -> FFA p r c
-ffaSumDivOrFail (FFA na ua) (FFA nb ub) (FFA nd ud) =
-  if isNative @p @c
-    then FFA (sumDivOrFail na nb nd) (UIntFFA zero)
-    else (FFA na ua + FFA nb ub) * ffaFinvOrFail (FFA nd ud)
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c

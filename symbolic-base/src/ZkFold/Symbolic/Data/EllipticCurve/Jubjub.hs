@@ -29,7 +29,7 @@ jubjubD :: Natural
 jubjubD = 19257038036680949359750312669786877991949435402254120286184196891950884077233
 
 -- | Optimized point addition on the Jubjub curve.
--- Uses combined PlonkUp constraints to minimize the total number of constraints.
+-- Uses common subexpression elimination to minimize the total number of constraints.
 --
 -- The TwistedEdwards addition formula is:
 --   x3 = (x0*y1 + y0*x1) / (1 + d*x0*x1*y0*y1)
@@ -37,8 +37,7 @@ jubjubD = 1925703803668094935975031266978687799194943540225412028618419689195088
 --
 -- Optimized with:
 --   - Common subexpression reuse: t1=x0*x1, t2=y0*y1, t3=x0*y1, t4=y0*x1, t5=t1*t2
---   - Combined sum-division constraints: computes (a+b)/d in 1 constraint instead of 3
---   - Avoids intermediate variables for numerators and uses combined constraint
+--   - 1-constraint inversion (finvOrFail) instead of 2-constraint inversion
 --
 -- SAFETY: Denominators are non-zero for valid twisted Edwards curve points
 -- because |d*x0*x1*y0*y1| < 1 (curve property). Use only with valid points.
@@ -62,16 +61,19 @@ jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y
       -- d = -10240/10241 (mod BLS12_381_Scalar) = jubjubD
       dt5 = scale jubjubD t5  -- d*x0*x1*y0*y1 (1 constraint)
       
-      -- Denominators (cost 1 constraint each for variable assignment)
+      -- Numerators (1 constraint each)
+      numX = t3 + t4     -- x0*y1 + y0*x1 (1 constraint)
+      -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 + x0*x1
+      numY = t2 + t1     -- (1 constraint)
+      
+      -- Denominators (1 constraint each)
       denX = one + dt5   -- 1 + d*x0*x1*y0*y1 (1 constraint)
       denY = one - dt5   -- 1 - d*x0*x1*y0*y1 (1 constraint)
       
-      -- Final divisions using combined sum-division constraint
-      -- Each computes (a + b) / d in a single constraint: result * d = a + b
-      -- x2 = (t3 + t4) / denX
-      -- y2 = (t2 + t1) / denY  [for a = -1: y0*y1 + x0*x1]
-      x2 = ffaSumDivOrFail t3 t4 denX  -- (1 constraint)
-      y2 = ffaSumDivOrFail t2 t1 denY  -- (1 constraint)
+      -- Final divisions using 1-constraint inversion
+      -- Each division = 1 inversion + 1 multiplication = 2 constraints
+      x2 = ffaDivOrFail numX denX
+      y2 = ffaDivOrFail numY denY
    in AffinePoint (EC.AffinePoint x2 y2)
 
 instance
