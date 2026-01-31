@@ -29,24 +29,19 @@ jubjubD :: Natural
 jubjubD = 19257038036680949359750312669786877991949435402254120286184196891950884077233
 
 -- | Optimized point addition on the Jubjub curve.
--- Uses common subexpression elimination to minimize constraints.
+-- Uses combined PlonkUp constraints to minimize the total number of constraints.
 --
 -- The TwistedEdwards addition formula is:
---   x3 = (x1*y2 + y1*x2) / (1 + d*x1*x2*y1*y2)
---   y3 = (y1*y2 - a*x1*x2) / (1 - d*x1*x2*y1*y2)
+--   x3 = (x0*y1 + y0*x1) / (1 + d*x0*x1*y0*y1)
+--   y3 = (y0*y1 + x0*x1) / (1 - d*x0*x1*y0*y1)  [with a = -1]
 --
--- For Jubjub: a = -1, d = -10240/10241
+-- Optimized with:
+--   - Common subexpression reuse: t1=x0*x1, t2=y0*y1, t3=x0*y1, t4=y0*x1, t5=t1*t2
+--   - Combined sum-division constraints: computes (a+b)/d in 1 constraint instead of 3
+--   - Avoids intermediate variables for numerators and uses combined constraint
 --
--- Optimized to reuse:
---   t1 = x1*x2, t2 = y1*y2, t3 = x1*y2, t4 = y1*x2
---   t5 = t1*t2 (= x1*x2*y1*y2)
---   dt5 = d*t5
---
--- Also uses ffaDivOrFail for 1-constraint inversion (vs 2 for regular finv).
--- The denominators are guaranteed non-zero for valid curve points on twisted
--- Edwards curves because |d*x1*x2*y1*y2| < 1 for any valid points (due to the
--- curve equation constraints). This function should only be used with valid
--- curve points, not with arbitrary field elements or the identity point.
+-- SAFETY: Denominators are non-zero for valid twisted Edwards curve points
+-- because |d*x0*x1*y0*y1| < 1 (curve property). Use only with valid points.
 jubjubAdd
   :: forall ctx
    . ( Symbolic ctx
@@ -57,29 +52,26 @@ jubjubAdd
   -> Jubjub_Point ctx
 jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y1)) =
   let -- Common subexpressions (each costs 1 multiplication constraint)
-      t1 = x0 * x1       -- x0*x1
-      t2 = y0 * y1       -- y0*y1
-      t3 = x0 * y1       -- x0*y1
-      t4 = y0 * x1       -- y0*x1
-      t5 = t1 * t2       -- x0*x1*y0*y1
+      t1 = x0 * x1       -- x0*x1 (1 constraint)
+      t2 = y0 * y1       -- y0*y1 (1 constraint)
+      t3 = x0 * y1       -- x0*y1 (1 constraint)
+      t4 = y0 * x1       -- y0*x1 (1 constraint)
+      t5 = t1 * t2       -- x0*x1*y0*y1 (1 constraint)
       
-      -- d*t5 using scale (still costs 1 constraint in current framework)
+      -- d*t5 using scale (1 constraint in current framework)
       -- d = -10240/10241 (mod BLS12_381_Scalar) = jubjubD
-      dt5 = scale jubjubD t5  -- d*x0*x1*y0*y1
-      
-      -- Numerators (cost 1 constraint each for variable assignment)
-      numX = t3 + t4     -- x0*y1 + y0*x1
-      -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 - (-1)*x0*x1 = y0*y1 + x0*x1
-      numY = t2 + t1
+      dt5 = scale jubjubD t5  -- d*x0*x1*y0*y1 (1 constraint)
       
       -- Denominators (cost 1 constraint each for variable assignment)
-      denX = one + dt5   -- 1 + d*x0*x1*y0*y1
-      denY = one - dt5   -- 1 - d*x0*x1*y0*y1
+      denX = one + dt5   -- 1 + d*x0*x1*y0*y1 (1 constraint)
+      denY = one - dt5   -- 1 - d*x0*x1*y0*y1 (1 constraint)
       
-      -- Final divisions using optimized 1-constraint inversion
-      -- (each costs 2 constraints: 1 for inversion + 1 for multiplication)
-      x2 = ffaDivOrFail numX denX
-      y2 = ffaDivOrFail numY denY
+      -- Final divisions using combined sum-division constraint
+      -- Each computes (a + b) / d in a single constraint: result * d = a + b
+      -- x2 = (t3 + t4) / denX
+      -- y2 = (t2 + t1) / denY  [for a = -1: y0*y1 + x0*x1]
+      x2 = ffaSumDivOrFail t3 t4 denX  -- (1 constraint)
+      y2 = ffaSumDivOrFail t2 t1 denY  -- (1 constraint)
    in AffinePoint (EC.AffinePoint x2 y2)
 
 instance

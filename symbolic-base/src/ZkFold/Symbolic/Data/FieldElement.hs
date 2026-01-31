@@ -21,14 +21,14 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic (..), embed, fromCircuit2F, fromCircuit3F, fromCircuitF, symbolicF)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert, runInvertOrFail)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import ZkFold.Symbolic.MonadCircuit (Witness (..), newAssigned, newConstrained)
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
@@ -111,6 +111,25 @@ finvOrFail :: Symbolic c => FieldElement c -> FieldElement c
 finvOrFail (FieldElement x) =
   FieldElement $
     symbolicF x (\(Par1 v) -> Par1 (finv v)) runInvertOrFail
+
+-- | Compute (a + b) / den in a single constraint (plus the combined constraint).
+-- Instead of computing:
+--   sum = a + b        (1 constraint)
+--   result = sum / den (1 constraint for inv + 1 for mul = 2 constraints)
+-- We use the combined constraint:
+--   result * den = a + b  (single constraint)
+-- 
+-- Total: 1 constraint instead of 3.
+-- IMPORTANT: This assumes den is non-zero.
+sumDivOrFail :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c -> FieldElement c
+sumDivOrFail (FieldElement a) (FieldElement b) (FieldElement d) =
+  FieldElement $
+    fromCircuit3F a b d $ \(Par1 ai) (Par1 bi) (Par1 di) ->
+      -- Witness: result = (a + b) / d
+      -- Constraint: result * d - a - b = 0
+      Par1 Haskell.<$> newConstrained
+        (\x result -> x result * x di - x ai - x bi)
+        ((at ai + at bi) // at di)
 
 instance
   ( KnownNat (Order (FieldElement c))
