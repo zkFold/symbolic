@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module ZkFold.Symbolic.Data.FieldElement where
@@ -111,6 +112,23 @@ finvOrFail :: Symbolic c => FieldElement c -> FieldElement c
 finvOrFail (FieldElement x) =
   FieldElement $
     symbolicF x (\(Par1 v) -> Par1 (finv v)) runInvertOrFail
+
+-- | Compute (constant + scale * x) in a single constraint.
+-- This is more efficient than `fromConstant c + scale s x` which uses 2 constraints.
+-- The PlonkUp constraint: qL*x + qC = result  =>  s*x + c - result = 0
+-- Uses selectors: qL=s, qC=c, qO=-1
+scaleAddConst
+  :: forall ctx k s. (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
+  => k                    -- ^ Constant term
+  -> s                    -- ^ Scale factor
+  -> FieldElement ctx     -- ^ Variable to scale
+  -> FieldElement ctx     -- ^ Result: constant + scale * variable
+scaleAddConst c s (FieldElement x) = 
+  let c' = fromConstant c :: BaseField ctx
+      s' = fromConstant s :: BaseField ctx
+  in FieldElement $
+       fromCircuitF x $ \(Par1 i) ->
+         Par1 <$> newAssigned (\w -> fromConstant c' + fromConstant s' * w i)
 
 instance
   ( KnownNat (Order (FieldElement c))

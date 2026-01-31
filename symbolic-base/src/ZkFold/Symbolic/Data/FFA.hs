@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail, ffaScaleAddConst) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -25,7 +25,7 @@ import Prelude (Integer)
 import qualified Prelude
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field (Zp)
+import ZkFold.Algebra.Field (Zp, fromZp)
 import ZkFold.Algebra.Number (KnownNat, Prime, value, type (*), type (^))
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (Eq (..))
@@ -44,7 +44,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, scaleAddConst)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -414,6 +414,25 @@ ffaDivOrFail
   -> FFA p r c
   -> FFA p r c
 ffaDivOrFail num den = num * ffaFinvOrFail den
+
+-- | Compute (constant + scale * x) in a single constraint for FFA (native case).
+-- This computes: constant + scale * x
+-- For native case: uses 1 constraint instead of 2
+-- For non-native case: falls back to regular operations
+ffaScaleAddConst
+  :: forall p r c k s
+   . (Symbolic c, KnownFFA p r c, FromConstant k (Zp p), Scale s (Zp p))
+  => k                    -- ^ Constant term
+  -> s                    -- ^ Scale factor
+  -> FFA p r c            -- ^ Variable to scale
+  -> FFA p r c            -- ^ Result: constant + scale * variable
+ffaScaleAddConst c s ffa@(FFA nx _ux) =
+  if isNative @p @c
+    then FFA (scaleAddConst c' s' nx) (UIntFFA zero)
+    else fromConstant (fromConstant c :: Zp p) + fromConstant (scale s one :: Zp p) * ffa
+  where
+    c' = fromZp (fromConstant c :: Zp p) :: Natural
+    s' = fromZp (scale s one :: Zp p) :: Natural
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c

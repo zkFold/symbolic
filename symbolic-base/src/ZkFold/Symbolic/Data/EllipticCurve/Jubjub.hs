@@ -38,6 +38,7 @@ jubjubD = 1925703803668094935975031266978687799194943540225412028618419689195088
 -- Optimized with:
 --   - Common subexpression reuse: t1=x0*x1, t2=y0*y1, t3=x0*y1, t4=y0*x1, t5=t1*t2
 --   - 1-constraint inversion (finvOrFail) instead of 2-constraint inversion
+--   - Constant scaling absorbed into selector coefficients (no intermediate dt5 variable)
 --
 -- SAFETY: Denominators are non-zero for valid twisted Edwards curve points
 -- because |d*x0*x1*y0*y1| < 1 (curve property). Use only with valid points.
@@ -57,24 +58,26 @@ jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y
       t4 = y0 * x1       -- y0*x1 (1 constraint)
       t5 = t1 * t2       -- x0*x1*y0*y1 (1 constraint)
       
-      -- d*t5 using scale (1 constraint in current framework)
-      -- d = -10240/10241 (mod BLS12_381_Scalar) = jubjubD
-      dt5 = scale jubjubD t5  -- d*x0*x1*y0*y1 (1 constraint)
-      
       -- Numerators (1 constraint each)
       numX = t3 + t4     -- x0*y1 + y0*x1 (1 constraint)
       -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 + x0*x1
       numY = t2 + t1     -- (1 constraint)
       
-      -- Denominators (1 constraint each)
-      denX = one + dt5   -- 1 + d*x0*x1*y0*y1 (1 constraint)
-      denY = one - dt5   -- 1 - d*x0*x1*y0*y1 (1 constraint)
+      -- Denominators using scaleAddConst (1 constraint each)
+      -- Instead of: dt5 = d*t5 (1 constraint), denX = 1 + dt5 (1 constraint)
+      -- We use: denX = 1 + d*t5 (1 constraint) - absorbs d into selector
+      denX = ffaScaleAddConst (1 :: Natural) jubjubD t5   -- 1 + d*t5 (1 constraint)
+      denY = ffaScaleAddConst (1 :: Natural) negJubjubD t5 -- 1 - d*t5 (1 constraint)
       
       -- Final divisions using 1-constraint inversion
       -- Each division = 1 inversion + 1 multiplication = 2 constraints
       x2 = ffaDivOrFail numX denX
       y2 = ffaDivOrFail numY denY
    in AffinePoint (EC.AffinePoint x2 y2)
+  where
+    -- -d (mod p) = p - d
+    negJubjubD :: Natural
+    negJubjubD = value @Jubjub_Base -! jubjubD
 
 instance
   ( Symbolic ctx
