@@ -1,5 +1,5 @@
 Jubjub.EdDSA.MiMC
-Number of polynomial constraints: 27421
-Number of variables: 29251
+Number of polynomial constraints: 24403
+Number of variables: 26233
 Number of lookup constraints: 2140
 Number of lookup tables: 8

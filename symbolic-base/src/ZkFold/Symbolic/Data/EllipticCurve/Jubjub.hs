@@ -42,7 +42,11 @@ jubjubD = 1925703803668094935975031266978687799194943540225412028618419689195088
 --   t5 = t1*t2 (= x1*x2*y1*y2)
 --   dt5 = d*t5
 --
--- Measured: 17 polynomial constraints (reduced from 21 in generic implementation)
+-- Also uses ffaDivOrFail for 1-constraint inversion (vs 2 for regular finv).
+-- The denominators are guaranteed non-zero for valid curve points on twisted
+-- Edwards curves because |d*x1*x2*y1*y2| < 1 for any valid points (due to the
+-- curve equation constraints). This function should only be used with valid
+-- curve points, not with arbitrary field elements or the identity point.
 jubjubAdd
   :: forall ctx
    . ( Symbolic ctx
@@ -72,9 +76,10 @@ jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y
       denX = one + dt5   -- 1 + d*x0*x1*y0*y1
       denY = one - dt5   -- 1 - d*x0*x1*y0*y1
       
-      -- Final divisions (each costs 3 constraints: 2 for inversion + 1 for multiplication)
-      x2 = numX // denX
-      y2 = numY // denY
+      -- Final divisions using optimized 1-constraint inversion
+      -- (each costs 2 constraints: 1 for inversion + 1 for multiplication)
+      x2 = ffaDivOrFail numX denX
+      y2 = ffaDivOrFail numY denY
    in AffinePoint (EC.AffinePoint x2 y2)
 
 instance

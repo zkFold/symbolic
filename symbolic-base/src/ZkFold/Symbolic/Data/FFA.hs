@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -44,7 +44,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -383,6 +383,37 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
 
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
+
+-- | Optimized field inversion for FFA that uses only 1 constraint (for native case).
+-- IMPORTANT: This assumes the input is non-zero. If the input is zero,
+-- the circuit will be unsatisfiable.
+-- Use this only when you can guarantee the input is non-zero.
+--
+-- For native case (circuit field = FFA prime), uses finvOrFail which is
+-- 1 constraint instead of 2. For non-native case, the optimization is less
+-- significant because non-native FFA operations have other overhead, so we
+-- fall back to regular finv for simplicity.
+ffaFinvOrFail
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c, Prime p)
+  => FFA p r c
+  -> FFA p r c
+ffaFinvOrFail (FFA nx _ux) =
+  -- For native case, use finvOrFail which is 1 constraint instead of 2
+  -- For non-native case, fall back to regular finv (the optimization is less significant)
+  if isNative @p @c
+    then FFA (finvOrFail nx) (UIntFFA zero)
+    else finv (FFA nx _ux)
+
+-- | Optimized division for FFA that uses only 1 constraint for inversion (native case).
+-- IMPORTANT: This assumes the denominator is non-zero.
+ffaDivOrFail
+  :: forall p r c
+   . (Symbolic c, KnownFFA p r c, Prime p)
+  => FFA p r c
+  -> FFA p r c
+  -> FFA p r c
+ffaDivOrFail num den = num * ffaFinvOrFail den
 
 instance (Symbolic c, KnownFFA p r c) => BinaryExpansion (FFA p r c) where
   type Bits (FFA p r c) = ByteString (NumberOfBits (Zp p)) c

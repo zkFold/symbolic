@@ -23,7 +23,7 @@ import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
 import ZkFold.Symbolic.Class
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
+import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert, runInvertOrFail)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
@@ -102,6 +102,15 @@ instance Symbolic c => Field (FieldElement c) where
     FieldElement $
       symbolicF x (\(Par1 v) -> Par1 (finv v)) $
         fmap snd . runInvert
+
+-- | Optimized field inversion that uses only 1 constraint.
+-- IMPORTANT: This assumes the input is non-zero. If the input is zero,
+-- the circuit will be unsatisfiable.
+-- Use this only when you can guarantee the input is non-zero.
+finvOrFail :: Symbolic c => FieldElement c -> FieldElement c
+finvOrFail (FieldElement x) =
+  FieldElement $
+    symbolicF x (\(Par1 v) -> Par1 (finv v)) runInvertOrFail
 
 instance
   ( KnownNat (Order (FieldElement c))
