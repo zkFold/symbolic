@@ -13,11 +13,12 @@ import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class hiding (AffinePoint)
 import qualified ZkFold.Algebra.EllipticCurve.Class as EC
 import ZkFold.Algebra.EllipticCurve.Jubjub (Jubjub_Base, Jubjub_Scalar)
+import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool (..))
 import ZkFold.Symbolic.Data.ByteString
-import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto), from)
+import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Point.Affine (AffinePoint (..))
 import ZkFold.Symbolic.Data.FFA
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
@@ -134,6 +135,9 @@ instance
   --   1. Precompute powers: [x, 2x, 4x, 8x, ...]
   --   2. For each bit, select zero or the corresponding power
   --   3. Sum all selected points
+  --
+  -- OPTIMIZATION: Uses NumberOfBits (Zp Jubjub_Scalar) = 252 bits instead of FFAMaxBits = 504 bits
+  -- This halves the number of curve operations needed.
   scale ffa x =
     jubjubSum $
       Prelude.zipWith
@@ -141,16 +145,18 @@ instance
         [upper, upper -! 1 .. 0]
         (Prelude.iterate jubjubDouble x)
    where
-    bits :: ByteString (FFAMaxBits Jubjub_Scalar ctx) ctx
-    bits = from (toUInt @(FFAMaxBits Jubjub_Scalar ctx) ffa)
+    -- Use binaryExpansion which gives exactly NumberOfBits (Zp Jubjub_Scalar) = 252 bits
+    -- This is much more efficient than toUInt @(FFAMaxBits ...) which would give 504 bits
+    bits :: ByteString (NumberOfBits (Zp Jubjub_Scalar)) ctx
+    bits = binaryExpansion ffa
 
     upper :: Natural
-    upper = value @(FFAMaxBits Jubjub_Scalar ctx) -! 1
+    upper = value @(NumberOfBits (Zp Jubjub_Scalar)) -! 1
     
     -- Efficient point selection: if bit=1 return p, else return zero
     -- Uses 2 constraints (1 per coordinate) instead of ~20 interpolation constraints
     jubjubSelectPoint :: Natural -> Jubjub_Point ctx -> Jubjub_Point ctx
-    jubjubSelectPoint bitIdx p@(AffinePoint (EC.AffinePoint px py)) =
+    jubjubSelectPoint bitIdx (AffinePoint (EC.AffinePoint px py)) =
       let Bool bitCircuit = isSet bits bitIdx
           bitFE = FieldElement bitCircuit
           -- zero = (0, 1) on twisted Edwards
