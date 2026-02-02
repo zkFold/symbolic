@@ -128,6 +128,8 @@ invAffineOrFail c s (FieldElement x) =
            (finv (fromConstant c' + fromConstant s' * at i))
 
 -- | Conditional selection: result = onFalse + bit * (onTrue - onFalse)
+-- Uses two PlonkUp constraints: one for diff = onTrue - onFalse,
+-- another for result = onFalse + bit * diff.
 -- The bit parameter must be 0 or 1.
 conditionalSelect
   :: Symbolic ctx
@@ -137,8 +139,11 @@ conditionalSelect
   -> FieldElement ctx  -- ^ Result: onFalse + bit * (onTrue - onFalse)
 conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
   FieldElement $
-    fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) ->
-      Par1 <$> newAssigned (\w -> w f + w b * (w t - w f))
+    fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) -> do
+      -- First constraint: diff = onTrue - onFalse
+      diff <- newAssigned (\w -> w t - w f)
+      -- Second constraint: result = onFalse + bit * diff (valid PlonkUp)
+      Par1 <$> newAssigned (\w -> w f + w b * w diff)
 
 instance
   ( KnownNat (Order (FieldElement c))
