@@ -43,28 +43,30 @@ jubjubAdd
   -> Jubjub_Point ctx
   -> Jubjub_Point ctx
 jubjubAdd (AffinePoint (EC.AffinePoint x0 y0)) (AffinePoint (EC.AffinePoint x1 y1)) =
-  let -- Common subexpressions
-      t1 = x0 * x1
-      t2 = y0 * y1
-      t3 = x0 * y1
-      t4 = y0 * x1
-      t5 = t1 * t2
-      
-      -- Numerators
-      numX = t3 + t4
-      numY = t2 + t1  -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 + x0*x1
-      
-      -- Inverse of affine denominators: 1/(1 ± d*t5)
-      invDenX = ffaInvAffineOrFail (1 :: Natural) jubjubD t5
-      invDenY = ffaInvAffineOrFail (1 :: Natural) negJubjubD t5
-      
-      -- Result coordinates
-      x2 = numX * invDenX
-      y2 = numY * invDenY
-   in AffinePoint (EC.AffinePoint x2 y2)
-  where
-    negJubjubD :: Natural
-    negJubjubD = value @Jubjub_Base -! jubjubD
+  let
+    -- Common subexpressions
+    t1 = x0 * x1
+    t2 = y0 * y1
+    t3 = x0 * y1
+    t4 = y0 * x1
+    t5 = t1 * t2
+
+    -- Numerators
+    numX = t3 + t4
+    numY = t2 + t1 -- For a = -1: y0*y1 - a*x0*x1 = y0*y1 + x0*x1
+
+    -- Inverse of affine denominators: 1/(1 ± d*t5)
+    invDenX = ffaInvAffineOrFail (1 :: Natural) jubjubD t5
+    invDenY = ffaInvAffineOrFail (1 :: Natural) negJubjubD t5
+
+    -- Result coordinates
+    x2 = numX * invDenX
+    y2 = numY * invDenY
+   in
+    AffinePoint (EC.AffinePoint x2 y2)
+ where
+  negJubjubD :: Natural
+  negJubjubD = value @Jubjub_Base -! jubjubD
 
 instance
   ( Symbolic ctx
@@ -86,7 +88,7 @@ instance
   )
   => Scale (FFA Jubjub_Scalar 'Auto ctx) (Jubjub_Point ctx)
   where
-  -- | Scalar multiplication using the power-of-2 method.
+  -- \| Scalar multiplication using the power-of-2 method.
   -- For each bit of the scalar, selects zero or the corresponding power-of-2 multiple,
   -- then sums all selected points.
   scale ffa x =
@@ -101,7 +103,7 @@ instance
 
     upper :: Natural
     upper = value @(NumberOfBits (Zp Jubjub_Scalar)) -! 1
-    
+
     -- Select zero or point based on bit value
     jubjubSelectPoint :: Natural -> Jubjub_Point ctx -> Jubjub_Point ctx
     jubjubSelectPoint bitIdx (AffinePoint (EC.AffinePoint px py)) =
@@ -112,10 +114,10 @@ instance
           resX = ffaConditionalSelect bitFE zeroX px
           resY = ffaConditionalSelect bitFE zeroY py
        in AffinePoint (EC.AffinePoint resX resY)
-    
+
     jubjubDouble :: Jubjub_Point ctx -> Jubjub_Point ctx
     jubjubDouble p = jubjubAdd p p
-    
+
     jubjubSum :: [Jubjub_Point ctx] -> Jubjub_Point ctx
     jubjubSum [] = zero
-    jubjubSum (p:ps) = Prelude.foldl jubjubAdd p ps
+    jubjubSum (p : ps) = Prelude.foldl jubjubAdd p ps

@@ -5,7 +5,20 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaInvAffineOrFail, ffaConditionalSelect) where
+module ZkFold.Symbolic.Data.FFA (
+  UIntFFA (..),
+  FFA (..),
+  KnownFFA,
+  FFAMaxBits,
+  toUInt,
+  unsafeFromInt,
+  fromInt,
+  unsafeFromUInt,
+  fromUInt,
+  ffaFinvOrFail,
+  ffaInvAffineOrFail,
+  ffaConditionalSelect,
+) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -44,7 +57,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, invAffineOrFail, conditionalSelect)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), conditionalSelect, finvOrFail, invAffineOrFail)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -402,17 +415,21 @@ ffaFinvOrFail (FFA nx _ux) =
 ffaInvAffineOrFail
   :: forall p r c k s
    . (Symbolic c, KnownFFA p r c, Prime p, FromConstant k (Zp p), Scale s (Zp p))
-  => k                    -- ^ Constant term
-  -> s                    -- ^ Scale factor
-  -> FFA p r c            -- ^ Variable x
-  -> FFA p r c            -- ^ Result: 1 / (constant + scale * x)
+  => k
+  -- ^ Constant term
+  -> s
+  -- ^ Scale factor
+  -> FFA p r c
+  -- ^ Variable x
+  -> FFA p r c
+  -- ^ Result: 1 / (constant + scale * x)
 ffaInvAffineOrFail c s ffa@(FFA nx _ux) =
   if isNative @p @c
     then FFA (invAffineOrFail c' s' nx) (UIntFFA zero)
     else ffaFinvOrFail (fromConstant (fromConstant c :: Zp p) + fromConstant (scale s one :: Zp p) * ffa)
-  where
-    c' = fromZp (fromConstant c :: Zp p) :: Natural
-    s' = fromZp (scale s one :: Zp p) :: Natural
+ where
+  c' = fromZp (fromConstant c :: Zp p) :: Natural
+  s' = fromZp (scale s one :: Zp p) :: Natural
 
 -- | Efficient conditional selection for FFA: result = onFalse + bit * (onTrue - onFalse)
 -- For native case: uses 1 constraint per field element.
@@ -420,10 +437,14 @@ ffaInvAffineOrFail c s ffa@(FFA nx _ux) =
 ffaConditionalSelect
   :: forall p r c
    . (Symbolic c, KnownFFA p r c)
-  => FieldElement c       -- ^ Selector bit (0 or 1)
-  -> FFA p r c            -- ^ onFalse (value when bit=0)
-  -> FFA p r c            -- ^ onTrue (value when bit=1)
-  -> FFA p r c            -- ^ Result: onFalse + bit * (onTrue - onFalse)
+  => FieldElement c
+  -- ^ Selector bit (0 or 1)
+  -> FFA p r c
+  -- ^ onFalse (value when bit=0)
+  -> FFA p r c
+  -- ^ onTrue (value when bit=1)
+  -> FFA p r c
+  -- ^ Result: onFalse + bit * (onTrue - onFalse)
 ffaConditionalSelect bit (FFA nxF _uxF) (FFA nxT _uxT) =
   if isNative @p @c
     then FFA (conditionalSelect bit nxF nxT) (UIntFFA zero)

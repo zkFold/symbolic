@@ -29,7 +29,7 @@ import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned, newConstrained, Witness (..))
+import ZkFold.Symbolic.MonadCircuit (Witness (..), newAssigned, newConstrained)
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
@@ -113,32 +113,42 @@ finvOrFail (FieldElement x) =
 -- | Compute 1 / (constant + scale * x) using 1 constraint.
 -- Assumes (constant + scale * x) is non-zero.
 invAffineOrFail
-  :: forall ctx k s. (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
-  => k                    -- ^ Constant term
-  -> s                    -- ^ Scale factor
-  -> FieldElement ctx     -- ^ Variable x
-  -> FieldElement ctx     -- ^ Result: 1 / (constant + scale * x)
-invAffineOrFail c s (FieldElement x) = 
+  :: forall ctx k s
+   . (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
+  => k
+  -- ^ Constant term
+  -> s
+  -- ^ Scale factor
+  -> FieldElement ctx
+  -- ^ Variable x
+  -> FieldElement ctx
+  -- ^ Result: 1 / (constant + scale * x)
+invAffineOrFail c s (FieldElement x) =
   let c' = fromConstant c :: BaseField ctx
       s' = fromConstant s :: BaseField ctx
-  in FieldElement $
-       fromCircuitF x $ \(Par1 i) ->
-         Par1 <$> newConstrained 
-           (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
-           (finv (fromConstant c' + fromConstant s' * at i))
+   in FieldElement $
+        fromCircuitF x $ \(Par1 i) ->
+          Par1
+            <$> newConstrained
+              (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
+              (finv (fromConstant c' + fromConstant s' * at i))
 
 -- | Conditional selection: result = onFalse + bit * (onTrue - onFalse)
 -- Uses three PlonkUp constraints (each with at most 3 variables):
 -- 1. diff = onTrue - onFalse
--- 2. prod = bit * diff  
+-- 2. prod = bit * diff
 -- 3. result = onFalse + prod
 -- The bit parameter must be 0 or 1.
 conditionalSelect
   :: Symbolic ctx
-  => FieldElement ctx  -- ^ Selector bit (0 or 1)
-  -> FieldElement ctx  -- ^ onFalse (value when bit=0)
-  -> FieldElement ctx  -- ^ onTrue (value when bit=1)
-  -> FieldElement ctx  -- ^ Result: onFalse + bit * (onTrue - onFalse)
+  => FieldElement ctx
+  -- ^ Selector bit (0 or 1)
+  -> FieldElement ctx
+  -- ^ onFalse (value when bit=0)
+  -> FieldElement ctx
+  -- ^ onTrue (value when bit=1)
+  -> FieldElement ctx
+  -- ^ Result: onFalse + bit * (onTrue - onFalse)
 conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
   FieldElement $
     fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) -> do
