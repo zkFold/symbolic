@@ -142,11 +142,9 @@ conditionalSelect
 conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
   FieldElement $
     fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) -> do
-      -- Constraint 1: diff = onTrue - onFalse (3 vars: t, f, diff)
+      -- result = onFalse + bit * (onTrue - onFalse)
       diff <- newAssigned (\w -> w t - w f)
-      -- Constraint 2: prod = bit * diff (3 vars: b, diff, prod)
       prod <- newAssigned (\w -> w b * w diff)
-      -- Constraint 3: result = onFalse + prod (3 vars: f, prod, result)
       Par1 <$> newAssigned (\w -> w f + w prod)
 
 instance
