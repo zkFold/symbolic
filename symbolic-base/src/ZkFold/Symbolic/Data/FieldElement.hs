@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements, finvOrFail, invAffineOrFail, conditionalSelect, scaleAddConst) where
+module ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements, finvOrFail, invAffineOrFail, conditionalSelect) where
 
 import Control.DeepSeq (NFData)
 import Data.Foldable (foldr)
@@ -104,46 +104,14 @@ instance Symbolic c => Field (FieldElement c) where
       symbolicF x (\(Par1 v) -> Par1 (finv v)) $
         fmap snd . runInvert
 
--- | Optimized field inversion that uses only 1 constraint.
--- IMPORTANT: This assumes the input is non-zero. If the input is zero,
--- the circuit will be unsatisfiable.
--- Use this only when you can guarantee the input is non-zero.
+-- | Field inversion using 1 constraint when input is guaranteed non-zero.
 finvOrFail :: Symbolic c => FieldElement c -> FieldElement c
 finvOrFail (FieldElement x) =
   FieldElement $
     symbolicF x (\(Par1 v) -> Par1 (finv v)) runInvertOrFail
 
--- | Compute (constant + scale * x) in a single constraint.
--- This is more efficient than `fromConstant c + scale s x` which uses 2 constraints.
--- The PlonkUp constraint: qL*x + qC = result  =>  s*x + c - result = 0
--- Uses selectors: qL=s, qC=c, qO=-1
-scaleAddConst
-  :: forall ctx k s. (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
-  => k                    -- ^ Constant term
-  -> s                    -- ^ Scale factor
-  -> FieldElement ctx     -- ^ Variable to scale
-  -> FieldElement ctx     -- ^ Result: constant + scale * variable
-scaleAddConst c s (FieldElement x) = 
-  let c' = fromConstant c :: BaseField ctx
-      s' = fromConstant s :: BaseField ctx
-  in FieldElement $
-       fromCircuitF x $ \(Par1 i) ->
-         Par1 <$> newAssigned (\w -> fromConstant c' + fromConstant s' * w i)
-
--- | Compute the inverse of an affine function: 1 / (constant + scale * x)
--- Uses only 1 constraint by inlining the affine function into the inversion.
--- 
--- Instead of:
---   1. y = c + s*x  (1 constraint)
---   2. inv * y = 1  (1 constraint)
--- 
--- We use a single combined constraint:
---   s*x*inv + c*inv - 1 = 0  (1 constraint)
---
--- PlonkUp form: qM*x*inv + qL*inv + qC = 0  with qM=s, qL=c, qC=-1
---
--- IMPORTANT: This assumes (c + s*x) is non-zero. If it's zero, the circuit
--- will be unsatisfiable.
+-- | Compute 1 / (constant + scale * x) using 1 constraint.
+-- Assumes (constant + scale * x) is non-zero.
 invAffineOrFail
   :: forall ctx k s. (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
   => k                    -- ^ Constant term
@@ -155,19 +123,12 @@ invAffineOrFail c s (FieldElement x) =
       s' = fromConstant s :: BaseField ctx
   in FieldElement $
        fromCircuitF x $ \(Par1 i) ->
-         -- Constraint: s*x*inv + c*inv - 1 = 0
-         -- Witness: inv = 1 / (c + s*x)
          Par1 <$> newConstrained 
            (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
            (finv (fromConstant c' + fromConstant s' * at i))
 
--- | Efficient conditional selection: result = onFalse + bit * (onTrue - onFalse)
--- Uses 1 PlonkUp constraint instead of ~10+ from interpolation.
---
--- The generic `bool` via `interpolate` costs significantly more constraints.
--- Use this function when selecting between two field elements based on a bit.
---
--- SAFETY: The bit parameter must be 0 or 1 for correct results.
+-- | Conditional selection: result = onFalse + bit * (onTrue - onFalse)
+-- The bit parameter must be 0 or 1.
 conditionalSelect
   :: Symbolic ctx
   => FieldElement ctx  -- ^ Selector bit (0 or 1)
@@ -177,8 +138,6 @@ conditionalSelect
 conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
   FieldElement $
     fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) ->
-      -- result = onFalse + bit * (onTrue - onFalse)
-      -- = bit * onTrue + (1 - bit) * onFalse
       Par1 <$> newAssigned (\w -> w f + w b * (w t - w f))
 
 instance

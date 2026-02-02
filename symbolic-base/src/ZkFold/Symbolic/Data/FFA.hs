@@ -5,7 +5,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
 
-module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaDivOrFail, ffaScaleAddConst, ffaInvAffineOrFail, ffaConditionalSelect) where
+module ZkFold.Symbolic.Data.FFA (UIntFFA (..), FFA (..), KnownFFA, FFAMaxBits, toUInt, unsafeFromInt, fromInt, unsafeFromUInt, fromUInt, ffaFinvOrFail, ffaInvAffineOrFail, ffaConditionalSelect) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (Monad (..))
@@ -44,7 +44,7 @@ import ZkFold.Symbolic.Data.Combinators (
   NumberOfRegisters,
   Resize (..),
  )
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, scaleAddConst, invAffineOrFail, conditionalSelect)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..), finvOrFail, invAffineOrFail, conditionalSelect)
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
 import ZkFold.Symbolic.Data.Int (Int, isNegative, uint)
 import ZkFold.Symbolic.Data.Ord (Ord (..))
@@ -384,68 +384,21 @@ instance (Symbolic c, KnownFFA p r c, Prime p) => Field (FFA p r c) where
 instance Finite (Zp p) => Finite (FFA p r c) where
   type Order (FFA p r c) = p
 
--- | Optimized field inversion for FFA that uses only 1 constraint (for native case).
--- IMPORTANT: This assumes the input is non-zero. If the input is zero,
--- the circuit will be unsatisfiable.
--- Use this only when you can guarantee the input is non-zero.
---
--- For native case (circuit field = FFA prime), uses finvOrFail which is
--- 1 constraint instead of 2. For non-native case, the optimization is less
--- significant because non-native FFA operations have other overhead, so we
--- fall back to regular finv for simplicity.
+-- | Field inversion for FFA using 1 constraint when input is guaranteed non-zero.
+-- Falls back to regular finv for non-native case.
 ffaFinvOrFail
   :: forall p r c
    . (Symbolic c, KnownFFA p r c, Prime p)
   => FFA p r c
   -> FFA p r c
 ffaFinvOrFail (FFA nx _ux) =
-  -- For native case, use finvOrFail which is 1 constraint instead of 2
-  -- For non-native case, fall back to regular finv (the optimization is less significant)
   if isNative @p @c
     then FFA (finvOrFail nx) (UIntFFA zero)
     else finv (FFA nx _ux)
 
--- | Optimized division for FFA that uses only 1 constraint for inversion (native case).
--- IMPORTANT: This assumes the denominator is non-zero.
-ffaDivOrFail
-  :: forall p r c
-   . (Symbolic c, KnownFFA p r c, Prime p)
-  => FFA p r c
-  -> FFA p r c
-  -> FFA p r c
-ffaDivOrFail num den = num * ffaFinvOrFail den
-
--- | Compute (constant + scale * x) in a single constraint for FFA (native case).
--- This computes: constant + scale * x
--- For native case: uses 1 constraint instead of 2
--- For non-native case: falls back to regular operations
-ffaScaleAddConst
-  :: forall p r c k s
-   . (Symbolic c, KnownFFA p r c, FromConstant k (Zp p), Scale s (Zp p))
-  => k                    -- ^ Constant term
-  -> s                    -- ^ Scale factor
-  -> FFA p r c            -- ^ Variable to scale
-  -> FFA p r c            -- ^ Result: constant + scale * variable
-ffaScaleAddConst c s ffa@(FFA nx _ux) =
-  if isNative @p @c
-    then FFA (scaleAddConst c' s' nx) (UIntFFA zero)
-    else fromConstant (fromConstant c :: Zp p) + fromConstant (scale s one :: Zp p) * ffa
-  where
-    c' = fromZp (fromConstant c :: Zp p) :: Natural
-    s' = fromZp (scale s one :: Zp p) :: Natural
-
--- | Compute 1 / (constant + scale * x) in a single constraint for FFA (native case).
--- This inlines the affine function into the inversion, saving 1 constraint.
---
--- Instead of:
---   1. y = c + s*x  (1 constraint)
---   2. inv * y = 1  (1 constraint)
---
--- We use:
---   s*x*inv + c*inv - 1 = 0  (1 constraint)
---
--- For native case: uses 1 constraint
--- For non-native case: falls back to 2 constraints
+-- | Compute 1 / (constant + scale * x) for FFA.
+-- For native case: uses 1 constraint via inlined affine inversion.
+-- For non-native case: falls back to separate operations.
 ffaInvAffineOrFail
   :: forall p r c k s
    . (Symbolic c, KnownFFA p r c, Prime p, FromConstant k (Zp p), Scale s (Zp p))
@@ -456,18 +409,14 @@ ffaInvAffineOrFail
 ffaInvAffineOrFail c s ffa@(FFA nx _ux) =
   if isNative @p @c
     then FFA (invAffineOrFail c' s' nx) (UIntFFA zero)
-    else ffaFinvOrFail (ffaScaleAddConst c s ffa)
+    else ffaFinvOrFail (fromConstant (fromConstant c :: Zp p) + fromConstant (scale s one :: Zp p) * ffa)
   where
     c' = fromZp (fromConstant c :: Zp p) :: Natural
     s' = fromZp (scale s one :: Zp p) :: Natural
 
 -- | Efficient conditional selection for FFA: result = onFalse + bit * (onTrue - onFalse)
--- Uses 1 constraint per field element instead of ~10+ from interpolation.
---
--- For native FFA (when circuit field = curve field), this uses 1 constraint total.
--- For non-native FFA, falls back to the generic `bool` which uses interpolation.
---
--- SAFETY: The bit parameter must be 0 or 1 for correct results.
+-- For native case: uses 1 constraint per field element.
+-- The bit parameter must be 0 or 1.
 ffaConditionalSelect
   :: forall p r c
    . (Symbolic c, KnownFFA p r c)
