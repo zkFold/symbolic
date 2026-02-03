@@ -1,8 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ZkFold.Symbolic.Data.FieldElement where
+module ZkFold.Symbolic.Data.FieldElement (FieldElement (..), fieldElements, finvOrFail, invAffineOrFail, conditionalSelect) where
 
 import Control.DeepSeq (NFData)
 import Data.Foldable (foldr)
@@ -21,14 +22,14 @@ import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.HFunctor.Classes (HEq, HNFData, HShow)
 import ZkFold.Data.Package (Package, unpacked)
 import ZkFold.Data.Vector (Vector, fromVector, unsafeToVector)
-import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.Class (Symbolic (..), embed, fromCircuit2F, fromCircuit3F, fromCircuitF, symbolicF)
 import ZkFold.Symbolic.Data.Class
-import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert)
+import ZkFold.Symbolic.Data.Combinators (expansion, horner, runInvert, runInvertOrFail)
 import ZkFold.Symbolic.Data.Input
 import ZkFold.Symbolic.Data.Ord
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
-import ZkFold.Symbolic.MonadCircuit (newAssigned)
+import ZkFold.Symbolic.MonadCircuit (Witness (..), newAssigned, newConstrained)
 
 newtype FieldElement c = FieldElement {fromFieldElement :: c Par1}
   deriving Generic
@@ -102,6 +103,59 @@ instance Symbolic c => Field (FieldElement c) where
     FieldElement $
       symbolicF x (\(Par1 v) -> Par1 (finv v)) $
         fmap snd . runInvert
+
+-- | Field inversion using 1 constraint when input is guaranteed non-zero.
+finvOrFail :: Symbolic c => FieldElement c -> FieldElement c
+finvOrFail (FieldElement x) =
+  FieldElement $
+    symbolicF x (\(Par1 v) -> Par1 (finv v)) runInvertOrFail
+
+-- | Compute 1 / (constant + scale * x) using 1 constraint.
+-- Assumes (constant + scale * x) is non-zero.
+invAffineOrFail
+  :: forall ctx k s
+   . (Symbolic ctx, FromConstant k (BaseField ctx), FromConstant s (BaseField ctx))
+  => k
+  -- ^ Constant term
+  -> s
+  -- ^ Scale factor
+  -> FieldElement ctx
+  -- ^ Variable x
+  -> FieldElement ctx
+  -- ^ Result: 1 / (constant + scale * x)
+invAffineOrFail c s (FieldElement x) =
+  let c' = fromConstant c :: BaseField ctx
+      s' = fromConstant s :: BaseField ctx
+   in FieldElement $
+        fromCircuitF x $ \(Par1 i) ->
+          Par1
+            <$> newConstrained
+              (\w inv -> fromConstant s' * w i * w inv + fromConstant c' * w inv - one)
+              (finv (fromConstant c' + fromConstant s' * at i))
+
+-- | Conditional selection: result = onFalse + bit * (onTrue - onFalse)
+-- Uses three PlonkUp constraints (each with at most 3 variables):
+-- 1. diff = onTrue - onFalse
+-- 2. prod = bit * diff
+-- 3. result = onFalse + prod
+-- The bit parameter must be 0 or 1.
+conditionalSelect
+  :: Symbolic ctx
+  => FieldElement ctx
+  -- ^ Selector bit (0 or 1)
+  -> FieldElement ctx
+  -- ^ onFalse (value when bit=0)
+  -> FieldElement ctx
+  -- ^ onTrue (value when bit=1)
+  -> FieldElement ctx
+  -- ^ Result: onFalse + bit * (onTrue - onFalse)
+conditionalSelect (FieldElement bit) (FieldElement onFalse) (FieldElement onTrue) =
+  FieldElement $
+    fromCircuit3F bit onFalse onTrue $ \(Par1 b) (Par1 f) (Par1 t) -> do
+      -- result = onFalse + bit * (onTrue - onFalse)
+      diff <- newAssigned (\w -> w t - w f)
+      prod <- newAssigned (\w -> w b * w diff)
+      Par1 <$> newAssigned (\w -> w f + w prod)
 
 instance
   ( KnownNat (Order (FieldElement c))
