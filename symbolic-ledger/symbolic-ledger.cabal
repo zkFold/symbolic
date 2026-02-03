@@ -151,3 +151,17 @@ test-suite symbolic-ledger-test
     hspec <2.12,
     symbolic-base,
     symbolic-ledger,
+
+benchmark bench-circuit-size
+  import: options-exe
+  main-is: CircuitSize.hs
+  hs-source-dirs: bench
+  type: exitcode-stdio-1.0
+  ghc-options: -O3
+  build-depends:
+    base,
+    bytestring,
+    symbolic-base,
+    symbolic-ledger,
+    tasty,
+    tasty-golden
