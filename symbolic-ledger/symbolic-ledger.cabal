@@ -164,4 +164,4 @@ benchmark bench-circuit-size
     symbolic-base,
     symbolic-ledger,
     tasty,
-    tasty-golden
+    tasty-golden,
