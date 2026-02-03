@@ -5,16 +5,16 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Function (($))
 import Data.Semigroup (Semigroup (..))
 import Data.String (String)
-import qualified Data.String as String
+import Data.String qualified as String
 import System.IO (IO)
-import qualified Test.Tasty as Tasty
-import qualified Test.Tasty.Golden as Golden
+import Test.Tasty qualified as Tasty
+import Test.Tasty.Golden qualified as Golden
 import Text.Show (Show (..))
 import ZkFold.ArithmeticCircuit (ArithmeticCircuit)
-import qualified ZkFold.ArithmeticCircuit as Circuit
+import ZkFold.ArithmeticCircuit qualified as Circuit
 
-import ZkFold.Symbolic.Ledger.Circuit.Compile (ledgerCircuit, LedgerCircuit)
-import ZkFold.Symbolic.Ledger.Examples.One (Bi, Bo, Ud, A, Ixs, Oxs, TxCount)
+import ZkFold.Symbolic.Ledger.Circuit.Compile (LedgerCircuit, ledgerCircuit)
+import ZkFold.Symbolic.Ledger.Examples.One (A, Bi, Bo, Ixs, Oxs, TxCount, Ud)
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 
 metrics :: String -> ArithmeticCircuit a i o -> ByteString
