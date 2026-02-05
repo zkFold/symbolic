@@ -39,7 +39,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry (..), MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
@@ -330,11 +330,11 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
             let
               nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
+              -- Note: The contains check is now done via replaceVerified's internal assertion
               isValid' =
                 isInsValidAcc
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
-                  && (acc `MerkleTree.contains` merkleEntry)
                   && ifThenElse
                     (utxoHash == nullUTxOHash')
                     true
@@ -349,12 +349,8 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
              in
               ( isValid'
                   :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
-                  :*: MerkleTree.replace
-                    ( merkleEntry
-                        { MerkleTree.value = nullUTxOHash'
-                        }
-                    )
-                    acc
+                  -- Use replaceVerified for O(log n) root computation instead of O(n)
+                  :*: MerkleTree.replaceVerified merkleEntry nullUTxOHash' acc
               )
         )
         ((true :: Bool context) :*: (false :: Bool context) :*: utxoTree)
@@ -380,22 +376,18 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                           && ifThenElse
                             (output == nullOutput)
                             true
-                            ( (utxoTreeAcc `MerkleTree.contains` merkleEntry)
-                                && (merkleEntry.value == nullUTxOHash @a @context)
+                            ( -- Note: The contains check is now done via replaceVerified's internal assertion
+                              (merkleEntry.value == nullUTxOHash @a @context)
                                 && outputHasValueSanity output
                             )
                       )
                   :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
+                            newUtxoHash = hash utxo & Base.hHash
                          in ifThenElse
                               (output == nullOutput)
                               utxoTreeAcc
-                              ( MerkleTree.replace
-                                  ( merkleEntry
-                                      { MerkleTree.value = hash utxo & Base.hHash
-                                      }
-                                  )
-                                  utxoTreeAcc
-                              )
+                              -- Use replaceVerified for O(log n) root computation instead of O(n)
+                              (MerkleTree.replaceVerified merkleEntry newUtxoHash utxoTreeAcc)
                       )
               )
         )

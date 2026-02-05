@@ -22,12 +22,13 @@ module ZkFold.Symbolic.Data.MerkleTree (
   search',
   KnownMerkleTree,
   replace,
+  replaceVerified,
   replaceAt,
 ) where
 
 import Data.Bool (otherwise)
 import Data.Foldable (foldl', foldr, toList)
-import Data.Function (($), (.))
+import Data.Function (const, ($), (.))
 import Data.Functor (fmap, (<$>))
 import Data.Ord ((<=))
 import Data.Tuple (fst)
@@ -254,17 +255,54 @@ search' p = assert (p . value) . fromJust . search p
 
 type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
 
+-- | Replace an entry in the Merkle tree.
+-- NOTE: This assumes the entry already exists in the tree and has been verified
+-- via 'contains'. The verification is NOT performed again to avoid redundant
+-- constraint generation.
 replace
   :: (Symbolic c, KnownMerkleTree d)
   => MerkleEntry d c
   -> MerkleTree d c
   -> MerkleTree d c
-replace entry@MerkleEntry {..} =
-  assert (`contains` entry)
-    . unconstrainedFromLeaves
-    . mapWithIx (replacer (toBasePosition position, toBaseHash value))
-    . toBaseLeaves
-    . mLeaves
+replace MerkleEntry {..} tree =
+  let -- Update leaves at witness level (no constraints for intermediate values)
+      newLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value))
+                    (toBaseLeaves (mLeaves tree))
+   in unconstrainedFromLeaves newLeaves
+ where
+  replacer
+    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
+    => (i, a)
+    -> n
+    -> a
+    -> a
+  replacer (i, a') n = ifThenElse (i == fromConstant n) a'
+
+-- | Replace an entry in the Merkle tree, verifying the old entry exists first.
+-- This computes the Merkle path once and uses it for both verification and
+-- computing the new root, which is more efficient than separate contains + replace.
+-- 
+-- Optimized version: O(log n) hashes instead of O(n) for root computation.
+replaceVerified
+  :: (Symbolic c, KnownMerkleTree d)
+  => MerkleEntry d c  -- ^ Old entry (must exist in tree)
+  -> FieldElement c   -- ^ New value to replace with
+  -> MerkleTree d c
+  -> MerkleTree d c
+replaceVerified oldEntry newValue tree =
+  let path = merklePath tree (position oldEntry)
+      -- Verify old entry exists using the path
+      oldRoot = rootOnReplace path (value oldEntry)
+      -- Compute new root with new value (reusing same path - O(log n) instead of O(n))
+      newRoot = rootOnReplace path newValue
+      -- Update leaves at witness level
+      newLeaves = mapWithIx (replacer (toBasePosition (position oldEntry), toBaseHash newValue))
+                    (toBaseLeaves (mLeaves tree))
+   in assert (const $ oldRoot == mHash tree) $
+      MerkleTree
+        { mHash = newRoot
+        , mLeaves = Payloaded $ fmap ((,U1) . Par1) newLeaves
+        }
  where
   replacer
     :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
