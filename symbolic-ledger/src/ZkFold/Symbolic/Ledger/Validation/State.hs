@@ -118,17 +118,19 @@ validateStateUpdateIndividualChecks previousState action newState sw =
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
+    -- Precompute nullUTxOHash once to avoid redundant computation
+    nullUTxOHash' = nullUTxOHash @a @context
+    
     (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
       foldl'
         ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
-            let nullUTxOHash' = nullUTxOHash @a @context
-                isValid' =
+            let isValid' =
                   isValidAcc
                     && ifThenElse
                       (output == nullOutput)
                       true
-                      ( (acc `MerkleTree.contains` merkleEntry)
-                          && (merkleEntry.value == nullUTxOHash')
+                      ( -- The contains check is done via replaceVerified's internal assertion
+                        (merkleEntry.value == nullUTxOHash')
                           && outputHasValueSanity output
                       )
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
@@ -137,13 +139,8 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                     :*: isValid'
                     :*: ifThenElse
                       (isValid' && (output /= nullOutput))
-                      ( MerkleTree.replace
-                          ( merkleEntry
-                              { MerkleTree.value = utxoHash
-                              }
-                          )
-                          acc
-                      )
+                      -- Use replaceVerified for O(log n) root computation instead of O(n)
+                      (MerkleTree.replaceVerified merkleEntry utxoHash acc)
                       acc
                 )
         )
