@@ -275,14 +275,23 @@ replace entry@MerkleEntry {..} tree =
   path = merklePath tree position
   -- New root is computed using the Merkle path (O(log n) circuit constraints)
   newRoot = rootOnReplace path value
-  -- Update leaves in witness using the same pattern as original but rebuild with new root
+  -- Update leaves in witness (no circuit constraints).
+  -- We reconstruct Payloaded with (Par1 witnessValue, U1) pairs to match
+  -- the Layout/Payload structure for FieldElement.
   newLeaves =
     let oldLeaves = toBaseLeaves (mLeaves tree)
         updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value)) oldLeaves
      in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
   result = MerkleTree newRoot newLeaves
 
-  -- Witness-level replacer (no circuit constraints since operating on WitnessField)
+  -- Witness-level replacer: updates leaf at index idx to newVal.
+  -- Uses witness-level equality and conditional (no circuit constraints).
+  replacer
+    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
+    => (i, a)
+    -> n
+    -> a
+    -> a
   replacer (idx, newVal) n oldVal =
     ifThenElse (idx == fromConstant n) newVal oldVal
 
