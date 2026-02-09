@@ -254,25 +254,37 @@ search' p = assert (p . value) . fromJust . search p
 
 type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
 
+-- | Optimized replace using path-based update.
+-- Complexity: O(log n) for circuit constraints instead of O(n).
+--
+-- The circuit only constrains:
+-- 1. New root computation via rootOnReplace (d-1 hashes)
+-- 2. Verification that new tree contains entry (d-1 hashes)
+-- Total: 2×(d-1) MiMC hashes = 2×(d-1)×660 constraints
+--
+-- Note: The witness update still iterates over all leaves, but uses
+-- witness-level (non-circuit) operations.
 replace
   :: (Symbolic c, KnownMerkleTree d)
   => MerkleEntry d c
   -> MerkleTree d c
   -> MerkleTree d c
-replace entry@MerkleEntry {..} =
-  assert (`contains` entry)
-    . unconstrainedFromLeaves
-    . mapWithIx (replacer (toBasePosition position, toBaseHash value))
-    . toBaseLeaves
-    . mLeaves
+replace entry@MerkleEntry {..} tree =
+  assert (`contains` entry) result
  where
-  replacer
-    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
-    => (i, a)
-    -> n
-    -> a
-    -> a
-  replacer (i, a') n = ifThenElse (i == fromConstant n) a'
+  path = merklePath tree position
+  -- New root is computed using the Merkle path (O(log n) circuit constraints)
+  newRoot = rootOnReplace path value
+  -- Update leaves in witness using the same pattern as original but rebuild with new root
+  newLeaves =
+    let oldLeaves = toBaseLeaves (mLeaves tree)
+        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value)) oldLeaves
+     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
+  result = MerkleTree newRoot newLeaves
+
+  -- Witness-level replacer (no circuit constraints since operating on WitnessField)
+  replacer (idx, newVal) n oldVal =
+    ifThenElse (idx == fromConstant n) newVal oldVal
 
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)

@@ -118,6 +118,7 @@ examples =
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("Exp65537Mod", exampleOutput @A expModContract)
   , ("MerkleTree.Insert.5", exampleOutput @A $ exampleMerkleTreeInsert @5)
+  , ("MerkleTree.Insert.20", exampleOutput @A $ exampleMerkleTreeInsert @20)
   -- , ("RSA.sign.verify.256", exampleOutput @A exampleRSA)
   -- , ("JWT.secretBits", exampleOutput @A $ exampleJWTSerialisation)
   -- , ("ZkloginNoSig", exampleOutput @A $ exampleZkLoginNoSig)
