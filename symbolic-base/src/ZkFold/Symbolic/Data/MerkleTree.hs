@@ -72,13 +72,6 @@ deriving instance (HShow c, P.Show (WitnessField c)) => P.Show (MerkleTree d c)
 emptyTree :: (KnownNat (Base.MerkleTreeSize d), Symbolic c) => MerkleTree d c
 emptyTree = fromLeaves zero
 
-unconstrainedFromLeaves
-  :: Symbolic c => Base.Leaves d (WitnessField c) -> MerkleTree d c
-unconstrainedFromLeaves src@(Payloaded . fmap ((,U1) . Par1) -> mLeaves) =
-  MerkleTree {..}
- where
-  mHash = fromBaseHash (Base.computeRoot src)
-
 fromLeaves :: Symbolic c => Base.Leaves d (FieldElement c) -> MerkleTree d c
 fromLeaves src@(payloaded -> mLeaves) = MerkleTree {..}
  where
