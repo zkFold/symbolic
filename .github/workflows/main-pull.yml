@@ -93,8 +93,11 @@ jobs:
     - name: Run other tests
       run: cabal test all --test-option="--skip=symbolic-base-test"
 
-    - name: Benchmark circuit size
-      run: cabal bench bench-circuit-size
+    - name: Benchmark circuit size for symbolic examples
+      run: cabal bench symbolic-examples:bench-circuit-size
+
+    - name: Benchmark circuit size for symbolic ledger
+      run: cabal bench symbolic-ledger:bench-circuit-size
 
     - name: Benchmark compiler performance
       run: cabal bench bench-compiler-performance

@@ -157,7 +157,7 @@ benchmark bench-compiler-performance
       symbolic-examples,
       tasty-bench
 
-benchmark bench-examples-circuit-size
+benchmark bench-circuit-size
     import:           options-exe
     main-is:          CircuitSize.hs
     hs-source-dirs:   bench
