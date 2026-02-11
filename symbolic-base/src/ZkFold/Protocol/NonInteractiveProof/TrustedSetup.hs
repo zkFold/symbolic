@@ -1,4 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 
 module ZkFold.Protocol.NonInteractiveProof.TrustedSetup (
   readTrustedSetup,
@@ -44,7 +46,10 @@ powersOfTau2e18p6 = powersOfTauSubset
 -- | Read no more than 2^18 + 6 G1 points and both G2 points from the Midnight trusted setup.
 powersOfTauSubset :: forall (n :: Natural). KnownNat n => IO (TrustedSetup n)
 powersOfTauSubset = do
-  fp <- getDataFileName "data/midnight_powers_of_tau_2e18"
+  let n = value @n
+  fp <- if n P.<= 2 P.^ 18 P.+ 6
+    then getDataFileName "data/midnight_powers_of_tau_2e18"
+    else getDataFileName "data/powers_of_tau_2e20"
   Just ts <- readTrustedSetup fp True
   P.pure ts
 
