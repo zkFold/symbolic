@@ -5,6 +5,7 @@
 
 module ZkFold.Data.Vector (
   module ZkFold.Data.Vector,
+  mapAccumL,
   module Data.Zip,
 ) where
 
@@ -22,6 +23,7 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1, Show1)
 import Data.Functor.Rep (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import Data.Int (Int)
+import qualified Data.List as List
 import Data.Maybe (Maybe (..))
 import qualified Data.OpenApi as OpenApi (ToSchema)
 import Data.Semigroup ((<>))
@@ -114,6 +116,9 @@ init (Vector !as) = Vector $ V.init as
 
 scanl :: forall size a b. (b -> a -> b) -> b -> Vector size a -> Vector (size + 1) b
 scanl f z (Vector !as) = Vector $ V.scanl f z as
+
+mapAccumL :: forall size a b c. (a -> b -> (a, c)) -> a -> Vector size b -> (a, Vector size c)
+mapAccumL f z (Vector !as) = let (z', as') = List.mapAccumL f z (V.toList as) in (z', Vector (V.fromList as'))
 
 singleton :: a -> Vector 1 a
 singleton = Vector . pure

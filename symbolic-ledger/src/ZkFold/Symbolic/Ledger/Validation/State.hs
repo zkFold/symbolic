@@ -122,28 +122,25 @@ validateStateUpdateIndividualChecks previousState action newState sw =
       foldl'
         ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
+                isNull = output == nullOutput
+                sanity = outputHasValueSanity output
+                utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
+                utxoHash = hash utxo & Base.hHash
+                (isInTree, updatedTree) = MerkleTree.containsAndReplace merkleEntry utxoHash acc
                 isValid' =
                   isValidAcc
                     && ifThenElse
-                      (output == nullOutput)
+                      isNull
                       true
-                      ( (acc `MerkleTree.contains` merkleEntry)
+                      ( isInTree
                           && (merkleEntry.value == nullUTxOHash')
-                          && outputHasValueSanity output
+                          && sanity
                       )
-                utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
-                utxoHash = hash utxo & Base.hHash
              in ( (ix + one)
                     :*: isValid'
                     :*: ifThenElse
-                      (isValid' && (output /= nullOutput))
-                      ( MerkleTree.replace
-                          ( merkleEntry
-                              { MerkleTree.value = utxoHash
-                              }
-                          )
-                          acc
-                      )
+                      (isValid' && (not isNull))
+                      updatedTree
                       acc
                 )
         )
