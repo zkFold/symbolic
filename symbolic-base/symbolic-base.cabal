@@ -13,6 +13,7 @@ license-file:       LICENSE
 build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
+    data/powers_of_tau_2e20
     data/midnight_powers_of_tau_2e18
 extra-source-files:
   rust-wrapper/*.toml
@@ -479,3 +480,12 @@ executable group-elements-generator
       bytestring,
       optparse-applicative,
       symbolic-base
+
+executable verify-setup
+  import: options-exe
+  main-is: VerifySetup.hs
+  hs-source-dirs: test
+  build-depends:
+    base,
+    symbolic-base,
+    vector,
