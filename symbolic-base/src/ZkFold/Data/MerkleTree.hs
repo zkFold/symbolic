@@ -63,7 +63,7 @@ merkleHash = mimcHash2 mimcConstants zero
 -- | Hash current value with sibling based on bit direction
 hashWithSibling :: (Ring h, Conditional b h) => h -> (b, h) -> h
 hashWithSibling current (bit, sibling) =
-  let left  = ifThenElse bit sibling current
+  let left = ifThenElse bit sibling current
       right = ifThenElse bit current sibling
    in merkleHash left right
 
