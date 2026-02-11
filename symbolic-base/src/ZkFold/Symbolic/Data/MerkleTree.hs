@@ -22,6 +22,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
   search',
   KnownMerkleTree,
   replace,
+  containsAndReplace,
   replaceAt,
 ) where
 
@@ -260,6 +261,34 @@ replace entry@MerkleEntry {..} tree =
   newLeaves =
     let oldLeaves = toBaseLeaves (mLeaves tree)
         updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value)) oldLeaves
+     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
+  result = MerkleTree newRoot newLeaves
+
+  replacer
+    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
+    => (i, a)
+    -> n
+    -> a
+    -> a
+  replacer (idx, newVal) n oldVal =
+    ifThenElse (idx == fromConstant n) newVal oldVal
+
+-- | Combined contains + replace sharing the merkle path.
+-- Saves one rootOnReplace vs separate contains + replace.
+containsAndReplace
+  :: (Symbolic c, KnownMerkleTree d)
+  => MerkleEntry d c
+  -> FieldElement c
+  -> MerkleTree d c
+  -> (Bool c, MerkleTree d c)
+containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
+ where
+  path = merklePath tree position
+  isContained = rootOnReplace path value == mHash tree
+  newRoot = rootOnReplace path newValue
+  newLeaves =
+    let oldLeaves = toBaseLeaves (mLeaves tree)
+        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash newValue)) oldLeaves
      in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
   result = MerkleTree newRoot newLeaves
 
