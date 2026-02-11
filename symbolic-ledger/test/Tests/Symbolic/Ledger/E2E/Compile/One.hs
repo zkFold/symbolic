@@ -1,5 +1,5 @@
 module Tests.Symbolic.Ledger.E2E.Compile.One (specE2ECompileOne) where
-  
+
 import Control.Applicative (pure)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
