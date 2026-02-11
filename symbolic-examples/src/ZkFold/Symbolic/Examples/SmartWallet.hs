@@ -122,8 +122,8 @@ mkSetup PlonkupVerifierSetup {..} =
         , cmT2_bytes = convertG1' cmT2
         , cmT3_bytes = convertG1' cmT3
         }
-  where
-    convertG1' = ByteStringFromHex . convertG1
+ where
+  convertG1' = ByteStringFromHex . convertG1
 
 mkProof :: forall i (n :: Natural). Proof (PlonkupTs i n ByteString) -> ZKProofBytes
 mkProof PlonkupProof {..} =
