@@ -72,13 +72,6 @@ deriving instance (HShow c, P.Show (WitnessField c)) => P.Show (MerkleTree d c)
 emptyTree :: (KnownNat (Base.MerkleTreeSize d), Symbolic c) => MerkleTree d c
 emptyTree = fromLeaves zero
 
-unconstrainedFromLeaves
-  :: Symbolic c => Base.Leaves d (WitnessField c) -> MerkleTree d c
-unconstrainedFromLeaves src@(Payloaded . fmap ((,U1) . Par1) -> mLeaves) =
-  MerkleTree {..}
- where
-  mHash = fromBaseHash (Base.computeRoot src)
-
 fromLeaves :: Symbolic c => Base.Leaves d (FieldElement c) -> MerkleTree d c
 fromLeaves src@(payloaded -> mLeaves) = MerkleTree {..}
  where
@@ -259,20 +252,25 @@ replace
   => MerkleEntry d c
   -> MerkleTree d c
   -> MerkleTree d c
-replace entry@MerkleEntry {..} =
-  assert (`contains` entry)
-    . unconstrainedFromLeaves
-    . mapWithIx (replacer (toBasePosition position, toBaseHash value))
-    . toBaseLeaves
-    . mLeaves
+replace entry@MerkleEntry {..} tree =
+  assert (`contains` entry) result
  where
+  path = merklePath tree position
+  newRoot = rootOnReplace path value
+  newLeaves =
+    let oldLeaves = toBaseLeaves (mLeaves tree)
+        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value)) oldLeaves
+     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
+  result = MerkleTree newRoot newLeaves
+
   replacer
     :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
     => (i, a)
     -> n
     -> a
     -> a
-  replacer (i, a') n = ifThenElse (i == fromConstant n) a'
+  replacer (idx, newVal) n oldVal =
+    ifThenElse (idx == fromConstant n) newVal oldVal
 
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
