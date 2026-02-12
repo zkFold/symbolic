@@ -305,20 +305,22 @@ mkSetup PlonkupVerifierSetup {..} =
         , omegaNPrv_int = convertZp (omega ^ (prvNum relation + 1))
         , k1_int = convertZp k1
         , k2_int = convertZp k2
-        , h1_bytes = convertG2 h1
-        , cmQm_bytes = convertG1 cmQm
-        , cmQl_bytes = convertG1 cmQl
-        , cmQr_bytes = convertG1 cmQr
-        , cmQo_bytes = convertG1 cmQo
-        , cmQc_bytes = convertG1 cmQc
-        , cmQk_bytes = convertG1 cmQk
-        , cmS1_bytes = convertG1 cmS1
-        , cmS2_bytes = convertG1 cmS2
-        , cmS3_bytes = convertG1 cmS3
-        , cmT1_bytes = convertG1 cmT1
-        , cmT2_bytes = convertG1 cmT2
-        , cmT3_bytes = convertG1 cmT3
+        , h1_bytes = ByteStringFromHex $ convertG2 h1
+        , cmQm_bytes = convertG1' cmQm
+        , cmQl_bytes = convertG1' cmQl
+        , cmQr_bytes = convertG1' cmQr
+        , cmQo_bytes = convertG1' cmQo
+        , cmQc_bytes = convertG1' cmQc
+        , cmQk_bytes = convertG1' cmQk
+        , cmS1_bytes = convertG1' cmS1
+        , cmS2_bytes = convertG1' cmS2
+        , cmS3_bytes = convertG1' cmS3
+        , cmT1_bytes = convertG1' cmT1
+        , cmT2_bytes = convertG1' cmT2
+        , cmT3_bytes = convertG1' cmT3
         }
+  where
+    convertG1' = ByteStringFromHex . convertG1
 
 mkProof :: forall bi bo a i (n :: Natural). Proof (PlonkupTs bi bo a i n ByteString) -> ZKProofBytes
 mkProof PlonkupProof {..} =
