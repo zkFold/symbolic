@@ -232,28 +232,33 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     -- Whether an input asset matches the current output asset by policy and name.
                     sameAsset av = (av.assetPolicy == outputAsset.assetPolicy) && (av.assetName == outputAsset.assetName)
 
-
-
                     -- Compute remaining before each input using a prefix scan across inputs.
                     inputsVec = unComp1 inputAssetsAcc'
                     (finalRemaining, updatedInputs) =
                       Vector.mapAccumL
-                        (\remBefore inAssetsComp ->
-                          let asVec = unComp1 inAssetsComp
-                              (remAfter, updatedAs) =
-                                Vector.mapAccumL
-                                  (\r av ->
-                                    let isMatch = sameAsset av
-                                        canFull = r >= av.assetQuantity
-                                        consumed = ifThenElse isMatch
-                                          (ifThenElse canFull av.assetQuantity r) zero
-                                        newR = r + negate consumed
-                                        newQty = ifThenElse isMatch
-                                          (av.assetQuantity + negate consumed) av.assetQuantity
-                                    in (newR, av { assetQuantity = newQty })
-                                  )
-                                  remBefore asVec
-                          in (remAfter, Comp1 updatedAs)
+                        ( \remBefore inAssetsComp ->
+                            let asVec = unComp1 inAssetsComp
+                                (remAfter, updatedAs) =
+                                  Vector.mapAccumL
+                                    ( \r av ->
+                                        let isMatch = sameAsset av
+                                            canFull = r >= av.assetQuantity
+                                            consumed =
+                                              ifThenElse
+                                                isMatch
+                                                (ifThenElse canFull av.assetQuantity r)
+                                                zero
+                                            newR = r + negate consumed
+                                            newQty =
+                                              ifThenElse
+                                                isMatch
+                                                (av.assetQuantity + negate consumed)
+                                                av.assetQuantity
+                                         in (newR, av {assetQuantity = newQty})
+                                    )
+                                    remBefore
+                                    asVec
+                             in (remAfter, Comp1 updatedAs)
                         )
                         outputAsset.assetQuantity
                         inputsVec
@@ -304,9 +309,9 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                         == utxo.uOutput.oAddress
                         && eddsaVerify
                           hashFn
-                              publicKey
-                              txId'
-                              (rPoint :*: s)
+                          publicKey
+                          txId'
+                          (rPoint :*: s)
                     )
              in
               ( isValid'
@@ -350,10 +355,10 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                                           && sanity
                                       )
                                 )
-                                :*: ifThenElse
-                                  isNull
-                                  utxoTreeAcc
-                                  updatedTree
+                                  :*: ifThenElse
+                                    isNull
+                                    utxoTreeAcc
+                                    updatedTree
                           )
                   )
         )

@@ -1,4 +1,3 @@
-
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 
 module ZkFold.Symbolic.Ledger.Examples.Three (
@@ -195,7 +194,7 @@ tx2 =
                     }
                 )
                   :*: false
-              ,  bridgeOutOutput
+              , bridgeOutOutput
                   :*: true
               ]
           )
