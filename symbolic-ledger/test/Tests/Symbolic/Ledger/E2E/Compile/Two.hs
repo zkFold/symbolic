@@ -1,5 +1,4 @@
 module Tests.Symbolic.Ledger.E2E.Compile.Two (specE2ECompileTwo) where
-  
 
 import Control.Applicative (pure)
 import Data.ByteString (ByteString)

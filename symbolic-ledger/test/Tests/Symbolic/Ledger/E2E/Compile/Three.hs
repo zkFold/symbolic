@@ -1,5 +1,4 @@
 module Tests.Symbolic.Ledger.E2E.Compile.Three (specE2ECompileThree) where
-  
 
 import Control.Applicative (pure)
 import Data.ByteString (ByteString)
@@ -21,7 +20,6 @@ import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
-import ZkFold.Symbolic.Ledger.Examples.Three
 
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
@@ -32,6 +30,7 @@ import ZkFold.Symbolic.Ledger.Circuit.Compile (
   ledgerProof,
   ledgerSetup,
  )
+import ZkFold.Symbolic.Ledger.Examples.Three
 
 specE2ECompileThree :: Spec
 specE2ECompileThree =
