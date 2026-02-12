@@ -98,6 +98,7 @@ library
     ZkFold.Symbolic.Ledger.Circuit.Compile
     ZkFold.Symbolic.Ledger.Examples.One
     ZkFold.Symbolic.Ledger.Examples.Two
+    ZkFold.Symbolic.Ledger.Examples.Three
     ZkFold.Symbolic.Ledger.Offchain.State.Update
     ZkFold.Symbolic.Ledger.Types
     ZkFold.Symbolic.Ledger.Types.Address
@@ -138,8 +139,10 @@ test-suite symbolic-ledger-test
     Tests.Symbolic.Ledger.E2E.Compile
     Tests.Symbolic.Ledger.E2E.Compile.One
     Tests.Symbolic.Ledger.E2E.Compile.Two
+    Tests.Symbolic.Ledger.E2E.Compile.Three
     Tests.Symbolic.Ledger.E2E.One
     Tests.Symbolic.Ledger.E2E.Two
+    Tests.Symbolic.Ledger.E2E.Three
     Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden
     Tests.Symbolic.Ledger.Update
 
