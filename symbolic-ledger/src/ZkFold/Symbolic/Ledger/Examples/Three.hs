@@ -43,7 +43,7 @@ type Bi = 1
 
 type Bo = 1
 
-type Ud = 3 -- Thus 2 ^ (3 - 1) = 4 leaves
+type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 2
 
