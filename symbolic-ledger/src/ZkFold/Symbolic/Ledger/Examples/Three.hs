@@ -37,6 +37,7 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
 import Control.Applicative (pure)
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
+import GHC.IsList (IsList (..))
 import GHC.Natural (Natural)
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
@@ -53,7 +54,6 @@ import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
-import GHC.IsList (IsList(..))
 
 type I = RollupBFInterpreter
 
@@ -344,7 +344,7 @@ sigs =
               )
           ]
       )
-      
+
 sigs2 =
   let
     dummyRPoint :*: dummyS = signTransaction tx4 privateKey
