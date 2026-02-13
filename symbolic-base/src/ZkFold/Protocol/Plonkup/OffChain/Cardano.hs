@@ -33,21 +33,22 @@ data ZKSetupBytes = ZKSetupBytes
   , omegaNPrv_int :: Integer
   , k1_int :: Integer
   , k2_int :: Integer
-  , h1_bytes :: ByteString
-  , cmQm_bytes :: ByteString
-  , cmQl_bytes :: ByteString
-  , cmQr_bytes :: ByteString
-  , cmQo_bytes :: ByteString
-  , cmQc_bytes :: ByteString
-  , cmQk_bytes :: ByteString
-  , cmS1_bytes :: ByteString
-  , cmS2_bytes :: ByteString
-  , cmS3_bytes :: ByteString
-  , cmT1_bytes :: ByteString
-  , cmT2_bytes :: ByteString
-  , cmT3_bytes :: ByteString
+  , h1_bytes :: ByteStringFromHex
+  , cmQm_bytes :: ByteStringFromHex
+  , cmQl_bytes :: ByteStringFromHex
+  , cmQr_bytes :: ByteStringFromHex
+  , cmQo_bytes :: ByteStringFromHex
+  , cmQc_bytes :: ByteStringFromHex
+  , cmQk_bytes :: ByteStringFromHex
+  , cmS1_bytes :: ByteStringFromHex
+  , cmS2_bytes :: ByteStringFromHex
+  , cmS3_bytes :: ByteStringFromHex
+  , cmT1_bytes :: ByteStringFromHex
+  , cmT2_bytes :: ByteStringFromHex
+  , cmT3_bytes :: ByteStringFromHex
   }
   deriving stock (Generic, Show)
+  deriving anyclass (FromJSON, ToJSON)
 
 -- | Field element.
 newtype ZKF = ZKF Integer
