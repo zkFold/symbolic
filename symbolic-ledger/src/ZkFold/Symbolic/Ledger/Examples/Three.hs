@@ -3,6 +3,7 @@
 module ZkFold.Symbolic.Ledger.Examples.Three (
   prevState,
   batch,
+  batch2,
   witness,
   newState,
   utxoPreimage2,
@@ -13,10 +14,16 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   tx1,
   tx2,
   tx3,
+  tx4,
   sigs,
+  sigs2,
   bridgeInOutput,
   bridgedIn,
   bridgeOutOutput,
+  bridgedIn2,
+  newState2,
+  witness2,
+  utxoPreimage3,
   I,
   Bi,
   Bo,
@@ -46,6 +53,7 @@ import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field
 import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
+import GHC.IsList (IsList(..))
 
 type I = RollupBFInterpreter
 
@@ -61,7 +69,7 @@ type Ixs = 2
 
 type Oxs = 2
 
-type TxCount = 3
+type TxCount = 2
 
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
@@ -171,6 +179,46 @@ tx1 =
 -- Total 2 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
+tx2 :: Transaction Ixs Oxs A I
+tx2 =
+  Transaction
+    { inputs =
+        Comp1
+          ( unsafeToVector'
+              [OutputRef {orTxId = tx1Id, orIndex = zero}, OutputRef {orTxId = tx1Id, orIndex = one}]
+          )
+    , outputs =
+        Comp1
+          ( unsafeToVector'
+              [ ( Output
+                    { oAddress = address2
+                    , oAssets =
+                        Comp1 $
+                          unsafeToVector'
+                            [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (5_000_000 :: Natural)}
+                            , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (25_000_000 :: Natural)}
+                            ]
+                    }
+                )
+                  :*: false
+              , ( Output
+                    { oAddress = address
+                    , oAssets =
+                        Comp1 $
+                          unsafeToVector'
+                            [ AssetValue {assetPolicy = adaPolicy, assetName = adaName, assetQuantity = fromConstant (5_000_000 :: Natural)}
+                            , AssetValue {assetPolicy = asset2Policy, assetName = asset2Name, assetQuantity = fromConstant (25_000_000 :: Natural)}
+                            ]
+                    }
+                )
+                  :*: false
+              ]
+          )
+    }
+
+-- "address" has 5 ADA and 25 asset2.
+-- "address2" has 5 ADA and 25 asset2.
+
 -- Cardano address @addr_test1qpxsldf6hmp5vtdhhwzukm8x5q0m9t2xh8cftx8s6a43vll3t8hyc5syfx9lltq9dgr2xdkvwahr9humhpa9tae2jcjsxpxw2h@ (picked randomly from explorer), maps to @4d0fb53abec3462db7bb85cb6ce6a01fb2ad46b9f09598f0d76b167f@ payment credential and @f159ee4c5204498bffac056a06a336cc776e32df9bb87a55f72a9625@ staking credential. And this concatenated hex string (where we concatenate payment credential and staking credential) maps to following base field given the way we convert hex strings to base fields in our rollup plutus validator.
 bridgeOutOutput =
   Output
@@ -183,13 +231,15 @@ bridgeOutOutput =
             ]
     }
 
-tx2 :: Transaction Ixs Oxs A I
-tx2 =
+tx2Id = txId tx2 & Base.hHash
+
+tx3 :: Transaction Ixs Oxs A I
+tx3 =
   Transaction
     { inputs =
         Comp1
           ( unsafeToVector'
-              [OutputRef {orTxId = tx1Id, orIndex = zero}, OutputRef {orTxId = tx1Id, orIndex = one}]
+              [OutputRef {orTxId = tx2Id, orIndex = zero}, OutputRef {orTxId = tx2Id, orIndex = one}]
           )
     , outputs =
         Comp1
@@ -214,23 +264,22 @@ tx2 =
 -- "address" has 5 ADA and 25 asset2.
 -- bridge-out output of 5 ADA and 25 asset2.
 -- Total 1 UTxOs.
-tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
-tx3 =
+tx3Id = txId tx3 & Base.hHash
+
+tx4 :: Transaction Ixs Oxs A I
+tx4 =
   Transaction
     { inputs =
         Comp1
           ( unsafeToVector'
-              [ OutputRef {orTxId = tx2Id, orIndex = zero}
-              , nullOutputRef
-              ]
+              [OutputRef {orTxId = tx3Id, orIndex = zero}, nullOutputRef]
           )
     , outputs =
         Comp1
           ( unsafeToVector'
               [ ( Output
-                    { oAddress = address
+                    { oAddress = address2
                     , oAssets =
                         Comp1 $
                           unsafeToVector'
@@ -241,7 +290,7 @@ tx3 =
                 )
                   :*: false
               , ( Output
-                    { oAddress = address2
+                    { oAddress = address
                     , oAssets =
                         Comp1 $
                           unsafeToVector'
@@ -259,7 +308,10 @@ tx3 =
 -- "address2" has 2.5 ADA and 12.5 asset2.
 
 batch :: TransactionBatch Ixs Oxs A TxCount I
-batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2, tx3]}
+batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2]}
+
+batch2 :: TransactionBatch Ixs Oxs A TxCount I
+batch2 = TransactionBatch {tbTransactions = unsafeToVector' [tx3, tx4]}
 
 sigs =
   let
@@ -275,11 +327,6 @@ sigs =
     publicKeyTx21 = publicKey2
     rPointTx22 :*: sTx22 = signTransaction tx2 privateKey
     publicKeyTx22 = publicKey
-    -- Tx3
-    rPointTx31 :*: sTx31 = signTransaction tx3 privateKey
-    publicKeyTx31 = publicKey
-    rPointTx32 :*: sTx32 = dummyRPoint :*: dummyS
-    publicKeyTx32 = dummyPublicKey
    in
     Comp1
       ( unsafeToVector'
@@ -295,13 +342,44 @@ sigs =
                   , rPointTx22 :*: sTx22 :*: publicKeyTx22
                   ]
               )
+          ]
+      )
+      
+sigs2 =
+  let
+    dummyRPoint :*: dummyS = signTransaction tx4 privateKey
+    dummyPublicKey = publicKey
+    -- Tx3
+    rPointTx11 :*: sTx11 = signTransaction tx3 privateKey2
+    publicKeyTx11 = publicKey2
+    rPointTx12 :*: sTx12 = signTransaction tx3 privateKey
+    publicKeyTx12 = publicKey
+    -- Tx4
+    rPointTx21 :*: sTx21 = dummyRPoint :*: dummyS
+    publicKeyTx21 = dummyPublicKey
+    rPointTx22 :*: sTx22 = dummyRPoint :*: dummyS
+    publicKeyTx22 = dummyPublicKey
+   in
+    Comp1
+      ( unsafeToVector'
+          [ Comp1
+              ( unsafeToVector'
+                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
+                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                  ]
+              )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx31 :*: sTx31 :*: publicKeyTx31
-                  , rPointTx32 :*: sTx32 :*: publicKeyTx32
+                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
+                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
                   ]
               )
           ]
       )
 
 newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+
+bridgedIn2 :: (Vector Bi :.: Output A) I
+bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
+
+newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2

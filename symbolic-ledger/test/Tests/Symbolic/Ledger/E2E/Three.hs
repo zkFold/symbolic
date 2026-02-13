@@ -1,17 +1,5 @@
 module Tests.Symbolic.Ledger.E2E.Three (
   specE2EThree,
-  prevState,
-  batch,
-  witness,
-  newState,
-  I,
-  Bi,
-  Bo,
-  Ud,
-  A,
-  Ixs,
-  Oxs,
-  TxCount,
 ) where
 
 import Test.Hspec (Spec, it, shouldBe)
@@ -32,3 +20,4 @@ specE2EThree =
     let
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
+    validateStateUpdateIndividualChecks newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
