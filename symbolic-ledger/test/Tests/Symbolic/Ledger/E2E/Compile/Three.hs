@@ -1,6 +1,7 @@
 module Tests.Symbolic.Ledger.E2E.Compile.Three (specE2ECompileThree) where
 
 import Control.Applicative (pure)
+import Control.Exception (evaluate)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
 import GHC.TypeNats (type (+))
@@ -20,9 +21,8 @@ import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
-import Control.Exception (evaluate)
-import Tests.Symbolic.Ledger.E2E.Utils (time)
 
+import Tests.Symbolic.Ledger.E2E.Utils (time)
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
   LedgerContractCompiledInput,
@@ -54,28 +54,30 @@ specE2ECompileThree =
             , lciStateWitness = witness2
             }
     compiledCircuit <- time "ledgerCircuit" $ do
-        let c = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
-        _ <- evaluate $ acSizeN c
-        pure c
+      let c = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
+      _ <- evaluate $ acSizeN c
+      pure c
 
     Haskell.putStrLn $
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
 
     let proverSecret = PlonkupProverSecret (pure zero)
 
-    zkLedgerSetup <- time "zkLedgerSetup" $ evaluate $
-        ledgerSetup
-          @ByteString
-          @Bi
-          @Bo
-          @Ud
-          @A
-          @Ixs
-          @Oxs
-          @TxCount
-          @I
-          ts
-          compiledCircuit
+    zkLedgerSetup <-
+      time "zkLedgerSetup" $
+        evaluate $
+          ledgerSetup
+            @ByteString
+            @Bi
+            @Bo
+            @Ud
+            @A
+            @Ixs
+            @Oxs
+            @TxCount
+            @I
+            ts
+            compiledCircuit
 
     zkLedgerProof <- time "zkLedgerProof" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci
     zkLedgerProof2 <- time "zkLedgerProof2" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci2

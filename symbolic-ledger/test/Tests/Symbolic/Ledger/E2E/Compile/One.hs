@@ -1,6 +1,7 @@
 module Tests.Symbolic.Ledger.E2E.Compile.One (specE2ECompileOne) where
 
 import Control.Applicative (pure)
+import Control.Exception (evaluate)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
 import GHC.TypeNats (type (+))
@@ -18,8 +19,6 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (pubInput))
 import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup (..))
 import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
-import Control.Exception (evaluate)
-
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
 
@@ -60,7 +59,9 @@ specE2ECompileOne =
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
     let
       proverSecret = PlonkupProverSecret (pure zero)
-    zkLedgerSetup <- time "zkLedgerSetup" $ evaluate $
+    zkLedgerSetup <-
+      time "zkLedgerSetup" $
+        evaluate $
           ledgerSetup
             @ByteString
             @Bi
