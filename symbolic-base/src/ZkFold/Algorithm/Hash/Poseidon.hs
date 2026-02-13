@@ -159,7 +159,3 @@ poseidonHash params input =
 -- | Poseidon hash with default parameters
 poseidonHashDefault :: Field a => [a] -> a
 poseidonHashDefault = poseidonHash defaultPoseidonParams
-
--- | Poseidon hash for two inputs (Merkle tree use case)
-poseidonHash2 :: Field a => a -> a -> a
-poseidonHash2 x y = poseidonHash defaultPoseidonParams [x, y]

@@ -23,12 +23,14 @@ module ZkFold.Symbolic.Data.MerkleTree (
   KnownMerkleTree,
   replace,
   replaceAt,
+  Index,
 ) where
 
 import Data.Bool (otherwise)
 import Data.Foldable (foldl', foldr, toList)
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
+import Data.List (splitAt, length)
 import Data.Ord ((<=))
 import Data.Tuple (fst)
 import Data.Type.Equality (type (~))
@@ -40,11 +42,13 @@ import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
+import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
+import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
@@ -104,19 +108,84 @@ type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
 
 type Index d = Vector (d - 1) :.: Bool
 
+-- | Compute the merkle path for a given position in the tree.
+-- This implementation uses circuit-level operations throughout to avoid
+-- the exponential WitnessF closure blowup that occurs with witness-level MiMC.
 merklePath
   :: (Symbolic c, KnownNat (d - 1))
   => MerkleTree d c
   -> Index d c
   -> MerklePath d c
 merklePath MerkleTree {..} position =
-  let baseTree = Base.MerkleTree (toBaseHash mHash) (toBaseLeaves mLeaves)
-      path = fromBaseHash <$> Base.merkleProve' baseTree (toBasePosition position)
-   in Comp1 $ zipWith (:*:) (reverse $ unComp1 position) path
+  let leaves = toList $ restored mLeaves
+      levels = computeAllLevelsSymbolic leaves
+      bitsReversed = toList $ reverse $ unComp1 position  -- from leaf toward root
+      siblings = computeSiblingsSymbolic levels bitsReversed
+   in Comp1 $ unsafeToVector $ P.zipWith (:*:) bitsReversed siblings
+
+-- | Compute all tree levels at the circuit level using the circuit-optimized MiMC.
+-- levels[0] = leaves, levels[k] has 2^(n-k) elements, levels[n] = [root]
+computeAllLevelsSymbolic :: Symbolic c => [FieldElement c] -> [[FieldElement c]]
+computeAllLevelsSymbolic [] = []
+computeAllLevelsSymbolic [single] = [[single]]
+computeAllLevelsSymbolic current = current : computeAllLevelsSymbolic (computeNextLevelSymbolic current)
+
+-- | Compute the next level of the tree by hashing pairs.
+computeNextLevelSymbolic :: Symbolic c => [FieldElement c] -> [FieldElement c]
+computeNextLevelSymbolic [] = []
+computeNextLevelSymbolic [_] = []
+computeNextLevelSymbolic (a : b : rest) = merkleHash a b : computeNextLevelSymbolic rest
+
+-- | Compute siblings at each level based on symbolic index bits.
+-- levels: from leaves (level 0) toward root
+-- bits: from leaf level toward root (bit i tells direction at level i)
+-- Returns: sibling values at each level
+computeSiblingsSymbolic :: Symbolic c => [[FieldElement c]] -> [Bool c] -> [FieldElement c]
+computeSiblingsSymbolic [] _ = []
+computeSiblingsSymbolic [[_]] [] = []  -- root level
+computeSiblingsSymbolic (level : levels) (bit : bits) =
+  -- At this level, bit tells us which half we're in (0=left, 1=right)
+  -- Sibling is in the opposite half
+  let (left, right) = splitAt (length level `P.div` 2) level
+      -- If bit=0, we're in left, sibling subtree is right
+      -- If bit=1, we're in right, sibling subtree is left
+      -- Select from sibling subtree using remaining bits
+      siblingLeft = selectFromSubtree right bits  -- sibling when we're in left
+      siblingRight = selectFromSubtree left bits  -- sibling when we're in right
+      sibling = bool siblingLeft siblingRight bit
+   in sibling : computeSiblingsSymbolic levels bits
+computeSiblingsSymbolic _ _ = []
+
+-- | Select an element from a subtree based on index bits (LSB first).
+-- For single element, return it. Otherwise split and recurse.
+selectFromSubtree :: Symbolic c => [FieldElement c] -> [Bool c] -> FieldElement c
+selectFromSubtree [x] _ = x
+selectFromSubtree xs (b:bs) =
+  let (left, right) = splitAt (length xs `P.div` 2) xs
+      leftResult = selectFromSubtree left bs
+      rightResult = selectFromSubtree right bs
+   in bool leftResult rightResult b
+selectFromSubtree [] _ = P.error "selectFromSubtree: empty list"
+selectFromSubtree _ [] = P.error "selectFromSubtree: not enough bits"
+
+-- | Circuit-optimized MiMC hash for Merkle tree operations.
+-- Uses the Symbolic MiMC implementation which builds circuits efficiently
+-- rather than creating exponential WitnessF closures.
+merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
+merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
+
+-- | Hash current value with sibling based on bit direction.
+-- Uses the circuit-optimized hash function.
+hashWithSibling :: Symbolic c => FieldElement c -> (Bool c, FieldElement c) -> FieldElement c
+hashWithSibling current (bit, sibling) =
+  bool
+    (merkleHash current sibling)   -- bit = false: current is left child
+    (merkleHash sibling current)   -- bit = true: current is right child
+    bit
 
 rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
 rootOnReplace (Comp1 path) value =
-  foldl' ((. toPair) . Base.hashWithSibling) value path
+  foldl' ((. toPair) . hashWithSibling) value path
 
 data MerkleEntry d c = MerkleEntry
   { position :: Index d c
