@@ -18,10 +18,13 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (pubInput))
 import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup (..))
 import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
+import Control.Exception (evaluate)
+
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
 
 import Tests.Symbolic.Ledger.E2E.One
+import Tests.Symbolic.Ledger.E2E.Utils (time)
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
   LedgerContractCompiledInput,
@@ -51,33 +54,35 @@ specE2ECompileOne =
             , lciNewState = newState2
             , lciStateWitness = witness2
             }
-    let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
+    compiledCircuit <- time "ledgerCircuit" $ evaluate $ ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
+
     Haskell.putStrLn $
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
     let
       proverSecret = PlonkupProverSecret (pure zero)
-      zkLedgerSetup =
-        ledgerSetup
-          @ByteString
-          @Bi
-          @Bo
-          @Ud
-          @A
-          @Ixs
-          @Oxs
-          @TxCount
-          @I
-          ts
-          compiledCircuit
-      zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
-      zkLedgerProof2 = ledgerProof @ByteString ts proverSecret compiledCircuit lci2
-      witnessInputs = runInterpreter $ arithmetize lci
-      compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
-      witnessInputs2 = runInterpreter $ arithmetize lci2
-      compiledInput2 = (witnessInputs2 :*: U1) :*: (payload lci2 :*: U1)
-      PlonkupVerifierSetup {relation} = zkLedgerSetup
-      zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
-      zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
+    zkLedgerSetup <- time "zkLedgerSetup" $ evaluate $
+          ledgerSetup
+            @ByteString
+            @Bi
+            @Bo
+            @Ud
+            @A
+            @Ixs
+            @Oxs
+            @TxCount
+            @I
+            ts
+            compiledCircuit
+
+    zkLedgerProof <- time "zkLedgerProof" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci
+    zkLedgerProof2 <- time "zkLedgerProof2" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci2
+    let witnessInputs = runInterpreter $ arithmetize lci
+        compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
+        witnessInputs2 = runInterpreter $ arithmetize lci2
+        compiledInput2 = (witnessInputs2 :*: U1) :*: (payload lci2 :*: U1)
+        PlonkupVerifierSetup {relation} = zkLedgerSetup
+        zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
+        zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
     Haskell.putStrLn $ "zkLedgerInput2: " <> show zkLedgerInput2
     verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A Ixs Oxs TxCount) LedgerCircuitGates ByteString)

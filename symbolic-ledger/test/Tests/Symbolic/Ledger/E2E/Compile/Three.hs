@@ -20,6 +20,8 @@ import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
 import Prelude (Semigroup ((<>)), Show (..), ($))
 import Prelude qualified as Haskell
+import Control.Exception (evaluate)
+import Tests.Symbolic.Ledger.E2E.Utils (time)
 
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerCircuitGates,
@@ -51,12 +53,17 @@ specE2ECompileThree =
             , lciNewState = newState2
             , lciStateWitness = witness2
             }
-    let compiledCircuit = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
+    compiledCircuit <- time "ledgerCircuit" $ do
+        let c = ledgerCircuit @Bi @Bo @Ud @A @Ixs @Oxs @TxCount @I
+        _ <- evaluate $ acSizeN c
+        pure c
+
     Haskell.putStrLn $
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
-    let
-      proverSecret = PlonkupProverSecret (pure zero)
-      zkLedgerSetup =
+
+    let proverSecret = PlonkupProverSecret (pure zero)
+
+    zkLedgerSetup <- time "zkLedgerSetup" $ evaluate $
         ledgerSetup
           @ByteString
           @Bi
@@ -69,8 +76,11 @@ specE2ECompileThree =
           @I
           ts
           compiledCircuit
-      zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
-      zkLedgerProof2 = ledgerProof @ByteString ts proverSecret compiledCircuit lci2
+
+    zkLedgerProof <- time "zkLedgerProof" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci
+    zkLedgerProof2 <- time "zkLedgerProof2" $ evaluate $ ledgerProof @ByteString ts proverSecret compiledCircuit lci2
+
+    let
       witnessInputs = runInterpreter $ arithmetize lci
       witnessInputs2 = runInterpreter $ arithmetize lci2
       compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
