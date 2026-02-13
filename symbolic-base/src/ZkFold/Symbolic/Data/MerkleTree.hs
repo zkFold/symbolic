@@ -138,35 +138,38 @@ computeNextLevelSymbolic (a : b : rest) = merkleHash a b : computeNextLevelSymbo
 
 -- | Compute siblings at each level based on symbolic index bits.
 -- levels: from leaves (level 0) toward root
--- bits: from leaf level toward root (bit i tells direction at level i)
--- Returns: sibling values at each level
+-- bitsLSB: index bits in LSB-first order (bitsLSB[k] = bit k of index)
+-- Returns: sibling values at each level, from level 0 upward
+--
+-- At level k, the element index is (originalIndex >> k), and the sibling
+-- index is that value with its LSB flipped. We select using MSB-first ordering.
 computeSiblingsSymbolic :: Symbolic c => [[FieldElement c]] -> [Bool c] -> [FieldElement c]
-computeSiblingsSymbolic [] _ = []
-computeSiblingsSymbolic [[_]] [] = []  -- root level
-computeSiblingsSymbolic (level : levels) (bit : bits) =
-  -- At this level, bit tells us which half we're in (0=left, 1=right)
-  -- Sibling is in the opposite half
-  let (left, right) = splitAt (length level `P.div` 2) level
-      -- If bit=0, we're in left, sibling subtree is right
-      -- If bit=1, we're in right, sibling subtree is left
-      -- Select from sibling subtree using remaining bits
-      siblingLeft = selectFromSubtree right bits  -- sibling when we're in left
-      siblingRight = selectFromSubtree left bits  -- sibling when we're in right
-      sibling = bool siblingLeft siblingRight bit
-   in sibling : computeSiblingsSymbolic levels bits
-computeSiblingsSymbolic _ _ = []
+computeSiblingsSymbolic levels bitsLSB =
+  [ selectSiblingAtLevel (levels P.!! k) k
+  | k <- [0 .. length bitsLSB P.- 1]
+  ]
+  where
+    selectSiblingAtLevel level k =
+      let -- Bits for (index >> k) in LSB-first order
+          relevantBitsLSB = P.drop k bitsLSB
+          -- Flip the LSB to get sibling index
+          siblingBitsLSB = case relevantBitsLSB of
+            (b : rest) -> notB b : rest
+            [] -> []
+          -- Reverse to get MSB-first for selection
+          siblingBitsMSB = P.reverse siblingBitsLSB
+       in selectFromLevel level siblingBitsMSB
 
--- | Select an element from a subtree based on index bits (LSB first).
--- For single element, return it. Otherwise split and recurse.
-selectFromSubtree :: Symbolic c => [FieldElement c] -> [Bool c] -> FieldElement c
-selectFromSubtree [x] _ = x
-selectFromSubtree xs (b:bs) =
-  let (left, right) = splitAt (length xs `P.div` 2) xs
-      leftResult = selectFromSubtree left bs
-      rightResult = selectFromSubtree right bs
-   in bool leftResult rightResult b
-selectFromSubtree [] _ = P.error "selectFromSubtree: empty list"
-selectFromSubtree _ [] = P.error "selectFromSubtree: not enough bits"
+    -- Symbolic NOT: if b then False else True
+    notB b = bool symTrue symFalse b
+    symTrue = Bool $ embedW $ Par1 one
+    symFalse = Bool $ embedW $ Par1 zero
+
+    selectFromLevel [x] _ = x
+    selectFromLevel xs (b : bs) =
+      let (left, right) = splitAt (length xs `P.div` 2) xs
+       in bool (selectFromLevel left bs) (selectFromLevel right bs) b
+    selectFromLevel xs [] = P.head xs
 
 -- | Circuit-optimized MiMC hash for Merkle tree operations.
 -- Uses the Symbolic MiMC implementation which builds circuits efficiently
