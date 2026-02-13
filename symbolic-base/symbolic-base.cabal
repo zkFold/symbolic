@@ -178,6 +178,7 @@ library
       ZkFold.FFI.Rust.Poly
       ZkFold.FFI.Rust.RustBLS
       ZkFold.FFI.Rust.RustFunctions
+      ZkFold.FFI.Rust.Halo2
       ZkFold.FFI.Rust.Types
       ZkFold.FFI.Rust.Plonkup
       ZkFold.FFI.Rust.Runner
