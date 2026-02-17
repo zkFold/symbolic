@@ -3,11 +3,13 @@ module Tests.Symbolic.Ledger.E2E.Compile.Three (specE2ECompileThree) where
 import Control.Applicative (pure)
 import Control.Exception (evaluate)
 import Data.ByteString (ByteString)
+import Data.Map.Strict qualified as M
 import GHC.Generics (U1 (..), (:*:) (..))
 import GHC.TypeNats (type (+))
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
+import ZkFold.ArithmeticCircuit (acSizeM, acSizeN, acContext)
+import ZkFold.ArithmeticCircuit.Context (acSystem)
 import ZkFold.Protocol.NonInteractiveProof (
   NonInteractiveProof (verify),
   TrustedSetup (..),
@@ -19,7 +21,7 @@ import ZkFold.Protocol.Plonkup.Relation (PlonkupRelation (pubInput))
 import ZkFold.Protocol.Plonkup.Verifier.Setup (PlonkupVerifierSetup (..))
 import ZkFold.Symbolic.Data.Class (arithmetize, payload)
 import ZkFold.Symbolic.Interpreter (runInterpreter)
-import Prelude (Semigroup ((<>)), Show (..), ($))
+import Prelude (Semigroup ((<>)), Show (..), ($), (.), (==))
 import Prelude qualified as Haskell
 
 import Tests.Symbolic.Ledger.E2E.Utils (time)
@@ -58,8 +60,10 @@ specE2ECompileThree =
       _ <- evaluate $ acSizeN c
       pure c
 
+    let zeroCons = M.size . M.filter (== zero) . acSystem . acContext $ compiledCircuit
+
     Haskell.putStrLn $
-      "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
+      "constraints: " <> show (acSizeN compiledCircuit) <> ", zero constraints: " <> show zeroCons <> ", variables: " <> show (acSizeM compiledCircuit)
 
     let proverSecret = PlonkupProverSecret (pure zero)
 

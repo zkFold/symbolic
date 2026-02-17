@@ -155,6 +155,7 @@ test-suite symbolic-ledger-test
     aeson-pretty,
     base,
     bytestring,
+    containers,
     hspec <2.12,
     symbolic-base,
     symbolic-ledger,

@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 
 module ZkFold.ArithmeticCircuit.Context where
 
@@ -41,13 +42,15 @@ import Data.Tuple (fst, snd, uncurry)
 import Data.Type.Equality (type (~))
 import GHC.Generics (Generic, Par1 (..), U1 (..), (:*:) (..))
 import GHC.Stack (callStack, prettyCallStack)
+import GHC.IsList qualified as List
 import Optics (over, set, zoom)
 import Text.Show
-import Prelude (error, seq)
+import Prelude (error, seq, filter, const, length, (>), id)
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Polynomial.Multivariate (Poly, var)
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial qualified as Mon
 import ZkFold.ArithmeticCircuit.MerkleHash (MerkleHash (..), merkleHash, runHash)
 import ZkFold.ArithmeticCircuit.Var
 import ZkFold.ArithmeticCircuit.Witness (WitnessF (..))
@@ -345,6 +348,23 @@ instance
     let evalMaybe = \case
           ConstVar cV -> Known cV
           _ -> Unknown
+
+        cons :: Constraint a
+        cons = if varDisjoint > Just 1 then error $ "Not a plonk constraint: variable relations are " <> show varRelations else p $ evalVar var
+
+        consMonomials :: [(a, Mon.Mono NewVar Natural)]
+        consMonomials = List.toList $ p $ evalVar var
+
+        d2 = case filter ((==2) . Mon.degM . snd) consMonomials of
+               [] -> Nothing
+               [m] -> Just m
+               lst -> error $ "Not a plonk constraint: " <> show (length lst) <> " monomials of degree 2."
+        d1' = filter ((==1) . Mon.degM . snd) consMonomials
+        d1 = if length d1' > 3 then error $ "Not a plonk constraint: " <> show (length d1') <> " monomials of length 1." else d1'
+
+        varRelations = fmap (\(_, m2) -> fmap (\(_, m1) -> S.disjoint (Mon.variables m1) (Mon.variables m2)) d1) d2
+        varDisjoint = fmap (length . filter id) varRelations
+
      in case p evalMaybe of
           Known c ->
             if c == zero
@@ -356,7 +376,7 @@ instance
                   )
           Unknown ->
             zoom #acSystem . modify $
-              M.insert (witToVar (p at)) (p $ evalVar var)
+              M.insert (witToVar (p at)) cons 
 
   lookupConstraint vars ltable = do
     vs <- traverse prepare (toList vars)
