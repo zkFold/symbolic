@@ -65,12 +65,8 @@ mimcRound k c xL xR = FieldElement $
     -- Compute t^4 = t2 * t2 (constraint 2)
     t4 <- newAssigned $ \w -> w t2 * w t2
     -- Compute result = t4 * t + xR = t^5 + xR (constraint 3)
-    Par1
-      <$> newAssigned
-        ( \w ->
-            let t = w iL + fromConstant k + fromConstant c
-             in w t4 * t + w iR
-        )
+    t4iL <- newAssigned (\w -> let t = w iL + fromConstant k + fromConstant c in w t4 * t)
+    Par1 <$> newAssigned (\w -> w t4iL + w iR)
 
 -- | Optimized MiMC hash for multiple inputs
 mimcHashN :: Symbolic c => [BaseField c] -> BaseField c -> [FieldElement c] -> FieldElement c
