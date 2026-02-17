@@ -111,20 +111,12 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
       [(coef, _)] -> coef
       _ -> fail s
 
-  d1OutCoef vs s =
-    case filter ((\vars -> all (P.flip S.notMember vars) vs) . Mon.variables . P.snd) d1 of
-      [] -> (zero, ConstVar one)
-      [(coef, m)] -> (coef, head . S.toList . Mon.variables $ m)
-      lst ->
-        fail
-          ( s
-              <> ". "
-              <> P.show (length lst)
-              <> " coefficients after filtering. "
-              <> P.show (length d1)
-              <> " monomials of degree 1. Var relations: "
-              <> d1VarStats
-          )
+  d1OutCoef vs s = 
+      case filter ((\vars -> all (P.flip S.notMember vars) vs). Mon.variables . P.snd) d1 of 
+        [] -> (zero, ConstVar one)
+        [(coef, m)] -> (coef, head . S.toList . Mon.variables $ m)
+        lst -> fail (s <> ". " <> P.show (length lst) <> " coefficients after filtering. " <> P.show (length d1) <> " monomials of degree 1. Var relations: " <> d1VarStats)
+
 
   (ql, qr, qo, va, vb, vc) =
     case d2 of
@@ -136,7 +128,7 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
           [a] ->
             let ql' = d1VarCoef a "[a] ql'"
                 (qo', vc') = d1OutCoef [a] "[a] (qo', vc')"
-             in (ql', zero, qo', a, ConstVar one, vc')
+             in (ql', zero, qo', a, a, vc')
           -- The polynomial is of the form qm * a * b + ql * a + qr * b + qo * c + qc
           [a, b] ->
             let ql' = d1VarCoef a "[a, b] ql'"
