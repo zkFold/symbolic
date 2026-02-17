@@ -111,12 +111,20 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
       [(coef, _)] -> coef
       _ -> fail s
 
-  d1OutCoef vs s = 
-      case filter ((\vars -> all (P.flip S.notMember vars) vs). Mon.variables . P.snd) d1 of 
-        [] -> (zero, ConstVar one)
-        [(coef, m)] -> (coef, head . S.toList . Mon.variables $ m)
-        lst -> fail (s <> ". " <> P.show (length lst) <> " coefficients after filtering. " <> P.show (length d1) <> " monomials of degree 1. Var relations: " <> d1VarStats)
-
+  d1OutCoef vs s =
+    case filter ((\vars -> all (P.flip S.notMember vars) vs) . Mon.variables . P.snd) d1 of
+      [] -> (zero, ConstVar one)
+      [(coef, m)] -> (coef, head . S.toList . Mon.variables $ m)
+      lst ->
+        fail
+          ( s
+              <> ". "
+              <> P.show (length lst)
+              <> " coefficients after filtering. "
+              <> P.show (length d1)
+              <> " monomials of degree 1. Var relations: "
+              <> d1VarStats
+          )
 
   (ql, qr, qo, va, vb, vc) =
     case d2 of
