@@ -2,17 +2,15 @@
 
 module ZkFold.Protocol.Plonkup.PlonkConstraint where
 
-import Control.Monad (guard, replicateM, return)
+import Control.Monad (replicateM, return)
 import Data.Binary (Binary)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Eq (Eq (..))
 import Data.Function (($), (.))
 import Data.Functor (fmap, (<$>))
-import Data.List (all, concatMap, filter, find, head, map, permutations, sort, tails, (!!), (++))
-import Data.Maybe (Maybe (..), fromMaybe, mapMaybe)
+import Data.List (all, filter, head, sort, (!!))
+import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Ord (Ord)
 import Data.Set qualified as S
-import Debug.Trace (trace)
 import GHC.IsList (IsList (..))
 import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
@@ -26,18 +24,12 @@ import ZkFold.Algebra.Polynomial.Multivariate (
   Mono,
   Poly,
   degM,
-  evalMonomial,
-  evalPolynomial,
-  mono,
-  poly,
   var,
-  variables,
  )
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial (mapVar)
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial qualified as Mon
 import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
 import ZkFold.Data.Binary (toByteString)
-import ZkFold.Prelude (length, take)
+import ZkFold.Prelude (length)
 
 data PlonkConstraint i a = PlonkConstraint
   { qm :: a
@@ -145,70 +137,6 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
              in (ql', qr', qo', a, b, vc')
           _ -> fail "(ql, qr, qo)"
 
-{--
--- | All subsets of three elements of a list without repetitions
-nChoose3 :: [a] -> [[a]]
-nChoose3 (x:xs) =
-    [ [x,y,z] | (y:ys) <- tails xs
-              , z      <- ys ]
-  ++ nChoose3 xs
-nChoose3 _ = []
-
-toPlonkConstraint :: forall a i. (Ord a, FiniteField a) => Poly a (Var a) Natural -> PlonkConstraint i a
-toPlonkConstraint p =
-  let xs = Just <$> toList (variables p)
-      perms = case xs of
-        []  -> [[Nothing, Nothing, Nothing]]
-        [x] -> [ [Nothing, Nothing, x]
-               , [Nothing, x, Nothing]
-               , [x, Nothing, Nothing]
-               , [x, x, Nothing]
-               , [x, Nothing, x]
-               , [Nothing, x, x]
-               ]
-        [_,_] -> concatMap permutations $ nubOrd $ nChoose3 ([Nothing] ++ xs ++ xs)
-        _ -> concatMap permutations $ nubOrd $ nChoose3 (xs ++ xs)
-
-      polyCoefs :: [(a, Mono (Maybe (Var a)) Natural)]
-      polyCoefs = fmap (mapVar Just) <$> toList p
-
-      getCoef :: Mono (Maybe (Var a)) Natural -> a
-      getCoef m = case find ((m ==) . P.snd) polyCoefs of
-        Just (c, _) -> c
-        _ -> zero
-
-      getCoefs :: [Maybe (Var a)] -> Maybe (PlonkConstraint i a)
-      getCoefs [a, b, c] = do
-        let xa = mono $ fromList [(a, 1)]
-            xb = mono $ fromList [(b, 1)]
-            xc = mono $ fromList [(c, 1)]
-            xaxb = mono $ fromList [(a, 1), (b, 1)]
-
-            qm = getCoef xaxb
-            ql = getCoef xa
-            qr = getCoef xb
-            qo = getCoef xc
-            qc = getCoef one
-        guard $
-          evalPolynomial evalMonomial (var . Just) p
-            - poly
-              [ (qm, xaxb)
-              , (ql, xa)
-              , (qr, xb)
-              , (qo, xc)
-              , (qc, one)
-              ]
-            == zero
-        let va = fromMaybe (ConstVar one) a
-            vb = fromMaybe (ConstVar one) b
-            vc = fromMaybe (ConstVar one) c
-        return $ PlonkConstraint qm ql qr qo qc va vb vc
-      getCoefs _ = Nothing
-   in case mapMaybe getCoefs perms of
-        [] -> trace ("ZERO CONS" ++ show (fmap (degM . P.snd) $ toList p) ++ "\n") $ toPlonkConstraint zero
-        (x:_) -> trace ("VALID CONS" ++ show (fmap (degM . P.snd) $ toList p) ++ "\n") $ x
-
---}
 
 fromPlonkConstraint :: (Ord a, Field a) => PlonkConstraint i a -> Poly a (Var a) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
