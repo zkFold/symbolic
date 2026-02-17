@@ -8,7 +8,7 @@ import GHC.Generics (U1 (..), (:*:) (..))
 import GHC.TypeNats (type (+))
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
-import ZkFold.ArithmeticCircuit (acSizeM, acSizeN, acContext)
+import ZkFold.ArithmeticCircuit (acContext, acSizeM, acSizeN)
 import ZkFold.ArithmeticCircuit.Context (acSystem)
 import ZkFold.Protocol.NonInteractiveProof (
   NonInteractiveProof (verify),
@@ -63,7 +63,12 @@ specE2ECompileThree =
     let zeroCons = M.size . M.filter (== zero) . acSystem . acContext $ compiledCircuit
 
     Haskell.putStrLn $
-      "constraints: " <> show (acSizeN compiledCircuit) <> ", zero constraints: " <> show zeroCons <> ", variables: " <> show (acSizeM compiledCircuit)
+      "constraints: "
+        <> show (acSizeN compiledCircuit)
+        <> ", zero constraints: "
+        <> show zeroCons
+        <> ", variables: "
+        <> show (acSizeM compiledCircuit)
 
     let proverSecret = PlonkupProverSecret (pure zero)
 
