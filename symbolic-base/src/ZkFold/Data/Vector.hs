@@ -5,7 +5,6 @@
 
 module ZkFold.Data.Vector (
   module ZkFold.Data.Vector,
-  mapAccumL,
   module Data.Zip,
 ) where
 
