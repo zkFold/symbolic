@@ -137,7 +137,6 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
              in (ql', qr', qo', a, b, vc')
           _ -> fail "(ql, qr, qo)"
 
-
 fromPlonkConstraint :: (Ord a, Field a) => PlonkConstraint i a -> Poly a (Var a) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =
   let xa = var a
