@@ -447,7 +447,7 @@ type FiniteAdditiveGroup a = (Finite a, AdditiveGroup a)
 
 type FiniteMultiplicativeGroup a = (Finite a, MultiplicativeGroup a)
 
-type FiniteField a = (Finite a, Field a) 
+type FiniteField a = (Finite a, Field a)
 
 --------------------------------------------------------------------------------
 
