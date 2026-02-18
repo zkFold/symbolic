@@ -24,5 +24,5 @@ main = do
   ts <- powersOfTauSubset
   let setupBytes = expModSetup @ByteString ts
       proofBytes = expModProof @ByteString ts (PlonkupProverSecret $ pure (one + one)) expModCircuit (ExpModProofInput 17 3 7 11)
---  print $ verify @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGates ByteString) setupBytes input proofBytes
+  --  print $ verify @(PlonkupTs (Par1 :*: Par1) ExpModCircuitGates ByteString) setupBytes input proofBytes
   print proofBytes

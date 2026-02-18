@@ -31,7 +31,7 @@ import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
-import GHC.Natural (powModNatural, shiftRNatural, shiftLNatural, andNatural)
+import GHC.Natural (andNatural, powModNatural, shiftLNatural, shiftRNatural)
 import GHC.Real ((%))
 import GHC.TypeLits (Symbol)
 import System.Random (Random (..))
@@ -212,7 +212,7 @@ instance KnownNat p => Binary (Zp p) where
     go _ 0 = pure ()
     go n count =
       let n' = n `shiftRNatural` 8
-          r = n `andNatural` 0xFF 
+          r = n `andNatural` 0xFF
        in putWord8 (Haskell.fromIntegral r) <> go n' (count -! 1)
   get = (toZp . Haskell.fromIntegral) <$> go (wordCount @p)
    where
