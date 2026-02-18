@@ -31,7 +31,7 @@ import Data.Tuple (snd)
 import Data.Type.Equality (type (~))
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
-import GHC.Natural (powModNatural)
+import GHC.Natural (powModNatural, shiftRNatural, shiftLNatural, andNatural)
 import GHC.Real ((%))
 import GHC.TypeLits (Symbol)
 import System.Random (Random (..))
@@ -206,17 +206,19 @@ instance KnownNat p => FromJSON (Zp p) where
   parseJSON = fmap (Zp . (residue @p)) . parseJSON
 
 instance KnownNat p => Binary (Zp p) where
-  put (Zp x) = go x (wordCount @p)
+  put (Zp x) = go (Haskell.fromIntegral x) (wordCount @p)
    where
+    go :: Natural -> Natural -> Put
     go _ 0 = pure ()
     go n count =
-      let (n', r) = n `Haskell.divMod` 256
+      let n' = n `shiftRNatural` 8
+          r = n `andNatural` 0xFF 
        in putWord8 (Haskell.fromIntegral r) <> go n' (count -! 1)
-  get = toZp <$> go (wordCount @p)
+  get = (toZp . Haskell.fromIntegral) <$> go (wordCount @p)
    where
     go 0 = pure zero
     go n = liftA2 combine getWord8 (go $ n -! 1) <|> pure zero
-    combine r d = Haskell.fromIntegral r + 256 * d
+    combine r d = Haskell.fromIntegral r + shiftLNatural d 8
 
 wordCount :: forall p. KnownNat p => Natural
 wordCount = Haskell.ceiling $ log2ceiling (value @p) % (8 :: Natural)
