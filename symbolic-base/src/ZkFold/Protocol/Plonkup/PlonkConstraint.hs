@@ -26,8 +26,8 @@ import ZkFold.Algebra.Polynomial.Multivariate (
   var,
  )
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial qualified as Mon
-import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
 import ZkFold.ArithmeticCircuit.Context (decomposePolynomial)
+import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Prelude (length)
 

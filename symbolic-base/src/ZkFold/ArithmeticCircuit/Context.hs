@@ -339,13 +339,12 @@ guessOutput f (i :*: o) = fromCircuit2F (f i) (fool o) \o1 o2 -> do
 -- No more than 3 monomials of degree 1 (d1)
 -- If there is a monomial of degree 2, there should be no more than one monomial of degree 1 with a variable that is not present in d2
 --   (e.g. no cases as  qm * a * a + ql * a + **qr * b** + qo * c + qc -- notice that in d2 there is a^2, not a * b)
---
-decomposePolynomial 
-  :: forall a v 
-  .  FiniteField a 
+decomposePolynomial
+  :: forall a v
+   . FiniteField a
   => Eq a
   => Ord v
-  => Poly a v Natural 
+  => Poly a v Natural
   -> ( Maybe (a, Mon.Mono v Natural)
      , [(a, Mon.Mono v Natural)]
      , Maybe (a, Mon.Mono v Natural)
@@ -375,7 +374,6 @@ decomposePolynomial p = (d2, d1, d0, d1VarStats)
   d1' = filter ((== 1) . Mon.degM . P.snd) monomials
   d1 = if length d1' > 3 then fail "d1" else d1'
 
-
   -- No more than one monomial of degree 0
   d0 :: Maybe (a, Mon.Mono v Natural)
   d0 = case filter ((== 0) . Mon.degM . P.snd) monomials of
@@ -403,7 +401,7 @@ instance
           ConstVar cV -> Known cV
           _ -> Unknown
 
-        -- FIXME: These checks are valid for Plonk constraints only. 
+        -- FIXME: These checks are valid for Plonk constraints only.
         -- If we plan to support multiple provers for the same function, we need to remove them.
         cons :: Constraint a
         cons =
@@ -414,7 +412,6 @@ instance
         (_, _, _, varRelations) = decomposePolynomial @a $ p (evalVar var)
 
         varDisjoint = fmap (length . filter id) varRelations
-
      in case p evalMaybe of
           Known c ->
             if c == zero
