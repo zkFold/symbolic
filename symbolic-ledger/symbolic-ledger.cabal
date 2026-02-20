@@ -96,6 +96,7 @@ library
   import: options
   exposed-modules:
     ZkFold.Symbolic.Ledger.Circuit.Compile
+    ZkFold.Symbolic.Ledger.Circuit.IVC
     ZkFold.Symbolic.Ledger.Examples.One
     ZkFold.Symbolic.Ledger.Examples.Three
     ZkFold.Symbolic.Ledger.Examples.Two
@@ -118,9 +119,11 @@ library
   build-depends:
     aeson,
     base >=4.9 && <5,
+    binary,
     bytestring,
     lens,
     openapi3,
+    semialign,
     symbolic-base,
 
   hs-source-dirs: src
@@ -140,6 +143,7 @@ test-suite symbolic-ledger-test
     Tests.Symbolic.Ledger.E2E.Compile.One
     Tests.Symbolic.Ledger.E2E.Compile.Three
     Tests.Symbolic.Ledger.E2E.Compile.Two
+    Tests.Symbolic.Ledger.E2E.IVC
     Tests.Symbolic.Ledger.E2E.One
     Tests.Symbolic.Ledger.E2E.Three
     Tests.Symbolic.Ledger.E2E.Two
