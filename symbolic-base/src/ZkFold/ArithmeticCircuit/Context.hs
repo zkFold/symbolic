@@ -46,6 +46,7 @@ import GHC.Stack (callStack, prettyCallStack)
 import Optics (over, set, zoom)
 import Text.Show
 import Prelude (error, filter, id, length, seq, (>))
+import Prelude qualified as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Number
@@ -331,6 +332,59 @@ guessOutput f (i :*: o) = fromCircuit2F (f i) (fool o) \o1 o2 -> do
 
 ----------------------------- MonadCircuit instance ----------------------------
 
+-- | The function below checks that the polynomial is in the form of Plonk constraint
+-- It means:
+--
+-- No more than one monomial of degree 2 (d2)
+-- No more than 3 monomials of degree 1 (d1)
+-- If there is a monomial of degree 2, there should be no more than one monomial of degree 1 with a variable that is not present in d2
+--   (e.g. no cases as  qm * a * a + ql * a + **qr * b** + qo * c + qc -- notice that in d2 there is a^2, not a * b)
+--
+decomposePolynomial 
+  :: forall a v 
+  .  FiniteField a 
+  => Eq a
+  => Ord v
+  => Poly a v Natural 
+  -> ( Maybe (a, Mon.Mono v Natural)
+     , [(a, Mon.Mono v Natural)]
+     , Maybe (a, Mon.Mono v Natural)
+     , Maybe [Bool]
+     )
+decomposePolynomial p = (d2, d1, d0, d1VarStats)
+ where
+  fail :: P.String -> x
+  fail s =
+    P.error $
+      s
+        <> ": not a plonk constraint. Mon.Monomials of the following degrees were encountered: "
+        <> P.show (fmap (Mon.degM . P.snd) $ List.toList p)
+
+  monomials :: [(a, Mon.Mono v Natural)]
+  monomials = List.toList p
+
+  -- No more than one monomial of degree 2
+  d2 :: Maybe (a, Mon.Mono v Natural)
+  d2 = case filter ((== 2) . Mon.degM . P.snd) monomials of
+    [] -> Nothing
+    [m] -> Just m
+    _ -> fail "d2"
+
+  -- No more than three monomials of degree 1
+  d1', d1 :: [(a, Mon.Mono v Natural)]
+  d1' = filter ((== 1) . Mon.degM . P.snd) monomials
+  d1 = if length d1' > 3 then fail "d1" else d1'
+
+
+  -- No more than one monomial of degree 0
+  d0 :: Maybe (a, Mon.Mono v Natural)
+  d0 = case filter ((== 0) . Mon.degM . P.snd) monomials of
+    [] -> Nothing
+    [m] -> Just m
+    _ -> fail "d0"
+
+  d1VarStats = (\m -> fmap (\md -> S.disjoint (Mon.variables $ P.snd md) (Mon.variables $ P.snd m)) d1) <$> d2
+
 instance
   (Arithmetic a, Binary a)
   => MonadCircuit (Var a) a (CircuitWitness a) (State (CircuitContext a o))
@@ -349,36 +403,18 @@ instance
           ConstVar cV -> Known cV
           _ -> Unknown
 
-        -- The code below checks that the polynomial is in the form of Plonk constraint
-        -- It means:
-        --
-        -- No more than one monomial of degree 2 (d2)
-        -- No more than 3 monomials of degree 1 (d1)
-        -- If there is a monomial of degree 2, there should be no more than one monomial of degree 1 with a variable that is not present in d2
-        --   (e.g. no cases as  qm * a * a + ql * a + **qr * b** + qo * c + qc -- notice that in d2 there is a^2, not a * b)
-        --
+        -- FIXME: These checks are valid for Plonk constraints only. 
+        -- If we plan to support multiple provers for the same function, we need to remove them.
         cons :: Constraint a
         cons =
           if varDisjoint > Just 1
             then error $ "Not a plonk constraint: variable relations are " <> show varRelations
             else p $ evalVar var
 
-        consMonomials :: [(a, Mon.Mono NewVar Natural)]
-        consMonomials = List.toList $ p $ evalVar var
+        (_, _, _, varRelations) = decomposePolynomial @a $ p (evalVar var)
 
-        -- No more than one monomial of degree 2
-        d2 = case filter ((== 2) . Mon.degM . snd) consMonomials of
-          [] -> Nothing
-          [m] -> Just m
-          lst -> error $ "Not a plonk constraint: " <> show (length lst) <> " monomials of degree 2."
-
-        -- No more than three monomials of degree 1
-        d1' = filter ((== 1) . Mon.degM . snd) consMonomials
-        d1 = if length d1' > 3 then error $ "Not a plonk constraint: " <> show (length d1') <> " monomials of length 1." else d1'
-
-        -- No more than one variable in d1 not present in d2
-        varRelations = fmap (\(_, m2) -> fmap (\(_, m1) -> S.disjoint (Mon.variables m1) (Mon.variables m2)) d1) d2
         varDisjoint = fmap (length . filter id) varRelations
+
      in case p evalMaybe of
           Known c ->
             if c == zero

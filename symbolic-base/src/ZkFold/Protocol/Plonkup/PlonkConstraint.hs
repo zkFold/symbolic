@@ -16,18 +16,18 @@ import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
-import Prelude ((<>), (>))
+import Prelude ((<>))
 import Prelude qualified as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (
-  Mono,
   Poly,
   degM,
   var,
  )
 import ZkFold.Algebra.Polynomial.Multivariate.Monomial qualified as Mon
 import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
+import ZkFold.ArithmeticCircuit.Context (decomposePolynomial)
 import ZkFold.Data.Binary (toByteString)
 import ZkFold.Prelude (length)
 
@@ -65,27 +65,9 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
         <> ": not a plonk constraint. Monomials of the following degrees were encountered: "
         <> P.show (fmap (degM . P.snd) $ toList p)
 
-  monomials :: [(a, Mono (Var a) Natural)]
-  monomials = toList p
+  (d2, d1, d0, d1VarStats) = decomposePolynomial @a p
 
-  d2 :: Maybe (a, Mono (Var a) Natural)
-  d2 = case filter ((== 2) . degM . P.snd) monomials of
-    [] -> Nothing
-    [m] -> Just m
-    _ -> fail "d2"
-
-  d1', d1, d1Ext :: [(a, Mono (Var a) Natural)]
-  d1' = filter ((== 1) . degM . P.snd) monomials
-  d1 = if length d1' > 3 then fail "d1" else d1'
   d1Ext = d1 <> [(zero, one), (zero, one), (zero, one)]
-
-  d1VarStats = P.show $ (\m -> fmap (\md -> S.disjoint (Mon.variables $ P.snd md) (Mon.variables $ P.snd m)) d1) <$> d2
-
-  d0 :: Maybe (a, Mono (Var a) Natural)
-  d0 = case filter ((== 0) . degM . P.snd) monomials of
-    [] -> Nothing
-    [m] -> Just m
-    _ -> fail "d0"
 
   qm = fromMaybe zero (P.fst <$> d2)
   qc = fromMaybe zero (P.fst <$> d0)
@@ -115,7 +97,7 @@ toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
               <> " coefficients after filtering. "
               <> P.show (length d1)
               <> " monomials of degree 1. Var relations: "
-              <> d1VarStats
+              <> P.show d1VarStats
           )
 
   (ql, qr, qo, va, vb, vc) =
