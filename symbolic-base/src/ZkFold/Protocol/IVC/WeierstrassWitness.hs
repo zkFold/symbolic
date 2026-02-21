@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ZkFold.Protocol.IVC.WeierstrassWitness where
 
@@ -15,6 +16,7 @@ import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Base, BLS12_381_Scalar)
+import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF)
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..), Planar, Point (..), Weierstrass (..), pointXY)
 import ZkFold.Algebra.Number (Natural, value)
 import ZkFold.Control.Conditional (Conditional (..), ifThenElse)
@@ -67,6 +69,25 @@ instance SymbolicData WeierstrassWitness where
 
 instance (Symbolic ctx, w ~ WitnessField ctx) => OracleSource w (WeierstrassWitness ctx) where
   source = toList . payload
+
+-- | Orphan: component-wise conditional selection between two
+-- @'Point' ('ForeignField' q ('EuclideanF' a v))@ values using a
+-- @'BooleanF' a v@ circuit boolean.
+--
+-- This instance is required for arithmetic on @'WeierstrassWitness' ctx@
+-- when @ctx = 'CircuitContext' a@, where
+-- @'IntegralOf' ('WitnessField' ctx) ~ 'EuclideanF' a 'NewVar'@ and
+-- @'BooleanOf' ('WitnessField' ctx) ~ 'BooleanF' a 'NewVar'@.
+--
+-- The instance head uses concrete 'BooleanF' / 'EuclideanF' type constructors
+-- so that it is structurally disjoint from @'Conditional' 'Bool' a@ and
+-- avoids any overlap with that general instance.
+instance
+  Conditional (BooleanF a v) (EuclideanF a v)
+  => Conditional (BooleanF a v) (Point (ForeignField q (EuclideanF a v)))
+  where
+  bool (Point x1 y1 b1) (Point x2 y2 b2) c =
+    Point (bool x1 x2 c) (bool y1 y2 c) (bool b1 b2 c)
 
 instance
   ( Symbolic ctx
