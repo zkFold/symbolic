@@ -157,11 +157,14 @@ polyGEQ (FieldElement fa) (FieldElement fb) =
             (bool zero one (toIntegral (at va) >= toIntegral (at vb)))
         -- d = ge*(a-b) + (1-ge)*(b-a-1)
         -- d ∈ [0,2^n) is provable iff the comparison witness is honest.
+        --
+        -- Introduce diff = a - b so that d = ge*(2*diff+1) - diff - 1,
+        -- which uses only one degree-2 monomial (ge*diff) and is a valid PLONK gate.
+        diff <- newAssigned (\x -> x va - x vb)
         d <-
           newAssigned
             ( \x ->
-                x ge * (x va - x vb)
-                  + (one - x ge) * (x vb - x va - one)
+                x ge * (x diff + x diff + one) - x diff - one
             )
         -- n polynomial boolean constraints + 1 reconstruction constraint
         _ <- polynomialExpansion (value @n) d
