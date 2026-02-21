@@ -71,9 +71,7 @@ module ZkFold.Symbolic.Ledger.Circuit.IVC (
 
 import Data.Zip (Zip)
 import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
-import GHC.TypeNats (KnownNat, type (-), type (+))
-import Prelude hiding ((+))
-
+import GHC.TypeNats (KnownNat, type (+), type (-))
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit.Context (CircuitContext)
 import ZkFold.Data.Empty (empty)
@@ -98,6 +96,7 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleTree, fromLeaves, toLeaves)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter, runInterpreter)
+import Prelude hiding ((+))
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
@@ -107,18 +106,17 @@ import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, valida
 -- IVC state
 -- ---------------------------------------------------------------------------
 
-{- | IVC step state – what is carried between consecutive transaction steps.
-
-All fields are 'FieldElement', so @Payload (TxStepState ud) n = U1@ (no
-witness data needed beyond what is already in the layout).  This makes the
-type directly usable as the @i@ functor in 'StepFunction'.
-
-The UTxO Merkle tree is stored as its flat leaf vector rather than the full
-'MerkleTree' because 'MerkleTree' stores its leaves in the symbolic payload
-(via 'Payloaded'), which is not compatible with the IVC Vec representation.
-'fromLeaves' / 'toLeaves' convert between the two representations inside the
-step circuit.
--}
+-- | IVC step state – what is carried between consecutive transaction steps.
+--
+-- All fields are 'FieldElement', so @Payload (TxStepState ud) n = U1@ (no
+-- witness data needed beyond what is already in the layout).  This makes the
+-- type directly usable as the @i@ functor in 'StepFunction'.
+--
+-- The UTxO Merkle tree is stored as its flat leaf vector rather than the full
+-- 'MerkleTree' because 'MerkleTree' stores its leaves in the symbolic payload
+-- (via 'Payloaded'), which is not compatible with the IVC Vec representation.
+-- 'fromLeaves' / 'toLeaves' convert between the two representations inside the
+-- step circuit.
 data TxStepState ud ctx = TxStepState
   { tssLeaves :: (Vector (MerkleTreeSize ud) :.: FieldElement) ctx
   -- ^ Flat representation of all UTxO Merkle tree leaf hashes.
@@ -132,11 +130,10 @@ data TxStepState ud ctx = TxStepState
 -- IVC payload
 -- ---------------------------------------------------------------------------
 
-{- | IVC step payload – data supplied for each individual transaction step.
-
-Contains one 'Transaction', its 'TransactionWitness', and the global list of
-bridge-out outputs (which is the same for every step in a given batch).
--}
+-- | IVC step payload – data supplied for each individual transaction step.
+--
+-- Contains one 'Transaction', its 'TransactionWitness', and the global list of
+-- bridge-out outputs (which is the same for every step in a given batch).
 data TxStepPayload ud i o a bo ctx = TxStepPayload
   { tspTx :: Transaction i o a ctx
   -- ^ The transaction to be validated in this step.
@@ -156,14 +153,13 @@ data TxStepPayload ud i o a bo ctx = TxStepPayload
 -- All fields of 'TxStepState' are 'FieldElement', so this has no payload.
 type LedgerIVCStateF ud = Layout (TxStepState ud) (Order RollupBF)
 
-{- | Combined layout+payload functor for the IVC step payload.
-
-The IVC framework's 'StepFunction' receives the payload as a flat vector of
-field elements ('Vec p ctx = ctx p').  Complex types inside 'TxStepPayload'
-(e.g. 'UInt 32 Auto', 'Bool') store extra witness data in their 'Payload'.
-By using @Layout T n :*: Payload T n@ we pass both parts together so that
-'restore' can reconstruct the full symbolic type inside the step function.
--}
+-- | Combined layout+payload functor for the IVC step payload.
+--
+-- The IVC framework's 'StepFunction' receives the payload as a flat vector of
+-- field elements ('Vec p ctx = ctx p').  Complex types inside 'TxStepPayload'
+-- (e.g. 'UInt 32 Auto', 'Bool') store extra witness data in their 'Payload'.
+-- By using @Layout T n :*: Payload T n@ we pass both parts together so that
+-- 'restore' can reconstruct the full symbolic type inside the step function.
 type LedgerIVCPayloadF ud i o a bo =
   Layout (TxStepPayload ud i o a bo) (Order RollupBF)
     :*: Payload (TxStepPayload ud i o a bo) (Order RollupBF)
@@ -172,23 +168,22 @@ type LedgerIVCPayloadF ud i o a bo =
 -- Step function
 -- ---------------------------------------------------------------------------
 
-{- | Core IVC step: validate one transaction and update the UTxO state.
-
-This is the @f@ in @z_{n+1} = f(z_n, w_n)@ of the IVC chain.
-
-Steps performed inside the circuit:
-  1. Restore 'TxStepState' from the flat state Vec (U1 payload).
-  2. Restore 'TxStepPayload' from the combined layout+payload Vec.
-  3. Reconstruct the 'MerkleTree' from the stored leaf hashes.
-  4. Call 'validateTransaction'.
-  5. Extract updated leaf hashes from the returned tree.
-  6. Pack the new state back into a Vec.
-
-The validity flag returned by 'validateTransaction' is intentionally not
-included in the output state: if the transaction is *invalid* the prover
-cannot produce a valid proof whose final state matches the expected new state,
-so invalidity is already enforced by the proof system.
--}
+-- | Core IVC step: validate one transaction and update the UTxO state.
+--
+-- This is the @f@ in @z_{n+1} = f(z_n, w_n)@ of the IVC chain.
+--
+-- Steps performed inside the circuit:
+--   1. Restore 'TxStepState' from the flat state Vec (U1 payload).
+--   2. Restore 'TxStepPayload' from the combined layout+payload Vec.
+--   3. Reconstruct the 'MerkleTree' from the stored leaf hashes.
+--   4. Call 'validateTransaction'.
+--   5. Extract updated leaf hashes from the returned tree.
+--   6. Pack the new state back into a Vec.
+--
+-- The validity flag returned by 'validateTransaction' is intentionally not
+-- included in the output state: if the transaction is *invalid* the prover
+-- cannot produce a valid proof whose final state matches the expected new state,
+-- so invalidity is already enforced by the proof system.
 ledgerTxStepFunction
   :: forall ud i o a bo
    . SignatureTransaction ud i o a (CircuitContext RollupBF)
@@ -237,7 +232,7 @@ ledgerTxStepFunction stateVec payloadVec =
         { tssLeaves = Comp1 newLeaves
         , tssBOCount = tssBOCount state + bouts
         }
-  in
+   in
     Vec (arithmetize newState)
 
 -- ---------------------------------------------------------------------------
@@ -272,21 +267,20 @@ mkTxStepPayload p =
 -- IVC chain wrappers
 -- ---------------------------------------------------------------------------
 
-{- | Initialise the IVC chain and prove the FIRST transaction step.
-
-Must be called exactly once before any 'ledgerIVCProve' calls.
-
-Type parameters
----------------
-  @d@   – Protostar degree (typically 2 for degree-2 arithmetic circuits).
-  @pt@  – Recursive point type (use 'WeierstrassWitness' from symbolic-base).
-  @ud@  – UTxO Merkle tree depth.
-  @i@   – Number of transaction inputs.
-  @o@   – Number of transaction outputs.
-  @a@   – Number of asset types per output.
-  @bo@  – Number of bridge-out output slots.
-  @c@   – Commitment type (e.g. 'OperationRecord' with 'cyclicCommit').
--}
+-- | Initialise the IVC chain and prove the FIRST transaction step.
+--
+-- Must be called exactly once before any 'ledgerIVCProve' calls.
+--
+-- Type parameters
+-- ---------------
+--   @d@   – Protostar degree (typically 2 for degree-2 arithmetic circuits).
+--   @pt@  – Recursive point type (use 'WeierstrassWitness' from symbolic-base).
+--   @ud@  – UTxO Merkle tree depth.
+--   @i@   – Number of transaction inputs.
+--   @o@   – Number of transaction outputs.
+--   @a@   – Number of asset types per output.
+--   @bo@  – Number of bridge-out output slots.
+--   @c@   – Commitment type (e.g. 'OperationRecord' with 'cyclicCommit').
 ledgerIVCSetup
   :: forall d pt ud i o a bo c
    . ( KnownNat (d + 1)
@@ -316,10 +310,9 @@ ledgerIVCSetup hash hcommit1 hcommit2 z0 w0 =
     z0
     w0
 
-{- | Prove the NEXT transaction step, folding it into the IVC chain.
-
-Call this once for each transaction after the first one.
--}
+-- | Prove the NEXT transaction step, folding it into the IVC chain.
+--
+-- Call this once for each transaction after the first one.
 ledgerIVCProve
   :: forall d pt ud i o a bo c
    . ( KnownNat (d + 1)
@@ -353,4 +346,3 @@ ledgerIVCProve hash hcommit1 hcommit2 ptData result w =
     (ledgerTxStepFunction @ud @i @o @a @bo)
     result
     w
-

@@ -1,18 +1,17 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{- | Polynomial (lookup-free) encoding of bounded integers.
-
-'PolyBounded n ctx' wraps a 'FieldElement' and implements comparison via
-polynomial bit-decomposition (@b*(b-1)=0@ per bit) instead of lookup range
-constraints.  Every constraint produced is a polynomial constraint, so values
-of this type are safe to use inside Protostar IVC step circuits where lookup
-constraints are not folded by the accumulator.
-
-Arithmetic (+, -, negate) is plain field arithmetic — no carry expansion, no
-lookups.  Range safety for comparison is enforced by the polynomial expansion
-witness inside '(>=)'.
--}
+-- | Polynomial (lookup-free) encoding of bounded integers.
+--
+-- 'PolyBounded n ctx' wraps a 'FieldElement' and implements comparison via
+-- polynomial bit-decomposition (@b*(b-1)=0@ per bit) instead of lookup range
+-- constraints.  Every constraint produced is a polynomial constraint, so values
+-- of this type are safe to use inside Protostar IVC step circuits where lookup
+-- constraints are not folded by the accumulator.
+--
+-- Arithmetic (+, -, negate) is plain field arithmetic — no carry expansion, no
+-- lookups.  Range safety for comparison is enforced by the polynomial expansion
+-- witness inside '(>=)'.
 module ZkFold.Symbolic.Ledger.Types.Polynomial (
   PolyBounded (..),
 ) where
@@ -21,6 +20,19 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema)
 import GHC.Generics (Generic, Generic1, Par1 (..))
 import GHC.TypeNats (KnownNat, Natural)
+import ZkFold.Algebra.Class
+import ZkFold.Algebra.Number (value)
+import ZkFold.Data.Eq (Eq (..))
+import ZkFold.Data.HFunctor.Classes (HEq, HShow)
+import ZkFold.Data.Ord
+import ZkFold.Symbolic.Class (Symbolic (..), fromCircuit2F)
+import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
+import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Combinators (polynomialExpansion)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Ord (Ordering)
+import ZkFold.Symbolic.MonadCircuit (at, newAssigned, newConstrained)
 import Prelude hiding (
   Bool,
   Eq,
@@ -40,20 +52,6 @@ import Prelude hiding (
   (||),
  )
 import qualified Prelude as Haskell
-
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Number (value)
-import ZkFold.Data.Eq (Eq (..))
-import ZkFold.Data.HFunctor.Classes (HEq, HShow)
-import ZkFold.Data.Ord
-import ZkFold.Symbolic.Class (Symbolic (..), fromCircuit2F)
-import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), bool)
-import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Combinators (polynomialExpansion)
-import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.Ord (Ordering)
-import ZkFold.Symbolic.MonadCircuit (at, newAssigned, newConstrained)
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
@@ -125,17 +123,16 @@ instance Symbolic ctx => Eq (PolyBounded n ctx) where
 -- Comparison — polynomial GEQ, no lookups
 -- ---------------------------------------------------------------------------
 
-{- | Polynomial greater-than-or-equal comparison for 'PolyBounded' values.
-
-Witnesses a boolean @ge ∈ {0,1}@ and adds polynomial constraints:
-
-* @ge = 1@: proves @a - b ∈ [0, 2^n)@ via @n@ boolean constraints.
-* @ge = 0@: proves @b - a - 1 ∈ [0, 2^n)@ via @n@ boolean constraints.
-
-This is sound because both @a - b@ and @b - a - 1@ cannot simultaneously
-fit in @[0, 2^n)@ when the field order @p >> 2^n@ (which holds for
-'RollupBF').
--}
+-- | Polynomial greater-than-or-equal comparison for 'PolyBounded' values.
+--
+-- Witnesses a boolean @ge ∈ {0,1}@ and adds polynomial constraints:
+--
+-- * @ge = 1@: proves @a - b ∈ [0, 2^n)@ via @n@ boolean constraints.
+-- * @ge = 0@: proves @b - a - 1 ∈ [0, 2^n)@ via @n@ boolean constraints.
+--
+-- This is sound because both @a - b@ and @b - a - 1@ cannot simultaneously
+-- fit in @[0, 2^n)@ when the field order @p >> 2^n@ (which holds for
+-- 'RollupBF').
 polyGEQ
   :: forall n ctx
    . (Symbolic ctx, KnownNat n)

@@ -1,24 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-{- | End-to-end tests for the IVC ledger step function.
-
-We test two things:
-
-1. **Single step (interpreter)**
-   Run the *concrete* step function (via 'predicateEval') on a known valid
-   transaction and verify that the bridge-out count in the returned state is zero
-   (Example One's transaction does not produce bridge-out outputs).
-
-2. **Two-step chain (interpreter)**
-   Chain two steps and verify that the final UTxO leaf state matches the
-   expected state derived from Example One's 'newState2'.
--}
+-- | End-to-end tests for the IVC ledger step function.
+--
+-- We test two things:
+--
+-- 1. **Single step (interpreter)**
+--    Run the *concrete* step function (via 'predicateEval') on a known valid
+--    transaction and verify that the bridge-out count in the returned state is zero
+--    (Example One's transaction does not produce bridge-out outputs).
+--
+-- 2. **Two-step chain (interpreter)**
+--    Chain two steps and verify that the final UTxO leaf state matches the
+--    expected state derived from Example One's 'newState2'.
 module Tests.Symbolic.Ledger.E2E.IVC (specIVC) where
 
 import GHC.Generics ((:.:) (..))
 import Test.Hspec (Spec, describe, it, shouldBe)
-import Prelude hiding ((+))
-
 import ZkFold.Algebra.Class
 import ZkFold.Data.Empty (empty)
 import ZkFold.Data.Vector qualified as V
@@ -27,6 +24,7 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (preimage)
 import ZkFold.Symbolic.Interpreter (Interpreter (..))
+import Prelude hiding ((+))
 
 import ZkFold.Symbolic.Ledger.Circuit.IVC (
   LedgerIVCPayloadF,
@@ -48,11 +46,15 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 -- Type aliases (reuse Example One's small parameter values)
 -- ---------------------------------------------------------------------------
 
-type Ud = Ex1.Ud    -- UTxO tree depth = 2
-type Ixs = Ex1.Ixs  -- tx inputs  = 1
-type Oxs = Ex1.Oxs  -- tx outputs = 1
-type A = Ex1.A      -- assets     = 1
-type Bo = Ex1.Bo    -- bridge-out = 1
+type Ud = Ex1.Ud -- UTxO tree depth = 2
+
+type Ixs = Ex1.Ixs -- tx inputs  = 1
+
+type Oxs = Ex1.Oxs -- tx outputs = 1
+
+type A = Ex1.A -- assets     = 1
+
+type Bo = Ex1.Bo -- bridge-out = 1
 
 -- ---------------------------------------------------------------------------
 -- Extract the single TransactionWitness from each StateWitness

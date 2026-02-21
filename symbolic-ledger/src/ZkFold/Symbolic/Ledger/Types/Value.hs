@@ -40,6 +40,7 @@ import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.List (List, emptyList, (.:))
 import ZkFold.Symbolic.Data.List qualified as Symbolic.List
 import ZkFold.Symbolic.Fold (SymbolicFold)
+import ZkFold.Symbolic.Ledger.Types.Polynomial (PolyBounded)
 import Prelude hiding (
   Bool,
   Eq,
@@ -60,7 +61,6 @@ import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Types.Orphans ()
-import ZkFold.Symbolic.Ledger.Types.Polynomial (PolyBounded)
 
 -- | Asset policy.
 type AssetPolicy context = FieldElement context
