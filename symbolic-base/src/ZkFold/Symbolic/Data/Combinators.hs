@@ -282,6 +282,29 @@ expansion :: MonadCircuit i a w m => Natural -> i -> m [i]
 -- ^ @expansion n k@ computes a binary expansion of @k@ if it fits in @n@ bits.
 expansion = expansionW @1
 
+-- | Like 'expansion' but uses the polynomial boolean constraint @b*(b-1)=0@
+-- for each bit instead of a lookup range constraint.
+--
+-- All constraints produced are polynomial (no lookup tables), making this
+-- function safe to use inside Protostar IVC step circuits where lookup
+-- constraints cannot be folded by the accumulator.
+polynomialExpansion :: MonadCircuit i a w m => Natural -> i -> m [i]
+polynomialExpansion n k = do
+  bits <- for [0 .. n -! 1] $ \j ->
+    newConstrained
+      (\x v -> x v * (x v - one)) -- b*(b-1) = 0: polynomial boolean constraint
+      (bitOf j (at k))
+  k' <- horner bits
+  constraint (\x -> x k - x k') -- k = sum b_j * 2^j (reconstruction)
+  return bits
+ where
+  bitOf :: PrimeField x => Natural -> x -> x
+  bitOf j =
+    fromConstant
+      . (`mod` fromConstant (2 :: Natural))
+      . (`div` fromConstant ((2 :: Natural) ^ j))
+      . toIntegral
+
 expansionW :: forall r i a w m. (KnownNat r, MonadCircuit i a w m) => Natural -> i -> m [i]
 expansionW n k = do
   words <- wordsOf @r n k
