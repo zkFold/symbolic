@@ -333,7 +333,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                       :*: (outputIx + one)
                       :*: ( outsValidAcc
                               && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
-                              && (output /= nullOutput) -- kept for clarity, logic identical
+                              && not isNull
                               && sanity
                           )
                       :*: utxoTreeAcc
