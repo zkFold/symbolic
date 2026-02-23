@@ -403,6 +403,7 @@ instance
 
         -- FIXME: These checks are valid for Plonk constraints only.
         -- If we plan to support multiple provers for the same function, we need to remove them.
+        -- See https://github.com/zkFold/symbolic/issues/805
         cons :: Constraint a
         cons =
           if varDisjoint > Just 1
