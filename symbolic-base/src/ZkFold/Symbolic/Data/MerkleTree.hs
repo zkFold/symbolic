@@ -112,7 +112,7 @@ type Index d = Vector (d - 1) :.: Bool
 -- This implementation uses circuit-level operations throughout to avoid
 -- the exponential WitnessF closure blowup that occurs with witness-level MiMC.
 merklePath
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> MerklePath d c
@@ -160,9 +160,6 @@ computeSiblingsSymbolic levels bitsLSB =
           -- Reverse to get MSB-first for selection
           siblingBitsMSB = P.reverse siblingBitsLSB
        in selectFromLevel level siblingBitsMSB
-
-    -- Symbolic NOT: if b then False else True
-    notB b = bool symTrue symFalse b
     symTrue = Bool $ embedW $ Par1 one
     symFalse = Bool $ embedW $ Par1 zero
 
@@ -171,6 +168,9 @@ computeSiblingsSymbolic levels bitsLSB =
       let (left, right) = splitAt (length xs `P.div` 2) xs
        in bool (selectFromLevel left bs) (selectFromLevel right bs) b
     selectFromLevel xs [] = P.head xs
+
+    -- Symbolic NOT: if b then False else True
+    notB = bool symTrue symFalse
 
 -- | Circuit-optimized MiMC hash for Merkle tree operations.
 -- Uses the Symbolic MiMC implementation which builds circuits efficiently
@@ -203,7 +203,7 @@ deriving stock instance HShow c => P.Show (MerkleEntry d c)
 
 contains
   :: forall d c
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => MerkleTree d c
   -> MerkleEntry d c
   -> Bool c
@@ -214,7 +214,7 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
 (!!)
   :: forall d c
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
@@ -236,7 +236,7 @@ tree !! position =
 
 search
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (MerkleEntry d) c
@@ -284,7 +284,7 @@ search pred tree =
 
 find
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe FieldElement c
@@ -292,7 +292,7 @@ find pred = mmap value . search pred
 
 findIndex
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (Index d) c
@@ -300,21 +300,21 @@ findIndex pred = mmap position . search pred
 
 elemIndex
   :: forall c d
-   . (Symbolic c, KnownNat (d - 1))
+   . (Symbolic c)
   => FieldElement (WitnessContext c)
   -> MerkleTree d c
   -> Maybe (Index d) c
 elemIndex elem = findIndex (== elem)
 
 lookup
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
 lookup = (!!)
 
 search'
-  :: (Symbolic c, KnownNat (d - 1))
+  :: (Symbolic c)
   => (forall e. (Symbolic e, BaseField e ~ BaseField c) => FieldElement e -> Bool e)
   -> MerkleTree d c
   -> MerkleEntry d c
@@ -343,8 +343,7 @@ replace MerkleEntry {..} tree = result
     -> n
     -> a
     -> a
-  replacer (idx, newVal) n oldVal =
-    ifThenElse (idx == fromConstant n) newVal oldVal
+  replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
 
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
