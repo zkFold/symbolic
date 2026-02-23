@@ -18,7 +18,6 @@ import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (
-  AdditiveGroup (..),
   AdditiveSemigroup (..),
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
@@ -220,70 +219,37 @@ validateTransaction
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
-    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
-    -- We check if all output assets are covered by inputs.
-    (outAssetsWithinInputs :*: finalInputAssets) =
-      foldl'
-        ( \(isValid1 :*: inputAssetsAcc) outputAssets ->
-            foldl'
-              ( \(isValid2 :*: inputAssetsAcc') outputAsset ->
-                  let
-                    -- Whether an input asset matches the current output asset by policy and name.
-                    sameAsset av = (av.assetPolicy == outputAsset.assetPolicy) && (av.assetName == outputAsset.assetName)
+    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_ :*: utxo :*: _ :*: _ :*: _) -> unComp1 utxo.uOutput.oAssets)
+    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _) -> unComp1 output.oAssets)
 
-                    -- Compute remaining before each input using a prefix scan across inputs.
-                    inputsVec = unComp1 inputAssetsAcc'
-                    (finalRemaining, updatedInputs) =
-                      Vector.mapAccumL
-                        ( \remBefore inAssetsComp ->
-                            let asVec = unComp1 inAssetsComp
-                                (remAfter, updatedAs) =
-                                  Vector.mapAccumL
-                                    ( \r av ->
-                                        let isMatch = sameAsset av
-                                            canFull = r >= av.assetQuantity
-                                            consumed =
-                                              ifThenElse
-                                                isMatch
-                                                (ifThenElse canFull av.assetQuantity r)
-                                                zero
-                                            newR = r + negate consumed
-                                            newQty =
-                                              ifThenElse
-                                                isMatch
-                                                (av.assetQuantity + negate consumed)
-                                                av.assetQuantity
-                                         in (newR, av {assetQuantity = newQty})
-                                    )
-                                    remBefore
-                                    asVec
-                             in (remAfter, Comp1 updatedAs)
-                        )
-                        outputAsset.assetQuantity
-                        inputsVec
-                    isValid' = isValid2 && (finalRemaining == zero)
-                   in
-                    (isValid' :*: Comp1 updatedInputs)
-              )
-              (isValid1 :*: inputAssetsAcc)
-              outputAssets
-        )
-        ((true :: Bool context) :*: Comp1 inputAssets)
-        outputsAssets
-    -- We check if all inputs are covered by outputs.
-    inputsConsumed =
+    -- Total quantity of asset (policy, name) across inputAssets.
+    sumInputQty policy name =
       foldl'
-        ( \acc inAssetsComp ->
-            let asVec = unComp1 inAssetsComp
-             in acc
-                  && foldl'
-                    (\acc2 av -> acc2 && (av.assetQuantity == zero))
-                    true
-                    asVec
+        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
+        zero
+        inputAssets
+
+    -- Total quantity of asset (policy, name) across outputsAssets.
+    sumOutputQty policy name =
+      foldl'
+        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
+        zero
+        outputsAssets
+
+    -- Asset-balanced: every asset type appearing in inputs or outputs has equal totals on both sides.
+    isBalanced =
+      foldl'
+        ( foldl'
+            (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
         )
         true
-        (unComp1 finalInputAssets)
+        inputAssets
+        && foldl'
+          ( foldl'
+              (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
+          )
+          true
+          outputsAssets
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: consumedAtleastOneInput :*: updatedUTxOTreeForInputs) =
       foldl'
@@ -366,7 +332,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         outputsWithWitness
    in
     ( bouts
-        :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed)
+        :*: (outsValid && isInsValid && consumedAtleastOneInput && isBalanced)
         :*: updatedUTxOTreeForOutputs
     )
 
