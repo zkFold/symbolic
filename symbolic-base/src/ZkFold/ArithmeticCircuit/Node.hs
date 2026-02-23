@@ -44,7 +44,7 @@ import ZkFold.ArithmeticCircuit (ArithmeticCircuit, optimize, solder)
 import ZkFold.ArithmeticCircuit.Context (CircuitContext, crown, emptyContext)
 import ZkFold.ArithmeticCircuit.Op
 import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var)
-import ZkFold.ArithmeticCircuit.Witness (BooleanF, EuclideanF, OrderingF, WitnessF)
+import ZkFold.ArithmeticCircuit.Witness (BooleanF (..), EuclideanF (..), OrderingF (..), WitnessF)
 import ZkFold.Control.Conditional (Conditional (..))
 import ZkFold.Data.Bool (BoolType (..))
 import ZkFold.Data.Eq (Eq (..))
@@ -361,7 +361,9 @@ instance PrimeField a => Eq (Witness a s) where
   FieldVar u == FieldVar v = at @_ @(WitnessF a NewVar) u == at v
   IntWitness v == IntWitness w = v == w
   BoolWitness v == BoolWitness w = not (xor v w)
-  OrdWitness _ == OrdWitness _ = error "not implemented"
+  OrdWitness (OrderingF f) == OrdWitness (OrderingF g) =
+    EuclideanF (\x -> ordering (fromConstant (-1 :: Integer)) zero one (f x))
+      == EuclideanF (\x -> ordering (fromConstant (-1 :: Integer)) zero one (g x))
   x /= y = not (x == y)
 
 opToWitness

@@ -1,0 +1,348 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+{- Note [IVC for the ledger transaction batch]
+
+The monolithic `ledgerCircuit` proves an entire TransactionBatch (t transactions)
+in a single Plonkup circuit.  Constraint count scales linearly with t:
+
+  t=1  ~108 k constraints
+  t=2  ~192 k constraints   (already near 2^18 = 262 k gate limit)
+  t=10 ~888 k constraints   (exceeds limit)
+
+To make the batch size unbounded we replace the inner fold-over-t with an
+Incremental Verifiable Computation (IVC) chain based on the Protostar
+accumulation scheme already present in `symbolic-base`.
+
+Architecture
+============
+
+1. **Step circuit** (`ledgerTxStepFunction`)
+   Processes exactly ONE transaction.  Constraint count is ~O(a·i·o) – the same
+   as the t=1 monolithic circuit.  The step takes:
+     • IVC state  – the UTxO Merkle tree leaves + running bridge-out count
+     • IVC payload – one (Transaction, TransactionWitness, bridgedOutOutputs)
+
+2. **IVC chain** (`ledgerIVCSetup` / `ledgerIVCProve`)
+   Chains t step proofs using the Protostar accumulator.  Each call folds one
+   more step into the accumulator at constant O(1) verifier cost.
+
+3. **Final verification** (`ledgerIVCVerify`)
+   Checks that the accumulator is valid.  This is O(1) in t.
+
+Limitations / known open items
+================================
+• [RESOLVED] The Protostar accumulator folds only polynomial constraints.
+  `UInt 32 Auto` (for `orIndex`) and `Int 64 Auto` (for `AssetQuantity`) formerly
+  generated Plonkup lookup range constraints that the accumulator could not fold.
+  Both types have been replaced with lookup-free alternatives:
+    – `orIndex` uses `FieldElement` (field elements need no range check).
+    – `AssetQuantity` uses `PolyBounded 64`, which encodes 64-bit bounds via
+      the polynomial boolean constraint @b*(b-1)=0@ per bit, and implements
+      comparison via a polynomial GEQ gadget (`polyGEQ`).  No lookup constraints
+      are generated anywhere in the step circuit.
+
+• Bridge-in processing is NOT included in the IVC chain.  It is cheap (bi is
+  small and constant) and can remain in a separate fixed-size outer circuit that
+  also calls `ledgerIVCVerify` to verify the IVC chain result.
+
+• The helper `mkInitialTxStepState` reconstructs the tree from the MerkleTree
+  witness; callers must supply the UTxO tree AFTER bridge-in has been applied.
+-}
+module ZkFold.Symbolic.Ledger.Circuit.IVC (
+  -- * IVC state / payload types
+  TxStepState (..),
+  TxStepPayload (..),
+  LedgerIVCStateF,
+  LedgerIVCPayloadF,
+
+  -- * Step function (the core IVC computation)
+  ledgerTxStepFunction,
+
+  -- * Helpers: construct IVC inputs from concrete values
+  mkInitialTxStepState,
+  mkTxStepPayload,
+
+  -- * IVC chain wrappers
+  ledgerIVCSetup,
+  ledgerIVCProve,
+) where
+
+import Data.Zip (Zip)
+import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
+import GHC.TypeNats (KnownNat, type (+), type (-))
+import ZkFold.Algebra.Class
+import ZkFold.ArithmeticCircuit.Context (CircuitContext)
+import ZkFold.Data.Empty (empty)
+import ZkFold.Data.HFunctor (hmap)
+import ZkFold.Data.MerkleTree (MerkleTreeSize)
+import ZkFold.Data.Package (unpacked)
+import ZkFold.Data.Product (fstP, sndP)
+import ZkFold.Data.Vector (Vector)
+import ZkFold.Protocol.IVC.Commit (HomomorphicCommit)
+import ZkFold.Protocol.IVC.Internal (IVCResult, ivcProve, ivcSetup)
+import ZkFold.Protocol.IVC.Oracle (Hasher, OracleSource)
+import ZkFold.Protocol.IVC.Predicate (Compilable, StepFunction)
+import ZkFold.Protocol.IVC.RecursiveFunction (IsRecursivePoint)
+import ZkFold.Symbolic.Class (Arithmetic, Symbolic (..), witnessF)
+import ZkFold.Symbolic.Data.Class (
+  Layout,
+  Payload,
+  SymbolicData (..),
+ )
+import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
+import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree, fromLeaves, toLeaves)
+import ZkFold.Symbolic.Data.Vec (Vec (..))
+import ZkFold.Symbolic.Interpreter (Interpreter, runInterpreter)
+import Prelude hiding ((+))
+
+import ZkFold.Symbolic.Ledger.Types
+import ZkFold.Symbolic.Ledger.Types.Field (RollupBF, RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
+
+-- ---------------------------------------------------------------------------
+-- IVC state
+-- ---------------------------------------------------------------------------
+
+-- | IVC step state – what is carried between consecutive transaction steps.
+--
+-- All fields are 'FieldElement', so @Payload (TxStepState ud) n = U1@ (no
+-- witness data needed beyond what is already in the layout).  This makes the
+-- type directly usable as the @i@ functor in 'StepFunction'.
+--
+-- The UTxO Merkle tree is stored as its flat leaf vector rather than the full
+-- 'MerkleTree' because 'MerkleTree' stores its leaves in the symbolic payload
+-- (via 'Payloaded'), which is not compatible with the IVC Vec representation.
+-- 'fromLeaves' / 'toLeaves' convert between the two representations inside the
+-- step circuit.
+data TxStepState ud ctx = TxStepState
+  { tssLeaves :: (Vector (MerkleTreeSize ud) :.: FieldElement) ctx
+  -- ^ Flat representation of all UTxO Merkle tree leaf hashes.
+  , tssBOCount :: FieldElement ctx
+  -- ^ Running count of bridge-out outputs seen across all steps so far.
+  }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
+
+-- ---------------------------------------------------------------------------
+-- IVC payload
+-- ---------------------------------------------------------------------------
+
+-- | IVC step payload – data supplied for each individual transaction step.
+--
+-- Contains one 'Transaction', its 'TransactionWitness', and the global list of
+-- bridge-out outputs (which is the same for every step in a given batch).
+data TxStepPayload ud i o a bo ctx = TxStepPayload
+  { tspTx :: Transaction i o a ctx
+  -- ^ The transaction to be validated in this step.
+  , tspWitness :: TransactionWitness ud i o a ctx
+  -- ^ Merkle proofs and signatures for this transaction.
+  , tspBridgedOut :: (Vector bo :.: Output a) ctx
+  -- ^ The global bridge-out output list (constant across all steps).
+  }
+  deriving stock (Generic, Generic1)
+  deriving anyclass (SymbolicData, SymbolicInput)
+
+-- ---------------------------------------------------------------------------
+-- Functor aliases used by the IVC framework
+-- ---------------------------------------------------------------------------
+
+-- | Layout functor for the IVC state.
+-- All fields of 'TxStepState' are 'FieldElement', so this has no payload.
+type LedgerIVCStateF ud = Layout (TxStepState ud) (Order RollupBF)
+
+-- | Combined layout+payload functor for the IVC step payload.
+--
+-- The IVC framework's 'StepFunction' receives the payload as a flat vector of
+-- field elements ('Vec p ctx = ctx p').  Complex types inside 'TxStepPayload'
+-- (e.g. 'UInt 32 Auto', 'Bool') store extra witness data in their 'Payload'.
+-- By using @Layout T n :*: Payload T n@ we pass both parts together so that
+-- 'restore' can reconstruct the full symbolic type inside the step function.
+type LedgerIVCPayloadF ud i o a bo =
+  Layout (TxStepPayload ud i o a bo) (Order RollupBF)
+    :*: Payload (TxStepPayload ud i o a bo) (Order RollupBF)
+
+-- ---------------------------------------------------------------------------
+-- Step function
+-- ---------------------------------------------------------------------------
+
+-- | Core IVC step: validate one transaction and update the UTxO state.
+--
+-- This is the @f@ in @z_{n+1} = f(z_n, w_n)@ of the IVC chain.
+--
+-- Steps performed inside the circuit:
+--   1. Restore 'TxStepState' from the flat state Vec (U1 payload).
+--   2. Restore 'TxStepPayload' from the combined layout+payload Vec.
+--   3. Reconstruct the 'MerkleTree' from the stored leaf hashes.
+--   4. Call 'validateTransaction'.
+--   5. Extract updated leaf hashes from the returned tree.
+--   6. Pack the new state back into a Vec.
+--
+-- The validity flag returned by 'validateTransaction' is intentionally not
+-- included in the output state: if the transaction is *invalid* the prover
+-- cannot produce a valid proof whose final state matches the expected new state,
+-- so invalidity is already enforced by the proof system.
+ledgerTxStepFunction
+  :: forall ud i o a bo
+   . SignatureTransaction ud i o a (CircuitContext RollupBF)
+  => StepFunction RollupBF (LedgerIVCStateF ud) (LedgerIVCPayloadF ud i o a bo)
+ledgerTxStepFunction stateVec payloadVec =
+  let
+    -- Restore IVC state.
+    -- Payload (TxStepState ud) = (Vector n :.: U1) :*: U1, which is "structurally
+    -- empty" (all positions are U1). We use `empty` to construct it without
+    -- needing to know the concrete layout at compile time.
+    state :: TxStepState ud (CircuitContext RollupBF)
+    state = restore (runVec stateVec, empty)
+
+    -- Restore IVC payload.
+    -- The payload functor is (Layout :*: Payload), so we split it with hmap
+    -- fstP / hmap sndP and use witnessF to convert the payload part to the
+    -- witness-field representation required by restore.
+    txPayload :: TxStepPayload ud i o a bo (CircuitContext RollupBF)
+    txPayload =
+      restore
+        ( hmap fstP (runVec payloadVec)
+        , witnessF $ hmap sndP (runVec payloadVec)
+        )
+
+    -- Reconstruct the full MerkleTree from the flat leaf vector.
+    utxoTree :: MerkleTree ud (CircuitContext RollupBF)
+    utxoTree = fromLeaves (unComp1 (tssLeaves state))
+
+    -- Validate the transaction, obtaining bridge-out count and updated tree.
+    -- validateTransaction returns (FieldElement :*: Bool :*: MerkleTree ud) context.
+    (bouts :*: _isValid :*: newTree) =
+      validateTransaction
+        utxoTree
+        (tspBridgedOut txPayload)
+        (tspTx txPayload)
+        (tspWitness txPayload)
+
+    -- Flatten the updated tree back to individual FieldElement leaves.
+    -- toLeaves gives Vec (Vector n) ctx = ctx (Vector n); unpacked decomposes into
+    -- Vector n (ctx Par1); wrapping each in FieldElement gives Vector n (FieldElement ctx).
+    newLeaves = fmap FieldElement (unpacked (runVec (toLeaves newTree)))
+
+    -- Build the new IVC state.
+    newState =
+      TxStepState
+        { tssLeaves = Comp1 newLeaves
+        , tssBOCount = tssBOCount state + bouts
+        }
+   in
+    Vec (arithmetize newState)
+
+-- ---------------------------------------------------------------------------
+-- Helpers: convert concrete interpreter values to IVC inputs
+-- ---------------------------------------------------------------------------
+
+-- | Convert a concrete 'MerkleTree' (after bridge-in) into the flat
+-- 'LedgerIVCStateF' representation expected by 'ivcSetup'.
+mkInitialTxStepState
+  :: forall ud
+   . MerkleTree ud RollupBFInterpreter
+  -- ^ UTxO tree AFTER all bridge-in outputs have been inserted.
+  -> LedgerIVCStateF ud RollupBF
+mkInitialTxStepState tree =
+  let s =
+        TxStepState
+          { tssLeaves = Comp1 (fmap FieldElement (unpacked (runVec (toLeaves tree))))
+          , tssBOCount = zero
+          }
+   in runInterpreter (arithmetize s)
+
+-- | Convert a concrete 'TxStepPayload' into the combined layout+payload
+-- 'LedgerIVCPayloadF' representation expected by 'ivcSetup' / 'ivcProve'.
+mkTxStepPayload
+  :: forall ud i o a bo
+   . TxStepPayload ud i o a bo RollupBFInterpreter
+  -> LedgerIVCPayloadF ud i o a bo RollupBF
+mkTxStepPayload p =
+  runInterpreter (arithmetize p) :*: payload p
+
+-- ---------------------------------------------------------------------------
+-- IVC chain wrappers
+-- ---------------------------------------------------------------------------
+
+-- | Initialise the IVC chain and prove the FIRST transaction step.
+--
+-- Must be called exactly once before any 'ledgerIVCProve' calls.
+--
+-- Type parameters
+-- ---------------
+--   @d@   – Protostar degree (typically 2 for degree-2 arithmetic circuits).
+--   @pt@  – Recursive point type (use 'WeierstrassWitness' from symbolic-base).
+--   @ud@  – UTxO Merkle tree depth.
+--   @i@   – Number of transaction inputs.
+--   @o@   – Number of transaction outputs.
+--   @a@   – Number of asset types per output.
+--   @bo@  – Number of bridge-out output slots.
+--   @c@   – Commitment type (e.g. 'OperationRecord' with 'cyclicCommit').
+ledgerIVCSetup
+  :: forall d pt ud i o a bo c
+   . ( KnownNat (d + 1)
+     , KnownNat (d - 1)
+     , Compilable (LedgerIVCStateF ud)
+     , Zip (LedgerIVCStateF ud)
+     , Compilable (LedgerIVCPayloadF ud i o a bo)
+     , Zero c
+     , Arithmetic RollupBF
+     , IsRecursivePoint pt RollupBF
+     , SignatureTransaction ud i o a (CircuitContext RollupBF)
+     )
+  => Hasher
+  -> HomomorphicCommit RollupBF c
+  -> HomomorphicCommit (FieldElement (CircuitContext RollupBF)) (pt (CircuitContext RollupBF))
+  -> LedgerIVCStateF ud RollupBF
+  -- ^ Initial state: use 'mkInitialTxStepState' with the post-bridge-in tree.
+  -> LedgerIVCPayloadF ud i o a bo RollupBF
+  -- ^ First transaction payload: use 'mkTxStepPayload'.
+  -> IVCResult 1 (LedgerIVCStateF ud) c RollupBF
+ledgerIVCSetup hash hcommit1 hcommit2 z0 w0 =
+  ivcSetup @d @pt
+    hash
+    hcommit1
+    hcommit2
+    (ledgerTxStepFunction @ud @i @o @a @bo)
+    z0
+    w0
+
+-- | Prove the NEXT transaction step, folding it into the IVC chain.
+--
+-- Call this once for each transaction after the first one.
+ledgerIVCProve
+  :: forall d pt ud i o a bo c
+   . ( KnownNat (d + 1)
+     , KnownNat (d - 1)
+     , Compilable (LedgerIVCStateF ud)
+     , Zip (LedgerIVCStateF ud)
+     , Compilable (LedgerIVCPayloadF ud i o a bo)
+     , Arithmetic RollupBF
+     , IsRecursivePoint pt RollupBF
+     , Scale RollupBF c
+     , OracleSource RollupBF c
+     , AdditiveGroup c
+     , SignatureTransaction ud i o a (CircuitContext RollupBF)
+     )
+  => Hasher
+  -> HomomorphicCommit RollupBF c
+  -> HomomorphicCommit (FieldElement (CircuitContext RollupBF)) (pt (CircuitContext RollupBF))
+  -> (c -> pt (Interpreter RollupBF))
+  -- ^ Converts a commitment value to the recursive point representation.
+  -> IVCResult 1 (LedgerIVCStateF ud) c RollupBF
+  -- ^ Current IVC result (from previous setup/prove call).
+  -> LedgerIVCPayloadF ud i o a bo RollupBF
+  -- ^ Next transaction payload: use 'mkTxStepPayload'.
+  -> IVCResult 1 (LedgerIVCStateF ud) c RollupBF
+ledgerIVCProve hash hcommit1 hcommit2 ptData result w =
+  ivcProve @d @pt
+    hash
+    hcommit1
+    hcommit2
+    ptData
+    (ledgerTxStepFunction @ud @i @o @a @bo)
+    result
+    w

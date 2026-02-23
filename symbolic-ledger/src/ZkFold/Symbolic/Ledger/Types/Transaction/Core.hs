@@ -37,10 +37,10 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.Combinators (RegisterSize (Auto))
 import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point)
 import ZkFold.Symbolic.Data.FFA (FFA, KnownFFA)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable, hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.UInt (UInt)
 import Prelude hiding (Bool, Eq, Maybe, length, splitAt, (*), (+), (==), (||))
 import Prelude qualified as Haskell hiding ((||))
 
@@ -54,9 +54,8 @@ import ZkFold.Symbolic.Ledger.Types.Value (AssetValue, KnownRegistersAssetQuanti
 data OutputRef context = OutputRef
   { orTxId :: HashSimple context
   -- ^ Transaction ID which created this output.
-  , orIndex :: UInt 32 Auto context
-  -- ^ Index of the output in the transaction.
-  -- TODO: Restrict to represent 'o' outputs instead of 2^32?
+  , orIndex :: FieldElement context
+  -- ^ Index of the output in the transaction (polynomial, no lookups).
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
