@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-missing-signatures #-}
-
 module Tests.Symbolic.Ledger.E2E.One (
   specE2EOne,
   prevState,

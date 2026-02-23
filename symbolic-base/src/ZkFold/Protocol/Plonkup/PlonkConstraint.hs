@@ -1,34 +1,35 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+
 module ZkFold.Protocol.Plonkup.PlonkConstraint where
 
-import Control.Monad (guard, replicateM, return)
+import Control.Monad (replicateM, return)
 import Data.Binary (Binary)
-import Data.Containers.ListUtils (nubOrd)
 import Data.Eq (Eq (..))
 import Data.Function (($), (.))
-import Data.Functor ((<$>))
-import Data.List (find, head, map, permutations, sort, (!!), (++))
-import Data.Maybe (Maybe (..), fromMaybe, mapMaybe)
+import Data.Functor (fmap, (<$>))
+import Data.List (all, filter, head, sort, (!!))
+import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Ord (Ord)
+import Data.Set qualified as S
 import GHC.IsList (IsList (..))
+import GHC.Stack (HasCallStack)
 import Numeric.Natural (Natural)
 import Test.QuickCheck (Arbitrary (..))
 import Text.Show (Show)
+import Prelude ((<>), (>))
+import Prelude qualified as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Polynomial.Multivariate (
   Mono,
   Poly,
-  evalMonomial,
-  evalPolynomial,
-  mono,
-  poly,
+  degM,
   var,
-  variables,
  )
-import ZkFold.Algebra.Polynomial.Multivariate.Monomial (mapVar)
+import ZkFold.Algebra.Polynomial.Multivariate.Monomial qualified as Mon
 import ZkFold.ArithmeticCircuit.Var (LinVar (..), NewVar (..), Var, toVar)
 import ZkFold.Data.Binary (toByteString)
-import ZkFold.Prelude (length, take)
+import ZkFold.Prelude (length)
 
 data PlonkConstraint i a = PlonkConstraint
   { qm :: a
@@ -54,50 +55,87 @@ instance (Ord a, Arbitrary a, Binary a, Semiring a) => Arbitrary (PlonkConstrain
     let x1 = head xs; x2 = xs !! 1; x3 = xs !! 2
     return $ PlonkConstraint qm ql qr qo qc x1 x2 x3
 
-toPlonkConstraint :: forall a i. (Ord a, FiniteField a) => Poly a (Var a) Natural -> PlonkConstraint i a
-toPlonkConstraint p =
-  let xs = Just <$> toList (variables p)
-      perms = nubOrd $ map (take 3) $ permutations $ case length xs of
-        0 -> [Nothing, Nothing, Nothing]
-        1 -> [Nothing, Nothing, head xs, head xs]
-        2 -> [Nothing] ++ xs ++ xs
-        _ -> xs ++ xs
+toPlonkConstraint :: forall a i. (Ord a, FiniteField a, HasCallStack) => Poly a (Var a) Natural -> PlonkConstraint i a
+toPlonkConstraint p = PlonkConstraint qm ql qr qo qc va vb vc
+ where
+  fail :: P.String -> x
+  fail s =
+    P.error $
+      s
+        <> ": not a plonk constraint. Monomials of the following degrees were encountered: "
+        <> P.show (fmap (degM . P.snd) $ toList p)
 
-      getCoef :: Mono (Maybe (Var a)) Natural -> a
-      getCoef m = case find (\(_, as) -> m == mapVar Just as) (toList p) of
-        Just (c, _) -> c
-        _ -> zero
+  monomials :: [(a, Mono (Var a) Natural)]
+  monomials = toList p
 
-      getCoefs :: [Maybe (Var a)] -> Maybe (PlonkConstraint i a)
-      getCoefs [a, b, c] = do
-        let xa = [(a, 1)]
-            xb = [(b, 1)]
-            xc = [(c, 1)]
-            xaxb = xa ++ xb
+  d2 :: Maybe (a, Mono (Var a) Natural)
+  d2 = case filter ((== 2) . degM . P.snd) monomials of
+    [] -> Nothing
+    [m] -> Just m
+    _ -> fail "d2"
 
-            qm = getCoef $ mono $ fromList xaxb
-            ql = getCoef $ mono $ fromList xa
-            qr = getCoef $ mono $ fromList xb
-            qo = getCoef $ mono $ fromList xc
-            qc = getCoef one
-        guard $
-          evalPolynomial evalMonomial (var . Just) p
-            - poly
-              [ (qm, mono $ fromList xaxb)
-              , (ql, mono $ fromList xa)
-              , (qr, mono $ fromList xb)
-              , (qo, mono $ fromList xc)
-              , (qc, one)
-              ]
-            == zero
-        let va = fromMaybe (ConstVar one) a
-            vb = fromMaybe (ConstVar one) b
-            vc = fromMaybe (ConstVar one) c
-        return $ PlonkConstraint qm ql qr qo qc va vb vc
-      getCoefs _ = Nothing
-   in case mapMaybe getCoefs perms of
-        [] -> toPlonkConstraint zero
-        _ -> head $ mapMaybe getCoefs perms
+  d1', d1, d1Ext :: [(a, Mono (Var a) Natural)]
+  d1' = filter ((== 1) . degM . P.snd) monomials
+  d1 = if length d1' > 3 then fail "d1" else d1'
+  d1Ext = d1 <> [(zero, one), (zero, one), (zero, one)]
+
+  d1VarStats = P.show $ (\m -> fmap (\md -> S.disjoint (Mon.variables $ P.snd md) (Mon.variables $ P.snd m)) d1) <$> d2
+
+  d0 :: Maybe (a, Mono (Var a) Natural)
+  d0 = case filter ((== 0) . degM . P.snd) monomials of
+    [] -> Nothing
+    [m] -> Just m
+    _ -> fail "d0"
+
+  qm = fromMaybe zero (P.fst <$> d2)
+  qc = fromMaybe zero (P.fst <$> d0)
+
+  d1Coef i = P.fst $ d1Ext !! i
+
+  d1Var i = case S.toList . Mon.variables . P.snd $ d1Ext !! i of
+    [] -> ConstVar one
+    [v] -> v
+    _ -> fail $ "d1Var " <> P.show i
+
+  d1VarCoef v s =
+    case filter (S.member v . Mon.variables . P.snd) d1 of
+      [] -> zero
+      [(coef, _)] -> coef
+      _ -> fail s
+
+  d1OutCoef vs s =
+    case filter ((\vars -> all (P.flip S.notMember vars) vs) . Mon.variables . P.snd) d1 of
+      [] -> (zero, ConstVar one)
+      [(coef, m)] -> (coef, head . S.toList . Mon.variables $ m)
+      lst ->
+        fail
+          ( s
+              <> ". "
+              <> P.show (length lst)
+              <> " coefficients after filtering. "
+              <> P.show (length d1)
+              <> " monomials of degree 1. Var relations: "
+              <> d1VarStats
+          )
+
+  (ql, qr, qo, va, vb, vc) =
+    case d2 of
+      -- The polynomial is of the form ql * a + qr * b + qo * c + qc
+      Nothing -> (d1Coef 0, d1Coef 1, d1Coef 2, d1Var 0, d1Var 1, d1Var 2)
+      Just (_, m) ->
+        case S.toList (Mon.variables m) of
+          -- The polynomial is of the form qm * a^2 + ql * a + qo * c + qc
+          [a] ->
+            let ql' = d1VarCoef a "[a] ql'"
+                (qo', vc') = d1OutCoef [a] "[a] (qo', vc')"
+             in (ql', zero, qo', a, a, vc')
+          -- The polynomial is of the form qm * a * b + ql * a + qr * b + qo * c + qc
+          [a, b] ->
+            let ql' = d1VarCoef a "[a, b] ql'"
+                qr' = d1VarCoef b "[a, b] qr'"
+                (qo', vc') = d1OutCoef [a, b] "[a, b] (qo', vc')"
+             in (ql', qr', qo', a, b, vc')
+          _ -> fail "(ql, qr, qo)"
 
 fromPlonkConstraint :: (Ord a, Field a) => PlonkConstraint i a -> Poly a (Var a) Natural
 fromPlonkConstraint (PlonkConstraint qm ql qr qo qc a b c) =

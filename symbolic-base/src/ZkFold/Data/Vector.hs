@@ -28,6 +28,7 @@ import Data.Semigroup ((<>))
 import qualified Data.Swagger as Swagger (ToSchema)
 import Data.These (These (..))
 import Data.Traversable (Traversable, sequenceA, traverse)
+import qualified Data.Traversable as T
 import Data.Tuple (fst, snd, uncurry)
 import qualified Data.Vector as V
 import Data.Vector.Binary ()
@@ -114,6 +115,9 @@ init (Vector !as) = Vector $ V.init as
 
 scanl :: forall size a b. (b -> a -> b) -> b -> Vector size a -> Vector (size + 1) b
 scanl f z (Vector !as) = Vector $ V.scanl f z as
+
+mapAccumL :: forall size a b c. (a -> b -> (a, c)) -> a -> Vector size b -> (a, Vector size c)
+mapAccumL f z (Vector !as) = let (z', as') = T.mapAccumL f z as in (z', Vector as')
 
 singleton :: a -> Vector 1 a
 singleton = Vector . pure

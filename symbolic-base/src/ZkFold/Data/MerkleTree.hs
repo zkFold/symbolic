@@ -63,9 +63,9 @@ merkleHash = mimcHash2 mimcConstants zero
 -- | Hash current value with sibling based on bit direction
 hashWithSibling :: (Ring h, Conditional b h) => h -> (b, h) -> h
 hashWithSibling current (bit, sibling) =
-  if bit
-    then merkleHash sibling current -- current is right child
-    else merkleHash current sibling -- current is left child
+  let left = ifThenElse bit sibling current
+      right = ifThenElse bit current sibling
+   in merkleHash left right
 
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve'
