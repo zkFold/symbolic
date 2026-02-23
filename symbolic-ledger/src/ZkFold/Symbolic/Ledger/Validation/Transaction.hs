@@ -315,7 +315,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     )
              in
               ( isValid'
-                  :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
+                  :*: (consumedAtleastOneAcc || not isNullUTxO)
                   :*: updatedTree
               )
         )
