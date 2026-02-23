@@ -323,19 +323,40 @@ search' p = assert (p . value) . fromJust . search p
 type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
 
 replace
-  :: (Symbolic c, KnownMerkleTree d)
+  :: forall c d
+   . (Symbolic c, KnownMerkleTree d)
   => MerkleEntry d c
   -> MerkleTree d c
   -> MerkleTree d c
-replace MerkleEntry {..} tree = result
+replace MerkleEntry {..} tree =
+  -- Verify input tree is consistent along this path before replacement
+  assert (\_ -> oldRootValid) result
  where
   path = merklePath tree position
+
+  -- Get old value at position (witness-level selection, no constraints)
+  oldValue = fromBaseHash $
+    recIndex (fromBool <$> unComp1 position) $
+      toBaseLeaves (mLeaves tree)
+
+  -- Verify the path siblings are consistent with the stored root
+  oldRootValid = rootOnReplace path oldValue == mHash tree
+
+  -- Compute new state
   newRoot = rootOnReplace path value
   newLeaves =
     let oldLeaves = toBaseLeaves (mLeaves tree)
         updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash value)) oldLeaves
      in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
   result = MerkleTree newRoot newLeaves
+
+  recIndex :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
+  recIndex i v = foldr splitter Data.head (toList i) (toV v)
+   where
+    splitter b rec d = let (l, r) = bisect d in ifThenElse b (rec r) (rec l)
+
+  fromBool :: Bool c -> Bool' c
+  fromBool (Bool b) = (== one) $ toIntegral $ unPar1 $ witnessF b
 
   replacer
     :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
