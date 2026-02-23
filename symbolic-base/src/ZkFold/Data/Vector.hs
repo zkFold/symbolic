@@ -22,13 +22,13 @@ import Data.Functor (Functor, fmap, (<$>))
 import Data.Functor.Classes (Eq1, Show1)
 import Data.Functor.Rep (Representable (..), collectRep, distributeRep, mzipRep, pureRep)
 import Data.Int (Int)
-import qualified Data.List as List
 import Data.Maybe (Maybe (..))
 import qualified Data.OpenApi as OpenApi (ToSchema)
 import Data.Semigroup ((<>))
 import qualified Data.Swagger as Swagger (ToSchema)
 import Data.These (These (..))
 import Data.Traversable (Traversable, sequenceA, traverse)
+import qualified Data.Traversable as T
 import Data.Tuple (fst, snd, uncurry)
 import qualified Data.Vector as V
 import Data.Vector.Binary ()
@@ -117,7 +117,7 @@ scanl :: forall size a b. (b -> a -> b) -> b -> Vector size a -> Vector (size + 
 scanl f z (Vector !as) = Vector $ V.scanl f z as
 
 mapAccumL :: forall size a b c. (a -> b -> (a, c)) -> a -> Vector size b -> (a, Vector size c)
-mapAccumL f z (Vector !as) = let (z', as') = List.mapAccumL f z (V.toList as) in (z', Vector (V.fromList as'))
+mapAccumL f z (Vector !as) = let (z', as') = T.mapAccumL f z as in (z', Vector as')
 
 singleton :: a -> Vector 1 a
 singleton = Vector . pure
