@@ -28,7 +28,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
 
 import Data.Bool (otherwise)
 import Data.Foldable (foldl', foldr, toList)
-import Data.Function (($), (.))
+import Data.Function (($), (.), const)
 import Data.Functor (fmap, (<$>))
 import Data.List (splitAt, length)
 import Data.Ord ((<=))
@@ -330,7 +330,7 @@ replace
   -> MerkleTree d c
 replace MerkleEntry {..} tree =
   -- Verify input tree is consistent along this path before replacement
-  assert (\_ -> oldRootValid) result
+  assert (const oldRootValid) result
  where
   path = merklePath tree position
 
