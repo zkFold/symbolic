@@ -118,7 +118,9 @@ x .: List {..} =
   incSize = lSize + one
 
 hashFun :: MonadCircuit i a w m => i -> These i i -> m i
-hashFun s (These h t) = newAssigned \x -> x h + x t * x s
+hashFun s (These h t) = do
+  ts <- newAssigned \x -> x t * x s
+  newAssigned \x -> x h + x ts
 hashFun _ (This h) = pure h
 hashFun s (That t) = newAssigned \x -> x t * x s
 
