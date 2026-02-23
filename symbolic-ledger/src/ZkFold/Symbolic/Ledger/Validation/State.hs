@@ -123,7 +123,6 @@ validateStateUpdateIndividualChecks previousState action newState sw =
         ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isNull = output == nullOutput
-                sanity = outputHasValueSanity output
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
                 (isInTree, updatedTree) = MerkleTree.containsAndReplace merkleEntry utxoHash acc
@@ -134,7 +133,7 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                       true
                       ( isInTree
                           && (merkleEntry.value == nullUTxOHash')
-                          && sanity
+                          && outputHasValueSanity output
                       )
              in ( (ix + one)
                     :*: isValid'
