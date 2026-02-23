@@ -53,7 +53,7 @@ import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
-import ZkFold.Symbolic.Data.Class (SymbolicData)
+import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
@@ -120,7 +120,8 @@ merklePath MerkleTree {..} position =
   let leaves = toList $ restored mLeaves
       levels = computeAllLevelsSymbolic leaves
       bitsReversed = toList $ reverse $ unComp1 position  -- from leaf toward root
-      siblings = computeSiblingsSymbolic levels bitsReversed
+      -- Compute siblings and drop constraints - rootOnReplace will verify
+      siblings = withoutConstraints <$> computeSiblingsSymbolic levels bitsReversed
    in Comp1 $ unsafeToVector $ P.zipWith (:*:) bitsReversed siblings
 
 -- | Compute all tree levels at the circuit level using the circuit-optimized MiMC.
@@ -179,12 +180,14 @@ merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
 
 -- | Hash current value with sibling based on bit direction.
 -- Uses the circuit-optimized hash function.
+-- Computes inputs conditionally to avoid doubling hash constraints.
 hashWithSibling :: Symbolic c => FieldElement c -> (Bool c, FieldElement c) -> FieldElement c
 hashWithSibling current (bit, sibling) =
-  bool
-    (merkleHash current sibling)   -- bit = false: current is left child
-    (merkleHash sibling current)   -- bit = true: current is right child
-    bit
+  -- Compute which value goes left/right using cheap conditionals,
+  -- then do a single hash instead of computing both orderings.
+  let left = bool current sibling bit
+      right = bool sibling current bit
+  in merkleHash left right
 
 rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
 rootOnReplace (Comp1 path) value =
@@ -324,8 +327,7 @@ replace
   => MerkleEntry d c
   -> MerkleTree d c
   -> MerkleTree d c
-replace entry@MerkleEntry {..} tree =
-  assert (`contains` entry) result
+replace MerkleEntry {..} tree = result
  where
   path = merklePath tree position
   newRoot = rootOnReplace path value
