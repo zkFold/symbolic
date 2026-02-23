@@ -8,6 +8,6 @@ import Tests.Symbolic.Ledger.E2E.Compile.Two
 
 specE2ECompile :: Spec
 specE2ECompile = do
-  -- specE2ECompileOne
-  -- specE2ECompileTwo
+  specE2ECompileOne
+  specE2ECompileTwo
   specE2ECompileThree
