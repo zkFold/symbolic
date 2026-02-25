@@ -11,11 +11,10 @@ import Data.Function ((.))
 import Data.Functor ((<$>))
 import Data.Kind (Type)
 import Data.Ord (Ord)
-import Data.Traversable (traverse)
 import Data.Type.Equality (type (~))
 import GHC.Generics (type (:.:) (unComp1))
 import Numeric.Natural (Natural)
-import Prelude (Enum, Integer, Traversable)
+import Prelude (Enum, Integer)
 
 import ZkFold.Algebra.Class
 import ZkFold.Control.HApplicative (HApplicative (hpair, hunit))
