@@ -42,9 +42,9 @@ import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
-import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base

@@ -427,7 +427,7 @@ instance
               M.insert (witToVar (p at)) cons
 
   clearConstraints = modify $ \ctx ->
-    ctx { acSystem = M.empty, acLookup = MM.empty }
+    ctx {acSystem = M.empty, acLookup = MM.empty}
 
   lookupConstraint vars ltable = do
     vs <- traverse prepare (toList vars)

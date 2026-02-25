@@ -52,4 +52,4 @@ toWitnessContext
   => x c -> x (WitnessContext c)
 toWitnessContext x =
   let ws = witnessF $ arithmetize x
-  in restore (fromCircuitF hunit (\_ -> traverse unconstrained ws), payload x)
+   in restore (fromCircuitF hunit (\_ -> traverse unconstrained ws), payload x)
