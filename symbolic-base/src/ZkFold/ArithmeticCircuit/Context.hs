@@ -426,6 +426,9 @@ instance
             zoom #acSystem . modify $
               M.insert (witToVar (p at)) cons
 
+  clearConstraints = modify $ \ctx ->
+    ctx { acSystem = M.empty, acLookup = MM.empty }
+
   lookupConstraint vars ltable = do
     vs <- traverse prepare (toList vars)
     lt <- lookupType ltable

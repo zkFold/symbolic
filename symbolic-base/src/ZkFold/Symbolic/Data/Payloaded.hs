@@ -8,6 +8,7 @@ import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<&>))
 import Data.Functor.Classes (Show1)
 import Data.Semialign (Semialign)
+import Data.Traversable (Traversable, traverse)
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import Text.Show (Show)
@@ -17,7 +18,8 @@ import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq
 import ZkFold.Data.Product (fromPair, toPair)
 import ZkFold.Symbolic.Algorithm.Interpolation (interpolateW)
-import ZkFold.Symbolic.Class (Symbolic (..), embedW)
+import ZkFold.Symbolic.Class (Symbolic (..))
+import ZkFold.Symbolic.MonadCircuit (unconstrained)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), true)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.Input (SymbolicInput (..))
@@ -43,11 +45,16 @@ payloaded
   => f (d c) -> Payloaded f d c
 payloaded xs = Payloaded $ xs <&> \x -> (witnessF $ arithmetize x, payload x)
 
+-- | Restores symbolic data from a Payloaded container.
+-- NOTE: For circuit contexts, the stored witness values must be simple
+-- (constants or pre-computed values), not closures that reference
+-- other circuit variables.
 restored
   :: forall f d c
-   . (Functor f, Symbolic c, SymbolicData d)
+   . (Functor f, Symbolic c, SymbolicData d, Traversable (Layout d (Order (BaseField c))))
   => Payloaded f d c -> f (d c)
-restored xs = runPayloaded xs <&> \(l, p) -> restore (embedW l, p)
+restored xs = runPayloaded xs <&> \(l, p) ->
+  restore (fromCircuitF hunit (\_ -> traverse unconstrained l), p)
 
 instance (Semialign f, SymbolicData d) => SymbolicData (Payloaded f d) where
   type Layout (Payloaded f d) _ = U1

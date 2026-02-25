@@ -42,6 +42,7 @@ import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
+import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
@@ -51,7 +52,7 @@ import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
 import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
-import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
+import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
@@ -60,6 +61,7 @@ import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
+import ZkFold.Symbolic.MonadCircuit (unconstrained)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
 data MerkleTree d c = MerkleTree
@@ -120,8 +122,7 @@ merklePath MerkleTree {..} position =
   let leaves = toList $ restored mLeaves
       levels = computeAllLevelsSymbolic leaves
       bitsReversed = toList $ reverse $ unComp1 position -- from leaf toward root
-      -- Compute siblings and drop constraints - rootOnReplace will verify
-      siblings = withoutConstraints <$> computeSiblingsSymbolic levels bitsReversed
+      siblings = fmap withoutConstraints $ computeSiblingsSymbolic levels bitsReversed
    in Comp1 $ unsafeToVector $ P.zipWith (:*:) bitsReversed siblings
 
 -- | Compute all tree levels at the circuit level using the circuit-optimized MiMC.
@@ -162,8 +163,8 @@ computeSiblingsSymbolic levels bitsLSB =
       siblingBitsMSB = P.reverse siblingBitsLSB
      in
       selectFromLevel level siblingBitsMSB
-  symTrue = Bool $ embedW $ Par1 one
-  symFalse = Bool $ embedW $ Par1 zero
+  symTrue = Bool $ embed $ Par1 one
+  symFalse = Bool $ embed $ Par1 zero
 
   selectFromLevel [x] _ = x
   selectFromLevel xs (b : bs) =
@@ -282,7 +283,7 @@ search pred tree =
   fromBool (Bool (WC (Par1 b))) = toIntegral b == one
 
   toBool :: Bool' c -> Bool c
-  toBool = Bool . embedW . Par1 . bool zero one
+  toBool b = Bool $ fromCircuitF hunit (\_ -> Par1 <$> unconstrained (bool zero one b))
 
 find
   :: forall c d
@@ -382,8 +383,10 @@ replaceAt position value = replace MerkleEntry {..}
 bisect :: Data.Vector a -> (Data.Vector a, Data.Vector a)
 bisect v = Data.splitAt (Data.length v `P.div` 2) v
 
+-- | Embed a witness field value into the symbolic context.
+-- This creates unconstrained circuit variables from witness values.
 fromBaseHash :: Symbolic c => WitnessField c -> FieldElement c
-fromBaseHash = FieldElement . embedW . Par1
+fromBaseHash w = FieldElement $ fromCircuitF hunit (\_ -> Par1 <$> unconstrained w)
 
 toBaseHash :: Symbolic c => FieldElement c -> WitnessField c
 toBaseHash = unPar1 . witnessF . fromFieldElement

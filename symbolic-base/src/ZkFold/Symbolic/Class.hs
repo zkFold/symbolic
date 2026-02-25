@@ -94,10 +94,6 @@ class
 embed :: (Symbolic c, Functor f) => f (BaseField c) -> c f
 embed cs = fromCircuitF hunit (\_ -> return (fromConstant <$> cs))
 
--- | Embeds unconstrained witness value(s) into generic context @c@.
-embedW :: (Symbolic c, Traversable f) => f (WitnessField c) -> c f
-embedW ws = fromCircuitF hunit (\_ -> traverse unconstrained ws)
-
 symbolicF
   :: (Symbolic c, BaseField c ~ a, Functor f, Functor g)
   => c f

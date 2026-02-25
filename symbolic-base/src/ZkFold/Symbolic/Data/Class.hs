@@ -15,7 +15,7 @@ import Data.Functor.Rep (Rep, Representable, pureRep)
 import Data.Kind (Constraint, Type)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Semialign (Semialign, Zip, zipWith)
-import Data.Traversable (Traversable)
+import Data.Traversable (Traversable, traverse)
 import Data.Tuple (curry)
 import Data.Type.Equality (type (~))
 import qualified GHC.Generics as G
@@ -30,6 +30,7 @@ import ZkFold.Data.Package (pack, unpack)
 import ZkFold.Data.Product (fstP, sndP)
 import qualified ZkFold.Symbolic.Algorithm.Interpolation as I
 import ZkFold.Symbolic.Class
+import ZkFold.Symbolic.MonadCircuit (at, clearConstraints, unconstrained)
 
 -- Functor data
 
@@ -129,10 +130,16 @@ class
     -> x c
   restore = G.to1 . restore
 
+-- | Drops all constraints from a context while preserving witness generation.
+dropConstraintsF :: (Symbolic c, Traversable f) => c f -> c f
+dropConstraintsF cf = fromCircuitF cf $ \fVars -> do
+  clearConstraints
+  traverse (unconstrained . at) fVars
+
 withoutConstraints
   :: (SymbolicData x, Symbolic c, Traversable (Layout x (Order (BaseField c))))
   => x c -> x c
-withoutConstraints x = restore (embedW $ witnessF $ arithmetize x, payload x)
+withoutConstraints x = restore (dropConstraintsF $ arithmetize x, payload x)
 
 dummy :: forall x c. (SymbolicData x, HasRep x c, Symbolic c) => x c
 dummy = restore (embed (pureRep zero), pureRep zero)

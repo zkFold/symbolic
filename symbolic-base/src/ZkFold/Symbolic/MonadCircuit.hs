@@ -89,7 +89,11 @@ class
   --   NOTE: currently, provided constraints are directly fed to zkSNARK in use.
   newAssigned :: HasCallStack => ClosedPoly var a -> m var
   newAssigned p = newConstrained (\x var -> p x - x var) (p at)
-
+  -- | Clears all polynomial and lookup constraints from the circuit.
+  --   Witness generation functions are preserved.
+  --   Default implementation does nothing (for pure contexts).
+  clearConstraints :: m ()
+  clearConstraints = return ()
 -- | Adds new range constraint to the system.
 -- E.g., @'rangeConstraint' var B@ forces variable @var@ to be in range \([0; B]\).
 --
