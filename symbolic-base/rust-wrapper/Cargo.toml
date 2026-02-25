@@ -20,6 +20,8 @@ halo2_proofs = { git = "https://github.com/input-output-hk/halo2", package = "ha
 halo2curves = "0.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+subtle="2.6.1"
+rand="0.8.5"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
