@@ -9,6 +9,7 @@ import qualified Data.Bool as Haskell
 import qualified Data.Eq as Haskell
 import Data.Foldable (toList)
 import Data.Function (($), (.))
+import Data.Functor ((<$>))
 import Data.String (fromString)
 import GHC.Generics (Generic, Par1 (..), U1 (..), unPar1)
 import Prelude (Integer, Traversable (traverse), error, fromInteger, type (~))
@@ -24,7 +25,7 @@ import ZkFold.Data.Eq (Eq (..))
 import ZkFold.Data.Vector (Vector, unsafeToVector, (!!))
 import ZkFold.Protocol.IVC.ForeignField (ForeignField)
 import ZkFold.Protocol.IVC.Oracle (OracleSource (..))
-import ZkFold.Symbolic.Class (Symbolic (..), embedW)
+import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.MonadCircuit (unconstrained)
@@ -197,4 +198,4 @@ instance
     two = one + one
     n = toIntegral $ unPar1 $ witnessF $ fromFieldElement f
     n' = n `div` two
-    f' = FieldElement $ embedW $ Par1 $ fromConstant n'
+    f' = FieldElement $ fromCircuitF hunit (\_ -> Par1 <$> unconstrained (fromConstant n'))
