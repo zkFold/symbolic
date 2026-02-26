@@ -118,7 +118,7 @@ examples =
   , ("MiMCHash", exampleOutput @A exampleMiMC)
   , ("Exp65537Mod", exampleOutput @A expModContract)
   , ("MerkleTree.Replace.5", exampleOutput @A $ exampleMerkleTreeReplace @5)
-  , ("MerkleTree.Replace.8", exampleOutput @A $ exampleMerkleTreeReplace @8)
+  -- , ("MerkleTree.Replace.8", exampleOutput @A $ exampleMerkleTreeReplace @8)
   -- , ("MerkleTree.Replace.12", exampleOutput @A $ exampleMerkleTreeReplace @12)
   -- , ("MerkleTree.Replace.16", exampleOutput @A $ exampleMerkleTreeReplace @16)
   -- , ("MerkleTree.Replace.20", exampleOutput @A $ exampleMerkleTreeReplace @20)
