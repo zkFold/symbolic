@@ -39,17 +39,15 @@ officialTestVector =
         ]
     }
 
--- | Test Poseidon permutation with current implementation
--- NOTE: Test vector needs to be updated once official reference is accessible
--- Current implementation uses reduced parameters due to limited constants
+-- | Test Poseidon permutation against official test vector
 poseidonPermutationSpec :: Spec
-poseidonPermutationSpec = describe "Poseidon permutation test (reduced parameters)" $ do
-  it ("should run without error for input " <> show (tvInput officialTestVector)) $ do
+poseidonPermutationSpec = describe "Poseidon permutation (BLS12-381, width=3, R_F=8, R_P=57)" $ do
+  it ("should match official test vector for input " <> show (tvInput officialTestVector)) $ do
     let params = defaultPoseidonParams :: PoseidonParams Fr
     let input = V.fromList $ map (fromConstant @Integer @Fr) (tvInput officialTestVector)
+    let expected = V.fromList $ map (fromConstant @Integer @Fr) (tvOutput officialTestVector)
     let result = poseidonPermutation params input
-    -- For now, just test that it runs and produces correct length output
-    V.length result `shouldBe` 3
+    result `shouldBe` expected
 
 -- | Main test specification following repository patterns
 specPoseidon :: Spec
