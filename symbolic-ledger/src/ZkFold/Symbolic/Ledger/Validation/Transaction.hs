@@ -251,9 +251,9 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
           true
           outputsAssets
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
-    (isInsValid :*: consumedAtleastOneInput :*: updatedUTxOTreeForInputs) =
+    (isInsValid :*: updatedUTxOTreeForInputs) =
       foldl'
-        ( \(isInsValidAcc :*: consumedAtleastOneAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
+        ( \(isInsValidAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
             let
               nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
@@ -280,12 +280,9 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                           (rPoint :*: s)
                     )
              in
-              ( isValid'
-                  :*: (consumedAtleastOneAcc || not isNullUTxO)
-                  :*: updatedTree
-              )
+              (isValid' :*: updatedTree)
         )
-        ((true :: Bool context) :*: (false :: Bool context) :*: utxoTree)
+        ((true :: Bool context) :*: utxoTree)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
     (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
@@ -332,7 +329,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         outputsWithWitness
    in
     ( bouts
-        :*: (outsValid && isInsValid && consumedAtleastOneInput && isBalanced)
+        :*: (outsValid && isInsValid && isBalanced)
         :*: updatedUTxOTreeForOutputs
     )
 
