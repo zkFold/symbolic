@@ -44,7 +44,7 @@ For validating transactions, we should check:
 \* Bridged out outputs are checked to be same as in bridge out list.
 \* Outputs (bridged out or not) must have at least one ada and all assets are non-negative.
 \* Transaction is balanced.
-\* Transaction must have at least one input.
+\* Transaction must have at least one input OR the entire transaction is null (no inputs & no outputs)
 \* Bridged out output is not a null output.
 
 For validating batch, we simply apply transaction validation check iteratively.
