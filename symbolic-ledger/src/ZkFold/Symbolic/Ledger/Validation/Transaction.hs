@@ -26,7 +26,7 @@ import ZkFold.Algebra.Class (
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HShow)
-import ZkFold.Data.Ord ((>=))
+import ZkFold.Data.Ord ((>), (>=))
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
@@ -329,13 +329,13 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         outputsWithWitness
    in
     ( bouts
-        :*: (outsValid && isInsValid && isBalanced)
+        :*: (outsValid && isInsValid && isBalanced) -- Note that we don't need to check if transaction consumes at least one input or is null entirely as our transaction currently only has two fields, namely, inputs & outputs and if thus inputs are null, outputs are null too.
         :*: updatedUTxOTreeForOutputs
     )
 
 -- | Check if output has sane value.
 --
--- We check if the output has at least one ada and all assets are non-negative.
+-- We check if the output has at least one ada and all non-null assets have strictly positive quantity.
 outputHasValueSanity
   :: forall a context
    . (KnownRegistersAssetQuantity context, Symbolic context)
@@ -354,7 +354,7 @@ outputHasValueSanity output =
                          >= fromConstant @Haskell.Integer 1_000_000
                      )
               )
-                :*: (allNonNegAcc && (asset.assetQuantity >= zero))
+                :*: (allNonNegAcc && (asset.assetQuantity > zero || (asset.assetPolicy == zero && asset.assetName == zero)))
           )
           (false :*: true)
           (unComp1 (oAssets output))
