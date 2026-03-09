@@ -28,35 +28,35 @@ import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
 -- | Transaction batch witness for validating transaction batch.
-newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
-  { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
+newtype TransactionBatchWitness ud n a t context = TransactionBatchWitness
+  { tbwTransactions :: (Vector t :.: TransactionWitness ud n a) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
+deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud n a t context)
 
-deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
-
-deriving anyclass instance
-  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+deriving anyclass instance ToJSON (TransactionBatchWitness ud n a t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall ud i o a t
-   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
-  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+  forall ud n a t. KnownNat n => FromJSON (TransactionBatchWitness ud n a t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall ud n a t
+   . (KnownNat ud, KnownNat n, KnownNat a, KnownNat t, KnownNat (ud - 1))
+  => ToSchema (TransactionBatchWitness ud n a t RollupBFInterpreter)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
-  :: forall ud bo i o a t context
-   . SignatureTransactionBatch ud i o a t context
+  :: forall ud bo n a t context
+   . SignatureTransactionBatch ud n a t context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
-  -> TransactionBatch i o a t context
+  -> TransactionBatch n a t context
   -- ^ Transaction batch.
-  -> TransactionBatchWitness ud i o a t context
+  -> TransactionBatchWitness ud n a t context
   -- ^ Witness for the transaction batch.
   -> (Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree.

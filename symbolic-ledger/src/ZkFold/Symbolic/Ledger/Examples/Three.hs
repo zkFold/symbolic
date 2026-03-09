@@ -29,8 +29,7 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  N,
   TxCount,
 ) where
 
@@ -65,9 +64,7 @@ type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 2
 
-type Ixs = 2
-
-type Oxs = 2
+type N = 2
 
 type TxCount = 2
 
@@ -141,7 +138,7 @@ bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput])
 bridgeInHash :: HashSimple I
 bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 =
   Transaction
     { inputs = Comp1 (unsafeToVector' [OutputRef {orTxId = bridgeInHash, orIndex = zero}, nullOutputRef])
@@ -179,7 +176,7 @@ tx1 =
 -- Total 2 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction N A I
 tx2 =
   Transaction
     { inputs =
@@ -233,7 +230,7 @@ bridgeOutOutput =
 
 tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
+tx3 :: Transaction N A I
 tx3 =
   Transaction
     { inputs =
@@ -267,7 +264,7 @@ tx3 =
 
 tx3Id = txId tx3 & Base.hHash
 
-tx4 :: Transaction Ixs Oxs A I
+tx4 :: Transaction N A I
 tx4 =
   Transaction
     { inputs =
@@ -307,10 +304,10 @@ tx4 =
 -- "address" has 2.5 ADA and 12.5 asset2.
 -- "address2" has 2.5 ADA and 12.5 asset2.
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2]}
 
-batch2 :: TransactionBatch Ixs Oxs A TxCount I
+batch2 :: TransactionBatch N A TxCount I
 batch2 = TransactionBatch {tbTransactions = unsafeToVector' [tx3, tx4]}
 
 sigs =

@@ -11,8 +11,7 @@ module ZkFold.Symbolic.Ledger.Examples.Two (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  N,
   TxCount,
 ) where
 
@@ -46,9 +45,7 @@ type Ud = 3 -- Thus 2 ^ (3 - 1) = 4 leaves
 
 type A = 3
 
-type Ixs = 3
-
-type Oxs = 3
+type N = 3
 
 type TxCount = 3
 
@@ -139,7 +136,7 @@ bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
 two = one + one
 
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 =
   Transaction
     { inputs = Comp1 (unsafeToVector' [nullOutputRef, OutputRef {orTxId = bridgeInHash, orIndex = two}, nullOutputRef])
@@ -180,7 +177,7 @@ tx1 =
 -- Total 3 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction N A I
 tx2 =
   Transaction
     { inputs =
@@ -236,7 +233,7 @@ tx2 =
 -- Total 3 UTxOs.
 tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
+tx3 :: Transaction N A I
 tx3 =
   Transaction
     { inputs =
@@ -292,7 +289,7 @@ tx3 =
 
 -- Spent all UTxOs and bridged out all created outputs.
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2, tx3]}
 
 sigs =

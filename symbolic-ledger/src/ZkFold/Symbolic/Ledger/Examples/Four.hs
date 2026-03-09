@@ -18,8 +18,7 @@ module ZkFold.Symbolic.Ledger.Examples.Four (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  N,
   TxCount,
 ) where
 
@@ -33,8 +32,7 @@ import ZkFold.Symbolic.Ledger.Examples.One (
   Bi,
   Bo,
   I,
-  Ixs,
-  Oxs,
+  N,
   Ud,
   bridgedIn,
   prevState,
@@ -50,19 +48,19 @@ import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 type TxCount = 2
 
 -- | The real transaction (same as 'tx' from Examples.One).
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 = tx
 
 -- | A null transaction: all null inputs and all null outputs.
 -- Intended as a padding transaction to fill a fixed-size batch.
-nullTx :: Transaction Ixs Oxs A I
+nullTx :: Transaction N A I
 nullTx =
   Transaction
     { inputs = Comp1 (fromList [nullOutputRef])
     , outputs = Comp1 (fromList [nullOutput @A @I :*: false])
     }
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, nullTx]}
 
 sigs =

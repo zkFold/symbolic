@@ -26,11 +26,10 @@ import ZkFold.Symbolic.Ledger.Types.State
 import ZkFold.Symbolic.Ledger.Types.Transaction
 import ZkFold.Symbolic.Ledger.Types.Value
 
-type SignatureTransaction ud i o a context =
+type SignatureTransaction ud n a context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
-  , KnownNat i
-  , KnownNat o
+  , KnownNat n
   , KnownNat a
   , KnownNat (ud - 1)
   , KnownNat (MerkleTreeSize ud)
@@ -41,8 +40,8 @@ type SignatureTransaction ud i o a context =
       (GetRegisterSize (BaseField context) (NumberOfBits (BaseField context)) 'Auto)
   )
 
-type SignatureTransactionBatch ud i o a t context =
-  ( SignatureTransaction ud i o a context
+type SignatureTransactionBatch ud n a t context =
+  ( SignatureTransaction ud n a context
   , KnownNat t
   )
 

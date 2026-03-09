@@ -58,16 +58,16 @@ import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 -- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
 -- | Transaction witness for validating transaction.
-data TransactionWitness ud i o a context = TransactionWitness
-  { twInputs :: (Vector i :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
-  , twOutputs :: (Vector o :.: MerkleEntry ud) context
+data TransactionWitness ud n a context = TransactionWitness
+  { twInputs :: (Vector n :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
+  , twOutputs :: (Vector n :.: MerkleEntry ud) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionWitness ud i o a context)
+deriving stock instance HShow context => Haskell.Show (TransactionWitness ud n a context)
 
-instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+instance ToJSON (TransactionWitness ud n a RollupBFInterpreter) where
   toJSON (TransactionWitness ins outs) =
     let insVec = unComp1 ins
         insList = Vector.fromVector insVec
@@ -86,7 +86,7 @@ instance ToJSON (TransactionWitness ud i o a RollupBFInterpreter) where
           , "outputs" .= outsList
           ]
 
-instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a RollupBFInterpreter) where
+instance KnownNat n => FromJSON (TransactionWitness ud n a RollupBFInterpreter) where
   parseJSON =
     withObject
       "TransactionWitness"
@@ -113,7 +113,7 @@ instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a Rollu
       )
 
 -- |
--- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (TransactionWitness 2 1 1 1 RollupBFInterpreter))
+-- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (TransactionWitness 2 1 1 RollupBFInterpreter))
 -- {
 --     "properties": {
 --         "inputs": {
@@ -160,9 +160,9 @@ instance (KnownNat i, KnownNat o) => FromJSON (TransactionWitness ud i o a Rollu
 --     "type": "object"
 -- }
 instance
-  forall ud i o a
-   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat (ud - 1))
-  => ToSchema (TransactionWitness ud i o a RollupBFInterpreter)
+  forall ud n a
+   . (KnownNat ud, KnownNat n, KnownNat a, KnownNat (ud - 1))
+  => ToSchema (TransactionWitness ud n a RollupBFInterpreter)
   where
   declareNamedSchema _ = do
     meRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBFInterpreter))
@@ -170,7 +170,7 @@ instance
     rRef <- declareSchemaRef (Proxy @(EdDSAPoint RollupBFInterpreter))
     sRef <- declareSchemaRef (Proxy @(EdDSAScalarField RollupBFInterpreter))
     pkRef <- declareSchemaRef (Proxy @(PublicKey RollupBFInterpreter))
-    outsRef <- declareSchemaRef (Proxy @((:.:) (Vector o) (MerkleEntry ud) RollupBFInterpreter))
+    outsRef <- declareSchemaRef (Proxy @((:.:) (Vector n) (MerkleEntry ud) RollupBFInterpreter))
 
     let inputSchema =
           Haskell.mempty
@@ -204,15 +204,15 @@ instance
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
-  :: forall ud bo i o a context
-   . SignatureTransaction ud i o a context
+  :: forall ud bo n a context
+   . SignatureTransaction ud n a context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
-  -> Transaction i o a context
+  -> Transaction n a context
   -- ^ Transaction.
-  -> TransactionWitness ud i o a context
+  -> TransactionWitness ud n a context
   -- ^ Transaction witness.
   -> (FieldElement :*: Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree.
