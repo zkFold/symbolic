@@ -17,7 +17,6 @@ import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChe
 specE2EThree :: Spec
 specE2EThree =
   it "E2E Three" $ do
-    let
     sLength newState `shouldBe` (one :: FieldElement I)
     validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
     validateStateUpdateIndividualChecks newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
