@@ -10,5 +10,6 @@ import Tests.Symbolic.Ledger.E2E.Compile.Three
 specE2ECompile :: Spec
 specE2ECompile = do
   specE2ECompileOne
+  -- Commented to save time on CI.
   -- specE2ECompileTwo
   specE2ECompileThree
