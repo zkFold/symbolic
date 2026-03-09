@@ -326,30 +326,6 @@ search' p = assert (p . value) . fromJust . search p
 
 type KnownMerkleTree d = (KnownNat (d - 1), KnownNat (Base.MerkleTreeSize d))
 
-mkReplacement
-  :: (Symbolic c, KnownMerkleTree d)
-  => Index d c
-  -> FieldElement c
-  -> MerkleTree d c
-  -> (MerklePath d c, MerkleTree d c)
-mkReplacement position newValue tree = (path, result)
- where
-  path = merklePath tree position
-  newRoot = rootOnReplace path newValue
-  newLeaves =
-    let oldLeaves = toBaseLeaves (mLeaves tree)
-        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash newValue)) oldLeaves
-     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
-  result = MerkleTree newRoot newLeaves
-
-  replacer
-    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
-    => (i, a)
-    -> n
-    -> a
-    -> a
-  replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
-
 replace
   :: forall c d
    . (Symbolic c, KnownMerkleTree d)
@@ -357,14 +333,21 @@ replace
   -> MerkleTree d c
   -> MerkleTree d c
 replace MerkleEntry {..} tree =
+  -- Verify input tree is consistent along this path before replacement
   assert (const oldRootValid) result
  where
   path = merklePath tree position
+  
+  -- Get old value at position (witness-level selection, no constraints)
   oldValue =
     fromBaseHash $
       recIndex (fromBool <$> unComp1 position) $
         toBaseLeaves (mLeaves tree)
+  
+  -- Verify the path siblings are consistent with the stored root
   oldRootValid = rootOnReplace path oldValue == mHash tree
+  
+  -- Compute new state
   newRoot = rootOnReplace path value
   newLeaves =
     let oldLeaves = toBaseLeaves (mLeaves tree)
@@ -389,7 +372,8 @@ replace MerkleEntry {..} tree =
   replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
 
 -- | Combined contains + replace sharing the merkle path.
--- Saves one rootOnReplace call vs separate contains + replace as we don't need to check if new value is in tree.
+-- Checks whether the entry is in the tree and replaces it with a new value,
+-- computing the merkle path only once.
 containsAndReplace
   :: (Symbolic c, KnownMerkleTree d)
   => MerkleEntry d c
@@ -398,8 +382,26 @@ containsAndReplace
   -> (Bool c, MerkleTree d c)
 containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
  where
-  (path, result) = mkReplacement position newValue tree
+  path = merklePath tree position
+
+  -- Contains check: verify the entry's value produces the tree's root
   isContained = rootOnReplace path value == mHash tree
+
+  -- Replace: compute new root using the same path but with newValue
+  newRoot = rootOnReplace path newValue
+  newLeaves =
+    let oldLeaves = toBaseLeaves (mLeaves tree)
+        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash newValue)) oldLeaves
+     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
+  result = MerkleTree newRoot newLeaves
+
+  replacer
+    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
+    => (i, a)
+    -> n
+    -> a
+    -> a
+  replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
 
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
