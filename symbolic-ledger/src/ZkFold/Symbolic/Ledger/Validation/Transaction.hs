@@ -21,6 +21,8 @@ import ZkFold.Algebra.Class (
   AdditiveSemigroup (..),
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
+  MultiplicativeSemigroup (..),
+  Ring (..),
   Zero (..),
  )
 import ZkFold.Control.Conditional (ifThenElse)
@@ -38,8 +40,10 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
+import ZkFold.Symbolic.Data.Int (Int (..))
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import ZkFold.Symbolic.Data.UInt (toNative)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
@@ -222,34 +226,20 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
     inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_ :*: utxo :*: _ :*: _ :*: _) -> unComp1 utxo.uOutput.oAssets)
     outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _) -> unComp1 output.oAssets)
 
-    -- Total quantity of asset (policy, name) across inputAssets.
-    sumInputQty policy name =
-      foldl'
-        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
-        zero
-        inputAssets
-
-    -- Total quantity of asset (policy, name) across outputsAssets.
-    sumOutputQty policy name =
-      foldl'
-        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
-        zero
-        outputsAssets
-
-    -- Asset-balanced: every asset type appearing in inputs or outputs has equal totals on both sides.
-    isBalanced =
-      foldl'
-        ( foldl'
-            (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
-        )
-        true
-        inputAssets
-        && foldl'
-          ( foldl'
-              (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
-          )
-          true
-          outputsAssets
+    -- Asset-balanced check using random linear combination (Schwartz-Zippel).
+    -- For each asset (policy, name, qty), compute qty * ((policy + 1) * r + (name + 1))
+    -- and sum across all inputs/outputs. If sums match, the transaction is balanced
+    -- with overwhelming probability (soundness error ≤ 1/|F| ≈ 2^{-255}).
+    -- The +1 offsets ensure ADA (policy=0, name=0) gets weight r+1 ≠ 0.
+    -- r = txId' is bound to the transaction content, so the prover cannot
+    -- independently choose r to forge a false balance.
+    r = txId'
+    weightedSum = foldl' (foldl' (\s av ->
+      let qtyFe = toNative (uint av.assetQuantity)
+       in s + qtyFe * ((av.assetPolicy + one) * r + (av.assetName + one))))
+    sIn = weightedSum (zero :: FieldElement context) inputAssets
+    sOut = weightedSum (zero :: FieldElement context) outputsAssets
+    isBalanced = sIn == sOut
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: updatedUTxOTreeForInputs) =
       foldl'

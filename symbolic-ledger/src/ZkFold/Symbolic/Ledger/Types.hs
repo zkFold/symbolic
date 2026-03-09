@@ -38,6 +38,7 @@ type SignatureTransaction ud n a context =
   , KnownFFA Jubjub_Scalar 'Auto context
   , KnownNat
       (GetRegisterSize (BaseField context) (NumberOfBits (BaseField context)) 'Auto)
+  , KnownNat (GetRegisterSize (BaseField context) 64 'Auto)
   )
 
 type SignatureTransactionBatch ud n a t context =
