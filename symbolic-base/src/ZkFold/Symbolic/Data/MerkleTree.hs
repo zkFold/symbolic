@@ -337,16 +337,16 @@ replace MerkleEntry {..} tree =
   assert (const oldRootValid) result
  where
   path = merklePath tree position
-  
+
   -- Get old value at position (witness-level selection, no constraints)
   oldValue =
     fromBaseHash $
       recIndex (fromBool <$> unComp1 position) $
         toBaseLeaves (mLeaves tree)
-  
+
   -- Verify the path siblings are consistent with the stored root
   oldRootValid = rootOnReplace path oldValue == mHash tree
-  
+
   -- Compute new state
   newRoot = rootOnReplace path value
   newLeaves =
