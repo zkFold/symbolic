@@ -22,7 +22,6 @@ import ZkFold.Algebra.Class (
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
   MultiplicativeSemigroup (..),
-  Ring (..),
   Zero (..),
  )
 import ZkFold.Control.Conditional (ifThenElse)

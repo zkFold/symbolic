@@ -43,7 +43,6 @@ import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
@@ -52,7 +51,7 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
+import qualified ZkFold.Symbolic.Algorithm.Hash.Poseidon as SymbolicPoseidon
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
@@ -176,11 +175,10 @@ computeSiblingsSymbolic levels bitsLSB =
   -- Symbolic NOT: if b then False else True
   notB = bool symTrue symFalse
 
--- | Circuit-optimized MiMC hash for Merkle tree operations.
--- Uses the Symbolic MiMC implementation which builds circuits efficiently
--- rather than creating exponential WitnessF closures.
+-- | Poseidon hash for Merkle tree operations.
+-- Uses width=3, rate=2 sponge construction for 2-to-1 hashing.
 merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
-merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
+merkleHash a b = SymbolicPoseidon.poseidonHash2 a b
 
 -- | Hash current value with sibling based on bit direction.
 -- Uses the circuit-optimized hash function.
