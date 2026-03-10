@@ -22,8 +22,3 @@ hash =
     . unpacked
     . hmap toList
     . arithmetize
-
--- | Poseidon hash of exactly two field elements.
--- Uses width=3, rate=2 sponge: absorbs both elements in one block.
-poseidonHash2 :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
-poseidonHash2 a b = poseidonHashDefault [a, b]
