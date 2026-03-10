@@ -26,7 +26,7 @@ import qualified Prelude as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.Field (Zp, fromZp, toZp)
-import ZkFold.Algorithm.Hash.Poseidon (poseidonHashDefault)
+import ZkFold.Algorithm.Hash.MiMC (mimcConstants, mimcHash2)
 import ZkFold.Control.Conditional (Conditional, ifThenElse)
 import qualified ZkFold.Data.Eq as ZkFold
 import ZkFold.Data.Vector hiding (zip, (.:))
@@ -47,7 +47,7 @@ data MerkleTree (d :: Natural) h = MerkleTree
 emptyTree
   :: forall d h
    . ( KnownNat (MerkleTreeSize d)
-     , Field h
+     , Ring h
      )
   => MerkleTree d h
 emptyTree = MerkleTree rootHash leaves
@@ -57,11 +57,11 @@ emptyTree = MerkleTree rootHash leaves
 
 -- | Hash to use in the Merkle tree
 merkleHash
-  :: forall h. Field h => h -> h -> h
-merkleHash a b = poseidonHashDefault [a, b]
+  :: forall h. Ring h => h -> h -> h
+merkleHash = mimcHash2 mimcConstants zero
 
 -- | Hash current value with sibling based on bit direction
-hashWithSibling :: (Field h, Conditional b h) => h -> (b, h) -> h
+hashWithSibling :: (Ring h, Conditional b h) => h -> (b, h) -> h
 hashWithSibling current (bit, sibling) =
   let left = ifThenElse bit sibling current
       right = ifThenElse bit current sibling
@@ -91,7 +91,7 @@ merkleProve' (MerkleTree _ leaves) idx =
 -- | Computes the merkle proof for a given index in the merkle tree
 merkleProve
   :: forall d h
-   . (Field h, KnownNat (d - 1))
+   . (Ring h, KnownNat (d - 1))
   => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h
 merkleProve (MerkleTree _ leaves) idx =
   let allLevels = computeAllLevels leaves
@@ -109,7 +109,7 @@ merkleProve (MerkleTree _ leaves) idx =
 -- | Verifies the merkle proof for a given index in the merkle tree
 merkleVerify
   :: forall d h
-   . (Field h, Eq h, KnownNat (d - 1))
+   . (Ring h, Eq h, KnownNat (d - 1))
   => MerkleTree d h -> Zp (MerkleTreeSize d) -> Vector (d - 1) h -> Bool
 merkleVerify (MerkleTree rootHash leaves) idx proof =
   let leaf = leaves V.!! fromZp idx
@@ -119,7 +119,7 @@ merkleVerify (MerkleTree rootHash leaves) idx proof =
 instance
   forall d n h
    . ( MerkleTreeSize d ~ n
-     , Field h
+     , Ring h
      )
   => Iso (Vector n h) (MerkleTree d h)
   where
@@ -128,7 +128,7 @@ instance
 instance
   forall d n h
    . ( MerkleTreeSize d ~ n
-     , Field h
+     , Ring h
      )
   => Iso (MerkleTree d h) (Vector n h)
   where
@@ -137,7 +137,7 @@ instance
 instance Eq h => Eq (MerkleTree d h) where
   MerkleTree h1 _ == MerkleTree h2 _ = h1 == h2
 
-instance (KnownNat (MerkleTreeSize d), Field h, Arbitrary h) => Arbitrary (MerkleTree d h) where
+instance (KnownNat (MerkleTreeSize d), Ring h, Arbitrary h) => Arbitrary (MerkleTree d h) where
   arbitrary = from @(Vector (MerkleTreeSize d) h) <$> arbitrary
 
 -- | Finds an element satisfying the constraint
@@ -177,7 +177,7 @@ lookup (MerkleTree _ leaves) idx = leaves V.!! fromZp idx
 -- | Replaces an element at a given index in the Merkle tree
 replaceAt
   :: forall d h
-   . Field h
+   . Ring h
   => Zp (MerkleTreeSize d)
   -> h
   -> MerkleTree d h
@@ -197,13 +197,13 @@ indexToBits idx =
    in tabulate (\i -> testBit idxInt (fromIntegral $ fromZp i))
 
 -- | Computes the next level up in the merkle tree by pairing adjacent elements
-computeNextLevel :: forall h. Field h => [h] -> [h]
+computeNextLevel :: forall h. Ring h => [h] -> [h]
 computeNextLevel [] = []
 computeNextLevel [_] = [] -- odd number, ignore the last element
 computeNextLevel (a : b : rest) = merkleHash a b : computeNextLevel rest
 
 -- | Computes all levels of the merkle tree from leaves to root
-computeAllLevels :: forall n h. Field h => Vector n h -> [[h]]
+computeAllLevels :: forall n h. Ring h => Vector n h -> [[h]]
 computeAllLevels leaves = go (fromVector leaves)
  where
   go [] = []
@@ -212,7 +212,7 @@ computeAllLevels leaves = go (fromVector leaves)
     let nextLevel = computeNextLevel current
      in current : go nextLevel
 
-computeRoot :: forall d h. Field h => Leaves d h -> h
+computeRoot :: forall d h. Ring h => Leaves d h -> h
 computeRoot leaves =
   case P.last (computeAllLevels leaves) of
     [root] -> root
