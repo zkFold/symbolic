@@ -27,12 +27,14 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
 import ZkFold.Symbolic.Data.Bool (false)
 
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Ledger.Examples.One (
   A,
   Bi,
   Bo,
   I,
   N,
+  S,
   Ud,
   bridgedIn,
   prevState,
@@ -63,15 +65,16 @@ nullTx =
 batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, nullTx]}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let rPoint :*: s = signTransaction tx1 privateKey
       -- Any signature works for the null transaction since its null inputs
-      -- skip signature verification (isNullUTxO = true).
+      -- skip signature verification (allInputsNull = true).
       dummyRPoint :*: dummyS = rPoint :*: s
    in Comp1
         ( unsafeToVector'
-            [ Comp1 (fromList [rPoint :*: s :*: publicKey])
-            , Comp1 (fromList [dummyRPoint :*: dummyS :*: publicKey])
+            [ Comp1 (fromList [publicKey :*: rPoint :*: s])
+            , Comp1 (fromList [publicKey :*: dummyRPoint :*: dummyS])
             ]
         )
 

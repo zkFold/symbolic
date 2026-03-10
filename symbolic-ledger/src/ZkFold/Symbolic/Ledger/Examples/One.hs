@@ -24,6 +24,7 @@ module ZkFold.Symbolic.Ledger.Examples.One (
   Bo,
   Ud,
   A,
+  S,
   N,
   TxCount,
 ) where
@@ -58,6 +59,8 @@ type Bo = 1
 type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 1
+
+type S = 1
 
 type N = 1
 
@@ -118,9 +121,10 @@ tx =
 batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = pure tx}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let rPoint :*: s = signTransaction tx privateKey
-   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
 newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
 
@@ -138,8 +142,9 @@ bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
 batch2 :: TransactionBatch N A TxCount I
 batch2 = TransactionBatch {tbTransactions = pure tx2}
 
+sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs2 =
   let rPoint :*: s = signTransaction tx2 privateKey
-   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
 newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2

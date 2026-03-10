@@ -9,6 +9,7 @@ module Tests.Symbolic.Ledger.E2E.Two (
   Bo,
   Ud,
   A,
+  S,
   N,
   TxCount,
 ) where

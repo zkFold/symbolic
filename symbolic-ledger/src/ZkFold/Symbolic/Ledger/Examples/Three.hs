@@ -29,6 +29,7 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   Bo,
   Ud,
   A,
+  S,
   N,
   TxCount,
 ) where
@@ -63,6 +64,8 @@ type Bo = 1
 type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 2
+
+type S = 2
 
 type N = 2
 
@@ -310,6 +313,7 @@ batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2]}
 batch2 :: TransactionBatch N A TxCount I
 batch2 = TransactionBatch {tbTransactions = unsafeToVector' [tx3, tx4]}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let
     dummyRPoint :*: dummyS = signTransaction tx1 privateKey
@@ -329,19 +333,20 @@ sigs =
       ( unsafeToVector'
           [ Comp1
               ( unsafeToVector'
-                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
-                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
-                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
+                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
                   ]
               )
           ]
       )
 
+sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs2 =
   let
     dummyRPoint :*: dummyS = signTransaction tx4 privateKey
@@ -361,14 +366,14 @@ sigs2 =
       ( unsafeToVector'
           [ Comp1
               ( unsafeToVector'
-                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
-                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
-                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
+                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
                   ]
               )
           ]

@@ -31,9 +31,9 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 --
 -- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
-  :: forall bi bo ud a n t context
+  :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud n a t context
+  => SignatureTransactionBatch ud s n a t context
   => State bi bo ud a context
   -- ^ Previous state.
   -> Leaves ud (UTxO a context)
@@ -42,9 +42,9 @@ updateLedgerState
   -- ^ Bridged in outputs.
   -> TransactionBatch n a t context
   -- ^ Transaction batch.
-  -> (Vector t :.: (Vector n :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
-  -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a n t :*: (Leaves ud :.: UTxO a)) context
+  -> (Vector t :.: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) context
+  -- ^ Signature material for each transaction: per-signer (publicKey :*: rPoint :*: s).
+  -> (State bi bo ud a :*: StateWitness bi bo ud a s n t :*: (Leaves ud :.: UTxO a)) context
   -- ^ New state, witness and UTxO set.
 updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
   let
@@ -102,8 +102,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         txId' = txId tx & Base.hHash
         -- Inputs witnesses
         inRefs = fromVector (unComp1 tx.inputs)
-        sigsList = fromVector (unComp1 sigs)
-        stepIn (insAcc, treeIn, preIn) (ref, rPoint :*: s :*: publicKey) =
+        stepIn (insAcc, treeIn, preIn) ref =
           let
             -- Find UTxO by reference in evolving preimage set
             utxoSetList = fromVector preIn
@@ -117,9 +116,10 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash'}) treeIn
             preIn' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
            in
-            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn')
-        (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
+            ((me :*: utxo) : insAcc, treeIn', preIn')
+        (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) inRefs
         twInputs = Comp1 (unsafeToVector' @n (P.reverse insRev))
+        twSignatures = sigs
 
         -- Outputs witnesses and apply outputs (skip bridge-outs)
         outs = fromVector (unComp1 tx.outputs)
@@ -136,7 +136,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
         twOutputs = Comp1 (unsafeToVector' @n (P.reverse outsRev))
-        tw = TransactionWitness {twInputs, twOutputs}
+        tw = TransactionWitness {twSignatures, twInputs, twOutputs}
        in
         (treeAfterOuts, preAfterOuts, tw : witsAcc)
 

@@ -15,6 +15,7 @@ module Tests.Symbolic.Ledger.E2E.One (
   Bo,
   Ud,
   A,
+  S,
   N,
   TxCount,
 ) where

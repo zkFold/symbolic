@@ -38,7 +38,7 @@ specE2ECompileOne :: Spec
 specE2ECompileOne =
   it "E2E ledger circuit, One: prove and verify" $ do
     ts :: TrustedSetup (LedgerCircuitGates + 6) <- powersOfTauSubset
-    let lci :: LedgerContractInput Bi Bo Ud A N TxCount I
+    let lci :: LedgerContractInput Bi Bo Ud A S N TxCount I
         lci =
           LedgerContractInput
             { lciPreviousState = prevState
@@ -53,7 +53,7 @@ specE2ECompileOne =
             , lciNewState = newState2
             , lciStateWitness = witness2
             }
-    compiledCircuit <- time "ledgerCircuit" $ evaluate $ ledgerCircuit @Bi @Bo @Ud @A @N @TxCount @I
+    compiledCircuit <- time "ledgerCircuit" $ evaluate $ ledgerCircuit @Bi @Bo @Ud @A @S @N @TxCount @I
 
     Haskell.putStrLn $
       "constraints: " <> show (acSizeN compiledCircuit) <> ", variables: " <> show (acSizeM compiledCircuit)
@@ -68,6 +68,7 @@ specE2ECompileOne =
             @Bo
             @Ud
             @A
+            @S
             @N
             @TxCount
             @I
@@ -85,12 +86,12 @@ specE2ECompileOne =
         zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
     Haskell.putStrLn $ "zkLedgerInput2: " <> show zkLedgerInput2
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
       `shouldBe` Haskell.True
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput2
       zkLedgerProof2

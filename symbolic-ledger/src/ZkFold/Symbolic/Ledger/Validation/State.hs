@@ -60,37 +60,37 @@ For validating state, we check following:
 -}
 
 -- | State witness for validating state update.
-data StateWitness bi bo ud a n t context = StateWitness
+data StateWitness bi bo ud a s n t context = StateWitness
   { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
-  , swTransactionBatch :: (TransactionBatchWitness ud n a t) context
+  , swTransactionBatch :: (TransactionBatchWitness ud s n a t) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a n t context)
+deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a s n t context)
 
-deriving anyclass instance ToJSON (StateWitness bi bo ud a n t RollupBFInterpreter)
-
-deriving anyclass instance
-  forall bi bo ud a n t. KnownNat n => FromJSON (StateWitness bi bo ud a n t RollupBFInterpreter)
+deriving anyclass instance ToJSON (StateWitness bi bo ud a s n t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall bi bo ud a n t
-   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat n, KnownNat t)
-  => ToSchema (StateWitness bi bo ud a n t RollupBFInterpreter)
+  forall bi bo ud a s n t. (KnownNat s, KnownNat n) => FromJSON (StateWitness bi bo ud a s n t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a s n t
+   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat s, KnownNat n, KnownNat t)
+  => ToSchema (StateWitness bi bo ud a s n t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
-  :: forall bi bo ud a n t context
+  :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud n a t context
+  => SignatureTransactionBatch ud s n a t context
   => State bi bo ud a context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
   -> State bi bo ud a context
   -- ^ New state.
-  -> StateWitness bi bo ud a n t context
+  -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> Bool context
 validateStateUpdate previousState action newState sw =
@@ -99,16 +99,16 @@ validateStateUpdate previousState action newState sw =
 
 -- | Validate state update and return either the first failing reason or success.
 validateStateUpdateIndividualChecks
-  :: forall bi bo ud a n t context
+  :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud n a t context
+  => SignatureTransactionBatch ud s n a t context
   => State bi bo ud a context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
   -> State bi bo ud a context
   -- ^ New state.
-  -> StateWitness bi bo ud a n t context
+  -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> Vector 5 (Bool context)
 validateStateUpdateIndividualChecks previousState action newState sw =

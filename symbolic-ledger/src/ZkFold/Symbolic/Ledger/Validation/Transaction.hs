@@ -61,39 +61,64 @@ import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 -- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
 -- | Transaction witness for validating transaction.
-data TransactionWitness ud n a context = TransactionWitness
-  { twInputs :: (Vector n :.: (MerkleEntry ud :*: UTxO a :*: EdDSAPoint :*: EdDSAScalarField :*: PublicKey)) context
+--
+-- The signature set ('twSignatures') contains one entry per unique signer,
+-- following the Cardano-style witness model. This is more efficient than
+-- providing a signature per input, as it avoids redundant EdDSA verifications
+-- when multiple inputs belong to the same signer.
+data TransactionWitness ud s n a context = TransactionWitness
+  { twSignatures :: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField)) context
+  , twInputs :: (Vector n :.: (MerkleEntry ud :*: UTxO a)) context
   , twOutputs :: (Vector n :.: MerkleEntry ud) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionWitness ud n a context)
+deriving stock instance HShow context => Haskell.Show (TransactionWitness ud s n a context)
 
-instance ToJSON (TransactionWitness ud n a RollupBFInterpreter) where
-  toJSON (TransactionWitness ins outs) =
-    let insVec = unComp1 ins
+instance ToJSON (TransactionWitness ud s n a RollupBFInterpreter) where
+  toJSON (TransactionWitness sigs ins outs) =
+    let sigsVec = unComp1 sigs
+        sigsList = Vector.fromVector sigsVec
+        encodeSig (pk :*: rPoint :*: s) =
+          object
+            [ "publicKey" .= pk
+            , "r" .= rPoint
+            , "s" .= s
+            ]
+        insVec = unComp1 ins
         insList = Vector.fromVector insVec
-        encodeIn (me :*: utxo :*: rPoint :*: s :*: pk) =
+        encodeIn (me :*: utxo) =
           object
             [ "merkleEntry" .= me
             , "utxo" .= utxo
-            , "r" .= rPoint
-            , "s" .= s
-            , "publicKey" .= pk
             ]
         outsVec = unComp1 outs
         outsList = Vector.fromVector outsVec
      in object
-          [ "inputs" .= Haskell.fmap encodeIn insList
+          [ "signatures" .= Haskell.fmap encodeSig sigsList
+          , "inputs" .= Haskell.fmap encodeIn insList
           , "outputs" .= outsList
           ]
 
-instance KnownNat n => FromJSON (TransactionWitness ud n a RollupBFInterpreter) where
+instance (KnownNat s, KnownNat n) => FromJSON (TransactionWitness ud s n a RollupBFInterpreter) where
   parseJSON =
     withObject
       "TransactionWitness"
       ( \o -> do
+          sigsVals <- o .: "signatures"
+          sigsList <-
+            Haskell.traverse
+              ( withObject
+                  "Signature"
+                  ( \so -> do
+                      pk <- so .: "publicKey"
+                      rPoint <- so .: "r"
+                      s <- so .: "s"
+                      Haskell.pure (pk :*: rPoint :*: s)
+                  )
+              )
+              sigsVals
           insVals <- o .: "inputs"
           insList <-
             Haskell.traverse
@@ -102,70 +127,21 @@ instance KnownNat n => FromJSON (TransactionWitness ud n a RollupBFInterpreter) 
                   ( \io -> do
                       me <- io .: "merkleEntry"
                       utxo <- io .: "utxo"
-                      rPoint <- io .: "r"
-                      s <- io .: "s"
-                      pk <- io .: "publicKey"
-                      Haskell.pure (me :*: utxo :*: rPoint :*: s :*: pk)
+                      Haskell.pure (me :*: utxo)
                   )
               )
               insVals
           outsList <- o .: "outputs"
-          let twInputs = Comp1 (unsafeToVector' insList)
+          let twSignatures = Comp1 (unsafeToVector' sigsList)
+              twInputs = Comp1 (unsafeToVector' insList)
               twOutputs = Comp1 (unsafeToVector' outsList)
-          Haskell.pure (TransactionWitness twInputs twOutputs)
+          Haskell.pure (TransactionWitness twSignatures twInputs twOutputs)
       )
 
--- |
--- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (TransactionWitness 2 1 1 RollupBFInterpreter))
--- {
---     "properties": {
---         "inputs": {
---             "items": {
---                 "properties": {
---                     "merkleEntry": {
---                         "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
---                     },
---                     "publicKey": {
---                         "$ref": "#/components/schemas/AffinePoint"
---                     },
---                     "r": {
---                         "$ref": "#/components/schemas/AffinePoint"
---                     },
---                     "s": {
---                         "type": "integer"
---                     },
---                     "utxo": {
---                         "$ref": "#/components/schemas/UTxO_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
---                     }
---                 },
---                 "required": [
---                     "merkleEntry",
---                     "utxo",
---                     "r",
---                     "s",
---                     "publicKey"
---                 ],
---                 "type": "object"
---             },
---             "type": "array"
---         },
---         "outputs": {
---             "items": {
---                 "$ref": "#/components/schemas/MerkleEntry_2_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
---             },
---             "type": "array"
---         }
---     },
---     "required": [
---         "inputs",
---         "outputs"
---     ],
---     "type": "object"
--- }
 instance
-  forall ud n a
-   . (KnownNat ud, KnownNat n, KnownNat a, KnownNat (ud - 1))
-  => ToSchema (TransactionWitness ud n a RollupBFInterpreter)
+  forall ud s n a
+   . (KnownNat ud, KnownNat s, KnownNat n, KnownNat a, KnownNat (ud - 1))
+  => ToSchema (TransactionWitness ud s n a RollupBFInterpreter)
   where
   declareNamedSchema _ = do
     meRef <- declareSchemaRef (Proxy @(MerkleEntry ud RollupBFInterpreter))
@@ -175,18 +151,31 @@ instance
     pkRef <- declareSchemaRef (Proxy @(PublicKey RollupBFInterpreter))
     outsRef <- declareSchemaRef (Proxy @((:.:) (Vector n) (MerkleEntry ud) RollupBFInterpreter))
 
-    let inputSchema =
+    let sigSchema =
+          Haskell.mempty
+            & type_ ?~ OpenApiObject
+            & properties
+              .~ fromList
+                [ ("publicKey", pkRef)
+                , ("r", rRef)
+                , ("s", sRef)
+                ]
+            & required .~ ["publicKey", "r", "s"]
+
+        sigsSchema =
+          Haskell.mempty
+            & type_ ?~ OpenApiArray
+            & items ?~ OpenApiItemsObject (Inline sigSchema)
+
+        inputSchema =
           Haskell.mempty
             & type_ ?~ OpenApiObject
             & properties
               .~ fromList
                 [ ("merkleEntry", meRef)
                 , ("utxo", utxoRef)
-                , ("r", rRef)
-                , ("s", sRef)
-                , ("publicKey", pkRef)
                 ]
-            & required .~ ["merkleEntry", "utxo", "r", "s", "publicKey"]
+            & required .~ ["merkleEntry", "utxo"]
 
         inputsSchema =
           Haskell.mempty
@@ -198,31 +187,46 @@ instance
             & type_ ?~ OpenApiObject
             & properties
               .~ fromList
-                [ ("inputs", Inline inputsSchema)
+                [ ("signatures", Inline sigsSchema)
+                , ("inputs", Inline inputsSchema)
                 , ("outputs", outsRef)
                 ]
-            & required .~ ["inputs", "outputs"]
+            & required .~ ["signatures", "inputs", "outputs"]
 
     Haskell.pure (named "TransactionWitness" schema)
 
 -- | Validate transaction. See note [State validation] for details.
 validateTransaction
-  :: forall ud bo n a context
-   . SignatureTransaction ud n a context
+  :: forall ud s bo n a context
+   . SignatureTransaction ud s n a context
   => MerkleTree ud context
   -- ^ UTxO tree.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
   -> Transaction n a context
   -- ^ Transaction.
-  -> TransactionWitness ud n a context
+  -> TransactionWitness ud s n a context
   -- ^ Transaction witness.
   -> (FieldElement :*: Bool :*: MerkleTree ud) context
   -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree.
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_ :*: utxo :*: _ :*: _ :*: _) -> unComp1 utxo.uOutput.oAssets)
+
+    -- Verify signatures and compute signed addresses.
+    -- Each signature slot verifies one EdDSA signature and computes the signer's address.
+    -- This is cheaper than per-input verification when s < n (common case: single signer).
+    sigAddresses :: Vector s (FieldElement context)
+    sigAddresses = Haskell.fmap (\(pk :*: _ :*: _) -> hashFn pk) (unComp1 txw.twSignatures)
+    areSigsValid =
+      foldl'
+        ( \acc (pk :*: rPoint :*: s) ->
+            acc && eddsaVerify hashFn pk txId' (rPoint :*: s)
+        )
+        (true :: Bool context)
+        (unComp1 txw.twSignatures)
+
+    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_ :*: utxo) -> unComp1 utxo.uOutput.oAssets)
     outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _) -> unComp1 output.oAssets)
 
     -- Asset-balanced check using random linear combination (Schwartz-Zippel).
@@ -240,9 +244,9 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
     sOut = weightedSum (zero :: FieldElement context) outputsAssets
     isBalanced = sIn == sOut
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
-    (isInsValid :*: updatedUTxOTreeForInputs) =
+    (isInsValid :*: allInputsNull :*: updatedUTxOTreeForInputs) =
       foldl'
-        ( \(isInsValidAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo :*: rPoint :*: s :*: publicKey)) ->
+        ( \(isInsValidAcc :*: allNullAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo)) ->
             let
               nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
@@ -252,26 +256,18 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   nullUTxOHash'
                   acc
               isNullUTxO = utxoHash == nullUTxOHash'
+              -- Check that the input's address matches one of the signed addresses.
+              addressMatch = foldl' (\found addr -> found || addr == utxo.uOutput.oAddress) false sigAddresses
               isValid' =
                 isInsValidAcc
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
                   && isInTree
-                  && ifThenElse
-                    isNullUTxO
-                    true
-                    ( hashFn publicKey
-                        == utxo.uOutput.oAddress
-                        && eddsaVerify
-                          hashFn
-                          publicKey
-                          txId'
-                          (rPoint :*: s)
-                    )
+                  && ifThenElse isNullUTxO true addressMatch
              in
-              (isValid' :*: updatedTree)
+              (isValid' :*: (allNullAcc && isNullUTxO) :*: updatedTree)
         )
-        ((true :: Bool context) :*: utxoTree)
+        ((true :: Bool context) :*: (true :: Bool context) :*: utxoTree)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
     (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
@@ -318,7 +314,7 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
         outputsWithWitness
    in
     ( bouts
-        :*: (outsValid && isInsValid && isBalanced) -- Note that we don't need to check if transaction consumes at least one input or is null entirely as our transaction currently only has two fields, namely, inputs & outputs and if thus inputs are null, outputs are null too.
+        :*: (outsValid && isInsValid && ifThenElse allInputsNull true areSigsValid && isBalanced) -- Note that we don't need to check if transaction consumes at least one input or is null entirely as our transaction currently only has two fields, namely, inputs & outputs and if thus inputs are null, outputs are null too.
         :*: updatedUTxOTreeForOutputs
     )
 
