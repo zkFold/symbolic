@@ -176,9 +176,11 @@ computeSiblingsSymbolic levels bitsLSB =
   -- Symbolic NOT: if b then False else True
   notB = bool symTrue symFalse
 
--- | MiMC hash for Merkle tree 2-to-1 operations.
--- MiMC Feistel is cheaper than Poseidon for fixed 2-to-1 hashing
--- (654 vs ~747 constraints per hash).
+-- | Circuit-optimized MiMC hash for Merkle tree operations.
+-- Uses the Symbolic MiMC implementation which builds circuits efficiently
+-- rather than creating exponential WitnessF closures.
+--
+-- To note that MiMC Feistel is cheaper than Poseidon for fixed 2-to-1 hashing.
 merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
 merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
 
