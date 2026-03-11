@@ -37,6 +37,7 @@ import ZkFold.Symbolic.Ledger.Examples.One (
   S,
   Ud,
   bridgedIn,
+  emptyTree,
   prevState,
   privateKey,
   publicKey,
@@ -78,5 +79,5 @@ sigs =
             ]
         )
 
-newState :*: witness :*: utxoPreimage2 =
-  updateLedgerState prevState (pure (nullUTxO @A @I)) bridgedIn batch sigs
+newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 =
+  updateLedgerState prevState emptyTree (pure (nullUTxO @A @I)) bridgedIn batch sigs

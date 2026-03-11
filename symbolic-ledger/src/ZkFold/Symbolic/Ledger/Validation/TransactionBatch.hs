@@ -20,7 +20,6 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
@@ -50,26 +49,26 @@ deriving anyclass instance
 validateTransactionBatch
   :: forall ud s bo n a t context
    . SignatureTransactionBatch ud s n a t context
-  => MerkleTree ud context
-  -- ^ UTxO tree.
+  => FieldElement context
+  -- ^ UTxO tree root hash.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
   -> TransactionBatch n a t context
   -- ^ Transaction batch.
   -> TransactionBatchWitness ud s n a t context
   -- ^ Witness for the transaction batch.
-  -> (Bool :*: MerkleTree ud) context
-  -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree.
-validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
+  -> (Bool :*: FieldElement) context
+  -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree root hash.
+validateTransactionBatch utxoRoot bridgedOutOutputs tb tbw =
   let
     transactionBatchWithWitness = zipWith (:*:) tb.tbTransactions (unComp1 tbw.tbwTransactions)
-    (boCount :*: isValid :*: updatedUTxOTree) =
+    (boCount :*: isValid :*: updatedRoot) =
       foldl'
-        ( \(boCountAcc :*: isValidAcc :*: accUTxOTree) (tx :*: txw) ->
-            let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
-             in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
+        ( \(boCountAcc :*: isValidAcc :*: rootAcc) (tx :*: txw) ->
+            let (txBOuts :*: isTxValid :*: newRootAcc) = validateTransaction rootAcc bridgedOutOutputs tx txw
+             in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newRootAcc)
         )
-        ((zero :: FieldElement context) :*: true :*: utxoTree)
+        ((zero :: FieldElement context) :*: true :*: utxoRoot)
         transactionBatchWithWitness
     bouts =
       foldl'
@@ -77,4 +76,4 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
         zero
         (unComp1 bridgedOutOutputs)
    in
-    ((isValid && (bouts == boCount)) :*: updatedUTxOTree)
+    ((isValid && (bouts == boCount)) :*: updatedRoot)

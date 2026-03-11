@@ -25,6 +25,7 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
@@ -113,45 +114,45 @@ validateStateUpdateIndividualChecks
   -> Vector 5 (Bool context)
 validateStateUpdateIndividualChecks previousState action newState sw =
   let
-    initialUTxOTree = previousState.sUTxO
+    initialRoot = previousState.sUTxO
     bridgeInAssets = preimage newState.sBridgeIn
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
-    (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
+    (_ :*: isWitBridgeInValid :*: rootWithBridgeIn) =
       foldl'
-        ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
+        ( \(ix :*: isValidAcc :*: rootAcc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isNull = output == nullOutput
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
-                (isInTree, updatedTree) = MerkleTree.containsAndReplace merkleEntry utxoHash acc
+                (isInTree, updatedRoot) = MerkleTree.containsAndReplaceRoot merkleEntry utxoHash rootAcc
                 isValid' =
                   isValidAcc
                     && ifThenElse
                       isNull
                       true
                       ( isInTree
-                          && (merkleEntry.value == nullUTxOHash')
+                          && (MerkleTree.value merkleEntry == nullUTxOHash')
                           && outputHasValueSanity output
                       )
              in ( (ix + one)
                     :*: isValid'
                     :*: ifThenElse
                       (isValid' && (not isNull))
-                      updatedTree
-                      acc
+                      updatedRoot
+                      rootAcc
                 )
         )
-        (zero :*: true :*: initialUTxOTree)
+        (zero :*: true :*: initialRoot)
         bridgedInAssetsWithWitness
     bridgedOutOutputs = preimage newState.sBridgeOut
-    (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
+    (isBatchValid :*: finalRoot) = validateTransactionBatch rootWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
     unsafeToVector'
       [ newState.sPreviousStateHash == hasher previousState
       , newState.sLength == previousState.sLength + one
       , isWitBridgeInValid
       , isBatchValid
-      , utxoTree == newState.sUTxO
+      , finalRoot == newState.sUTxO
       ]

@@ -78,7 +78,7 @@ prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
-    , sUTxO = emptyTree
+    , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
     , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
@@ -379,9 +379,9 @@ sigs2 =
           ]
       )
 
-newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs
 
 bridgedIn2 :: (Vector Bi :.: Output A) I
 bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
 
-newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+newState2 :*: witness2 :*: _utxoTree3 :*: utxoPreimage3 = updateLedgerState newState utxoTree2 (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2

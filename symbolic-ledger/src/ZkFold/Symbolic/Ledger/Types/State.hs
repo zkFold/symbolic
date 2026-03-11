@@ -16,7 +16,7 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree)
+
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
@@ -29,8 +29,8 @@ import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 data State bi bo ud a context = State
   { sPreviousStateHash :: HashSimple context
   -- ^ Hash of the previous state.
-  , sUTxO :: MerkleTree ud context
-  -- ^ Merkle tree of UTxO set.
+  , sUTxO :: FieldElement context
+  -- ^ Root hash of the UTxO Merkle tree.
   , sLength :: FieldElement context
   -- ^ Denotes length of the state chain.
   , sBridgeIn :: Hash (Vector bi :.: Output a) context
@@ -54,10 +54,10 @@ instance Symbolic context => Hashable (HashSimple context) (State bi bo ud a con
   hasher = hashFn
 
 deriving anyclass instance
-  forall bi bo ud a. KnownMerkleTree ud => ToJSON (State bi bo ud a RollupBFInterpreter)
+  forall bi bo ud a. ToJSON (State bi bo ud a RollupBFInterpreter)
 
 deriving anyclass instance
-  forall bi bo ud a. KnownMerkleTree ud => FromJSON (State bi bo ud a RollupBFInterpreter)
+  forall bi bo ud a. FromJSON (State bi bo ud a RollupBFInterpreter)
 
 deriving anyclass instance
   forall bi bo ud a

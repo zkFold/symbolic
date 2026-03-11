@@ -49,6 +49,8 @@ main =
       [ goldenCircuit "Ledger.1.1.2.1.1.1" (ledgerCircuit @1 @1 @2 @1 @1 @1 @1 @RollupBFInterpreter)
       , goldenCircuit "Ledger.1.1.2.1.1.2" (ledgerCircuit @1 @1 @2 @1 @1 @1 @2 @RollupBFInterpreter)
       , goldenCircuit "Ledger.1.1.4.1.1.2" (ledgerCircuit @1 @1 @4 @1 @1 @1 @2 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.6.1.1.2" (ledgerCircuit @1 @1 @6 @1 @1 @1 @2 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.10.1.1.2" (ledgerCircuit @1 @1 @10 @1 @1 @1 @2 @RollupBFInterpreter)
       , goldenCircuit "Ledger.1.1.2.2.2.2" (ledgerCircuit @1 @1 @2 @2 @2 @2 @2 @RollupBFInterpreter)
       , goldenCircuit "Ledger.1.1.2.5.2.2" (ledgerCircuit @1 @1 @2 @5 @2 @2 @2 @RollupBFInterpreter)
       ]

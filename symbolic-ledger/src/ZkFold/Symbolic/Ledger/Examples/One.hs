@@ -10,6 +10,9 @@ module ZkFold.Symbolic.Ledger.Examples.One (
   newState2,
   witness2,
   utxoPreimage3,
+  utxoTree2,
+  utxoTree3,
+  emptyTree,
   batch2,
   tx,
   sigs,
@@ -73,7 +76,7 @@ prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
-    , sUTxO = emptyTree
+    , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
     , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
@@ -126,7 +129,7 @@ sigs =
   let rPoint :*: s = signTransaction tx privateKey
    in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
-newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs
 
 -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
 tx2 :: Transaction N A I
@@ -147,4 +150,4 @@ sigs2 =
   let rPoint :*: s = signTransaction tx2 privateKey
    in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
-newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+newState2 :*: witness2 :*: utxoTree3 :*: utxoPreimage3 = updateLedgerState newState utxoTree2 (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2

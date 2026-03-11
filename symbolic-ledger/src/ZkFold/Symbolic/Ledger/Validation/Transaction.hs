@@ -40,7 +40,7 @@ import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.Int (Int (..))
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, MerkleTree)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.Data.UInt (toNative)
 import Prelude qualified as Haskell
@@ -199,17 +199,17 @@ instance
 validateTransaction
   :: forall ud s bo n a context
    . SignatureTransaction ud s n a context
-  => MerkleTree ud context
-  -- ^ UTxO tree.
+  => FieldElement context
+  -- ^ UTxO tree root hash.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
   -> Transaction n a context
   -- ^ Transaction.
   -> TransactionWitness ud s n a context
   -- ^ Transaction witness.
-  -> (FieldElement :*: Bool :*: MerkleTree ud) context
-  -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree.
-validateTransaction utxoTree bridgedOutOutputs tx txw =
+  -> (FieldElement :*: Bool :*: FieldElement) context
+  -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree root hash.
+validateTransaction utxoRoot bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
 
@@ -244,17 +244,17 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
     sOut = weightedSum (zero :: FieldElement context) outputsAssets
     isBalanced = sIn == sOut
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
-    (isInsValid :*: allInputsNull :*: updatedUTxOTreeForInputs) =
+    (isInsValid :*: allInputsNull :*: updatedRootForInputs) =
       foldl'
-        ( \(isInsValidAcc :*: allNullAcc :*: acc) (inputRef :*: (merkleEntry :*: utxo)) ->
+        ( \(isInsValidAcc :*: allNullAcc :*: rootAcc) (inputRef :*: (merkleEntry :*: utxo)) ->
             let
               nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
-              (isInTree, updatedTree) =
-                MerkleTree.containsAndReplace
+              (isInTree, updatedRoot) =
+                MerkleTree.containsAndReplaceRoot
                   merkleEntry
                   nullUTxOHash'
-                  acc
+                  rootAcc
               isNullUTxO = utxoHash == nullUTxOHash'
               -- Check that the input's address matches one of the signed addresses.
               addressMatch = foldl' (\found addr -> found || addr == utxo.uOutput.oAddress) false sigAddresses
@@ -265,14 +265,14 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                   && isInTree
                   && ifThenElse isNullUTxO true addressMatch
              in
-              (isValid' :*: (allNullAcc && isNullUTxO) :*: updatedTree)
+              (isValid' :*: (allNullAcc && isNullUTxO) :*: updatedRoot)
         )
-        ((true :: Bool context) :*: (true :: Bool context) :*: utxoTree)
+        ((true :: Bool context) :*: (true :: Bool context) :*: utxoRoot)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
-    (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
+    (bouts :*: _ :*: outsValid :*: updatedRootForOutputs) =
       foldl'
-        ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
+        ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: rootAcc) ((output :*: bout) :*: merkleEntry) ->
             let isNull = output == nullOutput
                 sanity = outputHasValueSanity output
              in ifThenElse
@@ -284,38 +284,38 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                               && not isNull
                               && sanity
                           )
-                      :*: utxoTreeAcc
+                      :*: rootAcc
                   )
                   ( boutsAcc
                       :*: (outputIx + one)
                       :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
-                                (isInTree, updatedTree) =
-                                  MerkleTree.containsAndReplace
+                                (isInTree, updatedRoot) =
+                                  MerkleTree.containsAndReplaceRoot
                                     merkleEntry
                                     (hash utxo & Base.hHash)
-                                    utxoTreeAcc
+                                    rootAcc
                              in ( outsValidAcc
                                     && ifThenElse
                                       isNull
                                       true
                                       ( isInTree
-                                          && (merkleEntry.value == nullUTxOHash @a @context)
+                                          && (MerkleTree.value merkleEntry == nullUTxOHash @a @context)
                                           && sanity
                                       )
                                 )
                                   :*: ifThenElse
                                     isNull
-                                    utxoTreeAcc
-                                    updatedTree
+                                    rootAcc
+                                    updatedRoot
                           )
                   )
         )
-        (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
+        (zero :*: zero :*: (true :: Bool context) :*: updatedRootForInputs)
         outputsWithWitness
    in
     ( bouts
         :*: (outsValid && isInsValid && ifThenElse allInputsNull true areSigsValid && isBalanced) -- Note that we don't need to check if transaction consumes at least one input or is null entirely as our transaction currently only has two fields, namely, inputs & outputs and if thus inputs are null, outputs are null too.
-        :*: updatedUTxOTreeForOutputs
+        :*: updatedRootForOutputs
     )
 
 -- | Check if output has sane value.

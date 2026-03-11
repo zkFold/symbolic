@@ -17,6 +17,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Maybe (Maybe (..))
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.WitnessContext (toWitnessContext)
 import Prelude qualified as P
@@ -36,17 +37,19 @@ updateLedgerState
   => SignatureTransactionBatch ud s n a t context
   => State bi bo ud a context
   -- ^ Previous state.
+  -> MerkleTree ud context
+  -- ^ Full Merkle tree corresponding to the previous state's UTxO root hash.
   -> Leaves ud (UTxO a context)
-  -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the previous state's UTxO set
+  -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the merkle tree.
   -> (Vector bi :.: Output a) context
   -- ^ Bridged in outputs.
   -> TransactionBatch n a t context
   -- ^ Transaction batch.
   -> (Vector t :.: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) context
   -- ^ Signature material for each transaction: per-signer (publicKey :*: rPoint :*: s).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a s n t :*: (Leaves ud :.: UTxO a)) context
-  -- ^ New state, witness and UTxO set.
-updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
+  -> (State bi bo ud a :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
+  -- ^ New state, witness, updated Merkle tree and UTxO set.
+updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigMaterial =
   let
     nullOutput' = nullOutput @a @context
     nullUTxO' = nullUTxO @a @context
@@ -90,7 +93,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           entries' = entry : entries
           pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
-    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimageInit) biOutsList
+    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], initialTree, utxoPreimageInit) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
 
     -- Build transaction witnesses and apply batch updates to UTxO tree
@@ -146,7 +149,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     newState =
       State
         { sPreviousStateHash = hasher previousState
-        , sUTxO = utxoFinal
+        , sUTxO = MerkleTree.mHash utxoFinal
         , sLength = newLen
         , sBridgeIn = hash bridgedInOutputs
         , sBridgeOut = hash bridgedOutOutputs
@@ -154,4 +157,5 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
    in
     newState
       :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
+      :*: utxoFinal
       :*: Comp1 utxoPreimageFinal

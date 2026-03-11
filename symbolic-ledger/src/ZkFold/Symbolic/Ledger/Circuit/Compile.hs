@@ -28,7 +28,7 @@ import Data.Type.Equality (type (~))
 import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.Natural (Natural, naturalToInteger)
-import GHC.TypeNats (KnownNat, type (+), type (^))
+import GHC.TypeNats (KnownNat, type (+), type (-), type (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
@@ -68,7 +68,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
+
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, Show, error, fromIntegral, ($), (.), (<$>))
 
@@ -100,11 +100,11 @@ deriving stock instance
   => Show (LedgerContractInput bi bo ud a s n t context)
 
 deriving anyclass instance
-  forall bi bo ud a s n t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
+  forall bi bo ud a s n t. ToJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
 deriving anyclass instance
   forall bi bo ud a s n t
-   . (KnownMerkleTree ud, KnownNat s, KnownNat n) => FromJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
+   . (KnownNat s, KnownNat n) => FromJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
 -- |
 -- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
@@ -133,7 +133,7 @@ deriving anyclass instance
 -- }
 deriving anyclass instance
   forall bi bo ud a s n t
-   . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat s, KnownNat n, KnownNat t)
+   . (KnownNat ud, KnownNat (ud - 1), KnownNat bi, KnownNat bo, KnownNat a, KnownNat s, KnownNat n, KnownNat t)
   => ToSchema (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
 type LedgerContractOutput bi bo a =
@@ -160,13 +160,13 @@ ledgerContract
   => LedgerContractInput bi bo ud a s n t c -> LedgerContractOutput bi bo a c
 ledgerContract LedgerContractInput {..} =
   ( sPreviousStateHash lciPreviousState
-      :*: (mHash . sUTxO $ lciPreviousState)
+      :*: sUTxO lciPreviousState
       :*: sLength lciPreviousState
       :*: (hHash . sBridgeIn $ lciPreviousState)
       :*: (hHash . sBridgeOut $ lciPreviousState)
   )
     :*: ( sPreviousStateHash lciNewState
-            :*: (mHash . sUTxO $ lciNewState)
+            :*: sUTxO lciNewState
             :*: sLength lciNewState
             :*: (hHash . sBridgeIn $ lciNewState)
             :*: (hHash . sBridgeOut $ lciNewState)
