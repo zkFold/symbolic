@@ -218,7 +218,8 @@ contains
   -> MerkleEntry d c
   -> Bool c
 tree `contains` MerkleEntry {..} =
-  rootOnReplace (merklePath tree position) value == mHash tree
+  let path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
+   in rootOnReplace path value == mHash tree
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
@@ -229,8 +230,12 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
   -> Index d c
   -> FieldElement c
 tree !! position =
-  let siblings = Comp1 $ fmap (const zero) (unComp1 position)
-   in assert (\value -> tree `contains` MerkleEntry {..}) $
+  let entry val = addSiblings tree MerkleEntry
+        { position = position
+        , value = val
+        , siblings = Comp1 $ fmap (const zero) (unComp1 position)
+        }
+   in assert (\value -> tree `contains` entry value) $
     fromBaseHash $
       recIndex (fromBool <$> unComp1 position) $
         toBaseLeaves (mLeaves tree)
@@ -346,7 +351,8 @@ replace MerkleEntry {..} tree =
   -- Verify input tree is consistent along this path before replacement
   assert (const oldRootValid) result
  where
-  path = merklePath tree position
+  -- Build path from entry's siblings (no full-tree rebuild needed).
+  path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
 
   -- Get old value at position (witness-level selection, no constraints)
   oldValue =
@@ -392,7 +398,8 @@ containsAndReplace
   -> (Bool c, MerkleTree d c)
 containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
  where
-  path = merklePath tree position
+  -- Build path from entry's siblings (no full-tree rebuild needed).
+  path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
 
   -- Contains check: verify the entry's value produces the tree's root
   isContained = rootOnReplace path value == mHash tree
