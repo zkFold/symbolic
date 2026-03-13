@@ -28,7 +28,7 @@ import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- | Poseidon hash for two field element inputs.
--- Uses 627 constraints with all valid Plonk gates (exactly 3 variables per constraint).
+-- Uses 627 vanilla Plonk constraints.
 -- S-box: 3 constraints (t², t⁴, t⁵) when input is single variable + constant.
 -- MDS (3 inputs): 6 constraints (2 per output, chaining to keep ≤3 vars).
 -- MDS (2 inputs): 3 constraints (1 per output).
