@@ -12,7 +12,13 @@ import GHC.Generics (Par1 (..))
 import Prelude (Int, pure)
 import qualified Prelude as P
 
-import ZkFold.Algebra.Class (AdditiveSemigroup (..), FromConstant (..), MultiplicativeSemigroup (..), Scale (..), Zero (..))
+import ZkFold.Algebra.Class (
+  AdditiveSemigroup (..),
+  FromConstant (..),
+  MultiplicativeSemigroup (..),
+  Scale (..),
+  Zero (..),
+ )
 import ZkFold.Algorithm.Hash.Poseidon hiding (mdsLayer)
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)
@@ -39,9 +45,15 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
         mds = mdsMatrixBLS12381
         rc :: V.Vector (BaseField c)
         rc = roundConstantsBLS12381
-        m00 = mds V.! 0 V.! 0; m01 = mds V.! 0 V.! 1; m02 = mds V.! 0 V.! 2
-        m10 = mds V.! 1 V.! 0; m11 = mds V.! 1 V.! 1; m12 = mds V.! 1 V.! 2
-        m20 = mds V.! 2 V.! 0; m21 = mds V.! 2 V.! 1; m22 = mds V.! 2 V.! 2
+        m00 = mds V.! 0 V.! 0
+        m01 = mds V.! 0 V.! 1
+        m02 = mds V.! 0 V.! 2
+        m10 = mds V.! 1 V.! 0
+        m11 = mds V.! 1 V.! 1
+        m12 = mds V.! 1 V.! 2
+        m20 = mds V.! 2 V.! 0
+        m21 = mds V.! 2 V.! 1
+        m22 = mds V.! 2 V.! 2
         r :: Int -> BaseField c
         r i = rc V.! i
 
@@ -57,11 +69,11 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
         -- Gate 2: out = tmp + m2*v2 + const (3 vars: out, tmp, v2)
         mdsLayer (v0, v1, v2) ((c0, c1, c2) :: (BaseField c, BaseField c, BaseField c)) = do
           tmp0 <- newAssigned $ \w -> scale m00 (w v0) + scale m01 (w v1)
-          o0   <- newAssigned $ \w -> w tmp0 + scale m02 (w v2) + fromConstant c0
+          o0 <- newAssigned $ \w -> w tmp0 + scale m02 (w v2) + fromConstant c0
           tmp1 <- newAssigned $ \w -> scale m10 (w v0) + scale m11 (w v1)
-          o1   <- newAssigned $ \w -> w tmp1 + scale m12 (w v2) + fromConstant c1
+          o1 <- newAssigned $ \w -> w tmp1 + scale m12 (w v2) + fromConstant c1
           tmp2 <- newAssigned $ \w -> scale m20 (w v0) + scale m21 (w v1)
-          o2   <- newAssigned $ \w -> w tmp2 + scale m22 (w v2) + fromConstant c2
+          o2 <- newAssigned $ \w -> w tmp2 + scale m22 (w v2) + fromConstant c2
           pure (o0, o1, o2)
 
         -- Full round: S-box on each element, then MDS (15 constraints)
@@ -92,7 +104,7 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
 
     -- Round 0: Initial state is [i1, i2, 0], S-box with rc[0..2], then MDS
     -- Element 2 starts as 0, so (0 + rc[2])^5 is constant - 6 constraints for S-boxes 0,1
-    let sbox2c = let t = r 2; t2 = t*t; t4 = t2*t2 in t4*t
+    let sbox2c = let t = r 2; t2 = t * t; t4 = t2 * t2 in t4 * t
     s0_0 <- sbox1 i1 (r 0)
     s0_1 <- sbox1 i2 (r 1)
     -- MDS with constant sbox2c folded in (3 constraints, 2 variables each)
@@ -108,7 +120,7 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
     (pf_0, pf_1, pf_2) <- foldM partialRound (s4_0, s4_1, s4_2) partialIndices
 
     -- Final full rounds 61-64 (rc[183..194])
-    let ri = 12 P.+ 57 P.* 3  -- 183
+    let ri = 12 P.+ 57 P.* 3 -- 183
     (f1_0, f1_1, f1_2) <- fullRound (pf_0, pf_1, pf_2) ri
     (f2_0, f2_1, f2_2) <- fullRound (f1_0, f1_1, f1_2) (ri P.+ 3)
     (f3_0, f3_1, f3_2) <- fullRound (f2_0, f2_1, f2_2) (ri P.+ 6)
@@ -122,7 +134,7 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
 --   hash [a,b,c,...] = foldl (\h x -> poseidonHash2 h x) (poseidonHash2 a b) [c,...]
 hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
 hash x = case fmap FieldElement (unpacked (hmap toList (arithmetize x))) of
-  []         -> poseidonHash2 zero zero
-  [a]        -> poseidonHash2 a zero
-  [a, b]     -> poseidonHash2 a b
-  (a:b:rest) -> P.foldl poseidonHash2 (poseidonHash2 a b) rest
+  [] -> poseidonHash2 zero zero
+  [a] -> poseidonHash2 a zero
+  [a, b] -> poseidonHash2 a b
+  (a : b : rest) -> P.foldl poseidonHash2 (poseidonHash2 a b) rest
