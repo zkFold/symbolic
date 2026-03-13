@@ -18,8 +18,7 @@ module ZkFold.Symbolic.Ledger.Examples.Four (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  N,
   TxCount,
 ) where
 
@@ -28,15 +27,17 @@ import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
 import ZkFold.Symbolic.Data.Bool (false)
 
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Ledger.Examples.One (
   A,
   Bi,
   Bo,
   I,
-  Ixs,
-  Oxs,
+  N,
+  S,
   Ud,
   bridgedIn,
+  emptyTree,
   prevState,
   privateKey,
   publicKey,
@@ -50,32 +51,33 @@ import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 type TxCount = 2
 
 -- | The real transaction (same as 'tx' from Examples.One).
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 = tx
 
 -- | A null transaction: all null inputs and all null outputs.
 -- Intended as a padding transaction to fill a fixed-size batch.
-nullTx :: Transaction Ixs Oxs A I
+nullTx :: Transaction N A I
 nullTx =
   Transaction
     { inputs = Comp1 (fromList [nullOutputRef])
     , outputs = Comp1 (fromList [nullOutput @A @I :*: false])
     }
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, nullTx]}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let rPoint :*: s = signTransaction tx1 privateKey
       -- Any signature works for the null transaction since its null inputs
-      -- skip signature verification (isNullUTxO = true).
+      -- skip signature verification (allInputsNull = true).
       dummyRPoint :*: dummyS = rPoint :*: s
    in Comp1
         ( unsafeToVector'
-            [ Comp1 (fromList [rPoint :*: s :*: publicKey])
-            , Comp1 (fromList [dummyRPoint :*: dummyS :*: publicKey])
+            [ Comp1 (fromList [publicKey :*: rPoint :*: s])
+            , Comp1 (fromList [publicKey :*: dummyRPoint :*: dummyS])
             ]
         )
 
-newState :*: witness :*: utxoPreimage2 =
-  updateLedgerState prevState (pure (nullUTxO @A @I)) bridgedIn batch sigs
+newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 =
+  updateLedgerState prevState emptyTree (pure (nullUTxO @A @I)) bridgedIn batch sigs

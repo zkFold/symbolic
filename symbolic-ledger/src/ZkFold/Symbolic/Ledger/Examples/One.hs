@@ -10,6 +10,9 @@ module ZkFold.Symbolic.Ledger.Examples.One (
   newState2,
   witness2,
   utxoPreimage3,
+  utxoTree2,
+  utxoTree3,
+  emptyTree,
   batch2,
   tx,
   sigs,
@@ -24,8 +27,8 @@ module ZkFold.Symbolic.Ledger.Examples.One (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  S,
+  N,
   TxCount,
 ) where
 
@@ -60,9 +63,9 @@ type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 1
 
-type Ixs = 1
+type S = 1
 
-type Oxs = 1
+type N = 1
 
 type TxCount = 1
 
@@ -73,7 +76,7 @@ prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
-    , sUTxO = emptyTree
+    , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
     , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
@@ -111,24 +114,25 @@ bridgedIn = Comp1 (fromList [bridgeInOutput])
 bridgeInHash :: HashSimple I
 bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
-tx :: Transaction Ixs Oxs A I
+tx :: Transaction N A I
 tx =
   Transaction
     { inputs = Comp1 (fromList [OutputRef {orTxId = bridgeInHash, orIndex = zero}])
     , outputs = Comp1 (fromList [bridgeInOutput :*: false])
     }
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = pure tx}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let rPoint :*: s = signTransaction tx privateKey
-   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
-newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs
 
 -- Now let's try to use this newly created output and bridge it out, leaving no UTxOs in the ledger.
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction N A I
 tx2 =
   Transaction
     { inputs = Comp1 (fromList [OutputRef {orTxId = txId tx & Base.hHash, orIndex = zero}])
@@ -138,11 +142,12 @@ tx2 =
 bridgedIn2 :: (Vector Bi :.: Output A) I
 bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
 
-batch2 :: TransactionBatch Ixs Oxs A TxCount I
+batch2 :: TransactionBatch N A TxCount I
 batch2 = TransactionBatch {tbTransactions = pure tx2}
 
+sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs2 =
   let rPoint :*: s = signTransaction tx2 privateKey
-   in Comp1 (fromList [Comp1 (fromList [rPoint :*: s :*: publicKey])])
+   in Comp1 (fromList [Comp1 (fromList [publicKey :*: rPoint :*: s])])
 
-newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+newState2 :*: witness2 :*: utxoTree3 :*: utxoPreimage3 = updateLedgerState newState utxoTree2 (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2

@@ -11,8 +11,8 @@ module ZkFold.Symbolic.Ledger.Examples.Two (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  S,
+  N,
   TxCount,
 ) where
 
@@ -46,9 +46,9 @@ type Ud = 3 -- Thus 2 ^ (3 - 1) = 4 leaves
 
 type A = 3
 
-type Ixs = 3
+type S = 3
 
-type Oxs = 3
+type N = 3
 
 type TxCount = 3
 
@@ -59,7 +59,7 @@ prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
-    , sUTxO = emptyTree
+    , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
     , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
@@ -139,7 +139,7 @@ bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
 two = one + one
 
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 =
   Transaction
     { inputs = Comp1 (unsafeToVector' [nullOutputRef, OutputRef {orTxId = bridgeInHash, orIndex = two}, nullOutputRef])
@@ -180,7 +180,7 @@ tx1 =
 -- Total 3 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction N A I
 tx2 =
   Transaction
     { inputs =
@@ -236,7 +236,7 @@ tx2 =
 -- Total 3 UTxOs.
 tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
+tx3 :: Transaction N A I
 tx3 =
   Transaction
     { inputs =
@@ -292,28 +292,28 @@ tx3 =
 
 -- Spent all UTxOs and bridged out all created outputs.
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2, tx3]}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let
-    dummyRPoint :*: dummyS = signTransaction tx1 privateKey
-    dummyPublicKey = publicKey
-    -- Tx1
-    rPointTx11 :*: sTx11 = dummyRPoint :*: dummyS
-    publicKeyTx11 = dummyPublicKey
+    -- Tx1: only input[1] is non-null (address3). Need valid sigs for tx1.
+    -- Signer slots: pk3 (needed), pk1 (padding), pk1 (padding)
+    rPointTx11 :*: sTx11 = signTransaction tx1 privateKey
+    publicKeyTx11 = publicKey
     rPointTx12 :*: sTx12 = signTransaction tx1 privateKey3
     publicKeyTx12 = publicKey3
-    rPointTx13 :*: sTx13 = dummyRPoint :*: dummyS
-    publicKeyTx13 = dummyPublicKey
-    -- Tx2
+    rPointTx13 :*: sTx13 = signTransaction tx1 privateKey
+    publicKeyTx13 = publicKey
+    -- Tx2: input[0] is address (pk1), input[2] is address3 (pk3). Need valid sigs for tx2.
     rPointTx21 :*: sTx21 = signTransaction tx2 privateKey
     publicKeyTx21 = publicKey
-    rPointTx22 :*: sTx22 = dummyRPoint :*: dummyS
-    publicKeyTx22 = dummyPublicKey
+    rPointTx22 :*: sTx22 = signTransaction tx2 privateKey
+    publicKeyTx22 = publicKey
     rPointTx23 :*: sTx23 = signTransaction tx2 privateKey3
     publicKeyTx23 = publicKey3
-    -- Tx3
+    -- Tx3: input[0] is address2 (pk2), input[1] is address (pk1), input[2] is address2 (pk2).
     rPointTx31 :*: sTx31 = signTransaction tx3 privateKey2
     publicKeyTx31 = publicKey2
     rPointTx32 :*: sTx32 = signTransaction tx3 privateKey
@@ -325,26 +325,26 @@ sigs =
       ( unsafeToVector'
           [ Comp1
               ( unsafeToVector'
-                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
-                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
-                  , rPointTx13 :*: sTx13 :*: publicKeyTx13
+                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
+                  , publicKeyTx13 :*: rPointTx13 :*: sTx13
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
-                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
-                  , rPointTx23 :*: sTx23 :*: publicKeyTx23
+                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
+                  , publicKeyTx23 :*: rPointTx23 :*: sTx23
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx31 :*: sTx31 :*: publicKeyTx31
-                  , rPointTx32 :*: sTx32 :*: publicKeyTx32
-                  , rPointTx33 :*: sTx33 :*: publicKeyTx33
+                  [ publicKeyTx31 :*: rPointTx31 :*: sTx31
+                  , publicKeyTx32 :*: rPointTx32 :*: sTx32
+                  , publicKeyTx33 :*: rPointTx33 :*: sTx33
                   ]
               )
           ]
       )
 
-newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs

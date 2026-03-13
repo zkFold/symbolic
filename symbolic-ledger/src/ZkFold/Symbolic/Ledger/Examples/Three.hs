@@ -29,8 +29,8 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   Bo,
   Ud,
   A,
-  Ixs,
-  Oxs,
+  S,
+  N,
   TxCount,
 ) where
 
@@ -65,9 +65,9 @@ type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
 
 type A = 2
 
-type Ixs = 2
+type S = 2
 
-type Oxs = 2
+type N = 2
 
 type TxCount = 2
 
@@ -78,7 +78,7 @@ prevState :: State Bi Bo Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
-    , sUTxO = emptyTree
+    , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
     , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
     , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
@@ -141,7 +141,7 @@ bridgedIn = Comp1 (unsafeToVector' [bridgeInOutput])
 bridgeInHash :: HashSimple I
 bridgeInHash = (one :: FieldElement I) & hash & Base.hHash
 
-tx1 :: Transaction Ixs Oxs A I
+tx1 :: Transaction N A I
 tx1 =
   Transaction
     { inputs = Comp1 (unsafeToVector' [OutputRef {orTxId = bridgeInHash, orIndex = zero}, nullOutputRef])
@@ -179,7 +179,7 @@ tx1 =
 -- Total 2 UTxOs.
 tx1Id = txId tx1 & Base.hHash
 
-tx2 :: Transaction Ixs Oxs A I
+tx2 :: Transaction N A I
 tx2 =
   Transaction
     { inputs =
@@ -233,7 +233,7 @@ bridgeOutOutput =
 
 tx2Id = txId tx2 & Base.hHash
 
-tx3 :: Transaction Ixs Oxs A I
+tx3 :: Transaction N A I
 tx3 =
   Transaction
     { inputs =
@@ -267,7 +267,7 @@ tx3 =
 
 tx3Id = txId tx3 & Base.hHash
 
-tx4 :: Transaction Ixs Oxs A I
+tx4 :: Transaction N A I
 tx4 =
   Transaction
     { inputs =
@@ -307,12 +307,13 @@ tx4 =
 -- "address" has 2.5 ADA and 12.5 asset2.
 -- "address2" has 2.5 ADA and 12.5 asset2.
 
-batch :: TransactionBatch Ixs Oxs A TxCount I
+batch :: TransactionBatch N A TxCount I
 batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2]}
 
-batch2 :: TransactionBatch Ixs Oxs A TxCount I
+batch2 :: TransactionBatch N A TxCount I
 batch2 = TransactionBatch {tbTransactions = unsafeToVector' [tx3, tx4]}
 
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs =
   let
     dummyRPoint :*: dummyS = signTransaction tx1 privateKey
@@ -332,19 +333,20 @@ sigs =
       ( unsafeToVector'
           [ Comp1
               ( unsafeToVector'
-                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
-                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
-                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
+                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
                   ]
               )
           ]
       )
 
+sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 sigs2 =
   let
     dummyRPoint :*: dummyS = signTransaction tx4 privateKey
@@ -364,22 +366,22 @@ sigs2 =
       ( unsafeToVector'
           [ Comp1
               ( unsafeToVector'
-                  [ rPointTx11 :*: sTx11 :*: publicKeyTx11
-                  , rPointTx12 :*: sTx12 :*: publicKeyTx12
+                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
                   ]
               )
           , Comp1
               ( unsafeToVector'
-                  [ rPointTx21 :*: sTx21 :*: publicKeyTx21
-                  , rPointTx22 :*: sTx22 :*: publicKeyTx22
+                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
                   ]
               )
           ]
       )
 
-newState :*: witness :*: utxoPreimage2 = updateLedgerState prevState utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs
 
 bridgedIn2 :: (Vector Bi :.: Output A) I
 bridgedIn2 = Comp1 (fromList [nullOutput @A @I])
 
-newState2 :*: witness2 :*: utxoPreimage3 = updateLedgerState newState (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
+newState2 :*: witness2 :*: _utxoTree3 :*: utxoPreimage3 = updateLedgerState newState utxoTree2 (unComp1 utxoPreimage2) bridgedIn2 batch2 sigs2
