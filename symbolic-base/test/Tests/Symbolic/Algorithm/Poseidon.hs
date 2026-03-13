@@ -3,12 +3,17 @@ module Tests.Symbolic.Algorithm.Poseidon (specPoseidon) where
 import Data.Function (($))
 import qualified Data.Vector as V
 import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck ((===))
 import Prelude (Integer, String, map, show, (<>))
 import qualified Prelude as Haskell
 
-import ZkFold.Algebra.Class (FromConstant (..))
+import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), Zero (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonHash2)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
+import ZkFold.Symbolic.Interpreter (Interpreter)
 
 -- | Test vector data type
 data TestVector = TestVector
@@ -49,7 +54,25 @@ poseidonPermutationSpec = describe "Poseidon permutation (BLS12-381, width=3, R_
     let result = poseidonPermutation params input
     result `shouldBe` expected
 
+-- | Test that the symbolic poseidonHash2 (via Interpreter) agrees with the
+-- reference poseidonPermutation on random inputs.  This guards against
+-- regressions in round constants, MDS matrix ordering, and S-box placement.
+symbolicPoseidonHash2Spec :: Spec
+symbolicPoseidonHash2Spec =
+  describe "Symbolic poseidonHash2 via Interpreter (BLS12-381)" $
+    prop "matches reference poseidonPermutation on random inputs" $
+      \(a :: Fr) (b :: Fr) ->
+        let symResult =
+              toConstant $
+                poseidonHash2
+                  (fromConstant a :: FieldElement (Interpreter Fr))
+                  (fromConstant b)
+            params = defaultPoseidonParams :: PoseidonParams Fr
+            refResult = poseidonPermutation params (V.fromList [a, b, zero]) V.! 0
+         in symResult === refResult
+
 -- | Main test specification following repository patterns
 specPoseidon :: Spec
 specPoseidon = do
   poseidonPermutationSpec
+  symbolicPoseidonHash2Spec
