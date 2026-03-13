@@ -11,7 +11,7 @@ import qualified Prelude as Haskell
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), Zero (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonHash2)
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (hash, poseidonHash2)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 
@@ -71,8 +71,23 @@ symbolicPoseidonHash2Spec =
             refResult = poseidonPermutation params (V.fromList [a, b, zero]) V.! 0
          in symResult === refResult
 
+-- | Test that the symbolic 'hash' (via Interpreter) agrees with 'poseidonHashDefault'.
+-- Since 'hash' delegates directly to 'poseidonHashDefault', this verifies the
+-- Symbolic and non-Symbolic versions produce identical results.
+symbolicHashSpec :: Spec
+symbolicHashSpec =
+  describe "Symbolic hash via Interpreter (BLS12-381)" $
+    prop "matches poseidonHashDefault on random single-field-element inputs" $
+      \(a :: Fr) ->
+        let symResult =
+              toConstant $
+                hash (fromConstant a :: FieldElement (Interpreter Fr))
+            refResult = poseidonHashDefault [a]
+         in symResult === refResult
+
 -- | Main test specification following repository patterns
 specPoseidon :: Spec
 specPoseidon = do
   poseidonPermutationSpec
   symbolicPoseidonHash2Spec
+  symbolicHashSpec
