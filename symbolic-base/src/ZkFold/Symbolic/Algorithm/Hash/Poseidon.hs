@@ -86,13 +86,15 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
           mdsLayer (s0, s1, s2) (z, z, z)
 
         -- Partial round: S-box only on element 0, then MDS (9 constraints)
-        -- Elements 1,2 get round constants added during MDS
+        -- Elements 1,2 get round constants added before MDS, via MDS * [0, c1, c2]
         partialRound (v0, v1, v2) rc_idx = do
           s0 <- sbox1 v0 (r rc_idx)
           let c1 = r (rc_idx P.+ 1)
               c2 = r (rc_idx P.+ 2)
-              z = zero :: BaseField c
-          mdsLayer (s0, v1, v2) (z, c1, c2)
+              c0' = m01 * c1 + m02 * c2
+              c1' = m11 * c1 + m12 * c2
+              c2' = m21 * c1 + m22 * c2
+          mdsLayer (s0, v1, v2) (c0', c1', c2')
 
         -- MDS for Round 0: only 2 input variables, element 2 is constant sbox2c
         -- Each output is: m_0*v0 + m_1*v1 + m_2*sbox2c (2 variables, valid Plonk)
