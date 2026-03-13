@@ -39,7 +39,7 @@ hash =
 --
 -- This optimized version tracks MDS and round constant additions as
 -- linear combinations (LC), only creating constraints for S-box operations.
--- This reduces constraints from ~1,666 to ~492 for width=3 Poseidon.
+-- This reduces constraints from ~1,666 to ~711 for width=3 Poseidon.
 
 -- | Linear combination of circuit variables: sum(coeff_i * var_i) + constant.
 -- Used to track state elements without materializing them as constraints.
@@ -102,13 +102,13 @@ addRoundConstantsLC rcs = zipWith (\rc s -> lcAdd s (lcConst rc)) rcs
 
 -- | Circuit-optimized Poseidon permutation.
 --
--- S-box: materialize LC (1-2 gates) + x^2 + x^4 + x^5 (3 gates).
+-- S-box: materialize LC (1 gate) + x^2 + x^4 + x^5 (3 gates) = 4 gates per element.
 -- MDS and round constant additions are free (tracked as linear combinations).
 -- After every round, all elements are materialized (2 gates each for 3-term LCs
 -- from MDS output) to keep LCs bounded.
 --
--- Cost for width=3: 8*(3*3 + 3*2) + 57*(1*3 + 3*2) = 8*15 + 57*9 = 633 constraints
--- (vs 1666 for generic implementation -- 2.6x improvement)
+-- Cost for width=3: 8*(3*4 + 3*2) + 57*(1*4 + 3*2) = 8*18 + 57*10 = 714 constraints
+-- (theoretical). Measured: ~711 poly. (vs 1666 for generic -- 2.3x improvement)
 poseidonPermOpt
   :: (MonadCircuit v a w m, Field a)
   => PoseidonParams a -> [LC v a] -> m [LC v a]
@@ -158,7 +158,7 @@ poseidonPermOpt params initState = do
 
 -- | Circuit-optimized Poseidon compression: hash 2 field elements into 1.
 -- Uses a single Poseidon permutation with width=3 (rate=2, capacity=1).
--- Cost: ~633 poly constraints (vs ~1666 for generic implementation).
+-- Cost: ~711 poly constraints (vs ~1666 for generic implementation).
 poseidonCompress2
   :: forall c. Symbolic c
   => FieldElement c -> FieldElement c -> FieldElement c
