@@ -5,7 +5,7 @@ module ZkFold.Symbolic.Algorithm.Hash.Poseidon (
 
 import Control.Monad (foldM)
 import Data.Foldable (toList)
-import Data.Function (($))
+import Data.Function (($), (.))
 import Data.Functor (fmap)
 import qualified Data.Vector as V
 import GHC.Generics (Par1 (..))
@@ -130,13 +130,11 @@ poseidonHash2 (FieldElement x1) (FieldElement x2) = FieldElement $
 
     pure (Par1 f4_0)
 
--- | Symbolic Poseidon hash using optimized 2-input permutation.
--- For N elements, chains poseidonHash2 calls:
---   hash [a,b] = poseidonHash2 a b
---   hash [a,b,c,...] = foldl (\h x -> poseidonHash2 h x) (poseidonHash2 a b) [c,...]
+-- | Symbolic Poseidon hash using the sponge construction.
 hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
-hash x = case fmap FieldElement (unpacked (hmap toList (arithmetize x))) of
-  [] -> poseidonHash2 zero zero
-  [a] -> poseidonHash2 a zero
-  [a, b] -> poseidonHash2 a b
-  (a : b : rest) -> P.foldl poseidonHash2 (poseidonHash2 a b) rest
+hash =
+  poseidonHashDefault
+    . fmap FieldElement
+    . unpacked
+    . hmap toList
+    . arithmetize
