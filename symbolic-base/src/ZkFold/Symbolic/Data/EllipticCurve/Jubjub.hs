@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point, jubjubAdd) where
+module ZkFold.Symbolic.Data.EllipticCurve.Jubjub (Jubjub_Point, jubjubAdd, shamirDoubleScale) where
 
 import Data.Function (($))
 import qualified Prelude
@@ -121,3 +121,66 @@ instance
     jubjubSum :: [Jubjub_Point ctx] -> Jubjub_Point ctx
     jubjubSum [] = zero
     jubjubSum (p : ps) = Prelude.foldl jubjubAdd p ps
+
+-- | Joint scalar multiplication: @s1 * G + s2 * P@ using Shamir's trick,
+-- where @G = pointGen@ is a compile-time constant.
+--
+-- Uses MSB-first double-and-add processing both scalars simultaneously.
+-- Since G is constant, @jubjubAdd(acc, G)@ costs ~5 constraints instead of ~9
+-- (cross-multiplications with a constant operand are free linear operations).
+--
+-- Total: ~27 constraints per bit (252 bits) ≈ 6,804 constraints,
+-- vs ~10,050 for two independent @scale@ calls.
+shamirDoubleScale
+  :: forall ctx
+   . ( Symbolic ctx
+     , KnownFFA Jubjub_Base 'Auto ctx
+     , KnownFFA Jubjub_Scalar 'Auto ctx
+     )
+  => FFA Jubjub_Scalar 'Auto ctx  -- ^ First scalar s1
+  -> FFA Jubjub_Scalar 'Auto ctx  -- ^ Second scalar s2
+  -> Jubjub_Point ctx              -- ^ Variable point P
+  -> Jubjub_Point ctx              -- ^ Result: s1 * G + s2 * P
+shamirDoubleScale s1 s2 varPoint =
+  Prelude.foldl step (zero :: Jubjub_Point ctx) [0 .. upper]
+ where
+  g :: Jubjub_Point ctx
+  g = pointGen
+
+  bitsS1 :: ByteString (NumberOfBits (Zp Jubjub_Scalar)) ctx
+  bitsS1 = binaryExpansion s1
+
+  bitsS2 :: ByteString (NumberOfBits (Zp Jubjub_Scalar)) ctx
+  bitsS2 = binaryExpansion s2
+
+  upper :: Natural
+  upper = value @(NumberOfBits (Zp Jubjub_Scalar)) -! 1
+
+  -- | MSB-first step: double accumulator, conditionally add G, conditionally add P.
+  step :: Jubjub_Point ctx -> Natural -> Jubjub_Point ctx
+  step acc i =
+    let -- Double the accumulator (9 constraints)
+        doubled = jubjubAdd acc acc
+
+        -- Conditionally add G (constant): add costs ~5, select costs 2
+        doubledPlusG = jubjubAdd doubled g
+        Bool s1Bit = isSet bitsS1 i
+        afterG = jubjubCondSelect (FieldElement s1Bit) doubled doubledPlusG
+
+        -- Conditionally add P (variable): add costs 9, select costs 2
+        afterGPlusP = jubjubAdd afterG varPoint
+        Bool s2Bit = isSet bitsS2 i
+        afterGP = jubjubCondSelect (FieldElement s2Bit) afterG afterGPlusP
+     in afterGP
+
+  jubjubCondSelect
+    :: FieldElement ctx
+    -> Jubjub_Point ctx  -- ^ Value when bit = 0
+    -> Jubjub_Point ctx  -- ^ Value when bit = 1
+    -> Jubjub_Point ctx
+  jubjubCondSelect bit
+    (AffinePoint (EC.AffinePoint x0 y0))
+    (AffinePoint (EC.AffinePoint x1 y1)) =
+      AffinePoint (EC.AffinePoint
+        (ffaConditionalSelect bit x0 x1)
+        (ffaConditionalSelect bit y0 y1))

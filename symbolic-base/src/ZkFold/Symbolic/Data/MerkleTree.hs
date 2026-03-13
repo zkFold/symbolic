@@ -45,7 +45,6 @@ import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
@@ -54,7 +53,7 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonCompress2)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
@@ -178,13 +177,12 @@ computeSiblingsSymbolic levels bitsLSB =
   -- Symbolic NOT: if b then False else True
   notB = bool symTrue symFalse
 
--- | Circuit-optimized MiMC hash for Merkle tree operations.
--- Uses the Symbolic MiMC implementation which builds circuits efficiently
--- rather than creating exponential WitnessF closures.
---
--- To note that MiMC Feistel is cheaper than Poseidon for fixed 2-to-1 hashing.
+-- | Circuit-optimized Poseidon compression for Merkle tree operations.
+-- Uses the LC-tracking Poseidon implementation which absorbs MDS and
+-- round constant additions into S-box constraints, reducing cost from
+-- ~880 poly (MiMC) to ~492 poly per hash.
 merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
-merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
+merkleHash = poseidonCompress2
 
 -- | Hash current value with sibling based on bit direction.
 -- Uses the circuit-optimized hash function.
