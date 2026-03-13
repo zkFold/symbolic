@@ -18,7 +18,6 @@ import GHC.Generics (Generic, Generic1, (:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
 import GHC.TypeNats (KnownNat, type (-))
 import ZkFold.Algebra.Class (
-  AdditiveGroup (..),
   AdditiveSemigroup (..),
   FromConstant (fromConstant),
   MultiplicativeMonoid (..),
@@ -28,7 +27,7 @@ import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Data.Eq
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Ord ((>=))
-import ZkFold.Data.Vector (Vector, Zip (..), (!!))
+import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Data.Vector qualified as Vector
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
@@ -220,109 +219,37 @@ validateTransaction
 validateTransaction utxoTree bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
-    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_me :*: utxo :*: _ :*: _ :*: _) -> utxo.uOutput.oAssets)
-    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _isBridgeOut) -> unComp1 output.oAssets)
-    -- We check if all output assets are covered by inputs.
-    (outAssetsWithinInputs :*: finalInputAssets) =
+    inputAssets = unComp1 txw.twInputs & Haskell.fmap (\(_ :*: utxo :*: _ :*: _ :*: _) -> unComp1 utxo.uOutput.oAssets)
+    outputsAssets = unComp1 tx.outputs & Haskell.fmap (\(output :*: _) -> unComp1 output.oAssets)
+
+    -- Total quantity of asset (policy, name) across inputAssets.
+    sumInputQty policy name =
       foldl'
-        ( \(isValid1 :*: inputAssetsAcc) outputAssets ->
-            foldl'
-              ( \(isValid2 :*: inputAssetsAcc') outputAsset ->
-                  let
-                    -- Whether an input asset matches the current output asset by policy and name.
-                    sameAsset av = (av.assetPolicy == outputAsset.assetPolicy) && (av.assetName == outputAsset.assetName)
+        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
+        zero
+        inputAssets
 
-                    -- Given a remaining quantity to cover, compute the remaining after consuming from one input's assets.
-                    remainingAfterInput rem inAssetsComp =
-                      let asVec = unComp1 inAssetsComp
-                       in foldl'
-                            ( \r av ->
-                                ifThenElse
-                                  (sameAsset av)
-                                  ( ifThenElse
-                                      (r >= av.assetQuantity)
-                                      (r + negate av.assetQuantity)
-                                      zero
-                                  )
-                                  r
-                            )
-                            rem
-                            asVec
-
-                    -- Compute remaining before each input using a prefix scan across inputs.
-                    inputsVec = unComp1 inputAssetsAcc'
-                    remsAcrossInputs =
-                      Vector.scanl
-                        remainingAfterInput
-                        outputAsset.assetQuantity
-                        inputsVec
-
-                    -- Update assets for a single input, given the remaining before this input.
-                    updateInputAssets remBefore inAssetsComp =
-                      let asVec = unComp1 inAssetsComp
-                          -- Remaining before each asset within this input.
-                          remsWithinInput =
-                            Vector.scanl
-                              ( \r av ->
-                                  ifThenElse
-                                    (sameAsset av)
-                                    ( ifThenElse
-                                        (r >= av.assetQuantity)
-                                        (r + negate av.assetQuantity)
-                                        zero
-                                    )
-                                    r
-                              )
-                              remBefore
-                              asVec
-                          -- Update each asset using the remaining before that asset.
-                          updatedAs =
-                            Vector.mapWithIx
-                              ( \ix av ->
-                                  let rBefore = remsWithinInput !! ix
-                                   in ifThenElse
-                                        (sameAsset av)
-                                        ( let newQty = ifThenElse (rBefore >= av.assetQuantity) zero (av.assetQuantity + negate rBefore)
-                                           in av {assetQuantity = newQty}
-                                        )
-                                        av
-                              )
-                              asVec
-                       in Comp1 updatedAs
-
-                    -- Build updated inputs by mapping with index and using prefix-remaining per input.
-                    updatedInputs =
-                      Vector.mapWithIx
-                        ( \ix inAssetsComp ->
-                            let remBefore = remsAcrossInputs !! ix
-                             in updateInputAssets remBefore inAssetsComp
-                        )
-                        inputsVec
-
-                    -- Final remaining after all inputs processed for this output asset.
-                    finalRemaining = Vector.last remsAcrossInputs
-                    isValid' = isValid2 && (finalRemaining == zero)
-                   in
-                    (isValid' :*: Comp1 updatedInputs)
-              )
-              (isValid1 :*: inputAssetsAcc)
-              outputAssets
-        )
-        ((true :: Bool context) :*: Comp1 inputAssets)
+    -- Total quantity of asset (policy, name) across outputsAssets.
+    sumOutputQty policy name =
+      foldl'
+        (foldl' (\s av -> s + ifThenElse (av.assetPolicy == policy && av.assetName == name) av.assetQuantity zero))
+        zero
         outputsAssets
-    -- We check if all inputs are covered by outputs.
-    inputsConsumed =
+
+    -- Asset-balanced: every asset type appearing in inputs or outputs has equal totals on both sides.
+    isBalanced =
       foldl'
-        ( \acc inAssetsComp ->
-            let asVec = unComp1 inAssetsComp
-             in acc
-                  && foldl'
-                    (\acc2 av -> acc2 && (av.assetQuantity == zero))
-                    true
-                    asVec
+        ( foldl'
+            (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
         )
         true
-        (unComp1 finalInputAssets)
+        inputAssets
+        && foldl'
+          ( foldl'
+              (\acc2 av -> acc2 && (sumInputQty av.assetPolicy av.assetName == sumOutputQty av.assetPolicy av.assetName))
+          )
+          true
+          outputsAssets
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
     (isInsValid :*: consumedAtleastOneInput :*: updatedUTxOTreeForInputs) =
       foldl'
@@ -330,13 +257,19 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
             let
               nullUTxOHash' = nullUTxOHash @a @context
               utxoHash :: HashSimple context = hash utxo & Base.hHash
+              (isInTree, updatedTree) =
+                MerkleTree.containsAndReplace
+                  merkleEntry
+                  nullUTxOHash'
+                  acc
+              isNullUTxO = utxoHash == nullUTxOHash'
               isValid' =
                 isInsValidAcc
                   && (inputRef == utxo.uRef)
                   && (utxoHash == MerkleTree.value merkleEntry)
-                  && (acc `MerkleTree.contains` merkleEntry)
+                  && isInTree
                   && ifThenElse
-                    (utxoHash == nullUTxOHash')
+                    isNullUTxO
                     true
                     ( hashFn publicKey
                         == utxo.uOutput.oAddress
@@ -348,13 +281,8 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
                     )
              in
               ( isValid'
-                  :*: (consumedAtleastOneAcc || (utxoHash /= nullUTxOHash'))
-                  :*: MerkleTree.replace
-                    ( merkleEntry
-                        { MerkleTree.value = nullUTxOHash'
-                        }
-                    )
-                    acc
+                  :*: (consumedAtleastOneAcc || not isNullUTxO)
+                  :*: updatedTree
               )
         )
         ((true :: Bool context) :*: (false :: Bool context) :*: utxoTree)
@@ -363,47 +291,48 @@ validateTransaction utxoTree bridgedOutOutputs tx txw =
     (bouts :*: _ :*: outsValid :*: updatedUTxOTreeForOutputs) =
       foldl'
         ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: utxoTreeAcc) ((output :*: bout) :*: merkleEntry) ->
-            ifThenElse
-              bout
-              ( (boutsAcc + one)
-                  :*: (outputIx + one)
-                  :*: ( outsValidAcc
-                          && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
-                          && (output /= nullOutput)
-                          && outputHasValueSanity output
-                      )
-                  :*: utxoTreeAcc
-              )
-              ( boutsAcc
-                  :*: (outputIx + one)
-                  :*: ( outsValidAcc
-                          && ifThenElse
-                            (output == nullOutput)
-                            true
-                            ( (utxoTreeAcc `MerkleTree.contains` merkleEntry)
-                                && (merkleEntry.value == nullUTxOHash @a @context)
-                                && outputHasValueSanity output
-                            )
-                      )
-                  :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
-                         in ifThenElse
-                              (output == nullOutput)
-                              utxoTreeAcc
-                              ( MerkleTree.replace
-                                  ( merkleEntry
-                                      { MerkleTree.value = hash utxo & Base.hHash
-                                      }
-                                  )
-                                  utxoTreeAcc
-                              )
-                      )
-              )
+            let isNull = output == nullOutput
+                sanity = outputHasValueSanity output
+             in ifThenElse
+                  bout
+                  ( (boutsAcc + one)
+                      :*: (outputIx + one)
+                      :*: ( outsValidAcc
+                              && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                              && not isNull
+                              && sanity
+                          )
+                      :*: utxoTreeAcc
+                  )
+                  ( boutsAcc
+                      :*: (outputIx + one)
+                      :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
+                                (isInTree, updatedTree) =
+                                  MerkleTree.containsAndReplace
+                                    merkleEntry
+                                    (hash utxo & Base.hHash)
+                                    utxoTreeAcc
+                             in ( outsValidAcc
+                                    && ifThenElse
+                                      isNull
+                                      true
+                                      ( isInTree
+                                          && (merkleEntry.value == nullUTxOHash @a @context)
+                                          && sanity
+                                      )
+                                )
+                                  :*: ifThenElse
+                                    isNull
+                                    utxoTreeAcc
+                                    updatedTree
+                          )
+                  )
         )
         (zero :*: zero :*: (true :: Bool context) :*: updatedUTxOTreeForInputs)
         outputsWithWitness
    in
     ( bouts
-        :*: (outsValid && isInsValid && consumedAtleastOneInput && outAssetsWithinInputs && inputsConsumed)
+        :*: (outsValid && isInsValid && consumedAtleastOneInput && isBalanced)
         :*: updatedUTxOTreeForOutputs
     )
 

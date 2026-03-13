@@ -22,15 +22,16 @@ module ZkFold.Symbolic.Data.MerkleTree (
   search',
   KnownMerkleTree,
   replace,
+  containsAndReplace,
   replaceAt,
   Index,
 ) where
 
 import Data.Bool (otherwise)
 import Data.Foldable (foldl', foldr, toList)
-import Data.Function (($), (.), const)
+import Data.Function (const, ($), (.))
 import Data.Functor (fmap, (<$>))
-import Data.List (splitAt, length)
+import Data.List (length, splitAt)
 import Data.Ord ((<=))
 import Data.Tuple (fst)
 import Data.Type.Equality (type (~))
@@ -44,14 +45,15 @@ import qualified Prelude as P
 import ZkFold.Algebra.Class
 import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
+import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
 import ZkFold.Data.HFunctor.Classes (HEq, HShow)
 import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
-import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic, WitnessField, embedW, witnessF)
+import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
+import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (FieldElement), fieldElements, fromFieldElement)
@@ -60,6 +62,7 @@ import ZkFold.Symbolic.Data.Maybe (Maybe, fromJust, guard, mmap)
 import ZkFold.Symbolic.Data.Payloaded (Payloaded (..), payloaded, restored)
 import ZkFold.Symbolic.Data.Vec (Vec (..))
 import ZkFold.Symbolic.Interpreter (Interpreter (runInterpreter))
+import ZkFold.Symbolic.MonadCircuit (unconstrained)
 import ZkFold.Symbolic.WitnessContext (WitnessContext (..))
 
 data MerkleTree d c = MerkleTree
@@ -112,16 +115,15 @@ type Index d = Vector (d - 1) :.: Bool
 -- This implementation uses circuit-level operations throughout to avoid
 -- the exponential WitnessF closure blowup that occurs with witness-level MiMC.
 merklePath
-  :: (Symbolic c)
+  :: Symbolic c
   => MerkleTree d c
   -> Index d c
   -> MerklePath d c
 merklePath MerkleTree {..} position =
   let leaves = toList $ restored mLeaves
       levels = computeAllLevelsSymbolic leaves
-      bitsReversed = toList $ reverse $ unComp1 position  -- from leaf toward root
-      -- Compute siblings and drop constraints - rootOnReplace will verify
-      siblings = withoutConstraints <$> computeSiblingsSymbolic levels bitsReversed
+      bitsReversed = toList $ reverse $ unComp1 position -- from leaf toward root
+      siblings = fmap withoutConstraints $ computeSiblingsSymbolic levels bitsReversed
    in Comp1 $ unsafeToVector $ P.zipWith (:*:) bitsReversed siblings
 
 -- | Compute all tree levels at the circuit level using the circuit-optimized MiMC.
@@ -149,28 +151,30 @@ computeSiblingsSymbolic levels bitsLSB =
   [ selectSiblingAtLevel (levels P.!! k) k
   | k <- [0 .. length bitsLSB P.- 1]
   ]
-  where
-    selectSiblingAtLevel level k =
-      let -- Bits for (index >> k) in LSB-first order
-          relevantBitsLSB = P.drop k bitsLSB
-          -- Flip the LSB to get sibling index
-          siblingBitsLSB = case relevantBitsLSB of
-            (b : rest) -> notB b : rest
-            [] -> []
-          -- Reverse to get MSB-first for selection
-          siblingBitsMSB = P.reverse siblingBitsLSB
-       in selectFromLevel level siblingBitsMSB
-    symTrue = Bool $ embedW $ Par1 one
-    symFalse = Bool $ embedW $ Par1 zero
+ where
+  selectSiblingAtLevel level k =
+    let
+      -- Bits for (index >> k) in LSB-first order
+      relevantBitsLSB = P.drop k bitsLSB
+      -- Flip the LSB to get sibling index
+      siblingBitsLSB = case relevantBitsLSB of
+        (b : rest) -> notB b : rest
+        [] -> []
+      -- Reverse to get MSB-first for selection
+      siblingBitsMSB = P.reverse siblingBitsLSB
+     in
+      selectFromLevel level siblingBitsMSB
+  symTrue = Bool $ embed $ Par1 one
+  symFalse = Bool $ embed $ Par1 zero
 
-    selectFromLevel [x] _ = x
-    selectFromLevel xs (b : bs) =
-      let (left, right) = splitAt (length xs `P.div` 2) xs
-       in bool (selectFromLevel left bs) (selectFromLevel right bs) b
-    selectFromLevel xs [] = P.head xs
+  selectFromLevel [x] _ = x
+  selectFromLevel xs (b : bs) =
+    let (left, right) = splitAt (length xs `P.div` 2) xs
+     in bool (selectFromLevel left bs) (selectFromLevel right bs) b
+  selectFromLevel xs [] = P.head xs
 
-    -- Symbolic NOT: if b then False else True
-    notB = bool symTrue symFalse
+  -- Symbolic NOT: if b then False else True
+  notB = bool symTrue symFalse
 
 -- | Circuit-optimized MiMC hash for Merkle tree operations.
 -- Uses the Symbolic MiMC implementation which builds circuits efficiently
@@ -187,7 +191,7 @@ hashWithSibling current (bit, sibling) =
   -- then do a single hash instead of computing both orderings.
   let left = bool current sibling bit
       right = bool sibling current bit
-  in merkleHash left right
+   in merkleHash left right
 
 rootOnReplace :: Symbolic c => MerklePath d c -> FieldElement c -> FieldElement c
 rootOnReplace (Comp1 path) value =
@@ -203,7 +207,7 @@ deriving stock instance HShow c => P.Show (MerkleEntry d c)
 
 contains
   :: forall d c
-   . (Symbolic c)
+   . Symbolic c
   => MerkleTree d c
   -> MerkleEntry d c
   -> Bool c
@@ -214,7 +218,7 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
 (!!)
   :: forall d c
-   . (Symbolic c)
+   . Symbolic c
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
@@ -236,7 +240,7 @@ tree !! position =
 
 search
   :: forall c d
-   . (Symbolic c)
+   . Symbolic c
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (MerkleEntry d) c
@@ -280,11 +284,11 @@ search pred tree =
   fromBool (Bool (WC (Par1 b))) = toIntegral b == one
 
   toBool :: Bool' c -> Bool c
-  toBool = Bool . embedW . Par1 . bool zero one
+  toBool b = Bool $ fromCircuitF hunit (\_ -> Par1 <$> unconstrained (bool zero one b))
 
 find
   :: forall c d
-   . (Symbolic c)
+   . Symbolic c
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe FieldElement c
@@ -292,7 +296,7 @@ find pred = mmap value . search pred
 
 findIndex
   :: forall c d
-   . (Symbolic c)
+   . Symbolic c
   => (FieldElement (WitnessContext c) -> Bool (WitnessContext c))
   -> MerkleTree d c
   -> Maybe (Index d) c
@@ -300,21 +304,21 @@ findIndex pred = mmap position . search pred
 
 elemIndex
   :: forall c d
-   . (Symbolic c)
+   . Symbolic c
   => FieldElement (WitnessContext c)
   -> MerkleTree d c
   -> Maybe (Index d) c
 elemIndex elem = findIndex (== elem)
 
 lookup
-  :: (Symbolic c)
+  :: Symbolic c
   => MerkleTree d c
   -> Index d c
   -> FieldElement c
 lookup = (!!)
 
 search'
-  :: (Symbolic c)
+  :: Symbolic c
   => (forall e. (Symbolic e, BaseField e ~ BaseField c) => FieldElement e -> Bool e)
   -> MerkleTree d c
   -> MerkleEntry d c
@@ -335,9 +339,10 @@ replace MerkleEntry {..} tree =
   path = merklePath tree position
 
   -- Get old value at position (witness-level selection, no constraints)
-  oldValue = fromBaseHash $
-    recIndex (fromBool <$> unComp1 position) $
-      toBaseLeaves (mLeaves tree)
+  oldValue =
+    fromBaseHash $
+      recIndex (fromBool <$> unComp1 position) $
+        toBaseLeaves (mLeaves tree)
 
   -- Verify the path siblings are consistent with the stored root
   oldRootValid = rootOnReplace path oldValue == mHash tree
@@ -366,6 +371,38 @@ replace MerkleEntry {..} tree =
     -> a
   replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
 
+-- | Combined contains + replace sharing the merkle path.
+-- Checks whether the entry is in the tree and replaces it with a new value,
+-- computing the merkle path only once.
+containsAndReplace
+  :: (Symbolic c, KnownMerkleTree d)
+  => MerkleEntry d c
+  -> FieldElement c
+  -> MerkleTree d c
+  -> (Bool c, MerkleTree d c)
+containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
+ where
+  path = merklePath tree position
+
+  -- Contains check: verify the entry's value produces the tree's root
+  isContained = rootOnReplace path value == mHash tree
+
+  -- Replace: compute new root using the same path but with newValue
+  newRoot = rootOnReplace path newValue
+  newLeaves =
+    let oldLeaves = toBaseLeaves (mLeaves tree)
+        updatedLeaves = mapWithIx (replacer (toBasePosition position, toBaseHash newValue)) oldLeaves
+     in Payloaded $ fmap (\v -> (Par1 v, U1)) updatedLeaves
+  result = MerkleTree newRoot newLeaves
+
+  replacer
+    :: (FromConstant n i, Eq i, Conditional (BooleanOf i) a)
+    => (i, a)
+    -> n
+    -> a
+    -> a
+  replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
+
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
   => Index d c
@@ -379,8 +416,10 @@ replaceAt position value = replace MerkleEntry {..}
 bisect :: Data.Vector a -> (Data.Vector a, Data.Vector a)
 bisect v = Data.splitAt (Data.length v `P.div` 2) v
 
+-- | Embed a witness field value into the symbolic context.
+-- This creates unconstrained circuit variables from witness values.
 fromBaseHash :: Symbolic c => WitnessField c -> FieldElement c
-fromBaseHash = FieldElement . embedW . Par1
+fromBaseHash w = FieldElement $ fromCircuitF hunit (\_ -> Par1 <$> unconstrained w)
 
 toBaseHash :: Symbolic c => FieldElement c -> WitnessField c
 toBaseHash = unPar1 . witnessF . fromFieldElement

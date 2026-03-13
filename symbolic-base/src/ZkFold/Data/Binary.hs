@@ -7,6 +7,8 @@
 
 module ZkFold.Data.Binary (
   Binary (..),
+  Put,
+  Get,
   Binary1,
   toByteString,
   fromByteString,
