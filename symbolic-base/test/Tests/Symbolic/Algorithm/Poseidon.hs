@@ -2,6 +2,7 @@ module Tests.Symbolic.Algorithm.Poseidon (specPoseidon) where
 
 import Data.Function (($))
 import qualified Data.Vector as V
+import GHC.Generics ((:*:) (..))
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck ((===))
@@ -71,18 +72,33 @@ symbolicPoseidonHash2Spec =
             refResult = poseidonPermutation params (V.fromList [a, b, zero]) V.! 0
          in symResult === refResult
 
--- | Test that the symbolic 'hash' (via Interpreter) agrees with 'poseidonHashDefault'.
--- Since 'hash' delegates directly to 'poseidonHashDefault', this verifies the
--- Symbolic and non-Symbolic versions produce identical results.
+-- | Test that the Symbolic sponge 'hash' (via Interpreter) agrees with 'poseidonHashDefault'.
+-- This verifies that the optimized Symbolic sponge (using poseidonPermute3) produces
+-- the same results as the non-Symbolic sponge construction.
 symbolicHashSpec :: Spec
 symbolicHashSpec =
-  describe "Symbolic hash via Interpreter (BLS12-381)" $
-    prop "matches poseidonHashDefault on random single-field-element inputs" $
+  describe "Symbolic hash via Interpreter (BLS12-381)" $ do
+    prop "matches poseidonHashDefault on 1-element inputs" $
       \(a :: Fr) ->
         let symResult =
               toConstant $
                 hash (fromConstant a :: FieldElement (Interpreter Fr))
             refResult = poseidonHashDefault [a]
+         in symResult === refResult
+    prop "matches poseidonHashDefault on 2-element inputs" $
+      \(a :: Fr) (b :: Fr) ->
+        let symA = fromConstant a :: FieldElement (Interpreter Fr)
+            symB = fromConstant b :: FieldElement (Interpreter Fr)
+            symResult = toConstant $ hash (symA :*: symB)
+            refResult = poseidonHashDefault [a, b]
+         in symResult === refResult
+    prop "matches poseidonHashDefault on 3-element inputs" $
+      \(a :: Fr) (b :: Fr) (c :: Fr) ->
+        let symA = fromConstant a :: FieldElement (Interpreter Fr)
+            symB = fromConstant b :: FieldElement (Interpreter Fr)
+            symC = fromConstant c :: FieldElement (Interpreter Fr)
+            symResult = toConstant $ hash (symA :*: symB :*: symC)
+            refResult = poseidonHashDefault [a, b, c]
          in symResult === refResult
 
 -- | Main test specification following repository patterns

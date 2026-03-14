@@ -128,9 +128,21 @@ poseidonHash2
 poseidonHash2 x y = let (o, _, _) = poseidonPermute3 x y zero in o
 
 -- | Symbolic Poseidon hash using the sponge construction (rate=2, capacity=1).
--- Delegates to 'poseidonHashDefault' applied to a list of 'FieldElement' values,
--- ensuring that Symbolic and non-Symbolic versions use identical logic.
+-- Pads the input to a multiple of the rate (always adding at least one zero per Poseidon spec),
+-- then absorbs each block of 2 elements into the state and applies the permutation.
+-- The result is the first element of the final state.
 hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
 hash x =
   let elems = fmap FieldElement (unpacked (hmap toList (arithmetize x)))
-   in poseidonHashDefault elems
+      padded = padInput 2 elems
+      (result, _, _) = P.foldl absorbBlock (zero, zero, zero) (blocks 2 padded)
+   in result
+ where
+  padInput r inp =
+    let n = P.length inp
+        paddingLen = r P.- (n `P.mod` r)
+     in inp P.++ P.replicate paddingLen zero
+  blocks _ [] = []
+  blocks n xs = let (b, rest) = P.splitAt n xs in b : blocks n rest
+  absorbBlock (s0, s1, s2) [b0, b1] = poseidonPermute3 (s0 + b0) (s1 + b1) s2
+  absorbBlock state _ = state
