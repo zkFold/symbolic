@@ -288,10 +288,10 @@ genLinVarsToReplace keep outVars (s, l)
   -- | Extract a variable to eliminate from a degree-1 constraint.
   -- Restrictions:
   -- * Variable must not be kept (input variable).
-  -- * For 2-var constraints (single-term replacement): d2vars OK because
-  --   replacing v with k*y+c in a degree-2 monomial v*u produces k*y*u+c*u
-  --   (still 1 degree-2 monomial). Similarly v^2 → (k*y+c)^2 = 1 degree-2.
-  --   Output vars OK.
+  -- * For 2-var constraints (single-term replacement): d2vars excluded because
+  --   replacing v with k*y+c in a degree-2 monomial v*u produces k*y*u+c*u,
+  --   adding an extra degree-1 term (c*u) that could exceed Plonk's gate limit.
+  --   Output vars OK (replacement fits in LinVar).
   -- * For 3-var constraints (2-term replacement): must not be in d2vars
   --   (would create 2 degree-2 monomials), must not be output var,
   --   and all other constraints containing the variable must have ≤ 2
