@@ -27,7 +27,7 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
--- | Symbolic Poseidon permutation on a full 3-element state (width=3, rate=2, capacity=1).
+-- | Symbolic Poseidon permutation (BLS12-381 ONLY) on a full 3-element state (width=3, rate=2, capacity=1).
 -- Takes (s0, s1, s2) and applies the Poseidon permutation, returning all 3 output elements.
 -- Uses 630 vanilla Plonk constraints.
 poseidonPermute3
