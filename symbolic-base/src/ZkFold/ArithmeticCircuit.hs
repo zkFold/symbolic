@@ -163,7 +163,7 @@ desugarRanges = over #acContext Desugaring.desugarRanges
 
 optimize
   :: forall a i o
-   . (Arithmetic a, Binary a, Binary (Rep i), Functor o)
+   . (Arithmetic a, Binary a, Binary (Rep i), Foldable o, Functor o)
   => ArithmeticCircuit a i o -> ArithmeticCircuit a i o
 optimize = over #acContext $ Optimization.optimize (Optimization.isInputVar @i)
 
