@@ -17,6 +17,8 @@ module ZkFold.Symbolic.Ledger.Examples.One (
   tx2,
   sigs2,
   bridgedIn2,
+  privateKey,
+  publicKey,
   I,
   Bi,
   Bo,
