@@ -53,7 +53,7 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonCompress2)
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonHash2)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
@@ -182,7 +182,7 @@ computeSiblingsSymbolic levels bitsLSB =
 -- round constant additions into S-box constraints, reducing cost from
 -- ~880 poly (MiMC) to ~492 poly per hash.
 merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
-merkleHash = poseidonCompress2
+merkleHash = poseidonHash2
 
 -- | Hash current value with sibling based on bit direction.
 -- Uses the circuit-optimized hash function.
