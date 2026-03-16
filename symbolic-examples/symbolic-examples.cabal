@@ -121,6 +121,7 @@ library
       ZkFold.Symbolic.Examples.MerkleTree
       ZkFold.Symbolic.Examples.MiMCHash
       ZkFold.Symbolic.Examples.Mithril
+      ZkFold.Symbolic.Examples.PoseidonHash
       ZkFold.Symbolic.Examples.Pasta
       ZkFold.Symbolic.Examples.ReverseList
       ZkFold.Symbolic.Examples.RSA
