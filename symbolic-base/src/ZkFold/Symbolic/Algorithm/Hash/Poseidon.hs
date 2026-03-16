@@ -29,7 +29,7 @@ import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
 -- | Symbolic Poseidon permutation on a full 3-element state (width=3, rate=2, capacity=1).
 -- Takes (s0, s1, s2) and applies the Poseidon permutation, returning all 3 output elements.
--- Uses 633 vanilla Plonk constraints (630 when capacity input is zero, as in 'poseidonHash2').
+-- Uses 630 vanilla Plonk constraints.
 poseidonPermute3
   :: forall c
    . Symbolic c
