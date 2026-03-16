@@ -25,7 +25,6 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
-import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
