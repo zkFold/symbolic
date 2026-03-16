@@ -3,167 +3,146 @@ module ZkFold.Symbolic.Algorithm.Hash.Poseidon (
   module ZkFold.Algorithm.Hash.Poseidon,
 ) where
 
+import Control.Monad (foldM)
 import Data.Foldable (toList)
-import Data.Function (($), (.))
-import Data.Functor (fmap, (<$>))
-import Data.List (zipWith)
+import Data.Function (($))
+import Data.Functor (fmap)
 import qualified Data.Vector as V
-import GHC.Generics (Par1 (..))
+import GHC.Generics (Par1 (..), (:*:) (..))
+import Prelude (Int, pure)
 import qualified Prelude as P
 
-import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.Poseidon
+import ZkFold.Algebra.Class (
+  AdditiveSemigroup (..),
+  FromConstant (..),
+  MultiplicativeSemigroup (..),
+  Scale (..),
+  Zero (..),
+ )
+import ZkFold.Algorithm.Hash.Poseidon hiding (mdsLayer)
 import ZkFold.Data.HFunctor (hmap)
 import ZkFold.Data.Package (unpacked)
-import ZkFold.Symbolic.Class (Symbolic (..), fromCircuit2F)
+import ZkFold.Symbolic.Class (Symbolic (..), fromCircuit3F)
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
-import ZkFold.Symbolic.MonadCircuit (MonadCircuit, newAssigned)
+import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
--- | Symbolic Poseidon hash
+-- | Symbolic Poseidon permutation on a full 3-element state (width=3, rate=2, capacity=1).
+-- Takes (s0, s1, s2) and applies the Poseidon permutation, returning all 3 output elements.
+-- Uses 633 vanilla Plonk constraints.
+poseidonPermute3
+  :: forall c
+   . Symbolic c
+  => FieldElement c
+  -> FieldElement c
+  -> FieldElement c
+  -> (FieldElement c, FieldElement c, FieldElement c)
+poseidonPermute3 (FieldElement x0) (FieldElement x1) (FieldElement x2) =
+  let result = fromCircuit3F x0 x1 x2 $ \(Par1 i0) (Par1 i1) (Par1 i2) -> do
+        -- Extract MDS matrix and round constants
+        let mds :: V.Vector (V.Vector (BaseField c))
+            mds = mdsMatrixBLS12381
+            rc :: V.Vector (BaseField c)
+            rc = roundConstantsBLS12381
+            m00 = mds V.! 0 V.! 0
+            m01 = mds V.! 0 V.! 1
+            m02 = mds V.! 0 V.! 2
+            m10 = mds V.! 1 V.! 0
+            m11 = mds V.! 1 V.! 1
+            m12 = mds V.! 1 V.! 2
+            m20 = mds V.! 2 V.! 0
+            m21 = mds V.! 2 V.! 1
+            m22 = mds V.! 2 V.! 2
+            r :: Int -> BaseField c
+            r i = rc V.! i
+
+            -- S-box: x^5 for single variable + constant (3 constraints)
+            sbox1 v (c :: BaseField c) = do
+              t2 <- newAssigned $ \w -> let t = w v + fromConstant c in t * t
+              t4 <- newAssigned $ \w -> w t2 * w t2
+              newAssigned $ \w -> let t = w v + fromConstant c in w t4 * t
+
+            -- MDS layer for 3 input variables: must chain to keep ≤3 vars per constraint
+            -- out = m0*v0 + m1*v1 + m2*v2 + const → 2 constraints per output
+            mdsLayer (v0, v1, v2) ((c0, c1, c2) :: (BaseField c, BaseField c, BaseField c)) = do
+              tmp0 <- newAssigned $ \w -> scale m00 (w v0) + scale m01 (w v1)
+              o0 <- newAssigned $ \w -> w tmp0 + scale m02 (w v2) + fromConstant c0
+              tmp1 <- newAssigned $ \w -> scale m10 (w v0) + scale m11 (w v1)
+              o1 <- newAssigned $ \w -> w tmp1 + scale m12 (w v2) + fromConstant c1
+              tmp2 <- newAssigned $ \w -> scale m20 (w v0) + scale m21 (w v1)
+              o2 <- newAssigned $ \w -> w tmp2 + scale m22 (w v2) + fromConstant c2
+              pure (o0, o1, o2)
+
+            -- Full round: S-box on each element, then MDS (15 constraints)
+            fullRound (v0, v1, v2) rc_idx = do
+              s0 <- sbox1 v0 (r rc_idx)
+              s1 <- sbox1 v1 (r (rc_idx P.+ 1))
+              s2 <- sbox1 v2 (r (rc_idx P.+ 2))
+              let z = zero :: BaseField c
+              mdsLayer (s0, s1, s2) (z, z, z)
+
+            -- Partial round: S-box only on element 0, then MDS (9 constraints)
+            -- Round constants for elements 1,2 are folded into MDS output constants
+            partialRound (v0, v1, v2) rc_idx = do
+              s0 <- sbox1 v0 (r rc_idx)
+              let c1 = r (rc_idx P.+ 1)
+                  c2 = r (rc_idx P.+ 2)
+                  c0' = m01 * c1 + m02 * c2
+                  c1' = m11 * c1 + m12 * c2
+                  c2' = m21 * c1 + m22 * c2
+              mdsLayer (s0, v1, v2) (c0', c1', c2')
+
+        -- Round 0 (full): S-box on all 3 elements (rc[0..2]), then MDS
+        (s1_0, s1_1, s1_2) <- fullRound (i0, i1, i2) 0
+
+        -- Full rounds 1-3 (rc[3..11])
+        (s2_0, s2_1, s2_2) <- fullRound (s1_0, s1_1, s1_2) 3
+        (s3_0, s3_1, s3_2) <- fullRound (s2_0, s2_1, s2_2) 6
+        (s4_0, s4_1, s4_2) <- fullRound (s3_0, s3_1, s3_2) 9
+
+        -- Partial rounds 4-60 (57 rounds, rc[12..182])
+        let partialIndices = [12, 15 .. 12 P.+ 56 P.* 3] :: [Int]
+        (pf_0, pf_1, pf_2) <- foldM partialRound (s4_0, s4_1, s4_2) partialIndices
+
+        -- Final full rounds 61-64 (rc[183..194])
+        let ri = 12 P.+ 57 P.* 3 -- 183
+        (f1_0, f1_1, f1_2) <- fullRound (pf_0, pf_1, pf_2) ri
+        (f2_0, f2_1, f2_2) <- fullRound (f1_0, f1_1, f1_2) (ri P.+ 3)
+        (f3_0, f3_1, f3_2) <- fullRound (f2_0, f2_1, f2_2) (ri P.+ 6)
+        (f4_0, f4_1, f4_2) <- fullRound (f3_0, f3_1, f3_2) (ri P.+ 9)
+
+        pure ((Par1 f4_0 :*: Par1 f4_1) :*: Par1 f4_2)
+   in ( FieldElement $ hmap (\((Par1 a :*: _) :*: _) -> Par1 a) result
+      , FieldElement $ hmap (\((_ :*: Par1 b) :*: _) -> Par1 b) result
+      , FieldElement $ hmap (\((_ :*: _) :*: Par1 c) -> Par1 c) result
+      )
+
+-- | Poseidon hash for two field element inputs.
+-- Applies the Poseidon permutation to state (x, y, 0) and returns the first output element.
+poseidonHash2
+  :: forall c
+   . Symbolic c
+  => FieldElement c
+  -> FieldElement c
+  -> FieldElement c
+poseidonHash2 x y = let (o, _, _) = poseidonPermute3 x y zero in o
+
+-- | Symbolic Poseidon hash using the sponge construction (rate=2, capacity=1).
+-- Pads the input to a multiple of the rate (always adding at least one zero per Poseidon spec),
+-- then absorbs each block of 2 elements into the state and applies the permutation.
+-- The result is the first element of the final state.
 hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
-hash =
-  poseidonHashDefault
-    . fmap FieldElement
-    . unpacked
-    . hmap toList
-    . arithmetize
-
--- ============================================================
--- Circuit-optimized Poseidon permutation
--- ============================================================
---
--- The generic Poseidon implementation above uses generic Field operations
--- for MDS matrix multiplication, which creates unnecessary constraints
--- (each constant * variable multiplication becomes a newAssigned call).
---
--- This optimized version tracks MDS and round constant additions as
--- linear combinations (LC), only creating constraints for S-box operations.
--- This reduces constraints from ~1,666 to ~711 for width=3 Poseidon.
-
--- | Linear combination of circuit variables: sum(coeff_i * var_i) + constant.
--- Used to track state elements without materializing them as constraints.
-data LC v a = LC ![(a, v)] !a
-
-lcVar :: Ring a => v -> LC v a
-lcVar v = LC [(one, v)] zero
-
-lcConst :: a -> LC v a
-lcConst c = LC [] c
-
-lcAdd :: AdditiveSemigroup a => LC v a -> LC v a -> LC v a
-lcAdd (LC t1 c1) (LC t2 c2) = LC (t1 P.++ t2) (c1 + c2)
-
-lcScale :: Ring a => a -> LC v a -> LC v a
-lcScale k (LC ts c) = LC [(k * coeff, v) | (coeff, v) <- ts] (k * c)
-
--- | Evaluate a linear combination within a ClosedPoly expression.
-lcEval :: Algebra a x => LC v a -> (v -> x) -> x
-lcEval (LC ts c) w =
-  P.foldl (\acc (coeff, var) -> acc + fromConstant coeff * w var) (fromConstant c) ts
-
--- | Materialize a linear combination into a concrete circuit variable.
--- Plonk gates have 3 wires (L, R, O), so newAssigned can reference at most
--- 2 existing variables. For LCs with 3+ terms, we decompose incrementally.
--- Cost: max(1, numTerms - 1) constraints.
-materializeLC :: (MonadCircuit v a w m, Ring a) => LC v a -> m v
-materializeLC (LC [] c) = newAssigned (\_ -> fromConstant c)
-materializeLC (LC [(c1,v1)] c0) =
-  newAssigned (\w -> fromConstant c1 * w v1 + fromConstant c0)
-materializeLC (LC [(c1,v1),(c2,v2)] c0) =
-  newAssigned (\w -> fromConstant c1 * w v1 + fromConstant c2 * w v2 + fromConstant c0)
-materializeLC (LC ((c1,v1):(c2,v2):rest) c0) = do
-  t <- newAssigned (\w -> fromConstant c1 * w v1 + fromConstant c2 * w v2 + fromConstant c0)
-  materializeLC (LC ((one, t) : rest) zero)
-
--- | Apply S-box (x^5) to a linear combination. Produces 4 constraints:
--- materialize LC + x^2 + x^4 + x^5.
--- The materialization is needed because squaring a multi-term LC produces
--- cross-terms that exceed plonk's L*R gate format.
-sboxLC :: (MonadCircuit v a w m, Field a) => LC v a -> m (LC v a)
-sboxLC lc = do
-  x   <- materializeLC lc
-  xSq <- newAssigned (\w -> w x * w x)
-  x4  <- newAssigned (\w -> w xSq * w xSq)
-  x5  <- newAssigned (\w -> w x4 * w x)
-  P.pure (lcVar x5)
-
--- | Apply MDS matrix to state. No constraints -- just linear combination manipulation.
-applyMDSLC :: Ring a => V.Vector (V.Vector a) -> [LC v a] -> [LC v a]
-applyMDSLC matrix state =
-  [ P.foldl lcAdd (lcConst zero)
-      (zipWith (\mij sj -> lcScale mij sj) (V.toList row) state)
-  | row <- V.toList matrix
-  ]
-
--- | Add round constants to state. No constraints.
-addRoundConstantsLC :: Ring a => [a] -> [LC v a] -> [LC v a]
-addRoundConstantsLC rcs = zipWith (\rc s -> lcAdd s (lcConst rc)) rcs
-
--- | Circuit-optimized Poseidon permutation.
---
--- S-box: materialize LC (1 gate) + x^2 + x^4 + x^5 (3 gates) = 4 gates per element.
--- MDS and round constant additions are free (tracked as linear combinations).
--- After every round, all elements are materialized (2 gates each for 3-term LCs
--- from MDS output) to keep LCs bounded.
---
--- Cost for width=3: 8*(3*4 + 3*2) + 57*(1*4 + 3*2) = 8*18 + 57*10 = 714 constraints
--- (theoretical). Measured: ~711 poly. (vs 1666 for generic -- 2.3x improvement)
-poseidonPermOpt
-  :: (MonadCircuit v a w m, Field a)
-  => PoseidonParams a -> [LC v a] -> m [LC v a]
-poseidonPermOpt params initState = do
-  let w = P.fromIntegral (width params) :: P.Int
-      nFirstFull = P.fromIntegral (fullRounds params) :: P.Int
-      nPartial = P.fromIntegral (partialRounds params) :: P.Int
-      nLastFull = P.fromIntegral (fullRounds params) :: P.Int
-      mds = mdsMatrix params
-      rcs = roundConstants params
-
-      -- Get round constants for round number r
-      getRCs r = [rcs V.! (r P.* w P.+ i) | i <- [0 .. w P.- 1]]
-
-      -- Full round: AddRC -> S-box all elements -> MDS -> Materialize all
-      -- Materialization keeps LCs at 1 term for the next round.
-      fullRound state rIdx = do
-        let rcState = addRoundConstantsLC (getRCs rIdx) state
-        sboxed <- P.mapM sboxLC rcState
-        let mdsResult = applyMDSLC mds sboxed
-        materialized <- P.mapM materializeLC mdsResult
-        P.pure (P.map lcVar materialized)
-
-      -- Partial round: AddRC -> S-box first element -> MDS -> Materialize all
-      -- Materialization prevents exponential growth of linear combinations.
-      partialRound state rIdx = do
-        let rcState = addRoundConstantsLC (getRCs rIdx) state
-        s0' <- sboxLC (P.head rcState)
-        let sboxed = s0' : P.tail rcState
-            mdsResult = applyMDSLC mds sboxed
-        materialized <- P.mapM materializeLC mdsResult
-        P.pure (P.map lcVar materialized)
-
-      -- Apply a sequence of rounds
-      applyRounds roundFn state startIdx count =
-        P.foldl
-          (\ms i -> do s <- ms; roundFn s i)
-          (P.pure state)
-          [startIdx .. startIdx P.+ count P.- 1]
-
-  -- First full rounds
-  s1 <- applyRounds fullRound initState 0 nFirstFull
-  -- Partial rounds (with materialization after each)
-  s2 <- applyRounds partialRound s1 nFirstFull nPartial
-  -- Last full rounds
-  applyRounds fullRound s2 (nFirstFull P.+ nPartial) nLastFull
-
--- | Circuit-optimized Poseidon compression: hash 2 field elements into 1.
--- Uses a single Poseidon permutation with width=3 (rate=2, capacity=1).
--- Cost: ~711 poly constraints (vs ~1666 for generic implementation).
-poseidonCompress2
-  :: forall c. Symbolic c
-  => FieldElement c -> FieldElement c -> FieldElement c
-poseidonCompress2 (FieldElement a) (FieldElement b) =
-  FieldElement $ fromCircuit2F a b $ \(Par1 iA) (Par1 iB) -> do
-    let initState = [lcVar iA, lcVar iB, lcConst zero]
-    finalState <- poseidonPermOpt defaultPoseidonParams initState
-    Par1 <$> materializeLC (P.head finalState)
+hash x =
+  let elems = fmap FieldElement (unpacked (hmap toList (arithmetize x)))
+      padded = padInput 2 elems
+      (result, _, _) = P.foldl absorbBlock (zero, zero, zero) (blocks 2 padded)
+   in result
+ where
+  padInput r inp =
+    let n = P.length inp
+        paddingLen = r P.- (n `P.mod` r)
+     in inp P.++ P.replicate paddingLen zero
+  blocks _ [] = []
+  blocks n xs = let (b, rest) = P.splitAt n xs in b : blocks n rest
+  absorbBlock (s0, s1, s2) [b0, b1] = poseidonPermute3 (s0 + b0) (s1 + b1) s2
+  absorbBlock state _ = state
