@@ -6,9 +6,11 @@ module ZkFold.Symbolic.Data.Payloaded where
 import Data.Bifunctor (bimap)
 import Data.Function (($), (.))
 import Data.Functor (Functor, fmap, (<&>))
+import Data.Functor.Classes (Show1)
 import Data.Semialign (Semialign)
 import Data.Tuple (snd)
 import GHC.Generics (Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
+import Text.Show (Show)
 
 import ZkFold.Algebra.Class (Order, fromConstant)
 import ZkFold.Control.HApplicative (hunit)
@@ -27,6 +29,13 @@ newtype Payloaded f d c = Payloaded
            , Payload d (Order (BaseField c)) (WitnessField c)
            )
   }
+
+deriving instance
+  ( Show1 f
+  , Show (Layout d (Order (BaseField c)) (WitnessField c))
+  , Show (Payload d (Order (BaseField c)) (WitnessField c))
+  )
+  => Show (Payloaded f d c)
 
 payloaded
   :: forall f d c

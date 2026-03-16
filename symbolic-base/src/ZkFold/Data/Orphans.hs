@@ -70,6 +70,9 @@ instance Arbitrary a => Arbitrary (Par1 a) where
 instance (Arbitrary (f a), Arbitrary (g a)) => Arbitrary ((f :*: g) a) where
   arbitrary = (:*:) <$> arbitrary <*> arbitrary
 
+instance Arbitrary (f (g a)) => Arbitrary ((f :.: g) a) where
+  arbitrary = Comp1 <$> arbitrary
+
 instance ToJSON a => ToJSON (U1 a)
 
 instance FromJSON a => FromJSON (U1 a)

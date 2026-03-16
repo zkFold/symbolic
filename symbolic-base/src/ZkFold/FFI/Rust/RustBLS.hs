@@ -386,6 +386,14 @@ instance
   where
   bilinear points scalars = G1_Jacobian $ bilinear (h2r $ (\(G1_Jacobian p) -> r2h p) <$> points) scalars
 
+instance
+  Bilinear
+    (RustVector Rust_BLS12_381_G1_JacobianPoint)
+    (RustPolyVec Fr size)
+    Rust_BLS12_381_G1_JacobianPoint
+  where
+  bilinear (RVector len dat) scalars = G1_Jacobian $ bilinear (RVector len dat :: RustVector Rust_BLS12_381_G1_Point) scalars
+
 -- Arbitrary
 instance Arbitrary Fr where
   arbitrary = h2r <$> arbitrary

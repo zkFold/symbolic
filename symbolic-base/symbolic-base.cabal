@@ -261,6 +261,7 @@ library
       ZkFold.Symbolic.Data.JWT.Utils
       ZkFold.Symbolic.Data.List
       ZkFold.Symbolic.Data.Maybe
+      ZkFold.Symbolic.Data.MerkleTree
       ZkFold.Symbolic.Data.Ord
       ZkFold.Symbolic.Data.Payloaded
       ZkFold.Symbolic.Data.Sum
@@ -414,6 +415,7 @@ test-suite symbolic-base-test
       Tests.Symbolic.Data.Hash
       Tests.Symbolic.Data.Int
       Tests.Symbolic.Data.List
+      Tests.Symbolic.Data.MerkleTree
       Tests.Symbolic.Data.Sum
       Tests.Symbolic.Data.UInt
       Tests.FFI.RustBLS
