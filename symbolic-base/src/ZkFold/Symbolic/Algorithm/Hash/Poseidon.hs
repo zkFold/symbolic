@@ -27,23 +27,21 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
--- | Symbolic Poseidon permutation on a full 3-element state (width=3, rate=2, capacity=1).
+-- | Symbolic Poseidon permutation on a 3-element state (width=3), parameterized by 'PoseidonParams'.
 -- Takes (s0, s1, s2) and applies the Poseidon permutation, returning all 3 output elements.
--- Uses 630 vanilla Plonk constraints.
+-- For BLS12-381 default parameters, uses 630 vanilla Plonk constraints.
 poseidonPermute3
   :: forall c
    . Symbolic c
-  => FieldElement c
+  => PoseidonParams (BaseField c)
+  -> FieldElement c
   -> FieldElement c
   -> FieldElement c
   -> (FieldElement c, FieldElement c, FieldElement c)
-poseidonPermute3 (FieldElement x0) (FieldElement x1) (FieldElement x2) =
+poseidonPermute3 params (FieldElement x0) (FieldElement x1) (FieldElement x2) =
   let result = fromCircuit3F x0 x1 x2 $ \(Par1 i0) (Par1 i1) (Par1 i2) -> do
-        -- Extract MDS matrix and round constants
-        let mds :: V.Vector (V.Vector (BaseField c))
-            mds = mdsMatrixBLS12381
-            rc :: V.Vector (BaseField c)
-            rc = roundConstantsBLS12381
+        let mds = mdsMatrix params
+            rc = roundConstants params
             m00 = mds V.! 0 V.! 0
             m01 = mds V.! 0 V.! 1
             m02 = mds V.! 0 V.! 2
@@ -92,48 +90,65 @@ poseidonPermute3 (FieldElement x0) (FieldElement x1) (FieldElement x2) =
                   c2' = m21 * c1 + m22 * c2
               mdsLayer (s0, v1, v2) (c0', c1', c2')
 
-        -- Round 0 (full): S-box on all 3 elements (rc[0..2]), then MDS
-        (s1_0, s1_1, s1_2) <- fullRound (i0, i1, i2) 0
+            nf = P.fromIntegral (fullRounds params) :: Int
+            np = P.fromIntegral (partialRounds params) :: Int
+            -- Width is fixed at 3 since fromCircuit3F requires exactly 3 inputs;
+            -- callers must ensure their PoseidonParams also has width=3.
+            w = 3 :: Int
+            firstFullIdxs = [0, w .. (nf P.- 1) P.* w]
+            partialIdxs = [nf P.* w, nf P.* w P.+ w .. (nf P.+ np P.- 1) P.* w]
+            lastFullStart = (nf P.+ np) P.* w
+            lastFullIdxs = [lastFullStart, lastFullStart P.+ w .. lastFullStart P.+ (nf P.- 1) P.* w]
 
-        -- Full rounds 1-3 (rc[3..11])
-        (s2_0, s2_1, s2_2) <- fullRound (s1_0, s1_1, s1_2) 3
-        (s3_0, s3_1, s3_2) <- fullRound (s2_0, s2_1, s2_2) 6
-        (s4_0, s4_1, s4_2) <- fullRound (s3_0, s3_1, s3_2) 9
+        s <- foldM fullRound (i0, i1, i2) firstFullIdxs
+        p <- foldM partialRound s partialIdxs
+        (f0, f1, f2) <- foldM fullRound p lastFullIdxs
 
-        -- Partial rounds 4-60 (57 rounds, rc[12..182])
-        let partialIndices = [12, 15 .. 12 P.+ 56 P.* 3] :: [Int]
-        (pf_0, pf_1, pf_2) <- foldM partialRound (s4_0, s4_1, s4_2) partialIndices
-
-        -- Final full rounds 61-64 (rc[183..194])
-        let ri = 12 P.+ 57 P.* 3 -- 183
-        (f1_0, f1_1, f1_2) <- fullRound (pf_0, pf_1, pf_2) ri
-        (f2_0, f2_1, f2_2) <- fullRound (f1_0, f1_1, f1_2) (ri P.+ 3)
-        (f3_0, f3_1, f3_2) <- fullRound (f2_0, f2_1, f2_2) (ri P.+ 6)
-        (f4_0, f4_1, f4_2) <- fullRound (f3_0, f3_1, f3_2) (ri P.+ 9)
-
-        pure ((Par1 f4_0 :*: Par1 f4_1) :*: Par1 f4_2)
+        pure ((Par1 f0 :*: Par1 f1) :*: Par1 f2)
    in ( FieldElement $ hmap (\((Par1 a :*: _) :*: _) -> Par1 a) result
       , FieldElement $ hmap (\((_ :*: Par1 b) :*: _) -> Par1 b) result
       , FieldElement $ hmap (\((_ :*: _) :*: Par1 c) -> Par1 c) result
       )
 
--- | Poseidon hash for two field element inputs.
+-- | Poseidon hash for two field element inputs, parameterized by 'PoseidonParams'.
 -- Applies the Poseidon permutation to state (x, y, 0) and returns the first output element.
--- Uses 630 vanilla Plonk constraints.
 poseidonHash2
+  :: forall c
+   . Symbolic c
+  => PoseidonParams (BaseField c)
+  -> FieldElement c
+  -> FieldElement c
+  -> FieldElement c
+poseidonHash2 params x y = let (o, _, _) = poseidonPermute3 params x y zero in o
+
+-- | Poseidon hash for two field element inputs using default BLS12-381 parameters.
+-- Uses 630 vanilla Plonk constraints.
+poseidonHash2Default
   :: forall c
    . Symbolic c
   => FieldElement c
   -> FieldElement c
   -> FieldElement c
-poseidonHash2 x y = let (o, _, _) = poseidonPermute3 x y zero in o
+poseidonHash2Default = poseidonHash2 defaultPoseidonParams
 
--- | Symbolic Poseidon hash using the sponge construction (rate=2, capacity=1).
--- Pads the input to a multiple of the rate (always adding at least one zero per Poseidon spec),
--- then absorbs each block of 2 elements into the state and applies the permutation.
+-- | Symbolic Poseidon sponge hash, parameterized by 'PoseidonParams'.
+-- Pads the input to a multiple of the rate (always adding at least one element per Poseidon spec),
+-- then absorbs each block into the state and applies the permutation.
 -- The result is the first element of the final state.
-hash :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
-hash x =
+--
+-- The params type uses 'FieldElement c' so that the standard 'Field' instance of
+-- 'FieldElement c' can drive the non-symbolic 'poseidonHash', letting arbitrary
+-- params work in a symbolic context.  For the optimized BLS12-381 default, use
+-- 'hashDefault'.
+hash :: (SymbolicData x, Symbolic c) => PoseidonParams (FieldElement c) -> x c -> FieldElement c
+hash params x =
+  let elems = fmap FieldElement (unpacked (hmap toList (arithmetize x)))
+   in poseidonHash params elems
+
+-- | Symbolic Poseidon sponge hash with default BLS12-381 parameters (rate=2, capacity=1).
+-- Uses the optimized 'poseidonPermute3' for lower constraint counts.
+hashDefault :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
+hashDefault x =
   let elems = fmap FieldElement (unpacked (hmap toList (arithmetize x)))
       padded = padInput 2 elems
       (result, _, _) = P.foldl absorbBlock (zero, zero, zero) (blocks 2 padded)
@@ -145,5 +160,5 @@ hash x =
      in inp P.++ P.replicate paddingLen zero
   blocks _ [] = []
   blocks n xs = let (b, rest) = P.splitAt n xs in b : blocks n rest
-  absorbBlock (s0, s1, s2) [b0, b1] = poseidonPermute3 (s0 + b0) (s1 + b1) s2
+  absorbBlock (s0, s1, s2) [b0, b1] = poseidonPermute3 defaultPoseidonParams (s0 + b0) (s1 + b1) s2
   absorbBlock _ _ = P.error "absorbBlock: unexpected block size"

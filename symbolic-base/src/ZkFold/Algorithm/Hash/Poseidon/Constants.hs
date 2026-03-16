@@ -10,7 +10,7 @@ module ZkFold.Algorithm.Hash.Poseidon.Constants (
 import Data.Functor ((<$>))
 import qualified Data.Vector as V
 import Numeric.Natural (Natural)
-import Prelude (Integer, map, ($))
+import Prelude (Functor, Integer, map, ($))
 
 import ZkFold.Algebra.Class (FromConstant (..))
 
@@ -24,6 +24,7 @@ data PoseidonParams a = PoseidonParams
   , capacity :: Natural
   , mdsMatrix :: V.Vector (V.Vector a)
   }
+  deriving Functor
 
 -- | Default parameters for BLS12-381 scalar field
 -- R_F = 8 (4 full rounds at start + 4 at end)

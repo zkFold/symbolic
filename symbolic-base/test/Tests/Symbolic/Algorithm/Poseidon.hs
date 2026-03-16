@@ -12,7 +12,7 @@ import qualified Prelude as Haskell
 import ZkFold.Algebra.Class (FromConstant (..), ToConstant (..), Zero (..))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (Fr)
 import ZkFold.Algorithm.Hash.Poseidon
-import ZkFold.Symbolic.Algorithm.Hash.Poseidon (hash, poseidonHash2)
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (hash, hashDefault, poseidonHash2Default)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Interpreter (Interpreter)
 
@@ -65,31 +65,31 @@ symbolicPoseidonHash2Spec =
       \(a :: Fr) (b :: Fr) ->
         let symResult =
               toConstant $
-                poseidonHash2
+                poseidonHash2Default
                   (fromConstant a :: FieldElement (Interpreter Fr))
                   (fromConstant b)
             params = defaultPoseidonParams :: PoseidonParams Fr
             refResult = poseidonPermutation params (V.fromList [a, b, zero]) V.! 0
          in symResult === refResult
 
--- | Test that the Symbolic sponge 'hash' (via Interpreter) agrees with 'poseidonHashDefault'.
+-- | Test that the Symbolic sponge 'hashDefault' (via Interpreter) agrees with 'poseidonHashDefault'.
 -- This verifies that the optimized Symbolic sponge (using poseidonPermute3) produces
 -- the same results as the non-Symbolic sponge construction.
-symbolicHashSpec :: Spec
-symbolicHashSpec =
-  describe "Symbolic hash via Interpreter (BLS12-381)" $ do
+symbolicHashDefaultSpec :: Spec
+symbolicHashDefaultSpec =
+  describe "Symbolic hashDefault via Interpreter (BLS12-381)" $ do
     prop "matches poseidonHashDefault on 1-element inputs" $
       \(a :: Fr) ->
         let symResult =
               toConstant $
-                hash (fromConstant a :: FieldElement (Interpreter Fr))
+                hashDefault (fromConstant a :: FieldElement (Interpreter Fr))
             refResult = poseidonHashDefault [a]
          in symResult === refResult
     prop "matches poseidonHashDefault on 2-element inputs" $
       \(a :: Fr) (b :: Fr) ->
         let symA = fromConstant a :: FieldElement (Interpreter Fr)
             symB = fromConstant b :: FieldElement (Interpreter Fr)
-            symResult = toConstant $ hash (symA :*: symB)
+            symResult = toConstant $ hashDefault (symA :*: symB)
             refResult = poseidonHashDefault [a, b]
          in symResult === refResult
     prop "matches poseidonHashDefault on 3-element inputs" $
@@ -97,7 +97,35 @@ symbolicHashSpec =
         let symA = fromConstant a :: FieldElement (Interpreter Fr)
             symB = fromConstant b :: FieldElement (Interpreter Fr)
             symC = fromConstant c :: FieldElement (Interpreter Fr)
-            symResult = toConstant $ hash (symA :*: symB :*: symC)
+            symResult = toConstant $ hashDefault (symA :*: symB :*: symC)
+            refResult = poseidonHashDefault [a, b, c]
+         in symResult === refResult
+
+-- | Test that the general Symbolic 'hash' (via Interpreter) with default params agrees
+-- with 'poseidonHashDefault'. This verifies the parameterized path is correct.
+symbolicHashSpec :: Spec
+symbolicHashSpec =
+  describe "Symbolic hash (parameterized) via Interpreter (BLS12-381)" $ do
+    prop "matches poseidonHashDefault on 1-element inputs" $
+      \(a :: Fr) ->
+        let symResult =
+              toConstant $
+                hash defaultPoseidonParams (fromConstant a :: FieldElement (Interpreter Fr))
+            refResult = poseidonHashDefault [a]
+         in symResult === refResult
+    prop "matches poseidonHashDefault on 2-element inputs" $
+      \(a :: Fr) (b :: Fr) ->
+        let symA = fromConstant a :: FieldElement (Interpreter Fr)
+            symB = fromConstant b :: FieldElement (Interpreter Fr)
+            symResult = toConstant $ hash defaultPoseidonParams (symA :*: symB)
+            refResult = poseidonHashDefault [a, b]
+         in symResult === refResult
+    prop "matches poseidonHashDefault on 3-element inputs" $
+      \(a :: Fr) (b :: Fr) (c :: Fr) ->
+        let symA = fromConstant a :: FieldElement (Interpreter Fr)
+            symB = fromConstant b :: FieldElement (Interpreter Fr)
+            symC = fromConstant c :: FieldElement (Interpreter Fr)
+            symResult = toConstant $ hash defaultPoseidonParams (symA :*: symB :*: symC)
             refResult = poseidonHashDefault [a, b, c]
          in symResult === refResult
 
@@ -106,4 +134,5 @@ specPoseidon :: Spec
 specPoseidon = do
   poseidonPermutationSpec
   symbolicPoseidonHash2Spec
+  symbolicHashDefaultSpec
   symbolicHashSpec
