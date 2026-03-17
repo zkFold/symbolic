@@ -25,7 +25,6 @@ import ZkFold.Algebra.Class qualified as Algebra
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import ZkFold.Symbolic.Class (Symbolic (..))
-import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (shamirDoubleScale)
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), false, true, (||))
 import ZkFold.Symbolic.Data.Int (Int (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement(..))
@@ -90,10 +89,6 @@ main = do
     (C.compileV1 @RollupBF scaleConstBase)
   putStrLn $ metrics "scale h A (variable base)"
     (C.compileV1 @RollupBF scaleVarBase)
-  putStrLn $ metrics "shamirDoubleScale s h A"
-    (C.compileV1 @RollupBF shamirBench)
-  putStrLn ""
-
   putStrLn "--- Balance Check (Schwartz-Zippel) ---"
   putStrLn $ metrics "Balance check (a=1, 1in vs 1out)"
     (C.compileV1 @RollupBF(balanceCheckCircuit @1))
@@ -248,11 +243,4 @@ scaleVarBase
   => (EdDSAScalarField :*: PublicKey) c -> PublicKey c
 scaleVarBase (s :*: p) = Algebra.scale s p
 
-shamirBench
-  :: forall c
-   . ( Symbolic c
-     , SignatureTransaction 2 1 1 1 c
-     )
-  => (EdDSAScalarField :*: EdDSAScalarField :*: PublicKey) c -> PublicKey c
-shamirBench (s1 :*: s2 :*: p) = shamirDoubleScale s1 s2 p
 
