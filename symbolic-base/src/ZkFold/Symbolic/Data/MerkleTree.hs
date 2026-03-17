@@ -228,15 +228,18 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
   -> Index d c
   -> FieldElement c
 tree !! position =
-  let entry val = addSiblings tree MerkleEntry
-        { position = position
-        , value = val
-        , siblings = Comp1 $ fmap (const zero) (unComp1 position)
-        }
+  let entry val =
+        addSiblings
+          tree
+          MerkleEntry
+            { position = position
+            , value = val
+            , siblings = Comp1 $ fmap (const zero) (unComp1 position)
+            }
    in assert (\value -> tree `contains` entry value) $
-    fromBaseHash $
-      recIndex (fromBool <$> unComp1 position) $
-        toBaseLeaves (mLeaves tree)
+        fromBaseHash $
+          recIndex (fromBool <$> unComp1 position) $
+            toBaseLeaves (mLeaves tree)
  where
   recIndex
     :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
@@ -455,11 +458,12 @@ replaceAt
   -> MerkleTree d c
 replaceAt pos val tree = replace (addSiblings tree entry) tree
  where
-  entry = MerkleEntry
-    { position = pos
-    , value = val
-    , siblings = Comp1 $ fmap (const zero) (unComp1 pos)
-    }
+  entry =
+    MerkleEntry
+      { position = pos
+      , value = val
+      , siblings = Comp1 $ fmap (const zero) (unComp1 pos)
+      }
 
 ---------------------------- conversion functions ------------------------------
 

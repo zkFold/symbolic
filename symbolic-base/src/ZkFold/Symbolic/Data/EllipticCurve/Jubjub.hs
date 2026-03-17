@@ -137,10 +137,14 @@ shamirDoubleScale
      , KnownFFA Jubjub_Base 'Auto ctx
      , KnownFFA Jubjub_Scalar 'Auto ctx
      )
-  => FFA Jubjub_Scalar 'Auto ctx  -- ^ First scalar s1
-  -> FFA Jubjub_Scalar 'Auto ctx  -- ^ Second scalar s2
-  -> Jubjub_Point ctx              -- ^ Variable point P
-  -> Jubjub_Point ctx              -- ^ Result: s1 * G + s2 * P
+  => FFA Jubjub_Scalar 'Auto ctx
+  -- ^ First scalar s1
+  -> FFA Jubjub_Scalar 'Auto ctx
+  -- ^ Second scalar s2
+  -> Jubjub_Point ctx
+  -- ^ Variable point P
+  -> Jubjub_Point ctx
+  -- ^ Result: s1 * G + s2 * P
 shamirDoubleScale s1 s2 varPoint =
   Prelude.foldl step (zero :: Jubjub_Point ctx) [0 .. upper]
  where
@@ -156,31 +160,38 @@ shamirDoubleScale s1 s2 varPoint =
   upper :: Natural
   upper = value @(NumberOfBits (Zp Jubjub_Scalar)) -! 1
 
-  -- | MSB-first step: double accumulator, conditionally add G, conditionally add P.
+  -- \| MSB-first step: double accumulator, conditionally add G, conditionally add P.
   step :: Jubjub_Point ctx -> Natural -> Jubjub_Point ctx
   step acc i =
-    let -- Double the accumulator (9 constraints)
-        doubled = jubjubAdd acc acc
+    let
+      -- Double the accumulator (9 constraints)
+      doubled = jubjubAdd acc acc
 
-        -- Conditionally add G (constant): add costs ~5, select costs 2
-        doubledPlusG = jubjubAdd doubled g
-        Bool s1Bit = isSet bitsS1 i
-        afterG = jubjubCondSelect (FieldElement s1Bit) doubled doubledPlusG
+      -- Conditionally add G (constant): add costs ~5, select costs 2
+      doubledPlusG = jubjubAdd doubled g
+      Bool s1Bit = isSet bitsS1 i
+      afterG = jubjubCondSelect (FieldElement s1Bit) doubled doubledPlusG
 
-        -- Conditionally add P (variable): add costs 9, select costs 2
-        afterGPlusP = jubjubAdd afterG varPoint
-        Bool s2Bit = isSet bitsS2 i
-        afterGP = jubjubCondSelect (FieldElement s2Bit) afterG afterGPlusP
-     in afterGP
+      -- Conditionally add P (variable): add costs 9, select costs 2
+      afterGPlusP = jubjubAdd afterG varPoint
+      Bool s2Bit = isSet bitsS2 i
+      afterGP = jubjubCondSelect (FieldElement s2Bit) afterG afterGPlusP
+     in
+      afterGP
 
   jubjubCondSelect
     :: FieldElement ctx
-    -> Jubjub_Point ctx  -- ^ Value when bit = 0
-    -> Jubjub_Point ctx  -- ^ Value when bit = 1
     -> Jubjub_Point ctx
-  jubjubCondSelect bit
+    -- \^ Value when bit = 0
+    -> Jubjub_Point ctx
+    -- \^ Value when bit = 1
+    -> Jubjub_Point ctx
+  jubjubCondSelect
+    bit
     (AffinePoint (EC.AffinePoint x0 y0))
     (AffinePoint (EC.AffinePoint x1 y1)) =
-      AffinePoint (EC.AffinePoint
-        (ffaConditionalSelect bit x0 x1)
-        (ffaConditionalSelect bit y0 y1))
+      AffinePoint
+        ( EC.AffinePoint
+            (ffaConditionalSelect bit x0 x1)
+            (ffaConditionalSelect bit y0 y1)
+        )

@@ -7,6 +7,7 @@ import qualified Data.Eq as P
 import Data.Function (const, ($))
 import Data.Functor (fmap)
 import Data.Typeable (Typeable)
+import GHC.Generics ((:.:) (..))
 import GHC.TypeLits (KnownNat)
 import Test.Hspec (Spec, describe)
 import Test.QuickCheck (Arbitrary (arbitrary), (==>))
@@ -21,7 +22,6 @@ import ZkFold.Data.Eq ((==))
 import ZkFold.Symbolic.Class (Arithmetic)
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Maybe (Maybe (fromJust))
-import GHC.Generics ((:.:) (..))
 import ZkFold.Symbolic.Data.MerkleTree
 import ZkFold.Symbolic.Interpreter (Interpreter)
 

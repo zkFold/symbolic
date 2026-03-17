@@ -68,7 +68,6 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, Show, error, fromIntegral, ($), (.), (<$>))
 

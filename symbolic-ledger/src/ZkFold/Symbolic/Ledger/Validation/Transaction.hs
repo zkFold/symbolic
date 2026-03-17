@@ -237,9 +237,14 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
     -- r = txId' is bound to the transaction content, so the prover cannot
     -- independently choose r to forge a false balance.
     r = txId'
-    weightedSum = foldl' (foldl' (\s av ->
-      let qtyFe = toNative (uint av.assetQuantity)
-       in s + qtyFe * ((av.assetPolicy + one) * r + (av.assetName + one))))
+    weightedSum =
+      foldl'
+        ( foldl'
+            ( \s av ->
+                let qtyFe = toNative (uint av.assetQuantity)
+                 in s + qtyFe * ((av.assetPolicy + one) * r + (av.assetName + one))
+            )
+        )
     sIn = weightedSum (zero :: FieldElement context) inputAssets
     sOut = weightedSum (zero :: FieldElement context) outputsAssets
     isBalanced = sIn == sOut
