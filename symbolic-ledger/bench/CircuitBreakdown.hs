@@ -106,10 +106,14 @@ main = do
   putStrLn ""
 
   putStrLn "--- Scalar Mul Isolation ---"
-  putStrLn $ metrics "scale s G (constant base)"
-    (C.compileV1 @RollupBF scaleConstBase)
-  putStrLn $ metrics "scale h A (variable base)"
-    (C.compileV1 @RollupBF scaleVarBase)
+  putStrLn $
+    metrics
+      "scale s G (constant base)"
+      (C.compileV1 @RollupBF scaleConstBase)
+  putStrLn $
+    metrics
+      "scale h A (variable base)"
+      (C.compileV1 @RollupBF scaleVarBase)
   putStrLn "--- Balance Check (Schwartz-Zippel) ---"
   putStrLn $
     metrics
@@ -295,4 +299,3 @@ scaleVarBase
      )
   => (EdDSAScalarField :*: PublicKey) c -> PublicKey c
 scaleVarBase (s :*: p) = Algebra.scale s p
-
