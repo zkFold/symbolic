@@ -297,34 +297,36 @@ genLinVarsToReplace keep outVars (s, l)
 
   sanitize :: GenLinRepl a -> GenLinRepl a
   sanitize m =
-    let -- First: no replacement may reference another eliminated variable.
-        m1 = M.filter (\(terms, _) -> all ((`M.notMember` m) . snd) terms) m
-        -- Second: no two 2-term replacements may share a target constraint.
-        -- For each 2-term replacement, collect the non-source constraint IDs
-        -- it appears in. If two such replacements share a target, keep only one.
-        twoTermVars = M.keys (M.filter (\(terms, _) -> length terms > 1) m1)
-        -- Build map: constraintId -> [eliminated vars that are 2-term and appear in it]
-        conflictMap =
-          foldl'
-            ( \acc v -> case M.lookup v varIndex of
-                Nothing -> acc
-                Just cIds ->
-                  foldl'
-                    (\acc' cId -> M.insertWith (<>) cId [v] acc')
-                    acc
-                    cIds
-            )
-            M.empty
-            twoTermVars
-        -- Collect vars that conflict (share a target with another 2-term replacement)
-        conflictVars =
-          foldMap
-            ( \vs -> case vs of
-                (_ : rest@(_ : _)) -> S.fromList rest -- keep first, drop rest
-                _ -> S.empty
-            )
-            conflictMap
-     in M.withoutKeys m1 conflictVars
+    let
+      -- First: no replacement may reference another eliminated variable.
+      m1 = M.filter (\(terms, _) -> all ((`M.notMember` m) . snd) terms) m
+      -- Second: no two 2-term replacements may share a target constraint.
+      -- For each 2-term replacement, collect the non-source constraint IDs
+      -- it appears in. If two such replacements share a target, keep only one.
+      twoTermVars = M.keys (M.filter (\(terms, _) -> length terms > 1) m1)
+      -- Build map: constraintId -> [eliminated vars that are 2-term and appear in it]
+      conflictMap =
+        foldl'
+          ( \acc v -> case M.lookup v varIndex of
+              Nothing -> acc
+              Just cIds ->
+                foldl'
+                  (\acc' cId -> M.insertWith (<>) cId [v] acc')
+                  acc
+                  cIds
+          )
+          M.empty
+          twoTermVars
+      -- Collect vars that conflict (share a target with another 2-term replacement)
+      conflictVars =
+        foldMap
+          ( \vs -> case vs of
+              (_ : rest@(_ : _)) -> S.fromList rest -- keep first, drop rest
+              _ -> S.empty
+          )
+          conflictMap
+     in
+      M.withoutKeys m1 conflictVars
 
   -- \| Check that substituting a 2-term replacement for v won't violate
   -- Plonk gate constraints in any target constraint (except source).
