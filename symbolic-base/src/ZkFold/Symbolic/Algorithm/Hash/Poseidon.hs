@@ -27,9 +27,9 @@ import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement
 import ZkFold.Symbolic.MonadCircuit (newAssigned)
 
--- | Symbolic Poseidon permutation on a full 3-element state (width=3, rate=2, capacity=1).
+-- | Symbolic Poseidon permutation (BLS12-381 ONLY) on a full 3-element state (width=3, rate=2, capacity=1).
 -- Takes (s0, s1, s2) and applies the Poseidon permutation, returning all 3 output elements.
--- Uses 633 vanilla Plonk constraints.
+-- Uses 630 vanilla Plonk constraints.
 poseidonPermute3
   :: forall c
    . Symbolic c
@@ -119,6 +119,7 @@ poseidonPermute3 (FieldElement x0) (FieldElement x1) (FieldElement x2) =
 
 -- | Poseidon hash for two field element inputs.
 -- Applies the Poseidon permutation to state (x, y, 0) and returns the first output element.
+-- Uses 630 vanilla Plonk constraints.
 poseidonHash2
   :: forall c
    . Symbolic c
@@ -145,4 +146,4 @@ hash x =
   blocks _ [] = []
   blocks n xs = let (b, rest) = P.splitAt n xs in b : blocks n rest
   absorbBlock (s0, s1, s2) [b0, b1] = poseidonPermute3 (s0 + b0) (s1 + b1) s2
-  absorbBlock state _ = state
+  absorbBlock _ _ = P.error "absorbBlock: unexpected block size"
