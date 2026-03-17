@@ -25,9 +25,9 @@ module ZkFold.Symbolic.Ledger.Examples.Four (
 import Control.Applicative (pure)
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
+import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Data.Bool (false)
 
-import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Ledger.Examples.One (
   A,
   Bi,

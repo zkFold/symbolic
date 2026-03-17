@@ -28,7 +28,17 @@ import GHC.Generics ((:*:))
 import Prelude (error)
 
 import ZkFold.Algebra.Class
-import ZkFold.Algebra.Polynomial.Multivariate (degM, degP, evalMonomial, evalPolynomial, homogenous, lt, poly, var, variables)
+import ZkFold.Algebra.Polynomial.Multivariate (
+  degM,
+  degP,
+  evalMonomial,
+  evalPolynomial,
+  homogenous,
+  lt,
+  poly,
+  var,
+  variables,
+ )
 import ZkFold.ArithmeticCircuit.Context (
   CircuitContext (..),
   CircuitFold (..),
@@ -37,7 +47,7 @@ import ZkFold.ArithmeticCircuit.Context (
   asRange,
   witToVar,
  )
-import ZkFold.ArithmeticCircuit.Var (NewVar (..), Var, CircuitWitness, LinVar (..), (.+))
+import ZkFold.ArithmeticCircuit.Var (CircuitWitness, LinVar (..), NewVar (..), Var, (.+))
 import ZkFold.Data.Binary (fromByteString)
 import ZkFold.Symbolic.Class (Arithmetic)
 
@@ -129,17 +139,23 @@ optimizeLinear keep (CircuitContext s lf lc w f o) =
       (newSystem, repls) = genLinVarsToReplace keep outVars (s, M.empty)
       -- Prune witnesses: WitnessF supports arbitrary polynomial expressions
       pruneW :: CircuitWitness a -> CircuitWitness a
-      pruneW = (>>= \v -> case repls M.!? v of
-        Nothing -> pure v
-        Just (terms, c) ->
-          foldl' (\acc (k, y) -> acc + fromConstant k * pure y) (fromConstant c) terms)
+      pruneW =
+        ( >>=
+            \v -> case repls M.!? v of
+              Nothing -> pure v
+              Just (terms, c) ->
+                foldl' (\acc (k, y) -> acc + fromConstant k * pure y) (fromConstant c) terms
+        )
       -- Prune outputs: LinVar only supports k*y + c (single variable)
       -- N-var replacements should never reach here (output vars are protected)
       pruneO :: Var a -> Var a
-      pruneO = (>>= \v -> case repls M.!? v of
-        Nothing -> pure v
-        Just ([(k, y)], c) -> c .+ scale k (pure y)
-        Just _ -> pure v)
+      pruneO =
+        ( >>=
+            \v -> case repls M.!? v of
+              Nothing -> pure v
+              Just ([(k, y)], c) -> c .+ scale k (pure y)
+              Just _ -> pure v
+        )
    in CircuitContext
         { acSystem = newSystem <> genLinInputConstraints @a keep repls
         , acLookupFunction = lf
@@ -244,7 +260,9 @@ genLinVarsToReplace
 genLinVarsToReplace keep outVars (s, l)
   | M.null newVars = (s, l)
   | otherwise =
-      genLinVarsToReplace keep outVars
+      genLinVarsToReplace
+        keep
+        outVars
         (M.filter (/= zero) (optimizeSystemsGenLin newVars s), newVars <> l)
  where
   -- Variables appearing in any degree-2 monomial across the constraint system.
@@ -256,47 +274,59 @@ genLinVarsToReplace keep outVars (s, l)
   -- Reverse index: variable -> list of constraint IDs containing it.
   -- Used to check Plonk gate format safety before elimination.
   varIndex :: Map NewVar [ByteString]
-  varIndex = M.foldlWithKey' (\acc cId c ->
-    foldl' (\m v -> M.insertWith (<>) v [cId] m) acc (S.toList (variables c))
-    ) M.empty s
+  varIndex =
+    M.foldlWithKey'
+      ( \acc cId c ->
+          foldl' (\m v -> M.insertWith (<>) v [cId] m) acc (S.toList (variables c))
+      )
+      M.empty
+      s
 
   -- Build replacement map, then sanitize: no replacement may reference
   -- another eliminated variable. This prevents exponential blowup when
   -- substituting into degree-2 constraints and avoids dangling variable
   -- references in witnesses.
   newVars :: GenLinRepl a
-  newVars = sanitize $
-    M.fromList [assoc | (cId, c) <- M.assocs s
-                      , Just assoc <- [toGenLinVar cId c]]
+  newVars =
+    sanitize $
+      M.fromList
+        [ assoc
+        | (cId, c) <- M.assocs s
+        , Just assoc <- [toGenLinVar cId c]
+        ]
 
   sanitize :: GenLinRepl a -> GenLinRepl a
   sanitize m = M.filter (\(terms, _) -> all ((`M.notMember` m) . snd) terms) m
 
-  -- | Check that substituting a 2-term replacement for v won't create > 3
+  -- \| Check that substituting a 2-term replacement for v won't create > 3
   -- degree-1 monomials in any constraint (except source).
   -- A 2-term replacement replaces 1 degree-1 monomial with 2, so each
   -- target constraint must have at most 2 degree-1 monomials.
   plonkSafe :: NewVar -> ByteString -> Bool
   plonkSafe v srcId = case M.lookup v varIndex of
     Nothing -> True
-    Just cIds -> all (\cId -> cId == srcId ||
-      case M.lookup cId s of
-        Nothing -> True
-        Just c -> S.size (variables (homogenous one c)) <= 2
-      ) cIds
+    Just cIds ->
+      all
+        ( \cId ->
+            cId == srcId
+              || case M.lookup cId s of
+                Nothing -> True
+                Just c -> S.size (variables (homogenous one c)) <= 2
+        )
+        cIds
 
-  -- | Extract a variable to eliminate from a degree-1 constraint.
+  -- \| Extract a variable to eliminate from a degree-1 constraint.
   -- Restrictions:
-  -- * Variable must not be kept (input variable).
-  -- * For 2-var constraints (single-term replacement): d2vars excluded because
+  -- \* Variable must not be kept (input variable).
+  -- \* For 2-var constraints (single-term replacement): d2vars excluded because
   --   replacing v with k*y+c in a degree-2 monomial v*u produces k*y*u+c*u,
   --   adding an extra degree-1 term (c*u) that could exceed Plonk's gate limit.
   --   Output vars OK (replacement fits in LinVar).
-  -- * For 3-var constraints (2-term replacement): must not be in d2vars
+  -- \* For 3-var constraints (2-term replacement): must not be in d2vars
   --   (would create 2 degree-2 monomials), must not be output var,
   --   and all other constraints containing the variable must have ≤ 2
   --   degree-1 monomials (Plonk gate format: max 3 degree-1 monomials).
-  -- * For 4+ var constraints: skip (replacement would exceed Plonk limits).
+  -- \* For 4+ var constraints: skip (replacement would exceed Plonk limits).
   toGenLinVar :: ByteString -> Constraint a -> Maybe (NewVar, ([(a, NewVar)], a))
   toGenLinVar cId p
     | degP p /= one = Nothing
@@ -314,14 +344,17 @@ genLinVarsToReplace keep outVars (s, l)
     (terms, c0) = extractLinearTerms p
     nVars = length terms
     canElim2 v = not (keep v) && not (S.member v d2vars)
-    canElim3 v = not (keep v) && not (S.member v d2vars)
-      && not (S.member v outVars) && plonkSafe v cId
+    canElim3 v =
+      not (keep v)
+        && not (S.member v d2vars)
+        && not (S.member v outVars)
+        && plonkSafe v cId
     mkRepl cv v =
       let others = filter ((/= v) . snd) terms
           repl = ([(negate ck // cv, vk) | (ck, vk) <- others], negate c0 // cv)
        in Just (v, repl)
 
-  -- | Substitute general linear replacements into the constraint system.
+  -- \| Substitute general linear replacements into the constraint system.
   optimizeSystemsGenLin
     :: GenLinRepl a
     -> Map ByteString (Constraint a)
@@ -365,10 +398,12 @@ genLinInputConstraints keep vs =
   M.fromList
     [ (pId, p)
     | (inVar, (terms, c)) <- M.assocs $ filterKeys keep vs
-    , let p = var inVar
+    , let p =
+            var inVar
               - foldl' (\acc (k, y) -> acc + fromConstant k * var y) (fromConstant c) terms
-    , let pId = witToVar @a
+    , let pId =
+            witToVar @a
               ( pure inVar
-              - foldl' (\acc (k, y) -> acc + fromConstant k * pure y) (fromConstant c) terms
+                  - foldl' (\acc (k, y) -> acc + fromConstant k * pure y) (fromConstant c) terms
               )
     ]

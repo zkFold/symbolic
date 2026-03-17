@@ -16,7 +16,6 @@ import ZkFold.Symbolic.Data.Class (SymbolicData (..))
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..))
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-
 import Prelude hiding (Bool, Eq, length, splitAt, (*), (+))
 import Prelude qualified as Haskell
 
