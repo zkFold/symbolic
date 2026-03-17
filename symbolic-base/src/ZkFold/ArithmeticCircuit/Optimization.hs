@@ -296,14 +296,43 @@ genLinVarsToReplace keep outVars (s, l)
         ]
 
   sanitize :: GenLinRepl a -> GenLinRepl a
-  sanitize m = M.filter (\(terms, _) -> all ((`M.notMember` m) . snd) terms) m
+  sanitize m =
+    let -- First: no replacement may reference another eliminated variable.
+        m1 = M.filter (\(terms, _) -> all ((`M.notMember` m) . snd) terms) m
+        -- Second: no two 2-term replacements may share a target constraint.
+        -- For each 2-term replacement, collect the non-source constraint IDs
+        -- it appears in. If two such replacements share a target, keep only one.
+        twoTermVars = M.keys (M.filter (\(terms, _) -> length terms > 1) m1)
+        -- Build map: constraintId -> [eliminated vars that are 2-term and appear in it]
+        conflictMap =
+          foldl'
+            ( \acc v -> case M.lookup v varIndex of
+                Nothing -> acc
+                Just cIds ->
+                  foldl'
+                    (\acc' cId -> M.insertWith (<>) cId [v] acc')
+                    acc
+                    cIds
+            )
+            M.empty
+            twoTermVars
+        -- Collect vars that conflict (share a target with another 2-term replacement)
+        conflictVars =
+          foldMap
+            ( \vs -> case vs of
+                (_ : rest@(_ : _)) -> S.fromList rest -- keep first, drop rest
+                _ -> S.empty
+            )
+            conflictMap
+     in M.withoutKeys m1 conflictVars
 
-  -- \| Check that substituting a 2-term replacement for v won't create > 3
-  -- degree-1 monomials in any constraint (except source).
-  -- A 2-term replacement replaces 1 degree-1 monomial with 2, so each
-  -- target constraint must have at most 2 degree-1 monomials.
-  plonkSafe :: NewVar -> ByteString -> Bool
-  plonkSafe v srcId = case M.lookup v varIndex of
+  -- \| Check that substituting a 2-term replacement for v won't violate
+  -- Plonk gate constraints in any target constraint (except source).
+  -- A Plonk gate allows at most 3 distinct variables: qm*a*b + ql*a + qr*b + qo*c + qc = 0.
+  -- A 2-term replacement replaces 1 degree-1 monomial (v) with 2 (y1, y2).
+  -- We must ensure the resulting constraint has at most 3 distinct variables total.
+  plonkSafe :: NewVar -> [(a, NewVar)] -> ByteString -> Bool
+  plonkSafe v replVars srcId = case M.lookup v varIndex of
     Nothing -> True
     Just cIds ->
       all
@@ -311,7 +340,13 @@ genLinVarsToReplace keep outVars (s, l)
             cId == srcId
               || case M.lookup cId s of
                 Nothing -> True
-                Just c -> S.size (variables (homogenous one c)) <= 2
+                Just c ->
+                  let d1Vars = variables (homogenous one c)
+                      d2Vars = variables (homogenous (one + one) c)
+                      -- After replacing v, remove v from d1 and add replacement vars.
+                      newD1Vars = S.union (S.fromList (snd <$> replVars)) (S.delete v d1Vars)
+                      totalVars = S.union d2Vars newD1Vars
+                   in S.size totalVars <= 3
         )
         cIds
 
@@ -348,7 +383,9 @@ genLinVarsToReplace keep outVars (s, l)
       not (keep v)
         && not (S.member v d2vars)
         && not (S.member v outVars)
-        && plonkSafe v cId
+        && plonkSafe v otherTerms cId
+     where
+      otherTerms = filter ((/= v) . snd) terms
     mkRepl cv v =
       let others = filter ((/= v) . snd) terms
           repl = ([(negate ck // cv, vk) | (ck, vk) <- others], negate c0 // cv)
