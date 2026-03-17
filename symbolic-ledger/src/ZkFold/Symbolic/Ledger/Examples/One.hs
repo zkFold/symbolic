@@ -59,7 +59,7 @@ type Bi = 1
 
 type Bo = 1
 
-type Ud = 2 -- Thus 2 ^ (2 - 1) = 2 leaves
+type Ud = 10 -- Thus 2 ^ (10 - 1) = 512 leaves
 
 type A = 1
 

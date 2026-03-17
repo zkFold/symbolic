@@ -42,7 +42,7 @@ type Bi = 3
 
 type Bo = 4
 
-type Ud = 3 -- Thus 2 ^ (3 - 1) = 4 leaves
+type Ud = 10 -- Thus 2 ^ (10 - 1) = 512 leaves
 
 type A = 3
 
