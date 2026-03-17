@@ -6,7 +6,6 @@ import Data.ByteString.Lazy qualified as BL
 import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
 import Prelude (($))
 import Prelude qualified as Haskell
-import Paths_symbolic_ledger (getDataFileName)
 
 import Paths_symbolic_ledger (getDataFileName)
 import Tests.Symbolic.Ledger.E2E.Two (batch, newState, prevState, witness)
