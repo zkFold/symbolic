@@ -20,7 +20,7 @@ import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
+import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
@@ -61,7 +61,11 @@ For validating state, we check following:
 
 -- | State witness for validating state update.
 data StateWitness bi bo ud a s n t context = StateWitness
-  { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
+  { swBridgeIn :: (Vector bi :.: Output a) context
+  -- ^ Outputs that are bridged into the ledger. These lead to creation of new UTxOs where `orTxId` of the output is obtained by hashing `sLength` and `orIndex` is the index of the output in the vector.
+  , swBridgeOut :: (Vector bo :.: Output a) context
+  -- ^ Denotes outputs that are bridged out of the ledger.
+  , swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
   , swTransactionBatch :: (TransactionBatchWitness ud s n a t) context
   }
   deriving stock (Generic, Generic1)
@@ -84,11 +88,11 @@ validateStateUpdate
   :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud s n a t context
-  => State bi bo ud a context
+  => State ud a context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State bi bo ud a context
+  -> State ud a context
   -- ^ New state.
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
@@ -102,11 +106,11 @@ validateStateUpdateIndividualChecks
   :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud s n a t context
-  => State bi bo ud a context
+  => State ud a context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State bi bo ud a context
+  -> State ud a context
   -- ^ New state.
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
@@ -114,7 +118,7 @@ validateStateUpdateIndividualChecks
 validateStateUpdateIndividualChecks previousState action newState sw =
   let
     initialRoot = previousState.sUTxO
-    bridgeInAssets = preimage newState.sBridgeIn
+    bridgeInAssets = sw.swBridgeIn
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
@@ -145,7 +149,7 @@ validateStateUpdateIndividualChecks previousState action newState sw =
         )
         (zero :*: true :*: initialRoot)
         bridgedInAssetsWithWitness
-    bridgedOutOutputs = preimage newState.sBridgeOut
+    bridgedOutOutputs = sw.swBridgeOut
     (isBatchValid :*: finalRoot) = validateTransactionBatch rootWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
     unsafeToVector'
