@@ -480,12 +480,3 @@ executable group-elements-generator
       bytestring,
       optparse-applicative,
       symbolic-base
-
-executable verify-setup
-  import: options-exe
-  main-is: VerifySetup.hs
-  hs-source-dirs: test
-  build-depends:
-    base,
-    symbolic-base,
-    vector,
