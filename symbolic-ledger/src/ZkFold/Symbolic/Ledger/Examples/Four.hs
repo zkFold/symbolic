@@ -80,4 +80,4 @@ sigs =
         )
 
 newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 =
-  updateLedgerState prevState emptyTree (pure (nullUTxO @A @I)) bridgedIn batch sigs
+  updateLedgerState @Bi @Bo prevState emptyTree (pure (nullUTxO @A @I)) bridgedIn batch sigs

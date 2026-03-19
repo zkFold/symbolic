@@ -35,7 +35,7 @@ updateLedgerState
   :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
   => SignatureTransactionBatch ud s n a t context
-  => State bi bo ud a context
+  => State ud a context
   -- ^ Previous state.
   -> MerkleTree ud context
   -- ^ Full Merkle tree corresponding to the previous state's UTxO root hash.
@@ -47,7 +47,7 @@ updateLedgerState
   -- ^ Transaction batch.
   -> (Vector t :.: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) context
   -- ^ Signature material for each transaction: per-signer (publicKey :*: rPoint :*: s).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
+  -> (State ud a :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
   -- ^ New state, witness, updated Merkle tree and UTxO set.
 updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigMaterial =
   let
@@ -151,11 +151,14 @@ updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigM
         { sPreviousStateHash = hasher previousState
         , sUTxO = MerkleTree.mHash utxoFinal
         , sLength = newLen
-        , sBridgeIn = hash bridgedInOutputs
-        , sBridgeOut = hash bridgedOutOutputs
         }
    in
     newState
-      :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
+      :*: StateWitness
+        { swBridgeIn = bridgedInOutputs
+        , swBridgeOut = bridgedOutOutputs
+        , swAddBridgeIn
+        , swTransactionBatch = TransactionBatchWitness {tbwTransactions}
+        }
       :*: utxoFinal
       :*: Comp1 utxoPreimageFinal

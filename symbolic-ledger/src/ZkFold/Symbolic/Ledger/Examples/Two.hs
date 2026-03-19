@@ -55,14 +55,12 @@ type TxCount = 3
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
 
-prevState :: State Bi Bo Ud A I
+prevState :: State Ud A I
 prevState =
   State
     { sPreviousStateHash = zero
     , sUTxO = SymMerkle.mHash emptyTree
     , sLength = zero
-    , sBridgeIn = hash (Comp1 (pure (nullOutput @A @I)))
-    , sBridgeOut = hash (Comp1 (pure (nullOutput @A @I)))
     }
 
 utxoPreimage :: Leaves Ud (UTxO A I)
@@ -347,4 +345,4 @@ sigs =
           ]
       )
 
-newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 = updateLedgerState prevState emptyTree utxoPreimage bridgedIn batch sigs
+newState :*: witness :*: _utxoTree2 :*: utxoPreimage2 = updateLedgerState @Bi @Bo prevState emptyTree utxoPreimage bridgedIn batch sigs
