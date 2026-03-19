@@ -1,310 +1,10 @@
 {
   "lciNewState": {
-    "sBridgeIn": {
-      "hash": 4.6872915377126129243765754015138884746293725825209315594722876016316928798973e76,
-      "value": [
-        {
-          "oAddress": 4.6158797386681279449660551146192109801082715412008826514275147611100144249071e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 10000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 50000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 50000000
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 1.7033026136576283862527892727621800263364328420780463981683865699740330379031e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 10000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 50000000
-            },
-            {
-              "assetName": 3,
-              "assetPolicy": 3,
-              "assetQuantity": 50000000
-            }
-          ]
-        }
-      ]
-    },
-    "sBridgeOut": {
-      "hash": 1.7856020886548217594926068707172466686769441929947564375642753069953943180782e76,
-      "value": [
-        {
-          "oAddress": 1.7033026136576283862527892727621800263364328420780463981683865699740330379031e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 1000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 25000000
-            },
-            {
-              "assetName": 3,
-              "assetPolicy": 3,
-              "assetQuantity": 25000000
-            }
-          ]
-        },
-        {
-          "oAddress": 4.6158797386681279449660551146192109801082715412008826514275147611100144249071e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 5000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 50000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 3.5147019766049063460101562925615440015436177310939553502688022326208633856824e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 9000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 25000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 2,
-              "assetQuantity": 50000000
-            }
-          ]
-        },
-        {
-          "oAddress": 3.5147019766049063460101562925615440015436177310939553502688022326208633856824e76,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 5000000
-            },
-            {
-              "assetName": 3,
-              "assetPolicy": 3,
-              "assetQuantity": 25000000
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        }
-      ]
-    },
     "sLength": 1,
-    "sPreviousStateHash": 3.2727723866229963359225524388627303779986012733934946138738490013549827695785e76,
+    "sPreviousStateHash": 5.219323580338395118756720865140582435730863831275479345382602538905408730167e76,
     "sUTxO": 3.4303625898657320987464738212694661657170371790297130570388271374195883477032e76
   },
   "lciPreviousState": {
-    "sBridgeIn": {
-      "hash": 2.0792489274292401295689306626662188244858771172579964924987397726781617281392e76,
-      "value": [
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        }
-      ]
-    },
-    "sBridgeOut": {
-      "hash": 5.835409597354134958747840623721726300229538609470041463572058677212979249803e75,
-      "value": [
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        },
-        {
-          "oAddress": 0,
-          "oAssets": [
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            },
-            {
-              "assetName": 0,
-              "assetPolicy": 0,
-              "assetQuantity": 0
-            }
-          ]
-        }
-      ]
-    },
     "sLength": 0,
     "sPreviousStateHash": 0,
     "sUTxO": 3.4303625898657320987464738212694661657170371790297130570388271374195883477032e76
@@ -385,6 +85,150 @@
           2.3841191201804359642399153300626149146025839581913673212260582891731545023495e76
         ],
         "value": 4.5862395974132899605793803505519226355504891021112036057722911023768551140065e76
+      }
+    ],
+    "swBridgeIn": [
+      {
+        "oAddress": 4.6158797386681279449660551146192109801082715412008826514275147611100144249071e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 10000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 50000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 50000000
+          }
+        ]
+      },
+      {
+        "oAddress": 0,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 0
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 0
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 0
+          }
+        ]
+      },
+      {
+        "oAddress": 1.7033026136576283862527892727621800263364328420780463981683865699740330379031e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 10000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 50000000
+          },
+          {
+            "assetName": 3,
+            "assetPolicy": 3,
+            "assetQuantity": 50000000
+          }
+        ]
+      }
+    ],
+    "swBridgeOut": [
+      {
+        "oAddress": 1.7033026136576283862527892727621800263364328420780463981683865699740330379031e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 1000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 25000000
+          },
+          {
+            "assetName": 3,
+            "assetPolicy": 3,
+            "assetQuantity": 25000000
+          }
+        ]
+      },
+      {
+        "oAddress": 4.6158797386681279449660551146192109801082715412008826514275147611100144249071e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 5000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 50000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 0
+          }
+        ]
+      },
+      {
+        "oAddress": 3.5147019766049063460101562925615440015436177310939553502688022326208633856824e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 9000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 25000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 2,
+            "assetQuantity": 50000000
+          }
+        ]
+      },
+      {
+        "oAddress": 3.5147019766049063460101562925615440015436177310939553502688022326208633856824e76,
+        "oAssets": [
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 5000000
+          },
+          {
+            "assetName": 3,
+            "assetPolicy": 3,
+            "assetQuantity": 25000000
+          },
+          {
+            "assetName": 0,
+            "assetPolicy": 0,
+            "assetQuantity": 0
+          }
+        ]
       }
     ],
     "swTransactionBatch": {

@@ -66,7 +66,6 @@ import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, Show, error, fromIntegral, ($), (.), (<$>))
@@ -86,16 +85,16 @@ import ZkFold.Symbolic.Ledger.Validation.State
 -- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
 data LedgerContractInput bi bo ud a s n t c = LedgerContractInput
-  { lciPreviousState :: State bi bo ud a c
+  { lciPreviousState :: State ud a c
   , lciTransactionBatch :: TransactionBatch n a t c
-  , lciNewState :: State bi bo ud a c
+  , lciNewState :: State ud a c
   , lciStateWitness :: StateWitness bi bo ud a s n t c
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance
-  (Show (State bi bo ud a context), Show (TransactionBatch n a t context), Show (StateWitness bi bo ud a s n t context))
+  (Show (State ud a context), Show (TransactionBatch n a t context), Show (StateWitness bi bo ud a s n t context))
   => Show (LedgerContractInput bi bo ud a s n t context)
 
 deriving anyclass instance
@@ -110,10 +109,10 @@ deriving anyclass instance
 -- {
 --     "properties": {
 --         "lciNewState": {
---             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/State_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciPreviousState": {
---             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/State_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciStateWitness": {
 --             "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
@@ -139,12 +138,8 @@ type LedgerContractOutput bi bo a =
   ( FieldElement
       :*: FieldElement
       :*: FieldElement
-      :*: FieldElement
-      :*: FieldElement
   )
     :*: ( FieldElement
-            :*: FieldElement
-            :*: FieldElement
             :*: FieldElement
             :*: FieldElement
         )
@@ -161,18 +156,14 @@ ledgerContract LedgerContractInput {..} =
   ( sPreviousStateHash lciPreviousState
       :*: sUTxO lciPreviousState
       :*: sLength lciPreviousState
-      :*: (hHash . sBridgeIn $ lciPreviousState)
-      :*: (hHash . sBridgeOut $ lciPreviousState)
   )
     :*: ( sPreviousStateHash lciNewState
             :*: sUTxO lciNewState
             :*: sLength lciNewState
-            :*: (hHash . sBridgeIn $ lciNewState)
-            :*: (hHash . sBridgeOut $ lciNewState)
         )
     :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
-    :*: preimage (sBridgeIn lciNewState)
-    :*: preimage (sBridgeOut lciNewState)
+    :*: swBridgeIn lciStateWitness
+    :*: swBridgeOut lciStateWitness
 
 -- TODO: Circuit gate count is likely not good enough, see https://github.com/zkFold/symbolic/issues/766.
 type LedgerCircuitGates = 2 ^ 18
@@ -194,12 +185,8 @@ type LedgerContractOutputLayout bi bo a =
   ( Par1
       :*: Par1
       :*: Par1
-      :*: Par1
-      :*: Par1
   )
     :*: ( Par1
-            :*: Par1
-            :*: Par1
             :*: Par1
             :*: Par1
         )
