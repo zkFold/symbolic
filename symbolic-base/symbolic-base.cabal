@@ -13,8 +13,8 @@ license-file:       LICENSE
 build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
-    data/powers_of_tau_2e20
     data/midnight_powers_of_tau_2e18
+    data/midnight_powers_of_tau_2e20
 extra-source-files:
   rust-wrapper/*.toml
   rust-wrapper/src/*.rs
