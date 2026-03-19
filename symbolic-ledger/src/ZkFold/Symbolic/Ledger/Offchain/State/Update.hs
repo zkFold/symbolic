@@ -154,6 +154,11 @@ updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigM
         }
    in
     newState
-      :*: StateWitness {swBridgeIn = bridgedInOutputs, swBridgeOut = bridgedOutOutputs, swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
+      :*: StateWitness
+        { swBridgeIn = bridgedInOutputs
+        , swBridgeOut = bridgedOutOutputs
+        , swAddBridgeIn
+        , swTransactionBatch = TransactionBatchWitness {tbwTransactions}
+        }
       :*: utxoFinal
       :*: Comp1 utxoPreimageFinal
