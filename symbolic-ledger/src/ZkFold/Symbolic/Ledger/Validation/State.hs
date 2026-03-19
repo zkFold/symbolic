@@ -20,7 +20,7 @@ import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
-import ZkFold.Symbolic.Data.Hash (Hashable (..), hash, preimage)
+import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
 import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
@@ -60,37 +60,41 @@ For validating state, we check following:
 -}
 
 -- | State witness for validating state update.
-data StateWitness bi bo ud a i o t context = StateWitness
-  { swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
-  , swTransactionBatch :: (TransactionBatchWitness ud i o a t) context
+data StateWitness bi bo ud a s n t context = StateWitness
+  { swBridgeIn :: (Vector bi :.: Output a) context
+  -- ^ Outputs that are bridged into the ledger. These lead to creation of new UTxOs where `orTxId` of the output is obtained by hashing `sLength` and `orIndex` is the index of the output in the vector.
+  , swBridgeOut :: (Vector bo :.: Output a) context
+  -- ^ Denotes outputs that are bridged out of the ledger.
+  , swAddBridgeIn :: (Vector bi :.: MerkleEntry ud) context
+  , swTransactionBatch :: (TransactionBatchWitness ud s n a t) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a i o t context)
+deriving stock instance HShow context => Haskell.Show (StateWitness bi bo ud a s n t context)
 
-deriving anyclass instance ToJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
-
-deriving anyclass instance
-  forall bi bo ud a i o t. (KnownNat i, KnownNat o) => FromJSON (StateWitness bi bo ud a i o t RollupBFInterpreter)
+deriving anyclass instance ToJSON (StateWitness bi bo ud a s n t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall bi bo ud a i o t
-   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
-  => ToSchema (StateWitness bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a s n t. (KnownNat s, KnownNat n) => FromJSON (StateWitness bi bo ud a s n t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall bi bo ud a s n t
+   . (KnownNat bi, KnownNat bo, KnownNat (ud - 1), KnownNat ud, KnownNat a, KnownNat s, KnownNat n, KnownNat t)
+  => ToSchema (StateWitness bi bo ud a s n t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
 validateStateUpdate
-  :: forall bi bo ud a i o t context
+  :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud i o a t context
-  => State bi bo ud a context
+  => SignatureTransactionBatch ud s n a t context
+  => State ud a context
   -- ^ Previous state.
-  -> TransactionBatch i o a t context
+  -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State bi bo ud a context
+  -> State ud a context
   -- ^ New state.
-  -> StateWitness bi bo ud a i o t context
+  -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> Bool context
 validateStateUpdate previousState action newState sw =
@@ -99,59 +103,59 @@ validateStateUpdate previousState action newState sw =
 
 -- | Validate state update and return either the first failing reason or success.
 validateStateUpdateIndividualChecks
-  :: forall bi bo ud a i o t context
+  :: forall bi bo ud a s n t context
    . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud i o a t context
-  => State bi bo ud a context
+  => SignatureTransactionBatch ud s n a t context
+  => State ud a context
   -- ^ Previous state.
-  -> TransactionBatch i o a t context
+  -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State bi bo ud a context
+  -> State ud a context
   -- ^ New state.
-  -> StateWitness bi bo ud a i o t context
+  -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> Vector 5 (Bool context)
 validateStateUpdateIndividualChecks previousState action newState sw =
   let
-    initialUTxOTree = previousState.sUTxO
-    bridgeInAssets = preimage newState.sBridgeIn
+    initialRoot = previousState.sUTxO
+    bridgeInAssets = sw.swBridgeIn
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
-    (_ :*: isWitBridgeInValid :*: utxoTreeWithBridgeIn) =
+    (_ :*: isWitBridgeInValid :*: rootWithBridgeIn) =
       foldl'
-        ( \(ix :*: isValidAcc :*: acc) ((output :*: merkleEntry)) ->
+        ( \(ix :*: isValidAcc :*: rootAcc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isNull = output == nullOutput
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
-                (isInTree, updatedTree) = MerkleTree.containsAndReplace merkleEntry utxoHash acc
+                (isInTree, updatedRoot) = MerkleTree.containsAndReplaceRoot merkleEntry utxoHash rootAcc
                 isValid' =
                   isValidAcc
                     && ifThenElse
                       isNull
                       true
                       ( isInTree
-                          && (merkleEntry.value == nullUTxOHash')
+                          && (MerkleTree.value merkleEntry == nullUTxOHash')
                           && outputHasValueSanity output
                       )
              in ( (ix + one)
                     :*: isValid'
                     :*: ifThenElse
                       (isValid' && (not isNull))
-                      updatedTree
-                      acc
+                      updatedRoot
+                      rootAcc
                 )
         )
-        (zero :*: true :*: initialUTxOTree)
+        (zero :*: true :*: initialRoot)
         bridgedInAssetsWithWitness
-    bridgedOutOutputs = preimage newState.sBridgeOut
-    (isBatchValid :*: utxoTree) = validateTransactionBatch utxoTreeWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
+    bridgedOutOutputs = sw.swBridgeOut
+    (isBatchValid :*: finalRoot) = validateTransactionBatch rootWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
     unsafeToVector'
       [ newState.sPreviousStateHash == hasher previousState
       , newState.sLength == previousState.sLength + one
       , isWitBridgeInValid
       , isBatchValid
-      , utxoTree == newState.sUTxO
+      , finalRoot == newState.sUTxO
       ]

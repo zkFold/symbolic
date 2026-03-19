@@ -175,3 +175,16 @@ benchmark bench-circuit-size
     symbolic-ledger,
     tasty,
     tasty-golden,
+
+benchmark bench-circuit-breakdown
+  import: options-exe
+  main-is: CircuitBreakdown.hs
+  hs-source-dirs: bench
+  type: exitcode-stdio-1.0
+  ghc-options: -O3
+  build-depends:
+    base,
+    bytestring,
+    vector,
+    symbolic-base,
+    symbolic-ledger,

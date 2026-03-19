@@ -20,7 +20,6 @@ import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..))
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
@@ -28,48 +27,48 @@ import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
 -- | Transaction batch witness for validating transaction batch.
-newtype TransactionBatchWitness ud i o a t context = TransactionBatchWitness
-  { tbwTransactions :: (Vector t :.: TransactionWitness ud i o a) context
+newtype TransactionBatchWitness ud s n a t context = TransactionBatchWitness
+  { tbwTransactions :: (Vector t :.: TransactionWitness ud s n a) context
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud i o a t context)
+deriving stock instance HShow context => Haskell.Show (TransactionBatchWitness ud s n a t context)
 
-deriving anyclass instance ToJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
-
-deriving anyclass instance
-  forall ud i o a t. (KnownNat i, KnownNat o) => FromJSON (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+deriving anyclass instance ToJSON (TransactionBatchWitness ud s n a t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall ud i o a t
-   . (KnownNat ud, KnownNat i, KnownNat o, KnownNat a, KnownNat t, KnownNat (ud - 1))
-  => ToSchema (TransactionBatchWitness ud i o a t RollupBFInterpreter)
+  forall ud s n a t. (KnownNat s, KnownNat n) => FromJSON (TransactionBatchWitness ud s n a t RollupBFInterpreter)
+
+deriving anyclass instance
+  forall ud s n a t
+   . (KnownNat ud, KnownNat s, KnownNat n, KnownNat a, KnownNat t, KnownNat (ud - 1))
+  => ToSchema (TransactionBatchWitness ud s n a t RollupBFInterpreter)
 
 -- | Validate transaction batch. See note [State validation] for details.
 validateTransactionBatch
-  :: forall ud bo i o a t context
-   . SignatureTransactionBatch ud i o a t context
-  => MerkleTree ud context
-  -- ^ UTxO tree.
+  :: forall ud s bo n a t context
+   . SignatureTransactionBatch ud s n a t context
+  => FieldElement context
+  -- ^ UTxO tree root hash.
   -> (Vector bo :.: Output a) context
   -- ^ Bridged out outputs.
-  -> TransactionBatch i o a t context
+  -> TransactionBatch n a t context
   -- ^ Transaction batch.
-  -> TransactionBatchWitness ud i o a t context
+  -> TransactionBatchWitness ud s n a t context
   -- ^ Witness for the transaction batch.
-  -> (Bool :*: MerkleTree ud) context
-  -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree.
-validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
+  -> (Bool :*: FieldElement) context
+  -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree root hash.
+validateTransactionBatch utxoRoot bridgedOutOutputs tb tbw =
   let
     transactionBatchWithWitness = zipWith (:*:) tb.tbTransactions (unComp1 tbw.tbwTransactions)
-    (boCount :*: isValid :*: updatedUTxOTree) =
+    (boCount :*: isValid :*: updatedRoot) =
       foldl'
-        ( \(boCountAcc :*: isValidAcc :*: accUTxOTree) (tx :*: txw) ->
-            let (txBOuts :*: isTxValid :*: newAccUTxOTree) = validateTransaction accUTxOTree bridgedOutOutputs tx txw
-             in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newAccUTxOTree)
+        ( \(boCountAcc :*: isValidAcc :*: rootAcc) (tx :*: txw) ->
+            let (txBOuts :*: isTxValid :*: newRootAcc) = validateTransaction rootAcc bridgedOutOutputs tx txw
+             in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newRootAcc)
         )
-        ((zero :: FieldElement context) :*: true :*: utxoTree)
+        ((zero :: FieldElement context) :*: true :*: utxoRoot)
         transactionBatchWithWitness
     bouts =
       foldl'
@@ -77,4 +76,4 @@ validateTransactionBatch utxoTree bridgedOutOutputs tb tbw =
         zero
         (unComp1 bridgedOutOutputs)
    in
-    ((isValid && (bouts == boCount)) :*: updatedUTxOTree)
+    ((isValid && (bouts == boCount)) :*: updatedRoot)
