@@ -32,6 +32,16 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   S,
   N,
   TxCount,
+  -- Helpers for parameterizing TxCount
+  emptyTree,
+  utxoPreimage,
+  nullTx,
+  nullSigEntry,
+  SigEntry,
+  sigEntries1,
+  sigEntries2,
+  makeBatch,
+  makeSigs,
 ) where
 
 import Control.Applicative (pure)
@@ -48,7 +58,9 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree qualified as SymMerkle
-import Prelude (($))
+import Prelude (Int, length, replicate, ($), (++))
+import Prelude qualified as P
+import ZkFold.Algebra.Number (KnownNat, value)
 
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
@@ -305,14 +317,44 @@ tx4 =
 -- "address" has 2.5 ADA and 12.5 asset2.
 -- "address2" has 2.5 ADA and 12.5 asset2.
 
-batch :: TransactionBatch N A TxCount I
-batch = TransactionBatch {tbTransactions = unsafeToVector' [tx1, tx2]}
+-- | Null transaction for padding batches to the desired TxCount.
+nullTx :: Transaction N A I
+nullTx =
+  Transaction
+    { inputs = Comp1 (fromList [nullOutputRef, nullOutputRef])
+    , outputs = Comp1 (fromList [nullOutput @A @I :*: false, nullOutput @A @I :*: false])
+    }
 
-batch2 :: TransactionBatch N A TxCount I
-batch2 = TransactionBatch {tbTransactions = unsafeToVector' [tx3, tx4]}
+type SigEntry = (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField)) I
 
-sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
-sigs =
+-- | Dummy signature entry for padding sigs to the desired TxCount.
+nullSigEntry :: SigEntry
+nullSigEntry =
+  let rPoint :*: s = signTransaction nullTx privateKey
+   in Comp1
+        ( unsafeToVector'
+            [ publicKey :*: rPoint :*: s
+            , publicKey :*: rPoint :*: s
+            ]
+        )
+
+-- | Build a transaction batch, padding with 'nullTx' to reach @txCount@.
+makeBatch :: forall txCount. KnownNat txCount => [Transaction N A I] -> TransactionBatch N A txCount I
+makeBatch txs = TransactionBatch {tbTransactions = unsafeToVector' (txs ++ replicate padding nullTx)}
+ where
+  padding :: Int
+  padding = P.fromIntegral (value @txCount) P.- length txs
+
+-- | Build signatures, padding with 'nullSigEntry' to reach @txCount@.
+makeSigs :: forall txCount. KnownNat txCount => [SigEntry] -> (Vector txCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
+makeSigs entries = Comp1 (unsafeToVector' (entries ++ replicate padding nullSigEntry))
+ where
+  padding :: Int
+  padding = P.fromIntegral (value @txCount) P.- length entries
+
+-- | Signature entries for batch 1 (tx1, tx2).
+sigEntries1 :: [SigEntry]
+sigEntries1 =
   let
     dummyRPoint :*: dummyS = signTransaction tx1 privateKey
     dummyPublicKey = publicKey
@@ -327,25 +369,23 @@ sigs =
     rPointTx22 :*: sTx22 = signTransaction tx2 privateKey
     publicKeyTx22 = publicKey
    in
-    Comp1
-      ( unsafeToVector'
-          [ Comp1
-              ( unsafeToVector'
-                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
-                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
-                  ]
-              )
-          , Comp1
-              ( unsafeToVector'
-                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
-                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
-                  ]
-              )
-          ]
-      )
+    [ Comp1
+        ( unsafeToVector'
+            [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+            , publicKeyTx12 :*: rPointTx12 :*: sTx12
+            ]
+        )
+    , Comp1
+        ( unsafeToVector'
+            [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+            , publicKeyTx22 :*: rPointTx22 :*: sTx22
+            ]
+        )
+    ]
 
-sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
-sigs2 =
+-- | Signature entries for batch 2 (tx3, tx4).
+sigEntries2 :: [SigEntry]
+sigEntries2 =
   let
     dummyRPoint :*: dummyS = signTransaction tx4 privateKey
     dummyPublicKey = publicKey
@@ -360,22 +400,31 @@ sigs2 =
     rPointTx22 :*: sTx22 = dummyRPoint :*: dummyS
     publicKeyTx22 = dummyPublicKey
    in
-    Comp1
-      ( unsafeToVector'
-          [ Comp1
-              ( unsafeToVector'
-                  [ publicKeyTx11 :*: rPointTx11 :*: sTx11
-                  , publicKeyTx12 :*: rPointTx12 :*: sTx12
-                  ]
-              )
-          , Comp1
-              ( unsafeToVector'
-                  [ publicKeyTx21 :*: rPointTx21 :*: sTx21
-                  , publicKeyTx22 :*: rPointTx22 :*: sTx22
-                  ]
-              )
-          ]
-      )
+    [ Comp1
+        ( unsafeToVector'
+            [ publicKeyTx11 :*: rPointTx11 :*: sTx11
+            , publicKeyTx12 :*: rPointTx12 :*: sTx12
+            ]
+        )
+    , Comp1
+        ( unsafeToVector'
+            [ publicKeyTx21 :*: rPointTx21 :*: sTx21
+            , publicKeyTx22 :*: rPointTx22 :*: sTx22
+            ]
+        )
+    ]
+
+batch :: TransactionBatch N A TxCount I
+batch = makeBatch @TxCount [tx1, tx2]
+
+batch2 :: TransactionBatch N A TxCount I
+batch2 = makeBatch @TxCount [tx3, tx4]
+
+sigs :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
+sigs = makeSigs @TxCount sigEntries1
+
+sigs2 :: (Vector TxCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
+sigs2 = makeSigs @TxCount sigEntries2
 
 newState :*: witness :*: utxoTree2 :*: utxoPreimage2 = updateLedgerState @Bi @Bo prevState emptyTree utxoPreimage bridgedIn batch sigs
 
