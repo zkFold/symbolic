@@ -470,6 +470,18 @@ benchmark bench-lagrange-basis
       tasty-bench,
       QuickCheck
 
+executable setup-generator
+    import: options-exe
+    main-is: SetupGenerator.hs
+    hs-source-dirs: test
+    ghc-options:
+      -O2
+      -threaded
+      "-with-rtsopts=-A128M -N"
+    build-depends:
+      base,
+      symbolic-base
+
 executable group-elements-generator
     import: options-exe
     main-is: Main.hs
