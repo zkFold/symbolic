@@ -1,6 +1,22 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- | Extract a subset of G1 points from the Midnight trusted setup ceremony file.
+--
+-- The original Midnight file (~3GB for 2^25) contains uncompressed BLS12-381 G1
+-- points (96 bytes each) followed by two uncompressed G2 points (192 bytes each).
+-- See https://github.com/midnightntwrk/midnight-trusted-setup
+--
+-- This tool reads the first N G1 points and both G2 points, validates them on the
+-- curve, and saves them with compressed G1 points (48 bytes each).
+--
+-- Usage:
+--
+-- > cabal run setup-generator -- <n-points> <input-midnight-file> <output-file>
+--
+-- Example (extract 2^20 + 6 = 1048582 points):
+--
+-- > cabal run setup-generator -- 1048582 ~/Downloads/midnight-powers-of-tau-2p25 data/midnight_powers_of_tau_2e20
 module Main where
 
 import GHC.TypeNats (SomeNat (..), someNatVal)
