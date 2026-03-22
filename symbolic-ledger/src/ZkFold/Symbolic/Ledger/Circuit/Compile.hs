@@ -166,7 +166,7 @@ ledgerContract LedgerContractInput {..} =
     :*: swBridgeOut lciStateWitness
 
 -- TODO: Circuit gate count is likely not good enough, see https://github.com/zkFold/symbolic/issues/766.
-type LedgerCircuitGates = 2 ^ 18
+type LedgerCircuitGates = 2 ^ 20
 
 type LedgerContractInputLayout bi bo ud a s n t =
   Layout
