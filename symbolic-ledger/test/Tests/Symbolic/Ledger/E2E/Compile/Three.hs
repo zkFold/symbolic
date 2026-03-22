@@ -100,12 +100,12 @@ specE2ECompileThree =
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
       zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A TxCount N (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
       `shouldBe` Haskell.True
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A TxCount N (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput2
       zkLedgerProof2

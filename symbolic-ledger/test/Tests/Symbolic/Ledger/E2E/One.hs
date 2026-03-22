@@ -38,6 +38,8 @@ specE2EOne :: Spec
 specE2EOne =
   it "E2E One" $ do
     sLength newState `shouldBe` (one :: FieldElement I)
-    validateStateUpdateIndividualChecks prevState batch newState witness `shouldBe` Haskell.pure true
-    validateStateUpdateIndividualChecks newState batch2 newState2 witness2 `shouldBe` Haskell.pure true
+    let (checks1, _, _, _) = validateStateUpdateIndividualChecks prevState batch newState witness
+    checks1 `shouldBe` Haskell.pure true
+    let (checks2, _, _, _) = validateStateUpdateIndividualChecks newState batch2 newState2 witness2
+    checks2 `shouldBe` Haskell.pure true
     unComp1 utxoPreimage3 `shouldBe` pure (nullUTxO @A @I)

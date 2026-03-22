@@ -68,7 +68,7 @@ specE2ECompileTwo =
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A TxCount N (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
