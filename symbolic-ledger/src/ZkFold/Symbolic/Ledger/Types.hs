@@ -47,7 +47,7 @@ type SignatureTransactionBatch ud s n a t context =
   , KnownNat t
   )
 
-type SignatureState bi bo ud a context =
+type SignatureState bi bo context =
   ( Symbolic context
   , KnownRegistersAssetQuantity context
   , KnownNat bi

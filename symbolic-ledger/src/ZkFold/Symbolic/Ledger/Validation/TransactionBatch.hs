@@ -24,6 +24,7 @@ import Prelude qualified as Haskell
 
 import ZkFold.Symbolic.Ledger.Types
 import ZkFold.Symbolic.Ledger.Types.Field (RollupBFInterpreter)
+import ZkFold.Symbolic.Ledger.Utils (unsafeToVector')
 import ZkFold.Symbolic.Ledger.Validation.Transaction (TransactionWitness, validateTransaction)
 
 -- | Transaction batch witness for validating transaction batch.
@@ -57,23 +58,41 @@ validateTransactionBatch
   -- ^ Transaction batch.
   -> TransactionBatchWitness ud s n a t context
   -- ^ Witness for the transaction batch.
-  -> (Bool :*: FieldElement) context
-  -- ^ Result of validation. First field denotes whether the transaction batch is valid, second one denotes updated UTxO tree root hash.
+  -> ( Bool :*: FieldElement
+         :*: (Vector t :.: (Vector n :.: FieldElement))
+         :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
+     )
+       context
+  -- ^ Result of validation:
+  -- (1) validity,
+  -- (2) updated UTxO tree root hash,
+  -- (3) input deltas per transaction: packed leaf positions,
+  -- (4) output deltas per transaction: (isActive, packed position, new hash).
 validateTransactionBatch utxoRoot bridgedOutOutputs tb tbw =
   let
     transactionBatchWithWitness = zipWith (:*:) tb.tbTransactions (unComp1 tbw.tbwTransactions)
-    (boCount :*: isValid :*: updatedRoot) =
+    ((boCount :*: isValid :*: updatedRoot), inputDeltasRev, outputDeltasRev) =
       foldl'
-        ( \(boCountAcc :*: isValidAcc :*: rootAcc) (tx :*: txw) ->
-            let (txBOuts :*: isTxValid :*: newRootAcc) = validateTransaction rootAcc bridgedOutOutputs tx txw
-             in ((boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newRootAcc)
+        ( \((boCountAcc :*: isValidAcc :*: rootAcc), inDsAcc, outDsAcc) (tx :*: txw) ->
+            let (txBOuts :*: isTxValid :*: newRootAcc :*: txInputDelta :*: txOutputDelta) =
+                  validateTransaction rootAcc bridgedOutOutputs tx txw
+             in ( (boCountAcc + txBOuts) :*: (isValidAcc && isTxValid) :*: newRootAcc
+                , txInputDelta : inDsAcc
+                , txOutputDelta : outDsAcc
+                )
         )
-        ((zero :: FieldElement context) :*: true :*: utxoRoot)
+        ((zero :: FieldElement context) :*: true :*: utxoRoot, [], [])
         transactionBatchWithWitness
+    batchInputDeltas = Comp1 (unsafeToVector' (Haskell.reverse inputDeltasRev))
+    batchOutputDeltas = Comp1 (unsafeToVector' (Haskell.reverse outputDeltasRev))
     bouts =
       foldl'
         (\acc output -> ifThenElse (output == nullOutput @a @context) acc (acc + one))
         zero
         (unComp1 bridgedOutOutputs)
    in
-    ((isValid && (bouts == boCount)) :*: updatedRoot)
+    ( (isValid && (bouts == boCount))
+        :*: updatedRoot
+        :*: batchInputDeltas
+        :*: batchOutputDeltas
+    )

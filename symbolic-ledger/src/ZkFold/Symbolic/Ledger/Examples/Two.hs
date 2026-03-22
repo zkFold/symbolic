@@ -55,7 +55,7 @@ type TxCount = 3
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))
 
-prevState :: State Ud A I
+prevState :: State I
 prevState =
   State
     { sPreviousStateHash = zero
