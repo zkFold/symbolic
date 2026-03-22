@@ -86,12 +86,12 @@ specE2ECompileOne =
         zkLedgerInput2 = PlonkupInput (pubInput relation compiledInput2)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
     Haskell.putStrLn $ "zkLedgerInput2: " <> show zkLedgerInput2
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) G ByteString)
+    verify @(PlonkupTs Bi Bo A TxCount N (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) G ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
       `shouldBe` Haskell.True
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) G ByteString)
+    verify @(PlonkupTs Bi Bo A TxCount N (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) G ByteString)
       zkLedgerSetup
       zkLedgerInput2
       zkLedgerProof2
