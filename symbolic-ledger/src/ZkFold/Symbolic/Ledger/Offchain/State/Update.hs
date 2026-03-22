@@ -33,9 +33,9 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 -- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
   :: forall bi bo ud a s n t context
-   . SignatureState bi bo ud a context
+   . SignatureState bi bo context
   => SignatureTransactionBatch ud s n a t context
-  => State ud a context
+  => State context
   -- ^ Previous state.
   -> MerkleTree ud context
   -- ^ Full Merkle tree corresponding to the previous state's UTxO root hash.
@@ -47,7 +47,7 @@ updateLedgerState
   -- ^ Transaction batch.
   -> (Vector t :.: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) context
   -- ^ Signature material for each transaction: per-signer (publicKey :*: rPoint :*: s).
-  -> (State ud a :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
+  -> (State :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
   -- ^ New state, witness, updated Merkle tree and UTxO set.
 updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigMaterial =
   let
