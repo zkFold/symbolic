@@ -17,3 +17,6 @@ serde_json = "1.0.140"
 blstrs = { git = "https://github.com/davidnevadoc/blstrs", rev = "3dfe5bf" }
 halo2_proofs = { git = "https://github.com/input-output-hk/halo2", rev = "0bca06e58937fbe213a0530ecac9d8e0fed501d6" }
 plutus-halo2-verifier-gen = { git = "https://github.com/input-output-hk/plutus-halo2-verifier-gen", branch = "main" }
+
+[profile.release]
+debug = "line-tables-only"

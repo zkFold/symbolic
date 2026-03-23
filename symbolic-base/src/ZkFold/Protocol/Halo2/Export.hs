@@ -50,6 +50,7 @@ import Prelude (Bool, Either (..), Eq, FilePath, IO, Show, flip, foldMap, id, ($
 import Prelude qualified as P
 
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381
 import ZkFold.Algebra.Number
 import ZkFold.Algebra.Permutation (fromCycles, mkIndexPartition)
 import ZkFold.Algebra.Polynomial.Multivariate (evalMonomial, evalPolynomial, var)
@@ -69,6 +70,10 @@ import ZkFold.Symbolic.Class (Arithmetic)
 class Halo2FieldExport a where
   halo2FieldTag :: proxy a -> T.Text
   halo2FieldText :: a -> T.Text
+
+instance Halo2FieldExport Fr where
+  halo2FieldTag _ = "bls12_381_scalar"
+  halo2FieldText = primeFieldDecimal
 
 primeFieldDecimal :: (PrimeField a, Show (IntegralOf a)) => a -> T.Text
 primeFieldDecimal = T.pack . P.show . toIntegral
