@@ -115,7 +115,7 @@ deriving anyclass instance
 --             "$ref": "#/components/schemas/State_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciStateWitness": {
---             "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/StateWitness_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciTransactionBatch": {
 --             "$ref": "#/components/schemas/TransactionBatch_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
