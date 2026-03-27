@@ -4,6 +4,7 @@ use ff::PrimeField;
 use ff::Field;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -52,8 +53,16 @@ impl ImportedCircuitIr {
         let path = path.as_ref();
         let file = File::open(path)
             .with_context(|| format!("failed to open IR file: {}", path.display()))?;
-        let ir: Self = serde_json::from_reader(file)
-            .with_context(|| format!("failed to decode IR file: {}", path.display()))?;
+
+        // Large file buffer for disk I/O
+        let reader = BufReader::with_capacity(1024 * 1024, file);
+
+        // Larger CBOR scratch buffer than the default 4 KB
+        let mut scratch = vec![0u8; 64 * 1024];
+
+        let ir: Self = ciborium::de::from_reader_with_buffer(reader, &mut scratch)
+            .with_context(|| format!("failed to decode CBOR IR file: {}", path.display()))?;
+
         ir.validate()?;
         Ok(ir)
     }
