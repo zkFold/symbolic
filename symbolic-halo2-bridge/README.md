@@ -25,6 +25,8 @@ cargo build --release
 Run the Rust bridge executable:
 
 ```bash
+export RAYON_NUM_THREADS=1 # turning parallelism off significantly speeds up proving
+
 ./symbolic-halo2-bridge prove symbolic_circuit.json
 ./symbolic-halo2-bridge verify symbolic_circuit.json symbolic_circuit.proof.hex
 ./symbolic-halo2-bridge gen-plinth symbolic_circuit.json
