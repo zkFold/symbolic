@@ -1,7 +1,6 @@
-use ff::Field;
 use crate::ir::{parse_scalar, ImportedCircuitIr};
-use anyhow::{anyhow, Result};
 use blstrs::Scalar;
+use ff::Field;
 use halo2_proofs::circuit::{Cell, Layouter, SimpleFloorPlanner, Value};
 use halo2_proofs::plonk::{
     Advice, Circuit, Column, ConstraintSystem, Error, Fixed, Instance, TableColumn,
@@ -23,7 +22,6 @@ pub struct ImportedConfig {
     pub q_r: Column<Fixed>,
     pub q_o: Column<Fixed>,
     pub q_c: Column<Fixed>,
-    pub q_pub: Column<Fixed>,
     pub q_lookup: Column<Fixed>,
 
     pub table_1: TableColumn,
@@ -40,6 +38,25 @@ impl ImportedCircuit {
     pub fn new(ir: ImportedCircuitIr) -> Self {
         Self { ir: Arc::new(ir) }
     }
+
+    fn without_witness_ir(&self) -> ImportedCircuitIr {
+        let mut ir = (*self.ir).clone();
+
+        for row in &mut ir.rows {
+            row.a_cell.cell_value = "0".to_owned();
+            row.b_cell.cell_value = "0".to_owned();
+            row.c_cell.cell_value = "0".to_owned();
+        }
+
+        // Public inputs are not witness in the strict PLONK sense, but for the
+        // witness-free sizing/keygen path it is simplest to clear them too while
+        // preserving arity.
+        for x in &mut ir.public_inputs {
+            *x = "0".to_owned();
+        }
+
+        ir
+    }
 }
 
 impl Circuit<Scalar> for ImportedCircuit {
@@ -47,7 +64,7 @@ impl Circuit<Scalar> for ImportedCircuit {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        self.clone()
+        Self::new(self.without_witness_ir())
     }
 
     fn configure(meta: &mut ConstraintSystem<Scalar>) -> Self::Config {
@@ -60,13 +77,13 @@ impl Circuit<Scalar> for ImportedCircuit {
         meta.enable_equality(adv_c);
 
         let inst = meta.instance_column();
+        meta.enable_equality(inst);
 
         let q_m = meta.fixed_column();
         let q_l = meta.fixed_column();
         let q_r = meta.fixed_column();
         let q_o = meta.fixed_column();
         let q_c = meta.fixed_column();
-        let q_pub = meta.fixed_column();
         let q_lookup = meta.fixed_column();
 
         let table_1 = meta.lookup_table_column();
@@ -83,17 +100,13 @@ impl Circuit<Scalar> for ImportedCircuit {
             let q_r_expr = meta.query_fixed(q_r, Rotation::cur());
             let q_o_expr = meta.query_fixed(q_o, Rotation::cur());
             let q_c_expr = meta.query_fixed(q_c, Rotation::cur());
-            let q_pub_expr = meta.query_fixed(q_pub, Rotation::cur());
-
-            let pi = meta.query_instance(inst, Rotation::cur());
 
             vec![
                 q_m_expr * a.clone() * b.clone()
                     + q_l_expr * a
                     + q_r_expr * b
                     + q_o_expr * c
-                    + q_c_expr
-                    - q_pub_expr * pi,
+                    + q_c_expr,
             ]
         });
 
@@ -103,7 +116,11 @@ impl Circuit<Scalar> for ImportedCircuit {
             let b = meta.query_advice(adv_b, Rotation::cur());
             let c = meta.query_advice(adv_c, Rotation::cur());
 
-            vec![(q.clone() * a, table_1), (q.clone() * b, table_2), (q * c, table_3)]
+            vec![
+                (q.clone() * a, table_1),
+                (q.clone() * b, table_2),
+                (q * c, table_3),
+            ]
         });
 
         ImportedConfig {
@@ -116,7 +133,6 @@ impl Circuit<Scalar> for ImportedCircuit {
             q_r,
             q_o,
             q_c,
-            q_pub,
             q_lookup,
             table_1,
             table_2,
@@ -145,27 +161,47 @@ impl Circuit<Scalar> for ImportedCircuit {
             },
         )?;
 
-        layouter.assign_region(
+        let public_cells: Vec<(Cell, usize)> = layouter.assign_region(
             || "symbolic_rows",
             |mut region| {
                 let mut equality_cells: HashMap<String, Cell> = HashMap::new();
+                let mut public_cells: Vec<(Cell, usize)> = Vec::new();
 
                 for (offset, row) in self.ir.rows.iter().enumerate() {
                     let a_val = parse_scalar(&row.a_cell.cell_value).map_err(to_halo2_err)?;
                     let b_val = parse_scalar(&row.b_cell.cell_value).map_err(to_halo2_err)?;
                     let c_val = parse_scalar(&row.c_cell.cell_value).map_err(to_halo2_err)?;
 
-                    let q_m = parse_scalar(&row.q_m_row).map_err(to_halo2_err)?;
-                    let q_l = parse_scalar(&row.q_l_row).map_err(to_halo2_err)?;
-                    let q_r = parse_scalar(&row.q_r_row).map_err(to_halo2_err)?;
-                    let q_o = parse_scalar(&row.q_o_row).map_err(to_halo2_err)?;
-                    let q_c = parse_scalar(&row.q_c_row).map_err(to_halo2_err)?;
-                    let q_pub = if row.instance_index.is_some() {
-                        Scalar::ONE
-                    } else {
+                    let is_public_anchor = row.instance_index.is_some();
+
+                    let q_m = if is_public_anchor {
                         Scalar::ZERO
+                    } else {
+                        parse_scalar(&row.q_m_row).map_err(to_halo2_err)?
                     };
-                    let q_lookup = if row.q_lookup {
+                    let q_l = if is_public_anchor {
+                        Scalar::ZERO
+                    } else {
+                        parse_scalar(&row.q_l_row).map_err(to_halo2_err)?
+                    };
+                    let q_r = if is_public_anchor {
+                        Scalar::ZERO
+                    } else {
+                        parse_scalar(&row.q_r_row).map_err(to_halo2_err)?
+                    };
+                    let q_o = if is_public_anchor {
+                        Scalar::ZERO
+                    } else {
+                        parse_scalar(&row.q_o_row).map_err(to_halo2_err)?
+                    };
+                    let q_c = if is_public_anchor {
+                        Scalar::ZERO
+                    } else {
+                        parse_scalar(&row.q_c_row).map_err(to_halo2_err)?
+                    };
+                    let q_lookup = if is_public_anchor {
+                        Scalar::ZERO
+                    } else if row.q_lookup {
                         Scalar::ONE
                     } else {
                         Scalar::ZERO
@@ -176,7 +212,6 @@ impl Circuit<Scalar> for ImportedCircuit {
                     region.assign_fixed(|| "q_r", config.q_r, offset, || Value::known(q_r))?;
                     region.assign_fixed(|| "q_o", config.q_o, offset, || Value::known(q_o))?;
                     region.assign_fixed(|| "q_c", config.q_c, offset, || Value::known(q_c))?;
-                    region.assign_fixed(|| "q_pub", config.q_pub, offset, || Value::known(q_pub))?;
                     region.assign_fixed(
                         || "q_lookup",
                         config.q_lookup,
@@ -209,11 +244,19 @@ impl Circuit<Scalar> for ImportedCircuit {
                         row.c_cell.equality_key.as_deref(),
                         c_assigned.cell(),
                     )?;
+
+                    if let Some(ix) = row.instance_index {
+                        public_cells.push((a_assigned.cell(), ix as usize));
+                    }
                 }
 
-                Ok(())
+                Ok(public_cells)
             },
         )?;
+
+        for (cell, instance_row) in public_cells {
+            layouter.constrain_instance(cell, config.inst, instance_row)?;
+        }
 
         Ok(())
     }

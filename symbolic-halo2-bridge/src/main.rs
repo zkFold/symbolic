@@ -3,9 +3,7 @@ mod ir;
 
 use anyhow::{bail, Context, Result};
 use blstrs::{Bls12, G1Projective, Scalar};
-use halo2_proofs::plonk::{
-    create_proof, k_from_circuit, keygen_pk, keygen_vk, prepare, ProvingKey, VerifyingKey,
-};
+use halo2_proofs::plonk::{create_proof, keygen_pk, keygen_vk_with_k, prepare, ProvingKey, VerifyingKey};
 use halo2_proofs::poly::commitment::{Guard, PolynomialCommitmentScheme};
 use halo2_proofs::poly::gwc_kzg::GwcKZGCommitmentScheme;
 use halo2_proofs::poly::kzg::params::{ParamsKZG, ParamsVerifierKZG};
@@ -46,56 +44,56 @@ fn main() -> Result<()> {
     };
 
     match args.as_slice() {
-        [cmd, circuit_json] if cmd == "prove" => dispatch_prove(Path::new(circuit_json), flavor),
-        [cmd, circuit_json, proof_hex] if cmd == "verify" => {
-            dispatch_verify(Path::new(circuit_json), Path::new(proof_hex), flavor)
+        [cmd, circuit_cbor] if cmd == "prove" => dispatch_prove(Path::new(circuit_cbor), flavor),
+        [cmd, circuit_cbor, proof_hex] if cmd == "verify" => {
+            dispatch_verify(Path::new(circuit_cbor), Path::new(proof_hex), flavor)
         }
-        [cmd, circuit_json] if cmd == "gen-plinth" => {
-            dispatch_gen_plinth(Path::new(circuit_json), flavor)
+        [cmd, circuit_cbor] if cmd == "gen-plinth" => {
+            dispatch_gen_plinth(Path::new(circuit_cbor), flavor)
         }
-        [cmd, circuit_json] if cmd == "gen-aiken" => {
-            dispatch_gen_aiken(Path::new(circuit_json), flavor)
+        [cmd, circuit_cbor] if cmd == "gen-aiken" => {
+            dispatch_gen_aiken(Path::new(circuit_cbor), flavor)
         }
         _ => {
             eprintln!("Usage:");
-            eprintln!("  symbolic-halo2-bridge prove <circuit.json> [gwc_kzg]");
-            eprintln!("  symbolic-halo2-bridge verify <circuit.json> <proof.hex> [gwc_kzg]");
-            eprintln!("  symbolic-halo2-bridge gen-plinth <circuit.json> [gwc_kzg]");
-            eprintln!("  symbolic-halo2-bridge gen-aiken <circuit.json> [gwc_kzg]");
+            eprintln!("  symbolic-halo2-bridge prove <circuit.cbor> [gwc_kzg]");
+            eprintln!("  symbolic-halo2-bridge verify <circuit.cbor> <proof.hex> [gwc_kzg]");
+            eprintln!("  symbolic-halo2-bridge gen-plinth <circuit.cbor> [gwc_kzg]");
+            eprintln!("  symbolic-halo2-bridge gen-aiken <circuit.cbor> [gwc_kzg]");
             bail!("invalid command line")
         }
     }
 }
 
-fn dispatch_prove(circuit_json: &Path, flavor: Flavor) -> Result<()> {
+fn dispatch_prove(circuit_cbor: &Path, flavor: Flavor) -> Result<()> {
     match flavor {
-        Flavor::Halo2 => prove_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_json),
-        Flavor::Gwc19 => prove_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_json),
+        Flavor::Halo2 => prove_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_cbor),
+        Flavor::Gwc19 => prove_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_cbor),
     }
 }
 
-fn dispatch_verify(circuit_json: &Path, proof_hex: &Path, flavor: Flavor) -> Result<()> {
+fn dispatch_verify(circuit_cbor: &Path, proof_hex: &Path, flavor: Flavor) -> Result<()> {
     match flavor {
-        Flavor::Halo2 => verify_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_json, proof_hex),
-        Flavor::Gwc19 => verify_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_json, proof_hex),
+        Flavor::Halo2 => verify_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_cbor, proof_hex),
+        Flavor::Gwc19 => verify_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_cbor, proof_hex),
     }
 }
 
-fn dispatch_gen_plinth(circuit_json: &Path, flavor: Flavor) -> Result<()> {
+fn dispatch_gen_plinth(circuit_cbor: &Path, flavor: Flavor) -> Result<()> {
     match flavor {
-        Flavor::Halo2 => gen_plinth_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_json),
-        Flavor::Gwc19 => gen_plinth_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_json),
+        Flavor::Halo2 => gen_plinth_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_cbor),
+        Flavor::Gwc19 => gen_plinth_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_cbor),
     }
 }
 
-fn dispatch_gen_aiken(circuit_json: &Path, flavor: Flavor) -> Result<()> {
+fn dispatch_gen_aiken(circuit_cbor: &Path, flavor: Flavor) -> Result<()> {
     match flavor {
-        Flavor::Halo2 => gen_aiken_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_json),
-        Flavor::Gwc19 => gen_aiken_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_json),
+        Flavor::Halo2 => gen_aiken_with_pcs::<KZGCommitmentScheme<Bls12>>(circuit_cbor),
+        Flavor::Gwc19 => gen_aiken_with_pcs::<GwcKZGCommitmentScheme<Bls12>>(circuit_cbor),
     }
 }
 
-fn prove_with_pcs<PCS>(circuit_json: &Path) -> Result<()>
+fn prove_with_pcs<PCS>(circuit_cbor: &Path) -> Result<()>
 where
     PCS: PolynomialCommitmentScheme<
             Scalar,
@@ -104,51 +102,48 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let ir = ImportedCircuitIr::from_path(circuit_json)?;
+    let ir = ImportedCircuitIr::from_path(circuit_cbor)?;
     let circuit = ImportedCircuit::new(ir.clone());
 
     let seed = [0u8; 32];
     let mut rng: StdRng = SeedableRng::from_seed(seed);
 
-    let k = k_from_circuit(&circuit);
+    let k = k_from_ir(&ir)?;
     let params = get_or_create_kzg_params(k, rng.clone())?;
-    let vk: VerifyingKey<Scalar, PCS> = keygen_vk(&params, &circuit)?;
+    let vk: VerifyingKey<Scalar, PCS> = keygen_vk_with_k(&params, &circuit, k)?;
     let pk: ProvingKey<Scalar, PCS> = keygen_pk(vk.clone(), &circuit)?;
 
-    let dense_public = ir.dense_public_inputs()?;
-    let paths = derive_output_paths(circuit_json);
+    let compact_public = ir.compact_public_inputs()?;
+    let paths = derive_output_paths(circuit_cbor);
 
-    let proof = create_proof_bytes::<PCS>(&params, &pk, circuit.clone(), &dense_public, &mut rng)?;
-    verify_proof_bytes::<PCS>(&params, &vk, &dense_public, &proof)?;
+    let proof =
+        create_proof_bytes::<PCS>(&params, &pk, circuit.clone(), &compact_public, &mut rng)?;
+    verify_proof_bytes::<PCS>(&params, &vk, &compact_public, &proof)?;
 
-    fs::create_dir_all(
-        paths.proof_hex
-            .parent()
-            .unwrap_or_else(|| Path::new(".")),
-    )?;
+    fs::create_dir_all(paths.proof_hex.parent().unwrap_or_else(|| Path::new(".")))?;
 
     serialize_proof(paths.proof_json.to_string_lossy().to_string(), proof.clone())
         .context("failed to write proof json")?;
     export_proof(paths.proof_hex.to_string_lossy().to_string(), proof.clone())
         .context("failed to write proof hex")?;
 
-    let col0: &[Scalar] = dense_public.as_slice();
+    let col0: &[Scalar] = compact_public.as_slice();
     let instance_columns: [&[Scalar]; 1] = [col0];
     let instances: &[&[&[Scalar]]] = &[&instance_columns];
 
     let mut public_out = File::create(&paths.public_hex)
         .with_context(|| format!("failed to create {}", paths.public_hex.display()))?;
     export_public_inputs(instances, &mut public_out)
-        .context("failed to write dense public inputs")?;
+        .context("failed to write public inputs")?;
 
     println!("proof written to {}", paths.proof_hex.display());
     println!("proof json written to {}", paths.proof_json.display());
-    println!("dense public inputs written to {}", paths.public_hex.display());
+    println!("public inputs written to {}", paths.public_hex.display());
 
     Ok(())
 }
 
-fn verify_with_pcs<PCS>(circuit_json: &Path, proof_hex: &Path) -> Result<()>
+fn verify_with_pcs<PCS>(circuit_cbor: &Path, proof_hex: &Path) -> Result<()>
 where
     PCS: PolynomialCommitmentScheme<
             Scalar,
@@ -157,28 +152,28 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let ir = ImportedCircuitIr::from_path(circuit_json)?;
+    let ir = ImportedCircuitIr::from_path(circuit_cbor)?;
     let circuit = ImportedCircuit::new(ir.clone());
 
     let seed = [0u8; 32];
     let rng: StdRng = SeedableRng::from_seed(seed);
 
-    let k = k_from_circuit(&circuit);
+    let k = k_from_ir(&ir)?;
     let params = get_or_create_kzg_params(k, rng)?;
-    let vk: VerifyingKey<Scalar, PCS> = keygen_vk(&params, &circuit)?;
+    let vk: VerifyingKey<Scalar, PCS> = keygen_vk_with_k(&params, &circuit, k)?;
 
-    let dense_public = ir.dense_public_inputs()?;
+    let compact_public = ir.compact_public_inputs()?;
     let proof_hex_contents = fs::read_to_string(proof_hex)
         .with_context(|| format!("failed to read {}", proof_hex.display()))?;
     let proof_bytes = hex::decode(proof_hex_contents.trim())
         .with_context(|| format!("failed to decode hex proof {}", proof_hex.display()))?;
 
-    verify_proof_bytes::<PCS>(&params, &vk, &dense_public, &proof_bytes)?;
+    verify_proof_bytes::<PCS>(&params, &vk, &compact_public, &proof_bytes)?;
     println!("verification succeeded");
     Ok(())
 }
 
-fn gen_plinth_with_pcs<PCS>(circuit_json: &Path) -> Result<()>
+fn gen_plinth_with_pcs<PCS>(circuit_cbor: &Path) -> Result<()>
 where
     PCS: PolynomialCommitmentScheme<
             Scalar,
@@ -187,9 +182,9 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let (params, vk, dense_public) = prepare_vk::<PCS>(circuit_json)?;
+    let (params, vk, compact_public) = prepare_vk::<PCS>(circuit_cbor)?;
 
-    let col0: &[Scalar] = dense_public.as_slice();
+    let col0: &[Scalar] = compact_public.as_slice();
     let instance_columns: [&[Scalar]; 1] = [col0];
     let instances: &[&[&[Scalar]]] = &[&instance_columns];
 
@@ -199,7 +194,7 @@ where
     Ok(())
 }
 
-fn gen_aiken_with_pcs<PCS>(circuit_json: &Path) -> Result<()>
+fn gen_aiken_with_pcs<PCS>(circuit_cbor: &Path) -> Result<()>
 where
     PCS: PolynomialCommitmentScheme<
             Scalar,
@@ -208,9 +203,9 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let (params, vk, dense_public) = prepare_vk::<PCS>(circuit_json)?;
+    let (params, vk, compact_public) = prepare_vk::<PCS>(circuit_cbor)?;
 
-    let col0: &[Scalar] = dense_public.as_slice();
+    let col0: &[Scalar] = compact_public.as_slice();
     let instance_columns: [&[Scalar]; 1] = [col0];
     let instances: &[&[&[Scalar]]] = &[&instance_columns];
 
@@ -220,7 +215,7 @@ where
     Ok(())
 }
 
-fn prepare_vk<PCS>(circuit_json: &Path) -> Result<(Params, VerifyingKey<Scalar, PCS>, Vec<Scalar>)>
+fn prepare_vk<PCS>(circuit_cbor: &Path) -> Result<(Params, VerifyingKey<Scalar, PCS>, Vec<Scalar>)>
 where
     PCS: PolynomialCommitmentScheme<
             Scalar,
@@ -229,25 +224,25 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let ir = ImportedCircuitIr::from_path(circuit_json)?;
+    let ir = ImportedCircuitIr::from_path(circuit_cbor)?;
     let circuit = ImportedCircuit::new(ir.clone());
 
     let seed = [0u8; 32];
     let rng: StdRng = SeedableRng::from_seed(seed);
 
-    let k = k_from_circuit(&circuit);
+    let k = k_from_ir(&ir)?;
     let params = get_or_create_kzg_params(k, rng)?;
-    let vk: VerifyingKey<Scalar, PCS> = keygen_vk(&params, &circuit)?;
-    let dense_public = ir.dense_public_inputs()?;
+    let vk: VerifyingKey<Scalar, PCS> = keygen_vk_with_k(&params, &circuit, k)?;
+    let compact_public = ir.compact_public_inputs()?;
 
-    Ok((params, vk, dense_public))
+    Ok((params, vk, compact_public))
 }
 
 fn create_proof_bytes<PCS>(
     params: &Params,
     pk: &ProvingKey<Scalar, PCS>,
     circuit: ImportedCircuit,
-    dense_public: &[Scalar],
+    compact_public: &[Scalar],
     rng: &mut StdRng,
 ) -> Result<Vec<u8>>
 where
@@ -258,7 +253,7 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let col0: &[Scalar] = dense_public;
+    let col0: &[Scalar] = compact_public;
     let instance_columns: [&[Scalar]; 1] = [col0];
     let instances: &[&[&[Scalar]]] = &[&instance_columns];
 
@@ -271,7 +266,7 @@ where
 fn verify_proof_bytes<PCS>(
     params: &Params,
     vk: &VerifyingKey<Scalar, PCS>,
-    dense_public: &[Scalar],
+    compact_public: &[Scalar],
     proof: &[u8],
 ) -> Result<()>
 where
@@ -282,7 +277,7 @@ where
             VerifierParameters = ParamsVK,
         > + ExtractPCS,
 {
-    let col0: &[Scalar] = dense_public;
+    let col0: &[Scalar] = compact_public;
     let instance_columns: [&[Scalar]; 1] = [col0];
     let instances: &[&[&[Scalar]]] = &[&instance_columns];
 
@@ -296,15 +291,49 @@ where
     Ok(())
 }
 
+fn k_from_ir(ir: &ImportedCircuitIr) -> Result<u32> {
+    let rows = ir.rows.len();
+    let table = ir.lookup_table.len();
+
+    // SimpleFloorPlanner packs the main region and table data into the same
+    // overall layout budget, so use a conservative upper bound.
+    let total = rows
+        .checked_add(table)
+        .and_then(|x| x.checked_add(8192))
+        .context("row-count overflow while computing k")?;
+
+    let n = total.max(1).next_power_of_two();
+    let k = n.ilog2();
+
+    if k > 24 {
+        bail!(
+            "layout needs k={}, which exceeds the supported limit 24 (rows={}, lookup_table={})",
+            k,
+            rows,
+            table
+        );
+    }
+
+    println!(
+        "Using k={} (rows={}, lookup_table={}, public_inputs={})",
+        k,
+        rows,
+        table,
+        ir.public_inputs.len()
+    );
+
+    Ok(k)
+}
+
 struct OutputPaths {
     proof_hex: PathBuf,
     proof_json: PathBuf,
     public_hex: PathBuf,
 }
 
-fn derive_output_paths(circuit_json: &Path) -> OutputPaths {
-    let dir = circuit_json.parent().unwrap_or_else(|| Path::new("."));
-    let stem = circuit_json
+fn derive_output_paths(circuit_cbor: &Path) -> OutputPaths {
+    let dir = circuit_cbor.parent().unwrap_or_else(|| Path::new("."));
+    let stem = circuit_cbor
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("symbolic_circuit");
