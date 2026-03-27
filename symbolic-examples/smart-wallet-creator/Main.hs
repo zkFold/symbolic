@@ -11,27 +11,25 @@
 module Main where
 
 import Data.ByteString (ByteString)
+import GHC.Generics
 import GHC.Generics (Par1 (..), (:*:) (..))
+import System.Process
 import ZkFold.Algebra.Class
+import ZkFold.Algebra.EllipticCurve.BLS12_381
+import ZkFold.Algebra.Field
+import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
+import ZkFold.Protocol.Halo2.Export
 import ZkFold.Protocol.NonInteractiveProof
 import ZkFold.Protocol.Plonkup.Prover.Secret
 import Prelude hiding (Fractional (..), Num (..), length)
 
 import ZkFold.Symbolic.Examples.SmartWallet
 
-
-import ZkFold.Algebra.Polynomial.Univariate (PolyVec)
-import ZkFold.Algebra.Class
-import ZkFold.Algebra.Field
-import GHC.Generics
-import ZkFold.Algebra.EllipticCurve.BLS12_381
-import ZkFold.Protocol.Halo2.Export
-import System.Process
-
 main :: IO ()
 main = do
   runProof
-      {--
+
+{--
   (exitcode, stdout, stderr) <- readProcessWithExitCode (exePath <> exeName) ["prove", circuitFile] ""
   print exitcode
   putStrLn "-----------------"
@@ -50,7 +48,7 @@ exePath :: FilePath
 exePath = "/home/vladimir/Desktop/zkFold/zkfold-base/symbolic-halo2-bridge/target/release/"
 
 exeName :: FilePath
-exeName = "symbolic-halo2-bridge" 
+exeName = "symbolic-halo2-bridge"
 
 circuitFile :: FilePath
 circuitFile = "circuit.cbor"
@@ -58,20 +56,20 @@ circuitFile = "circuit.cbor"
 runProof :: IO ()
 runProof = writeHalo2IrFile circuitFile ir
  where
-{--
-  input :: Fr
-  input = toZp (-42)
+  {--
+    input :: Fr
+    input = toZp (-42)
 
-  witnessInputs :: (Par1 :*: Par1) Fr
-  witnessInputs = Par1 input :*: Par1 input
+    witnessInputs :: (Par1 :*: Par1) Fr
+    witnessInputs = Par1 input :*: Par1 input
 
-  Right ir = exportHalo2Ir @_ @_ @ExpModCircuitGatesMock @_ @(PolyVec Fr) debugCircuit witnessInputs
+    Right ir = exportHalo2Ir @_ @_ @ExpModCircuitGatesMock @_ @(PolyVec Fr) debugCircuit witnessInputs
 
---}
+  --}
 
---{--
+  -- {--
   ac = expModCircuit 65537 239456238475263984572639847
   input = circuitInput 128752 129567120934
-  Right ir = exportHalo2Ir @_ @_ @ExpModCircuitGates @_ @(PolyVec Fr) ac input 
+  Right ir = exportHalo2Ir @_ @_ @ExpModCircuitGates @_ @(PolyVec Fr) ac input
 
---}
+-- }

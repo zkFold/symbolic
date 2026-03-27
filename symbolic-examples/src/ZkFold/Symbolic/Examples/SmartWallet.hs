@@ -285,7 +285,7 @@ expModProof
 expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
  where
   paddedWitnessInputs :: ExpModCompiledInput Fr
-  paddedWitnessInputs = circuitInput piSignature piTokenName 
+  paddedWitnessInputs = circuitInput piSignature piTokenName
 
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
   plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t

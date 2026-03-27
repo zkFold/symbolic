@@ -25,17 +25,17 @@ module ZkFold.Protocol.Halo2.Export (
   writeHalo2IrFile,
 ) where
 
-import Control.Applicative (pure)
-import Codec.CBOR.Encoding
-  ( Encoding
-  , encodeBool
-  , encodeListLen
-  , encodeMapLen
-  , encodeNull
-  , encodeString
-  , encodeWord32
-  )
+import Codec.CBOR.Encoding (
+  Encoding,
+  encodeBool,
+  encodeListLen,
+  encodeMapLen,
+  encodeNull,
+  encodeString,
+  encodeWord32,
+ )
 import Codec.CBOR.Write (toLazyByteString)
+import Control.Applicative (pure)
 import Data.Aeson qualified as Aeson
 import Data.Binary (Binary, encode)
 import Data.ByteString.Lazy qualified as LBS
@@ -103,7 +103,6 @@ data AssignedCell = AssignedCell
   }
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
-
 data ImportedRow = ImportedRow
   { rowIndex :: !Word32
   , aCell :: !AssignedCell
@@ -119,14 +118,12 @@ data ImportedRow = ImportedRow
   }
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
-
 data LookupTableRow = LookupTableRow
   { t1 :: !T.Text
   , t2 :: !T.Text
   , t3 :: !T.Text
   }
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
-  
 
 data Halo2CircuitIR = Halo2CircuitIR
   { formatVersion :: !Word32
@@ -137,77 +134,100 @@ data Halo2CircuitIR = Halo2CircuitIR
   }
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
-
 data ExportError
   = RelationTooSmall
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
-
 writeHalo2IrFile :: FilePath -> Halo2CircuitIR -> IO ()
-writeHalo2IrFile fp ir = 
+writeHalo2IrFile fp ir =
   LBS.writeFile fp (toLazyByteString (encodeHalo2CircuitIR ir))
 
 encodeHalo2CircuitIR :: Halo2CircuitIR -> Encoding
-encodeHalo2CircuitIR Halo2CircuitIR
-  { formatVersion
-  , fieldTag
-  , rows
-  , lookupTable
-  , publicInputs
-  } =
+encodeHalo2CircuitIR
+  Halo2CircuitIR
+    { formatVersion
+    , fieldTag
+    , rows
+    , lookupTable
+    , publicInputs
+    } =
     encodeMapLen 5
-      <> encodeString "formatVersion" <> encodeWord32 formatVersion
-      <> encodeString "fieldTag" <> encodeString fieldTag
-      <> encodeString "rows" <> encodeListWith encodeImportedRow rows
-      <> encodeString "lookupTable" <> encodeListWith encodeLookupTableRow lookupTable
-      <> encodeString "publicInputs" <> encodeListWith encodeString publicInputs
+      <> encodeString "formatVersion"
+      <> encodeWord32 formatVersion
+      <> encodeString "fieldTag"
+      <> encodeString fieldTag
+      <> encodeString "rows"
+      <> encodeListWith encodeImportedRow rows
+      <> encodeString "lookupTable"
+      <> encodeListWith encodeLookupTableRow lookupTable
+      <> encodeString "publicInputs"
+      <> encodeListWith encodeString publicInputs
 
 encodeImportedRow :: ImportedRow -> Encoding
-encodeImportedRow ImportedRow
-  { rowIndex
-  , aCell
-  , bCell
-  , cCell
-  , qMRow 
-  , qLRow
-  , qRRow
-  , qORow
-  , qCRow
-  , qLookup
-  , instanceIndex
-  } =
+encodeImportedRow
+  ImportedRow
+    { rowIndex
+    , aCell
+    , bCell
+    , cCell
+    , qMRow
+    , qLRow
+    , qRRow
+    , qORow
+    , qCRow
+    , qLookup
+    , instanceIndex
+    } =
     encodeMapLen 11
-      <> encodeString "rowIndex" <> encodeWord32 rowIndex
-      <> encodeString "aCell" <> encodeAssignedCell aCell
-      <> encodeString "bCell" <> encodeAssignedCell bCell
-      <> encodeString "cCell" <> encodeAssignedCell cCell
-      <> encodeString "qMRow" <> encodeString qMRow 
-      <> encodeString "qLRow" <> encodeString qLRow
-      <> encodeString "qRRow" <> encodeString qRRow
-      <> encodeString "qORow" <> encodeString qORow
-      <> encodeString "qCRow" <> encodeString qCRow
-      <> encodeString "qLookup" <> encodeBool qLookup
-      <> encodeString "instanceIndex" <> encodeMaybeWord32 instanceIndex
+      <> encodeString "rowIndex"
+      <> encodeWord32 rowIndex
+      <> encodeString "aCell"
+      <> encodeAssignedCell aCell
+      <> encodeString "bCell"
+      <> encodeAssignedCell bCell
+      <> encodeString "cCell"
+      <> encodeAssignedCell cCell
+      <> encodeString "qMRow"
+      <> encodeString qMRow
+      <> encodeString "qLRow"
+      <> encodeString qLRow
+      <> encodeString "qRRow"
+      <> encodeString qRRow
+      <> encodeString "qORow"
+      <> encodeString qORow
+      <> encodeString "qCRow"
+      <> encodeString qCRow
+      <> encodeString "qLookup"
+      <> encodeBool qLookup
+      <> encodeString "instanceIndex"
+      <> encodeMaybeWord32 instanceIndex
 
 encodeAssignedCell :: AssignedCell -> Encoding
-encodeAssignedCell AssignedCell
-  { cellValue
-  , equalityKey
-  } =
+encodeAssignedCell
+  AssignedCell
+    { cellValue
+    , equalityKey
+    } =
     encodeMapLen 2
-      <> encodeString "cellValue" <> encodeString cellValue
-      <> encodeString "equalityKey" <> encodeMaybeText equalityKey
+      <> encodeString "cellValue"
+      <> encodeString cellValue
+      <> encodeString "equalityKey"
+      <> encodeMaybeText equalityKey
 
 encodeLookupTableRow :: LookupTableRow -> Encoding
-encodeLookupTableRow LookupTableRow
-  { t1
-  , t2
-  , t3
-  } =
+encodeLookupTableRow
+  LookupTableRow
+    { t1
+    , t2
+    , t3
+    } =
     encodeMapLen 3
-      <> encodeString "t1" <> encodeString t1
-      <> encodeString "t2" <> encodeString t2
-      <> encodeString "t3" <> encodeString t3
+      <> encodeString "t1"
+      <> encodeString t1
+      <> encodeString "t2"
+      <> encodeString t2
+      <> encodeString "t3"
+      <> encodeString t3
 
 encodeMaybeWord32 :: Maybe Word32 -> Encoding
 encodeMaybeWord32 Nothing = encodeNull
