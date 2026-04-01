@@ -301,8 +301,8 @@ search pred tree =
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
            in ( isL || isR
-              , isR : zipWith (ifThenElse isR) ri li
-              , ifThenElse isR rx lx
+              , (not isL && isR) : zipWith (ifThenElse (not isL && isR)) ri li
+              , ifThenElse (not isL && isR) rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
