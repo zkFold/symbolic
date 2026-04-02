@@ -36,9 +36,13 @@ import Codec.CBOR.Encoding (
  )
 import Codec.CBOR.Write (toLazyByteString)
 import Control.Applicative (pure)
+import Control.Monad.Except (ExceptT, liftEither)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson qualified as Aeson
 import Data.Binary (Binary, encode)
 import Data.ByteString.Lazy qualified as LBS
+import Data.ByteString qualified as BS
+import Data.ByteString.Base16 qualified as B16
 import Data.Char (intToDigit)
 import Data.Foldable (Foldable, toList)
 import Data.Functor (fmap, (<$>))
@@ -58,6 +62,10 @@ import GHC.IsList (fromList)
 import Numeric (showHex)
 import Prelude (Bool, Either (..), Eq, FilePath, IO, Show, flip, foldMap, id, ($), (++), (.), (/=), (<>), (==))
 import Prelude qualified as P
+import System.IO.Temp.OsPath (withSystemTempDirectory)
+import System.Process
+import System.Directory.Internal (os, so)
+import System.FilePath ((</>))
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -136,6 +144,7 @@ data Halo2CircuitIR = Halo2CircuitIR
 
 data ExportError
   = RelationTooSmall
+  | ProofDecodeError T.Text
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
 writeHalo2IrFile :: FilePath -> Halo2CircuitIR -> IO ()
@@ -357,6 +366,42 @@ lowerToPlonkup !ac =
    in if P.max cNum nLookup P.<= n
         then Just PlonkupLowering {relation, wireA = a, wireB = b, wireC = c, lookupTableRows}
         else Nothing
+
+runProver
+  :: forall i o n a pv
+   . ( KnownNat n
+     , Arithmetic a
+     , Eq a
+     , Binary a
+     , Binary (Rep i)
+     , UnivariateRingPolyVec a pv
+     , Representable i
+     , Representable o
+     , Foldable o
+     , Halo2FieldExport a
+     )
+  => FilePath
+  -> ArithmeticCircuit a i o
+  -> i a
+  -> ExceptT ExportError IO BS.ByteString
+runProver proverExe ac input = do
+  ir <- liftEither eitherIr
+  eitherProof <- withSystemTempDirectory (os "plonk_halo2") $ \path -> liftIO $ do
+    let dir = so path
+    let circuit = dir </> "circuit.cbor"
+    let proof = dir </> "circuit.proof.hex"
+    writeHalo2IrFile circuit ir 
+    (exitcode, stdout, stderr) <- readProcessWithExitCode proverExe ["prove", circuit] ""
+    proofHex <- BS.readFile proof
+    pure $ mapLeft (ProofDecodeError . T.pack) $ B16.decode proofHex
+  liftEither eitherProof
+  where
+    eitherIr :: Either ExportError Halo2CircuitIR
+    eitherIr = exportHalo2Ir @i @o @n @a @pv ac input  
+
+    mapLeft :: (l1 -> l2) -> Either l1 r -> Either l2 r
+    mapLeft f (Left l1) = Left (f l1)
+    mapLeft _ (Right r) = Right r
 
 exportHalo2Ir
   :: forall i o n a pv
