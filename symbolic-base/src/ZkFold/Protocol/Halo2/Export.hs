@@ -23,6 +23,7 @@ module ZkFold.Protocol.Halo2.Export (
   ExportError (..),
   exportHalo2Ir,
   writeHalo2IrFile,
+  runProver,
 ) where
 
 import Codec.CBOR.Encoding (
