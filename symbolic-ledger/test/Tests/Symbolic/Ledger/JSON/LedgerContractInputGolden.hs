@@ -14,6 +14,10 @@ import Paths_symbolic_ledger (getDataFileName)
 import Tests.Symbolic.Ledger.E2E.Two (batch, newState, prevState, witness)
 import ZkFold.Symbolic.Ledger.Circuit.Compile (LedgerContractInput (..))
 
+-- | Golden tests for LedgerContractInput JSON encoding.
+--
+-- Set the @GOLDEN_ACCEPT=1@ environment variable to overwrite the golden file
+-- when the output changes, similar to @tasty --accept@.  Example:
 specLedgerContractInputJSON :: Spec
 specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
   let
@@ -29,6 +33,8 @@ specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
       readGolden = do
         path <- getDataFileName "test/data/ledger_contract_input.json"
         bytes <- BL.readFile path
+        -- Force the lazy ByteString to be fully read so the file handle is
+        -- closed before we potentially write back to the same path.
         _ <- evaluate (toStrict bytes)
         Haskell.pure (path, bytes)
       accept = do
