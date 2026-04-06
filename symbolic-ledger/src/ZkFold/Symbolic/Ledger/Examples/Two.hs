@@ -14,6 +14,7 @@ module ZkFold.Symbolic.Ledger.Examples.Two (
   S,
   N,
   TxCount,
+  G,
 ) where
 
 import Control.Applicative (pure)
@@ -21,6 +22,7 @@ import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.Natural (Natural)
 import ZkFold.Algebra.Class
+import GHC.TypeNats (type (^))
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)
@@ -51,6 +53,8 @@ type S = 3
 type N = 3
 
 type TxCount = 3
+
+type G = 2 ^ 18
 
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))

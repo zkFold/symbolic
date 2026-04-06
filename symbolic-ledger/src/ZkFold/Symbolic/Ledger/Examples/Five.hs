@@ -32,9 +32,11 @@ module ZkFold.Symbolic.Ledger.Examples.Five (
   S,
   N,
   TxCount,
+  G,
 ) where
 
 import GHC.Generics ((:*:) (..), (:.:) (..))
+import GHC.TypeNats (type (^))
 import GHC.IsList (IsList (..))
 
 import ZkFold.Data.Vector (Vector)
@@ -48,7 +50,6 @@ import ZkFold.Symbolic.Ledger.Examples.Three (
   I,
   N,
   S,
-  SigEntry,
   Ud,
   address,
   address2,
@@ -71,6 +72,8 @@ import ZkFold.Symbolic.Ledger.Examples.Three (
 import ZkFold.Symbolic.Ledger.Examples.Three qualified as Three (prevState)
 
 type TxCount = 4
+
+type G = 2 ^ 20
 
 prevState :: State Ud A I
 prevState = Three.prevState

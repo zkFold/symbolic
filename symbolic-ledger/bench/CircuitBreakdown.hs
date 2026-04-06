@@ -26,7 +26,6 @@ import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Algorithm.EdDSA (eddsaVerify)
 import ZkFold.Symbolic.Class (Symbolic (..))
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), false, true, (||))
-import ZkFold.Symbolic.Data.EllipticCurve.Jubjub (shamirDoubleScale)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
 import ZkFold.Symbolic.Data.Hash (hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base

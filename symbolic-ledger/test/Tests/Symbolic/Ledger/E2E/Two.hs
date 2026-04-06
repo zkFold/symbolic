@@ -12,6 +12,7 @@ module Tests.Symbolic.Ledger.E2E.Two (
   S,
   N,
   TxCount,
+  G,
 ) where
 
 import Control.Applicative (pure)

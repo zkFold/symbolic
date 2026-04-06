@@ -28,7 +28,7 @@ import Data.Type.Equality (type (~))
 import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.Natural (Natural, naturalToInteger)
-import GHC.TypeNats (KnownNat, type (+), type (-), type (^))
+import GHC.TypeNats (KnownNat, type (*), type (+), type (-), type (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
@@ -224,30 +224,31 @@ type TranscriptConstraints ts =
   )
 
 ledgerSetup
-  :: forall tc bi bo ud a s n t c
-   . TranscriptConstraints tc
+  :: forall g tc bi bo ud a s n t c
+   . (KnownNat g, KnownNat (4 * g + 6))
+  => TranscriptConstraints tc
   => RollupBF ~ BaseField c
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud s n a t c
-  => TrustedSetup (LedgerCircuitGates + 6)
+  => TrustedSetup (g + 6)
   -> LedgerCircuit bi bo ud a s n t
-  -> SetupVerify (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) LedgerCircuitGates tc)
+  -> SetupVerify (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) g tc)
 ledgerSetup TrustedSetup {..} circuit = setupV
  where
-  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  (omega, k1, k2) = getParams (Number.value @g)
   plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
-  setupV = setupVerify @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) LedgerCircuitGates tc) plonkup
+  setupV = setupVerify @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) g tc) plonkup
 
 ledgerProof
-  :: forall tc bi bo ud a s n t c
-   . (TranscriptConstraints tc, c ~ Interpreter RollupBF)
+  :: forall g tc bi bo ud a s n t c
+   . (KnownNat g, KnownNat (4 * g + 6), TranscriptConstraints tc, c ~ Interpreter RollupBF)
   => SignatureState bi bo ud a c
   => SignatureTransactionBatch ud s n a t c
-  => TrustedSetup (LedgerCircuitGates + 6)
+  => TrustedSetup (g + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
   -> LedgerCircuit bi bo ud a s n t
   -> LedgerContractInput bi bo ud a s n t c
-  -> Proof (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) LedgerCircuitGates tc)
+  -> Proof (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) g tc)
 ledgerProof TrustedSetup {..} ps circuit input = proof
  where
   witnessInputs :: (Layout (LedgerContractInput bi bo ud a s n t) (Order RollupBF)) RollupBF
@@ -256,11 +257,11 @@ ledgerProof TrustedSetup {..} ps circuit input = proof
   paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a s n t RollupBF
   paddedWitnessInputs = (witnessInputs :*: U1) :*: (payload input :*: U1)
 
-  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  (omega, k1, k2) = getParams (Number.value @g)
   plonkup =
     Plonkup omega k1 k2 circuit g2_1 g1s
-      :: PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) LedgerCircuitGates tc
-  setupP = setupProve @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) LedgerCircuitGates tc) plonkup
+      :: PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) g tc
+  setupP = setupProve @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a s n t) g tc) plonkup
   witness =
     ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a s n t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs
     , ps

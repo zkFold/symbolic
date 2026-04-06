@@ -32,6 +32,7 @@ module ZkFold.Symbolic.Ledger.Examples.Three (
   S,
   N,
   TxCount,
+  G,
   -- Helpers for parameterizing TxCount
   emptyTree,
   utxoPreimage,
@@ -60,6 +61,7 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree qualified as SymMerkle
 import Prelude (Int, length, replicate, ($), (++))
 import Prelude qualified as P
+import GHC.TypeNats (type (^))
 import ZkFold.Algebra.Number (KnownNat, value)
 
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
@@ -82,6 +84,8 @@ type S = 2
 type N = 2
 
 type TxCount = 2
+
+type G = 2 ^ 18
 
 emptyTree :: SymMerkle.MerkleTree Ud I
 emptyTree = SymMerkle.fromLeaves (pure (nullUTxOHash @A @I))

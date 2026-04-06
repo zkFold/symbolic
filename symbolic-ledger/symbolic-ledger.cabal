@@ -186,7 +186,5 @@ benchmark bench-circuit-breakdown
   ghc-options: -O3
   build-depends:
     base,
-    bytestring,
-    vector,
     symbolic-base,
     symbolic-ledger,
