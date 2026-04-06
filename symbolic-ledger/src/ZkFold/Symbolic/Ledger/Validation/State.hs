@@ -87,7 +87,7 @@ deriving anyclass instance
 -- | Validate state update. See note [State validation] for details.
 -- Returns validity and tree delta:
 -- (1) validity boolean,
--- (2) bridge-in deltas: (packed position, new leaf hash) per bridge-in,
+-- (2) bridge-in deltas: (isActive, packed position, new leaf hash) per bridge-in,
 -- (3) input deltas per transaction: packed positions,
 -- (4) output deltas per transaction: (isActive, packed position, new hash).
 validateStateUpdate
@@ -103,7 +103,7 @@ validateStateUpdate
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> ( Bool
-         :*: (Vector bi :.: (FieldElement :*: FieldElement))
+         :*: (Vector bi :.: (Bool :*: FieldElement :*: FieldElement))
          :*: (Vector t :.: (Vector n :.: FieldElement))
          :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
      )
@@ -129,7 +129,7 @@ validateStateUpdateIndividualChecks
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
   -> ( Vector 5 (Bool context)
-     , (Vector bi :.: (FieldElement :*: FieldElement)) context
+     , (Vector bi :.: (Bool :*: FieldElement :*: FieldElement)) context
      , (Vector t :.: (Vector n :.: FieldElement)) context
      , (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement))) context
      )
@@ -148,7 +148,8 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
                 pos = packIndex (MerkleTree.position merkleEntry)
-                deltaEntry = pos :*: utxoHash
+                isActive = not isNull
+                deltaEntry = isActive :*: pos :*: utxoHash
                 (isInTree, updatedRoot) = MerkleTree.containsAndReplaceRoot merkleEntry utxoHash rootAcc
                 isValid' =
                   isValidAcc

@@ -147,7 +147,7 @@ type LedgerContractOutput bi bo a t n =
     :*: (Vector bi :.: Output a)
     :*: (Vector bo :.: Output a)
     -- Tree delta:
-    :*: (Vector bi :.: (FieldElement :*: FieldElement))
+    :*: (Vector bi :.: (Bool :*: FieldElement :*: FieldElement))
     :*: (Vector t :.: (Vector n :.: FieldElement))
     :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
 
@@ -203,7 +203,7 @@ type LedgerContractOutputLayout bi bo a t n =
     :*: (Vector bi :.: Layout (Output a) (Order RollupBF))
     :*: (Vector bo :.: Layout (Output a) (Order RollupBF))
     -- Tree delta layout:
-    :*: (Vector bi :.: (Par1 :*: Par1))
+    :*: (Vector bi :.: (Par1 :*: Par1 :*: Par1))
     :*: (Vector t :.: (Vector n :.: Par1))
     :*: (Vector t :.: (Vector n :.: (Par1 :*: Par1 :*: Par1)))
 
