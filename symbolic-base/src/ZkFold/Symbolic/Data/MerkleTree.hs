@@ -300,9 +300,10 @@ search pred tree =
           let (l, r) = bisect v
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
+              pickR = not isL && isR -- In case both subtrees have a match, we should prefer left subtree.
            in ( isL || isR
-              , (not isL && isR) : zipWith (ifThenElse (not isL && isR)) ri li
-              , ifThenElse (not isL && isR) rx lx
+              , pickR : zipWith (ifThenElse pickR) ri li
+              , ifThenElse pickR rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
