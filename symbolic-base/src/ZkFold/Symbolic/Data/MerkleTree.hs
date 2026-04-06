@@ -115,8 +115,10 @@ type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
 type Index d = Vector (d - 1) :.: Bool
 
 -- | Pack a tree index (vector of bits) into a single 'FieldElement'.
--- The bits are interpreted as a little-endian binary number:
--- @bit_0 * 2^0 + bit_1 * 2^1 + ... + bit_{d-2} * 2^{d-2}@.
+-- The position vector is stored root-to-leaf (MSB-first), so we reverse
+-- to get LSB-first before applying little-endian weights:
+-- @bit_{d-2} * 2^0 + ... + bit_1 * 2^{d-3} + bit_0 * 2^{d-2}@.
+-- This produces the natural leaf index (0, 1, 2, ...).
 -- This is a linear combination with constant coefficients, so it adds
 -- essentially zero cost to the circuit.
 packIndex
@@ -127,7 +129,7 @@ packIndex (Comp1 bits) =
   foldl'
     (\acc (Bool b :*: pow) -> acc + FieldElement b * pow)
     zero
-    (zipWith (:*:) (toList bits) powers)
+    (zipWith (:*:) (P.reverse (toList bits)) powers)
   where
     powers = P.fmap (fromConstant @Natural) $ P.iterate (* 2) 1
 
