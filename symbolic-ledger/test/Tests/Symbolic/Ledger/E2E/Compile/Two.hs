@@ -31,7 +31,6 @@ import ZkFold.Symbolic.Ledger.Circuit.Compile (
   ledgerSetup,
  )
 
-
 specE2ECompileTwo :: Spec
 specE2ECompileTwo =
   it "E2E ledger circuit, Two: prove and verify" $ do

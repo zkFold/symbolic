@@ -21,8 +21,8 @@ import Control.Applicative (pure)
 import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.Natural (Natural)
-import ZkFold.Algebra.Class
 import GHC.TypeNats (type (^))
+import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)

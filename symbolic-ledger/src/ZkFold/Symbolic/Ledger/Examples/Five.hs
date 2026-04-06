@@ -36,12 +36,9 @@ module ZkFold.Symbolic.Ledger.Examples.Five (
 ) where
 
 import GHC.Generics ((:*:) (..), (:.:) (..))
-import GHC.TypeNats (type (^))
 import GHC.IsList (IsList (..))
-
+import GHC.TypeNats (type (^))
 import ZkFold.Data.Vector (Vector)
-import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
-import ZkFold.Symbolic.Ledger.Types
 
 import ZkFold.Symbolic.Ledger.Examples.Three (
   A,
@@ -70,6 +67,8 @@ import ZkFold.Symbolic.Ledger.Examples.Three (
   utxoPreimage,
  )
 import ZkFold.Symbolic.Ledger.Examples.Three qualified as Three (prevState)
+import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
+import ZkFold.Symbolic.Ledger.Types
 
 type TxCount = 4
 

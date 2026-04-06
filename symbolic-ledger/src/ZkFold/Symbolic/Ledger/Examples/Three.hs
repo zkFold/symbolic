@@ -50,8 +50,10 @@ import Data.Function ((&))
 import GHC.Generics ((:*:) (..), (:.:) (..))
 import GHC.IsList (IsList (..))
 import GHC.Natural (Natural)
+import GHC.TypeNats (type (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.Class (CyclicGroup (..))
+import ZkFold.Algebra.Number (KnownNat, value)
 import ZkFold.Data.MerkleTree (Leaves)
 import ZkFold.Data.Vector (Vector)
 import ZkFold.Symbolic.Data.Bool (false, true)
@@ -61,8 +63,6 @@ import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.MerkleTree qualified as SymMerkle
 import Prelude (Int, length, replicate, ($), (++))
 import Prelude qualified as P
-import GHC.TypeNats (type (^))
-import ZkFold.Algebra.Number (KnownNat, value)
 
 import ZkFold.Symbolic.Ledger.Offchain.State.Update (updateLedgerState)
 import ZkFold.Symbolic.Ledger.Types
@@ -350,7 +350,9 @@ makeBatch txs = TransactionBatch {tbTransactions = unsafeToVector' (txs ++ repli
   padding = P.fromIntegral (value @txCount) P.- length txs
 
 -- | Build signatures, padding with 'nullSigEntry' to reach @txCount@.
-makeSigs :: forall txCount. KnownNat txCount => [SigEntry] -> (Vector txCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
+makeSigs
+  :: forall txCount
+   . KnownNat txCount => [SigEntry] -> (Vector txCount :.: (Vector S :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) I
 makeSigs entries = Comp1 (unsafeToVector' (entries ++ replicate padding nullSigEntry))
  where
   padding :: Int

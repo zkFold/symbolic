@@ -19,8 +19,8 @@
 -- > cabal run setup-generator -- 1048582 ~/Downloads/midnight-powers-of-tau-2p25 data/midnight_powers_of_tau_2e20
 module Main where
 
-import GHC.TypeNats (SomeNat (..), someNatVal)
 import Data.Proxy (Proxy (..))
+import GHC.TypeNats (SomeNat (..), someNatVal)
 import System.Environment (getArgs)
 import Prelude
 
