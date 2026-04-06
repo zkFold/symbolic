@@ -2,9 +2,12 @@ module Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden (specLedgerContractI
 
 import Data.Aeson (eitherDecode)
 import Data.Aeson.Encode.Pretty (Config (..), Indent (..), defConfig, encodePretty')
+import Control.Exception (evaluate)
 import Data.ByteString.Lazy qualified as BL
+import Data.ByteString.Lazy (toStrict)
+import System.Environment (lookupEnv)
 import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
-import Prelude (($))
+import Prelude (($), (==))
 import Prelude qualified as Haskell
 
 import Paths_symbolic_ledger (getDataFileName)
@@ -25,13 +28,25 @@ specLedgerContractInputJSON = describe "LedgerContractInput JSON" $ do
       enc = encodePretty' encConf
       readGolden = do
         path <- getDataFileName "test/data/ledger_contract_input.json"
-        BL.readFile path
+        bytes <- BL.readFile path
+        _ <- evaluate (toStrict bytes)
+        Haskell.pure (path, bytes)
+      accept = do
+        env <- lookupEnv "GOLDEN_ACCEPT"
+        Haskell.pure (env == Haskell.Just "1")
   it "encodes to JSON matching the golden file" $ do
-    goldenBytes <- readGolden
-    enc lci `shouldBe` goldenBytes
+    (goldenPath, goldenBytes) <- readGolden
+    let encoded = enc lci
+    if encoded == goldenBytes
+      then Haskell.pure ()
+      else do
+        shouldAccept <- accept
+        if shouldAccept
+          then BL.writeFile goldenPath encoded
+          else encoded `shouldBe` goldenBytes
 
   it "decodes from the golden JSON back to the same value (by re-encoding)" $ do
-    goldenBytes <- readGolden
+    (_, goldenBytes) <- readGolden
     case eitherDecode goldenBytes of
       Haskell.Left err -> expectationFailure err
       Haskell.Right parsed -> enc parsed `shouldBe` enc lci
