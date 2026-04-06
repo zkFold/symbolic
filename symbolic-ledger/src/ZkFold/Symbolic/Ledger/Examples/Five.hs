@@ -74,7 +74,7 @@ type TxCount = 4
 
 type G = 2 ^ 20
 
-prevState :: State Ud A I
+prevState :: State I
 prevState = Three.prevState
 
 batch :: TransactionBatch N A TxCount I
