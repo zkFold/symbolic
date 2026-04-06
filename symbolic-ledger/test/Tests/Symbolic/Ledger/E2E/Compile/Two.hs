@@ -3,7 +3,7 @@ module Tests.Symbolic.Ledger.E2E.Compile.Two (specE2ECompileTwo) where
 import Control.Applicative (pure)
 import Data.ByteString (ByteString)
 import GHC.Generics (U1 (..), (:*:) (..))
-import GHC.TypeNats (type (+))
+import GHC.TypeNats (type (+), type (^))
 import Test.Hspec (Spec, it, shouldBe)
 import ZkFold.Algebra.Class
 import ZkFold.ArithmeticCircuit (acSizeM, acSizeN)
@@ -23,7 +23,6 @@ import Prelude qualified as Haskell
 
 import Tests.Symbolic.Ledger.E2E.Two
 import ZkFold.Symbolic.Ledger.Circuit.Compile (
-  LedgerCircuitGates,
   LedgerContractCompiledInput,
   LedgerContractInput (..),
   PlonkupTs,
@@ -32,10 +31,11 @@ import ZkFold.Symbolic.Ledger.Circuit.Compile (
   ledgerSetup,
  )
 
+
 specE2ECompileTwo :: Spec
 specE2ECompileTwo =
   it "E2E ledger circuit, Two: prove and verify" $ do
-    ts :: TrustedSetup (LedgerCircuitGates + 6) <- powersOfTauSubset
+    ts :: TrustedSetup (G + 6) <- powersOfTauSubset
     let lci :: LedgerContractInput Bi Bo Ud A S N TxCount I
         lci =
           LedgerContractInput
@@ -51,6 +51,7 @@ specE2ECompileTwo =
       proverSecret = PlonkupProverSecret (pure zero)
       zkLedgerSetup =
         ledgerSetup
+          @G
           @ByteString
           @Bi
           @Bo
@@ -62,13 +63,13 @@ specE2ECompileTwo =
           @I
           ts
           compiledCircuit
-      zkLedgerProof = ledgerProof @ByteString ts proverSecret compiledCircuit lci
+      zkLedgerProof = ledgerProof @G @ByteString ts proverSecret compiledCircuit lci
       witnessInputs = runInterpreter $ arithmetize lci
       compiledInput = (witnessInputs :*: U1) :*: (payload lci :*: U1)
       PlonkupVerifierSetup {relation} = zkLedgerSetup
       zkLedgerInput = PlonkupInput (pubInput relation compiledInput)
     Haskell.putStrLn $ "zkLedgerInput: " <> show zkLedgerInput
-    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) LedgerCircuitGates ByteString)
+    verify @(PlonkupTs Bi Bo A (LedgerContractCompiledInput Bi Bo Ud A S N TxCount) G ByteString)
       zkLedgerSetup
       zkLedgerInput
       zkLedgerProof
