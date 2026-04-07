@@ -69,7 +69,7 @@ readTrustedSetup fp isCompressed = do
 
   !g1s <- V.replicateM @n $ getG handle g1Size
 
-  hSeek handle SeekFromEnd $ P.fromIntegral (- (2 P.* g2Size))
+  hSeek handle SeekFromEnd $ P.fromIntegral (-(2 P.* g2Size))
 
   !g20 <- getG handle g2Size
   !g21 <- getG handle g2Size
