@@ -4,6 +4,7 @@
 module ZkFold.Symbolic.Ledger.Circuit.Compile (
   LedgerContractInput (..),
   LedgerContractOutput,
+  LedgerContractOutputLayout,
   LedgerContractCompiledInput,
   LedgerCircuitGates,
   LedgerCircuit,
