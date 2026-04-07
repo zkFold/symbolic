@@ -19,11 +19,12 @@ import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Data.Vector (Vector, Zip (..))
 import ZkFold.Prelude (foldl')
 import ZkFold.Symbolic.Data.Bool (Bool, BoolType (..), true)
+import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry)
+import ZkFold.Symbolic.Data.MerkleTree (MerkleEntry, packIndex)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import Prelude qualified as Haskell
 
@@ -84,37 +85,54 @@ deriving anyclass instance
   => ToSchema (StateWitness bi bo ud a s n t RollupBFInterpreter)
 
 -- | Validate state update. See note [State validation] for details.
+-- Returns validity and tree delta:
+-- (1) validity boolean,
+-- (2) bridge-in deltas: (isActive, packed position, new leaf hash) per bridge-in,
+-- (3) input deltas per transaction: packed positions,
+-- (4) output deltas per transaction: (isActive, packed position, new hash).
 validateStateUpdate
   :: forall bi bo ud a s n t context
-   . SignatureState bi bo ud a context
+   . SignatureState bi bo context
   => SignatureTransactionBatch ud s n a t context
-  => State ud a context
+  => State context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State ud a context
+  -> State context
   -- ^ New state.
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
-  -> Bool context
+  -> ( Bool
+         :*: (Vector bi :.: (Bool :*: FieldElement :*: FieldElement))
+         :*: (Vector t :.: (Vector n :.: FieldElement))
+         :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
+     )
+       context
 validateStateUpdate previousState action newState sw =
-  let res = validateStateUpdateIndividualChecks previousState action newState sw
-   in res == Haskell.pure true
+  let (checks, biDelta, inDeltas, outDeltas) =
+        validateStateUpdateIndividualChecks previousState action newState sw
+      isValid = checks == Haskell.pure true
+   in isValid :*: biDelta :*: inDeltas :*: outDeltas
 
--- | Validate state update and return either the first failing reason or success.
+-- | Validate state update and return either the first failing reason or success,
+-- along with tree delta data.
 validateStateUpdateIndividualChecks
   :: forall bi bo ud a s n t context
-   . SignatureState bi bo ud a context
+   . SignatureState bi bo context
   => SignatureTransactionBatch ud s n a t context
-  => State ud a context
+  => State context
   -- ^ Previous state.
   -> TransactionBatch n a t context
   -- ^ The "action" that is applied to the state.
-  -> State ud a context
+  -> State context
   -- ^ New state.
   -> StateWitness bi bo ud a s n t context
   -- ^ Witness for the state.
-  -> Vector 5 (Bool context)
+  -> ( Vector 5 (Bool context)
+     , (Vector bi :.: (Bool :*: FieldElement :*: FieldElement)) context
+     , (Vector t :.: (Vector n :.: FieldElement)) context
+     , (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement))) context
+     )
 validateStateUpdateIndividualChecks previousState action newState sw =
   let
     initialRoot = previousState.sUTxO
@@ -122,13 +140,16 @@ validateStateUpdateIndividualChecks previousState action newState sw =
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
-    (_ :*: isWitBridgeInValid :*: rootWithBridgeIn) =
+    ((_ :*: isWitBridgeInValid :*: rootWithBridgeIn), biDeltasRev) =
       foldl'
-        ( \(ix :*: isValidAcc :*: rootAcc) ((output :*: merkleEntry)) ->
+        ( \((ix :*: isValidAcc :*: rootAcc), deltasAcc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isNull = output == nullOutput
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
                 utxoHash = hash utxo & Base.hHash
+                pos = packIndex (MerkleTree.position merkleEntry)
+                isActive = not isNull
+                deltaEntry = isActive :*: pos :*: utxoHash
                 (isInTree, updatedRoot) = MerkleTree.containsAndReplaceRoot merkleEntry utxoHash rootAcc
                 isValid' =
                   isValidAcc
@@ -139,23 +160,31 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                           && (MerkleTree.value merkleEntry == nullUTxOHash')
                           && outputHasValueSanity output
                       )
-             in ( (ix + one)
-                    :*: isValid'
-                    :*: ifThenElse
-                      (isValid' && (not isNull))
-                      updatedRoot
-                      rootAcc
+             in ( ( (ix + one)
+                      :*: isValid'
+                      :*: ifThenElse
+                        (isValid' && (not isNull))
+                        updatedRoot
+                        rootAcc
+                  )
+                , deltaEntry : deltasAcc
                 )
         )
-        (zero :*: true :*: initialRoot)
+        ((zero :*: true :*: initialRoot), [])
         bridgedInAssetsWithWitness
+    bridgeInDelta = Comp1 (unsafeToVector' (Haskell.reverse biDeltasRev))
     bridgedOutOutputs = sw.swBridgeOut
-    (isBatchValid :*: finalRoot) = validateTransactionBatch rootWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
+    (isBatchValid :*: finalRoot :*: batchInputDeltas :*: batchOutputDeltas) =
+      validateTransactionBatch rootWithBridgeIn bridgedOutOutputs action sw.swTransactionBatch
    in
-    unsafeToVector'
-      [ newState.sPreviousStateHash == hasher previousState
-      , newState.sLength == previousState.sLength + one
-      , isWitBridgeInValid
-      , isBatchValid
-      , finalRoot == newState.sUTxO
-      ]
+    ( unsafeToVector'
+        [ newState.sPreviousStateHash == hasher previousState
+        , newState.sLength == previousState.sLength + one
+        , isWitBridgeInValid
+        , isBatchValid
+        , finalRoot == newState.sUTxO
+        ]
+    , bridgeInDelta
+    , batchInputDeltas
+    , batchOutputDeltas
+    )

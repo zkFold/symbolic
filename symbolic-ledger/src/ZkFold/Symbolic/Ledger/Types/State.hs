@@ -7,7 +7,6 @@ module ZkFold.Symbolic.Ledger.Types.State (
 import Data.Aeson (FromJSON, ToJSON)
 import Data.OpenApi (ToSchema (..))
 import GHC.Generics (Generic, Generic1)
-import GHC.TypeNats (KnownNat)
 import ZkFold.Data.Eq (Eq)
 import ZkFold.Data.HFunctor.Classes (HShow)
 import ZkFold.Symbolic.Class (Symbolic (..))
@@ -23,7 +22,7 @@ import ZkFold.Symbolic.Ledger.Types.Hash (HashSimple, hashFn)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
 -- | Defines the on-chain representation of the Symbolic Ledger state.
-data State ud a context = State
+data State context = State
   { sPreviousStateHash :: HashSimple context
   -- ^ Hash of the previous state.
   , sUTxO :: FieldElement context
@@ -35,24 +34,19 @@ data State ud a context = State
   deriving anyclass (SymbolicData, SymbolicInput)
 
 instance
-  forall ud a context
+  forall context
    . ( KnownRegistersAssetQuantity context
      , Symbolic context
      )
-  => Eq (State ud a context)
+  => Eq (State context)
 
-deriving stock instance (HShow context, Show (WitnessField context)) => Haskell.Show (State ud a context)
+deriving stock instance (HShow context, Show (WitnessField context)) => Haskell.Show (State context)
 
-instance Symbolic context => Hashable (HashSimple context) (State ud a context) where
+instance Symbolic context => Hashable (HashSimple context) (State context) where
   hasher = hashFn
 
-deriving anyclass instance
-  forall ud a. ToJSON (State ud a RollupBFInterpreter)
+deriving anyclass instance ToJSON (State RollupBFInterpreter)
 
-deriving anyclass instance
-  forall ud a. FromJSON (State ud a RollupBFInterpreter)
+deriving anyclass instance FromJSON (State RollupBFInterpreter)
 
-deriving anyclass instance
-  forall ud a
-   . (KnownNat ud, KnownNat a)
-  => ToSchema (State ud a RollupBFInterpreter)
+deriving anyclass instance ToSchema (State RollupBFInterpreter)

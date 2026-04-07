@@ -9,7 +9,7 @@ module ZkFold.Symbolic.Ledger.Validation.Transaction (
 
 import Control.Lens ((.~), (?~))
 import Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.=))
-import Data.Function ((&))
+import Data.Function (($), (&))
 import Data.OpenApi (OpenApiItems (..), OpenApiType (..), Referenced (Inline), ToSchema (..), declareSchemaRef, type_)
 import Data.OpenApi.Internal.Schema (named)
 import Data.OpenApi.Lens (items, properties, required)
@@ -207,8 +207,18 @@ validateTransaction
   -- ^ Transaction.
   -> TransactionWitness ud s n a context
   -- ^ Transaction witness.
-  -> (FieldElement :*: Bool :*: FieldElement) context
-  -- ^ Result of validation. First field denotes number of bridged out outputs in this transaction, second one denotes whether the transaction is valid, third one denotes updated UTxO tree root hash.
+  -> ( FieldElement :*: Bool :*: FieldElement
+         :*: (Vector n :.: FieldElement)
+         :*: (Vector n :.: (Bool :*: FieldElement :*: FieldElement))
+     )
+       context
+  -- ^ Result of validation:
+  -- (1) number of bridged out outputs,
+  -- (2) validity,
+  -- (3) updated UTxO tree root hash,
+  -- (4) input delta: packed leaf positions of consumed inputs (new value is always nullUTxOHash),
+  -- (5) output delta per output: (isActive, packed leaf position, new leaf hash).
+  --     isActive is false for bridge-out and null outputs (no tree change).
 validateTransaction utxoRoot bridgedOutOutputs tx txw =
   let
     txId' = txId tx & Base.hHash
@@ -249,6 +259,13 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
     sOut = weightedSum (zero :: FieldElement context) outputsAssets
     isBalanced = sIn == sOut
     inputsWithWitness = zipWith (:*:) (unComp1 tx.inputs) (unComp1 txw.twInputs)
+
+    -- Input delta: packed positions extracted from witness (no hash needed — always nullUTxOHash).
+    inputDelta :: (Vector n :.: FieldElement) context
+    inputDelta = Comp1 $ Haskell.fmap
+      (\(me :*: _) -> MerkleTree.packIndex (MerkleTree.position me))
+      (unComp1 txw.twInputs)
+
     (isInsValid :*: allInputsNull :*: updatedRootForInputs) =
       foldl'
         ( \(isInsValidAcc :*: allNullAcc :*: rootAcc) (inputRef :*: (merkleEntry :*: utxo)) ->
@@ -275,12 +292,27 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
         ((true :: Bool context) :*: (true :: Bool context) :*: utxoRoot)
         inputsWithWitness
     outputsWithWitness = zipWith (:*:) (unComp1 tx.outputs) (unComp1 txw.twOutputs)
-    (bouts :*: _ :*: outsValid :*: updatedRootForOutputs) =
+
+    -- Output fold: collect delta entries alongside validation.
+    -- utxoHash is computed before ifThenElse to avoid redundancy
+    -- (the circuit evaluates both branches regardless).
+    ((bouts :*: _ :*: outsValid :*: updatedRootForOutputs), outputDeltasRev) =
       foldl'
-        ( \(boutsAcc :*: outputIx :*: outsValidAcc :*: rootAcc) ((output :*: bout) :*: merkleEntry) ->
+        ( \((boutsAcc :*: outputIx :*: outsValidAcc :*: rootAcc), deltasAcc) ((output :*: bout) :*: merkleEntry) ->
             let isNull = output == nullOutput
                 sanity = outputHasValueSanity output
-             in ifThenElse
+                -- Compute UTxO hash unconditionally (reused in tree update below)
+                utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
+                utxoHash = hash utxo & Base.hHash
+                pos = MerkleTree.packIndex (MerkleTree.position merkleEntry)
+                isActive = not bout && not isNull
+                deltaEntry = isActive :*: pos :*: utxoHash
+                (isInTree, updatedRoot) =
+                  MerkleTree.containsAndReplaceRoot
+                    merkleEntry
+                    utxoHash
+                    rootAcc
+                circuitResult = ifThenElse
                   bout
                   ( (boutsAcc + one)
                       :*: (outputIx + one)
@@ -293,34 +325,32 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
                   )
                   ( boutsAcc
                       :*: (outputIx + one)
-                      :*: ( let utxo = UTxO {uRef = OutputRef {orTxId = txId', orIndex = outputIx}, uOutput = output}
-                                (isInTree, updatedRoot) =
-                                  MerkleTree.containsAndReplaceRoot
-                                    merkleEntry
-                                    (hash utxo & Base.hHash)
-                                    rootAcc
-                             in ( outsValidAcc
-                                    && ifThenElse
-                                      isNull
-                                      true
-                                      ( isInTree
-                                          && (MerkleTree.value merkleEntry == nullUTxOHash @a @context)
-                                          && sanity
-                                      )
-                                )
-                                  :*: ifThenElse
-                                    isNull
-                                    rootAcc
-                                    updatedRoot
+                      :*: ( ( outsValidAcc
+                                && ifThenElse
+                                  isNull
+                                  true
+                                  ( isInTree
+                                      && (MerkleTree.value merkleEntry == nullUTxOHash @a @context)
+                                      && sanity
+                                  )
+                            )
+                              :*: ifThenElse
+                                isNull
+                                rootAcc
+                                updatedRoot
                           )
                   )
+             in (circuitResult, deltaEntry : deltasAcc)
         )
-        (zero :*: zero :*: (true :: Bool context) :*: updatedRootForInputs)
+        ((zero :*: zero :*: (true :: Bool context) :*: updatedRootForInputs), [])
         outputsWithWitness
+    outputDelta = Comp1 (unsafeToVector' (Haskell.reverse outputDeltasRev))
    in
     ( bouts
         :*: (outsValid && isInsValid && ifThenElse allInputsNull true areSigsValid && isBalanced) -- Note that we don't need to check if transaction consumes at least one input or is null entirely as our transaction currently only has two fields, namely, inputs & outputs and if thus inputs are null, outputs are null too.
         :*: updatedRootForOutputs
+        :*: inputDelta
+        :*: outputDelta
     )
 
 -- | Check if output has sane value.

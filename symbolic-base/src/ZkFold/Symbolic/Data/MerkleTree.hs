@@ -27,6 +27,7 @@ module ZkFold.Symbolic.Data.MerkleTree (
   addSiblings,
   replaceAt,
   Index,
+  packIndex,
 ) where
 
 import Data.Bool (otherwise)
@@ -40,6 +41,7 @@ import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
 import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:*:) (..), (:.:) (..))
+import GHC.Natural (Natural)
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
@@ -111,6 +113,25 @@ instance
 type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
 
 type Index d = Vector (d - 1) :.: Bool
+
+-- | Pack a tree index (vector of bits) into a single 'FieldElement'.
+-- The position vector is stored root-to-leaf (MSB-first), so we reverse
+-- to get LSB-first before applying little-endian weights:
+-- @bit_{d-2} * 2^0 + ... + bit_1 * 2^{d-3} + bit_0 * 2^{d-2}@.
+-- This produces the natural leaf index (0, 1, 2, ...).
+-- This is a linear combination with constant coefficients, so it adds
+-- essentially zero cost to the circuit.
+packIndex
+  :: Symbolic c
+  => Index d c
+  -> FieldElement c
+packIndex (Comp1 bits) =
+  foldl'
+    (\acc (Bool b :*: pow) -> acc + FieldElement b * pow)
+    zero
+    (zipWith (:*:) (P.reverse (toList bits)) powers)
+  where
+    powers = P.fmap (fromConstant @Natural) $ P.iterate (* 2) 1
 
 -- | Compute the merkle path for a given position in the tree.
 -- This implementation uses circuit-level operations throughout to avoid
@@ -281,9 +302,10 @@ search pred tree =
           let (l, r) = bisect v
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
+              pickR = not isL && isR -- In case both subtrees have a match, we should prefer left subtree.
            in ( isL || isR
-              , isR : zipWith (ifThenElse isR) ri li
-              , ifThenElse isR rx lx
+              , pickR : zipWith (ifThenElse pickR) ri li
+              , ifThenElse pickR rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
