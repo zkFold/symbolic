@@ -161,11 +161,11 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                           && outputHasValueSanity output
                       )
              in ( (ix + one)
-                      :*: isValid'
-                      :*: ifThenElse
-                        (isValid' && not isNull)
-                        updatedRoot
-                        rootAcc
+                    :*: isValid'
+                    :*: ifThenElse
+                      (isValid' && not isNull)
+                      updatedRoot
+                      rootAcc
                 , deltaEntry : deltasAcc
                 )
         )
