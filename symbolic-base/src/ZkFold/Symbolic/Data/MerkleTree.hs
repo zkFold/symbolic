@@ -130,8 +130,8 @@ packIndex (Comp1 bits) =
     (\acc (Bool b :*: pow) -> acc + FieldElement b * pow)
     zero
     (zipWith (:*:) (P.reverse (toList bits)) powers)
-  where
-    powers = P.fmap (fromConstant @Natural) $ P.iterate (* 2) 1
+ where
+  powers = P.fmap (fromConstant @Natural) $ P.iterate (* 2) 1
 
 -- | Compute the merkle path for a given position in the tree.
 -- This implementation uses circuit-level operations throughout to avoid

@@ -1,10 +1,10 @@
 module Tests.Symbolic.Ledger.JSON.LedgerContractInputGolden (specLedgerContractInputJSON) where
 
+import Control.Exception (evaluate)
 import Data.Aeson (eitherDecode)
 import Data.Aeson.Encode.Pretty (Config (..), Indent (..), defConfig, encodePretty')
-import Control.Exception (evaluate)
-import Data.ByteString.Lazy qualified as BL
 import Data.ByteString.Lazy (toStrict)
+import Data.ByteString.Lazy qualified as BL
 import System.Environment (lookupEnv)
 import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
 import Prelude (($), (==))

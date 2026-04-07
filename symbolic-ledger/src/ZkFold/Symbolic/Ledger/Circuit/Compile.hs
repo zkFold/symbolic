@@ -294,7 +294,8 @@ convertG1 = toByteString . compress
 convertG2 :: BLS12_381_G2_JacobianPoint -> ByteString
 convertG2 = toByteString . compress
 
-mkSetup :: forall bi bo a txCount txN i n. KnownNat n => SetupVerify (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKSetupBytes
+mkSetup
+  :: forall bi bo a txCount txN i n. KnownNat n => SetupVerify (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
    in ZKSetupBytes
@@ -322,7 +323,8 @@ mkSetup PlonkupVerifierSetup {..} =
  where
   convertG1' = ByteStringFromHex . convertG1
 
-mkProof :: forall bi bo a txCount txN i (n :: Natural). Proof (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKProofBytes
+mkProof
+  :: forall bi bo a txCount txN i (n :: Natural). Proof (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKProofBytes
 mkProof PlonkupProof {..} =
   case l_xi of
     [] -> error "mkProof: empty inputs"

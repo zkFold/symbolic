@@ -207,7 +207,9 @@ validateTransaction
   -- ^ Transaction.
   -> TransactionWitness ud s n a context
   -- ^ Transaction witness.
-  -> ( FieldElement :*: Bool :*: FieldElement
+  -> ( FieldElement
+         :*: Bool
+         :*: FieldElement
          :*: (Vector n :.: FieldElement)
          :*: (Vector n :.: (Bool :*: FieldElement :*: FieldElement))
      )
@@ -262,9 +264,11 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
 
     -- Input delta: packed positions extracted from witness (no hash needed — always nullUTxOHash).
     inputDelta :: (Vector n :.: FieldElement) context
-    inputDelta = Comp1 $ Haskell.fmap
-      (\(me :*: _) -> MerkleTree.packIndex (MerkleTree.position me))
-      (unComp1 txw.twInputs)
+    inputDelta =
+      Comp1 $
+        Haskell.fmap
+          (\(me :*: _) -> MerkleTree.packIndex (MerkleTree.position me))
+          (unComp1 txw.twInputs)
 
     (isInsValid :*: allInputsNull :*: updatedRootForInputs) =
       foldl'
@@ -312,34 +316,35 @@ validateTransaction utxoRoot bridgedOutOutputs tx txw =
                     merkleEntry
                     utxoHash
                     rootAcc
-                circuitResult = ifThenElse
-                  bout
-                  ( (boutsAcc + one)
-                      :*: (outputIx + one)
-                      :*: ( outsValidAcc
-                              && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
-                              && not isNull
-                              && sanity
-                          )
-                      :*: rootAcc
-                  )
-                  ( boutsAcc
-                      :*: (outputIx + one)
-                      :*: ( ( outsValidAcc
-                                && ifThenElse
-                                  isNull
-                                  true
-                                  ( isInTree
-                                      && (MerkleTree.value merkleEntry == nullUTxOHash @a @context)
-                                      && sanity
-                                  )
+                circuitResult =
+                  ifThenElse
+                    bout
+                    ( (boutsAcc + one)
+                        :*: (outputIx + one)
+                        :*: ( outsValidAcc
+                                && foldl' (\found boutput -> found || output == boutput) false (unComp1 bridgedOutOutputs)
+                                && not isNull
+                                && sanity
                             )
-                              :*: ifThenElse
-                                isNull
-                                rootAcc
-                                updatedRoot
-                          )
-                  )
+                        :*: rootAcc
+                    )
+                    ( boutsAcc
+                        :*: (outputIx + one)
+                        :*: ( ( outsValidAcc
+                                  && ifThenElse
+                                    isNull
+                                    true
+                                    ( isInTree
+                                        && (MerkleTree.value merkleEntry == nullUTxOHash @a @context)
+                                        && sanity
+                                    )
+                              )
+                                :*: ifThenElse
+                                  isNull
+                                  rootAcc
+                                  updatedRoot
+                            )
+                    )
              in (circuitResult, deltaEntry : deltasAcc)
         )
         ((zero :*: zero :*: (true :: Bool context) :*: updatedRootForInputs), [])

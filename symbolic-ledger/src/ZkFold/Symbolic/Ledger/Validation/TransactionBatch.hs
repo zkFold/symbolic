@@ -58,7 +58,8 @@ validateTransactionBatch
   -- ^ Transaction batch.
   -> TransactionBatchWitness ud s n a t context
   -- ^ Witness for the transaction batch.
-  -> ( Bool :*: FieldElement
+  -> ( Bool
+         :*: FieldElement
          :*: (Vector t :.: (Vector n :.: FieldElement))
          :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
      )
