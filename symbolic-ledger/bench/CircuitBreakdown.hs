@@ -185,8 +185,7 @@ main = do
 
 merkleProofCircuit
   :: forall ud c
-   . ( Symbolic c
-     )
+   . Symbolic c
   => (MerkleEntry ud :*: FieldElement :*: FieldElement) c
   -> (Bool :*: FieldElement) c
 merkleProofCircuit (entry :*: newVal :*: root) =
@@ -195,22 +194,19 @@ merkleProofCircuit (entry :*: newVal :*: root) =
 
 hashUtxoCircuit
   :: forall a c
-   . ( Symbolic c
-     )
+   . Symbolic c
   => UTxO a c -> FieldElement c
 hashUtxoCircuit utxo = hash utxo & Base.hHash
 
 txIdCircuit
   :: forall n a c
-   . ( Symbolic c
-     )
+   . Symbolic c
   => Transaction n a c -> FieldElement c
 txIdCircuit tx = txId tx & Base.hHash
 
 eddsaCircuit1
   :: forall c
-   . ( SignatureTransaction 2 1 1 1 c
-     )
+   . SignatureTransaction 2 1 1 1 c
   => ( PublicKey
          :*: EdDSAPoint
          :*: EdDSAScalarField
@@ -223,8 +219,7 @@ eddsaCircuit1 (pk :*: rPoint :*: s :*: msg) =
 
 balanceCheckCircuit
   :: forall a c
-   . ( SignatureTransaction 2 1 1 a c
-     )
+   . SignatureTransaction 2 1 1 a c
   => ((Vector a :.: AssetValue) :*: (Vector a :.: AssetValue) :*: FieldElement) c
   -> Bool c
 balanceCheckCircuit (inAssets :*: outAssets :*: r) =
@@ -256,8 +251,7 @@ outputEqCircuit (a :*: b) = a == b
 
 addressMatchCircuit
   :: forall s c
-   . ( Symbolic c
-     )
+   . Symbolic c
   => ((Vector s :.: FieldElement) :*: FieldElement) c
   -> Bool c
 addressMatchCircuit (addrs :*: target) =
@@ -271,14 +265,12 @@ hashPkCircuit = hashFn
 
 scaleConstBase
   :: forall c
-   . ( SignatureTransaction 2 1 1 1 c
-     )
+   . SignatureTransaction 2 1 1 1 c
   => EdDSAScalarField c -> PublicKey c
 scaleConstBase s = Algebra.scale s (pointGen @(PublicKey c))
 
 scaleVarBase
   :: forall c
-   . ( SignatureTransaction 2 1 1 1 c
-     )
+   . SignatureTransaction 2 1 1 1 c
   => (EdDSAScalarField :*: PublicKey) c -> PublicKey c
 scaleVarBase (s :*: p) = Algebra.scale s p
