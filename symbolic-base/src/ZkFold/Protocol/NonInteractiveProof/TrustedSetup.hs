@@ -48,7 +48,7 @@ powersOfTauSubset :: forall (n :: Natural). KnownNat n => IO (TrustedSetup n)
 powersOfTauSubset = do
   let n = value @n
   fp <-
-    if n P.<= 2 P.^ 18 P.+ 6
+    if n P.<= 2 P.^ (18 :: Natural) P.+ 6
       then getDataFileName "data/midnight_powers_of_tau_2e18"
       else getDataFileName "data/midnight_powers_of_tau_2e20"
   Just ts <- readTrustedSetup fp True
@@ -69,7 +69,7 @@ readTrustedSetup fp isCompressed = do
 
   !g1s <- V.replicateM @n $ getG handle g1Size
 
-  hSeek handle SeekFromEnd $ P.fromIntegral (-2 P.* g2Size)
+  hSeek handle SeekFromEnd $ P.fromIntegral (- (2 P.* g2Size))
 
   !g20 <- getG handle g2Size
   !g21 <- getG handle g2Size

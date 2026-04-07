@@ -140,9 +140,9 @@ validateStateUpdateIndividualChecks previousState action newState sw =
     bridgedInAssetsWithWitness = zipWith (:*:) (unComp1 bridgeInAssets) (unComp1 sw.swAddBridgeIn)
 
     bridgeInHash = newState.sLength & hash & Base.hHash
-    ((_ :*: isWitBridgeInValid :*: rootWithBridgeIn), biDeltasRev) =
+    (_ :*: isWitBridgeInValid :*: rootWithBridgeIn, biDeltasRev) =
       foldl'
-        ( \((ix :*: isValidAcc :*: rootAcc), deltasAcc) ((output :*: merkleEntry)) ->
+        ( \(ix :*: isValidAcc :*: rootAcc, deltasAcc) ((output :*: merkleEntry)) ->
             let nullUTxOHash' = nullUTxOHash @a @context
                 isNull = output == nullOutput
                 utxo = UTxO {uRef = OutputRef {orTxId = bridgeInHash, orIndex = ix}, uOutput = output}
@@ -160,17 +160,16 @@ validateStateUpdateIndividualChecks previousState action newState sw =
                           && (MerkleTree.value merkleEntry == nullUTxOHash')
                           && outputHasValueSanity output
                       )
-             in ( ( (ix + one)
+             in ( (ix + one)
                       :*: isValid'
                       :*: ifThenElse
-                        (isValid' && (not isNull))
+                        (isValid' && not isNull)
                         updatedRoot
                         rootAcc
-                  )
                 , deltaEntry : deltasAcc
                 )
         )
-        ((zero :*: true :*: initialRoot), [])
+        (zero :*: true :*: initialRoot, [])
         bridgedInAssetsWithWitness
     bridgeInDelta = Comp1 (unsafeToVector' (Haskell.reverse biDeltasRev))
     bridgedOutOutputs = sw.swBridgeOut
