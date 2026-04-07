@@ -335,7 +335,7 @@ library
       semialign                             < 1.4,
       semigroups                                 ,
       split                               < 0.2.6,
-      temporary-ospath,
+      temporary,
       text                                       ,
       these                                 < 1.3,
       transformers                               ,

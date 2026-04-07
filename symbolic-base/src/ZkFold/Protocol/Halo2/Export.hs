@@ -37,14 +37,14 @@ import Codec.CBOR.Encoding (
  )
 import Codec.CBOR.Write (toLazyByteString)
 import Control.Applicative (pure)
+import Control.Exception (finally)
 import Control.Monad.Except (ExceptT, liftEither)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson qualified as Aeson
 import Data.Binary (Binary, encode)
-import Data.ByteString.Lazy qualified as LBS
 import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as B16
-import Data.Char (intToDigit)
+import Data.ByteString.Lazy qualified as LBS
 import Data.Foldable (Foldable, toList)
 import Data.Functor (fmap, (<$>))
 import Data.Functor.Rep (Rep, Representable, tabulate)
@@ -59,14 +59,16 @@ import Data.Vector (Vector)
 import Data.Vector qualified as V
 import Data.Word (Word32, Word8)
 import GHC.Generics (Generic)
+import GHC.IO.Exception (ExitCode (..))
 import GHC.IsList (fromList)
 import Numeric (showHex)
-import Prelude (Bool, Either (..), Eq, FilePath, IO, Show, flip, foldMap, id, ($), (++), (.), (/=), (<>), (==))
-import Prelude qualified as P
-import System.IO.Temp.OsPath (withSystemTempDirectory)
-import System.Process
-import System.Directory.Internal (os, so)
+import System.Directory
 import System.FilePath ((</>))
+import System.IO hiding (stderr)
+import System.IO.Temp
+import System.Process
+import Prelude (Bool, Either (..), Eq, Show, flip, foldMap, id, ($), (++), (.), (/=), (<>), (==))
+import Prelude qualified as P
 
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381
@@ -146,6 +148,7 @@ data Halo2CircuitIR = Halo2CircuitIR
 data ExportError
   = RelationTooSmall
   | ProofDecodeError T.Text
+  | ProverError P.Int T.Text
   deriving (Aeson.FromJSON, Aeson.ToJSON, Eq, Generic, Show)
 
 writeHalo2IrFile :: FilePath -> Halo2CircuitIR -> IO ()
@@ -372,7 +375,6 @@ runProver
   :: forall i o n a pv
    . ( KnownNat n
      , Arithmetic a
-     , Eq a
      , Binary a
      , Binary (Rep i)
      , UnivariateRingPolyVec a pv
@@ -387,28 +389,32 @@ runProver
   -> ExceptT ExportError IO BS.ByteString
 runProver proverExe ac input = do
   ir <- liftEither eitherIr
-  eitherProof <- withSystemTempDirectory (os "plonk_halo2") $ \path -> liftIO $ do
-    let dir = so path
-    let circuit = dir </> "circuit.cbor"
-    let proof = dir </> "circuit.proof.hex"
-    writeHalo2IrFile circuit ir 
-    (exitcode, stdout, stderr) <- readProcessWithExitCode proverExe ["prove", circuit] ""
-    proofHex <- BS.readFile proof
-    pure $ mapLeft (ProofDecodeError . T.pack) $ B16.decode proofHex
+  eitherProof <- liftIO $ do
+    tempDir <- getTemporaryDirectory
+    tempDirPath <- createTempDirectory tempDir "plonk_halo2"
+    flip finally (removeDirectoryRecursive tempDirPath) $ do
+      let circuit = tempDirPath </> "circuit.cbor"
+      let proof = tempDirPath </> "circuit.proof.hex"
+      writeHalo2IrFile circuit ir
+      (exitcode, _stdout, stderr) <- readProcessWithExitCode proverExe ["prove", circuit] ""
+      case exitcode of
+        ExitSuccess -> do
+          proofHex <- BS.readFile proof
+          pure $ mapLeft (ProofDecodeError . T.pack) $ B16.decode proofHex
+        ExitFailure code -> pure $ Left $ ProverError code $ T.pack stderr
   liftEither eitherProof
-  where
-    eitherIr :: Either ExportError Halo2CircuitIR
-    eitherIr = exportHalo2Ir @i @o @n @a @pv ac input  
+ where
+  eitherIr :: Either ExportError Halo2CircuitIR
+  eitherIr = exportHalo2Ir @i @o @n @a @pv ac input
 
-    mapLeft :: (l1 -> l2) -> Either l1 r -> Either l2 r
-    mapLeft f (Left l1) = Left (f l1)
-    mapLeft _ (Right r) = Right r
+  mapLeft :: (l1 -> l2) -> Either l1 r -> Either l2 r
+  mapLeft f (Left l1) = Left (f l1)
+  mapLeft _ (Right r) = Right r
 
 exportHalo2Ir
   :: forall i o n a pv
    . ( KnownNat n
      , Arithmetic a
-     , Eq a
      , Binary a
      , Binary (Rep i)
      , UnivariateRingPolyVec a pv
