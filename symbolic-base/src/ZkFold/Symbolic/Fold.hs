@@ -25,8 +25,8 @@ class Symbolic c => SymbolicFold c where
     => (Binary1 h, WitnessField c ~ wc)
     => ( forall s
           . (SymbolicFold s, BaseField s ~ BaseField c)
-         => -- \^ In anonymous context over same base field,
-         s f
+         -- \^ In anonymous context over same base field,
+         => s f
          -- \^ given a current state layout,
          -> p (WitnessField s)
          -- \^ a current state payload
