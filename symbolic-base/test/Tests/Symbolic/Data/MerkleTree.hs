@@ -52,13 +52,16 @@ specMerkleTree' = describe (show $ typeAt @(MerkleTree d (Interpreter a))) do
   it
     "replace p x . replace q y == replace q y . replace p x"
     \(t :: MerkleTree d (Interpreter a)) p q x y ->
-      let e = addSiblings t (MerkleEntry p x (Comp1 $ fmap (const zero) (unComp1 p)))
-          f = addSiblings t (MerkleEntry q y (Comp1 $ fmap (const zero) (unComp1 q)))
-       in p P./= q ==> replace e (replace f t) P.== replace f (replace e t)
+      let mk tree pos val = addSiblings tree (MerkleEntry pos val (Comp1 $ fmap (const zero) (unComp1 pos)))
+          tq = replace (mk t q y) t
+          lhs = replace (mk tq p x) tq
+          tp = replace (mk t p x) t
+          rhs = replace (mk tp q y) tp
+       in p P./= q ==> lhs P.== rhs
   it "contains . index == true" \(t :: MerkleTree d (Interpreter a)) position ->
     let value = t !! position
-        siblings = Comp1 $ fmap (const zero) (unComp1 position)
-     in t `contains` MerkleEntry {..} P.== true
+        entry = addSiblings t MerkleEntry {position, value, siblings = Comp1 $ fmap (const zero) (unComp1 position)}
+     in t `contains` entry P.== true
   it "contains . search' == true" \(t :: MerkleTree d (Interpreter a)) position ->
     let pred x = x == fromConstant (toConstant (t !! position))
      in t `contains` fromJust (search pred t) P.== true
