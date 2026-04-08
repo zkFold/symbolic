@@ -99,6 +99,7 @@ library
     ZkFold.Symbolic.Ledger.Examples.Four
     ZkFold.Symbolic.Ledger.Examples.One
     ZkFold.Symbolic.Ledger.Examples.Three
+    ZkFold.Symbolic.Ledger.Examples.Five
     ZkFold.Symbolic.Ledger.Examples.Two
     ZkFold.Symbolic.Ledger.Offchain.State.Update
     ZkFold.Symbolic.Ledger.Types
@@ -140,6 +141,7 @@ test-suite symbolic-ledger-test
     Tests.Symbolic.Ledger.E2E.Compile
     Tests.Symbolic.Ledger.E2E.Compile.One
     Tests.Symbolic.Ledger.E2E.Compile.Three
+    Tests.Symbolic.Ledger.E2E.Compile.Five
     Tests.Symbolic.Ledger.E2E.Compile.Two
     Tests.Symbolic.Ledger.E2E.Four
     Tests.Symbolic.Ledger.E2E.One
@@ -175,3 +177,14 @@ benchmark bench-circuit-size
     symbolic-ledger,
     tasty,
     tasty-golden,
+
+benchmark bench-circuit-breakdown
+  import: options-exe
+  main-is: CircuitBreakdown.hs
+  hs-source-dirs: bench
+  type: exitcode-stdio-1.0
+  ghc-options: -O3
+  build-depends:
+    base,
+    symbolic-base,
+    symbolic-ledger,

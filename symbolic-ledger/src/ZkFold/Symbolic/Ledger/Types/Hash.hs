@@ -4,7 +4,7 @@ module ZkFold.Symbolic.Ledger.Types.Hash (
   hashFn,
 ) where
 
-import ZkFold.Symbolic.Algorithm.Hash.MiMC qualified as MiMC
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon qualified as Poseidon
 import ZkFold.Symbolic.Class (Symbolic)
 import ZkFold.Symbolic.Data.Class (SymbolicData)
 import ZkFold.Symbolic.Data.FieldElement (FieldElement)
@@ -19,6 +19,4 @@ type Hash = Symbolic.Hash.Hash HashSimple
 type HashSimple = FieldElement
 
 hashFn :: (SymbolicData x, Symbolic c) => x c -> FieldElement c
-hashFn =
-  -- TODO: (#730) Move to Poseidon hash.
-  MiMC.hash
+hashFn = Poseidon.hash

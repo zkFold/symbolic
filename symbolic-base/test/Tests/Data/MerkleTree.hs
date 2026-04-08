@@ -17,7 +17,7 @@ import Prelude (Show, ($))
 import qualified Prelude as Haskell
 
 import Tests.Common (it)
-import ZkFold.Algebra.Class (Ring, one, toConstant, (+))
+import ZkFold.Algebra.Class (Field, one, toConstant, (+))
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (BLS12_381_Scalar)
 import ZkFold.Algebra.Field (Zp)
 import ZkFold.Algebra.Number (KnownNat)
@@ -27,7 +27,7 @@ import ZkFold.Symbolic.Data.Combinators (Iso (..))
 
 testId
   :: forall d h
-   . ( Ring h
+   . ( Field h
      , Eq h
      )
   => MerkleTree d h
@@ -60,7 +60,7 @@ testLookup mt@(MerkleTree _ leaves) k =
 
 testReplaceAt
   :: forall d h
-   . ( Ring h
+   . ( Field h
      , Eq h
      )
   => Zp (MerkleTreeSize d)
@@ -72,7 +72,7 @@ testReplaceAt k h mt = lookup (replaceAt k h mt) k == h
 -- | Test that valid proofs are accepted
 testValidProofAccepted
   :: forall d h
-   . ( Ring h
+   . ( Field h
      , Eq h
      , KnownNat (d - 1)
      )
@@ -86,7 +86,7 @@ testValidProofAccepted mt idx =
 -- | Test that modifying a proof invalidates it
 testInvalidProofRejected
   :: forall d h
-   . ( Ring h
+   . ( Field h
      , Eq h
      , KnownNat (d - 1)
      )
@@ -105,7 +105,7 @@ testInvalidProofRejected mt idx =
 specMerkleTree'
   :: forall a d
    . ( Arbitrary a
-     , Ring a
+     , Field a
      , Eq a
      , Show a
      , KnownNat (2 ^ (d - 1))
