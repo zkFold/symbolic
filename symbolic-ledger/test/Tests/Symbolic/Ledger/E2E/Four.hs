@@ -17,5 +17,5 @@ import ZkFold.Symbolic.Ledger.Validation.State (validateStateUpdateIndividualChe
 specE2EFour :: Spec
 specE2EFour =
   it "Null transaction as batch padding passes validation" $ do
-    validateStateUpdateIndividualChecks prevState batch newState witness
-      `shouldBe` Haskell.pure true
+    let (checks1, _, _, _) = validateStateUpdateIndividualChecks prevState batch newState witness
+    checks1 `shouldBe` Haskell.pure true

@@ -29,7 +29,7 @@ import Data.Type.Equality (type (~))
 import Data.Word (Word8)
 import GHC.Generics (Generic, Generic1, Par1 (..), U1 (..), (:*:) (..), (:.:) (..))
 import GHC.Natural (Natural, naturalToInteger)
-import GHC.TypeNats (KnownNat, type (+), type (^))
+import GHC.TypeNats (KnownNat, type (*), type (+), type (-), type (^))
 import ZkFold.Algebra.Class
 import ZkFold.Algebra.EllipticCurve.BLS12_381 (
   BLS12_381_G1_CompressedPoint,
@@ -67,9 +67,7 @@ import ZkFold.Symbolic.Class (BaseField, Symbolic (..))
 import ZkFold.Symbolic.Data.Bool
 import ZkFold.Symbolic.Data.Class
 import ZkFold.Symbolic.Data.FieldElement (FieldElement (..))
-import ZkFold.Symbolic.Data.Hash (Hash (..), preimage)
 import ZkFold.Symbolic.Data.Input (SymbolicInput)
-import ZkFold.Symbolic.Data.MerkleTree (KnownMerkleTree, MerkleTree (mHash))
 import ZkFold.Symbolic.Interpreter
 import Prelude (Integer, Show, error, fromIntegral, ($), (.), (<$>))
 
@@ -87,41 +85,41 @@ import ZkFold.Symbolic.Ledger.Validation.State
 -- >>> import Data.OpenApi.Internal.Utils (encodePretty)
 -- >>> import ZkFold.Symbolic.Ledger.Types.Field
 
-data LedgerContractInput bi bo ud a i o t c = LedgerContractInput
-  { lciPreviousState :: State bi bo ud a c
-  , lciTransactionBatch :: TransactionBatch i o a t c
-  , lciNewState :: State bi bo ud a c
-  , lciStateWitness :: StateWitness bi bo ud a i o t c
+data LedgerContractInput bi bo ud a s n t c = LedgerContractInput
+  { lciPreviousState :: State c
+  , lciTransactionBatch :: TransactionBatch n a t c
+  , lciNewState :: State c
+  , lciStateWitness :: StateWitness bi bo ud a s n t c
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
 deriving stock instance
-  (Show (State bi bo ud a context), Show (TransactionBatch i o a t context), Show (StateWitness bi bo ud a i o t context))
-  => Show (LedgerContractInput bi bo ud a i o t context)
+  (Show (State context), Show (TransactionBatch n a t context), Show (StateWitness bi bo ud a s n t context))
+  => Show (LedgerContractInput bi bo ud a s n t context)
 
 deriving anyclass instance
-  forall bi bo ud a i o t. KnownMerkleTree ud => ToJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a s n t. ToJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall bi bo ud a i o t
-   . (KnownMerkleTree ud, KnownNat i, KnownNat o) => FromJSON (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a s n t
+   . (KnownNat s, KnownNat n) => FromJSON (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
 -- |
 -- >>> BSL.putStrLn $ encodePretty $ toSchema (Proxy :: Proxy (LedgerContractInput 1 1 2 1 1 1 1 RollupBFInterpreter))
 -- {
 --     "properties": {
 --         "lciNewState": {
---             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/State_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciPreviousState": {
---             "$ref": "#/components/schemas/State_1_1_2_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/State_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciStateWitness": {
---             "$ref": "#/components/schemas/StateWitness_Natural_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/StateWitness_1_1_2_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         },
 --         "lciTransactionBatch": {
---             "$ref": "#/components/schemas/TransactionBatch_1_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
+--             "$ref": "#/components/schemas/TransactionBatch_1_1_1_(Interpreter_*_(Zp_52435875175126190479447740508185965837690552500527637822603658699938581184513))"
 --         }
 --     },
 --     "required": [
@@ -133,98 +131,99 @@ deriving anyclass instance
 --     "type": "object"
 -- }
 deriving anyclass instance
-  forall bi bo ud a i o t
-   . (KnownMerkleTree ud, KnownNat ud, KnownNat bi, KnownNat bo, KnownNat a, KnownNat i, KnownNat o, KnownNat t)
-  => ToSchema (LedgerContractInput bi bo ud a i o t RollupBFInterpreter)
+  forall bi bo ud a s n t
+   . (KnownNat ud, KnownNat (ud - 1), KnownNat bi, KnownNat bo, KnownNat a, KnownNat s, KnownNat n, KnownNat t)
+  => ToSchema (LedgerContractInput bi bo ud a s n t RollupBFInterpreter)
 
-type LedgerContractOutput bi bo a =
+type LedgerContractOutput bi bo a t n =
   ( FieldElement
-      :*: FieldElement
-      :*: FieldElement
       :*: FieldElement
       :*: FieldElement
   )
     :*: ( FieldElement
             :*: FieldElement
             :*: FieldElement
-            :*: FieldElement
-            :*: FieldElement
         )
     :*: Bool
     :*: (Vector bi :.: Output a)
     :*: (Vector bo :.: Output a)
+    -- Tree delta:
+    :*: (Vector bi :.: (Bool :*: FieldElement :*: FieldElement))
+    :*: (Vector t :.: (Vector n :.: FieldElement))
+    :*: (Vector t :.: (Vector n :.: (Bool :*: FieldElement :*: FieldElement)))
 
 ledgerContract
-  :: forall bi bo ud a i o t c
-   . SignatureState bi bo ud a c
-  => SignatureTransactionBatch ud i o a t c
-  => LedgerContractInput bi bo ud a i o t c -> LedgerContractOutput bi bo a c
+  :: forall bi bo ud a s n t c
+   . SignatureState bi bo c
+  => SignatureTransactionBatch ud s n a t c
+  => LedgerContractInput bi bo ud a s n t c -> LedgerContractOutput bi bo a t n c
 ledgerContract LedgerContractInput {..} =
-  ( sPreviousStateHash lciPreviousState
-      :*: (mHash . sUTxO $ lciPreviousState)
-      :*: sLength lciPreviousState
-      :*: (hHash . sBridgeIn $ lciPreviousState)
-      :*: (hHash . sBridgeOut $ lciPreviousState)
-  )
-    :*: ( sPreviousStateHash lciNewState
-            :*: (mHash . sUTxO $ lciNewState)
-            :*: sLength lciNewState
-            :*: (hHash . sBridgeIn $ lciNewState)
-            :*: (hHash . sBridgeOut $ lciNewState)
-        )
-    :*: validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
-    :*: preimage (sBridgeIn lciNewState)
-    :*: preimage (sBridgeOut lciNewState)
+  let (isValid :*: biDelta :*: inDeltas :*: outDeltas) =
+        validateStateUpdate lciPreviousState lciTransactionBatch lciNewState lciStateWitness
+   in ( sPreviousStateHash lciPreviousState
+          :*: sUTxO lciPreviousState
+          :*: sLength lciPreviousState
+      )
+        :*: ( sPreviousStateHash lciNewState
+                :*: sUTxO lciNewState
+                :*: sLength lciNewState
+            )
+        :*: isValid
+        :*: swBridgeIn lciStateWitness
+        :*: swBridgeOut lciStateWitness
+        :*: biDelta
+        :*: inDeltas
+        :*: outDeltas
 
 -- TODO: Circuit gate count is likely not good enough, see https://github.com/zkFold/symbolic/issues/766.
-type LedgerCircuitGates = 2 ^ 18
+type LedgerCircuitGates = 2 ^ 20
 
-type LedgerContractInputLayout bi bo ud a i o t =
+type LedgerContractInputLayout bi bo ud a s n t =
   Layout
-    (LedgerContractInput bi bo ud a i o t :*: U1)
+    (LedgerContractInput bi bo ud a s n t :*: U1)
     (Order RollupBF)
 
-type LedgerContractInputPayload bi bo ud a i o t =
+type LedgerContractInputPayload bi bo ud a s n t =
   Payload
-    (LedgerContractInput bi bo ud a i o t :*: U1)
+    (LedgerContractInput bi bo ud a s n t :*: U1)
     (Order RollupBF)
 
-type LedgerContractCompiledInput bi bo ud a i o t =
-  LedgerContractInputLayout bi bo ud a i o t :*: LedgerContractInputPayload bi bo ud a i o t
+type LedgerContractCompiledInput bi bo ud a s n t =
+  LedgerContractInputLayout bi bo ud a s n t :*: LedgerContractInputPayload bi bo ud a s n t
 
-type LedgerContractOutputLayout bi bo a =
+type LedgerContractOutputLayout bi bo a t n =
   ( Par1
-      :*: Par1
-      :*: Par1
       :*: Par1
       :*: Par1
   )
     :*: ( Par1
             :*: Par1
             :*: Par1
-            :*: Par1
-            :*: Par1
         )
     :*: Par1
     :*: (Vector bi :.: Layout (Output a) (Order RollupBF))
     :*: (Vector bo :.: Layout (Output a) (Order RollupBF))
+    -- Tree delta layout:
+    :*: (Vector bi :.: (Par1 :*: Par1 :*: Par1))
+    :*: (Vector t :.: (Vector n :.: Par1))
+    :*: (Vector t :.: (Vector n :.: (Par1 :*: Par1 :*: Par1)))
 
-type LedgerCircuit bi bo ud a i o t =
-  ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a i o t) (LedgerContractOutputLayout bi bo a)
+type LedgerCircuit bi bo ud a s n t =
+  ArithmeticCircuit RollupBF (LedgerContractCompiledInput bi bo ud a s n t) (LedgerContractOutputLayout bi bo a t n)
 
 ledgerCircuit
-  :: forall bi bo ud a i o t c
-   . SignatureState bi bo ud a c
-  => SignatureTransactionBatch ud i o a t c
+  :: forall bi bo ud a s n t c
+   . SignatureState bi bo c
+  => SignatureTransactionBatch ud s n a t c
   => -- Since we are hardcoding @RollupBF@ at some places in this file, it is important that it is the same as the base field of the context.
   RollupBF ~ BaseField c
-  => LedgerCircuit bi bo ud a i o t
+  => LedgerCircuit bi bo ud a s n t
 ledgerCircuit = C.compileV1 @RollupBF ledgerContract
 
-type PlonkupTs bi bo a i n t =
+type PlonkupTs bi bo a txCount txN i n t =
   Plonkup
     i
-    (LedgerContractOutputLayout bi bo a)
+    (LedgerContractOutputLayout bi bo a txCount txN)
     n
     BLS12_381_G1_JacobianPoint
     BLS12_381_G2_JacobianPoint
@@ -239,45 +238,46 @@ type TranscriptConstraints ts =
   )
 
 ledgerSetup
-  :: forall tc bi bo ud a i o t c
-   . TranscriptConstraints tc
+  :: forall g tc bi bo ud a s n t c
+   . (KnownNat g, KnownNat (4 * g + 6))
+  => TranscriptConstraints tc
   => RollupBF ~ BaseField c
-  => SignatureState bi bo ud a c
-  => SignatureTransactionBatch ud i o a t c
-  => TrustedSetup (LedgerCircuitGates + 6)
-  -> LedgerCircuit bi bo ud a i o t
-  -> SetupVerify (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+  => SignatureState bi bo c
+  => SignatureTransactionBatch ud s n a t c
+  => TrustedSetup (g + 6)
+  -> LedgerCircuit bi bo ud a s n t
+  -> SetupVerify (PlonkupTs bi bo a t n (LedgerContractCompiledInput bi bo ud a s n t) g tc)
 ledgerSetup TrustedSetup {..} circuit = setupV
  where
-  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  (omega, k1, k2) = getParams (Number.value @g)
   plonkup = Plonkup omega k1 k2 circuit g2_1 g1s
-  setupV = setupVerify @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+  setupV = setupVerify @(PlonkupTs bi bo a t n (LedgerContractCompiledInput bi bo ud a s n t) g tc) plonkup
 
 ledgerProof
-  :: forall tc bi bo ud a i o t c
-   . (TranscriptConstraints tc, c ~ Interpreter RollupBF)
-  => SignatureState bi bo ud a c
-  => SignatureTransactionBatch ud i o a t c
-  => TrustedSetup (LedgerCircuitGates + 6)
+  :: forall g tc bi bo ud a s n t c
+   . (KnownNat g, KnownNat (4 * g + 6), TranscriptConstraints tc, c ~ Interpreter RollupBF)
+  => SignatureState bi bo c
+  => SignatureTransactionBatch ud s n a t c
+  => TrustedSetup (g + 6)
   -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
-  -> LedgerCircuit bi bo ud a i o t
-  -> LedgerContractInput bi bo ud a i o t c
-  -> Proof (PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc)
+  -> LedgerCircuit bi bo ud a s n t
+  -> LedgerContractInput bi bo ud a s n t c
+  -> Proof (PlonkupTs bi bo a t n (LedgerContractCompiledInput bi bo ud a s n t) g tc)
 ledgerProof TrustedSetup {..} ps circuit input = proof
  where
-  witnessInputs :: (Layout (LedgerContractInput bi bo ud a i o t) (Order RollupBF)) RollupBF
+  witnessInputs :: (Layout (LedgerContractInput bi bo ud a s n t) (Order RollupBF)) RollupBF
   witnessInputs = runInterpreter $ arithmetize input
 
-  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a i o t RollupBF
+  paddedWitnessInputs :: LedgerContractCompiledInput bi bo ud a s n t RollupBF
   paddedWitnessInputs = (witnessInputs :*: U1) :*: (payload input :*: U1)
 
-  (omega, k1, k2) = getParams (Number.value @LedgerCircuitGates)
+  (omega, k1, k2) = getParams (Number.value @g)
   plonkup =
     Plonkup omega k1 k2 circuit g2_1 g1s
-      :: PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc
-  setupP = setupProve @(PlonkupTs bi bo a (LedgerContractCompiledInput bi bo ud a i o t) LedgerCircuitGates tc) plonkup
+      :: PlonkupTs bi bo a t n (LedgerContractCompiledInput bi bo ud a s n t) g tc
+  setupP = setupProve @(PlonkupTs bi bo a t n (LedgerContractCompiledInput bi bo ud a s n t) g tc) plonkup
   witness =
-    ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a i o t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs
+    ( PlonkupWitnessInput @(LedgerContractCompiledInput bi bo ud a s n t) @BLS12_381_G1_JacobianPoint paddedWitnessInputs
     , ps
     )
   (proof, _) = rustPlonkupProve setupP witness
@@ -295,7 +295,8 @@ convertG1 = toByteString . compress
 convertG2 :: BLS12_381_G2_JacobianPoint -> ByteString
 convertG2 = toByteString . compress
 
-mkSetup :: forall bi bo a i n. KnownNat n => SetupVerify (PlonkupTs bi bo a i n ByteString) -> ZKSetupBytes
+mkSetup
+  :: forall bi bo a txCount txN i n. KnownNat n => SetupVerify (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKSetupBytes
 mkSetup PlonkupVerifierSetup {..} =
   let PlonkupCircuitCommitments {..} = commitments
    in ZKSetupBytes
@@ -323,7 +324,8 @@ mkSetup PlonkupVerifierSetup {..} =
  where
   convertG1' = ByteStringFromHex . convertG1
 
-mkProof :: forall bi bo a i (n :: Natural). Proof (PlonkupTs bi bo a i n ByteString) -> ZKProofBytes
+mkProof
+  :: forall bi bo a txCount txN i (n :: Natural). Proof (PlonkupTs bi bo a txCount txN i n ByteString) -> ZKProofBytes
 mkProof PlonkupProof {..} =
   case l_xi of
     [] -> error "mkProof: empty inputs"

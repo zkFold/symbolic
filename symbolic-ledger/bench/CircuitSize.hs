@@ -38,16 +38,17 @@ goldenCircuit name circuit =
 -- @bo@      - number of bridge-out outputs
 -- @ud@      - UTXO tree depth (2^(ud-1) leaves)
 -- @a@       - number of assets per output
--- @ixs@     - number of inputs per transaction
--- @oxs@     - number of outputs per transaction
+-- @s@       - max unique signers per transaction
+-- @n@       - number of inputs/outputs per transaction
 -- @txCount@ - number of transactions per batch
 main :: IO ()
 main =
   Tasty.defaultMain $
     Tasty.testGroup
       "Ledger circuit golden tests"
-      [ goldenCircuit "Ledger.1.1.2.1.1.1.1" (ledgerCircuit @1 @1 @2 @1 @1 @1 @1 @RollupBFInterpreter)
-      , goldenCircuit "Ledger.1.1.2.1.1.1.2" (ledgerCircuit @1 @1 @2 @1 @1 @1 @2 @RollupBFInterpreter)
-      , goldenCircuit "Ledger.1.1.4.1.1.1.2" (ledgerCircuit @1 @1 @4 @1 @1 @1 @2 @RollupBFInterpreter)
-      , goldenCircuit "Ledger.1.1.2.2.2.2.2" (ledgerCircuit @1 @1 @2 @2 @2 @2 @2 @RollupBFInterpreter)
+      [ goldenCircuit "Ledger.1.1.2.1.1.1" (ledgerCircuit @1 @1 @2 @1 @1 @1 @1 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.2.1.1.2" (ledgerCircuit @1 @1 @2 @1 @1 @1 @2 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.10.1.1.2" (ledgerCircuit @1 @1 @10 @1 @1 @1 @2 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.2.2.2.2" (ledgerCircuit @1 @1 @2 @2 @2 @2 @2 @RollupBFInterpreter)
+      , goldenCircuit "Ledger.1.1.20.2.2.2" (ledgerCircuit @1 @1 @20 @2 @2 @2 @2 @RollupBFInterpreter)
       ]

@@ -21,26 +21,26 @@ import ZkFold.Symbolic.Ledger.Types.Transaction.Core (Transaction)
 import ZkFold.Symbolic.Ledger.Types.Value (KnownRegistersAssetQuantity)
 
 -- | Transaction batch.
-newtype TransactionBatch i o a t c = TransactionBatch
-  { tbTransactions :: Vector t (Transaction i o a c)
+newtype TransactionBatch n a t c = TransactionBatch
+  { tbTransactions :: Vector t (Transaction n a c)
   -- ^ Vector of transaction hashes.
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (TransactionBatch i o a t context)
+deriving stock instance HShow context => Haskell.Show (TransactionBatch n a t context)
 
 instance
-  forall i o a t context
+  forall n a t context
    . ( Symbolic context
      , KnownRegistersAssetQuantity context
      )
-  => Eq (TransactionBatch i o a t context)
+  => Eq (TransactionBatch n a t context)
 
-deriving anyclass instance forall i o a t. ToJSON (TransactionBatch i o a t RollupBFInterpreter)
+deriving anyclass instance forall n a t. ToJSON (TransactionBatch n a t RollupBFInterpreter)
 
-deriving anyclass instance forall i o a t. FromJSON (TransactionBatch i o a t RollupBFInterpreter)
+deriving anyclass instance forall n a t. FromJSON (TransactionBatch n a t RollupBFInterpreter)
 
 deriving anyclass instance
-  forall i o a t
-   . (KnownNat i, KnownNat o, KnownNat t, KnownNat a) => ToSchema (TransactionBatch i o a t RollupBFInterpreter)
+  forall n a t
+   . (KnownNat n, KnownNat t, KnownNat a) => ToSchema (TransactionBatch n a t RollupBFInterpreter)

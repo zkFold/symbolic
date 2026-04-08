@@ -23,8 +23,11 @@ module ZkFold.Symbolic.Data.MerkleTree (
   KnownMerkleTree,
   replace,
   containsAndReplace,
+  containsAndReplaceRoot,
+  addSiblings,
   replaceAt,
   Index,
+  packIndex,
 ) where
 
 import Data.Bool (otherwise)
@@ -38,12 +41,12 @@ import Data.Type.Equality (type (~))
 import qualified Data.Vector as Data
 import Data.Zip (zipWith)
 import GHC.Generics (Generic, Generic1, Par1 (Par1, unPar1), U1 (..), (:*:) (..), (:.:) (..))
+import GHC.Natural (Natural)
 import GHC.TypeLits (KnownNat, type (-), type (^))
 import Test.QuickCheck (Arbitrary (..))
 import qualified Prelude as P
 
 import ZkFold.Algebra.Class
-import ZkFold.Algorithm.Hash.MiMC.Constants (mimcConstants)
 import ZkFold.Control.Conditional (ifThenElse)
 import ZkFold.Control.HApplicative (hunit)
 import ZkFold.Data.Eq (BooleanOf, Eq, (==))
@@ -52,7 +55,7 @@ import qualified ZkFold.Data.MerkleTree as Base
 import ZkFold.Data.Package (packed)
 import ZkFold.Data.Product (toPair)
 import ZkFold.Data.Vector (Vector, mapWithIx, reverse, toV, unsafeToVector)
-import qualified ZkFold.Symbolic.Algorithm.Hash.MiMC as SymbolicMiMC
+import ZkFold.Symbolic.Algorithm.Hash.Poseidon (poseidonHash2)
 import ZkFold.Symbolic.Class (Arithmetic, BaseField, Symbolic (..), WitnessField, embed, witnessF)
 import ZkFold.Symbolic.Data.Bool (Bool (..), BoolType (..), Conditional, assert, bool, (||))
 import ZkFold.Symbolic.Data.Class (SymbolicData, withoutConstraints)
@@ -110,6 +113,25 @@ instance
 type MerklePath d = Vector (d - 1) :.: (Bool :*: FieldElement)
 
 type Index d = Vector (d - 1) :.: Bool
+
+-- | Pack a tree index (vector of bits) into a single 'FieldElement'.
+-- The position vector is stored root-to-leaf (MSB-first), so we reverse
+-- to get LSB-first before applying little-endian weights:
+-- @bit_{d-2} * 2^0 + ... + bit_1 * 2^{d-3} + bit_0 * 2^{d-2}@.
+-- This produces the natural leaf index (0, 1, 2, ...).
+-- This is a linear combination with constant coefficients, so it adds
+-- essentially zero cost to the circuit.
+packIndex
+  :: Symbolic c
+  => Index d c
+  -> FieldElement c
+packIndex (Comp1 bits) =
+  foldl'
+    (\acc (Bool b :*: pow) -> acc + FieldElement b * pow)
+    zero
+    (zipWith (:*:) (P.reverse (toList bits)) powers)
+ where
+  powers = (fromConstant @Natural) P.<$> P.iterate (* 2) 1
 
 -- | Compute the merkle path for a given position in the tree.
 -- This implementation uses circuit-level operations throughout to avoid
@@ -176,11 +198,12 @@ computeSiblingsSymbolic levels bitsLSB =
   -- Symbolic NOT: if b then False else True
   notB = bool symTrue symFalse
 
--- | Circuit-optimized MiMC hash for Merkle tree operations.
--- Uses the Symbolic MiMC implementation which builds circuits efficiently
--- rather than creating exponential WitnessF closures.
+-- | Circuit-optimized Poseidon compression for Merkle tree operations.
+-- Uses the LC-tracking Poseidon implementation which absorbs MDS and
+-- round constant additions into S-box constraints, reducing cost from
+-- ~880 poly (MiMC) to ~492 poly per hash.
 merkleHash :: Symbolic c => FieldElement c -> FieldElement c -> FieldElement c
-merkleHash = SymbolicMiMC.mimcHash2 mimcConstants zero
+merkleHash = poseidonHash2
 
 -- | Hash current value with sibling based on bit direction.
 -- Uses the circuit-optimized hash function.
@@ -200,6 +223,8 @@ rootOnReplace (Comp1 path) value =
 data MerkleEntry d c = MerkleEntry
   { position :: Index d c
   , value :: FieldElement c
+  , siblings :: (Vector (d - 1) :.: FieldElement) c
+  -- ^ Sibling hashes along the Merkle path from leaf to root.
   }
   deriving (Generic, Generic1, SymbolicData, SymbolicInput)
 
@@ -212,7 +237,8 @@ contains
   -> MerkleEntry d c
   -> Bool c
 tree `contains` MerkleEntry {..} =
-  rootOnReplace (merklePath tree position) value == mHash tree
+  let path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
+   in rootOnReplace path value == mHash tree
 
 type Bool' c = BooleanOf (IntegralOf (WitnessField c))
 
@@ -223,10 +249,18 @@ type Bool' c = BooleanOf (IntegralOf (WitnessField c))
   -> Index d c
   -> FieldElement c
 tree !! position =
-  assert (\value -> tree `contains` MerkleEntry {..}) $
-    fromBaseHash $
-      recIndex (fromBool <$> unComp1 position) $
-        toBaseLeaves (mLeaves tree)
+  let entry val =
+        addSiblings
+          tree
+          MerkleEntry
+            { position = position
+            , value = val
+            , siblings = Comp1 $ fmap (const zero) (unComp1 position)
+            }
+   in assert (\value -> tree `contains` entry value) $
+        fromBaseHash $
+          recIndex (fromBool <$> unComp1 position) $
+            toBaseLeaves (mLeaves tree)
  where
   recIndex
     :: forall n b a. Conditional b a => Vector n b -> Vector (2 ^ n) a -> a
@@ -268,9 +302,10 @@ search pred tree =
           let (l, r) = bisect v
               (isL, li, lx) = doSearch l
               (isR, ri, rx) = doSearch r
+              pickR = not isL && isR -- In case both subtrees have a match, we should prefer left subtree.
            in ( isL || isR
-              , isR : zipWith (ifThenElse isR) ri li
-              , ifThenElse isR rx lx
+              , pickR : zipWith (ifThenElse pickR) ri li
+              , ifThenElse pickR rx lx
               )
 
   toEntry :: Bool' c ~ b => (b, Vector (d - 1) b, WitnessField c) -> Maybe (MerkleEntry d) c
@@ -278,7 +313,10 @@ search pred tree =
     ( toBool -> wasFound
       , Comp1 . fmap toBool -> position
       , fromBaseHash -> value
-      ) = guard wasFound MerkleEntry {..}
+      ) =
+      let path = merklePath tree position
+          siblings = Comp1 $ fmap (\(_ :*: sib) -> sib) (unComp1 path)
+       in guard wasFound MerkleEntry {..}
 
   fromBool :: Bool (WitnessContext c) -> Bool' c
   fromBool (Bool (WC (Par1 b))) = toIntegral b == one
@@ -336,7 +374,8 @@ replace MerkleEntry {..} tree =
   -- Verify input tree is consistent along this path before replacement
   assert (const oldRootValid) result
  where
-  path = merklePath tree position
+  -- Build path from entry's siblings (no full-tree rebuild needed).
+  path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
 
   -- Get old value at position (witness-level selection, no constraints)
   oldValue =
@@ -382,7 +421,8 @@ containsAndReplace
   -> (Bool c, MerkleTree d c)
 containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
  where
-  path = merklePath tree position
+  -- Build path from entry's siblings (no full-tree rebuild needed).
+  path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
 
   -- Contains check: verify the entry's value produces the tree's root
   isContained = rootOnReplace path value == mHash tree
@@ -403,13 +443,49 @@ containsAndReplace MerkleEntry {..} newValue tree = (isContained, result)
     -> a
   replacer (idx, newVal) n = ifThenElse (idx == fromConstant n) newVal
 
+-- | Root-only contains-and-replace using a MerkleEntry with siblings.
+-- Verifies the old value is in the tree and computes the new root after replacement.
+-- Cost: O(d) hashes — no full-tree operations.
+containsAndReplaceRoot
+  :: Symbolic c
+  => MerkleEntry d c
+  -- ^ Entry with position, old value, and sibling hashes.
+  -> FieldElement c
+  -- ^ New value to replace the old value with.
+  -> FieldElement c
+  -- ^ Current root hash.
+  -> (Bool c, FieldElement c)
+  -- ^ (old value was in tree, new root hash)
+containsAndReplaceRoot MerkleEntry {..} newValue currentRoot =
+  -- position is root-to-leaf, siblings is leaf-to-root (matching merklePath order).
+  -- Reverse position to align with siblings for rootOnReplace (which folds leaf-to-root).
+  let path = Comp1 $ zipWith (:*:) (reverse $ unComp1 position) (unComp1 siblings)
+      isContained = rootOnReplace path value == currentRoot
+      newRoot = rootOnReplace path newValue
+   in (isContained, newRoot)
+
+-- | Compute and attach sibling hashes from a full MerkleTree to a MerkleEntry.
+-- Used off-chain to populate the siblings field after a search.
+addSiblings :: Symbolic c => MerkleTree d c -> MerkleEntry d c -> MerkleEntry d c
+addSiblings tree entry =
+  let path = merklePath tree (position entry)
+      sibs = Comp1 $ fmap (\(_ :*: sib) -> sib) (unComp1 path)
+   in entry {siblings = sibs}
+
 replaceAt
   :: (Symbolic c, KnownMerkleTree d)
   => Index d c
   -> FieldElement c
   -> MerkleTree d c
   -> MerkleTree d c
-replaceAt position value = replace MerkleEntry {..}
+replaceAt pos val tree = replace (addSiblings tree entry) tree
+ where
+  entry =
+    MerkleEntry
+      { position = pos
+      , value = val
+      , siblings = Comp1 $ fmap (const zero) (unComp1 pos)
+      }
 
 ---------------------------- conversion functions ------------------------------
 

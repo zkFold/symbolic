@@ -17,6 +17,7 @@ import ZkFold.Symbolic.Data.FieldElement (FieldElement)
 import ZkFold.Symbolic.Data.Hash (Hashable (..), hash)
 import ZkFold.Symbolic.Data.Hash qualified as Base
 import ZkFold.Symbolic.Data.Maybe (Maybe (..))
+import ZkFold.Symbolic.Data.MerkleTree (MerkleTree)
 import ZkFold.Symbolic.Data.MerkleTree qualified as MerkleTree
 import ZkFold.Symbolic.WitnessContext (toWitnessContext)
 import Prelude qualified as P
@@ -31,22 +32,24 @@ import ZkFold.Symbolic.Ledger.Validation.TransactionBatch (TransactionBatchWitne
 --
 -- This function assumes that provided inputs are valid in the sense that say transaction outputs contain at least one ada, given UTxO set correctly corresponds to merkle tree, etc.. We can use @validateStateUpdate@ on top of this function to check if inputs are valid.
 updateLedgerState
-  :: forall bi bo ud a i o t context
-   . SignatureState bi bo ud a context
-  => SignatureTransactionBatch ud i o a t context
-  => State bi bo ud a context
+  :: forall bi bo ud a s n t context
+   . SignatureState bi bo context
+  => SignatureTransactionBatch ud s n a t context
+  => State context
   -- ^ Previous state.
+  -> MerkleTree ud context
+  -- ^ Full Merkle tree corresponding to the previous state's UTxO root hash.
   -> Leaves ud (UTxO a context)
-  -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the previous state's UTxO set
+  -- ^ UTxO set (preimage of leaves of the merkle tree). It is assumed that it corresponds correctly to the merkle tree.
   -> (Vector bi :.: Output a) context
   -- ^ Bridged in outputs.
-  -> TransactionBatch i o a t context
+  -> TransactionBatch n a t context
   -- ^ Transaction batch.
-  -> (Vector t :.: (Vector i :.: (EdDSAPoint :*: EdDSAScalarField :*: PublicKey))) context
-  -- ^ Signature material for each transaction input: (rPoint :*: s :*: publicKey).
-  -> (State bi bo ud a :*: StateWitness bi bo ud a i o t :*: (Leaves ud :.: UTxO a)) context
-  -- ^ New state, witness and UTxO set.
-updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
+  -> (Vector t :.: (Vector s :.: (PublicKey :*: EdDSAPoint :*: EdDSAScalarField))) context
+  -- ^ Signature material for each transaction: per-signer (publicKey :*: rPoint :*: s).
+  -> (State :*: StateWitness bi bo ud a s n t :*: MerkleTree ud :*: (Leaves ud :.: UTxO a)) context
+  -- ^ New state, witness, updated Merkle tree and UTxO set.
+updateLedgerState previousState initialTree utxoSet bridgedInOutputs action sigMaterial =
   let
     nullOutput' = nullOutput @a @context
     nullUTxO' = nullUTxO @a @context
@@ -90,7 +93,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
           entries' = entry : entries
           pre' = replaceFirstMatchWith pre nullUTxO' gatedUtxo
        in (ix', entries', tree', pre')
-    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], previousState.sUTxO, utxoPreimageInit) biOutsList
+    (_ixAfterBI, biEntriesRev, utxoAfterBridgeIn, utxoPreimageAfterBI) = foldl' stepBridgeIn (zero, [], initialTree, utxoPreimageInit) biOutsList
     swAddBridgeIn = Comp1 (unsafeToVector' @bi (P.reverse biEntriesRev))
 
     -- Build transaction witnesses and apply batch updates to UTxO tree
@@ -102,8 +105,7 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
         txId' = txId tx & Base.hHash
         -- Inputs witnesses
         inRefs = fromVector (unComp1 tx.inputs)
-        sigsList = fromVector (unComp1 sigs)
-        stepIn (insAcc, treeIn, preIn) (ref, rPoint :*: s :*: publicKey) =
+        stepIn (insAcc, treeIn, preIn) ref =
           let
             -- Find UTxO by reference in evolving preimage set
             utxoSetList = fromVector preIn
@@ -117,9 +119,10 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
             treeIn' = MerkleTree.replace (me {MerkleTree.value = nullUTxOHash'}) treeIn
             preIn' = replaceFirstMatchWith' preIn (\u -> u.uRef == ref) nullUTxO'
            in
-            ((me :*: utxo :*: rPoint :*: s :*: publicKey) : insAcc, treeIn', preIn')
-        (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) (P.zip inRefs sigsList)
-        twInputs = Comp1 (unsafeToVector' @i (P.reverse insRev))
+            ((me :*: utxo) : insAcc, treeIn', preIn')
+        (insRev, treeAfterIns, preAfterIns) = foldl' stepIn ([], tree, pre) inRefs
+        twInputs = Comp1 (unsafeToVector' @n (P.reverse insRev))
+        twSignatures = sigs
 
         -- Outputs witnesses and apply outputs (skip bridge-outs)
         outs = fromVector (unComp1 tx.outputs)
@@ -135,8 +138,8 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
               preOut' = replaceFirstMatchWith preOut nullUTxO' gatedUtxo
            in (me : outsAcc, outIx + one, treeOut', preOut')
         (outsRev, _outIxEnd, treeAfterOuts, preAfterOuts) = foldl' stepOut ([], zero, treeAfterIns, preAfterIns) outs
-        twOutputs = Comp1 (unsafeToVector' @o (P.reverse outsRev))
-        tw = TransactionWitness {twInputs, twOutputs}
+        twOutputs = Comp1 (unsafeToVector' @n (P.reverse outsRev))
+        tw = TransactionWitness {twSignatures, twInputs, twOutputs}
        in
         (treeAfterOuts, preAfterOuts, tw : witsAcc)
 
@@ -146,12 +149,16 @@ updateLedgerState previousState utxoSet bridgedInOutputs action sigMaterial =
     newState =
       State
         { sPreviousStateHash = hasher previousState
-        , sUTxO = utxoFinal
+        , sUTxO = MerkleTree.mHash utxoFinal
         , sLength = newLen
-        , sBridgeIn = hash bridgedInOutputs
-        , sBridgeOut = hash bridgedOutOutputs
         }
    in
     newState
-      :*: StateWitness {swAddBridgeIn, swTransactionBatch = TransactionBatchWitness {tbwTransactions}}
+      :*: StateWitness
+        { swBridgeIn = bridgedInOutputs
+        , swBridgeOut = bridgedOutOutputs
+        , swAddBridgeIn
+        , swTransactionBatch = TransactionBatchWitness {tbwTransactions}
+        }
+      :*: utxoFinal
       :*: Comp1 utxoPreimageFinal

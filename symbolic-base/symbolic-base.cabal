@@ -14,6 +14,7 @@ build-type:         Custom
 Data-Files:
     test/data/shabittestvectors/*.rsp
     data/midnight_powers_of_tau_2e18
+    data/midnight_powers_of_tau_2e20
 extra-source-files:
   rust-wrapper/*.toml
   rust-wrapper/src/*.rs
@@ -474,6 +475,18 @@ benchmark bench-lagrange-basis
       symbolic-base,
       tasty-bench,
       QuickCheck
+
+executable setup-generator
+    import: options-exe
+    main-is: SetupGenerator.hs
+    hs-source-dirs: test
+    ghc-options:
+      -O2
+      -threaded
+      "-with-rtsopts=-A128M -N"
+    build-depends:
+      base,
+      symbolic-base
 
 executable group-elements-generator
     import: options-exe

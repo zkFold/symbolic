@@ -149,43 +149,43 @@ nullUTxOHash
 nullUTxOHash = hash (nullUTxO @a @context) & Base.hHash
 
 -- | Transaction in our symbolic ledger.
-data Transaction i o a context = Transaction
-  { inputs :: (Vector i :.: OutputRef) context
+data Transaction n a context = Transaction
+  { inputs :: (Vector n :.: OutputRef) context
   -- ^ Inputs.
-  , outputs :: (Vector o :.: (Output a :*: Bool)) context
+  , outputs :: (Vector n :.: (Output a :*: Bool)) context
   -- ^ Outputs. Boolean denotes whether the output is a bridge out output, in which case `oAddress` denotes Cardano address.
   }
   deriving stock (Generic, Generic1)
   deriving anyclass (SymbolicData, SymbolicInput)
 
-deriving stock instance HShow context => Haskell.Show (Transaction i o a context)
+deriving stock instance HShow context => Haskell.Show (Transaction n a context)
 
 instance
-  forall i o a context
+  forall n a context
    . ( Symbolic context
      , KnownRegistersAssetQuantity context
      )
-  => Eq (Transaction i o a context)
+  => Eq (Transaction n a context)
 
-deriving anyclass instance ToJSON (Transaction i o a RollupBFInterpreter)
+deriving anyclass instance ToJSON (Transaction n a RollupBFInterpreter)
 
-deriving anyclass instance FromJSON (Transaction i o a RollupBFInterpreter)
+deriving anyclass instance FromJSON (Transaction n a RollupBFInterpreter)
 
 deriving anyclass instance
-  forall i o a. (KnownNat i, KnownNat o, KnownNat a) => ToSchema (Transaction i o a RollupBFInterpreter)
+  forall n a. (KnownNat n, KnownNat a) => ToSchema (Transaction n a RollupBFInterpreter)
 
 -- | Transaction hash.
-type TransactionId i o a = Hash (Transaction i o a)
+type TransactionId n a = Hash (Transaction n a)
 
-instance Symbolic context => Hashable (HashSimple context) (Transaction i o a context) where
+instance Symbolic context => Hashable (HashSimple context) (Transaction n a context) where
   hasher = hashFn
 
 -- | Obtain transaction hash.
 txId
-  :: forall i o a context
+  :: forall n a context
    . Symbolic context
-  => Transaction i o a context
-  -> TransactionId i o a context
+  => Transaction n a context
+  -> TransactionId n a context
 txId = hash
 
 type EdDSABaseField = FFA Jubjub_Base 'Auto
@@ -199,11 +199,11 @@ type PrivateKey = EdDSAScalarField
 type PublicKey = EdDSAPoint
 
 signTransaction
-  :: forall i o a context
+  :: forall n a context
    . Symbolic context
   => KnownFFA Jubjub_Scalar 'Auto context
   => KnownFFA Jubjub_Base 'Auto context
-  => Transaction i o a context
+  => Transaction n a context
   -> PrivateKey context
   -> (EdDSAPoint :*: EdDSAScalarField) context
 signTransaction tx privateKey = eddsaSign hashFn privateKey (txId tx & Base.hHash)
