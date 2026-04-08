@@ -228,6 +228,7 @@ library
       ZkFold.Protocol.NonInteractiveProof.Prover
       ZkFold.Protocol.NonInteractiveProof.Testing
       ZkFold.Protocol.Halo2
+      ZkFold.Protocol.Halo2.Export
       ZkFold.Prelude
       ZkFold.Symbolic.Algorithm.ECDSA.ECDSA
       ZkFold.Symbolic.Algorithm.EdDSA
@@ -312,11 +313,14 @@ library
       bifunctors                                 ,
       bytestring                           < 0.13,
       bytestring-aeson-orphans              < 0.2,
+      cborg                                      ,
       constraints                                ,
       containers                                 ,
       cryptohash-sha256                    < 0.12,
       deepseq                          <= 1.6.0.0,
+      directory >= 1.3.6.0,
       distributive                               ,
+      filepath,
       generic-random                        < 1.6,
       hashtables                                 ,
       infinite-list                              ,
@@ -325,12 +329,14 @@ library
       mtl                                   < 2.4,
       optics                                < 0.5,
       pretty-simple                         < 4.2,
+      process                                    ,
       QuickCheck                           < 2.16,
       random                                < 1.3,
       scientific                            < 0.4,
       semialign                             < 1.4,
       semigroups                                 ,
       split                               < 0.2.6,
+      temporary,
       text                                       ,
       these                                 < 1.3,
       transformers                               ,

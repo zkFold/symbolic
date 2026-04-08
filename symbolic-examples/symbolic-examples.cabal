@@ -199,5 +199,6 @@ executable smart-wallet-creator
   build-depends:
     base              >= 4.9 && < 5,
     bytestring                     ,
+    process                        ,
     symbolic-base                  ,
     symbolic-examples

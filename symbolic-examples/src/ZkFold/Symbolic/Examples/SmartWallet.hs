@@ -13,12 +13,14 @@ module ZkFold.Symbolic.Examples.SmartWallet (
   expModCircuit,
   expModSetup,
   expModProof,
+  circuitInput,
   -- Mock circuits for testing
   ExpModCircuitGatesMock,
   expModSetupMock,
   expModProofMock,
   nativeSolution,
   -- Circuit for debugging
+  debugCircuit,
   expModProofDebug,
   ExpModProofInput (..),
   PlonkupTs,
@@ -257,15 +259,8 @@ deriving instance ToJSON ExpModProofInput
 
 deriving instance FromJSON ExpModProofInput
 
-expModProof
-  :: forall t
-   . TranscriptConstraints t
-  => TrustedSetup (ExpModCircuitGates + 6)
-  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
-  -> (Natural -> Natural -> ExpModCircuit)
-  -> ExpModProofInput
-  -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
-expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
+circuitInput :: Natural -> Natural -> ExpModCompiledInput Fr
+circuitInput piSignature piTokenName = paddedWitnessInputs
  where
   input :: ExpModInput (Interpreter Fr)
   input =
@@ -279,6 +274,19 @@ expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
   paddedWitnessInputs :: ExpModCompiledInput Fr
   paddedWitnessInputs = ((U1 :*: U1) :*: U1) :*: (witnessInputs :*: U1)
 
+expModProof
+  :: forall t
+   . TranscriptConstraints t
+  => TrustedSetup (ExpModCircuitGates + 6)
+  -> PlonkupProverSecret BLS12_381_G1_JacobianPoint
+  -> (Natural -> Natural -> ExpModCircuit)
+  -> ExpModProofInput
+  -> Proof (PlonkupTs ExpModCompiledInput ExpModCircuitGates t)
+expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
+ where
+  paddedWitnessInputs :: ExpModCompiledInput Fr
+  paddedWitnessInputs = circuitInput piSignature piTokenName
+
   (omega, k1, k2) = getParams (Number.value @ExpModCircuitGates)
   plonkup = Plonkup omega k1 k2 (ac piPubE piPubN) g2_1 g1s :: PlonkupTs ExpModCompiledInput ExpModCircuitGates t
   setupP = setupProve @(PlonkupTs ExpModCompiledInput ExpModCircuitGates t) plonkup
@@ -289,7 +297,7 @@ expModProof TrustedSetup {..} ps ac ExpModProofInput {..} = proof
 --  Mock circuit. To be replaced with the full circuit after optimisations
 -------------------------------------------------------------------------------------------------------------------
 
-type ExpModCircuitGatesMock = 2 ^ 10
+type ExpModCircuitGatesMock = 2 ^ 16
 
 identityCircuit :: ArithmeticCircuit Fr (Par1 :*: Par1) (Par1 :*: Par1)
 identityCircuit = AC.idCircuit
