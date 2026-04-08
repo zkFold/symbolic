@@ -42,8 +42,8 @@ specMerkleTree' = describe (show $ typeAt @(MerkleTree d (Interpreter a))) do
   it
     "index . replace == id"
     \(t :: MerkleTree d (Interpreter a)) position value ->
-      let siblings = Comp1 $ fmap (const zero) (unComp1 position)
-       in replace MerkleEntry {..} t !! position P.== value
+      let entry = addSiblings t MerkleEntry {position, value, siblings = Comp1 $ fmap (const zero) (unComp1 position)}
+       in replace entry t !! position P.== value
   it
     "replace p x . replace p y == replace p x"
     \(t :: MerkleTree d (Interpreter a)) p x y ->
